@@ -1,0 +1,143 @@
+package com.xyp.gtneverreset.common.item;
+
+import java.util.List;
+
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.StatCollector;
+import net.minecraft.world.World;
+
+import com.cleanroommc.modularui.api.IGuiHolder;
+import com.cleanroommc.modularui.factory.PlayerInventoryGuiData;
+import com.cleanroommc.modularui.factory.PlayerInventoryGuiFactory;
+import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.screen.ModularScreen;
+import com.cleanroommc.modularui.screen.UISettings;
+import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.client.gui.PixelFontModularScreen;
+import com.xyp.gtneverreset.common.gui.WildcardPatternGui;
+import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtneverreset.utils.recipes.wildcard.WildcardPatternGenerator;
+import com.xyp.gtneverreset.utils.recipes.wildcard.WildcardPatternState;
+
+import appeng.api.networking.crafting.ICraftingPatternDetails;
+import appeng.items.misc.ItemEncodedPattern;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
+public class WildcardPatternItem extends ItemEncodedPattern implements IGuiHolder<PlayerInventoryGuiData> {
+
+    public static final String UNLOCALIZED_NAME = "wildcardpattern";
+    public static final String ITEM_NAME = "WildcardPattern";
+
+    public WildcardPatternItem() {
+        super();
+        setMaxStackSize(1);
+        // #tr item.wildcardpattern.name
+        // # Wildcard Pattern
+        // # zh_CN 通配样板符
+        setUnlocalizedName(UNLOCALIZED_NAME);
+        setTextureName(GTNeverReset.MODID + ":wildcard_pattern");
+    }
+
+    @Override
+    public void onCreated(ItemStack stack, World world, EntityPlayer player) {
+        WildcardPatternGenerator.markAsWildcard(stack);
+    }
+
+    @Override
+    public void onUpdate(ItemStack stack, World world, Entity entity, int slot, boolean isHeld) {
+        if (stack != null && stack.stackTagCompound == null) {
+            WildcardPatternGenerator.markAsWildcard(stack);
+        }
+    }
+
+    @Override
+    public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
+        if (stack == null) return stack;
+
+        WildcardPatternGenerator.markAsWildcard(stack);
+        if (!world.isRemote) {
+            try {
+                PlayerInventoryGuiFactory.INSTANCE.openFromMainHand(player);
+            } catch (Exception e) {
+                GTNeverReset.LOG.error("failed to open wildcard pattern configuration", e);
+            }
+        }
+        return stack;
+    }
+
+    @Override
+    public ModularPanel buildUI(PlayerInventoryGuiData data, PanelSyncManager syncManager, UISettings settings) {
+        return new WildcardPatternGui(data.getSlotIndex()).buildUI(data, syncManager, settings);
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public ModularScreen createScreen(PlayerInventoryGuiData data, ModularPanel mainPanel) {
+        return new PixelFontModularScreen(ModList.ModIds.GT_NEVER_RESET, mainPanel);
+    }
+
+    @Override
+    public boolean onItemUseFirst(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
+        float hitX, float hitY, float hitZ) {
+        WildcardPatternGenerator.markAsWildcard(stack);
+        return false;
+    }
+
+    @Override
+    public ICraftingPatternDetails getPatternForItem(ItemStack stack, World world) {
+        return WildcardPatternGenerator.getDetailsForItem(stack, world);
+    }
+
+    @Override
+    public ItemStack getOutput(ItemStack item) {
+        if (!WildcardPatternGenerator.isWildcardPattern(item)) {
+            return super.getOutput(item);
+        }
+        return WildcardPatternGenerator.getOutputForItem(item, null);
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public void addCheckedInformation(ItemStack stack, EntityPlayer player, List<String> lines,
+        boolean advancedTooltips) {
+        if (!WildcardPatternGenerator.isWildcardPattern(stack)) {
+            WildcardPatternGenerator.markAsWildcard(stack);
+        }
+
+        int actualCount;
+        try {
+            actualCount = WildcardPatternGenerator.countActualPatternsAfterExclude(stack);
+        } catch (Exception e) {
+            actualCount = WildcardPatternState.getExpandedPatternCount(stack);
+        }
+
+        // #tr tooltip.wildcardpattern.desc_axis
+        // # §7Generates a pattern for each material that passes the filter.
+        // # zh_CN §7为每种符合过滤条件的材料生成一张样板。
+        lines.add(StatCollector.translateToLocal("tooltip.wildcardpattern.desc_axis"));
+
+        // #tr tooltip.wildcardpattern.usage
+        // # Right-click to configure; use NEI + to import a recipe, then save.
+        // # zh_CN 右键配置，可点击 NEI 配方的＋自动填写，调整后保存。
+        lines.add(StatCollector.translateToLocal("tooltip.wildcardpattern.usage"));
+
+        // #tr tooltip.wildcardpattern.desc_io
+        // # §7Inputs and outputs support material prefixes, fluids and fixed items.
+        // # zh_CN §7输入输出支持材料前缀、流体与固定物品。
+        lines.add(StatCollector.translateToLocal("tooltip.wildcardpattern.desc_io"));
+
+        // #tr tooltip.wildcardpattern.desc_filter
+        // # §7Filter by material properties, tags or names.
+        // # zh_CN §7可按材料属性、标签或名称过滤。
+        lines.add(StatCollector.translateToLocal("tooltip.wildcardpattern.desc_filter"));
+
+        // #tr tooltip.wildcardpattern.expand_count
+        // # Expanded patterns:
+        // # zh_CN 展开样板数：
+        lines.add(StatCollector.translateToLocal("tooltip.wildcardpattern.expand_count") + " " + actualCount);
+    }
+}

@@ -1,0 +1,419 @@
+{
+  "source": "https://github.com/ikkkkkkkuuu/GT-Not-Good",
+  "revision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+  "note": "Hashes identify actual local source inputs; destination hashes include target package/API adaptations and formatting.",
+  "modifications": [
+    "Responsibility-based packages and target item/recipe/client/mixin registration",
+    "Native ModularUI2 theme and selector with preserved artwork; no LDLib runtime",
+    "Native fluid pattern reconstruction and direct integration with local super/circuit hatches",
+    "Retained wildcard NBT and generated identities; prototype command omitted"
+  ],
+  "entries": [
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/WildcardPatternCache.java",
+      "sourceSha256": "79ebc31f8b8e54be9ea6acb9978d76079b295928982a72b9d2aede20c4ea5173",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/WildcardPatternCache.java",
+      "destinationSha256": "6368180093212b2e46f1125421ce53157d2b5ba264710e9ae14535ac1cc31938",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/WildcardPatternConfig.java",
+      "sourceSha256": "e5470c1a21a8b628404e67a9cac6034c7120ae0bba0372b3f8e76d5546fb053e",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/WildcardPatternConfig.java",
+      "destinationSha256": "d4e2b1c7c0d1327513f07c00b9b0d14280f1afbda87692bb2d55f34dad83b916",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/WildcardPatternDetails.java",
+      "sourceSha256": "879292c1ac4c41e73a95d1d9f0dc868042808b84a33bd992b40f0933ce3b5465",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/WildcardPatternDetails.java",
+      "destinationSha256": "35ff7725198d7e056e7ab24c61174ebfb2380bd0235464f0d0a782c49a317235",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/WildcardPatternEntry.java",
+      "sourceSha256": "0882c8b9fe599e483e55996be4b21cc4be1829b1491fc17399f0dedef7e5fe98",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/WildcardPatternEntry.java",
+      "destinationSha256": "d7026a629c76dd6dd9c1c9f5fe6063516eb6186649046bbb087caa1f238496af",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/WildcardPatternGenerator.java",
+      "sourceSha256": "1e6b276a02cea70e9b0843c2b30194748ea5c9a1825768143b9c7849a73afcf6",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/WildcardPatternGenerator.java",
+      "destinationSha256": "6537d9af04fe4ee235b0fe34887a494e393809e2576c738bd580ac123113902c",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/WildcardPatternItem.java",
+      "sourceSha256": "621c6deef95fac4d652334b8900417e48feabd4114f03b35017f093827782a35",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/item/WildcardPatternItem.java",
+      "destinationSha256": "5edfa6a613abbb23fb8985d8d96997c7f7d2adb256f096fb467184b7d1610a1b",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/WildcardPatternState.java",
+      "sourceSha256": "aeb71d3833c450edd36f4fdbb5f5ba59dcd1dea8733b01b687d9584a144241ac",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/WildcardPatternState.java",
+      "destinationSha256": "6f205dd1a9fb8476751a4779d505329cfcd5e1453214f768ce2eaccc8c263bb1",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/WildcardPreviewPatternDetails.java",
+      "sourceSha256": "963725849ad8930c7609f5186fd8ad1a6cf02549d8907db594f6d33a4269b26e",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/WildcardPreviewPatternDetails.java",
+      "destinationSha256": "2ed79bb77172c3a01b4a145a6ba5592403974ffb8752ca35dcdfc66ed2ff7b71",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/IWildcardComponent.java",
+      "sourceSha256": "f82e4846ef13a80851a330d4afc8244335e974ae2c8c5a0cc486acae3a6eee74",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/IWildcardComponent.java",
+      "destinationSha256": "ab8188f16ce64442e383487cad7788bfd1bb965f276c265bcb808b19761130f3",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/IWildcardFilterComponent.java",
+      "sourceSha256": "a98904cd111e4b1039e0d8915c134edda7976919b7242a4b350d6cdcfca5b828",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/IWildcardFilterComponent.java",
+      "destinationSha256": "90cb5d8365d6b50634ca3ddd09f4acc19bee3ddbb190ae9b617eb85350621952",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/IWildcardIOComponent.java",
+      "sourceSha256": "eddd91ae0e4a06b5e5e04c631bd8bfedd9ae188ec51f07e1b633174fa062434c",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/IWildcardIOComponent.java",
+      "destinationSha256": "99ee195ce31fa3e78f2709c5f52ea4cfd43db76f96368bd823751a0666287ffe",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/WildcardComponentCodec.java",
+      "sourceSha256": "a8d69fba693b3940a83a15dfab391654acb79038807c78007d62b0cd42fc8500",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/WildcardComponentCodec.java",
+      "destinationSha256": "ec64e7e66fbadf3f0ce9e2b2e2bb6737c1a783ffb18d94638620ccea507642c6",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/WildcardExpansion.java",
+      "sourceSha256": "f92f3a1a666496297272343169649d88ee389e4d185d7d24094691c27a800a7e",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/WildcardExpansion.java",
+      "destinationSha256": "e4a0fbc22beae6853817a9b7b6c6c862a5bec2597fb3b479eed02c22a5bfe2af",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/WildcardMaterials.java",
+      "sourceSha256": "c42378e2f039ece258f08be8fb5ccf96d740bc268da764e6405815a34130ee52",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/WildcardMaterials.java",
+      "destinationSha256": "2696d40a7b0add05f9c64e21799a95469d442f848b0e3ecca863cc3d018ee1dd",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/WildcardMigration.java",
+      "sourceSha256": "7eb544599eff435d8ca4dea24a3a67550a04f9e36740779d9a9348b4c9ca99d3",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/WildcardMigration.java",
+      "destinationSha256": "030afca723a109784d54fc0db58ff53ccc5229c21ff4216a0e2b2af5002e8896",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/WildcardModelState.java",
+      "sourceSha256": "df595afc41e77c966224159385feae532a917c1c533d35c01275c9b7fdfea2ac",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/WildcardModelState.java",
+      "destinationSha256": "866939b61f825c9c48214dc15d63eeb060ad3c54257d53b885e2bd9a67616104",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/WildcardRecipeTemplate.java",
+      "sourceSha256": "c6c6369b4ba5352b0044a92e1fa823beb7261fc7fa81730c0c16c9fde403b232",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/WildcardRecipeTemplate.java",
+      "destinationSha256": "7d7e8eea16a9ecb9eb618b886837fab73fd27aa6b52772d4851d0e9aaca92c32",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/filter/AbstractFilterComponent.java",
+      "sourceSha256": "493470062837e6f2e765d87356cea9cc0d7af772f29a48fc03a52cca57e7215d",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/filter/AbstractFilterComponent.java",
+      "destinationSha256": "b8c779fc35ca998204ccf4634a1ccf4fd135c51bb3cb874758cd09b4052518ee",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/filter/PrefixFilterComponent.java",
+      "sourceSha256": "1e1c2ff3e8c1488883ff85febf7c91996a1dab25db907c08ddcbc4b8bc725ade",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/filter/PrefixFilterComponent.java",
+      "destinationSha256": "366013d6985c0a0e4440004b8af7d4c2ed674b4203d8182a9663d34fe8d0d263",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/filter/PropertyFilterComponent.java",
+      "sourceSha256": "6f1cb5369d0afbcae0d1557ddedb3e0d746a3aefcdf16f7e3f9d7bfc24eab9b0",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/filter/PropertyFilterComponent.java",
+      "destinationSha256": "7b739bd39d0bff8f8d8ba9277d59e54180745eada3fae489c62e79872a144306",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/filter/SimpleFilterComponent.java",
+      "sourceSha256": "6b075f81a2ba71ad2e1177468333cf5839c54b9e896e54af4dcdf6f9ffcd0b54",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/filter/SimpleFilterComponent.java",
+      "destinationSha256": "90282e9f396bf57ab18dc707501139d92e9e0f2a8fe2727add6c425a8e8b499c",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/filter/StringFilterComponent.java",
+      "sourceSha256": "66a0081e7b91f2e0a0ac5583bdc3dc8ab85ddfab4bc8eaf452d0257a26290cda",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/filter/StringFilterComponent.java",
+      "destinationSha256": "00b31692feb4cb71fc20df3f12931a6bfebcda0a3ff9f80e052073d3ac4dd626",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/filter/SubTagFilterComponent.java",
+      "sourceSha256": "7a22be719e65f76e28ccf0152fb61c9a33e59d8d82323d21b0d3330fa4d06436",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/filter/SubTagFilterComponent.java",
+      "destinationSha256": "86ecd65ea1afa813ac5365d65edf30651c38fa5f76a54a5aeed8e33568337891",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/io/FluidIOComponent.java",
+      "sourceSha256": "69e9691d92d601916469b12af774a4af7043acbe00147f287fcf7667b3909f43",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/io/FluidIOComponent.java",
+      "destinationSha256": "d2688e8bebbb0ccd3a43c7ac1c22bb180396563504591064a06917f4666f7e36",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/io/PrefixIOComponent.java",
+      "sourceSha256": "7ea721b77fcfe14752218c904d1ffa6952b8048c12faa88e342a9b2877a52640",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/io/PrefixIOComponent.java",
+      "destinationSha256": "6b85e45feb481373216c42eb4130045e74a3115a161afb4331ce2a5d4dd9f8f3",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/model/io/SimpleIOComponent.java",
+      "sourceSha256": "9fe5e62e0f5bb0b26b3694c3461563409c7e92580ff92bd545474ae84b05336d",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/wildcard/model/io/SimpleIOComponent.java",
+      "destinationSha256": "2c9eeb3a7596557d94dc4ce75f64f2d021033d7b769f66038da79d3b88b75b47",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/gui/modularui/wildcard/WildcardPatternGui.java",
+      "sourceSha256": "1d43b268d0b05519c3f75b5c635f4506bfe58f9729d0ea9785ba11343d73d4e3",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/WildcardPatternGui.java",
+      "destinationSha256": "c6e017083a6dcbcc416fa6317e610a32c3e98e7414d0bc4c1fd8ed3d67104719",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/gui/modularui/wildcard/WildcardDropWidget.java",
+      "sourceSha256": "06c89e285233b67f6b1eece45888ea283e4184787c9e597f0793b239365aa549",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/WildcardPatternGui.java",
+      "destinationSha256": "c6e017083a6dcbcc416fa6317e610a32c3e98e7414d0bc4c1fd8ed3d67104719",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/gui/modularui/wildcard/WildcardIconWidget.java",
+      "sourceSha256": "295d523c9e9bd34e122285671bf79bad9933a79a8d387223c7bc15a030a3b27a",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/WildcardPatternGui.java",
+      "destinationSha256": "c6e017083a6dcbcc416fa6317e610a32c3e98e7414d0bc4c1fd8ed3d67104719",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/gui/modularui/wildcard/WildcardIndexPage.java",
+      "sourceSha256": "18df81466d6300dba4e55fed0927bf49fbd4f10635860855450a06812340ef48",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/WildcardPatternGui.java",
+      "destinationSha256": "c6e017083a6dcbcc416fa6317e610a32c3e98e7414d0bc4c1fd8ed3d67104719",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/gui/slots/WildcardPatternSlotGT.java",
+      "sourceSha256": "cc01ddd685ef615651ba89a5ca163ed5502dfc7868c3c67ad2635384b4a02867",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/WildcardPatternSlotGT.java",
+      "destinationSha256": "d2eb4c4c1e4634c2ef0232848cb240b71e6b633cef6826674c0ea9a9df794f6a",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/gui/slots/WildcardPatternSlotSuper.java",
+      "sourceSha256": "280ac56dd8ffa2c8c6648fef62a87cb9c793f9c33dbdce0c86b1ebb13912f326",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/WildcardPatternSlotSuper.java",
+      "destinationSha256": "07fbee1e743169e8189a477b5402e46d81a1431dca0d1d9b5496970a55285b5f",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/DualityInterfaceMixin.java",
+      "sourceSha256": "85ebe6a249347fe5a4ca37b6fad9df6c388e51c0408fcb045b2673efff8388d0",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/DualityInterfaceMixin.java",
+      "destinationSha256": "dd08c9b92ca025a47d92e1b2c6355df7fe6fe8a8db988a9258fd870c4e8ea39c",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/ItemEncodedPatternMixin.java",
+      "sourceSha256": "28239e02914afd1f873400614fb966a4ba0c7b275825abaf83315a73306378b6",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/ItemEncodedPatternMixin.java",
+      "destinationSha256": "7aeec41eb3d15923a8cc5cc524457adf18da621dd5aad55464e484059598ba03",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/MTEHatchCraftingInputMEMixin.java",
+      "sourceSha256": "6101572379ac36ab707f5647e650042211abd7e168a28fa60a104582ea9f4e08",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/MTEHatchCraftingInputMEMixin.java",
+      "destinationSha256": "868ec70e111b7c9983d2dccebaa71fac6cad3bae480bf1a700876e655d7d389d",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/MatrixWildcardPatternOptimizationMixin.java",
+      "sourceSha256": "f61966f0035654870613e121925a408e2cbb3dc9140328bc951ffa8ae37cc13c",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/MatrixWildcardPatternOptimizationMixin.java",
+      "destinationSha256": "5f1f1bcbf81595e11ea5f9e063cfec66c3842606daf3d924dfb0d107c5cdd2bf",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/PatternMultiplierHelperMixin.java",
+      "sourceSha256": "8bce1e5b84782b6b44ef3c77a87b954fdf0ed9cf75e8f924daa39f001dcce764",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/PatternMultiplierHelperMixin.java",
+      "destinationSha256": "cf5278941b1839a5cf39c897de969fec27b72c428e13444927b154e755592040",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/gui/modularui/wildcard/WildcardPatternGui.java",
+      "sourceSha256": "1d43b268d0b05519c3f75b5c635f4506bfe58f9729d0ea9785ba11343d73d4e3",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/WildcardPatternGui.java",
+      "destinationSha256": "c6e017083a6dcbcc416fa6317e610a32c3e98e7414d0bc4c1fd8ed3d67104719",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/client/nei/WildcardRecipeImport.java",
+      "sourceSha256": "9d160d3a629301bb352d7617211441939dadc012655382185740369689fa5bf3",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/nei/WildcardRecipeImport.java",
+      "destinationSha256": "b230ae21d90fcb68cfabe65ea612c0acea1733e68a316ba533c47451593a1e84",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/recipe/machine/WildcardPatternRecipes.java",
+      "sourceSha256": "c10d903912c511ed6a1e93d71b83c43e13ba20829797c2de58d20702d4cc1d9e",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/ae2/WildcardPatternRecipes.java",
+      "destinationSha256": "87d0f0a643ab567b9a803222a3246456e6ac505192b6834925b25f556df3ed31",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/me/CircuitMEPatternBuffer.java",
+      "sourceSha256": "922952193723958626c1765c30e3f62c40c54acb1c8f40479483080c6fffa302",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/machine/hatch/CircuitMEPatternBuffer.java",
+      "destinationSha256": "6b12367c5e798999914bfcbedcfe6a6f0dd54cd1f34dff77ef76d614423330d8",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/me/CircuitPatternCodec.java",
+      "sourceSha256": "5c53227a12b4bd0a5a0e5a218febbf14c767484f5c21be3f7f98af0bed6534ab",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/CircuitPatternCodec.java",
+      "destinationSha256": "26d8bb4c56646fd5aed32671abaaf1bb8b23b61c0a72061c4982b469b4ee0a14",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/SuperMTEHatchCraftingInputMEMixin.java",
+      "sourceSha256": "75a189ace8df34e5c80db1b8c2c7f988d9daecca10508aba18d9dd2bb3090e98",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/machine/hatch/SuperMTEHatchCraftingInputME.java",
+      "destinationSha256": "62c5f1171e75448843397c22be99df94acb882409b72fe8b39b126d862e82ad5",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/ldlib/integration/modularui/ModernThemeAdapter.java",
+      "sourceSha256": "2f99b34c94a26d82b0c8920786a531895e2fa35ffff123601b31aa1f3a536d97",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/WildcardPatternGui.java",
+      "destinationSha256": "c6e017083a6dcbcc416fa6317e610a32c3e98e7414d0bc4c1fd8ed3d67104719",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/ldlib/integration/modularui/SelectorWidget.java",
+      "sourceSha256": "696f61284899727d837614065be4209f923a61cd7633c10096740ced9f8fbab7",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/WildcardPatternGui.java",
+      "destinationSha256": "c6e017083a6dcbcc416fa6317e610a32c3e98e7414d0bc4c1fd8ed3d67104719",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/ldlib/integration/modularui/ScrollingTextDrawable.java",
+      "sourceSha256": "a9663dced2485102e7aa035c4c9d6257553c439ca80f844842eb479492f37b17",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/WildcardPatternGui.java",
+      "destinationSha256": "c6e017083a6dcbcc416fa6317e610a32c3e98e7414d0bc4c1fd8ed3d67104719",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/ldlib/integration/modularui/PixelFontModularScreen.java",
+      "sourceSha256": "ddb7e44c5c5a2a0ca878519a87bfa2d25ef3ee7bb189def8d029ac119742cf3b",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/gui/PixelFontModularScreen.java",
+      "destinationSha256": "25b4612f4109d37d0ff7954d8c952d6e0c4634ccd10b9324fe0a2d150c8fd1c5",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/java/com/xyp/ldlib/gui/texture/PixelFontScope.java",
+      "sourceSha256": "9152b6198c9456733fceb72175ac9dfac905757177ef65ca18c4270d63b0e7fe",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/render/PixelFontScope.java",
+      "destinationSha256": "3ada60fd10c61734d443d201c1b9fdf54aaedee0578ee5a0df9502036ded9f0a",
+      "license": "GTNG-MIT.txt"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/items/wildcard_pattern.png",
+      "sourceSha256": "601aeddc5ad728271ca2963a7e02af0ef56d1e45743f25f782b434633e1817db",
+      "destination": "src/main/resources/assets/gtneverreset/textures/items/wildcard_pattern.png",
+      "destinationSha256": "601aeddc5ad728271ca2963a7e02af0ef56d1e45743f25f782b434633e1817db",
+      "license": "GTNG-MIT.txt; Wildcard-Pattern-MIT.txt"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/ldlib/modern/background.png",
+      "sourceSha256": "b97ef8e9c0f3373d662e489ec4c50ac2cfbb32e6501c98ce4be004a4c923f2c8",
+      "destination": "src/main/resources/assets/gtneverreset/textures/gui/ldlib/modern/background.png",
+      "destinationSha256": "b97ef8e9c0f3373d662e489ec4c50ac2cfbb32e6501c98ce4be004a4c923f2c8",
+      "license": "AE2-LGPL-3.0.txt"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/ldlib/modern/button.png",
+      "sourceSha256": "5e815b235384d3ad4422e61e044804c097e486ffdb61fade6056965069c8f382",
+      "destination": "src/main/resources/assets/gtneverreset/textures/gui/ldlib/modern/button.png",
+      "destinationSha256": "5e815b235384d3ad4422e61e044804c097e486ffdb61fade6056965069c8f382",
+      "license": "AE2-LGPL-3.0.txt"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/ldlib/modern/button_disabled.png",
+      "sourceSha256": "d45e7b6314c216b81489f576c3c06e736d34502ef3c6db1430308e1bb34227f2",
+      "destination": "src/main/resources/assets/gtneverreset/textures/gui/ldlib/modern/button_disabled.png",
+      "destinationSha256": "d45e7b6314c216b81489f576c3c06e736d34502ef3c6db1430308e1bb34227f2",
+      "license": "AE2-LGPL-3.0.txt"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/ldlib/modern/button_highlighted.png",
+      "sourceSha256": "5f2bda04a241ebfd4dac3799c42b413c2653f6607757c95e41d86eb73b3f7ca9",
+      "destination": "src/main/resources/assets/gtneverreset/textures/gui/ldlib/modern/button_highlighted.png",
+      "destinationSha256": "5f2bda04a241ebfd4dac3799c42b413c2653f6607757c95e41d86eb73b3f7ca9",
+      "license": "AE2-LGPL-3.0.txt"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/ldlib/modern/text_field.png",
+      "sourceSha256": "73bba41174d3ec15d83947e439915873611735fe436ad0cbc7653eca15e23ad1",
+      "destination": "src/main/resources/assets/gtneverreset/textures/gui/ldlib/modern/text_field.png",
+      "destinationSha256": "73bba41174d3ec15d83947e439915873611735fe436ad0cbc7653eca15e23ad1",
+      "license": "AE2-LGPL-3.0.txt"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/ldlib/modern/slot.png",
+      "sourceSha256": "0927a387f61dbaecd9bd95e044421bcad64e0b2ff24eb4f5494a687d98c1dd21",
+      "destination": "src/main/resources/assets/gtneverreset/textures/gui/ldlib/modern/slot.png",
+      "destinationSha256": "0927a387f61dbaecd9bd95e044421bcad64e0b2ff24eb4f5494a687d98c1dd21",
+      "license": "Modernity-CC-BY-NC-SA-4.0.txt"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/ldlib/modern/tabs_left.png",
+      "sourceSha256": "f86d35ed3566e3e55fe7509125513a8a53faa298daf5112cbbaae79fbe46f150",
+      "destination": "src/main/resources/assets/gtneverreset/textures/gui/ldlib/modern/tabs_left.png",
+      "destinationSha256": "f86d35ed3566e3e55fe7509125513a8a53faa298daf5112cbbaae79fbe46f150",
+      "license": "Modernity-CC-BY-NC-SA-4.0.txt"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/ldlib/modern/close.png",
+      "sourceSha256": "2d29687e2e5aec479bb16578764c75dcfc72ba4fc19102f143d90eba75d0b7b8",
+      "destination": "src/main/resources/assets/gtneverreset/textures/gui/ldlib/modern/close.png",
+      "destinationSha256": "2d29687e2e5aec479bb16578764c75dcfc72ba4fc19102f143d90eba75d0b7b8",
+      "license": "GTCEu-LGPL-3.0.txt"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/ldlib/modern/progress_bar_arrow.png",
+      "sourceSha256": "eaaeaad7f563d65ae556ccce594ff0f4ab232376be6b7d5a8c076a31b59fcbb0",
+      "destination": "src/main/resources/assets/gtneverreset/textures/gui/ldlib/modern/progress_bar_arrow.png",
+      "destinationSha256": "eaaeaad7f563d65ae556ccce594ff0f4ab232376be6b7d5a8c076a31b59fcbb0",
+      "license": "GTCEu-LGPL-3.0.txt"
+    }
+  ]
+}

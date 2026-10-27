@@ -1,0 +1,112 @@
+package com.xyp.gtneverreset.utils.recipes.wildcard.model.io;
+
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+
+import com.xyp.gtneverreset.utils.recipes.wildcard.model.IWildcardIOComponent;
+import com.xyp.gtneverreset.utils.recipes.wildcard.model.WildcardMaterials;
+
+import gregtech.api.enums.Materials;
+import gregtech.api.enums.OrePrefixes;
+import lombok.Getter;
+
+public final class PrefixIOComponent implements IWildcardIOComponent {
+
+    public static final String TYPE = "prefix";
+
+    private static final String KEY_PREFIX = "Prefix";
+    private static final String KEY_AMOUNT = "Amount";
+
+    @Getter
+    private OrePrefixes prefix;
+    @Getter
+    private int amount;
+    /** 用户正在输入的前缀名原始文本；解析成 OrePrefixes 后仍保留原文，避免输入过程被 getter 冲掉。 */
+    private String rawText;
+    private OrePrefixes displayPrefix;
+    private ItemStack displayStack;
+
+    public PrefixIOComponent(OrePrefixes prefix, int amount) {
+        this.prefix = prefix;
+        this.amount = Math.max(1, amount);
+        this.rawText = prefix == null ? "" : prefix.name();
+    }
+
+    public static PrefixIOComponent empty() {
+        return new PrefixIOComponent(null, 1);
+    }
+
+    public static PrefixIOComponent readData(NBTTagCompound data) {
+        OrePrefixes prefix = WildcardMaterials.findPrefix(data.getString(KEY_PREFIX));
+        int amount = Math.max(1, data.getInteger(KEY_AMOUNT));
+        return new PrefixIOComponent(prefix, amount);
+    }
+
+    public void setPrefix(OrePrefixes prefix) {
+        this.prefix = prefix;
+        if (prefix != null) this.rawText = prefix.name();
+    }
+
+    /** GUI 文本框读取的原始文本。 */
+    public String getRawText() {
+        return rawText == null ? "" : rawText;
+    }
+
+    /** GUI 文本框写入：记住原文并尝试解析成前缀（失败时保留原文、prefix 置空）。 */
+    public void setRawText(String text) {
+        this.rawText = text == null ? "" : text;
+        this.prefix = WildcardMaterials.findPrefix(this.rawText);
+    }
+
+    public void setAmount(int amount) {
+        this.amount = Math.max(1, amount);
+    }
+
+    @Override
+    public ItemStack apply(Materials material) {
+        return WildcardMaterials.makePrefixStack(prefix, material, amount);
+    }
+
+    @Override
+    public ItemStack apply(String materialName) {
+        return WildcardMaterials.makePrefixStack(prefix, materialName, amount);
+    }
+
+    @Override
+    public ItemStack getDisplayStack() {
+        if (prefix == null) return null;
+        // 铁没有管道等形态；缓存实际注册的示例，避免 GUI 每帧扫描材料。
+        if (displayPrefix != prefix) {
+            displayStack = WildcardMaterials.makePrefixStack(prefix, Materials.Iron, 1);
+            if (displayStack == null) {
+                for (String materialName : WildcardMaterials.expandableMaterialNames()) {
+                    displayStack = WildcardMaterials.makePrefixStack(prefix, materialName, 1);
+                    if (displayStack != null) break;
+                }
+            }
+            displayPrefix = prefix;
+        }
+        if (displayStack == null) return null;
+        ItemStack display = displayStack.copy();
+        display.stackSize = amount;
+        return display;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return prefix == null;
+    }
+
+    @Override
+    public String typeKey() {
+        return TYPE;
+    }
+
+    @Override
+    public NBTTagCompound writeData() {
+        NBTTagCompound data = new NBTTagCompound();
+        data.setString(KEY_PREFIX, prefix == null ? "" : prefix.name());
+        data.setInteger(KEY_AMOUNT, amount);
+        return data;
+    }
+}

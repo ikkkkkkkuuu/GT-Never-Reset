@@ -1,0 +1,431 @@
+{
+  "repository": "https://github.com/ikkkkkkkuuu/GT-Not-Good",
+  "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+  "license": "MIT",
+  "files": [
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/ITerminalVisibilityToggle.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/api/terminal/ITerminalVisibilityToggle.java",
+      "sourceSha256": "6594c7bb071b3170bdb853eae12650aa1eac72e467770aa63ef8eb762aeebab3",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/loader/KeybindLoader.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/event/WirelessTerminalInputHandler.java",
+      "sourceSha256": "88f446178d3223e71dc8ac53f64300c0ecb83687a324a2d2d458eae1fe811c94",
+      "license": "MIT",
+      "adaptations": "Selected terminal behavior extracted or rewritten for native AE2 integration in the responsibility package."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/client/gui/widget/CompactTerminalSwitchButton.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/gui/CompactTerminalSwitchButton.java",
+      "sourceSha256": "0c37e67f52c28d0c3a79cae1d0e5f4f7755958d7dcff4cf4601e105f647b2773",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/client/GuiQuickEncodingTerminal.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/gui/GuiQuickEncodingTerminal.java",
+      "sourceSha256": "fc2ba191e4ee90438a593622255660b41cec67893404b3ed019892695eba846d",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/client/InterfacePatternRows.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/gui/GuiQuickEncodingTerminal.java",
+      "sourceSha256": "a5af05cbd8f5aa9807eaac2a7bd1e1780787a765f23ae9806651f682a8d5202f",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/client/InterfaceRowFilter.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/gui/GuiQuickEncodingTerminal.java",
+      "sourceSha256": "6f2c93d38dc4e5a5c048def27d2574ecfd2cc0653412bd0b6d60673787147ca9",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/client/InterfaceSuffixButton.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/gui/GuiQuickEncodingTerminal.java",
+      "sourceSha256": "0cbc1da740b3b617d22a0485c266bfcba0daa25ea265f78309ec11889c773490",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/client/InterfaceTerminalSuffix.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/gui/GuiQuickEncodingTerminal.java",
+      "sourceSha256": "8f3fd1094fa3a7277db616414adfa69523f956a3efac84c4511ffced69edd09c",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/client/QuickTerminalButtonTextures.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/gui/QuickTerminalButtonTextures.java",
+      "sourceSha256": "b0e5fb30ab2a3917cd0a9d334164d84d53240aabbce06f3a05bdd2e1b022b900",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/common/item/ItemWirelessDualInterfaceTerminal.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/item/ItemWirelessDualInterfaceTerminal.java",
+      "sourceSha256": "8c8d8d4a93275a460bc1f6da124e717975d081a1923a32dabbb55a72fad84aa6",
+      "license": "MIT",
+      "adaptations": "Selected terminal behavior extracted or rewritten for native AE2 integration in the responsibility package."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/nei/NeiCraftingFluid.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/nei/NeiCraftingFluid.java",
+      "sourceSha256": "a504d31a6d0a2c7b1cd4cdcbc38c95cc928b490722d9fad9acaef1e37868e90d",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/nei/NEI_TH_Config.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/nei/NEIWirelessTerminalConfig.java",
+      "sourceSha256": "7fb7fb5bb0e91877c8a8e981085f2be755792619e46f1fa5c2e44f288f4a67a7",
+      "license": "MIT",
+      "adaptations": "Selected behavior rewritten for native AE2 integration; unrelated legacy infrastructure omitted."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/nei/QuickTerminalRecipeTransferHandler.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/nei/QuickTerminalRecipeTransferHandler.java",
+      "sourceSha256": "9adbc5eb65ceb4fd570758f72729d53160d080c1b48bb9d1b5107a60fef1644c",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/nei/NEIUtils.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/nei/TerminalRecipeIngredients.java",
+      "sourceSha256": "f2d0f5281358798df84806809c2611c2c8d073616e8f571f8d77503bc0808cf7",
+      "license": "MIT",
+      "adaptations": "Selected terminal behavior extracted or rewritten for native AE2 integration in the responsibility package."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/nei/recipes/extractor/ThaumcraftRecipeExtractor.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/nei/TerminalRecipeIngredients.java",
+      "sourceSha256": "2a01432afa5a4743c4f1a963322f9d684a297e07aec47bded2af90ce026fed51",
+      "license": "MIT",
+      "adaptations": "Selected terminal behavior extracted or rewritten for native AE2 integration in the responsibility package."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/nei/recipes/FluidRecipe.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/nei/TerminalRecipeIngredients.java",
+      "sourceSha256": "253e89c2b2c85520e5db6272b05dd9674be80637b8312dd478a12ddd43b72122",
+      "license": "MIT",
+      "adaptations": "Selected terminal behavior extracted or rewritten for native AE2 integration in the responsibility package."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/inventory/gui/QuickEncodingTerminalGuiFactory.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/WirelessTerminalGuiHandler.java",
+      "sourceSha256": "f56afa21b283a46b61e1e91ced6b6dbf0786b452cf60606425572638b16f28da",
+      "license": "MIT",
+      "adaptations": "Selected behavior rewritten for native AE2 integration; unrelated legacy infrastructure omitted."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/inventory/InventoryHandler.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/WirelessTerminalGuiHandler.java",
+      "sourceSha256": "3ce94e2c942c39f590799b7013129cc050094393518b90d5fb4fc7997288c147",
+      "license": "MIT",
+      "adaptations": "Selected behavior rewritten for native AE2 integration; unrelated legacy infrastructure omitted."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/inventory/gui/GuiType.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/enums/WirelessTerminalGuiType.java",
+      "sourceSha256": "9abc5d28e7ca436951bfbced054aa03d52e572b40ffb7fc4fe9db763e8bbbecd",
+      "license": "MIT",
+      "adaptations": "Selected terminal behavior extracted or rewritten for native AE2 integration in the responsibility package."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/common/item/ItemWirelessDualInterfaceTerminal.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/item/ItemWirelessDualInterfaceTerminal.java",
+      "sourceSha256": "8c8d8d4a93275a460bc1f6da124e717975d081a1923a32dabbb55a72fad84aa6",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/network/CPacketSendHeldItemToNetwork.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/packet/terminal/CPacketSendHeldItemToNetwork.java",
+      "sourceSha256": "de39c8c17850cad5f3669ad0d8e4cddfb46e9bb4f86c7f687c324f8f6b5a9d7c",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/network/CPacketSwitchGuis.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/packet/terminal/CPacketSwitchGuis.java",
+      "sourceSha256": "d14f87197be869e0152fa74f2dcb02e30b29efc508b8f45e6cf5479117f211d8",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/network/CPacketTeleportToInterface.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/packet/terminal/CPacketTeleportToInterface.java",
+      "sourceSha256": "07e5e7aecbe8864d64cee533b81ee594135396abe80c78d9023e2b68ab0b2bf0",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/network/CPacketToggleInterfaceVisibility.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/packet/terminal/CPacketToggleInterfaceVisibility.java",
+      "sourceSha256": "73584fb62342367ea12ce739353c69c6748ff7fe6ba6679f613debe1743f11ef",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/InterfacePatternTarget.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/packet/terminal/InterfacePatternTarget.java",
+      "sourceSha256": "8b9e0416ed7f97218c8b812196673a3b74234ab474072fe8205876ff4355ff8b",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/RecipeIngredientReplacement.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/packet/terminal/RecipeIngredientReplacement.java",
+      "sourceSha256": "a068a8ca0ced6485a821809c7c677180608be135944c2f240bcea6b3228f4f63",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/RecipeTransferPayload.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/packet/terminal/RecipeTransferPayload.java",
+      "sourceSha256": "a54f857eed68a756e942d566b0f8f630b503b3da9041570ffaf809554aec5e9e",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/StorageFluidRequest.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/packet/terminal/StorageFluidRequest.java",
+      "sourceSha256": "28c156cb47de1b027167ab50aea4553b94694521ce4da27cdb38a515e4eff3ba",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/network/CPacketInventoryActionExtend.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/packet/terminal/TerminalItemRequestPacket.java",
+      "sourceSha256": "f3e24c4e3eaa6496da14ab0b50fa5f7d351dd85e4326a5189dacc649d03f8267",
+      "license": "MIT",
+      "adaptations": "Selected terminal behavior extracted or rewritten for native AE2 integration in the responsibility package."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/ArcaneWorkbenchPatterns.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/ae2/ArcaneWorkbenchPatterns.java",
+      "sourceSha256": "b6e6af4bdc07cd43ff24737939e25dae8b589fd45705694f9bac1bd0b4ac9b27",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/loader/RecipeLoader.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/ae2/WirelessTerminalRecipes.java",
+      "sourceSha256": "a56db8251f3a3871a05700800bac0126c2fff52cc4c1e1653fe9aff8f167f96a",
+      "license": "MIT",
+      "adaptations": "Selected behavior rewritten for native AE2 integration; unrelated legacy infrastructure omitted."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/loader/recipe/WirelessTerminalEnergyRecipe.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/ae2/WirelessTerminalUpgradeRecipe.java",
+      "sourceSha256": "b5ae7bf291304e7b4a291e6cdf27e524762b54998ae514c47c8668e30fa3bfcc",
+      "license": "MIT",
+      "adaptations": "Selected behavior rewritten for native AE2 integration; unrelated legacy infrastructure omitted."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/loader/recipe/WirelessTerminalQuantumBridgeRecipe.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/ae2/WirelessTerminalUpgradeRecipe.java",
+      "sourceSha256": "3693f0f582ed904bd331f303b17a1b38327fa9d724cd1607166d92fa893818e9",
+      "license": "MIT",
+      "adaptations": "Selected behavior rewritten for native AE2 integration; unrelated legacy infrastructure omitted."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/ContainerQuickEncodingTerminal.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/container/ContainerQuickEncodingTerminal.java",
+      "sourceSha256": "f1ebdcd4a7437b4b2ec305f1cb445a6df2d8e797bdcecf96ad10d0aabefc3fbe",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/loader/LateMixinsLoader.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/loader/LateMixinsLoader.java",
+      "sourceSha256": "389e5ccd6785720a176fd3b4c65a1f10566b294ce32d3560a7e73ea1f6049186",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/coremod/mixin/ae/AccessorContainerMEMonitorable.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/AccessorContainerMEMonitorable.java",
+      "sourceSha256": "828f6b3464e8bb8be124da37fb221ce2cfed93d08b26421e98f044003850f129",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/coremod/mixin/ae/AccessorGuiScrollbar.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/AccessorGuiScrollbar.java",
+      "sourceSha256": "042e5151945f9c336d975e873c8d7a43924cc00c7fdc2afd8715d023184529e6",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/InterfaceEntryRowFilterMixin.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/InterfaceEntryRowFilterMixin.java",
+      "sourceSha256": "07a5b3b37a635f786ce88405032b3fd2028f517864786d0dc5dc69af4eccb490",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/InterfaceEntryViewportAccessor.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/InterfaceEntryViewportAccessor.java",
+      "sourceSha256": "c132cb03877e5cf660e0a7d4d1ff5536d0c99003c39921a0d746223abb8c56ce",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/InterfaceSectionRowFilterMixin.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/InterfaceSectionRowFilterMixin.java",
+      "sourceSha256": "6eadae27a299ca5aadb29d305e1ebe300e0fc7c80c2cad068d2c2b713e692d3d",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/InterfaceTerminalRowFilterMixin.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/InterfaceTerminalRowFilterMixin.java",
+      "sourceSha256": "7a8b45f063b3c10b1db716e6bda9b771fd74848233eefb724b526824f2ef4e7b",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/InterfaceTerminalViewportMixin.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/InterfaceTerminalViewportMixin.java",
+      "sourceSha256": "94964fdbcdfeefed59ee57778ffe8d0998d3d3a9c69a760c8cbcf62e04a51d02",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/coremod/mixin/ae/MixinGuiCraftingTerm.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/MixinGuiCraftingTerm.java",
+      "sourceSha256": "de246b8b1f07da6a8dde01ef37bd4afcef82ff86e556098660d38f1e33c3d86c",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/QuickTerminalButtonTextureMixin.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/QuickTerminalButtonTextureMixin.java",
+      "sourceSha256": "6173d310a40f6bf6d4e2c199e3688c5ac7eb67d343799248fb5860b96ca44ab7",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/QuickTerminalTabButtonTextureMixin.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/QuickTerminalTabButtonTextureMixin.java",
+      "sourceSha256": "eed00465e535046b49deab68b85c2fce901ec5cf701c658f4877f6cde389a8bc",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/QuickTerminalTypeButtonTextureMixin.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/QuickTerminalTypeButtonTextureMixin.java",
+      "sourceSha256": "8c5d5eddf5ea2b6aa1e0a5d052e54bda75813a1e00244d691af6ca0687b12dbe",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/coremod/mixin/nei/MixinPanelWidget.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/nei/TerminalPanelWidgetMixin.java",
+      "sourceSha256": "7417f86c72b84dfea14ccb596d2a592f8b98857ab5cfd680a868e1bf6f104bc1",
+      "license": "MIT",
+      "adaptations": "Selected terminal behavior extracted or rewritten for native AE2 integration in the responsibility package."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/quickterminal/DualTerminalGuiObject.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/inventory/DualTerminalGuiObject.java",
+      "sourceSha256": "e43b7d3a3264e3d46f1b58bcd9a7848b74d1ad7e4254ac0ac0dbdda6d624f0a3",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/compat/FluidDropCompat.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/inventory/FluidDropCompat.java",
+      "sourceSha256": "fb537c22af67750c4f238766983fcdc8490d1372004f65ab98f5227f6a9baec6",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/common/item/ItemBaseWirelessTerminal.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/inventory/WirelessTerminalSession.java",
+      "sourceSha256": "7b72693acbb0e7bee731a3f93caf334faf99c996a8be3de5575bcfbbb455c446",
+      "license": "MIT",
+      "adaptations": "Selected behavior rewritten for native AE2 integration; unrelated legacy infrastructure omitted."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/util/Util.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/inventory/WirelessTerminalSession.java",
+      "sourceSha256": "eb4c318b000a6594b4f642a37d7951272aac71fef7d51efbdade35d8369e752d",
+      "license": "MIT",
+      "adaptations": "Selected behavior rewritten for native AE2 integration; unrelated legacy infrastructure omitted."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/teleport/TeleportManager.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/world/InterfaceTeleportation.java",
+      "sourceSha256": "8794b202e043dc914d4ebe72e91d795078cb84b9c46262a2176e7d5c79a25511",
+      "license": "MIT",
+      "adaptations": "Selected terminal behavior extracted or rewritten for native AE2 integration in the responsibility package."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/ae2thing/util/Util.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/world/InterfaceTerminalLocation.java",
+      "sourceSha256": "eb4c318b000a6594b4f642a37d7951272aac71fef7d51efbdade35d8369e752d",
+      "license": "MIT",
+      "adaptations": "Extracted the shared interface location into the world-support package, retaining coordinates and side only."
+    }
+  ]
+}

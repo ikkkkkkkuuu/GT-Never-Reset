@@ -1,0 +1,64 @@
+package com.xyp.gtneverreset.utils.enums;
+
+public enum GTNRMachineID {
+
+    SuperCraftingInputME(29400),
+    CircuitMEPatternBuffer(29401),
+    SuperCraftingInputSlave(29402),
+    CircuitMEPatternMirror(29403),
+    StaticParallelControllerT1(29404),
+    StaticParallelControllerT2(29405),
+    StaticParallelControllerT3(29406),
+    StaticParallelControllerT4(29407),
+    StaticParallelControllerT5(29408),
+    StaticParallelControllerT6(29409),
+    StaticParallelControllerT7(29410),
+    StaticParallelControllerT8(29411),
+    DynamicParallelControllerT1(29412),
+    DynamicParallelControllerT2(29413),
+    DynamicParallelControllerT3(29414),
+    DynamicParallelControllerT4(29415),
+    DynamicParallelControllerT5(29416),
+    DynamicParallelControllerT6(29417),
+    DynamicParallelControllerT7(29418),
+    DynamicParallelControllerT8(29419),
+    StaticSpeedControllerT1(29420),
+    StaticSpeedControllerT2(29421),
+    StaticSpeedControllerT3(29422),
+    StaticSpeedControllerT4(29423),
+    StaticSpeedControllerT5(29424),
+    StaticSpeedControllerT6(29425),
+    StaticSpeedControllerT7(29426),
+    StaticSpeedControllerT8(29427),
+    DynamicSpeedControllerT1(29428),
+    DynamicSpeedControllerT2(29429),
+    DynamicSpeedControllerT3(29430),
+    DynamicSpeedControllerT4(29431),
+    DynamicSpeedControllerT5(29432),
+    DynamicSpeedControllerT6(29433),
+    DynamicSpeedControllerT7(29434),
+    DynamicSpeedControllerT8(29435),
+    PowerConsumptionControllerT1(29436),
+    PowerConsumptionControllerT2(29437),
+    PowerConsumptionControllerT3(29438),
+    PowerConsumptionControllerT4(29439),
+    PowerConsumptionControllerT5(29440),
+    PowerConsumptionControllerT6(29441),
+    PowerConsumptionControllerT7(29442),
+    PowerConsumptionControllerT8(29443),
+    LargeOreProcessor(29444),
+    LowSpeedPerfectOverclockController(29445),
+    PerfectOverclockController(29446),
+    SingularityPerfectOverclockController(29447),
+    LargeFurnace(29448),
+    QuantumComputer(29449),
+    AssemblerMatrix(29450),
+    SingularityDataHub(29451),
+    VaultPortHatch(29452);
+
+    public final int id;
+
+    GTNRMachineID(int id) {
+        this.id = id;
+    }
+}

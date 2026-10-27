@@ -1,0 +1,65 @@
+package com.xyp.gtneverreset.utils.recipes.wildcard.model.filter;
+
+import net.minecraft.nbt.NBTTagCompound;
+
+import com.xyp.gtneverreset.utils.recipes.wildcard.model.WildcardMaterials;
+
+import gregtech.api.enums.Materials;
+import gregtech.api.enums.OrePrefixes;
+import lombok.Getter;
+import lombok.Setter;
+
+public final class PrefixFilterComponent extends AbstractFilterComponent {
+
+    public static final String TYPE = "prefix";
+
+    private static final String KEY_PREFIX = "Prefix";
+
+    @Getter
+    @Setter
+    private OrePrefixes prefix;
+
+    public PrefixFilterComponent(OrePrefixes prefix, boolean whitelist) {
+        super(whitelist);
+        this.prefix = prefix;
+    }
+
+    public static PrefixFilterComponent empty() {
+        return new PrefixFilterComponent(WildcardMaterials.findPrefix("plate"), true);
+    }
+
+    public static PrefixFilterComponent readData(NBTTagCompound data) {
+        OrePrefixes prefix = WildcardMaterials.findPrefix(data.getString(KEY_PREFIX));
+        return new PrefixFilterComponent(prefix, readWhitelist(data));
+    }
+
+    @Override
+    protected boolean matches(Materials material) {
+        return prefix != null && prefix.doGenerateItem(material);
+    }
+
+    @Override
+    public boolean test(String materialName) {
+        Materials material = WildcardMaterials.findByName(materialName);
+        boolean matches = WildcardMaterials.isRealMaterial(material) ? matches(material)
+            : WildcardMaterials.makePrefixStack(prefix, materialName, 1) != null;
+        return materialName != null && isWhitelist() == matches;
+    }
+
+    @Override
+    public String describe() {
+        return (isWhitelist() ? "+" : "-") + (prefix == null ? "?" : prefix.name());
+    }
+
+    @Override
+    public String typeKey() {
+        return TYPE;
+    }
+
+    @Override
+    public NBTTagCompound writeData() {
+        NBTTagCompound data = baseData();
+        data.setString(KEY_PREFIX, prefix == null ? "" : prefix.name());
+        return data;
+    }
+}

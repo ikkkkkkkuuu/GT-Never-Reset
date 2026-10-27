@@ -1,0 +1,82 @@
+// Opt-in native AE/GT transactions and GUI checks; QA classes stay outside release jars.
+gradle.beforeProject { project ->
+    project.layout.buildDirectory.set(project.file('build/io-bus-isolated'))
+}
+
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    def scenario = root.findProperty('ioBusQAMode') ?: 'stock'
+    if (!(scenario in ['stock', 'generator', 'advanced'])) {
+        throw new GradleException('Expected ioBusQAMode=stock, generator or advanced')
+    }
+    def qa = root.file("build/io-bus-${scenario}-qa")
+    def sources = scenario == 'stock'
+        ? ['StockIOClientChecks', 'StockIOGuiClientChecks', 'StockIOLogicTest']
+        : scenario == 'generator' ? ['StockIOGeneratorClientChecks'] : ['AdvancedIOClientChecks']
+    root.dependencies.add('testImplementation', 'junit:junit:4.13.2')
+    root.extensions.findByName('spotless')?.java {
+        target 'scripts/qa/StockIO*Checks.java', 'scripts/qa/StockIOLogicTest.java', 'scripts/qa/AdvancedIOClientChecks.java'
+    }
+    root.tasks.named('compileTestJava').configure {
+        options.release.set(17)
+        destinationDirectory.set(new File(qa, 'client-classes'))
+        setSource(root.files(sources.collect { "scripts/qa/${it}.java" }))
+    }
+    root.tasks.named('runClient17').configure {
+        javaLauncher.set(root.javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) })
+        dependsOn root.tasks.named('testClasses')
+        classpath += root.files(new File(qa, 'client-classes'))
+        classpath += root.configurations.testRuntimeClasspath.filter {
+            it.name.startsWith('jvmdowngrader-java-api-') || it.name.startsWith('junit-') || it.name.startsWith('hamcrest-')
+        }
+        workingDir new File(qa, 'client-run')
+        systemProperty 'gtnr.io.bus.qa', 'true'
+        if (scenario == 'stock') {
+            systemProperty 'gtnr.stockio.qa', 'true'
+            systemProperty 'gtnr.stockio.qa.output', qa.absolutePath
+        } else if (scenario == 'generator') {
+            systemProperty 'gtnr.stockio.generator.qa', 'true'
+            systemProperty 'gtnr.stockio.generator.qa.output', qa.absolutePath
+        } else {
+            systemProperty 'gtnr.advancedio.qa', 'true'
+            systemProperty 'gtnr.advancedio.resume', root.findProperty('advancedIOResume') ?: ''
+        }
+        systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
+        systemProperty 'sun.net.client.defaultReadTimeout', '15000'
+        args '--width', '1100', '--height', '800'
+        notCompatibleWithConfigurationCache('isolated IO bus client verification')
+        doFirst {
+            qa.mkdirs()
+            workingDir.mkdirs()
+            def result = scenario == 'advanced' ? new File(workingDir, 'advancedio-qa-result.txt') : new File(qa, 'result.txt')
+            java.nio.file.Files.deleteIfExists(result.toPath())
+            new File(workingDir, 'options.txt').setText(
+                'lang:zh_CN\nguiScale:2\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsoundCategory_music:0.0\nmusic:0.0\nsound:0.0\n', 'UTF-8')
+            def dreamCore = new File(workingDir, 'config/DreamCoreMod.properties')
+            dreamCore.parentFile.mkdirs()
+            dreamCore.setText('showConfirmExitWindow=false\n', 'UTF-8')
+            new File(workingDir, 'config/splash.properties').setText('enabled=false\n', 'UTF-8')
+            root.copy {
+                from root.file('run/client/falsepattern')
+                include '*.jar'
+                into new File(workingDir, 'falsepattern')
+            }
+            if (System.getProperty('os.name').startsWith('Windows')) {
+                def helper = new File(qa, 'HideIOBusClient.ps1')
+                helper.setText(root.file('scripts/qa/HideWildcardClient.ps1').getText('UTF-8')
+                    .replace('gtnr.wildcard.qa', 'gtnr.io.bus.qa'), 'UTF-8')
+                new ProcessBuilder('powershell.exe', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
+                    '-ExecutionPolicy', 'Bypass', '-File', helper.absolutePath,
+                    '-Workspace', root.projectDir.absolutePath)
+                    .redirectErrorStream(true).redirectOutput(new File(qa, 'window-helper.log')).start()
+            }
+        }
+        doLast {
+            def result = scenario == 'advanced' ? new File(workingDir, 'advancedio-qa-result.txt') : new File(qa, 'result.txt')
+            def expected = scenario == 'advanced' && !root.findProperty('advancedIOResume') ? 'SAVED' : 'PASS'
+            if (!result.exists() || result.text.trim() != expected) {
+                throw new GradleException("IO bus ${scenario} QA failed; inspect the isolated client log")
+            }
+        }
+    }
+}

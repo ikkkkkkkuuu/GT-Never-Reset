@@ -1,0 +1,980 @@
+// SPDX-License-Identifier: MIT
+package com.xyp.gtneverreset.common.machine.multiblock;
+
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofBlock;
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofChain;
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.onElementPass;
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
+import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
+
+import java.io.File;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.text.MessageFormat;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.StatCollector;
+import net.minecraft.world.World;
+import net.minecraftforge.common.DimensionManager;
+import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.fluids.FluidStack;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.gtnewhorizon.gtnhlib.util.data.ItemId;
+import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
+import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
+import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
+import com.gtnewhorizon.structurelib.structure.StructureDefinition;
+import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.api.IItemVault;
+import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
+import com.xyp.gtneverreset.common.gui.modularui.SingularityDataHubGui;
+import com.xyp.gtneverreset.common.machine.hatch.VaultPortHatch;
+import com.xyp.gtneverreset.loader.BlockLoader;
+import com.xyp.gtneverreset.utils.enums.BlockIcons;
+import com.xyp.gtneverreset.utils.machine.storage.VaultStackSnapshots;
+import com.xyp.gtneverreset.utils.machine.storage.VaultStorageUsage;
+import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.utils.structure.SingularityDataHubStructure;
+import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
+
+import appeng.api.AEApi;
+import appeng.api.storage.data.IAEFluidStack;
+import appeng.api.storage.data.IAEItemStack;
+import appeng.api.storage.data.IItemList;
+import appeng.util.item.AEFluidStack;
+import appeng.util.item.AEItemStack;
+import gregtech.api.interfaces.ITexture;
+import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
+import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
+import gregtech.api.logic.ProcessingLogic;
+import gregtech.api.metatileentity.implementations.MTEExtendedPowerMultiBlockBase;
+import gregtech.api.metatileentity.implementations.MTEHatchInputBus;
+import gregtech.api.recipe.check.CheckRecipeResult;
+import gregtech.api.recipe.check.CheckRecipeResultRegistry;
+import gregtech.api.render.TextureFactory;
+import gregtech.api.structure.error.StructureError;
+import gregtech.api.structure.error.StructureErrors;
+import gregtech.api.util.GTUtility;
+import gregtech.api.util.MultiblockTooltipBuilder;
+import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
+import gregtech.common.tileentities.machines.MTEHatchCraftingInputME;
+import gregtech.common.tileentities.machines.MTEHatchInputBusME;
+import lombok.Setter;
+import mcp.mobius.waila.api.IWailaConfigHandler;
+import mcp.mobius.waila.api.IWailaDataAccessor;
+
+@IMetaTileEntity.SkipGenerateDescription
+public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<SingularityDataHub>
+    implements ISurvivalConstructable, IItemVault, MultiblockTooltipSource {
+
+    public static long maxDistinctItems = Long.MAX_VALUE - 1;
+    public static long maxDistinctFluids = Long.MAX_VALUE - 1;
+    public static final long MAX_STORAGE_BYTES = 5_764_607_523_034_234_870L;
+    private static final int BYTES_PER_TYPE = 8;
+    private static final int ITEMS_PER_BYTE = 8;
+    private static final int FLUID_MB_PER_BYTE = 8 * 256;
+
+    public static BigInteger maxItemCapacity = BigInteger.valueOf(MAX_STORAGE_BYTES)
+        .multiply(BigInteger.valueOf(ITEMS_PER_BYTE));
+    public static BigInteger maxFluidCapacity = BigInteger.valueOf(MAX_STORAGE_BYTES)
+        .multiply(BigInteger.valueOf(FLUID_MB_PER_BYTE));
+
+    public long capacityPerItem = Long.MAX_VALUE;
+    public long capacityPerFluid = Long.MAX_VALUE;
+
+    public boolean wirelessMode = false;
+    public boolean locked = true;
+    @Setter
+    public boolean doVoidExcess = false;
+    public VaultPortHatch portHatch = null;
+    public UUID ownerUUID;
+    public int mCountCasing = 0;
+
+    private static final String STRUCTURE_PIECE_MAIN = "main";
+    private static final String[][] shape = SingularityDataHubStructure.shape();
+    private IStructureDefinition<SingularityDataHub> structureDefinition;
+    private static final int HORIZONTAL_OFFSET = 1;
+    private static final int VERTICAL_OFFSET = 1;
+    private static final int DEPTH_OFFSET = 0;
+
+    public static NumberFormat nf = NumberFormat.getNumberInstance();
+
+    private IItemList<IAEItemStack> storedItems = AEApi.instance()
+        .storage()
+        .createItemList();
+
+    private IItemList<IAEFluidStack> storedFluids = AEApi.instance()
+        .storage()
+        .createFluidList();
+
+    private final VaultStorageUsage storageUsage = new VaultStorageUsage(MAX_STORAGE_BYTES, BYTES_PER_TYPE);
+
+    public SingularityDataHub(int aID, String aName, String aNameRegional) {
+        super(aID, aName, aNameRegional);
+    }
+
+    public SingularityDataHub(String aName) {
+        super(aName);
+    }
+
+    public long getUsedStorageBytes() {
+        return storageUsage.usedBytes();
+    }
+
+    @Override
+    public boolean isCorrectMachinePart(ItemStack stack) {
+        return true;
+    }
+
+    @Override
+    protected ProcessingLogic createProcessingLogic() {
+        return new ProcessingLogic().enablePerfectOverclock()
+            .setMaxParallelSupplier(this::getTrueParallel);
+    }
+
+    @Override
+    public boolean supportsVoidProtection() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsInputSeparation() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsBatchMode() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsSingleRecipeLocking() {
+        return true;
+    }
+
+    @Override
+    protected boolean forceUseMui2() {
+        return true;
+    }
+
+    @Override
+    protected @NotNull MTEMultiBlockBaseGui<?> getGui() {
+        return new SingularityDataHubGui(this);
+    }
+
+    @Override
+    public IMetaTileEntity newMetaEntity(IGregTechTileEntity aTileEntity) {
+        return new SingularityDataHub(super.mName);
+    }
+
+    @Override
+    public long maxItemCount() {
+        return maxDistinctItems;
+    }
+
+    @Override
+    public long maxFluidCount() {
+        return maxDistinctFluids;
+    }
+
+    @Override
+    public boolean hasItem() {
+        return true;
+    }
+
+    @Override
+    public boolean hasFluid() {
+        return true;
+    }
+
+    @Override
+    public void onFirstTick(IGregTechTileEntity aBaseMetaTileEntity) {
+        if (aBaseMetaTileEntity.isServerSide() && checkStructure(true, aBaseMetaTileEntity)) {
+            this.mStartUpCheck = -1;
+            this.mUpdate = 50;
+        }
+        this.ownerUUID = aBaseMetaTileEntity.getOwnerUuid();
+        super.onFirstTick(aBaseMetaTileEntity);
+    }
+
+    @Override
+    public void onBlockDestroyed() {
+        locked = true;
+        if (portHatch != null) {
+            portHatch.unbind();
+        }
+        super.onBlockDestroyed();
+    }
+
+    @Override
+    public void onUnload() {
+        locked = true;
+        if (portHatch != null) portHatch.unbind();
+        super.onUnload();
+    }
+
+    @Override
+    public @NotNull CheckRecipeResult checkProcessing() {
+        mEfficiency = 10000;
+        mEfficiencyIncrease = 10000;
+        mEUt = 0;
+        lEUt = 0;
+        mMaxProgresstime = 20;
+
+        if (locked) return CheckRecipeResultRegistry.SUCCESSFUL;
+
+        ArrayList<ItemStack> inputItems = getStoredInputs();
+        ArrayList<FluidStack> inputFluids = getStoredFluids();
+
+        if (!inputItems.isEmpty()) {
+            for (ItemStack aItem : inputItems) {
+                ItemStack toDeplete = aItem.copy();
+                toDeplete.stackSize = injectItems(aItem, false);
+                if (toDeplete.stackSize > 0 && depleteInput(toDeplete)) injectItems(toDeplete, true);
+            }
+        }
+
+        if (!inputFluids.isEmpty()) {
+            for (FluidStack aFluid : inputFluids) {
+                FluidStack toDeplete = aFluid.copy();
+                toDeplete.amount = injectFluids(aFluid, false);
+                if (toDeplete.amount > 0 && depleteInput(toDeplete)) injectFluids(toDeplete, true);
+            }
+        }
+
+        return CheckRecipeResultRegistry.SUCCESSFUL;
+    }
+
+    @Override
+    public ArrayList<ItemStack> getStoredInputsForColor(Optional<Byte> color) {
+        ArrayList<ItemStack> rList = new ArrayList<>();
+        Map<ItemId, ItemStack> inputsFromME = new HashMap<>();
+        for (MTEHatchInputBus tHatch : GTUtility.validMTEList(mInputBusses)) {
+            if (tHatch instanceof MTEHatchCraftingInputME) {
+                continue;
+            }
+            byte busColor = tHatch.getColor();
+            if (color.isPresent() && busColor != -1 && busColor != color.get()) continue;
+            tHatch.mRecipeMap = getRecipeMap();
+            IGregTechTileEntity tileEntity = tHatch.getBaseMetaTileEntity();
+            boolean isMEBus = tHatch instanceof MTEHatchInputBusME;
+            for (int i = tileEntity.getSizeInventory() - 1; i >= 0; i--) {
+                ItemStack itemStack = tileEntity.getStackInSlot(i);
+                if (itemStack != null) {
+                    if (isMEBus) {
+                        // Prevent the same item from different ME buses from being recognized
+                        inputsFromME.put(ItemId.createNoCopy(itemStack), itemStack);
+                    } else {
+                        rList.add(itemStack);
+                    }
+                }
+            }
+        }
+
+        if (!inputsFromME.isEmpty()) {
+            rList.addAll(inputsFromME.values());
+        }
+        return rList;
+
+    }
+
+    @Override
+    public void onPostTick(IGregTechTileEntity aBaseMetaTileEntity, long aTick) {
+        super.onPostTick(aBaseMetaTileEntity, aTick);
+        if (aBaseMetaTileEntity.isServerSide()) {
+            this.locked = !aBaseMetaTileEntity.isActive();
+        }
+    }
+
+    @Override
+    public void onScrewdriverRightClick(ForgeDirection side, EntityPlayer aPlayer, float aX, float aY, float aZ,
+        ItemStack aTool) {
+        if (getBaseMetaTileEntity().isServerSide()) {
+            this.setDoVoidExcess(!doVoidExcess);
+            markDirty();
+            // #tr Info_SingularityDataHub_AutoVoiding
+            // # Auto-voiding: %b
+            // # zh_CN 自动销毁溢出: %b
+            GTUtility.sendChatToPlayer(
+                aPlayer,
+                StatCollector.translateToLocalFormatted("Info_SingularityDataHub_AutoVoiding", doVoidExcess));
+        }
+    }
+
+    @Override
+    public IStructureDefinition<SingularityDataHub> getStructureDefinition() {
+        if (structureDefinition != null) return structureDefinition;
+        structureDefinition = StructureDefinition.<SingularityDataHub>builder()
+            .addShape(STRUCTURE_PIECE_MAIN, transpose(shape))
+            .addElement(
+                'A',
+                ofChain(
+                    StructureTooltipHooks.describeAsHatch(
+                        buildHatchAdder(SingularityDataHub.class).hatchClass(VaultPortHatch.class)
+                            .shouldReject(t -> t.portHatch != null)
+                            .adder(SingularityDataHub::addPortBusToMachineList)
+                            .casingIndex(16)
+                            .hint(1)
+                            .build(),
+                        "gtnr.hatch.vault_port.name"),
+                    onElementPass(t -> t.mCountCasing++, ofBlock(BlockLoader.eddingtonWallCasing, 0))))
+            .build();
+        return structureDefinition;
+    }
+
+    @Override
+    public void checkMachine(IGregTechTileEntity aBaseMetaTileEntity, ItemStack aStack, List<StructureError> errors) {
+
+        mCountCasing = 0;
+
+        if (!checkPiece(STRUCTURE_PIECE_MAIN, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors)) {
+            return;
+        }
+
+        collectTooltipStructureRequirements(errors);
+        if (errors.isEmpty()) setupParameters();
+    }
+
+    public void setupParameters() {
+        wirelessMode = mEnergyHatches.isEmpty() && mExoticEnergyHatches.isEmpty();
+        if (portHatch != null && portHatch.controller == null) portHatch.bind(this);
+    }
+
+    @Override
+    public void collectTooltipStructureRequirements(List<StructureError> errors) {
+        if (!StructureTooltipHooks.onCheckCasingMin(this, 1)) checkCasingMin(errors, mCountCasing, 1);
+
+        if (!StructureTooltipHooks.onCheckHatchKeys(this, 1, 1, "gtnr.hatch.vault_port.name") && portHatch == null) {
+            // #tr structure_error.need_vault_port_hatch
+            // # Vault Port Hatch is required
+            // # zh_CN 需要仓库端口仓
+            errors.add(StructureErrors.of("structure_error.need_vault_port_hatch"));
+        }
+    }
+
+    @Override
+    public void clearHatches() {
+        super.clearHatches();
+        wirelessMode = false;
+        locked = true;
+        if (portHatch != null) {
+            portHatch.unbind();
+            portHatch = null;
+        }
+    }
+
+    @Override
+    public String[] getStructureDescription(ItemStack stackSize) {
+        return new String[0];
+    }
+
+    @Override
+    public void construct(ItemStack stackSize, boolean hintsOnly) {
+        if (StructureTooltipHooks
+            .onBuildPiece(this, STRUCTURE_PIECE_MAIN, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET)) return;
+        buildPiece(STRUCTURE_PIECE_MAIN, stackSize, hintsOnly, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET);
+    }
+
+    @Override
+    public int survivalConstruct(ItemStack stackSize, int elementBudget, ISurvivalBuildEnvironment env) {
+        if (mMachine) return -1;
+        return survivalBuildPiece(
+            STRUCTURE_PIECE_MAIN,
+            stackSize,
+            HORIZONTAL_OFFSET,
+            VERTICAL_OFFSET,
+            DEPTH_OFFSET,
+            elementBudget,
+            env,
+            false,
+            true);
+    }
+
+    public MultiblockTooltipBuilder createTooltip() {
+        return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
+            .toolTipFinisher();
+    }
+
+    @Override
+    public String getTooltipMachineType() {
+        // #tr SingularityDataHubRecipeType
+        // # Vault
+        // # zh_CN 保险库
+        return StatCollector.translateToLocal("SingularityDataHubRecipeType");
+    }
+
+    @Override
+    public ITexture[] getTexture(IGregTechTileEntity aBaseMetaTileEntity, ForgeDirection side, ForgeDirection facing,
+        int colorIndex, boolean aActive, boolean aRedstone) {
+        if (side != facing) return new ITexture[] { BlockLoader.eddingtonWallCasing.getCasingTexture() };
+        return new ITexture[] { BlockLoader.eddingtonWallCasing.getCasingTexture(), TextureFactory.builder()
+            .addIcon(aActive ? BlockIcons.OverlayFrontKerrCompressorActive : BlockIcons.OverlayFrontKerrCompressor)
+            .extFacing()
+            .build(),
+            TextureFactory.builder()
+                .addIcon(
+                    aActive ? BlockIcons.OverlayFrontKerrCompressorActiveGlow
+                        : BlockIcons.OverlayFrontKerrCompressorGlow)
+                .extFacing()
+                .glow()
+                .build() };
+    }
+
+    @Override
+    public boolean supportsPowerPanel() {
+        return false;
+    }
+
+    @Override
+    public String[] getInfoData() {
+        ArrayList<String> ll = new ArrayList<>();
+        // #tr Info_SingularityDataHub_StoredItems
+        // # Stored Items:
+        // # zh_CN 已存储物品：
+        ll.add(
+            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_StoredItems")
+                + EnumChatFormatting.RESET);
+
+        int i = 0;
+        for (IAEItemStack tank : storedItems) {
+            String localizedName = Objects.requireNonNull(
+                tank.getItem()
+                    .getItemStackDisplayName(tank.getItemStack()));
+            String amount = nf.format(tank.getStackSize());
+            String percentage = capacityPerItem > 0 ? BigInteger.valueOf(tank.getStackSize())
+                .multiply(BigInteger.valueOf(100))
+                .divide(BigInteger.valueOf(capacityPerItem))
+                .toString() : "";
+            ll.add(MessageFormat.format("{0} - {1}: {2} ({3}%)", i++, localizedName, amount, percentage));
+            if (i >= 32) break;
+        }
+
+        // #tr Info_SingularityDataHub_StoredFluids
+        // # Stored Fluids:
+        // # zh_CN 已存储流体：
+        ll.add(
+            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_StoredFluids")
+                + EnumChatFormatting.RESET);
+
+        int j = 0;
+        for (IAEFluidStack tank : storedFluids) {
+            String localizedName = Objects.requireNonNull(
+                tank.getFluid()
+                    .getLocalizedName(tank.getFluidStack()));
+            String amount = nf.format(tank.getStackSize());
+            String percentage = capacityPerFluid > 0 ? BigInteger.valueOf(tank.getStackSize())
+                .multiply(BigInteger.valueOf(100))
+                .divide(BigInteger.valueOf(capacityPerFluid))
+                .toString() : "";
+            ll.add(MessageFormat.format("{0} - {1}: {2} ({3}%)", j++, localizedName, amount, percentage));
+            if (j >= 32) break;
+        }
+
+        // #tr Info_SingularityDataHub_OperationalData
+        // # Operational Data
+        // # zh_CN 运行数据
+        ll.add(
+            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_OperationalData")
+                + EnumChatFormatting.RESET);
+
+        // #tr Info_SingularityDataHub_ItemUsed
+        // # Item Used Capacity: %s
+        // # zh_CN 已用物品容量: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_ItemUsed", nf.format(getItemStoredAmount())));
+        // #tr Info_SingularityDataHub_ItemTotal
+        // # Item Total Capacity: %s
+        // # zh_CN 物品总容量: %s
+        ll.add(
+            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_ItemTotal", nf.format(maxItemCapacity)));
+        // #tr Info_SingularityDataHub_PerItemCapacity
+        // # Per-Item Capacity: %s
+        // # zh_CN 每种物品容量: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_PerItemCapacity", nf.format(capacityPerItem)));
+        // #tr Info_SingularityDataHub_ItemUsedTypes
+        // # Item Used Type: %s
+        // # zh_CN 已用物品种类: %s
+        ll.add(
+            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_ItemUsedTypes", nf.format(itemsCount())));
+        // #tr Info_SingularityDataHub_ItemTotalTypes
+        // # Item Total Type: %s
+        // # zh_CN 物品总种类: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_ItemTotalTypes", nf.format(maxItemCount())));
+
+        // #tr Info_SingularityDataHub_FluidUsed
+        // # Fluid Used Capacity: %s
+        // # zh_CN 已用流体容量: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_FluidUsed", nf.format(getFluidStoredAmount())));
+        // #tr Info_SingularityDataHub_FluidTotal
+        // # Fluid Total Capacity: %s
+        // # zh_CN 流体总容量: %s
+        ll.add(
+            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_FluidTotal", nf.format(maxFluidCapacity)));
+        // #tr Info_SingularityDataHub_PerFluidCapacity
+        // # Per-Fluid Capacity: %s
+        // # zh_CN 每种流体容量: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_PerFluidCapacity", nf.format(capacityPerFluid)));
+        // #tr Info_SingularityDataHub_FluidUsedTypes
+        // # Fluid Used Type: %s
+        // # zh_CN 已用流体种类: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_FluidUsedTypes", nf.format(fluidsCount())));
+        // #tr Info_SingularityDataHub_FluidTotalTypes
+        // # Fluid Total Type: %s
+        // # zh_CN 流体总种类: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_FluidTotalTypes", nf.format(maxFluidCount())));
+
+        // #tr Info_SingularityDataHub_RunningCost
+        // # Running Cost: %dEU/t
+        // # zh_CN 运行成本: %dEU/t
+        ll.add(StatCollector.translateToLocalFormatted("Info_SingularityDataHub_RunningCost", getActualEnergyUsage()));
+        // #tr Info_SingularityDataHub_AutoVoiding
+        // # Auto-voiding: %b
+        // # zh_CN 自动销毁溢出: %b
+        ll.add(StatCollector.translateToLocalFormatted("Info_SingularityDataHub_AutoVoiding", doVoidExcess));
+        // #tr Waila_WirelessMode
+        // # Wireless Mode
+        // # zh_CN 无线模式
+        if (wirelessMode)
+            ll.add(EnumChatFormatting.LIGHT_PURPLE + StatCollector.translateToLocal("Waila_WirelessMode"));
+        ll.add(EnumChatFormatting.STRIKETHROUGH + "---------------------------------------------");
+
+        return ll.toArray(new String[0]);
+    }
+
+    public long getActualEnergyUsage() {
+        return 0;
+    }
+
+    @Override
+    public void setItemNBT(NBTTagCompound tag) {
+        super.setItemNBT(tag);
+        writeSettings(tag);
+        NBTTagCompound contents = writeContents();
+        File worldDir = DimensionManager.getCurrentSaveRootDirectory();
+        if (worldDir == null) {
+            copyContents(contents, tag);
+            return;
+        }
+        File dataDir = new File(worldDir, "data");
+        String uuid = UUID.randomUUID()
+            .toString();
+        File storeFile = new File(dataDir, "ItemVault_" + uuid + ".dat");
+        try {
+            if (!dataDir.isDirectory() && !dataDir.mkdirs()) {
+                throw new IOException("unable to create vault data directory " + dataDir);
+            }
+            CompressedStreamTools.safeWrite(contents, storeFile);
+            tag.setString("storeUUID", uuid);
+            tag.removeTag("STORE_ITEM");
+            tag.removeTag("STORE_FLUID");
+        } catch (IOException exception) {
+            GTNeverReset.LOG.error("failed to save dropped vault contents to {}", storeFile, exception);
+            copyContents(contents, tag);
+            tag.removeTag("storeUUID");
+        }
+    }
+
+    @Override
+    public void saveNBTData(NBTTagCompound tag) {
+        super.saveNBTData(tag);
+        writeSettings(tag);
+        copyContents(writeContents(), tag);
+        tag.removeTag("storeUUID");
+    }
+
+    @Override
+    public void loadNBTData(NBTTagCompound tag) {
+        super.loadNBTData(tag);
+        storedItems = AEApi.instance()
+            .storage()
+            .createItemList();
+        storedFluids = AEApi.instance()
+            .storage()
+            .createFluidList();
+        setDoVoidExcess(tag.getBoolean("doVoidExcess"));
+        locked = true;
+        wirelessMode = tag.getBoolean("wirelessMode");
+        if (tag.hasKey("STORE_ITEM", 9) || tag.hasKey("STORE_FLUID", 9)) {
+            readContents(tag);
+        } else if (tag.hasKey("storeUUID", 8)) {
+            loadDroppedContents(tag.getString("storeUUID"));
+        }
+        rebuildStorageUsage();
+    }
+
+    private void rebuildStorageUsage() {
+        storageUsage.clear();
+        for (IAEItemStack item : storedItems) storageUsage.update(0, item.getStackSize(), ITEMS_PER_BYTE);
+        for (IAEFluidStack fluid : storedFluids) storageUsage.update(0, fluid.getStackSize(), FLUID_MB_PER_BYTE);
+    }
+
+    private void writeSettings(NBTTagCompound tag) {
+        tag.setBoolean("wirelessMode", wirelessMode);
+        tag.setBoolean("doVoidExcess", doVoidExcess);
+        tag.setBoolean("locked", locked);
+    }
+
+    private NBTTagCompound writeContents() {
+        NBTTagCompound contents = new NBTTagCompound();
+        NBTTagList items = new NBTTagList();
+        for (IAEItemStack item : storedItems) {
+            NBTTagCompound entry = new NBTTagCompound();
+            item.writeToNBT(entry);
+            items.appendTag(entry);
+        }
+        NBTTagList fluids = new NBTTagList();
+        for (IAEFluidStack fluid : storedFluids) {
+            NBTTagCompound entry = new NBTTagCompound();
+            fluid.writeToNBT(entry);
+            fluids.appendTag(entry);
+        }
+        contents.setTag("STORE_ITEM", items);
+        contents.setTag("STORE_FLUID", fluids);
+        return contents;
+    }
+
+    private void copyContents(NBTTagCompound contents, NBTTagCompound target) {
+        target.setTag("STORE_ITEM", contents.getTag("STORE_ITEM"));
+        target.setTag("STORE_FLUID", contents.getTag("STORE_FLUID"));
+    }
+
+    private void readContents(NBTTagCompound contents) {
+        NBTTagList items = contents.getTagList("STORE_ITEM", 10);
+        for (int index = 0; index < items.tagCount(); index++) {
+            IAEItemStack item = AEItemStack.loadItemStackFromNBT(items.getCompoundTagAt(index));
+            if (item != null && item.getStackSize() > 0) storedItems.addStorage(item);
+        }
+        NBTTagList fluids = contents.getTagList("STORE_FLUID", 10);
+        for (int index = 0; index < fluids.tagCount(); index++) {
+            IAEFluidStack fluid = AEFluidStack.loadFluidStackFromNBT(fluids.getCompoundTagAt(index));
+            if (fluid != null && fluid.getStackSize() > 0) storedFluids.addStorage(fluid);
+        }
+    }
+
+    private void loadDroppedContents(String storedUuid) {
+        try {
+            String uuid = UUID.fromString(storedUuid)
+                .toString();
+            File worldDir = DimensionManager.getCurrentSaveRootDirectory();
+            if (worldDir == null) return;
+            File storeFile = new File(new File(worldDir, "data"), "ItemVault_" + uuid + ".dat");
+            if (!storeFile.isFile()) return;
+            NBTTagCompound contents = CompressedStreamTools.read(storeFile);
+            if (contents == null) throw new IOException("empty vault contents file " + storeFile);
+            readContents(contents);
+            if (!storeFile.delete())
+                GTNeverReset.LOG.warn("failed to delete restored vault contents file {}", storeFile);
+        } catch (IOException | IllegalArgumentException exception) {
+            GTNeverReset.LOG.error("failed to restore dropped vault contents {}", storedUuid, exception);
+        }
+    }
+
+    @Override
+    public int injectItems(ItemStack aItem, boolean doInput) {
+        if (locked || aItem == null || aItem.stackSize <= 0) return 0;
+        var aeItem = findStoredItem(aItem);
+        long size = aeItem == null ? 0 : aeItem.getStackSize();
+        long accepted = storageUsage.insertableAmount(size, aItem.stackSize, ITEMS_PER_BYTE);
+        if (accepted <= 0) return doVoidExcess ? aItem.stackSize : 0;
+        if (doInput) {
+            if (aeItem == null) {
+                storedItems.addStorage(
+                    AEItemStack.create(aItem)
+                        .setStackSize(accepted));
+            } else {
+                aeItem.setStackSize(size + accepted);
+            }
+            storageUsage.update(size, size + accepted, ITEMS_PER_BYTE);
+            markDirty();
+            if (portHatch != null) portHatch.postUpdateItem(aItem, accepted);
+        }
+        return doVoidExcess ? aItem.stackSize : (int) accepted;
+    }
+
+    @Override
+    public long injectItems(IAEItemStack aItem, boolean doInput) {
+        if (locked || aItem == null || aItem.getStackSize() <= 0) return 0;
+        var aeItem = findStoredItem(aItem.getItemStack());
+        long size = aeItem == null ? 0 : aeItem.getStackSize();
+        long accepted = storageUsage.insertableAmount(size, aItem.getStackSize(), ITEMS_PER_BYTE);
+        if (accepted <= 0) return doVoidExcess ? aItem.getStackSize() : 0;
+        if (doInput) {
+            if (aeItem == null) {
+                storedItems.addStorage(
+                    VaultStackSnapshots.item(aItem)
+                        .setStackSize(accepted));
+            } else {
+                aeItem.setStackSize(size + accepted);
+            }
+            storageUsage.update(size, size + accepted, ITEMS_PER_BYTE);
+            markDirty();
+            if (portHatch != null) portHatch.postUpdateItem(aItem.getItemStack(), accepted);
+        }
+        return doVoidExcess ? aItem.getStackSize() : accepted;
+    }
+
+    @Override
+    public int injectFluids(FluidStack aFluid, boolean doInput) {
+        if (locked || aFluid == null || aFluid.amount <= 0) return 0;
+        var aeFluid = findStoredFluid(aFluid);
+        long size = aeFluid == null ? 0 : aeFluid.getStackSize();
+        long accepted = storageUsage.insertableAmount(size, aFluid.amount, FLUID_MB_PER_BYTE);
+        if (accepted <= 0) return doVoidExcess ? aFluid.amount : 0;
+        if (doInput) {
+            if (aeFluid == null) {
+                storedFluids.addStorage(
+                    AEFluidStack.create(aFluid)
+                        .setStackSize(accepted));
+            } else {
+                aeFluid.setStackSize(size + accepted);
+            }
+            storageUsage.update(size, size + accepted, FLUID_MB_PER_BYTE);
+            markDirty();
+            if (portHatch != null) portHatch.postUpdateFluid(aFluid, accepted);
+        }
+        return doVoidExcess ? aFluid.amount : (int) accepted;
+    }
+
+    @Override
+    public long injectFluids(IAEFluidStack aFluid, boolean doInput) {
+        if (locked || aFluid == null || aFluid.getStackSize() <= 0) return 0;
+        var aeFluid = findStoredFluid(aFluid.getFluidStack());
+        long size = aeFluid == null ? 0 : aeFluid.getStackSize();
+        long accepted = storageUsage.insertableAmount(size, aFluid.getStackSize(), FLUID_MB_PER_BYTE);
+        if (accepted <= 0) return doVoidExcess ? aFluid.getStackSize() : 0;
+        if (doInput) {
+            if (aeFluid == null) {
+                storedFluids.addStorage(
+                    aFluid.copy()
+                        .setStackSize(accepted));
+            } else {
+                aeFluid.setStackSize(size + accepted);
+            }
+            storageUsage.update(size, size + accepted, FLUID_MB_PER_BYTE);
+            markDirty();
+            if (portHatch != null) portHatch.postUpdateFluid(aFluid.getFluidStack(), accepted);
+        }
+        return doVoidExcess ? aFluid.getStackSize() : accepted;
+    }
+
+    @Override
+    public long extractItems(IAEItemStack aItem, boolean doOutput) {
+        if (locked || aItem == null || aItem.getStackSize() <= 0) return 0;
+        var aeItem = findStoredItem(aItem.getItemStack());
+        if (aeItem == null) return 0;
+        long storedSize = aeItem.getStackSize();
+        long requestSize = aItem.getStackSize();
+        if (storedSize > requestSize) {
+            if (doOutput) {
+                aeItem.setStackSize(storedSize - requestSize);
+                storageUsage.update(storedSize, storedSize - requestSize, ITEMS_PER_BYTE);
+                markDirty();
+                if (portHatch != null) portHatch.postUpdateItem(aItem.getItemStack(), -requestSize);
+            }
+            return requestSize;
+        } else {
+            if (doOutput) {
+                aeItem.setStackSize(0);
+                storageUsage.update(storedSize, 0, ITEMS_PER_BYTE);
+                markDirty();
+                if (portHatch != null) portHatch.postUpdateItem(aItem.getItemStack(), -storedSize);
+            }
+            return storedSize;
+        }
+    }
+
+    @Override
+    public long extractFluids(IAEFluidStack aFluid, boolean doOutput) {
+        if (locked || aFluid == null || aFluid.getStackSize() <= 0) return 0;
+        var aeFluid = findStoredFluid(aFluid.getFluidStack());
+        if (aeFluid == null) return 0;
+        long storedSize = aeFluid.getStackSize();
+        long requestSize = aFluid.getStackSize();
+        if (storedSize > requestSize) {
+            if (doOutput) {
+                aeFluid.setStackSize(storedSize - requestSize);
+                storageUsage.update(storedSize, storedSize - requestSize, FLUID_MB_PER_BYTE);
+                markDirty();
+                if (portHatch != null) portHatch.postUpdateFluid(aFluid.getFluidStack(), -requestSize);
+            }
+            return requestSize;
+        } else {
+            if (doOutput) {
+                aeFluid.setStackSize(0);
+                storageUsage.update(storedSize, 0, FLUID_MB_PER_BYTE);
+                markDirty();
+                if (portHatch != null) portHatch.postUpdateFluid(aFluid.getFluidStack(), -storedSize);
+            }
+            return storedSize;
+        }
+    }
+
+    @Override
+    public long itemsCount() {
+        long count = 0;
+        for (IAEItemStack item : storedItems) if (item.getStackSize() > 0) count++;
+        return count;
+    }
+
+    @Override
+    public long fluidsCount() {
+        long count = 0;
+        for (IAEFluidStack fluid : storedFluids) if (fluid.getStackSize() > 0) count++;
+        return count;
+    }
+
+    @Override
+    public IAEItemStack getStoredItem(@Nullable ItemStack aItem) {
+        IAEItemStack stored = findStoredItem(aItem);
+        return stored == null ? null : VaultStackSnapshots.item(stored);
+    }
+
+    private IAEItemStack findStoredItem(@Nullable ItemStack aItem) {
+        if (aItem == null) return null;
+        return storedItems.findPrecise(AEItemStack.create(aItem));
+    }
+
+    @Override
+    public IAEFluidStack getStoredFluid(@Nullable FluidStack aFluid) {
+        IAEFluidStack stored = findStoredFluid(aFluid);
+        return stored == null ? null : stored.copy();
+    }
+
+    private IAEFluidStack findStoredFluid(@Nullable FluidStack aFluid) {
+        if (aFluid == null) return null;
+        return storedFluids.findPrecise(AEFluidStack.create(aFluid));
+    }
+
+    @Override
+    public boolean containsItems(ItemStack aItem) {
+        IAEItemStack stored = findStoredItem(aItem);
+        return stored != null && stored.getStackSize() > 0;
+    }
+
+    @Override
+    public boolean containsFluids(FluidStack aFluid) {
+        IAEFluidStack stored = findStoredFluid(aFluid);
+        return stored != null && stored.getStackSize() > 0;
+    }
+
+    public BigInteger getItemStoredAmount() {
+        BigInteger amount = BigInteger.ZERO;
+        for (IAEItemStack item : storedItems) {
+            amount = amount.add(BigInteger.valueOf(item.getStackSize()));
+        }
+        return amount;
+    }
+
+    public BigInteger getFluidStoredAmount() {
+        BigInteger amount = BigInteger.ZERO;
+        for (IAEFluidStack fluid : storedFluids) {
+            amount = amount.add(BigInteger.valueOf(fluid.getStackSize()));
+        }
+        return amount;
+    }
+
+    @Override
+    public IItemList<IAEItemStack> getStoreItems() {
+        IItemList<IAEItemStack> snapshot = AEApi.instance()
+            .storage()
+            .createItemList();
+        copyItemsTo(snapshot);
+        return snapshot;
+    }
+
+    @Override
+    public IItemList<IAEFluidStack> getStoreFluids() {
+        IItemList<IAEFluidStack> snapshot = AEApi.instance()
+            .storage()
+            .createFluidList();
+        copyFluidsTo(snapshot);
+        return snapshot;
+    }
+
+    @Override
+    public void copyItemsTo(IItemList<IAEItemStack> out) {
+        for (IAEItemStack item : storedItems) out.addStorage(VaultStackSnapshots.item(item));
+    }
+
+    @Override
+    public void copyFluidsTo(IItemList<IAEFluidStack> out) {
+        for (IAEFluidStack fluid : storedFluids) out.addStorage(fluid.copy());
+    }
+
+    @Override
+    public void getWailaBody(ItemStack itemStack, List<String> currentTip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {}
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {}
+
+    @Override
+    public void checkMaintenance() {}
+
+    @Override
+    public boolean getDefaultHasMaintenanceChecks() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldCheckMaintenance() {
+        return false;
+    }
+
+    public boolean addPortBusToMachineList(IGregTechTileEntity aTileEntity, int aBaseCasingIndex) {
+        if (aTileEntity != null) {
+            final IMetaTileEntity aMetaTileEntity = aTileEntity.getMetaTileEntity();
+            if (aMetaTileEntity instanceof VaultPortHatch vaultPortHatch) {
+                if (portHatch != null) return false;
+                vaultPortHatch.updateTexture(aBaseCasingIndex);
+                vaultPortHatch.updateCraftingIcon(getMachineCraftingIcon());
+                portHatch = vaultPortHatch;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isValid() {
+        IGregTechTileEntity base = getBaseMetaTileEntity();
+        return mMachine && base != null && !base.isDead();
+    }
+
+    @Override
+    public boolean getDoVoidExcess() {
+        return doVoidExcess;
+    }
+}

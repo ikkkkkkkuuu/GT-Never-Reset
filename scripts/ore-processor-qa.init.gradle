@@ -1,0 +1,53 @@
+// Runs ore-processing, structure and module checks on an isolated dedicated server.
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    def qaBase = root.findProperty('ore-processorQaRoot') ? root.file(root.property('ore-processorQaRoot')) : root.layout.buildDirectory.get().asFile
+    def qaDirectory = root.layout.dir(root.provider { new File(qaBase, 'ore-processor-qa') })
+    root.tasks.named('packagePatchedMc').configure {
+        destinationDirectory.set(qaDirectory.map { it.dir('minecraft') })
+    }
+    root.extensions.findByName('spotless')?.java {
+        target 'scripts/qa/OreProcessorChecks.java'
+    }
+    root.tasks.named('compileTestJava').configure {
+        options.release.set(17)
+        destinationDirectory.set(qaDirectory.map { it.dir('test-classes') })
+        setSource(root.files('scripts/qa/OreProcessorChecks.java'))
+    }
+    root.tasks.named('runServer17').configure {
+        javaLauncher.set(root.javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) })
+        classpath += root.configurations.testRuntimeClasspath.filter { it.name.startsWith('jvmdowngrader-java-api-') }
+        dependsOn root.tasks.named('testClasses')
+        classpath += root.files(qaDirectory.map { it.dir('test-classes') })
+        classpath = classpath.filter { !it.name.toLowerCase(Locale.ROOT).startsWith('angelica-') }
+        workingDir qaDirectory.get().dir('run').asFile
+        systemProperty 'gtnr.ore.qa', 'true'
+        systemProperty 'gtnr.ore.qa.output', qaDirectory.get().asFile.absolutePath
+        systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
+        systemProperty 'sun.net.client.defaultReadTimeout', '15000'
+        args 'nogui'
+        notCompatibleWithConfigurationCache('isolated ore-processor dedicated server verification')
+        doFirst {
+            qaDirectory.get().asFile.mkdirs()
+            workingDir.mkdirs()
+            root.copy {
+                from root.file('run/client/falsepattern')
+                include '*.jar'
+                into new File(workingDir, 'falsepattern')
+            }
+            java.nio.file.Files.deleteIfExists(new File(qaDirectory.get().asFile, 'result.txt').toPath())
+            new File(workingDir, 'eula.txt').setText('eula=true\n', 'UTF-8')
+            new File(workingDir, 'server.properties').setText(
+                "online-mode=false\nserver-port=0\nlevel-name=ore-processor-${System.currentTimeMillis()}\n" +
+                    'level-type=FLAT\ngenerate-structures=false\nspawn-protection=0\nview-distance=3\n' +
+                    'gamemode=1\ndifficulty=0\nallow-flight=true\nmax-tick-time=-1\n',
+                'UTF-8')
+        }
+        doLast {
+            def result = new File(qaDirectory.get().asFile, 'result.txt')
+            if (!result.exists() || result.text.trim() != 'PASS') {
+                throw new GradleException('OreProcessor dedicated server QA failed; inspect the isolated server log')
+            }
+        }
+    }
+}

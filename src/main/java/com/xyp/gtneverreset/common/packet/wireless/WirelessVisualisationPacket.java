@@ -1,0 +1,77 @@
+// SPDX-License-Identifier: LGPL-3.0-only
+// Adapted from GT-Not-Leisure PR #627 at 651396c75d108e6ff5399a44c56c12214ad27d3d.
+
+package com.xyp.gtneverreset.common.packet.wireless;
+
+import net.minecraft.nbt.NBTTagCompound;
+
+import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardBinding;
+import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardVisualisation;
+
+import appeng.core.sync.AppEngPacket;
+import cpw.mods.fml.common.network.ByteBufUtils;
+import cpw.mods.fml.common.network.simpleimpl.IMessage;
+import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
+import cpw.mods.fml.common.network.simpleimpl.MessageContext;
+import io.netty.buffer.ByteBuf;
+
+public class WirelessVisualisationPacket implements IMessage {
+
+    private NBTTagCompound bindingTag;
+    private int dimension;
+    private byte[] payload;
+
+    public WirelessVisualisationPacket() {}
+
+    public WirelessVisualisationPacket(NBTTagCompound tag, int dimension, AppEngPacket packet) {
+        bindingTag = new NBTTagCompound();
+        WirelessCardBinding binding = WirelessCardBinding.read(tag);
+        if (binding == null) throw new IllegalArgumentException("Unbound wireless frequency card");
+        binding.write(bindingTag);
+        this.dimension = dimension;
+        ByteBuf nativePayload = packet.getProxy()
+            .payload();
+        try {
+            int size = nativePayload.readableBytes() - 4;
+            if (size < 0 || size > WirelessCardVisualisation.MAX_PACKET_BYTES) {
+                payload = new byte[0];
+            } else {
+                payload = new byte[size];
+                nativePayload.getBytes(nativePayload.readerIndex() + 4, payload);
+            }
+        } finally {
+            nativePayload.release();
+        }
+    }
+
+    @Override
+    public void fromBytes(ByteBuf buffer) {
+        bindingTag = ByteBufUtils.readTag(buffer);
+        dimension = buffer.readInt();
+        int size = buffer.readInt();
+        if (WirelessCardBinding.read(bindingTag) == null || size < 0
+            || size > WirelessCardVisualisation.MAX_PACKET_BYTES
+            || size > buffer.readableBytes())
+            throw new IllegalArgumentException("Invalid wireless visualisation snapshot");
+        payload = new byte[size];
+        buffer.readBytes(payload);
+    }
+
+    @Override
+    public void toBytes(ByteBuf buffer) {
+        ByteBufUtils.writeTag(buffer, bindingTag);
+        buffer.writeInt(dimension);
+        buffer.writeInt(payload.length);
+        buffer.writeBytes(payload);
+    }
+
+    public static final class Handler implements IMessageHandler<WirelessVisualisationPacket, IMessage> {
+
+        @Override
+        public IMessage onMessage(WirelessVisualisationPacket message, MessageContext context) {
+            GTNeverReset.proxy.receiveWirelessVisualisation(message.bindingTag, message.dimension, message.payload);
+            return null;
+        }
+    }
+}

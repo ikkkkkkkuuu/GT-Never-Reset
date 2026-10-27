@@ -1,0 +1,23 @@
+{
+  "parent": "gregtech:standard",
+  "button": {
+    "background": { "type": "texture", "id": "gregtech:button_gorge" },
+    "color": "#FFFFFFFF"
+  },
+  "toggleButton": {
+    "background": { "type": "texture", "id": "gregtech:button_gorge" },
+    "selectedBackground": { "type": "texture", "id": "gregtech:button_gorge" },
+    "color": "#FFFFFFFF",
+    "selectedColor": "#FFFFFFFF"
+  },
+  "buttonDisabled": {
+    "background": { "type": "texture", "id": "gregtech:button_gorge" },
+    "color": "#80FFFFFF"
+  },
+  "toggleButtonDisabled": {
+    "background": { "type": "texture", "id": "gregtech:button_gorge" },
+    "selectedBackground": { "type": "texture", "id": "gregtech:button_gorge" },
+    "color": "#80FFFFFF",
+    "selectedColor": "#80FFFFFF"
+  }
+}

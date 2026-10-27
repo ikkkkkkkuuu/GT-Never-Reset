@@ -1,0 +1,56 @@
+gradle.beforeProject { project ->
+    project.layout.buildDirectory.set(project.file('build/vault-qa-classes'))
+}
+
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    def qaDirectory = root.file(root.findProperty('vaultServerQaRoot') ?: 'build/vault-server-qa')
+    root.extensions.findByName('spotless')?.java {
+        target 'scripts/qa/VaultServerChecks.java'
+    }
+    root.tasks.named('compileTestJava').configure {
+        options.release.set(17)
+        classpath += root.files(root.tasks.named('compileJava').flatMap { it.destinationDirectory })
+        destinationDirectory.set(new File(qaDirectory, 'test-classes'))
+        setSource(root.files('scripts/qa/VaultServerChecks.java'))
+    }
+    root.sourceSets.test.output.classesDirs.setFrom(
+        root.files(new File(qaDirectory, 'test-classes')).builtBy(root.tasks.named('compileTestJava')))
+    root.tasks.named('runServer17').configure {
+        javaLauncher.set(root.javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) })
+        dependsOn root.tasks.named('testClasses')
+        classpath += root.files(new File(qaDirectory, 'test-classes'))
+        classpath += root.configurations.testRuntimeClasspath.filter { it.name.startsWith('jvmdowngrader-java-api-') }
+        classpath = classpath.filter { !it.name.toLowerCase(Locale.ROOT).startsWith('angelica-') }
+        workingDir new File(qaDirectory, 'run')
+        systemProperty 'gtnr.vault.server.qa', 'true'
+        systemProperty 'gtnr.vault.server.qa.output', qaDirectory.absolutePath
+        systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
+        systemProperty 'sun.net.client.defaultReadTimeout', '15000'
+        args 'nogui'
+        notCompatibleWithConfigurationCache('isolated vault dedicated server verification')
+        doFirst {
+            classpath = root.files(classpath.files.findAll { it.exists() })
+            qaDirectory.mkdirs()
+            workingDir.mkdirs()
+            root.copy {
+                from root.file('run/client/falsepattern')
+                include '*.jar'
+                into new File(workingDir, 'falsepattern')
+            }
+            java.nio.file.Files.deleteIfExists(new File(qaDirectory, 'result.txt').toPath())
+            new File(workingDir, 'eula.txt').setText('eula=true\n', 'UTF-8')
+            new File(workingDir, 'server.properties').setText(
+                "online-mode=false\nserver-port=0\nlevel-name=vault-${System.currentTimeMillis()}\n" +
+                    'level-type=FLAT\ngenerate-structures=false\nspawn-protection=0\nview-distance=3\n' +
+                    'gamemode=1\ndifficulty=0\nallow-flight=true\nmax-tick-time=-1\n',
+                'UTF-8')
+        }
+        doLast {
+            def result = new File(qaDirectory, 'result.txt')
+            if (!result.exists() || result.text.trim() != 'PASS') {
+                throw new GradleException('Vault dedicated server QA failed; inspect the isolated server log')
+            }
+        }
+    }
+}

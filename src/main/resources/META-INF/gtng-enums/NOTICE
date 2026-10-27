@@ -1,0 +1,11 @@
+ModList.java and ModsItemlist.java were ported from GT-Not-Good.
+Source revision: 048fd1963de8c6458ef6f800c411be0087cbafdb
+Source paths: src/main/java/com/xyp/gtnotgood/utils/enums/{ModList,ModsItemlist}.java
+License: MIT (included in LICENSE beside this notice).
+
+Original source SHA-256:
+ModList.java: 44636f368cbf479d9aa51b3fb483ab068bc9dc5816ea141471ff813c6b0b810c
+ModsItemlist.java: 9b65dd091e4091140ee8e30aad103f2c96de2e883a79714fb3ef7bd258be8da9
+
+Adaptations: changed the package to com.xyp.gtneverreset.utils.enums;
+added GTNeverReset and GTNHLib metadata to ModList.

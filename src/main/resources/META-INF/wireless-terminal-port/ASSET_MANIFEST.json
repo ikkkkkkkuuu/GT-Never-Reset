@@ -1,0 +1,80 @@
+[
+  {
+    "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+    "source": "src/main/resources/assets/gtnotgood/textures/items/wireless_dual_interface_terminal.png",
+    "destination": "src/main/resources/assets/gtneverreset/textures/items/wireless_dual_interface_terminal.png",
+    "sourceSha256": "2d657786cafa13adee4604fc73f2e200c1fe90e1a4affb7a09557d255fc642a5",
+    "modifiedPixels": false,
+    "license": "MIT"
+  },
+  {
+    "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+    "source": "src/main/resources/assets/gtnotgood/textures/gui/quick_terminal/view_cells.png",
+    "destination": "src/main/resources/assets/gtneverreset/textures/gui/quick_terminal/view_cells.png",
+    "sourceSha256": "d57df882f605c761207b0347e313fb7a730c7a45d12266cd9e3dbdd4ed5c29b3",
+    "modifiedPixels": false,
+    "license": "MIT"
+  },
+  {
+    "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+    "source": "src/main/resources/assets/gtnotgood/textures/gui/quick_terminal/suffix_toggle.png",
+    "destination": "src/main/resources/assets/gtneverreset/textures/gui/quick_terminal/suffix_toggle.png",
+    "sourceSha256": "dd9057d2157e119e462ffb921cb7f687ba0b47be906db8026370d0b400e5443e",
+    "modifiedPixels": false,
+    "license": "MIT"
+  },
+  {
+    "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+    "source": "src/main/resources/assets/gtnotgood/textures/gui/quick_terminal/states_dark.png",
+    "destination": "src/main/resources/assets/gtneverreset/textures/gui/quick_terminal/states_dark.png",
+    "sourceSha256": "8602baf1f970ce1b99a5015ffff3786b1d2370fc96c16982319b0324d4432118",
+    "modifiedPixels": false,
+    "license": "CC-BY-NC-SA-4.0",
+    "upstreamRepository": "https://github.com/ModernityGTNH/Modernity-GTNH-Dark-UI",
+    "upstreamRevision": "0322e00ef22e10628ed875154d6d604cc572d08a",
+    "upstreamPath": "assets/appliedenergistics2/textures/guis/states.png"
+  },
+  {
+    "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+    "source": "src/main/resources/assets/gtnotgood/textures/gui/quick_terminal/states.png",
+    "destination": "src/main/resources/assets/gtneverreset/textures/gui/quick_terminal/states.png",
+    "sourceSha256": "4fb85eee1c5c86da35b33c4e7d343e3dcd4d5f977aeb01d2a705ca13aa0e3876",
+    "modifiedPixels": false,
+    "license": "CC-BY-NC-SA-4.0",
+    "upstreamRepository": "https://github.com/ModernityGTNH/Modernity-GTNH-UI",
+    "upstreamRevision": "87fee0aac305ca8f1736278266ad87d94deff3b4",
+    "upstreamPath": "assets/appliedenergistics2/textures/guis/states.png"
+  },
+  {
+    "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+    "source": "src/main/resources/assets/gtnotgood/textures/gui/quick_terminal/keep_circuits_toggle.png",
+    "destination": "src/main/resources/assets/gtneverreset/textures/gui/quick_terminal/keep_circuits_toggle.png",
+    "sourceSha256": "7108e9f8bdc4f6e3634bfddb18bf4aaf721e028ba8a5604ff28d8c08ddd32182",
+    "modifiedPixels": false,
+    "license": "MIT"
+  },
+  {
+    "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+    "source": "src/main/resources/assets/gtnotgood/textures/gui/quick_terminal/items.png",
+    "destination": "src/main/resources/assets/gtneverreset/textures/gui/quick_terminal/items.png",
+    "sourceSha256": "e2df9de0213df1dbd5d29f039c284477961fc0d7159e47be5a17042475942467",
+    "modifiedPixels": false,
+    "license": "MIT"
+  },
+  {
+    "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+    "source": "src/main/resources/assets/gtnotgood/textures/gui/quick_terminal/encoding4.png",
+    "destination": "src/main/resources/assets/gtneverreset/textures/gui/quick_terminal/encoding4.png",
+    "sourceSha256": "67ff83caeabc80951d49ab3096dae9942ba19918e430dfc379333e55c7de0bef",
+    "modifiedPixels": false,
+    "license": "MIT"
+  },
+  {
+    "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+    "source": "src/main/resources/assets/gtnotgood/textures/gui/quick_terminal/encoding.png",
+    "destination": "src/main/resources/assets/gtneverreset/textures/gui/quick_terminal/encoding.png",
+    "sourceSha256": "d66cf70ed4a7b43a592afe71a1d1167674601f38306614bc336f7ab42c5c55ab",
+    "modifiedPixels": false,
+    "license": "MIT"
+  }
+]

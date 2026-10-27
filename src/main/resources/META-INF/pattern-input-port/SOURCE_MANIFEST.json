@@ -1,0 +1,225 @@
+{
+  "repository": "https://github.com/ikkkkkkkuuu/GT-Not-Good",
+  "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+  "hashBasis": "SHA-256 of exact source file bytes in the adjacent GT-Not-Good checkout at port time.",
+  "license": "MIT",
+  "upstreamLicenseNotice": "GregTech-derived portions retain LGPL-3.0-or-later rights. See NOTICE.md and included LGPL/GPL license texts.",
+  "files": [
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/SuperMTEHatchCraftingInputME.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/machine/hatch/SuperMTEHatchCraftingInputME.java",
+      "sourceSha256": "f38fef08846ef27e4b4fc6e5938fdf557a78910326a708f9bd0877e34c56f662",
+      "license": "MIT",
+      "adaptations": "540 pattern slots; responsibility package; GTNR names; standalone GUI and ME-output support; pending refunds retained on machine drops; wildcard support omitted."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/me/CircuitMEPatternBuffer.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/machine/hatch/CircuitMEPatternBuffer.java",
+      "sourceSha256": "922952193723958626c1765c30e3f62c40c54acb1c8f40479483080c6fffa302",
+      "license": "MIT",
+      "adaptations": "540 pattern slots; per-pattern virtual circuits/molds and long buffers retained; wildcard expansion omitted; mirror inventory notifications retained."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/SuperMTEHatchCraftingInputSlave.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/machine/hatch/SuperMTEHatchCraftingInputSlave.java",
+      "sourceSha256": "2f5337f11a4af7b9b112d590a9ef53c9bc66da821007f987b2e33f329aaf13f8",
+      "license": "MIT",
+      "adaptations": "Responsibility package and local hatch/output support; native proxy UI and data-stick binding retained."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/me/CircuitMEPatternMirror.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/machine/hatch/CircuitMEPatternMirror.java",
+      "sourceSha256": "32f2594b5f84fa5f2acd9c1a2aab22b2aa8ab3e279ec7468b3d220041fad7dfa",
+      "license": "MIT",
+      "adaptations": "Responsibility package and GTNR translation keys; restricted to circuit pattern buffer masters."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/gui/modularui/hatch/SuperMTEHatchCraftingInputMEGui.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/modularui/SuperMTEHatchCraftingInputMEGui.java",
+      "sourceSha256": "0be026363e4a142c94910baaf3023af5c9d6b0a26b06aff569225a272a28eb3a",
+      "license": "MIT",
+      "adaptations": "Responsibility package; 540-slot scroll layout; native GregTech textures; local ghost mold controls."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/gui/modularui/widget/GhostMoldItemStackHandler.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/modularui/SuperMTEHatchCraftingInputMEGui.java",
+      "sourceSha256": "78f4d9807ac853c2aac2399e59ce8cc90a01a63472d9ddfda1f4c3ba96bfd18f",
+      "license": "MIT",
+      "adaptations": "Responsibility package and local mold catalog integration."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/gui/modularui/widget/GhostMoldSlotWidget.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/modularui/SuperMTEHatchCraftingInputMEGui.java",
+      "sourceSha256": "0ce2ea7edb4b7ef73908c8ca193547cfa580c93dea1c051f03d53777a77613c0",
+      "license": "MIT",
+      "adaptations": "Responsibility package; local mold controls and translations."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/gui/modularui/widget/GhostMoldSyncHandler.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/modularui/SuperMTEHatchCraftingInputMEGui.java",
+      "sourceSha256": "b435e21912ab005da5b2dc6b4e2c7318e68c95157fb9b29c1078a143ab3f35d2",
+      "license": "MIT",
+      "adaptations": "Responsibility package and server-authoritative ghost selection synchronization."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/me/PatternMEOutput.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/PatternMEOutput.java",
+      "sourceSha256": "90067b99f5742438fba9a8237002ab0e3c7c5052db58fecd57a3b7c377296d1e",
+      "license": "MIT",
+      "adaptations": "ME item/fluid output support extracted into responsibility package; mirror masters use the same canonical output destination."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/me/PatternMEOutputViews.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/PatternMEOutputViews.java",
+      "sourceSha256": "2d0de1678d802ddb3e17bb0b92ff188cc0bdb7a1ea93883a658c864ff8ab9afc",
+      "license": "MIT",
+      "adaptations": "Output views moved into responsibility package and adapted to local master/mirror hatches."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/me/MaxCapacityMEOutputCapacity.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/MaxCapacityMEOutputCapacity.java",
+      "sourceSha256": "1e41ad41b597c7a24d08b481c43e7023e624a8a371447c5dc230e526c5260771",
+      "license": "MIT",
+      "adaptations": "Responsibility package and local logger; existing GregTech output provider integration retained."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/utils/machine/MoldDataManager.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/MoldDataManager.java",
+      "sourceSha256": "e1235563f6c5bbc35bc5af33d141af5a917ec4e0db8a4407398c2d811e084ebf",
+      "license": "MIT",
+      "adaptations": "Local package and shared mold catalog retained."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/me/LongCircuitBuffer.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/LongCircuitBuffer.java",
+      "sourceSha256": "a4626d390ae41f219359904c4b19a4f2ffb1b0c2bf9503ea68b1db65f42c6bb7",
+      "license": "MIT",
+      "adaptations": "Responsibility package; public cross-package access; 64 item/fluid types per channel and long quantity/refund arithmetic retained."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/me/CircuitPatternCodec.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/CircuitPatternCodec.java",
+      "sourceSha256": "5c53227a12b4bd0a5a0e5a218febbf14c767484f5c21be3f7f98af0bed6534ab",
+      "license": "MIT",
+      "adaptations": "Responsibility package; virtual circuit/mold runtime identities use local metadata keys; wildcard-only conversion omitted."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/compat/CircuitPatternMolds.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/CircuitPatternMolds.java",
+      "sourceSha256": "8508e64584483017b751438f0824f8f6da711dacc79d3c4d20724033d430c67a",
+      "license": "MIT",
+      "adaptations": "Recipe responsibility package; catalog-only mold lookup inlined; actual recipe consumption validation retained."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/compat/CircuitRecipeInputs.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/CircuitRecipeInputs.java",
+      "sourceSha256": "925a47b48579581ea37e0c875bce78b340431f24921383521f806b1e00e99d64",
+      "license": "MIT",
+      "adaptations": "Recipe responsibility package; deterministic input simulation and quantity validation retained."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/compat/CircuitPatternQuantities.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/CircuitPatternQuantities.java",
+      "sourceSha256": "c5182659ba9a0bd39435b23407f8b74f0933435a6b7525bf7226d7c9bc5becf1",
+      "license": "MIT",
+      "adaptations": "Recipe responsibility package; exact batch and output quantity arithmetic retained."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/compat/VirtualMachineMolds.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/recipes/CircuitPatternMolds.java",
+      "sourceSha256": "026e9e07ced391c743e5998be87363448bcf8fce149dc215d69d829ec2758489",
+      "license": "MIT",
+      "adaptations": "Only catalog index lookup and zero-size mold copying adapted; unrelated basic-machine mixin support excluded."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/me/ChatComponentInterfaceNameSuffix.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/ChatComponentInterfaceNameSuffix.java",
+      "sourceSha256": "8a86af9bd2551578bf6afcde37a1923feff6eef5a59889ad521b1c1c97ff4336",
+      "license": "MIT",
+      "adaptations": "Shared interface-name suffix serialization moved to machine support; local translation keys and class imports."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/MTEHatchCraftingInputMEMultiBlockNameMixin.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/gregtech/PatternAssemblyControllerNameMixin.java",
+      "sourceSha256": "52b249ed12a84066afb3508bfb4346672ee84cd3f19acfbd292bf8c44cc94fea",
+      "license": "MIT",
+      "adaptations": "Controller recipe-map naming and mode updates restricted to local pattern assemblies/mirrors; native GT hatch behavior untouched."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/PatternInputHatchElementMixin.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/gregtech/PatternInputHatchElementMixin.java",
+      "sourceSha256": "8a77b1fac27808825a53e06a3e4c59e1a5485de76696b7afd46407a57ff0afeb",
+      "license": "MIT",
+      "adaptations": "GregTech responsibility package; structure hatch acceptance limited to local pattern assembly family."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/appliedenergistics/PatternMEOutputMultiblockMixin.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/gregtech/PatternMEOutputMultiblockMixin.java",
+      "sourceSha256": "817b3a0b6dd81fbef00772c53400f76def319bd4804261ceb6eea9d29e4724df",
+      "license": "MIT",
+      "adaptations": "GregTech responsibility package; output roles and deduplicated canonical destinations adapted to local pattern assembly family."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/common/recipe/machine/SuperCraftingInputRecipes.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/gregtech/PatternInputRecipes.java",
+      "sourceSha256": "cc6a9f0aacd5a307110f0de318fa6826269daa8afb217a732470ed08789934b4",
+      "license": "MIT",
+      "adaptations": "Only requested pattern assemblies and mirrors registered; unrelated hatches, buses and compact variant recipes omitted."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/loader/MachineLoader.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/loader/MachineLoader.java",
+      "sourceSha256": "bdee222af707dc5789ba5fda552e598698522b0d57e5cd10b3dced53225c7064",
+      "license": "MIT",
+      "adaptations": "Selected assembly/mirror registration pattern adapted to GTNR enums, names and localized animated item credits."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/utils/enums/GTNGItemList.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/enums/GTNRItemList.java",
+      "sourceSha256": "65a5bbadd9c0ef8035f73e16465ca75cadce91532d24a54926eeaaecf285e0ef",
+      "license": "MIT",
+      "adaptations": "Selected item-container behavior and pattern assembly/mirror entries adapted to the local registry."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/utils/enums/GTNGMachineID.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/enums/GTNRMachineID.java",
+      "sourceSha256": "4ea019714a2471482e1a007be9013b6f193d7c622481f6b144bcb0718b5faaa9",
+      "license": "MIT",
+      "adaptations": "Machine ID enum organization adapted to the local allocation; source machine IDs not reused."
+    },
+    {
+      "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+      "source": "src/main/java/com/xyp/gtnotgood/utils/text/AnimatedText.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/text/AnimatedText.java",
+      "sourceSha256": "f10198967b8bcaff1f990ddac20503c1a66a8034ed61474e6c6a46a2db42394d",
+      "license": "MIT",
+      "adaptations": "Reference for localized Added by supplier; new minimal seven-color animation calls installed GTNHLib AnimatedTooltipHandler instead of copying the source effects framework."
+    }
+  ]
+}

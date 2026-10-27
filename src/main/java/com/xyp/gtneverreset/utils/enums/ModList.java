@@ -1,0 +1,162 @@
+package com.xyp.gtneverreset.utils.enums;
+
+import java.util.Locale;
+
+import net.minecraft.util.ResourceLocation;
+
+import cpw.mods.fml.common.Loader;
+import lombok.Getter;
+
+public enum ModList {
+
+    GTNeverReset(ModIds.GT_NEVER_RESET, Names.GT_NEVER_RESET),
+    GTNHLib(ModIds.GTNH_LIB, Names.GTNH_LIB),
+    Roguelike("Roguelike", "Roguelike Dungeons"),
+    LootGames("lootgames", "LootGames"),
+
+    GTNotLeisure(ModIds.GT_NOT_LEISURE, Names.GT_NOT_LEISURE),
+    TwistSpaceTechnology(ModIds.TWIST_SPACE_TECHNOLOGY, Names.TWIST_SPACE_TECHNOLOGY),
+    GTNotGood(ModIds.GT_NOT_GOOD, Names.GT_NOT_GOOD),
+    Angelica(ModIds.ANGELICA, Names.ANGELICA),
+    JourneyMap(ModIds.JOURNEY_MAP, Names.JOURNEY_MAP),
+    NotEnoughItems(ModIds.NOT_ENOUGH_ITEMS, Names.NOT_ENOUGH_ITEMS),
+    AE2(ModIds.APPLIED_ENERGISTICS_2, Names.APPLIED_ENERGISTICS_2),
+    AE2FluidCraft(ModIds.AE2_FLUID_CRAFT, Names.AE2_FLUID_CRAFT),
+    CropsNH(ModIds.CROPSNH, Names.CROPSNH),
+    DraconicEvolution(ModIds.DRACONIC_EVOLUTION, Names.DRACONIC_EVOLUTION),
+    SpiceOfLife(ModIds.SPICE_OF_LIFE, Names.SPICE_OF_LIFE),
+    Forestry(ModIds.FORESTRY, Names.FORESTRY),
+    MagicBees(ModIds.MAGIC_BEES, Names.MAGIC_BEES),
+    ExtraBees(ModIds.EXTRA_BEES, Names.EXTRA_BEES),
+    Railcraft(ModIds.RAILCRAFT, Names.RAILCRAFT),
+    GregTech(ModIds.GREGTECH, Names.GREGTECH),
+    ModularUI2(ModIds.MODULAR_UI_2, Names.MODULAR_UI_2),
+    StructureLib(ModIds.STRUCTURE_LIB, Names.STRUCTURE_LIB),
+    KubaTech(ModIds.KUBATECH, Names.KUBATECH),
+    Thaumcraft(ModIds.THAUMCRAFT, Names.THAUMCRAFT),
+    ThaumcraftResearchTweaks(ModIds.THAUMCRAFT_RESEARCH_TWEAKS, Names.THAUMCRAFT_RESEARCH_TWEAKS),
+    Baubles(ModIds.BAUBLES, Names.BAUBLES),
+    BloodMagic(ModIds.BLOOD_MAGIC, Names.BLOOD_MAGIC),
+    ThaumicEnergistics(ModIds.THAUMIC_ENERGISTICS, Names.THAUMIC_ENERGISTICS),
+    EnderIO(ModIds.ENDER_IO, Names.ENDER_IO),
+    BetterQuestingAPI(ModIds.BETTER_QUESTING_API, Names.BETTER_QUESTING_API),
+    WarpTheory(ModIds.WARP_THEORY, Names.WARP_THEORY),
+    MatterManipulator(ModIds.MATTER_MANIPULATOR, Names.MATTER_MANIPULATOR);
+
+    public static class ModIds {
+
+        public static final String GT_NEVER_RESET = "gtneverreset";
+        public static final String GTNH_LIB = "gtnhlib";
+        public static final String GT_NOT_LEISURE = "sciencenotleisure";
+        public static final String TWIST_SPACE_TECHNOLOGY = "TwistSpaceTechnology";
+        public static final String GT_NOT_GOOD = "gtnotgood";
+        public static final String ANGELICA = "angelica";
+        public static final String JOURNEY_MAP = "journeymap";
+        public static final String NOT_ENOUGH_ITEMS = "NotEnoughItems";
+        public static final String BETTER_QUESTING_API = "bqapi";
+        public static final String APPLIED_ENERGISTICS_2 = "appliedenergistics2";
+        public static final String AE2_FLUID_CRAFT = "ae2fc";
+        public static final String CROPSNH = "cropsnh";
+        public static final String DRACONIC_EVOLUTION = "DraconicEvolution";
+        public static final String SPICE_OF_LIFE = "SpiceOfLife";
+        public static final String FORESTRY = "Forestry";
+        public static final String MAGIC_BEES = "MagicBees";
+        public static final String EXTRA_BEES = "ExtraBees";
+        public static final String RAILCRAFT = "Railcraft";
+        public static final String GREGTECH = "gregtech";
+        public static final String MODULAR_UI_2 = "modularui2";
+        public static final String STRUCTURE_LIB = "structurelib";
+        public static final String KUBATECH = "kubatech";
+        public static final String THAUMCRAFT = "Thaumcraft";
+        public static final String THAUMCRAFT_RESEARCH_TWEAKS = "ThaumcraftResearchTweaks";
+        public static final String BAUBLES = "Baubles";
+        public static final String BLOOD_MAGIC = "AWWayofTime";
+        public static final String THAUMIC_ENERGISTICS = "thaumicenergistics";
+        public static final String WARP_THEORY = "WarpTheory";
+        public static final String ENDER_IO = "EnderIO";
+        public static final String MATTER_MANIPULATOR = "matter-manipulator";
+
+        private ModIds() {}
+    }
+
+    public static class Names {
+
+        public static final String GT_NEVER_RESET = "GT-Never-Reset";
+        public static final String GTNH_LIB = "GTNHLib";
+        public static final String GT_NOT_LEISURE = "GT Not Leisure";
+        public static final String TWIST_SPACE_TECHNOLOGY = "Twist Space Technology";
+        public static final String GT_NOT_GOOD = "GT-Not-Good";
+        public static final String ANGELICA = "Angelica";
+        public static final String JOURNEY_MAP = "JourneyMap";
+        public static final String NOT_ENOUGH_ITEMS = "Not Enough Items";
+        public static final String BETTER_QUESTING_API = "Better Questing API";
+        public static final String APPLIED_ENERGISTICS_2 = "Applied Energistics 2";
+        public static final String AE2_FLUID_CRAFT = "AE2 Fluid Crafting";
+        public static final String CROPSNH = "CropsNH";
+        public static final String DRACONIC_EVOLUTION = "Draconic Evolution";
+        public static final String SPICE_OF_LIFE = "Spice of Life";
+        public static final String FORESTRY = "Forestry";
+        public static final String MAGIC_BEES = "Magic Bees";
+        public static final String EXTRA_BEES = "Extra Bees";
+        public static final String RAILCRAFT = "Railcraft";
+        public static final String GREGTECH = "GregTech";
+        public static final String MODULAR_UI_2 = "Modular UI 2";
+        public static final String STRUCTURE_LIB = "StructureLib";
+        public static final String KUBATECH = "KubaTech";
+        public static final String THAUMCRAFT = "Thaumcraft";
+        public static final String THAUMCRAFT_RESEARCH_TWEAKS = "Thaumcraft Research Tweaks";
+        public static final String BAUBLES = "Baubles";
+        public static final String BLOOD_MAGIC = "Blood Magic";
+        public static final String THAUMIC_ENERGISTICS = "Thaumic Energistics";
+        public static final String WARP_THEORY = "WarpTheory";
+        public static final String ENDER_IO = "Ender IO";
+        public static final String MATTER_MANIPULATOR = "Matter Manipulator";
+
+        private Names() {}
+    }
+
+    private final String id;
+    private final String resourceDomain;
+    @Getter
+    private final String displayName;
+    private Boolean modLoaded;
+
+    ModList(String id, String displayName) {
+        this.id = id;
+        this.resourceDomain = id.toLowerCase(Locale.ENGLISH);
+        this.displayName = displayName;
+    }
+
+    public String getID() {
+        return id;
+    }
+
+    public boolean isModLoaded() {
+        if (this.modLoaded == null) {
+            this.modLoaded = Loader.isModLoaded(id);
+        }
+        return this.modLoaded;
+    }
+
+    public String getResourceLocation() {
+        return resourceDomain;
+    }
+
+    public String getResourcePath(String path) {
+        return this.getResourceLocation(path)
+            .toString();
+    }
+
+    public String getResourcePath(String... path) {
+        return this.getResourceLocation(path)
+            .toString();
+    }
+
+    public ResourceLocation getResourceLocation(String path) {
+        return new ResourceLocation(this.resourceDomain, path);
+    }
+
+    public ResourceLocation getResourceLocation(String... path) {
+        return new ResourceLocation(this.resourceDomain, String.join("/", path));
+    }
+}

@@ -1,0 +1,32 @@
+package com.xyp.gtneverreset.mixins.late.appliedenergistics2;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.ResourceLocation;
+
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+
+import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
+import com.xyp.gtneverreset.client.gui.QuickTerminalButtonTextures;
+
+import appeng.client.gui.widgets.GuiTabButton;
+
+@Mixin(value = GuiTabButton.class, remap = false)
+public abstract class QuickTerminalTabButtonTextureMixin {
+
+    @ModifyArg(
+        method = "drawButton",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/texture/TextureManager;bindTexture(Lnet/minecraft/util/ResourceLocation;)V",
+            remap = true),
+        index = 0,
+        remap = true,
+        require = 1)
+    private ResourceLocation gtneverreset$useModernTabButton(ResourceLocation original) {
+        return Minecraft.getMinecraft().currentScreen instanceof GuiQuickEncodingTerminal
+            ? QuickTerminalButtonTextures.states()
+            : original;
+    }
+}

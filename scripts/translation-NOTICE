@@ -1,0 +1,12 @@
+Translation generation and format validation were ported from GT-Not-Good.
+Source revision: 048fd1963de8c6458ef6f800c411be0087cbafdb
+Source paths: addon.gradle (translation generation), scripts/translation-format.gradle
+License: MIT (included in translation-LICENSE beside this notice).
+
+Original source SHA-256:
+addon.gradle: 6653b18dd01112124d6e33a24391f71a57c0e5e2f6ae10bc4cdee888a2ff6703
+scripts/translation-format.gradle: e299f16f498736c435a2f425c607e61aadc4c64bafb4073a02d974d89f76b183
+
+Adaptations: retained only the translation build logic; use task inputs at execution
+for configuration-cache compatibility; sort source files and reset pending keys per
+file; preserve empty color replacements and translations; write generated files with LF.

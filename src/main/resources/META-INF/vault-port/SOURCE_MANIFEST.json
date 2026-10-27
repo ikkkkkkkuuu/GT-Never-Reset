@@ -1,0 +1,457 @@
+{
+  "source_project": "GT-Not-Good",
+  "revision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+  "source_has_local_changes": true,
+  "sources": [
+    {
+      "path": "src/main/java/com/xyp/gtnotgood/common/machines/multiblock/SingularityDataHub.java",
+      "sha256": "2a4087c1af99fd3d4fb656e421c7c9ff96f8192192410599873f0063f59a151d"
+    },
+    {
+      "path": "src/main/java/com/xyp/gtnotgood/common/machines/hatch/VaultPortHatch.java",
+      "sha256": "7cb9939b33a35575fd7c9af260c9b0e8ba454515ce2688d3b84b9997ebdb9f91"
+    },
+    {
+      "path": "src/main/java/com/xyp/gtnotgood/common/api/IItemVault.java",
+      "sha256": "9c1174aa1fa80dced4f84a03737c5ec51e6d9a8a0153dbea458526939c6a75c5"
+    },
+    {
+      "path": "src/main/java/com/xyp/gtnotgood/common/machines/storage/VaultStorageUsage.java",
+      "sha256": "4920d646a3a81e265e92a3ccf0bac20c0c0a8863ee0df8287e32e1891516db80"
+    },
+    {
+      "path": "src/main/java/com/xyp/gtnotgood/common/machines/storage/VaultStackSnapshots.java",
+      "sha256": "a8339f4b8eac9ae6481c976c8a22c9ac8395e4ba84f3db6ebb44e0b3b1534721"
+    },
+    {
+      "path": "src/main/java/com/xyp/gtnotgood/common/gui/modularui/multiblock/SingularityDataHubGui.java",
+      "sha256": "5dc844c0fb63b4b5e6b9264977bd671e8845668077373e6b1d9d8fbb4e758e32"
+    },
+    {
+      "path": "src/main/java/com/xyp/gtnotgood/common/recipe/machine/SingularityDataHubRecipes.java",
+      "sha256": "1b9d4fd5e52ca9c0b00aced7c732c71fd9e36e62381f5aaa0e3cb7d88224c1a8"
+    },
+    {
+      "path": "src/main/java/com/xyp/gtnotgood/common/blocks/stellar/StellarConnections.java",
+      "sha256": "fff283c875c8f65159bee7a3410ddad9e25bbfcc15ca4ccc926d255eb7af751a"
+    },
+    {
+      "path": "src/main/java/com/xyp/gtnotgood/client/stellar/StellarConnectedIcons.java",
+      "sha256": "8a29c61c7457c878d6032413152ecec422ca9a016d7ce4e1244c221a5e64b0a8"
+    },
+    {
+      "path": "src/main/java/com/xyp/gtnotgood/client/stellar/StellarConnectedTexture.java",
+      "sha256": "f027b176b2da47b905b27967f6ed62f2b5b1265a94bc59c456d10da8f2c10c35"
+    },
+    {
+      "path": "src/main/resources/assets/gtnotgood/multiblock/singularity_data_hub.mbs",
+      "sha256": "a8337248f2c88557a069a46e5a3e7375b9c560df437abe98fc5cef49dddc3f6c"
+    },
+    {
+      "path": "src/main/resources/assets/gtnotgood/lang/zh_CN/tooltip/singularity-data-hub.md",
+      "sha256": "3785f2c87d621836dc9e475731db3e193386e33bd2bd97fd3a7fbccf731e90f8"
+    },
+    {
+      "path": "src/main/resources/assets/gtnotgood/lang/en_US/tooltip/singularity-data-hub.md",
+      "sha256": "5222aed352cd16f3828e48becf2c2e7bb33d40645d8b71f89a3997f3d09a90fc"
+    }
+  ],
+  "assets": [
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/sl_eddington.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/sl_eddington.png",
+      "source_sha256": "c8cbabd539a7753aec8e98da5071e57975e43ea5df063751eaa683352d60cde0",
+      "destination_sha256": "c8cbabd539a7753aec8e98da5071e57975e43ea5df063751eaa683352d60cde0"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_0.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_0.png",
+      "source_sha256": "c8cbabd539a7753aec8e98da5071e57975e43ea5df063751eaa683352d60cde0",
+      "destination_sha256": "c8cbabd539a7753aec8e98da5071e57975e43ea5df063751eaa683352d60cde0"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_1.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_1.png",
+      "source_sha256": "e0522b3f7ee47d0d8843fb4c168592d17a8ec27b84bfcae5efa39dc4340b892f",
+      "destination_sha256": "e0522b3f7ee47d0d8843fb4c168592d17a8ec27b84bfcae5efa39dc4340b892f"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_10.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_10.png",
+      "source_sha256": "bd941a6d5bbd259f13d5d89a0fce1a7ad224df43b8a161660883ae4cf5778b19",
+      "destination_sha256": "bd941a6d5bbd259f13d5d89a0fce1a7ad224df43b8a161660883ae4cf5778b19"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_11.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_11.png",
+      "source_sha256": "15c39a61a41c9782fd09afe0aceb615865f872b338ec5792c2347ed6480d9126",
+      "destination_sha256": "15c39a61a41c9782fd09afe0aceb615865f872b338ec5792c2347ed6480d9126"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_111.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_111.png",
+      "source_sha256": "c9a839910e974044a303484e166e6fd10b490ff6e92548d4cf5334ce9cc0586a",
+      "destination_sha256": "c9a839910e974044a303484e166e6fd10b490ff6e92548d4cf5334ce9cc0586a"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_12.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_12.png",
+      "source_sha256": "e6dae2c0eacaeff4d73e3983769d43aaa1aa1bb99f9c2adbcfb780319f66190d",
+      "destination_sha256": "e6dae2c0eacaeff4d73e3983769d43aaa1aa1bb99f9c2adbcfb780319f66190d"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_127.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_127.png",
+      "source_sha256": "a0991aaf4af603df54bd9c0949cec1a819000386420eed1d699a3f061846c13f",
+      "destination_sha256": "a0991aaf4af603df54bd9c0949cec1a819000386420eed1d699a3f061846c13f"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_13.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_13.png",
+      "source_sha256": "84fbec81df92da4c27efd1bfdcc61d1202e2e4f027c4262eda27f81ae2896b33",
+      "destination_sha256": "84fbec81df92da4c27efd1bfdcc61d1202e2e4f027c4262eda27f81ae2896b33"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_138.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_138.png",
+      "source_sha256": "442658574d2d6f6c6cddb0758d2c146248c26fa375d4fcb104f74dc52932b70b",
+      "destination_sha256": "442658574d2d6f6c6cddb0758d2c146248c26fa375d4fcb104f74dc52932b70b"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_139.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_139.png",
+      "source_sha256": "9d2b63153638a82a7bf17e1469ddd6e94d365a4397a5d38c8f5e8ec6a5b01053",
+      "destination_sha256": "9d2b63153638a82a7bf17e1469ddd6e94d365a4397a5d38c8f5e8ec6a5b01053"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_14.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_14.png",
+      "source_sha256": "c0a6d8b80d2721e0cdae929075aa76110c2ed7195faae4132b23b3a1e27b06a2",
+      "destination_sha256": "c0a6d8b80d2721e0cdae929075aa76110c2ed7195faae4132b23b3a1e27b06a2"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_142.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_142.png",
+      "source_sha256": "06b15dfc1279f186bfcbb4a825fefbf39f4b334e1a198e7c9589d78530898cb7",
+      "destination_sha256": "06b15dfc1279f186bfcbb4a825fefbf39f4b334e1a198e7c9589d78530898cb7"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_143.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_143.png",
+      "source_sha256": "eb79e9646cc21b8cb6e8acdcc2bd924838447ec44e06e7b77b22d54a0fe6710f",
+      "destination_sha256": "eb79e9646cc21b8cb6e8acdcc2bd924838447ec44e06e7b77b22d54a0fe6710f"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_15.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_15.png",
+      "source_sha256": "0415694e3c1ae09d70efe2b671c7f058631cb27647dd31332d5fcc91b5d40a98",
+      "destination_sha256": "0415694e3c1ae09d70efe2b671c7f058631cb27647dd31332d5fcc91b5d40a98"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_159.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_159.png",
+      "source_sha256": "06d5f836682452385e7e675089552a946b0dcbb0b384c6126bf60027cda1a3d0",
+      "destination_sha256": "06d5f836682452385e7e675089552a946b0dcbb0b384c6126bf60027cda1a3d0"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_174.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_174.png",
+      "source_sha256": "b58a54c0d7feac401a8a705351c3d32eab51b90b15c3b6b4943a6f0c17428fea",
+      "destination_sha256": "b58a54c0d7feac401a8a705351c3d32eab51b90b15c3b6b4943a6f0c17428fea"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_175.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_175.png",
+      "source_sha256": "2cf9142291c3745660dd7bfe5b0844d6f4f6537f46955b6a46e53a7a1379c790",
+      "destination_sha256": "2cf9142291c3745660dd7bfe5b0844d6f4f6537f46955b6a46e53a7a1379c790"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_191.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_191.png",
+      "source_sha256": "1a9c37d0695838b6fe8aa954dc069fd449da4af54667adf8c572772ad40c92f9",
+      "destination_sha256": "1a9c37d0695838b6fe8aa954dc069fd449da4af54667adf8c572772ad40c92f9"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_2.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_2.png",
+      "source_sha256": "10b0a85b847dc50eb2621472e30b9cee58c5298482bc7ca1128afdafd4ab61a5",
+      "destination_sha256": "10b0a85b847dc50eb2621472e30b9cee58c5298482bc7ca1128afdafd4ab61a5"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_203.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_203.png",
+      "source_sha256": "10cbc6a2565abae1cac594538ac27edb6ea64c3e5803121e5a9ca4bf1bbb3184",
+      "destination_sha256": "10cbc6a2565abae1cac594538ac27edb6ea64c3e5803121e5a9ca4bf1bbb3184"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_207.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_207.png",
+      "source_sha256": "ea9d8d11fa2a92d48d5e977e8c9b31616f519dd89ca5bfabc71e8defafc3973d",
+      "destination_sha256": "ea9d8d11fa2a92d48d5e977e8c9b31616f519dd89ca5bfabc71e8defafc3973d"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_21.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_21.png",
+      "source_sha256": "45c589ecca4d814aad614f0442dedcef07f57f4336a934741132390670d51833",
+      "destination_sha256": "45c589ecca4d814aad614f0442dedcef07f57f4336a934741132390670d51833"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_223.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_223.png",
+      "source_sha256": "a703bc9bda888585c7ac0466076eb9368b0870f90c8d07612bb7f79d06e1953e",
+      "destination_sha256": "a703bc9bda888585c7ac0466076eb9368b0870f90c8d07612bb7f79d06e1953e"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_23.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_23.png",
+      "source_sha256": "10729b548ed64444dc2e2ce65617c570fd879da0fa004637cabc918c60e0aabc",
+      "destination_sha256": "10729b548ed64444dc2e2ce65617c570fd879da0fa004637cabc918c60e0aabc"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_239.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_239.png",
+      "source_sha256": "4d4f4ccc1b6132fdb2a04b69b4c6c772d8925eb228256294728640d71ab2bec3",
+      "destination_sha256": "4d4f4ccc1b6132fdb2a04b69b4c6c772d8925eb228256294728640d71ab2bec3"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_255.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_255.png",
+      "source_sha256": "9e2d76bec181a91de70368968a66ba63b505c5322fa70fcc8df5266e15ae36a4",
+      "destination_sha256": "9e2d76bec181a91de70368968a66ba63b505c5322fa70fcc8df5266e15ae36a4"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_29.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_29.png",
+      "source_sha256": "a56708e7ed9cbe08e685c52cd90fed2f337774e3256a43af155d517172d115e9",
+      "destination_sha256": "a56708e7ed9cbe08e685c52cd90fed2f337774e3256a43af155d517172d115e9"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_3.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_3.png",
+      "source_sha256": "fdec2ebe1dc5161dba1576277db1cc73387c3c130e284ee3f31bb0b915cd55a2",
+      "destination_sha256": "fdec2ebe1dc5161dba1576277db1cc73387c3c130e284ee3f31bb0b915cd55a2"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_31.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_31.png",
+      "source_sha256": "507fe17cefecdbc2be78b85c9449a2e7b01e9acf722012a11848677c0ce326e7",
+      "destination_sha256": "507fe17cefecdbc2be78b85c9449a2e7b01e9acf722012a11848677c0ce326e7"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_38.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_38.png",
+      "source_sha256": "d8854a1887a13062120b376a335323c4c0bb11a49fec07430dc857465092e835",
+      "destination_sha256": "d8854a1887a13062120b376a335323c4c0bb11a49fec07430dc857465092e835"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_39.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_39.png",
+      "source_sha256": "432e29aac77ea022eb62544994ca5c74af1f248972b7c8027990220bb647fc63",
+      "destination_sha256": "432e29aac77ea022eb62544994ca5c74af1f248972b7c8027990220bb647fc63"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_4.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_4.png",
+      "source_sha256": "343bf5d8f1026816804a33c3bf3792b56c3d7a2af45677e3fd2bc314661b2e4f",
+      "destination_sha256": "343bf5d8f1026816804a33c3bf3792b56c3d7a2af45677e3fd2bc314661b2e4f"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_46.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_46.png",
+      "source_sha256": "b1b3ef960197db93ac23512cbbce138e66b6c0885f4a223ff73ee413d74cc0a2",
+      "destination_sha256": "b1b3ef960197db93ac23512cbbce138e66b6c0885f4a223ff73ee413d74cc0a2"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_47.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_47.png",
+      "source_sha256": "c793b4a5d7a26b9dcf420c4f575c2cf7ccd88fd8465ee1405568e88810a9b699",
+      "destination_sha256": "c793b4a5d7a26b9dcf420c4f575c2cf7ccd88fd8465ee1405568e88810a9b699"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_5.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_5.png",
+      "source_sha256": "ffda672d0fd4e4b6800586cfbfdbda2edf9c104d2ee94066cfe1a88a2d512ca6",
+      "destination_sha256": "ffda672d0fd4e4b6800586cfbfdbda2edf9c104d2ee94066cfe1a88a2d512ca6"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_55.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_55.png",
+      "source_sha256": "5fddc490bf44366b0b666a35cfed17bec7badeaec072b9e7249f791b20308e4b",
+      "destination_sha256": "5fddc490bf44366b0b666a35cfed17bec7badeaec072b9e7249f791b20308e4b"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_6.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_6.png",
+      "source_sha256": "3023d7b3db17f3469d8afd74143c544a378dc71d23db6067f77edcd2bb9ca193",
+      "destination_sha256": "3023d7b3db17f3469d8afd74143c544a378dc71d23db6067f77edcd2bb9ca193"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_63.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_63.png",
+      "source_sha256": "4ce1b82a2a6c0d6e6043bd335aa2aa5db365d2d50570eaec02c6a57e65b51a42",
+      "destination_sha256": "4ce1b82a2a6c0d6e6043bd335aa2aa5db365d2d50570eaec02c6a57e65b51a42"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_7.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_7.png",
+      "source_sha256": "ad7fc1823afbe536e7fbf116da78c7907aaaca0a178d7b6353cbef72dd0ca39c",
+      "destination_sha256": "ad7fc1823afbe536e7fbf116da78c7907aaaca0a178d7b6353cbef72dd0ca39c"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_73.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_73.png",
+      "source_sha256": "8515d417c105393f26418ff0b15097f7e29931def2ff5fc60066f340254905bb",
+      "destination_sha256": "8515d417c105393f26418ff0b15097f7e29931def2ff5fc60066f340254905bb"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_75.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_75.png",
+      "source_sha256": "a0a76978368dccbbe8f32e600d338e2697f9fd6403f229d49a9dacf6d1135fde",
+      "destination_sha256": "a0a76978368dccbbe8f32e600d338e2697f9fd6403f229d49a9dacf6d1135fde"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_77.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_77.png",
+      "source_sha256": "121ea64ed5e5dd87ea6f043703ad446ac5d927d6b3d7a692e2a8269a67969d62",
+      "destination_sha256": "121ea64ed5e5dd87ea6f043703ad446ac5d927d6b3d7a692e2a8269a67969d62"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_79.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_79.png",
+      "source_sha256": "8b7b8683959b89f22841fac0bb3c300589bde7f518f7103e5d0f4ecf9aded7e9",
+      "destination_sha256": "8b7b8683959b89f22841fac0bb3c300589bde7f518f7103e5d0f4ecf9aded7e9"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_8.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_8.png",
+      "source_sha256": "6858a388d56145e55849fd16d7c108ce096c87f5bb3ab064bc9533f3ba35cbe8",
+      "destination_sha256": "6858a388d56145e55849fd16d7c108ce096c87f5bb3ab064bc9533f3ba35cbe8"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_9.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_9.png",
+      "source_sha256": "0bb6417b442ed20df21f67aa31c7b18f3939b56ec40153e3920cd6e52b31e76c",
+      "destination_sha256": "0bb6417b442ed20df21f67aa31c7b18f3939b56ec40153e3920cd6e52b31e76c"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_93.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_93.png",
+      "source_sha256": "403be1bf0efb46b6cdda6acc1e04ffa3de7d9ca538a0c9c0bf5284e801d6eac2",
+      "destination_sha256": "403be1bf0efb46b6cdda6acc1e04ffa3de7d9ca538a0c9c0bf5284e801d6eac2"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/ctm/eddington_95.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/ctm/eddington_95.png",
+      "source_sha256": "0dbf32321ecee230a5aa851ca68ff3815b43510d64c6bb140a9aa1aa040fe857",
+      "destination_sha256": "0dbf32321ecee230a5aa851ca68ff3815b43510d64c6bb140a9aa1aa040fe857"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_ACTIVE_GLOW.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_ACTIVE_GLOW.png",
+      "source_sha256": "83d4237cfa713f876c2d0c38caee0f973f9bd87c5707ed37ba1461949d400886",
+      "destination_sha256": "83d4237cfa713f876c2d0c38caee0f973f9bd87c5707ed37ba1461949d400886"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_ACTIVE_GLOW.png.mcmeta",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_ACTIVE_GLOW.png.mcmeta",
+      "source_sha256": "af915735740bd046c85e66fc03c47bb31517ef64f1721726151ea5de8cf121e3",
+      "destination_sha256": "af915735740bd046c85e66fc03c47bb31517ef64f1721726151ea5de8cf121e3"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_ACTIVE.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_ACTIVE.png",
+      "source_sha256": "cfb0a9517c7921689b9b285c12af77010347ce2a3688b5bcdb503f5ada9a9f84",
+      "destination_sha256": "cfb0a9517c7921689b9b285c12af77010347ce2a3688b5bcdb503f5ada9a9f84"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_ACTIVE.png.mcmeta",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_ACTIVE.png.mcmeta",
+      "source_sha256": "af915735740bd046c85e66fc03c47bb31517ef64f1721726151ea5de8cf121e3",
+      "destination_sha256": "af915735740bd046c85e66fc03c47bb31517ef64f1721726151ea5de8cf121e3"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_GLOW.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_GLOW.png",
+      "source_sha256": "ecd23cd9273a1cd0b853b466e890a5e03e6e7ed002169a70646096b99eb9ee6b",
+      "destination_sha256": "ecd23cd9273a1cd0b853b466e890a5e03e6e7ed002169a70646096b99eb9ee6b"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR.png",
+      "destination": "assets/gtneverreset/textures/blocks/stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR.png",
+      "source_sha256": "96886e778465fd8d9dd0675b532b0c7c9a3261d70c14b97e1bd412bed5776b86",
+      "destination_sha256": "96886e778465fd8d9dd0675b532b0c7c9a3261d70c14b97e1bd412bed5776b86"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/modernity/button_disabled.png",
+      "destination": "assets/gtneverreset/textures/gui/modernity/button_disabled.png",
+      "source_sha256": "c4bcfdb6f2de7bc7b4641a1196f024b5e1e20b3c36b258cad9f5ffc6612bfc2e",
+      "destination_sha256": "c4bcfdb6f2de7bc7b4641a1196f024b5e1e20b3c36b258cad9f5ffc6612bfc2e"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/modernity/button_hover.png",
+      "destination": "assets/gtneverreset/textures/gui/modernity/button_hover.png",
+      "source_sha256": "9fdad0d5120fb5aafcc342904cd4b9ecfc5a4aa284688c885412a748269a4564",
+      "destination_sha256": "9fdad0d5120fb5aafcc342904cd4b9ecfc5a4aa284688c885412a748269a4564"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/modernity/button_pressed.png",
+      "destination": "assets/gtneverreset/textures/gui/modernity/button_pressed.png",
+      "source_sha256": "b9b5c3742d1aac6250630fd593bd9fac3e8edf12696fd53b3c42a317be16944c",
+      "destination_sha256": "b9b5c3742d1aac6250630fd593bd9fac3e8edf12696fd53b3c42a317be16944c"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/modernity/button.png",
+      "destination": "assets/gtneverreset/textures/gui/modernity/button.png",
+      "source_sha256": "b396c2c0f50a640e2bf356ec08193e76463399a8dc341756586ca340103d322c",
+      "destination_sha256": "b396c2c0f50a640e2bf356ec08193e76463399a8dc341756586ca340103d322c"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/modernity/vault_background.png",
+      "destination": "assets/gtneverreset/textures/gui/modernity/vault_background.png",
+      "source_sha256": "9a790986ddb2fbc4df39f3194ffe71d038c23f142487c2352fb0f7f256895f66",
+      "destination_sha256": "9a790986ddb2fbc4df39f3194ffe71d038c23f142487c2352fb0f7f256895f66"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/modernity/vault_item_slot.png",
+      "destination": "assets/gtneverreset/textures/gui/modernity/vault_item_slot.png",
+      "source_sha256": "f336ad77d76fd5c693bc09a9833baca2719069657bb7da349b1d06b854e7ad87",
+      "destination_sha256": "f336ad77d76fd5c693bc09a9833baca2719069657bb7da349b1d06b854e7ad87"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/modernity/vault_panel_border.png",
+      "destination": "assets/gtneverreset/textures/gui/modernity/vault_panel_border.png",
+      "source_sha256": "1a4f867fb4a3662a2cbbae1efb08960b8f83aac450158a541d16f662f292168e",
+      "destination_sha256": "1a4f867fb4a3662a2cbbae1efb08960b8f83aac450158a541d16f662f292168e"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/overlay_button/power_switch_disabled.png",
+      "destination": "assets/gtneverreset/textures/gui/overlay_button/power_switch_disabled.png",
+      "source_sha256": "659499365fb96336c072387a7e2dd25ee1eacc3b50c1a8878e73e94f69ad2abe",
+      "destination_sha256": "659499365fb96336c072387a7e2dd25ee1eacc3b50c1a8878e73e94f69ad2abe"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/overlay_button/power_switch_on.png",
+      "destination": "assets/gtneverreset/textures/gui/overlay_button/power_switch_on.png",
+      "source_sha256": "c3d95099c9924ccd5582a46f5fcdfed08c2f3c55d3a65a3a8515e546f8fe7a46",
+      "destination_sha256": "c3d95099c9924ccd5582a46f5fcdfed08c2f3c55d3a65a3a8515e546f8fe7a46"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/overlay_button/structure_check_off.png",
+      "destination": "assets/gtneverreset/textures/gui/overlay_button/structure_check_off.png",
+      "source_sha256": "73f6e9ad1309167d404242bef6e31a167b0cf074093d9f79ad24377c089fb181",
+      "destination_sha256": "73f6e9ad1309167d404242bef6e31a167b0cf074093d9f79ad24377c089fb181"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/gui/overlay_button/structure_check_on.png",
+      "destination": "assets/gtneverreset/textures/gui/overlay_button/structure_check_on.png",
+      "source_sha256": "97d043f0b9f9ca7758fbc43f3db3f70a8170c34c1490a1bcd145311235423736",
+      "destination_sha256": "97d043f0b9f9ca7758fbc43f3db3f70a8170c34c1490a1bcd145311235423736"
+    },
+    {
+      "source": "src/main/resources/assets/gtnotgood/textures/blocks/iconsets/OVERLAY_FRONT_ITEMVAULTPORTHATCH.png",
+      "destination": "assets/gtneverreset/textures/blocks/iconsets/OVERLAY_FRONT_ITEMVAULTPORTHATCH.png",
+      "source_sha256": "508b95c873490d1746fd904398f93b33d97bd083012f8626915fd36621f8c4cc",
+      "destination_sha256": "508b95c873490d1746fd904398f93b33d97bd083012f8626915fd36621f8c4cc"
+    }
+  ]
+}

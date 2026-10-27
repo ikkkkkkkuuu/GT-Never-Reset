@@ -1,0 +1,35 @@
+package com.xyp.gtneverreset.mixins.late.appliedenergistics2;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.ResourceLocation;
+
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+
+import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
+import com.xyp.gtneverreset.client.gui.QuickTerminalButtonTextures;
+import com.xyp.gtneverreset.utils.enums.ModList;
+
+import appeng.client.gui.widgets.TypeToggleButton;
+
+@Mixin(value = TypeToggleButton.class, remap = false)
+public abstract class QuickTerminalTypeButtonTextureMixin {
+
+    private static final ResourceLocation AE2_STATES = ModList.AE2.getResourceLocation("textures/guis/states.png");
+
+    @ModifyArg(
+        method = "drawButton",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/texture/TextureManager;bindTexture(Lnet/minecraft/util/ResourceLocation;)V",
+            remap = true),
+        index = 0,
+        remap = true,
+        require = 2)
+    private ResourceLocation gtneverreset$useModernTypeButton(ResourceLocation original) {
+        return Minecraft.getMinecraft().currentScreen instanceof GuiQuickEncodingTerminal && AE2_STATES.equals(original)
+            ? QuickTerminalButtonTextures.states()
+            : original;
+    }
+}

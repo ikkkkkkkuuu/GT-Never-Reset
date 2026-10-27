@@ -1,0 +1,50 @@
+{
+  "adaptation_date": "2026-10-26",
+  "source": "Adjacent GT-Not-Good working tree; source hashes identify local content beyond HEAD",
+  "source_head": "048fd1963de8c6458ef6f800c411be0087cbafdb",
+  "licenses": ["LGPL-3.0-only", "GPL-3.0-only", "MIT"],
+  "modifications": [
+    "Responsibility-based GTNR machine, structure, processing, recipe and loader packages with independent registration IDs",
+    "Uses GTNRMultiBlockBase, its existing GUI and parameter modules instead of GTNG batch processing and dedicated parallel/thread hatches",
+    "Independent recipe threads share available machine power; 64 base parallels and 6 threads at LV, both doubling per voltage tier",
+    "User-selected base speed multiplier 2.0 and EU multiplier 0.8, modified by existing GTNR parameter-module rules",
+    "Distinct-input furnace recipe lookup preserves access to later smeltable inputs when the first item is not smeltable",
+    "Structure geometry, native block mappings, steel casing hatch positions and 56 stationary lava blocks retained; original matching has no extra fluid-level check",
+    "Original controller assembler ingredients and native NEI smelting catalyst retained under the GTNR item and mod identity",
+    "Current GTNG furnace overlays copied byte-for-byte into the GTNR resource domain"
+  ],
+  "files": [
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/multiblock/parallelmachine/LargeFurnace.java",
+      "source_sha256": "91c4a882503a4e24be1af0e65c42a53fc1f7159fd1f5ad9c6b0a0d4c6df59721",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/machine/multiblock/LargeFurnace.java",
+      "license": "LGPL-3.0-only"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/multiblock/structure/LargeFurnaceStructure.java",
+      "source_sha256": "a749218c2f810563deae0df1ecc7171601c68adc439a6d5041540669f98e420d",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/structure/LargeFurnaceStructure.java",
+      "license": "LGPL-3.0-only"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/machines/processing/ParallelBatchProcessingLogic.java",
+      "source_sha256": "7e18a8c123d18e2b3c77ffedecdc6c894dbbda95caee9d6887b28f5d88e19930",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/FurnaceRecipeThreadProcessingLogic.java",
+      "license": "GPL-3.0-only",
+      "scope": "Distinct-input furnace recipe lookup; shared batch semantics not ported"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/recipe/machine/ParallelMachineRecipes.java",
+      "source_sha256": "4ddc490cd822524ab3acbb742983dbfb5ded79ad83c9d7b1da9a3446905f4c96",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/gregtech/LargeFurnaceRecipes.java",
+      "license": "MIT",
+      "scope": "Controller assembler recipe only"
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/client/nei/NEIGTNGConfig.java",
+      "source_sha256": "d49ece39951de5105f8755dcceb88b6136a3ad69a8cfb8f18af5cad2d12aea43",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/nei/NEIMachineConfig.java",
+      "license": "MIT"
+    }
+  ]
+}
