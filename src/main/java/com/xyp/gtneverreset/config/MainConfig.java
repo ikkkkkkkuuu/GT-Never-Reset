@@ -325,6 +325,14 @@ public final class MainConfig {
     @Comment("仅影响本客户端，不与服务器同步")
     public static class Client {
 
+        @Comment("在 Windows 上隐藏本客户端的任务栏按钮，游戏窗口仍可正常使用。默认关闭，保存设置后即时生效。")
+        @DefaultBoolean(false)
+        // #tr gtneverreset.gui.config.general.client.hide_windows_taskbar_button
+        // # Hide Windows taskbar button
+        // # zh_CN 隐藏 Windows 任务栏按钮
+        @LangKey("gtneverreset.gui.config.general.client.hide_windows_taskbar_button")
+        public boolean hideWindowsTaskbarButton = false;
+
         // #tr gtneverreset.gui.config.general.client.radial_menu
         // # Radial Menu
         // # zh_CN 轮盘菜单

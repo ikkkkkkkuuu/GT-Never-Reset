@@ -650,6 +650,7 @@ gtneverreset.gui.config.general.recipe_speed.fixed_duration=固定耗时（tick�
 gtneverreset.gui.config.general.recipe_speed.multiplier=耗时倍率
 gtneverreset.gui.config.general.recipe_speed.full_fluid_output=全量自动输出流体
 gtneverreset.gui.config.general.wireless_frequency.max_entrances=每个频率的入口上限
+gtneverreset.gui.config.general.client.hide_windows_taskbar_button=隐藏 Windows 任务栏按钮
 gtneverreset.gui.config.general.client.radial_menu=轮盘菜单
 gtneverreset.gui.config.general.client.quantum_crafting=量子合成
 gtneverreset.gui.config.general.client.wireless_terminal=无线二合一接口终端

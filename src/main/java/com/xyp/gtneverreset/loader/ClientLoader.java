@@ -10,6 +10,7 @@ import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.client.event.WindowsTaskbarButton;
 import com.xyp.gtneverreset.client.event.WirelessCardInput;
 import com.xyp.gtneverreset.client.event.WirelessTerminalInputHandler;
 import com.xyp.gtneverreset.client.gui.WirelessMonitorHud;
@@ -52,6 +53,9 @@ public final class ClientLoader {
     }
 
     public static void init() {
+        FMLCommonHandler.instance()
+            .bus()
+            .register(new WindowsTaskbarButton());
         registerPackagedCoreRenderers();
         MinecraftForge.EVENT_BUS.register(new WirelessConnectorRenderer());
         TextEffectRegistry.register(

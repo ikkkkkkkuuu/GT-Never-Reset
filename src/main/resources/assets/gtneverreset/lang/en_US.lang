@@ -650,6 +650,7 @@ gtneverreset.gui.config.general.recipe_speed.fixed_duration=Fixed duration (tick
 gtneverreset.gui.config.general.recipe_speed.multiplier=Duration multiplier
 gtneverreset.gui.config.general.recipe_speed.full_fluid_output=Full fluid auto-output
 gtneverreset.gui.config.general.wireless_frequency.max_entrances=Maximum entrances per frequency
+gtneverreset.gui.config.general.client.hide_windows_taskbar_button=Hide Windows taskbar button
 gtneverreset.gui.config.general.client.radial_menu=Radial Menu
 gtneverreset.gui.config.general.client.quantum_crafting=Quantum Crafting
 gtneverreset.gui.config.general.client.wireless_terminal=Wireless Dual Interface Terminal
