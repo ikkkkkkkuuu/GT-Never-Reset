@@ -7,7 +7,7 @@ import static gregtech.api.util.GTRecipeBuilder.SECONDS;
 
 import net.minecraft.item.ItemStack;
 
-import com.xyp.gtneverreset.loader.ModuleHatchLoader;
+import com.xyp.gtneverreset.loader.MachineLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import gregtech.api.enums.GTValues;
@@ -46,7 +46,7 @@ public final class ModuleHatchRecipes {
         ItemList[] sensors = { ItemList.Sensor_LV, ItemList.Sensor_MV, ItemList.Sensor_HV, ItemList.Sensor_EV,
             ItemList.Sensor_IV, ItemList.Sensor_LuV, ItemList.Sensor_ZPM, ItemList.Sensor_UV };
 
-        for (int i = 0; i < ModuleHatchLoader.STATIC_PARALLEL.length; i++) {
+        for (int i = 0; i < MachineLoader.STATIC_PARALLEL.length; i++) {
             GTValues.RA.stdBuilder()
                 .itemInputs(
                     hulls[i].get(1),
@@ -56,7 +56,7 @@ public final class ModuleHatchRecipes {
                     GTOreDictUnificator.get(OrePrefixes.plate, materials[i], 2))
                 .circuit(MODULE_CIRCUIT)
                 .fluidInputs(Materials.Tin.getMolten(144))
-                .itemOutputs(ModuleHatchLoader.STATIC_PARALLEL[i].get(1))
+                .itemOutputs(MachineLoader.STATIC_PARALLEL[i].get(1))
                 .eut(VP[i + 1])
                 .duration(10 * (i + 1) * SECONDS)
                 .addTo(assemblerRecipes);
@@ -70,7 +70,7 @@ public final class ModuleHatchRecipes {
                     GTOreDictUnificator.get(OrePrefixes.plate, materials[i], 2))
                 .circuit(MODULE_CIRCUIT)
                 .fluidInputs(Materials.Tin.getMolten(144))
-                .itemOutputs(ModuleHatchLoader.STATIC_SPEED[i].get(1))
+                .itemOutputs(MachineLoader.STATIC_SPEED[i].get(1))
                 .eut(VP[i + 1])
                 .duration(10 * (i + 1) * SECONDS)
                 .addTo(assemblerRecipes);
@@ -84,21 +84,21 @@ public final class ModuleHatchRecipes {
                     GTOreDictUnificator.get(OrePrefixes.plate, materials[i], 2))
                 .circuit(MODULE_CIRCUIT)
                 .fluidInputs(Materials.Tin.getMolten(144))
-                .itemOutputs(ModuleHatchLoader.POWER[i].get(1))
+                .itemOutputs(MachineLoader.POWER[i].get(1))
                 .eut(VP[i + 1])
                 .duration(10 * (i + 1) * SECONDS)
                 .addTo(assemblerRecipes);
 
             registerDynamicRecipe(
                 i,
-                ModuleHatchLoader.STATIC_PARALLEL[i],
-                ModuleHatchLoader.DYNAMIC_PARALLEL[i],
+                MachineLoader.STATIC_PARALLEL[i],
+                MachineLoader.DYNAMIC_PARALLEL[i],
                 circuits[i],
                 sensors[i]);
             registerDynamicRecipe(
                 i,
-                ModuleHatchLoader.STATIC_SPEED[i],
-                ModuleHatchLoader.DYNAMIC_SPEED[i],
+                MachineLoader.STATIC_SPEED[i],
+                MachineLoader.DYNAMIC_SPEED[i],
                 circuits[i],
                 sensors[i]);
         }
@@ -118,9 +118,9 @@ public final class ModuleHatchRecipes {
 
     private static void registerOverclockRecipes(ItemList[] hulls, Materials[] circuits, ItemList[] emitters,
         ItemList[] sensors) {
-        for (int i = 0; i < ModuleHatchLoader.OVERCLOCK.length; i++) {
+        for (int i = 0; i < MachineLoader.OVERCLOCK.length; i++) {
             ItemStack previousModule = i == 0 ? GTOreDictUnificator.get(OrePrefixes.wireGt02, Materials.Tin, 2)
-                : ModuleHatchLoader.OVERCLOCK[i - 1].get(1);
+                : MachineLoader.OVERCLOCK[i - 1].get(1);
             GTValues.RA.stdBuilder()
                 .itemInputs(
                     previousModule,
@@ -130,7 +130,7 @@ public final class ModuleHatchRecipes {
                     sensors[i].get(2))
                 .circuit(MODULE_CIRCUIT)
                 .fluidInputs(Materials.Tin.getMolten(144))
-                .itemOutputs(ModuleHatchLoader.OVERCLOCK[i].get(1))
+                .itemOutputs(MachineLoader.OVERCLOCK[i].get(1))
                 .eut(VP[i + 1])
                 .duration(10 * (i + 1) * SECONDS)
                 .addTo(assemblerRecipes);

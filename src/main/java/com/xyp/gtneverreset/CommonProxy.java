@@ -65,7 +65,7 @@ public class CommonProxy {
     public void init(FMLInitializationEvent event) {
         GuiManager.registerFactory(AdvancedIOGui.FACTORY);
         GuiManager.registerFactory(StockIOGui.FACTORY);
-        MachineLoader.registerMachines();
+        MachineLoader.registry();
         MinecraftForge.EVENT_BUS.register(WirelessChannelManager.INSTANCE);
         FMLCommonHandler.instance()
             .bus()

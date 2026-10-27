@@ -1,0 +1,300 @@
+{
+  "project": "GregTech CEu Modern",
+  "repository": "https://github.com/GregTechCEu/GregTech-Modern",
+  "release": "v7.4.0-1.20.1",
+  "sourceJar": "gtceu-1.20.1-7.4.0_mapped_parchment_2023.09.03-1.20.1.jar",
+  "sourceJarSha256": "cce78521822e4cddf3780b126285248108452a384920e05b9fd58cc2e469f81d",
+  "modifications": "Texture PNGs and Minecraft animation metadata copied byte-for-byte; resource namespace and directory relocated for Minecraft 1.7.10.",
+  "assets": [
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_back.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_back.png",
+      "sha256": "8d9285e57657d4bf53b0e4f77fa52cd66c518722b77c44eb33f0869a18787181"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_back_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_back_active.png",
+      "sha256": "8d9285e57657d4bf53b0e4f77fa52cd66c518722b77c44eb33f0869a18787181"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_back_active.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_back_active.png.mcmeta",
+      "sha256": "df8cd1c1eb95fb115037fed23e4fbabb2b12ca0b6d642424a84392ad0d433e85"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_front.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_front.png",
+      "sha256": "81b9cb85393dd3dd0ee1d99b9d3d690de4ddb47256f67a8b0a636a1405d32c18"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_front_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_front_active.png",
+      "sha256": "eada6011d97c05ee1bd58723500f606c55785d84ae9ead52ed9cf9bb1faebc12"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_front_active.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_front_active.png.mcmeta",
+      "sha256": "afd89f10df4b025b0d1fd8414f91bde840fe9a618aece7c5085271333b3beab3"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_side.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_side.png",
+      "sha256": "05efef270dbedaf88e351ac9ee93fb85376938342a1312870a5c89dee7161e26"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_side_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_side_active.png",
+      "sha256": "61131ba4fd6f19bf599117fc00128363897edba72be6eb3a528074bb9f2527b6"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_side_active.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_side_active.png.mcmeta",
+      "sha256": "afd89f10df4b025b0d1fd8414f91bde840fe9a618aece7c5085271333b3beab3"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_top.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_top.png",
+      "sha256": "4e20a62c2ff037ccdeff521fcc3b220bd5629d85f14520327489b341bf345b10"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_top_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_top_active.png",
+      "sha256": "b44f66440f57357bbd3caa16974f73b4c58faaff398288712aa79602da3c90a7"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/mixer/overlay_top_active.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_mixer/overlay_top_active.png.mcmeta",
+      "sha256": "afd89f10df4b025b0d1fd8414f91bde840fe9a618aece7c5085271333b3beab3"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_back.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_back.png",
+      "sha256": "8d9285e57657d4bf53b0e4f77fa52cd66c518722b77c44eb33f0869a18787181"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_back_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_back_active.png",
+      "sha256": "8d9285e57657d4bf53b0e4f77fa52cd66c518722b77c44eb33f0869a18787181"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_back_active_emissive.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_back_active_emissive.png",
+      "sha256": "bcb573d50c3debaa4d878825d95a8a42faf9dc7acefb1f753399550bc2d13310"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_back_emissive.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_back_emissive.png",
+      "sha256": "7cc66b7b035bd7389b36bfd9daabfcbcc7367038bbe76af7e87f7e14615ba539"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_front.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_front.png",
+      "sha256": "e8d663b7fc6e7e99763efd669a41c587737d7251cb34b50033c93476c85d39b6"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_front_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_front_active.png",
+      "sha256": "a404c00aea70904ea26e0126487c190fd57c7454dd704af672d5b52dde6be733"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_front_active.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_front_active.png.mcmeta",
+      "sha256": "7dc16041541801a5bbfd3e98fc2e939ca860cc063a19393da16841eca4212b37"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_front_active_emissive.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_front_active_emissive.png",
+      "sha256": "2ea0f50799d5956b8745c8b3d7dee70f57900464a9e79a40931a30569099838f"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_front_active_emissive.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_front_active_emissive.png.mcmeta",
+      "sha256": "7dc16041541801a5bbfd3e98fc2e939ca860cc063a19393da16841eca4212b37"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_front_emissive.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_front_emissive.png",
+      "sha256": "7cc66b7b035bd7389b36bfd9daabfcbcc7367038bbe76af7e87f7e14615ba539"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_side.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_side.png",
+      "sha256": "5563bafecd2a905068fb583c3f80f797ecd091ac5a1dba30eacd27bf9414ed44"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_side_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_side_active.png",
+      "sha256": "929c27907b4e6a1302946bd6498260c676faae8aa680f83725ef9ca4726c68fc"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_side_active.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_side_active.png.mcmeta",
+      "sha256": "7dc16041541801a5bbfd3e98fc2e939ca860cc063a19393da16841eca4212b37"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_side_active_emissive.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_side_active_emissive.png",
+      "sha256": "61410bb2c8f9fc3639b651862810a5b12379d42a2ec91cf47dae7e95bec5bf92"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_side_active_emissive.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_side_active_emissive.png.mcmeta",
+      "sha256": "7dc16041541801a5bbfd3e98fc2e939ca860cc063a19393da16841eca4212b37"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/electrolyzer/overlay_side_emissive.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_electrolyzer/overlay_side_emissive.png",
+      "sha256": "7cc66b7b035bd7389b36bfd9daabfcbcc7367038bbe76af7e87f7e14615ba539"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/chemical_reactor/overlay_front.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_chemical_reactor/overlay_front.png",
+      "sha256": "2825fb7b9423ec52cf626e00222c5a7ba93d961f288bd305266be01532581787"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/chemical_reactor/overlay_front_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_chemical_reactor/overlay_front_active.png",
+      "sha256": "064833984c5c0f40f7b174896fe9fb0f6189d49d9f0374d89f13d1f178b0cd6c"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/chemical_reactor/overlay_front_active.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_chemical_reactor/overlay_front_active.png.mcmeta",
+      "sha256": "afd89f10df4b025b0d1fd8414f91bde840fe9a618aece7c5085271333b3beab3"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/chemical_reactor/overlay_front_active_emissive.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_chemical_reactor/overlay_front_active_emissive.png",
+      "sha256": "7874a399e9a902e248b4e6de5a5752266702908cba11f968125f18c2231b8e54"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/chemical_reactor/overlay_front_active_emissive.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_chemical_reactor/overlay_front_active_emissive.png.mcmeta",
+      "sha256": "afd89f10df4b025b0d1fd8414f91bde840fe9a618aece7c5085271333b3beab3"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/chemical_reactor/overlay_front_emissive.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_chemical_reactor/overlay_front_emissive.png",
+      "sha256": "7cc66b7b035bd7389b36bfd9daabfcbcc7367038bbe76af7e87f7e14615ba539"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/lv/bottom.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/lv/bottom.png",
+      "sha256": "210e5a9dd81cff9897c2f7b52273a69a5d5dd3b07c54ba3683190080cd6ab760"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/lv/side.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/lv/side.png",
+      "sha256": "3fcf30c385a0ddc2108f7e9003d0564fb5a57a4bb1c0b69c722a06211ff6daa2"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/lv/top.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/lv/top.png",
+      "sha256": "3fcf30c385a0ddc2108f7e9003d0564fb5a57a4bb1c0b69c722a06211ff6daa2"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/mv/bottom.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/mv/bottom.png",
+      "sha256": "7249618487da01c7051e9b978fb5180f1fee0a86f0fa43cd3feb1b66d43878e4"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/mv/side.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/mv/side.png",
+      "sha256": "7249618487da01c7051e9b978fb5180f1fee0a86f0fa43cd3feb1b66d43878e4"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/mv/top.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/mv/top.png",
+      "sha256": "7249618487da01c7051e9b978fb5180f1fee0a86f0fa43cd3feb1b66d43878e4"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/hv/bottom.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/hv/bottom.png",
+      "sha256": "ea333a8440746fd694b0266ef5dde68333f2e426001ba1ac0484b158c1e8cb0f"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/hv/side.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/hv/side.png",
+      "sha256": "cd479a44c4cb5a979ccb394217d51f7bd0b23128d4de0ced0c1c4056353274d4"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/hv/top.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/hv/top.png",
+      "sha256": "cd479a44c4cb5a979ccb394217d51f7bd0b23128d4de0ced0c1c4056353274d4"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/ev/bottom.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/ev/bottom.png",
+      "sha256": "e6dfaaab10194e1e24a0389bbbd23070b0fdcd73d22e7baa0f4ddd655c997927"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/ev/side.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/ev/side.png",
+      "sha256": "4c7aa45e91499019f492d3b078148634e110d881920ccc0f914396eb736642cb"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/ev/top.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/ev/top.png",
+      "sha256": "e6dfaaab10194e1e24a0389bbbd23070b0fdcd73d22e7baa0f4ddd655c997927"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/iv/bottom.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/iv/bottom.png",
+      "sha256": "31de7e27a89bd8bfaa0137f373b358312b9275b501b689cd555a4ad33ee44256"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/iv/side.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/iv/side.png",
+      "sha256": "447da97ab9a260c5d832372453f9693ce8b9b4a1ff556a75dbb07ce32cfb43e8"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/iv/top.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/iv/top.png",
+      "sha256": "31de7e27a89bd8bfaa0137f373b358312b9275b501b689cd555a4ad33ee44256"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/luv/bottom.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/luv/bottom.png",
+      "sha256": "05992f9741bb6ac830c9b3849ea0c293aeec8e0d80f7d2ee7e9072b764cd92ce"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/luv/side.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/luv/side.png",
+      "sha256": "05992f9741bb6ac830c9b3849ea0c293aeec8e0d80f7d2ee7e9072b764cd92ce"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/luv/top.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/luv/top.png",
+      "sha256": "05992f9741bb6ac830c9b3849ea0c293aeec8e0d80f7d2ee7e9072b764cd92ce"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/zpm/bottom.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/zpm/bottom.png",
+      "sha256": "5d2636a1735d790dea563f94e080d90f19966fdf1cfc22d6276792fa07c1be13"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/zpm/side.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/zpm/side.png",
+      "sha256": "c83269d6826609bea6b20d2efec88d48acf3edd23fd7543fd0e39fa97ecdd511"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/zpm/top.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/zpm/top.png",
+      "sha256": "7b70ff11cc2c415cf23857244555666782748d6051c72e36f082b9ee57900cac"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/uv/bottom.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/uv/bottom.png",
+      "sha256": "9ba78e722bdbef5d0e867998c1818e04d5a5aee95a97687337b81cb37e40103f"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/uv/side.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/uv/side.png",
+      "sha256": "ae4f36590ac59397887182c4eddc31269c97c8d8c93e3f4b42f762581c5a8723"
+    },
+    {
+      "source": "assets/gtceu/textures/block/casings/voltage/uv/top.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/uv/top.png",
+      "sha256": "792fbb0918a798e6967d6146465d38448e11178d6fae17491abf070f6ead9b08"
+    }
+  ]
+}

@@ -5,6 +5,8 @@
 `api.machine.MultiblockTooltipSource` 提供纯计数规则和材料信息。
 现有 `GTNRMultiBlockBase` 已实现该接口，旧机器不需要修改接口调用。
 
+电压、线圈等性能加成和温度超频规则的接入见 [自动性能提示说明](MultiblockPerformance-NOTES.md)。
+
 ## 结构等级与重复层
 
 读取器使用独立的无世界绑定控制器，在投影物品数量 1–64 的范围内调用

@@ -36,9 +36,9 @@ import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadTask;
 import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
 
-import gregtech.api.enums.VoidingMode;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.HeatingCoilLevel;
+import gregtech.api.enums.VoidingMode;
 import gregtech.api.enums.VoltageIndex;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.logic.ProcessingLogic;
@@ -51,9 +51,9 @@ import gregtech.api.structure.error.ErrorType;
 import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrors;
 import gregtech.api.structure.error.TranslatableText;
-import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.api.util.GTRecipe;
 import gregtech.api.util.GTUtility;
+import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.api.util.OverclockCalculator;
 import gregtech.api.util.shutdown.ShutDownReason;
 import mcp.mobius.waila.api.IWailaConfigHandler;
@@ -542,11 +542,20 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             if (!heatOC && !discount && voltageHeat == 0) return null;
             boolean usesRecipeHeat = first.gtneverreset$recipeHeat() != second.gtneverreset$recipeHeat();
             int freeOverclocks = heatOC && !usesRecipeHeat
-                ? (int) Math.max(0L, ((long) first.gtneverreset$machineHeat() - first.gtneverreset$recipeHeat())
-                    / HEAT_OVERCLOCK_THRESHOLD)
+                ? (int) Math
+                    .max(
+                        0L,
+                        ((long) first.gtneverreset$machineHeat() - first.gtneverreset$recipeHeat())
+                            / HEAT_OVERCLOCK_THRESHOLD)
                 : 0;
-            return new HeatRules(heatOC, discount, first.gtneverreset$heatDiscountFactor(), usesRecipeHeat,
-                voltageHeat, getVoltageHeatFromTier(), freeOverclocks);
+            return new HeatRules(
+                heatOC,
+                discount,
+                first.gtneverreset$heatDiscountFactor(),
+                usesRecipeHeat,
+                voltageHeat,
+                getVoltageHeatFromTier(),
+                freeOverclocks);
         });
     }
 
@@ -574,8 +583,8 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     protected final int coilAndVoltageHeat(HeatingCoilLevel runtimeCoil) {
         HeatingCoilLevel coil = tooltipProbeState == null ? runtimeCoil
             : HeatingCoilLevel.getFromTier((byte) getTooltipTier(TieredPart.COIL, runtimeCoil.getTier()));
-        long heat = coil.getHeat() + (long) getVoltageHeatPerTier()
-            * (GTUtility.getTier(getMaxInputEu()) - getVoltageHeatFromTier());
+        long heat = coil.getHeat()
+            + (long) getVoltageHeatPerTier() * (GTUtility.getTier(getMaxInputEu()) - getVoltageHeatFromTier());
         return (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, heat));
     }
 
@@ -602,8 +611,20 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
 
     private OverclockCalculatorAccessorMixin tooltipCalculator(int recipeHeat) {
         if (!(createProcessingLogic() instanceof RecipeThreadProcessingLogic logic)) return null;
-        GTRecipe recipe = new GTRecipe(false, new ItemStack[0], new ItemStack[0], null, null, null, null, null,
-            new FluidStack[0], new FluidStack[0], HEAT_PROBE_DURATION, HEAT_PROBE_EUT, recipeHeat);
+        GTRecipe recipe = new GTRecipe(
+            false,
+            new ItemStack[0],
+            new ItemStack[0],
+            null,
+            null,
+            null,
+            null,
+            null,
+            new FluidStack[0],
+            new FluidStack[0],
+            HEAT_PROBE_DURATION,
+            HEAT_PROBE_EUT,
+            recipeHeat);
         OverclockCalculator calculator = logic.createTooltipOverclockCalculator(recipe);
         if (!(calculator instanceof OverclockCalculatorAccessorMixin accessor)) {
             throw new IllegalStateException("The configured overclock calculator is missing its tooltip accessor");

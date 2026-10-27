@@ -35,6 +35,24 @@ protected double getBaseSpeedMultiplier() {
 嵌套与异常通过 `finally` 恢复作用域；直接探测已绑定 TileEntity 的控制器会被拒绝。
 `MultiblockPerformanceReader` 对每次采样创建独立实例，实际建在世界中的机器不被修改。
 
+无线或自定义能源机器若覆写能源 getter，应保留基类的探测分支：
+
+```java
+@Override
+public long getMaxInputEu() {
+    if (isTooltipProbeActive()) return super.getMaxInputEu();
+    return readActualWirelessPower();
+}
+
+@Override
+public long getMaxInputVoltage() {
+    if (isTooltipProbeActive()) return super.getMaxInputVoltage();
+    return readActualWirelessVoltage();
+}
+```
+
+`readActualWirelessPower` 与 `readActualWirelessVoltage` 代表机器原有的实际取值方法。
+不要为了探测改动真实无线网络、电流上限或能源规则。
 ## 部件、范围与加成
 
 可选部件为 `VOLTAGE`、`COIL`、`GLASS`、`CASING`、
@@ -61,6 +79,8 @@ NaN 或 Infinity 表示不能用这一静态数值描述该机器，显示时省
 经 `createTooltipOverclockCalculator(recipe)` 调用同一个
 `createOverclockCalculator(recipe)`。
 只读取计算器配置，不搜寻配方、不消耗输入、不计算进度。
+提示不执行会访问世界的 setupProcessingLogic 链；只放在该链中的自定义参数，
+应提取为与真实 calculator 工厂共用的 getter/配置方法，或显式覆写 Source 的规则接口。
 只读 mixin 取得温度超频、温度折扣、折扣因子、机器温度、配方温度及电压越级限制。
 
 例如机器原本具有如下热处理逻辑时，提示可自动识别：
@@ -106,7 +126,8 @@ GT 的温度折扣步长为 900K，温度完美超频步长为 1800K；
 ## 验证入口
 
 ```powershell
-$env:JAVA_TOOL_OPTIONS = '-Djdk.net.unixdomain.tmpdir=D:/CodexScratch/GT-Never-Reset/2026-10-27-tooltip/tmp -Djava.io.tmpdir=D:/CodexScratch/GT-Never-Reset/2026-10-27-tooltip/tmp'
+New-Item -ItemType Directory -Path 'D:/gtnr-tmp' -Force | Out-Null
+$env:JAVA_TOOL_OPTIONS = '-Djdk.net.unixdomain.tmpdir=D:/gtnr-tmp -Djava.io.tmpdir=D:/gtnr-tmp'
 .\gradlew.bat -I scripts/multiblock-performance-qa.init.gradle runServer17 --no-configuration-cache
 .\gradlew.bat -I scripts/multiblock-performance-qa.init.gradle -Pperformance-tooltipQaClient runClient17 --no-configuration-cache
 ```

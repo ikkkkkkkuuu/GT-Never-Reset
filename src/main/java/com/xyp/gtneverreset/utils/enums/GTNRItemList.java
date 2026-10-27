@@ -69,6 +69,7 @@ public enum GTNRItemList implements IItemContainer {
     AssemblerMatrix,
     SingularityDataHub,
     VaultPortHatch,
+    FragmentWorldCollector,
     EddingtonWallCasing,
     AdvancedIOBus,
     StockIOInterface,

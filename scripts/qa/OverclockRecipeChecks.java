@@ -9,7 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
-import com.xyp.gtneverreset.loader.ModuleHatchLoader;
+import com.xyp.gtneverreset.loader.MachineLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import gregtech.api.GregTechAPI;
@@ -29,13 +29,13 @@ public final class OverclockRecipeChecks {
         int checks = 0;
         int modules = 0;
         for (GTNRItemList[] group : List.of(
-            ModuleHatchLoader.STATIC_PARALLEL,
-            ModuleHatchLoader.DYNAMIC_PARALLEL,
-            ModuleHatchLoader.STATIC_SPEED,
-            ModuleHatchLoader.DYNAMIC_SPEED,
-            ModuleHatchLoader.POWER,
-            ModuleHatchLoader.OVERCLOCK)) {
-            boolean dynamic = group == ModuleHatchLoader.DYNAMIC_PARALLEL || group == ModuleHatchLoader.DYNAMIC_SPEED;
+            MachineLoader.STATIC_PARALLEL,
+            MachineLoader.DYNAMIC_PARALLEL,
+            MachineLoader.STATIC_SPEED,
+            MachineLoader.DYNAMIC_SPEED,
+            MachineLoader.POWER,
+            MachineLoader.OVERCLOCK)) {
+            boolean dynamic = group == MachineLoader.DYNAMIC_PARALLEL || group == MachineLoader.DYNAMIC_SPEED;
             for (int index = 0; index < group.length; index++) {
                 GTNRItemList entry = group[index];
                 String label = entry.name();
@@ -82,7 +82,7 @@ public final class OverclockRecipeChecks {
                     GTRecipe.RecipeAssemblyLine.sAssemblylineRecipes.stream()
                         .noneMatch(line -> sameItem(line.mOutput, output)),
                     label + " has no obsolete assembly-line recipe");
-                if (group == ModuleHatchLoader.OVERCLOCK) checks += verifyOverclockItems(index, recipe.mInputs);
+                if (group == MachineLoader.OVERCLOCK) checks += verifyOverclockItems(index, recipe.mInputs);
                 modules++;
             }
         }
@@ -94,9 +94,9 @@ public final class OverclockRecipeChecks {
         String[] tiers = { "LV", "MV", "HV" };
         Materials[] circuits = { Materials.LV, Materials.MV, Materials.HV };
         ItemStack upgrade = index == 0 ? GTOreDictUnificator.get(OrePrefixes.wireGt02, Materials.Tin, 1)
-            : ModuleHatchLoader.OVERCLOCK[index - 1].get(1);
+            : MachineLoader.OVERCLOCK[index - 1].get(1);
         return verifyItems(
-            ModuleHatchLoader.OVERCLOCK[index].name(),
+            MachineLoader.OVERCLOCK[index].name(),
             inputs,
             new ItemAmount(GTUtility.getIntegratedCircuit(19), 0),
             new ItemAmount(

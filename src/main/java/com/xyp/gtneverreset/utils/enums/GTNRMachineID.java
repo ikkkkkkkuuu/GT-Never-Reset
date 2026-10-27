@@ -54,7 +54,14 @@ public enum GTNRMachineID {
     QuantumComputer(29449),
     AssemblerMatrix(29450),
     SingularityDataHub(29451),
-    VaultPortHatch(29452);
+    VaultPortHatch(29452),
+    FragmentWorldCollector(29453),
+    ModernMixerLV(29500),
+    ModernMixerUV(29507),
+    ModernElectrolyzerLV(29508),
+    ModernElectrolyzerUV(29515),
+    ModernChemicalReactorLV(29516),
+    ModernChemicalReactorUV(29523);
 
     public final int id;
 

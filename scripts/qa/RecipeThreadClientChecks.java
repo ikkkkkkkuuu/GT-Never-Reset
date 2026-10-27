@@ -20,7 +20,7 @@ import net.minecraft.world.WorldType;
 
 import com.cleanroommc.modularui.screen.GuiContainerWrapper;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
-import com.xyp.gtneverreset.loader.ModuleHatchLoader;
+import com.xyp.gtneverreset.loader.MachineLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
 
@@ -244,12 +244,12 @@ public final class RecipeThreadClientChecks {
                 RenderHelper.enableGUIStandardItemLighting();
                 int row = 0;
                 for (GTNRItemList[] group : List.of(
-                    ModuleHatchLoader.STATIC_PARALLEL,
-                    ModuleHatchLoader.DYNAMIC_PARALLEL,
-                    ModuleHatchLoader.STATIC_SPEED,
-                    ModuleHatchLoader.DYNAMIC_SPEED,
-                    ModuleHatchLoader.POWER,
-                    ModuleHatchLoader.OVERCLOCK)) {
+                    MachineLoader.STATIC_PARALLEL,
+                    MachineLoader.DYNAMIC_PARALLEL,
+                    MachineLoader.STATIC_SPEED,
+                    MachineLoader.DYNAMIC_SPEED,
+                    MachineLoader.POWER,
+                    MachineLoader.OVERCLOCK)) {
                     for (int column = 0; column < group.length; column++) {
                         items.renderItemAndEffectIntoGUI(
                             fontRendererObj,

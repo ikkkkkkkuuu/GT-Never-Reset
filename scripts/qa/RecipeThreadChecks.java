@@ -32,7 +32,7 @@ import com.mojang.authlib.GameProfile;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.GTNRMultiBlockBase;
-import com.xyp.gtneverreset.loader.ModuleHatchLoader;
+import com.xyp.gtneverreset.loader.MachineLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadTask;
@@ -322,11 +322,11 @@ public final class RecipeThreadChecks {
 
         int registrations = 0;
         for (GTNRItemList[] group : List.of(
-            ModuleHatchLoader.STATIC_PARALLEL,
-            ModuleHatchLoader.DYNAMIC_PARALLEL,
-            ModuleHatchLoader.STATIC_SPEED,
-            ModuleHatchLoader.DYNAMIC_SPEED,
-            ModuleHatchLoader.POWER)) {
+            MachineLoader.STATIC_PARALLEL,
+            MachineLoader.DYNAMIC_PARALLEL,
+            MachineLoader.STATIC_SPEED,
+            MachineLoader.DYNAMIC_SPEED,
+            MachineLoader.POWER)) {
             for (GTNRItemList entry : group) {
                 ItemStack item = entry.get(1);
                 require(
@@ -757,7 +757,7 @@ public final class RecipeThreadChecks {
     private void verifyOverclockModules(World world) {
         int[] timeReduction = { 4, 8, 8 };
         int[] powerIncrease = { 4, 4, 2 };
-        for (int index = 0; index < ModuleHatchLoader.OVERCLOCK.length; index++) {
+        for (int index = 0; index < MachineLoader.OVERCLOCK.length; index++) {
             int x = 16 + index * 5;
             world.getChunkFromChunkCoords(x >> 4, 0);
             Fixture controller = (Fixture) place(world, x, new ItemStack(GregTechAPI.sBlockMachines, 1, FIXTURE_ID))
@@ -774,7 +774,7 @@ public final class RecipeThreadChecks {
             controller.mInputBusses.add(input);
             controller.mOutputBusses.add(output);
             input.setInventorySlotContents(0, new ItemStack(Items.iron_ingot));
-            GTNRItemList entry = ModuleHatchLoader.OVERCLOCK[index];
+            GTNRItemList entry = MachineLoader.OVERCLOCK[index];
             ParameterModuleHatch module = module(world, x + 3, entry);
             require(
                 controller.addParameterModuleToMachineList(module.getBaseMetaTileEntity(), 0),
@@ -818,7 +818,7 @@ public final class RecipeThreadChecks {
             ParameterModuleHatch duplicate = module(
                 world,
                 x + 4,
-                ModuleHatchLoader.OVERCLOCK[(index + 1) % ModuleHatchLoader.OVERCLOCK.length]);
+                MachineLoader.OVERCLOCK[(index + 1) % MachineLoader.OVERCLOCK.length]);
             controller.addParameterModuleToMachineList(duplicate.getBaseMetaTileEntity(), 0);
             controller.checkMachine(controller.getBaseMetaTileEntity(), null, errors);
             require(errors.size() == 1, "different overclock grades still share one module limit: " + entry);

@@ -69,7 +69,8 @@ public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder
             for (String line : MultiblockPerformanceFormatter.bonuses(performance, BonusStat.PARALLEL)) addInfo(line);
             if (Double.isFinite(stats.speed())) {
                 addStaticSpeedInfo((float) stats.speed());
-                for (String line : MultiblockPerformanceFormatter.bonuses(performance, BonusStat.SPEED, BonusStat.DURATION)) addInfo(line);
+                for (String line : MultiblockPerformanceFormatter
+                    .bonuses(performance, BonusStat.SPEED, BonusStat.DURATION)) addInfo(line);
             }
             if (Double.isFinite(stats.energyUsage())) {
                 addStaticEuEffInfo((float) stats.energyUsage());

@@ -165,7 +165,8 @@ public interface MultiblockTooltipSource {
             if (!Double.isFinite(discountFactor) || discountFactor <= 0) {
                 throw new IllegalArgumentException("A heat discount multiplier must be finite and positive");
             }
-            if (heatPerVoltageTier < 0 || voltageHeatFrom < 0 || voltageHeatFrom > VoltageIndex.MAX
+            if (heatPerVoltageTier < 0 || voltageHeatFrom < 0
+                || voltageHeatFrom > VoltageIndex.MAX
                 || freePerfectOverclocks < 0) {
                 throw new IllegalArgumentException("Invalid voltage heat or free overclock rule");
             }

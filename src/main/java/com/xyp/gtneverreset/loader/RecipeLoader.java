@@ -7,7 +7,9 @@ import com.xyp.gtneverreset.common.recipe.ae2.WildcardPatternRecipes;
 import com.xyp.gtneverreset.common.recipe.ae2.WirelessFrequencyCardRecipes;
 import com.xyp.gtneverreset.common.recipe.ae2.WirelessTerminalRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.FluxConnectorRecipes;
+import com.xyp.gtneverreset.common.recipe.gregtech.FragmentWorldCollectorRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.LargeFurnaceRecipes;
+import com.xyp.gtneverreset.common.recipe.gregtech.ModernFluidMachineRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.ModuleHatchRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.OreProcessingRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.PatternInputRecipes;
@@ -31,9 +33,14 @@ public final class RecipeLoader {
         FluxConnectorRecipes.register();
         CompactAEMachineRecipes.register();
         SingularityDataHubRecipes.register();
+        ModernFluidMachineRecipes.register();
+        FragmentWorldCollectorRecipes.loadMachineRecipe();
+        FragmentWorldCollectorRecipes.loadDimensionRecipes();
     }
 
     public static void registerLateRecipes() {
         OreProcessingRecipes.registerExternalRecipes();
+        ModernFluidMachineRecipes.registerLateRecipes();
+        FragmentWorldCollectorRecipes.scheduleRecipes();
     }
 }

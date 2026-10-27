@@ -22,7 +22,7 @@ gradle.projectsEvaluated {
         classpath += root.configurations.testRuntimeClasspath.filter { it.name.startsWith('jvmdowngrader-java-api-') }
         if (!client) classpath = classpath.filter { !it.name.toLowerCase(Locale.ROOT).startsWith('angelica-') }
         workingDir new File(qa, client ? 'client-run' : 'server-run')
-        systemProperty 'java.io.tmpdir', new File(qa, 'tmp').absolutePath
+        systemProperty 'java.io.tmpdir', System.getenv('TEMP') ?: new File(qa, 'tmp').absolutePath
         systemProperty 'gtnr.performanceTooltip.qa', 'true'
         systemProperty 'gtnr.performanceTooltip.client.qa', client.toString()
         systemProperty 'gtnr.performanceTooltip.qa.output', qa.absolutePath

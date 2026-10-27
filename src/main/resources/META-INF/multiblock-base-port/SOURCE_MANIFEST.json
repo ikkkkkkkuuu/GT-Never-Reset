@@ -17,7 +17,9 @@
     "Optional Markdown; detached tooltip instances; no checkMachine probing",
     "Markdown controls description italics, following the merged PR #654 review",
     "Independent and cumulative structure tiers, material tiers, variable-length layers, per-layer hatches and shared casing totals",
-    "Structure probes retain actual projector stack sizes and isolate material sub-channels; voltage/heat probing remains unported",
+    "Structure probes retain actual projector stack sizes and isolate material sub-channels",
+    "Detached full-range voltage, coil, glass, casing, pressure and parallel-controller probes; scoped state restoration",
+    "Real calculator heat rules, perfect-overclock thresholds and recipe tier limits; read-only GT5 accessors",
     "No upstream controller registrations, execution cores or wireless scheduler"
   ],
   "files": [
@@ -48,20 +50,20 @@
     {
       "source": "src/main/java/com/xyp/gtnotgood/loader/ModularHatchLoader.java",
       "source_sha256": "fe731168e2379b2f92a160be5bb051cdd9cbefe855491cca392f52c7c3c166f5",
-      "destination": "src/main/java/com/xyp/gtneverreset/loader/ModuleHatchLoader.java",
-      "destination_sha256": "901b52a8995497ab4160fb5dd984c33483ffdc06a08e50f56b391d2012e98ece"
+      "destination": "src/main/java/com/xyp/gtneverreset/loader/MachineLoader.java",
+      "destination_sha256": "e3b15970f5e026de8628a30359db1dac687341956d397c953618ddd3d8ab9782"
     },
     {
       "source": "src/main/java/com/xyp/gtnotgood/common/recipe/machine/ModularHatchRecipes.java",
       "source_sha256": "b400f464ec235a50b9075ed6a787e9b85a1c4a5dd5edb2386f9ba9593152cad4",
       "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/gregtech/ModuleHatchRecipes.java",
-      "destination_sha256": "f1304ebf0ca621f621ccee6a66bff10689dc198a49756ad776fda572876ae758"
+      "destination_sha256": "034a71d98781c099168e9c6c741ae36e40f32274a7edeaf74c59130a2f70ee1d"
     },
     {
       "source": "src/main/java/com/xyp/gtnotgood/common/machines/multiblock/multiMachineBase/GTNGModularMachineBase.java",
       "source_sha256": "5b6252932fbaf096c6e4972ebb4d292029ba8f9c6b84e50db6cd96a3bbd420f5",
       "destination": "src/main/java/com/xyp/gtneverreset/common/machine/multiMachineBase/GTNRMultiBlockBase.java",
-      "destination_sha256": "b3295281ee4dadc6591d287f6b2291928564b5df3f8a604a958ddab1e8d21b49"
+      "destination_sha256": "7e4980cec3d3fd71daa557b6e052c29068577ee838a89c5eced9dbb03ef10faf"
     },
     {
       "source": "src/main/java/com/xyp/gtnotgood/common/machines/processing/ModuleWork.java",
@@ -73,7 +75,7 @@
       "source": "src/main/java/com/xyp/gtnotgood/common/machines/processing/ModularProcessingLogic.java",
       "source_sha256": "da9e6262af50489b42991805b383052d33e3fbdf5dbba8c3569a519beb1c83e2",
       "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/RecipeThreadProcessingLogic.java",
-      "destination_sha256": "277475d32e6f350675ba127d1684026d1edd06a574ce25839e74a870b8aec669"
+      "destination_sha256": "efcdd296bda8d2803fe792e5429e8965ed278bc988f34f8379269d70aa2525cd"
     },
     {
       "source": "src/main/java/com/xyp/gtnotgood/common/machines/processing/ModuleInputPreflight.java",
@@ -97,13 +99,13 @@
       "source": "src/main/java/com/xyp/gtnotgood/utils/tooltip/MultiblockTooltipSource.java",
       "source_sha256": "5054edec77a4a7785e681120aca5c61fc2d232756bcc6ef45f71231eeba229ee",
       "destination": "src/main/java/com/xyp/gtneverreset/api/machine/MultiblockTooltipSource.java",
-      "destination_sha256": "c67f5d676adb06da428db15bc6c9ac63d7ec26d39767d9b01a06c59a3e3ef132"
+      "destination_sha256": "432d53feb547da35708a8731de2390783cb7faf1cfc097d9b2256f8357e8eba8"
     },
     {
       "source": "src/main/java/com/xyp/gtnotgood/utils/tooltip/AutoMultiblockTooltipBuilder.java",
       "source_sha256": "fe011afe417c49d1d668dd9c89b60559e46321fa239979c0219d7ab3fb1a4e0b",
       "destination": "src/main/java/com/xyp/gtneverreset/utils/structure/AutoMultiblockTooltipBuilder.java",
-      "destination_sha256": "3dbb381a8ac35a04ceaf8211554228a1d3fd509f75f553b937cf1924d2fa380e"
+      "destination_sha256": "81e227c41d0e2da1a0502200e083f8febbe610a553755a00efb2583ed420e051"
     },
     {
       "source": "src/main/java/com/xyp/gtnotgood/utils/tooltip/StructureSummary.java",
@@ -182,6 +184,45 @@
       "destination": "src/main/resources/assets/gtneverreset/textures/blocks/modular/OVERLAY_SpeedController.png.mcmeta",
       "destination_sha256": "f00b4a27b6337e2fff045570af39980c442a91565f67eaa5560436782accb6dc",
       "modifications": "Unchanged bytes; resource domain relocated to gtneverreset"
+    }
+  ],
+  "tooltip_performance_revision": "a6ee80aea6eaf98e2478e847a96dfdc3a620847b",
+  "tooltip_performance_files": [
+    {
+      "destination": "src/main/java/com/xyp/gtneverreset/api/machine/MultiblockTooltipSource.java",
+      "destination_sha256": "432d53feb547da35708a8731de2390783cb7faf1cfc097d9b2256f8357e8eba8"
+    },
+    {
+      "destination": "src/main/java/com/xyp/gtneverreset/common/machine/multiMachineBase/GTNRMultiBlockBase.java",
+      "destination_sha256": "7e4980cec3d3fd71daa557b6e052c29068577ee838a89c5eced9dbb03ef10faf"
+    },
+    {
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/RecipeThreadProcessingLogic.java",
+      "destination_sha256": "efcdd296bda8d2803fe792e5429e8965ed278bc988f34f8379269d70aa2525cd"
+    },
+    {
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/gregtech/OverclockCalculatorAccessorMixin.java",
+      "destination_sha256": "768bfb158ff969795db5489e175db5ebb2672a3741ac1c09050fcb317b448bdd"
+    },
+    {
+      "destination": "src/main/java/com/xyp/gtneverreset/loader/LateMixinsLoader.java",
+      "destination_sha256": "0d7badd3d8acee6fd371427317d28c41c0579df359a63acc26e6cc2ad8d1d126"
+    },
+    {
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/structure/MultiblockPerformanceReader.java",
+      "destination_sha256": "395fae53db7bdcbb2648526a16df6323f787842448ca3f3c116179f75c5ab612"
+    },
+    {
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/structure/PerformanceSummary.java",
+      "destination_sha256": "728d9f801d63cac6ebc0ffbb087ea4bbda859e0fce7bea762b55887c6f3de035"
+    },
+    {
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/structure/MultiblockPerformanceFormatter.java",
+      "destination_sha256": "0e2b348b4e8cefb55c4409412b3a7720f431499db30938ff7fc15099713f36a2"
+    },
+    {
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/structure/AutoMultiblockTooltipBuilder.java",
+      "destination_sha256": "81e227c41d0e2da1a0502200e083f8febbe610a553755a00efb2583ed420e051"
     }
   ]
 }

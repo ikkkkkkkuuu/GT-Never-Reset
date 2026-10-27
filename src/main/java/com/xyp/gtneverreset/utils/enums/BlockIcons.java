@@ -12,6 +12,12 @@ public final class BlockIcons {
     public static IIconContainer OverlayFrontKerrCompressorActive;
     public static IIconContainer OverlayFrontKerrCompressorGlow;
     public static IIconContainer OverlayFrontKerrCompressorActiveGlow;
+    public static IIconContainer FragmentCollectorFront;
+    public static IIconContainer FragmentCollectorFrontActive;
+    public static IIconContainer FragmentCollectorSide;
+    public static IIconContainer FragmentCollectorTop;
+    public static IIconContainer FragmentCollectorBottom;
+    public static IIconContainer FragmentCollectorBack;
 
     private BlockIcons() {}
 
@@ -27,5 +33,17 @@ public final class BlockIcons {
             .custom(GTNeverReset.MODID, "stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_GLOW");
         OverlayFrontKerrCompressorActiveGlow = Textures.BlockIcons
             .custom(GTNeverReset.MODID, "stellar/iconsets/OVERLAY_FRONT_KERR_COMPRESSOR_ACTIVE_GLOW");
+        FragmentCollectorFront = Textures.BlockIcons
+            .custom(GTNeverReset.MODID, "basicmachines/fragment_collector/overlay_front");
+        FragmentCollectorFrontActive = Textures.BlockIcons
+            .custom(GTNeverReset.MODID, "basicmachines/fragment_collector/overlay_front_active");
+        FragmentCollectorSide = Textures.BlockIcons
+            .custom(GTNeverReset.MODID, "basicmachines/fragment_collector/overlay_side");
+        FragmentCollectorTop = Textures.BlockIcons
+            .custom(GTNeverReset.MODID, "basicmachines/fragment_collector/overlay_top");
+        FragmentCollectorBottom = Textures.BlockIcons
+            .custom(GTNeverReset.MODID, "basicmachines/fragment_collector/overlay_bottom");
+        FragmentCollectorBack = Textures.BlockIcons
+            .custom(GTNeverReset.MODID, "basicmachines/fragment_collector/overlay_back");
     }
 }

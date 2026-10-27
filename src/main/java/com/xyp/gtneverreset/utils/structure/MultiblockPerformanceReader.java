@@ -68,13 +68,16 @@ public final class MultiblockPerformanceReader {
     private static MultiblockTooltipSource freshSource(MTEEnhancedMultiBlockBase<?> machine) {
         MTEEnhancedMultiBlockBase<?> detached = StructureTooltipReader.detachedCopy(machine);
         if (!(detached instanceof MultiblockTooltipSource source)) {
-            throw new IllegalArgumentException("Missing automatic performance tooltip source: " + machine.getClass().getName());
+            throw new IllegalArgumentException(
+                "Missing automatic performance tooltip source: " + machine.getClass()
+                    .getName());
         }
         return source;
     }
 
     private static void validateRange(TieredPart part, TierRange range) {
-        if (range.first() < 0 || range.last() < range.first() || range.last() > MAX_PROBE_TIER
+        if (range.first() < 0 || range.last() < range.first()
+            || range.last() > MAX_PROBE_TIER
             || part == TieredPart.HIGH_PRESSURE && range.last() > 1) {
             throw new IllegalArgumentException("Invalid tooltip probe range for " + part + ": " + range);
         }
@@ -183,11 +186,13 @@ public final class MultiblockPerformanceReader {
 
     private static String tierName(TieredPart part, int tier) {
         return switch (part) {
-            case VOLTAGE, GLASS, PARALLEL_CONTROLLER -> tier <= VoltageIndex.MAX ? TooltipHelper.voltageTierText(tier, false) : null;
-            case COIL -> tier <= HeatingCoilLevel.getMaxTier()
-                ? HeatingCoilLevel.getDisplayNameFromHeat((int) HeatingCoilLevel.getFromTier((byte) tier).getHeat(), true)
-                    + EnumChatFormatting.GRAY
+            case VOLTAGE, GLASS, PARALLEL_CONTROLLER -> tier <= VoltageIndex.MAX
+                ? TooltipHelper.voltageTierText(tier, false)
                 : null;
+            case COIL -> tier <= HeatingCoilLevel.getMaxTier() ? HeatingCoilLevel.getDisplayNameFromHeat(
+                (int) HeatingCoilLevel.getFromTier((byte) tier)
+                    .getHeat(),
+                true) + EnumChatFormatting.GRAY : null;
             case CASING, HIGH_PRESSURE -> null;
         };
     }

@@ -1,0 +1,34 @@
+Modern basic machine textures
+
+Upstream project: GregTech CEu Modern
+Authors: GregTechCEu contributors and the upstream GregTech texture artists.
+Repository: https://github.com/GregTechCEu/GregTech-Modern
+Release: v7.4.0-1.20.1
+Source: https://github.com/GregTechCEu/GregTech-Modern/tree/v7.4.0-1.20.1
+License: GNU Lesser General Public License version 3.
+Upstream license: https://github.com/GregTechCEu/GregTech-Modern/blob/v7.4.0-1.20.1/LICENSE
+
+Included material:
+- Single-block mixer, electrolyzer and chemical reactor face textures.
+- LV through UV voltage casing bottom, side and top textures.
+- Minecraft animation metadata belonging to these textures.
+
+The PNG files and animation metadata are unmodified upstream files. Their
+resource namespace and directories have been relocated to gtneverreset for
+Minecraft 1.7.10. The source and destination path, version and SHA-256 of each
+file are listed in asset-manifest.json. The manifest also records the SHA-256
+of the local mapped upstream JAR used for extraction. No upstream Java classes
+or machine model loader are included.
+
+GTM's completely transparent rear overlays are retained in the resource copy;
+GregTech's standard rear output indicator remains visible. Unpainted casing
+colors come directly from GTM; painted casings use GTNH's dye modulation.
+
+ModernFluidMachine's processing checks adapt the GT5-Unofficial basic-machine
+checks to multiple fluid tanks, under LGPL-3.0-only. Its GUI adapts GT5U's basic
+machine GUI and side selector under the same license. Reference version: 5.09.54.205.
+Source: https://github.com/GTNewHorizons/GT5-Unofficial/blob/5.09.54.205/src/main/java/gregtech/api/metatileentity/implementations/MTEBasicMachine.java
+The energy, progress, item handling and cleanroom APIs remain provided by GT5U.
+
+The accompanying LGPL-3.0 and GPL-3.0 license texts apply to this upstream
+material. These notices do not change the license of unrelated project files.

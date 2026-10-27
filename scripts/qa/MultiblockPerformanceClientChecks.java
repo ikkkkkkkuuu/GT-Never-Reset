@@ -75,7 +75,8 @@ public final class MultiblockPerformanceClientChecks {
                     Files.write(
                         new File(output(), "client-result.txt").toPath(),
                         "PASS".getBytes(StandardCharsets.UTF_8));
-                    System.out.println("MULTIBLOCK_PERFORMANCE_CLIENT_QA PASS: twelve English/Chinese performance pages");
+                    System.out
+                        .println("MULTIBLOCK_PERFORMANCE_CLIENT_QA PASS: sixteen English/Chinese performance pages");
                     finished = true;
                 } else show();
             }

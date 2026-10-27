@@ -30,22 +30,33 @@ final class MultiblockPerformanceFormatter {
     static List<String> bonuses(PerformanceSummary summary, BonusStat... shown) {
         Map<TieredPart, List<TierBonus>> byPart = new LinkedHashMap<>();
         for (TierBonus bonus : summary.tierBonuses()) {
-            if (Arrays.asList(shown).contains(bonus.stat())) {
-                byPart.computeIfAbsent(bonus.part(), ignored -> new ArrayList<>()).add(bonus);
+            if (Arrays.asList(shown)
+                .contains(bonus.stat())) {
+                byPart.computeIfAbsent(bonus.part(), ignored -> new ArrayList<>())
+                    .add(bonus);
             }
         }
         Map<Effects, List<String>> groups = new LinkedHashMap<>();
         for (var entry : byPart.entrySet()) {
-            List<String> effects = entry.getValue().stream().map(MultiblockPerformanceFormatter::effect).toList();
-            boolean perTier = entry.getValue().get(0).perTier();
+            List<String> effects = entry.getValue()
+                .stream()
+                .map(MultiblockPerformanceFormatter::effect)
+                .toList();
+            boolean perTier = entry.getValue()
+                .get(0)
+                .perTier();
             groups.computeIfAbsent(new Effects(effects, perTier), ignored -> new ArrayList<>())
                 .add(partName(entry.getKey()));
         }
         List<String> lines = new ArrayList<>();
         for (var entry : groups.entrySet()) {
             String parts = String.join(" / ", entry.getValue());
-            String effects = String.join(", ", entry.getKey().lines());
-            if (entry.getKey().perTier()) {
+            String effects = String.join(
+                ", ",
+                entry.getKey()
+                    .lines());
+            if (entry.getKey()
+                .perTier()) {
                 // #tr gtnr.tooltip.performance.per_tier
                 // # Per %s tier: %s
                 // # zh_CN 每%s等级：%s
@@ -62,22 +73,30 @@ final class MultiblockPerformanceFormatter {
 
     static List<String> rules(PerformanceSummary summary) {
         List<String> lines = new ArrayList<>();
-        boolean perfect = summary.stats() != null && summary.stats().perfectOverclock();
+        boolean perfect = summary.stats() != null && summary.stats()
+            .perfectOverclock();
         if (summary.heat() != null) addHeat(lines, summary.heat(), perfect);
         if (summary.stats() == null) return lines;
         for (TierThreshold threshold : summary.perfectOverclockFrom()) {
             // #tr gtnr.tooltip.performance.perfect_from
             // # Perfect overclocking at %s or higher
             // # zh_CN 达到%s或更高时启用无损超频
-            lines.add(StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.perfect_from", threshold(threshold)));
+            lines.add(
+                StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.perfect_from", threshold(threshold)));
         }
-        if (summary.tierSkips().isPresent()) addTierSkips(lines, summary.tierSkips().getAsInt());
+        if (summary.tierSkips()
+            .isPresent())
+            addTierSkips(
+                lines,
+                summary.tierSkips()
+                    .getAsInt());
         return lines;
     }
 
     private static String effect(TierBonus bonus) {
         String change = bonus.multiplicative() ? "×" + number(bonus.value())
-            : (bonus.value() > 0 ? "+" : "") + number(bonus.stat() == BonusStat.PARALLEL ? bonus.value() : bonus.value() * 100)
+            : (bonus.value() > 0 ? "+" : "")
+                + number(bonus.stat() == BonusStat.PARALLEL ? bonus.value() : bonus.value() * 100)
                 + (bonus.stat() == BonusStat.PARALLEL ? "" : "%");
         String value = EnumChatFormatting.AQUA + change + EnumChatFormatting.GRAY;
         return switch (bonus.stat()) {
@@ -111,35 +130,57 @@ final class MultiblockPerformanceFormatter {
     private static void addHeat(List<String> lines, HeatRules heat, boolean perfect) {
         if (heat.heatPerVoltageTier() > 0) {
             String from = heat.voltageHeatFrom() >= 0 && heat.voltageHeatFrom() < GTValues.VN.length
-                ? GTValues.VN[heat.voltageHeatFrom()] : Integer.toString(heat.voltageHeatFrom());
+                ? GTValues.VN[heat.voltageHeatFrom()]
+                : Integer.toString(heat.voltageHeatFrom());
             // #tr gtnr.tooltip.performance.heat.voltage
             // # Each voltage tier above %s adds %sK of machine heat
             // # zh_CN 每超过%s一级电压，机器温度增加%sK
-            lines.add(StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.heat.voltage", colored(from),
-                colored(number(heat.heatPerVoltageTier()))));
+            lines.add(
+                StatCollector.translateToLocalFormatted(
+                    "gtnr.tooltip.performance.heat.voltage",
+                    colored(from),
+                    colored(number(heat.heatPerVoltageTier()))));
         }
         if (!perfect && heat.freePerfectOverclocks() > 0) {
             // #tr gtnr.tooltip.performance.heat.free_oc
             // # Fixed machine heat provides %s free perfect overclocks
             // # zh_CN 固定机器温度可提供%s次免费无损超频
-            lines.add(StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.heat.free_oc",
-                colored(number(heat.freePerfectOverclocks()))));
+            lines.add(
+                StatCollector.translateToLocalFormatted(
+                    "gtnr.tooltip.performance.heat.free_oc",
+                    colored(number(heat.freePerfectOverclocks()))));
         }
-        if (!heat.usesRecipeHeat()) return;
+        if (!heat.usesRecipeHeat()) {
+            if (heat.discount()) {
+                // #tr gtnr.tooltip.performance.heat.fixed_discount
+                // # Fixed recipe heat: each %sK heat-discount step multiplies energy usage by %s
+                // # zh_CN 使用固定配方温度：温度折扣步长为%sK，每级耗电系数乘以%s
+                lines.add(
+                    StatCollector.translateToLocalFormatted(
+                        "gtnr.tooltip.performance.heat.fixed_discount",
+                        colored(number(MultiblockTooltipSource.HEAT_DISCOUNT_THRESHOLD)),
+                        colored(number(heat.discountFactor() * 100) + "%")));
+            }
+            return;
+        }
         if (heat.discount()) {
             // #tr gtnr.tooltip.performance.heat.discount
             // # Every %sK above the recipe heat multiplies energy usage by %s
             // # zh_CN 每比配方要求高%sK，耗电系数乘以%s
-            lines.add(StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.heat.discount",
-                colored(number(MultiblockTooltipSource.HEAT_DISCOUNT_THRESHOLD)),
-                colored(number(heat.discountFactor() * 100) + "%")));
+            lines.add(
+                StatCollector.translateToLocalFormatted(
+                    "gtnr.tooltip.performance.heat.discount",
+                    colored(number(MultiblockTooltipSource.HEAT_DISCOUNT_THRESHOLD)),
+                    colored(number(heat.discountFactor() * 100) + "%")));
         }
         if (!perfect && heat.overclock()) {
             // #tr gtnr.tooltip.performance.heat.overclock
             // # Every %sK above the recipe heat turns one overclock into a perfect overclock
             // # zh_CN 每比配方要求高%sK，可将一次超频变为无损超频
-            lines.add(StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.heat.overclock",
-                colored(number(MultiblockTooltipSource.HEAT_OVERCLOCK_THRESHOLD))));
+            lines.add(
+                StatCollector.translateToLocalFormatted(
+                    "gtnr.tooltip.performance.heat.overclock",
+                    colored(number(MultiblockTooltipSource.HEAT_OVERCLOCK_THRESHOLD))));
         }
     }
 
@@ -159,7 +200,9 @@ final class MultiblockPerformanceFormatter {
             // #tr gtnr.tooltip.performance.tier_skip.max
             // # Recipes may exceed the input voltage by at most %s tiers
             // # zh_CN 配方电压最多可高于输入电压%s级
-            lines.add(StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.tier_skip.max", colored(number(skips))));
+            lines.add(
+                StatCollector
+                    .translateToLocalFormatted("gtnr.tooltip.performance.tier_skip.max", colored(number(skips))));
         }
     }
 
@@ -169,8 +212,10 @@ final class MultiblockPerformanceFormatter {
         // #tr gtnr.tooltip.performance.part_tier
         // # %s tier %s
         // # zh_CN %s等级%s
-        return StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.part_tier",
-            partName(threshold.part()), colored(number(threshold.tier())));
+        return StatCollector.translateToLocalFormatted(
+            "gtnr.tooltip.performance.part_tier",
+            partName(threshold.part()),
+            colored(number(threshold.tier())));
     }
 
     private static String partName(TieredPart part) {

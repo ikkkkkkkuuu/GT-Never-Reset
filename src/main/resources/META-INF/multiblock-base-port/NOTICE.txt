@@ -46,9 +46,22 @@ reuse a canonical structure definition; material sub-channel probes preserve
 the other channels, and custom channel objects retain their descriptions.
 GTNL-specific gameplay changes, machine migrations, audit/export commands and
 steam/wireless special cases are excluded.
-Voltage/heat probing is not ported; GT-Never-Reset uses explicit performance
-stats. New machines can follow scripts/qa/StructureTooltip-NOTES.md for the
-structure and pure count interfaces. QA fixtures are not part of the mod JAR.
+Performance probing also follows the merged PR head. Each sample uses a fresh
+detached controller; scoped probe inputs leave runtime state unchanged. The
+declared complete tier range is checked for linear or multiplicative bonuses,
+and sustained perfect-overclock thresholds are reported. Voltage probes set
+both input voltage and total input EU consistently. Steam/wireless gameplay
+implementations and controller migrations are not included.
+GT5's actual processing calculator factory supplies heat and tier-skip rules.
+A read-only accessor exposes its protected configuration without reflection
+or executing a recipe. Two recipe heat values distinguish fixed recipe heat
+from recipe-dependent heat. The original 900K and 1800K heat steps and the
+calculator's configured multiplier are preserved; existing machines do not
+gain new temperature mechanics through tooltip integration.
+New machines can follow scripts/qa/StructureTooltip-NOTES.md and
+scripts/qa/MultiblockPerformance-NOTES.md for the interfaces. QA fixtures are
+not part of the mod JAR. PerformanceSummary, MultiblockPerformanceReader and
+MultiblockPerformanceFormatter retain LGPL-3.0-only source attribution.
 
 These third-party portions are outside the project's general MIT grant.
 SOURCE_MANIFEST.json records source and destination hashes and modifications.
