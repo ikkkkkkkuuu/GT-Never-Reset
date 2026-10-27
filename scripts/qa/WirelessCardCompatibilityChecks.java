@@ -36,7 +36,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import com.recursive_pineapple.matter_manipulator.common.building.PendingBlock;
 import com.recursive_pineapple.matter_manipulator.common.building.PendingBuild;
 import com.recursive_pineapple.matter_manipulator.common.building.PendingMove;
-import com.xyp.gtneverreset.common.item.WirelessFrequencyCard;
+import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
 import com.xyp.gtneverreset.mixins.late.matterManipulator.MixinPendingBlockWireless;
 import com.xyp.gtneverreset.mixins.late.matterManipulator.MixinPendingBuildWireless;
 import com.xyp.gtneverreset.mixins.late.matterManipulator.MixinPendingMoveWireless;

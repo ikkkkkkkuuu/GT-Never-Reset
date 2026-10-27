@@ -1,10 +1,12 @@
 package com.xyp.gtneverreset.client.gui;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
+
 import com.cleanroommc.modularui.ModularUI;
 import com.cleanroommc.modularui.api.UpOrDown;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.ModularScreen;
-import com.xyp.gtneverreset.client.render.PixelFontScope;
 
 import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.relauncher.Side;
@@ -112,4 +114,22 @@ public class PixelFontModularScreen extends ModularScreen {
         }
     }
 
+    /** Temporarily enables bitmap Latin glyphs; nested scopes restore their caller's state. */
+    @SideOnly(Side.CLIENT)
+    private static final class PixelFontScope implements AutoCloseable {
+
+        private final FontRenderer font;
+        private final boolean unicode;
+
+        private PixelFontScope() {
+            font = Minecraft.getMinecraft().fontRenderer;
+            unicode = font.getUnicodeFlag();
+            font.setUnicodeFlag(false);
+        }
+
+        @Override
+        public void close() {
+            font.setUnicodeFlag(unicode);
+        }
+    }
 }

@@ -10,7 +10,7 @@ import java.util.WeakHashMap;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxConnector;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxConnector;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -22,16 +22,16 @@ import cpw.mods.fml.common.gameevent.TickEvent;
  */
 public final class FluxTransferScheduler {
 
-    private static final Set<TileFluxConnector> NODES = Collections.newSetFromMap(new WeakHashMap<>());
-    private static List<TileFluxConnector> ordered = Collections.emptyList();
+    private static final Set<TileEntityFluxConnector> NODES = Collections.newSetFromMap(new WeakHashMap<>());
+    private static List<TileEntityFluxConnector> ordered = Collections.emptyList();
     private static boolean dirty;
 
-    public static void add(TileFluxConnector tile) {
+    public static void add(TileEntityFluxConnector tile) {
         NODES.add(tile);
         dirty = true;
     }
 
-    public static void remove(TileFluxConnector tile) {
+    public static void remove(TileEntityFluxConnector tile) {
         NODES.remove(tile);
         dirty = true;
     }
@@ -50,7 +50,7 @@ public final class FluxTransferScheduler {
     public void onChunkLoad(ChunkEvent.Load event) {
         if (event.world.isRemote) return;
         for (Object value : event.getChunk().chunkTileEntityMap.values()) {
-            if (value instanceof TileFluxConnector tile && !tile.isInvalid()) add(tile);
+            if (value instanceof TileEntityFluxConnector tile && !tile.isInvalid()) add(tile);
         }
     }
 
@@ -68,14 +68,14 @@ public final class FluxTransferScheduler {
         if (dirty) {
             ordered = new ArrayList<>(NODES);
             ordered.sort(
-                Comparator.comparing(TileFluxConnector::isPlug)
+                Comparator.comparing(TileEntityFluxConnector::isPlug)
                     .reversed()
                     .thenComparing(
-                        Comparator.comparingInt(TileFluxConnector::effectivePriority)
+                        Comparator.comparingInt(TileEntityFluxConnector::effectivePriority)
                             .reversed()));
             dirty = false;
         }
-        for (TileFluxConnector tile : ordered) {
+        for (TileEntityFluxConnector tile : ordered) {
             if (!tile.isInvalid() && tile.getWorldObj() != null && !tile.getWorldObj().isRemote) tile.updateEntity();
         }
     }

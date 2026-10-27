@@ -7,7 +7,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeChunkManager;
 
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxConnector;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxConnector;
 
 /**
  * Forge 1.7.10 adapter for Flux Networks' opt-in chunk loading switch. Each ticket forces only
@@ -15,7 +15,7 @@ import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxConnector;
  */
 public final class FluxChunkLoading implements ForgeChunkManager.LoadingCallback {
 
-    public static ForgeChunkManager.Ticket request(TileFluxConnector tile) {
+    public static ForgeChunkManager.Ticket request(TileEntityFluxConnector tile) {
         ForgeChunkManager.Ticket ticket = ForgeChunkManager
             .requestTicket(GTNeverReset.INSTANCE, tile.getWorldObj(), ForgeChunkManager.Type.NORMAL);
         if (ticket != null) {
@@ -40,7 +40,7 @@ public final class FluxChunkLoading implements ForgeChunkManager.LoadingCallback
             int z = ticket.getModData()
                 .getInteger("fluxZ");
             if (ticket.getModData()
-                .hasKey("fluxX") && world.getTileEntity(x, y, z) instanceof TileFluxConnector tile
+                .hasKey("fluxX") && world.getTileEntity(x, y, z) instanceof TileEntityFluxConnector tile
                 && tile.restoreTicket(ticket)) {
                 ForgeChunkManager.forceChunk(ticket, new ChunkCoordIntPair(x >> 4, z >> 4));
             } else {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-package com.xyp.gtneverreset.common.item;
+package com.xyp.gtneverreset.common.item.items;
 
 import java.util.List;
 

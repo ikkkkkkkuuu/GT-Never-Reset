@@ -22,7 +22,7 @@ import net.minecraft.util.IChatComponent;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.github.bsideup.jabel.Desugar;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileStockIOInterface;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
 import com.xyp.gtneverreset.common.part.PartAdvancedIOBus;
 import com.xyp.gtneverreset.common.part.PartStockIOInterface;
 
@@ -106,7 +106,7 @@ public class WirelessInterfaceView {
         }
         if (machine instanceof IInterfaceViewable host) return readInterfaceName(host);
         if (machine instanceof IStorageBus bus && machine instanceof AEBasePart part) return readStorageName(bus, part);
-        if (machine instanceof TileStockIOInterface tile) return readMachineName(tile.getTarget());
+        if (machine instanceof TileEntityStockIOInterface tile) return readMachineName(tile.getTarget());
         if (machine instanceof PartStockIOInterface || machine instanceof PartAdvancedIOBus) {
             AEBasePart part = (AEBasePart) machine;
             var tile = part.getTile();

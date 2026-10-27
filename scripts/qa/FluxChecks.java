@@ -14,9 +14,9 @@ import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxConnector;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxPlug;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxPoint;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxConnector;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxPlug;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxPoint;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.machine.flux.FluxDropData;
 import com.xyp.gtneverreset.utils.machine.flux.FluxTransferBuffer;
@@ -30,8 +30,8 @@ import gregtech.common.misc.WirelessNetworkManager;
 
 public final class FluxChecks {
 
-    private TileFluxPlug plug;
-    private TileFluxPoint point;
+    private TileEntityFluxPlug plug;
+    private TileEntityFluxPoint point;
     private BaseMetaTileEntity sink;
     private int assertions;
 
@@ -45,8 +45,8 @@ public final class FluxChecks {
         sink = nativeTile(world, 3, ItemList.Hatch_Energy_LV.get(1), ForgeDirection.WEST);
         place(world, 0, GTNRItemList.FluxPlug.get(1), player);
         place(world, 2, GTNRItemList.FluxPoint.get(1), player);
-        plug = (TileFluxPlug) world.getTileEntity(0, 10, 0);
-        point = (TileFluxPoint) world.getTileEntity(2, 10, 0);
+        plug = (TileEntityFluxPlug) world.getTileEntity(0, 10, 0);
+        point = (TileEntityFluxPoint) world.getTileEntity(2, 10, 0);
         FluxTransferScheduler.remove(point);
         new FluxTransferScheduler().onChunkLoad(new ChunkEvent.Load(world.getChunkFromBlockCoords(2, 0)));
         require(nodes().contains(point), "loading a dormant chunk restores its existing connector to the scheduler");
@@ -86,7 +86,7 @@ public final class FluxChecks {
         System.out.println("FLUX_QA server checks: " + assertions + " assertions");
     }
 
-    public TileFluxPoint point() {
+    public TileEntityFluxPoint point() {
         return point;
     }
 
@@ -127,7 +127,7 @@ public final class FluxChecks {
         saved.setLong("fluxAmperage", Long.MAX_VALUE);
         saved.setInteger("fluxPriority", Integer.MIN_VALUE);
         saved.setString("fluxOwner", "invalid UUID");
-        TileFluxPlug loaded = new TileFluxPlug();
+        TileEntityFluxPlug loaded = new TileEntityFluxPlug();
         loaded.readFromNBT(saved);
         NBTTagCompound rewritten = new NBTTagCompound();
         loaded.writeToNBT(rewritten);
@@ -135,7 +135,7 @@ public final class FluxChecks {
             loaded.stored() == 987654321 && rewritten.getLong("fluxBuffer") == 987654321,
             "real TileEntity NBT preserves buffered EU");
         require(
-            loaded.voltage() == TileFluxConnector.MAX_VOLTAGE && loaded.amperage() == TileFluxConnector.MAX_AMPERAGE
+            loaded.voltage() == TileEntityFluxConnector.MAX_VOLTAGE && loaded.amperage() == TileEntityFluxConnector.MAX_AMPERAGE
                 && loaded.priority() == -9999,
             "corrupt numeric settings clamp without wrapping");
         NBTTagCompound portable = new NBTTagCompound();
@@ -154,7 +154,7 @@ public final class FluxChecks {
                 && !drop.getTagCompound()
                     .hasKey("fluxVoltage"),
             "drop cleanup resets settings and preserves unknown NBT");
-        TileFluxPoint defaults = new TileFluxPoint();
+        TileEntityFluxPoint defaults = new TileEntityFluxPoint();
         defaults.readFromNBT(new NBTTagCompound());
         require(
             defaults.voltage() == 32 && defaults.amperage() == 1
@@ -181,7 +181,7 @@ public final class FluxChecks {
     }
 
     private void verifyScheduler(World world) throws Exception {
-        TileFluxPlug old = new TileFluxPlug();
+        TileEntityFluxPlug old = new TileEntityFluxPlug();
         old.setWorldObj(world);
         FluxTransferScheduler.add(old);
         new FluxTransferScheduler().onWorldUnload(new WorldEvent.Unload(world));
@@ -198,7 +198,7 @@ public final class FluxChecks {
     private void verifyBreakRefund(EntityPlayerMP player) {
         World world = player.worldObj;
         place(world, 6, GTNRItemList.FluxPlug.get(1), player);
-        TileFluxPlug removed = (TileFluxPlug) world.getTileEntity(6, 10, 0);
+        TileEntityFluxPlug removed = (TileEntityFluxPlug) world.getTileEntity(6, 10, 0);
         NBTTagCompound saved = new NBTTagCompound();
         removed.writeToNBT(saved);
         saved.setLong("fluxBuffer", 64);

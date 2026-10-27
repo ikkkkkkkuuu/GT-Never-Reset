@@ -24,7 +24,7 @@ import net.minecraft.world.WorldType;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
-import com.xyp.gtneverreset.common.item.StableEndCrystalItem;
+import com.xyp.gtneverreset.common.item.items.StableEndCrystalItem;
 import com.xyp.gtneverreset.common.machine.basicMachine.EndCrystalResonator;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;

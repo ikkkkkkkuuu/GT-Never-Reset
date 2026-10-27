@@ -25,7 +25,7 @@ import com.cleanroommc.modularui.value.sync.InteractionSyncHandler;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
-import com.xyp.gtneverreset.client.render.FluxConnectorRenderer;
+import com.xyp.gtneverreset.client.render.FluxConnectorRender;
 import com.xyp.gtneverreset.utils.enums.ModList;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -220,10 +220,10 @@ public final class FluxClientChecks {
     }
 
     private static void verifyGeometry() throws Exception {
-        Method vertices = FluxConnectorRenderer.class
+        Method vertices = FluxConnectorRender.class
             .getDeclaredMethod("vertices", ForgeDirection.class, double[].class, double[].class);
         vertices.setAccessible(true);
-        Method rotation = FluxConnectorRenderer.class
+        Method rotation = FluxConnectorRender.class
             .getDeclaredMethod("rotate", double.class, double.class, double.class, int.class);
         rotation.setAccessible(true);
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {

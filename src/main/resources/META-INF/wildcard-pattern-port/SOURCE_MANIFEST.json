@@ -47,7 +47,7 @@
     {
       "source": "src/main/java/com/xyp/gtnotgood/common/items/wildcard/WildcardPatternItem.java",
       "sourceSha256": "621c6deef95fac4d652334b8900417e48feabd4114f03b35017f093827782a35",
-      "destination": "src/main/java/com/xyp/gtneverreset/common/item/WildcardPatternItem.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/item/items/WildcardPatternItem.java",
       "destinationSha256": "5edfa6a613abbb23fb8985d8d96997c7f7d2adb256f096fb467184b7d1610a1b",
       "license": "GTNG-MIT.txt"
     },

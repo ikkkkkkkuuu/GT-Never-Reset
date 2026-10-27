@@ -13,7 +13,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 
-import com.xyp.gtneverreset.common.item.WildcardPatternItem;
+import com.xyp.gtneverreset.common.item.items.WildcardPatternItem;
 import com.xyp.gtneverreset.utils.recipes.wildcard.model.IWildcardFilterComponent;
 import com.xyp.gtneverreset.utils.recipes.wildcard.model.IWildcardIOComponent;
 import com.xyp.gtneverreset.utils.recipes.wildcard.model.WildcardExpansion;

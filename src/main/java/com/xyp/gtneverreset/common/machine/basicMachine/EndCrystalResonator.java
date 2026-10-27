@@ -16,7 +16,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
-import com.xyp.gtneverreset.common.item.StableEndCrystalItem;
+import com.xyp.gtneverreset.common.item.items.StableEndCrystalItem;
 
 import gregtech.api.enums.Textures;
 import gregtech.api.interfaces.ITexture;

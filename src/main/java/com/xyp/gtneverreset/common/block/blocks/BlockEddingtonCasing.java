@@ -10,7 +10,6 @@ import net.minecraft.world.World;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
-import com.xyp.gtneverreset.client.render.VaultConnectedIcons;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.structure.VaultCasingConnections;
 
@@ -23,6 +22,8 @@ public final class BlockEddingtonCasing extends Block {
 
     public static final String REGISTRY_NAME = "eddington_wall_casing";
     private final ITexture casingTexture;
+    @SideOnly(Side.CLIENT)
+    private IIcon[] connectedIcons;
 
     public BlockEddingtonCasing() {
         super(Material.iron);
@@ -69,13 +70,24 @@ public final class BlockEddingtonCasing extends Block {
     @SideOnly(Side.CLIENT)
     public void registerBlockIcons(IIconRegister register) {
         super.registerBlockIcons(register);
-        VaultConnectedIcons.register(register, "sl_eddington");
+        IIcon[] variants = new IIcon[256];
+        for (int mask = 0; mask < variants.length; mask++) {
+            if (VaultCasingConnections.normalizeMask(mask) == mask) {
+                variants[mask] = register
+                    .registerIcon(ModList.GTNeverReset.getResourcePath("stellar/ctm/eddington_" + mask));
+            }
+        }
+        for (int mask = 0; mask < variants.length; mask++) {
+            variants[mask] = variants[VaultCasingConnections.normalizeMask(mask)];
+        }
+        connectedIcons = variants;
     }
 
     @Override
     @SideOnly(Side.CLIENT)
     public IIcon getIcon(IBlockAccess world, int x, int y, int z, int side) {
-        IIcon icon = VaultConnectedIcons.getIcon("sl_eddington", VaultCasingConnections.getMask(world, x, y, z, side));
+        IIcon icon = connectedIcons == null ? null
+            : connectedIcons[VaultCasingConnections.getMask(world, x, y, z, side) & 255];
         return icon == null ? blockIcon : icon;
     }
 }

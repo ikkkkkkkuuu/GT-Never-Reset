@@ -12,7 +12,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public final class StableEndCrystalRenderer extends Render {
+public final class StableEndCrystalRender extends Render {
 
     private static final ResourceLocation TEXTURE = new ResourceLocation(
         "textures/entity/endercrystal/endercrystal.png");

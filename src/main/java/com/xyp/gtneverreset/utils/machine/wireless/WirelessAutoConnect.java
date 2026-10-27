@@ -20,7 +20,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.world.BlockEvent;
 
 import com.cleanroommc.modularui.factory.GuiFactories;
-import com.xyp.gtneverreset.common.item.WirelessFrequencyCard;
+import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
 import com.xyp.gtneverreset.mixins.late.appliedenergistics2.wireless.AccessorTileController;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Address;
 

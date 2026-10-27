@@ -34,7 +34,7 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 
 import com.glodblock.github.loader.ItemAndBlockHolder;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileStockIOInterface;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
 import com.xyp.gtneverreset.common.gui.StockIOGui;
 import com.xyp.gtneverreset.common.part.PartStockIOInterface;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -81,7 +81,7 @@ public final class StockIOClientChecks {
     private volatile NBTTagCompound conversionTag;
     private boolean neiConversionsChecked;
     private PartStockIOInterface part;
-    private TileStockIOInterface block;
+    private TileEntityStockIOInterface block;
     private Fixture partFixture;
     private Fixture blockFixture;
 
@@ -369,8 +369,8 @@ public final class StockIOClientChecks {
                 if (pending) {
                     world.setBlock(12, 10, 0, blockType, ForgeDirection.NORTH.ordinal(), 3);
                     blockType.onBlockPlacedBy(world, 12, 10, 0, player, drops[0]);
-                    TileStockIOInterface restored = (TileStockIOInterface) world.getTileEntity(12, 10, 0);
-                    NBTTagCompound expected = contents(new TileStockIOInterface().getLogic());
+                    TileEntityStockIOInterface restored = (TileEntityStockIOInterface) world.getTileEntity(12, 10, 0);
+                    NBTTagCompound expected = contents(new TileEntityStockIOInterface().getLogic());
                     expected.setTag(
                         "stockIOEscrow",
                         refundsOnly.getTag("stockIOEscrow")
@@ -381,7 +381,7 @@ public final class StockIOClientChecks {
                         "replacing removal drops restores default settings and the entire refund queue");
                     NBTTagCompound savedBlock = new NBTTagCompound();
                     block.writeToNBT(savedBlock);
-                    TileStockIOInterface loadedBlock = new TileStockIOInterface();
+                    TileEntityStockIOInterface loadedBlock = new TileEntityStockIOInterface();
                     loadedBlock.readFromNBT(savedBlock);
                     NBTTagCompound savedPart = new NBTTagCompound();
                     part.writeToNBT(savedPart);
@@ -558,7 +558,7 @@ public final class StockIOClientChecks {
             Block.getBlockFromItem(
                 GTNRItemList.StockIOInterface.get(1)
                     .getItem()));
-        block = (TileStockIOInterface) world.getTileEntity(4, 10, 0);
+        block = (TileEntityStockIOInterface) world.getTileEntity(4, 10, 0);
         block.setOwnerName(player.getCommandSenderName());
         block.setTargetSide(ForgeDirection.SOUTH);
         partFixture = fixture(player, 0, part.getLogic(), part.getProxy());

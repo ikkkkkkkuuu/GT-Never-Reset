@@ -15,7 +15,7 @@ import net.minecraftforge.event.world.WorldEvent;
 
 import org.lwjgl.input.Keyboard;
 
-import com.xyp.gtneverreset.common.item.WirelessFrequencyCard;
+import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.wireless.OpenWirelessCardPacket;
 import com.xyp.gtneverreset.common.packet.wireless.ToggleWirelessCardPacket;

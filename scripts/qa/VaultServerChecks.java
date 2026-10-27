@@ -86,7 +86,7 @@ public final class VaultServerChecks {
         require(
             casingTexture != null && !casingTexture.getClass()
                 .getName()
-                .contains("VaultConnectedTexture"),
+                .contains("VaultConnectedTextureRender"),
             "common casing texture path avoids client connected renderer");
         BaseMetaTileEntity base = place(world, new int[] { 0, 70, 0 }, GTNRMachineID.SingularityDataHub.id);
         SingularityDataHub machine = (SingularityDataHub) base.getMetaTileEntity();

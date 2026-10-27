@@ -5,12 +5,14 @@ package com.xyp.gtneverreset.common.packet.quantum;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
 
-import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.client.quantum.ICraftingCycleHost;
+import com.xyp.gtneverreset.client.quantum.RecursivePatternReport;
 import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.Cycle;
 import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.PatternLocation;
 
@@ -20,6 +22,8 @@ import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 
 public class RecursivePatternResultPacket implements IMessage {
@@ -137,11 +141,25 @@ public class RecursivePatternResultPacket implements IMessage {
         }
     }
 
+    @SideOnly(Side.CLIENT)
+    private void handleClient() {
+        Minecraft minecraft = Minecraft.getMinecraft();
+        var connection = minecraft.getNetHandler();
+        minecraft.func_152344_a(() -> {
+            if (minecraft.getNetHandler() != connection) return;
+            if (minecraft.currentScreen instanceof ICraftingCycleHost host) {
+                host.gtnr$cyclesFound(request, cycles, manual);
+            } else if (manual) {
+                RecursivePatternReport.show(minecraft, request, cycles);
+            }
+        });
+    }
+
     public static final class Handler implements IMessageHandler<RecursivePatternResultPacket, IMessage> {
 
         @Override
         public IMessage onMessage(RecursivePatternResultPacket message, MessageContext context) {
-            GTNeverReset.proxy.receiveRecursivePatternResult(message.request, message.cycles, message.manual);
+            message.handleClient();
             return null;
         }
     }

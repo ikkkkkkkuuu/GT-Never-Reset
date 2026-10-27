@@ -9,7 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
 import com.xyp.gtneverreset.common.gui.WirelessTerminalGuiHandler;
-import com.xyp.gtneverreset.common.item.ItemWirelessDualInterfaceTerminal;
+import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
 import com.xyp.gtneverreset.container.ContainerQuickEncodingTerminal;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
 

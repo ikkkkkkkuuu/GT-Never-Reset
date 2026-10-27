@@ -21,7 +21,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.glodblock.github.loader.ItemAndBlockHolder;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileStockIOInterface;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
 import com.xyp.gtneverreset.common.part.PartStockIOInterface;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModList;
@@ -253,7 +253,7 @@ public final class StockIOGeneratorClientChecks {
                 Block.getBlockFromItem(
                     GTNRItemList.StockIOInterface.get(1)
                         .getItem()));
-            TileStockIOInterface stock = (TileStockIOInterface) world.getTileEntity(x, 10, 0);
+            TileEntityStockIOInterface stock = (TileEntityStockIOInterface) world.getTileEntity(x, 10, 0);
             stock.setOwnerName(player.getCommandSenderName());
             stock.setTargetSide(ForgeDirection.SOUTH);
             logic = stock.getLogic();

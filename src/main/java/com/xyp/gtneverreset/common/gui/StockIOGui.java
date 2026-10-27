@@ -63,7 +63,7 @@ import com.cleanroommc.modularui.widgets.slot.ModularSlot;
 import com.cleanroommc.modularui.widgets.slot.PhantomItemSlot;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.xyp.gtneverreset.client.gui.PixelFontModularScreen;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileStockIOInterface;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
 import com.xyp.gtneverreset.common.part.PartStockIOInterface;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.stockio.StockIOLogic;
@@ -946,7 +946,7 @@ public final class StockIOGui {
                         .ordinal()));
         }
 
-        public void open(EntityPlayer player, TileStockIOInterface tile) {
+        public void open(EntityPlayer player, TileEntityStockIOInterface tile) {
             open(player, new Data(player, tile.xCoord, tile.yCoord, tile.zCoord, -1));
         }
 
@@ -1008,7 +1008,7 @@ public final class StockIOGui {
             private Object resolve() {
                 if (!getWorld().blockExists(getX(), getY(), getZ())) return null;
                 TileEntity tile = getTileEntity();
-                if (side == -1) return tile instanceof TileStockIOInterface ? tile : null;
+                if (side == -1) return tile instanceof TileEntityStockIOInterface ? tile : null;
                 return side >= 0 && side < 6
                     && tile instanceof IPartHost host
                     && host.getPart(ForgeDirection.getOrientation(side)) instanceof PartStockIOInterface part ? part
@@ -1016,7 +1016,7 @@ public final class StockIOGui {
             }
 
             private StockIOLogic logic() {
-                return source instanceof TileStockIOInterface tile ? tile.getLogic()
+                return source instanceof TileEntityStockIOInterface tile ? tile.getLogic()
                     : ((PartStockIOInterface) source).getLogic();
             }
         }

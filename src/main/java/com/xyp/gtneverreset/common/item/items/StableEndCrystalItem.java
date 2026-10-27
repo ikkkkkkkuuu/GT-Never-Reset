@@ -1,4 +1,4 @@
-package com.xyp.gtneverreset.common.item;
+package com.xyp.gtneverreset.common.item.items;
 
 import java.util.List;
 

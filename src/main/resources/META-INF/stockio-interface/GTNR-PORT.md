@@ -8,7 +8,7 @@ META-INF/advancedio-port, which are preserved as source provenance.
 
 Current destinations are under com.xyp.gtneverreset:
 - common.part: PartAdvancedIOBus and PartStockIOInterface;
-- common.item: ItemAdvancedIOBus and ItemStockIOInterface;
+- common.item.items: ItemAdvancedIOBus and ItemStockIOInterface;
 - common.block.blocks, its item and tile subpackages: the stock interface block;
 - common.gui.modularui and its handler, sync and widget subpackages: both GUIs;
 - utils.machine.advancedio and utils.machine.stockio: transfers and transactions;

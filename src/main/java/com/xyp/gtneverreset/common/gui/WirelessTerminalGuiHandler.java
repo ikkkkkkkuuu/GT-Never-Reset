@@ -7,7 +7,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.common.item.ItemWirelessDualInterfaceTerminal;
+import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.terminal.CPacketSwitchGuis;
 import com.xyp.gtneverreset.container.ContainerQuickEncodingTerminal;

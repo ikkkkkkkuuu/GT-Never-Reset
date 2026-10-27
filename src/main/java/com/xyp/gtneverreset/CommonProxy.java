@@ -1,10 +1,7 @@
 package com.xyp.gtneverreset;
 
-import java.util.List;
-
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 
@@ -24,7 +21,6 @@ import com.xyp.gtneverreset.loader.EntityLoader;
 import com.xyp.gtneverreset.loader.ItemLoader;
 import com.xyp.gtneverreset.loader.MachineLoader;
 import com.xyp.gtneverreset.loader.RecipeLoader;
-import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.Cycle;
 import com.xyp.gtneverreset.utils.crafting.quantum.ae2.QuantumCraftingCache;
 import com.xyp.gtneverreset.utils.crafting.quantum.ae2.QuantumCraftingMode;
 import com.xyp.gtneverreset.utils.crafting.quantum.hooks.ticking.TickHandler;
@@ -34,7 +30,6 @@ import com.xyp.gtneverreset.utils.machine.wireless.WirelessAutoConnect;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager;
 
 import appeng.api.AEApi;
-import appeng.api.storage.data.IAEStack;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
@@ -48,10 +43,6 @@ import gregtech.api.interfaces.ITexture;
 import gregtech.api.render.TextureFactory;
 
 public class CommonProxy {
-
-    public ITexture createVaultCasingTexture(Block block) {
-        return TextureFactory.of(block, 0);
-    }
 
     public void preInit(FMLPreInitializationEvent event) {
         ConfigLoader.register(event.getModConfigurationDirectory());
@@ -77,18 +68,12 @@ public class CommonProxy {
     }
 
     public void postInit(FMLPostInitializationEvent event) {
-        AEApi.instance()
+        var interfaceTerminal = AEApi.instance()
             .registries()
-            .interfaceTerminal()
-            .register(AssemblerMatrix.class);
-        AEApi.instance()
-            .registries()
-            .interfaceTerminal()
-            .register(SuperMTEHatchCraftingInputME.class);
-        AEApi.instance()
-            .registries()
-            .interfaceTerminal()
-            .register(CircuitMEPatternBuffer.class);
+            .interfaceTerminal();
+        interfaceTerminal.register(AssemblerMatrix.class);
+        interfaceTerminal.register(SuperMTEHatchCraftingInputME.class);
+        interfaceTerminal.register(CircuitMEPatternBuffer.class);
         ChatComponentCustomRegistry.register(ChatComponentInterfaceNameSuffix::new);
         RecipeLoader.registerRecipes();
     }
@@ -96,24 +81,6 @@ public class CommonProxy {
     public void loadComplete(FMLLoadCompleteEvent event) {
         RecipeLoader.registerLateRecipes();
     }
-
-    public Object createTerminalGui(int id, EntityPlayer player, World world, int slot) {
-        return null;
-    }
-
-    public boolean preferOwnInterfaceNames() {
-        return false;
-    }
-
-    public void showWirelessHighlight(int dimension, int x, int y, int z) {}
-
-    public void receiveWirelessVisualisation(NBTTagCompound bindingTag, int dimension, byte[] payload) {}
-
-    public void receiveQuantumAvailability(boolean available) {}
-
-    public void receiveQuantumConfirm(boolean quantumJob) {}
-
-    public void receiveRecursivePatternResult(IAEStack<?> request, List<Cycle> cycles, boolean manual) {}
 
     public void serverStarting(FMLServerStartingEvent event) {
         TickHandler.instance()
@@ -130,5 +97,17 @@ public class CommonProxy {
     public void serverStopped(FMLServerStoppedEvent event) {
         FluxTransferScheduler.clear();
         WirelessChannelManager.clear();
+    }
+
+    public ITexture createVaultCasingTexture(Block block) {
+        return TextureFactory.of(block, 0);
+    }
+
+    public Object createTerminalGui(int id, EntityPlayer player, World world, int slot) {
+        return null;
+    }
+
+    public boolean preferOwnInterfaceNames() {
+        return false;
     }
 }

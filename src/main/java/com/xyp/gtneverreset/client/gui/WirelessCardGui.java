@@ -87,7 +87,7 @@ import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.event.WirelessCardInput;
 import com.xyp.gtneverreset.client.gui.WirelessCardGui.Layout;
 import com.xyp.gtneverreset.client.gui.WirelessCardGui.WirelessCardButton;
-import com.xyp.gtneverreset.client.render.WirelessWorldHighlight;
+import com.xyp.gtneverreset.client.render.WirelessWorldHighlightRender;
 import com.xyp.gtneverreset.container.WirelessCardContainer;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.wireless.InterfaceNameLocalization;
@@ -1049,7 +1049,7 @@ public class WirelessCardGui extends WirelessCardPanel {
             }
             roots = Collections.unmodifiableList(new ArrayList<>(next));
             if (data.hasKey("highlight", 9)) {
-                WirelessWorldHighlight.show(Minecraft.getMinecraft(), data.getTagList("highlight", 10));
+                WirelessWorldHighlightRender.show(Minecraft.getMinecraft(), data.getTagList("highlight", 10));
                 data.removeTag("highlight");
             }
             rebuild();

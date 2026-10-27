@@ -31,9 +31,9 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public class WirelessWorldHighlight {
+public class WirelessWorldHighlightRender {
 
-    public static final WirelessWorldHighlight INSTANCE = new WirelessWorldHighlight();
+    public static final WirelessWorldHighlightRender INSTANCE = new WirelessWorldHighlightRender();
     private static final long DURATION_MS = 5_000;
 
     @Desugar

@@ -22,7 +22,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxConnector;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxConnector;
 import com.xyp.gtneverreset.utils.enums.ModList;
 
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
@@ -30,7 +30,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public final class FluxConnectorRenderer implements ISimpleBlockRenderingHandler {
+public final class FluxConnectorRender implements ISimpleBlockRenderingHandler {
 
     private final Map<String, JsonArray> models = new HashMap<>();
 
@@ -71,7 +71,7 @@ public final class FluxConnectorRenderer implements ISimpleBlockRenderingHandler
 
     private void render(BlockFluxConnector block, IBlockAccess world, int x, int y, int z) {
         boolean active = world == null
-            || world.getTileEntity(x, y, z) instanceof TileFluxConnector tile && tile.enabled();
+            || world.getTileEntity(x, y, z) instanceof TileEntityFluxConnector tile && tile.enabled();
         drawModel(block, model(block.plug ? "fluxplug" : "fluxpoint"), active, -1, x, y, z, world == null);
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
             if (world == null || block.connects(world, x, y, z, side)) {

@@ -313,8 +313,8 @@
     },
     {
       "source": "src/main/java/com/xyp/gtnotgood/client/wirelessfrequency/WirelessWorldHighlight.java",
-      "destination": "src/main/java/com/xyp/gtneverreset/client/render/WirelessWorldHighlight.java",
-      "symbol": "com.xyp.gtneverreset.client.render.WirelessWorldHighlight",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/render/WirelessWorldHighlightRender.java",
+      "symbol": "com.xyp.gtneverreset.client.render.WirelessWorldHighlightRender",
       "sha256": "927dd9d32092e88216b8d55b7d26ad195851ee776f94ede55a5a3be6170f6fde"
     },
     {
@@ -343,8 +343,8 @@
     },
     {
       "source": "src/main/java/com/xyp/gtnotgood/common/items/wirelessfrequency/WirelessFrequencyCard.java",
-      "destination": "src/main/java/com/xyp/gtneverreset/common/item/WirelessFrequencyCard.java",
-      "symbol": "com.xyp.gtneverreset.common.item.WirelessFrequencyCard",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/item/items/WirelessFrequencyCard.java",
+      "symbol": "com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard",
       "sha256": "c9febb6f3cbd34b91cf1acb67e7ec418ed18a9b51357231e6240be8ecb6bccff"
     },
     {

@@ -34,7 +34,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.modularui2.GTGuiThemes;
 
 /** Full-block host for the same virtual stock transaction used by the cable-mounted interface. */
-public final class TileStockIOInterface extends TileEntity
+public final class TileEntityStockIOInterface extends TileEntity
     implements IGuiHolder<PosGuiData>, IGridProxyable, IActionHost {
 
     private static final int CONNECT_RETRY_LIMIT = 5;
@@ -51,12 +51,12 @@ public final class TileStockIOInterface extends TileEntity
 
         @Override
         public boolean isServerSide() {
-            return TileStockIOInterface.this.isServerSide();
+            return TileEntityStockIOInterface.this.isServerSide();
         }
 
         @Override
         public AENetworkProxy getProxy() {
-            return TileStockIOInterface.this.getProxy();
+            return TileEntityStockIOInterface.this.getProxy();
         }
 
         @Override
@@ -66,7 +66,7 @@ public final class TileStockIOInterface extends TileEntity
 
         @Override
         public TileEntity getTarget() {
-            return TileStockIOInterface.this.getTarget();
+            return TileEntityStockIOInterface.this.getTarget();
         }
 
         @Override
@@ -81,7 +81,7 @@ public final class TileStockIOInterface extends TileEntity
 
         @Override
         public void markDirty() {
-            TileStockIOInterface.this.markDirty();
+            TileEntityStockIOInterface.this.markDirty();
         }
 
         @Override

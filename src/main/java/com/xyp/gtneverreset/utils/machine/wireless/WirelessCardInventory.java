@@ -16,7 +16,7 @@ import net.minecraft.nbt.NBTTagCompound;
 
 import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.gtnhlib.compat.BaublesCompat;
-import com.xyp.gtneverreset.common.item.WirelessFrequencyCard;
+import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardSelection.Candidate;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Address;
 

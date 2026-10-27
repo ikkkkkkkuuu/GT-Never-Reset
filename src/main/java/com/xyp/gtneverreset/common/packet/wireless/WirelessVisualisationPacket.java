@@ -3,9 +3,10 @@
 
 package com.xyp.gtneverreset.common.packet.wireless;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.NBTTagCompound;
 
-import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.client.event.WirelessCardInput;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardBinding;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardVisualisation;
 
@@ -14,6 +15,8 @@ import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 
 public class WirelessVisualisationPacket implements IMessage {
@@ -66,11 +69,21 @@ public class WirelessVisualisationPacket implements IMessage {
         buffer.writeBytes(payload);
     }
 
+    @SideOnly(Side.CLIENT)
+    private void handleClient() {
+        Minecraft minecraft = Minecraft.getMinecraft();
+        var connection = minecraft.getNetHandler();
+        minecraft.func_152344_a(() -> {
+            if (minecraft.getNetHandler() == connection) WirelessCardInput
+                .receiveVisualisation(minecraft, WirelessCardBinding.read(bindingTag), dimension, payload);
+        });
+    }
+
     public static final class Handler implements IMessageHandler<WirelessVisualisationPacket, IMessage> {
 
         @Override
         public IMessage onMessage(WirelessVisualisationPacket message, MessageContext context) {
-            GTNeverReset.proxy.receiveWirelessVisualisation(message.bindingTag, message.dimension, message.payload);
+            message.handleClient();
             return null;
         }
     }

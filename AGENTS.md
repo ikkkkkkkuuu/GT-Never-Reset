@@ -15,7 +15,7 @@
 | 配置 | `config.MainConfig`；对照 GTNL，用 GTNHLib 注解和内部分类集中声明 |
 | 加载和注册编排 | `loader` |
 | 方块、对应 ItemBlock、TileEntity | 分别为 `common.block.blocks`、其下的 `item`、`tile` |
-| 普通物品 | `common.item` |
+| 普通物品 | `common.item.items`；物品基类及确有共用职责的基础类型放 `common.item` |
 | 单方块机器、多方块、仓室、机器基类 | 分别为 `common.machine.basicMachine`、`multiblock`、`hatch`、`multiMachineBase` |
 | 配方实现 | `common.recipe`，按配方所属系统细分；统一由 recipe loader 调用 |
 | GT 机器、仓室的 ModularUI 界面 | `common.gui.modularui`；控制器保留 UI 入口 |
@@ -34,11 +34,13 @@
 - 跨 GUI 复用或确有独立职责的复杂控件、同步实现才保留独立文件，按实际职责和 GTNL 的对应位置安排；不为减少文件数合并无关 GUI 或业务逻辑。Forge `IGuiHandler` 路由类与普通 GUI 入口同放 `common.gui`；跨 GUI、网络和会话共用的 GUI 类型枚举归 `utils.enums`。
 - 客户端 GUI 同样按实际使用范围收拢：专用按钮、面板、弹窗、视图状态及界面契约优先放回所属客户端主 GUI，相关生命周期和辅助方法就近排列；被客户端 mixin 引用本身不等于跨界面复用。确实被不同界面使用的屏幕基类、按钮和纹理处理保留独立；不要为了合并文件把客户端实现移入公共端，或去掉原有 `@SideOnly(Side.CLIENT)` 隔离。物品专用提示文字及其小型辅助方法归所属物品的客户端提示入口。
 - 类名使用领域名加职责名，如 `XxxController`、`XxxGui`、`XxxPacket`、`XxxState`。一个文件一个主要顶层类型，文件名与类型名一致。
+- 方块沿用 `BlockXxx`、对应 ItemBlock 沿用 `ItemBlockXxx`，TileEntity 类（含基类）统一使用 `TileEntityXxx` 前缀，放在 `common.block.blocks.tile`。目录或类名调整时同步更新引用，但保留已有注册 ID、存档键和网络标识。
 - 不把功能专属逻辑仅改名为 `Utils` 后堆入工具包；不为很小的逻辑创建没有独立职责的 Manager、接口或包装类。小型且只服务外部类的数据类型可用内部类。
 
 ## 类与方法的位置
 
 - loader 和代理负责调用与注册；业务规则归机器、TileEntity 或相应管理类；GUI 负责界面与同步；包处理器负责接收和委托。注册方法里不展开整个功能实现。
+- 代理类先集中排列初始化和服务端启停生命周期，再放侧别入口及相关辅助方法；同一流程重复取得的注册器使用局部变量。客户端回包处理归对应包的客户端处理入口，保留客户端隔离、主线程调度及连接有效性检查，不在代理中堆叠功能专属回包实现；继续保留 loader 委托和 `common.gui` 中的 GUI 路由。
 - 网络数据包统一在 `common.packet.NetWorkHandler#register` 注册，由代理调用；不另设功能专属的注册入口或通道。保留已有通道名、接收侧和包 ID，新增包追加到统一注册列表。
 - 配置沿用 GTNL 的 `MainConfig`、静态分类实例和内部分类类结构，使用 GTNHLib 的 `@Config`、默认值、说明及约束注解；由 `loader.ConfigLoader` 统一注册和保存。只创建已有功能需要的分类，纯客户端设置不标记 `@Sync`，不另用 NEI 配置标签保存同一设置。
 - 新类默认按“常量和字段 → 构造方法 → 生命周期及主要对外行为 → 辅助方法 → 局部内部类型”排列；同一流程的方法、重载及紧密相关的辅助方法相邻。修改已有类时先沿用同类附近的顺序，不机械按字母或可见性重排。

@@ -32,8 +32,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.cleanroommc.modularui.screen.GuiContainerWrapper;
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.client.render.VaultConnectedIcons;
-import com.xyp.gtneverreset.client.render.VaultConnectedTexture;
+import com.xyp.gtneverreset.client.render.VaultConnectedTextureRender;
 import com.xyp.gtneverreset.common.machine.hatch.VaultPortHatch;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -518,16 +517,20 @@ public final class VaultClientChecks {
     }
 
     private void checkTextures() throws Exception {
+        Field connectedIconsField = casing.getClass()
+            .getDeclaredField("connectedIcons");
+        connectedIconsField.setAccessible(true);
+        IIcon[] connectedIcons = (IIcon[]) connectedIconsField.get(casing);
         Set<IIcon> ctmVariants = new HashSet<>();
         for (int mask = 0; mask < 256; mask++) {
-            IIcon connected = VaultConnectedIcons.getIcon("sl_eddington", mask);
+            IIcon connected = connectedIcons[mask];
             require(
                 connected != null && Minecraft.getMinecraft()
                     .getTextureMapBlocks()
                     .getAtlasSprite(connected.getIconName()) == connected,
                 "connected casing mask selects a registered atlas sprite " + mask);
             require(
-                connected == VaultConnectedIcons.getIcon("sl_eddington", VaultCasingConnections.normalizeMask(mask)),
+                connected == connectedIcons[VaultCasingConnections.normalizeMask(mask)],
                 "connected casing mask normalizes unsupported corners " + mask);
             ctmVariants.add(connected);
         }
@@ -550,7 +553,7 @@ public final class VaultClientChecks {
             for (boolean active : new boolean[] { false, true }) {
                 ITexture[] textures = machine.getTexture(base, side, ForgeDirection.NORTH, -1, active, false);
                 require(
-                    textures[0] instanceof VaultConnectedTexture,
+                    textures[0] instanceof VaultConnectedTextureRender,
                     "controller base layer uses connected world rendering");
                 require(
                     icon(textures[0], side) == expected,
@@ -577,7 +580,7 @@ public final class VaultClientChecks {
                 }
                 ITexture[] portTextures = port.getTexture(portBase, side, ForgeDirection.NORTH, -1, active, false);
                 require(
-                    portTextures[0] instanceof VaultConnectedTexture,
+                    portTextures[0] instanceof VaultConnectedTextureRender,
                     "port base layer uses connected world rendering");
                 require(
                     icon(portTextures[0], side) == expected,

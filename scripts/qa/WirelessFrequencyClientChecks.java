@@ -32,7 +32,7 @@ import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.xyp.gtneverreset.client.gui.WirelessCardGui;
 import com.xyp.gtneverreset.client.gui.WirelessCardGui.WirelessCardRenameDialog;
 import com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions;
-import com.xyp.gtneverreset.common.item.WirelessFrequencyCard;
+import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
 import com.xyp.gtneverreset.container.WirelessCardContainer;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModList;

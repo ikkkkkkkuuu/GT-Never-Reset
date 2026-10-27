@@ -90,7 +90,7 @@
       "source": "src/main/java/com/xyp/gtnotgood/common/blocks/stockio/TileStockIOInterface.java",
       "sha256": "098841ea412592a84011e09270009a2e3ab9ad5a9ab0a350b82464f0fa8264a3",
       "destinations": [
-        "src/main/java/com/xyp/gtneverreset/common/block/blocks/tile/TileStockIOInterface.java"
+        "src/main/java/com/xyp/gtneverreset/common/block/blocks/tile/TileEntityStockIOInterface.java"
       ]
     },
     {
@@ -111,14 +111,14 @@
       "source": "src/main/java/com/xyp/gtnotgood/common/items/advancedio/ItemAdvancedIOBus.java",
       "sha256": "911642fd5050755ed0e5a23a73775a38b7858bacffbac91beb6e82f4e1955213",
       "destinations": [
-        "src/main/java/com/xyp/gtneverreset/common/item/ItemAdvancedIOBus.java"
+        "src/main/java/com/xyp/gtneverreset/common/item/items/ItemAdvancedIOBus.java"
       ]
     },
     {
       "source": "src/main/java/com/xyp/gtnotgood/common/items/stockio/ItemStockIOInterface.java",
       "sha256": "0aafe9c4817de1c4040a737fb7d91d80f295cabc3d82908bdc5d5f2aef75a0f0",
       "destinations": [
-        "src/main/java/com/xyp/gtneverreset/common/item/ItemStockIOInterface.java"
+        "src/main/java/com/xyp/gtneverreset/common/item/items/ItemStockIOInterface.java"
       ]
     },
     {
@@ -132,7 +132,7 @@
       "source": "src/main/java/com/xyp/gtnotgood/common/blocks/mebridge/TileMEBridgeBase.java",
       "sha256": "c78a8f36c26abf52792dcd116049928f6c1ff5d830481876af6ecf45fde16150",
       "destinations": [
-        "src/main/java/com/xyp/gtneverreset/common/block/blocks/tile/TileStockIOInterface.java"
+        "src/main/java/com/xyp/gtneverreset/common/block/blocks/tile/TileEntityStockIOInterface.java"
       ]
     },
     {

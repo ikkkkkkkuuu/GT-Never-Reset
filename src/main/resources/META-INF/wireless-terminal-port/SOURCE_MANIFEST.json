@@ -78,7 +78,7 @@
     {
       "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
       "source": "src/main/java/com/xyp/gtnotgood/ae2thing/common/item/ItemWirelessDualInterfaceTerminal.java",
-      "destination": "src/main/java/com/xyp/gtneverreset/common/item/ItemWirelessDualInterfaceTerminal.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/item/items/ItemWirelessDualInterfaceTerminal.java",
       "sourceSha256": "8c8d8d4a93275a460bc1f6da124e717975d081a1923a32dabbb55a72fad84aa6",
       "license": "MIT",
       "adaptations": "Selected terminal behavior extracted or rewritten for native AE2 integration in the responsibility package."
@@ -158,7 +158,7 @@
     {
       "sourceRevision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
       "source": "src/main/java/com/xyp/gtnotgood/ae2thing/common/item/ItemWirelessDualInterfaceTerminal.java",
-      "destination": "src/main/java/com/xyp/gtneverreset/common/item/ItemWirelessDualInterfaceTerminal.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/item/items/ItemWirelessDualInterfaceTerminal.java",
       "sourceSha256": "8c8d8d4a93275a460bc1f6da124e717975d081a1923a32dabbb55a72fad84aa6",
       "license": "MIT",
       "adaptations": "Responsibility package and GT-Never-Reset integration; related methods retained or extracted as appropriate."

@@ -9,7 +9,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.FluidStack;
 
-import com.xyp.gtneverreset.common.block.blocks.tile.TileStockIOInterface;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
 import com.xyp.gtneverreset.common.part.PartStockIOInterface;
 
 import appeng.api.parts.IPartHost;
@@ -90,7 +90,7 @@ public final class StockIORecipeBridge {
             TileEntity tile = world.getTileEntity(x, y, z);
             if (tile == null || tile.isInvalid()) continue;
             StockIOLogic logic = null;
-            if (tile instanceof TileStockIOInterface block) logic = block.getLogic();
+            if (tile instanceof TileEntityStockIOInterface block) logic = block.getLogic();
             else if (tile instanceof IPartHost host
                 && host.getPart(side.getOpposite()) instanceof PartStockIOInterface part) logic = part.getLogic();
             if (logic != null && logic.getTargetSide() == side.getOpposite() && logic.isEnabled() && logic.isOnline())

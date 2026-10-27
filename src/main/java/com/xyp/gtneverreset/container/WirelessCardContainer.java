@@ -18,7 +18,7 @@ import com.xyp.gtneverreset.client.gui.WirelessCardGui.WirelessCardClientView;
 import com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardSyncHandler;
 import com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardViewState;
 import com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardViewState.Snapshot;
-import com.xyp.gtneverreset.common.item.WirelessFrequencyCard;
+import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardBinding;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardInventory;
 

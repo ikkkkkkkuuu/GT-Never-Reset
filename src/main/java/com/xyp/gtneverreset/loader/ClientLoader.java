@@ -10,9 +10,9 @@ import com.xyp.gtneverreset.client.nei.NEIWirelessTerminalConfig;
 import com.xyp.gtneverreset.client.nei.WildcardRecipeImport;
 import com.xyp.gtneverreset.client.quantum.QuantumCraftingClientEvents;
 import com.xyp.gtneverreset.client.quantum.RecursivePatternReport;
-import com.xyp.gtneverreset.client.render.FluxConnectorRenderer;
-import com.xyp.gtneverreset.client.render.StableEndCrystalRenderer;
-import com.xyp.gtneverreset.client.render.WirelessWorldHighlight;
+import com.xyp.gtneverreset.client.render.FluxConnectorRender;
+import com.xyp.gtneverreset.client.render.StableEndCrystalRender;
+import com.xyp.gtneverreset.client.render.WirelessWorldHighlightRender;
 import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
 import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -32,9 +32,9 @@ public final class ClientLoader {
     }
 
     public static void init() {
-        RenderingRegistry.registerEntityRenderingHandler(StableEndCrystalEntity.class, new StableEndCrystalRenderer());
+        RenderingRegistry.registerEntityRenderingHandler(StableEndCrystalEntity.class, new StableEndCrystalRender());
         BlockFluxConnector.renderId = RenderingRegistry.getNextAvailableRenderId();
-        RenderingRegistry.registerBlockHandler(new FluxConnectorRenderer());
+        RenderingRegistry.registerBlockHandler(new FluxConnectorRender());
         AEApi.instance()
             .partHelper()
             .setItemBusRenderer((IPartItem) GTNRItemList.AdvancedIOBus.getItem());
@@ -43,7 +43,7 @@ public final class ClientLoader {
             .setItemBusRenderer((IPartItem) GTNRItemList.StockIOInterfacePart.getItem());
         WirelessCardInput.register();
         MinecraftForge.EVENT_BUS.register(new WildcardRecipeImport());
-        MinecraftForge.EVENT_BUS.register(WirelessWorldHighlight.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(WirelessWorldHighlightRender.INSTANCE);
         RecursivePatternReport.register();
         FMLCommonHandler.instance()
             .bus()

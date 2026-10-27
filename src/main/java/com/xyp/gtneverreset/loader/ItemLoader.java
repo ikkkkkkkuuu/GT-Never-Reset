@@ -1,12 +1,12 @@
 package com.xyp.gtneverreset.loader;
 
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
-import com.xyp.gtneverreset.common.item.ItemAdvancedIOBus;
-import com.xyp.gtneverreset.common.item.ItemStockIOInterface;
-import com.xyp.gtneverreset.common.item.ItemWirelessDualInterfaceTerminal;
-import com.xyp.gtneverreset.common.item.StableEndCrystalItem;
-import com.xyp.gtneverreset.common.item.WildcardPatternItem;
-import com.xyp.gtneverreset.common.item.WirelessFrequencyCard;
+import com.xyp.gtneverreset.common.item.items.ItemAdvancedIOBus;
+import com.xyp.gtneverreset.common.item.items.ItemStockIOInterface;
+import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
+import com.xyp.gtneverreset.common.item.items.StableEndCrystalItem;
+import com.xyp.gtneverreset.common.item.items.WildcardPatternItem;
+import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import appeng.api.AEApi;

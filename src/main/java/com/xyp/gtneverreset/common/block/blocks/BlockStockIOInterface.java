@@ -12,7 +12,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.xyp.gtneverreset.common.block.blocks.tile.TileStockIOInterface;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
 import com.xyp.gtneverreset.common.gui.StockIOGui;
 import com.xyp.gtneverreset.utils.enums.ModList;
 
@@ -40,7 +40,7 @@ public final class BlockStockIOInterface extends Block {
 
     @Override
     public TileEntity createTileEntity(World world, int metadata) {
-        return new TileStockIOInterface();
+        return new TileEntityStockIOInterface();
     }
 
     @Override
@@ -52,7 +52,7 @@ public final class BlockStockIOInterface extends Block {
     @Override
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float hitX,
         float hitY, float hitZ) {
-        if (!(world.getTileEntity(x, y, z) instanceof TileStockIOInterface tile)) return false;
+        if (!(world.getTileEntity(x, y, z) instanceof TileEntityStockIOInterface tile)) return false;
         if (!world.isRemote) StockIOGui.FACTORY.open(player, tile);
         return true;
     }
@@ -68,7 +68,7 @@ public final class BlockStockIOInterface extends Block {
     @Override
     public void onBlockPlacedBy(World world, int x, int y, int z, EntityLivingBase placer, ItemStack stack) {
         super.onBlockPlacedBy(world, x, y, z, placer, stack);
-        if (!world.isRemote && world.getTileEntity(x, y, z) instanceof TileStockIOInterface tile) {
+        if (!world.isRemote && world.getTileEntity(x, y, z) instanceof TileEntityStockIOInterface tile) {
             if (placer instanceof EntityPlayer player) tile.setOwnerName(player.getCommandSenderName());
             if (stack.hasTagCompound()) tile.getLogic()
                 .readContents(stack.getTagCompound());
@@ -82,7 +82,7 @@ public final class BlockStockIOInterface extends Block {
     public ArrayList<ItemStack> getDrops(World world, int x, int y, int z, int metadata, int fortune) {
         ArrayList<ItemStack> drops = new ArrayList<>();
         ItemStack portable = new ItemStack(this);
-        if (world.getTileEntity(x, y, z) instanceof TileStockIOInterface tile) {
+        if (world.getTileEntity(x, y, z) instanceof TileEntityStockIOInterface tile) {
             portable.setTagCompound(
                 tile.getLogic()
                     .getRemovalContents());

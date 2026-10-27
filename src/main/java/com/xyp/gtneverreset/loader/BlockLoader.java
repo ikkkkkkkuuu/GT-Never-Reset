@@ -11,9 +11,9 @@ import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
 import com.xyp.gtneverreset.common.block.blocks.BlockStockIOInterface;
 import com.xyp.gtneverreset.common.block.blocks.item.ItemBlockFluxConnector;
 import com.xyp.gtneverreset.common.block.blocks.item.ItemBlockStockIOInterface;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxPlug;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxPoint;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileStockIOInterface;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxPlug;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxPoint;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
 import com.xyp.gtneverreset.common.world.FluxChunkLoading;
 import com.xyp.gtneverreset.utils.enums.BlockIcons;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -38,7 +38,7 @@ public final class BlockLoader {
         GameRegistry
             .registerBlock(stockInterface, ItemBlockStockIOInterface.class, BlockStockIOInterface.REGISTRY_NAME);
         GameRegistry.registerTileEntity(
-            TileStockIOInterface.class,
+            TileEntityStockIOInterface.class,
             ModList.GTNeverReset.getResourcePath(BlockStockIOInterface.REGISTRY_NAME));
         GTNRItemList.StockIOInterface.set(new ItemStack(stockInterface));
         stockInterface.setCreativeTab(GTNRCreativeTabs.BLOCKS);
@@ -56,8 +56,8 @@ public final class BlockLoader {
         BlockFluxConnector point = new BlockFluxConnector(false, "flux_point");
         GameRegistry.registerBlock(plug, ItemBlockFluxConnector.class, "flux_plug");
         GameRegistry.registerBlock(point, ItemBlockFluxConnector.class, "flux_point");
-        GameRegistry.registerTileEntity(TileFluxPlug.class, ModList.GTNeverReset.getResourcePath("flux_plug"));
-        GameRegistry.registerTileEntity(TileFluxPoint.class, ModList.GTNeverReset.getResourcePath("flux_point"));
+        GameRegistry.registerTileEntity(TileEntityFluxPlug.class, ModList.GTNeverReset.getResourcePath("flux_plug"));
+        GameRegistry.registerTileEntity(TileEntityFluxPoint.class, ModList.GTNeverReset.getResourcePath("flux_point"));
         GTNRItemList.FluxPlug.set(new ItemStack(plug));
         GTNRItemList.FluxPoint.set(new ItemStack(point));
         FluxTransferScheduler scheduler = new FluxTransferScheduler();

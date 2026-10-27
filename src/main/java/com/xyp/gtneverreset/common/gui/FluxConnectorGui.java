@@ -28,7 +28,7 @@ import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxConnector;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxConnector;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModList;
 
@@ -42,7 +42,7 @@ public final class FluxConnectorGui {
 
     private FluxConnectorGui() {}
 
-    public static ModularPanel build(TileFluxConnector tile, PanelSyncManager sync) {
+    public static ModularPanel build(TileEntityFluxConnector tile, PanelSyncManager sync) {
         ModularPanel panel = ModularPanel.defaultPanel("flux_connector", 176, 202)
             .background();
         panel.child(
@@ -294,7 +294,7 @@ public final class FluxConnectorGui {
     }
 
     private static StringSyncValue edit(PanelSyncManager sync, String key, Supplier<String> getter,
-        Consumer<String> setter, TileFluxConnector tile) {
+        Consumer<String> setter, TileEntityFluxConnector tile) {
         StringSyncValue value = new StringSyncValue(getter, incoming -> {
             if (tile.getWorldObj() != null && !tile.getWorldObj().isRemote && tile.canConfigure(sync.getPlayer())) {
                 setter.accept(incoming);
@@ -343,7 +343,7 @@ public final class FluxConnectorGui {
         return Math.min(110, Minecraft.getMinecraft().fontRenderer.getStringWidth(label));
     }
 
-    private static void toggle(ParentWidget<?> parent, PanelSyncManager sync, TileFluxConnector tile, String id,
+    private static void toggle(ParentWidget<?> parent, PanelSyncManager sync, TileEntityFluxConnector tile, String id,
         String label, BooleanSupplier checked, Runnable action, int y) {
         parent.child(
             IKey.str(label)

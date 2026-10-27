@@ -15,7 +15,7 @@ import net.minecraft.util.Vec3;
 
 import com.glodblock.github.common.item.ItemFluidPacket;
 import com.xyp.gtneverreset.common.gui.AdvancedIOGui;
-import com.xyp.gtneverreset.common.item.ItemAdvancedIOBus;
+import com.xyp.gtneverreset.common.item.items.ItemAdvancedIOBus;
 import com.xyp.gtneverreset.utils.machine.advancedio.BusTarget;
 import com.xyp.gtneverreset.utils.machine.advancedio.StockPolicy;
 

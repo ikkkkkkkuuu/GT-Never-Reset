@@ -1,5 +1,5 @@
 /*
- * Adapted from Flux Networks TileFluxConnector and ConnectionTransfer.
+ * Adapted from Flux Networks TileEntityFluxConnector and ConnectionTransfer.
  * Copyright (c) 2018 Ollie Lansdell. MIT; see META-INF/licenses/Flux-Networks-MIT.txt.
  */
 package com.xyp.gtneverreset.common.block.blocks.tile;
@@ -45,7 +45,7 @@ import gregtech.common.misc.WirelessNetworkManager;
  * account. GT resolves team membership on each transaction. Chunk tickets are opt-in; no dimension scans are used.
  * All ledger mutations run on the server; GUI users cannot supply an account UUID.
  */
-public abstract class TileFluxConnector extends TileEntity implements IEnergyConnected, IGuiHolder<PosGuiData> {
+public abstract class TileEntityFluxConnector extends TileEntity implements IEnergyConnected, IGuiHolder<PosGuiData> {
 
     public static final long MAX_VOLTAGE = GTValues.V[14];
     public static final long MAX_AMPERAGE = 1_048_576L;
@@ -228,7 +228,7 @@ public abstract class TileFluxConnector extends TileEntity implements IEnergyCon
     public String neighbourName(int sideIndex) {
         if (worldObj == null) return "";
         TileEntity tile = neighbour(ForgeDirection.VALID_DIRECTIONS[sideIndex]);
-        if (!(tile instanceof IEnergyConnected) || tile instanceof TileFluxConnector) return "—";
+        if (!(tile instanceof IEnergyConnected) || tile instanceof TileEntityFluxConnector) return "—";
         return worldObj.getBlock(tile.xCoord, tile.yCoord, tile.zCoord)
             .getLocalizedName();
     }
@@ -281,7 +281,8 @@ public abstract class TileFluxConnector extends TileEntity implements IEnergyCon
         long detected = 0;
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
             TileEntity adjacent = neighbour(side);
-            if (!(adjacent instanceof IBasicEnergyContainer target) || adjacent instanceof TileFluxConnector) continue;
+            if (!(adjacent instanceof IBasicEnergyContainer target) || adjacent instanceof TileEntityFluxConnector)
+                continue;
             ForgeDirection face = side.getOpposite();
             if (isPlug() ? !target.outputsEnergyTo(face, false) : !target.inputEnergyFrom(face, false)) continue;
             long rating = isPlug() ? target.getOutputVoltage() : target.getInputVoltage();
@@ -340,7 +341,7 @@ public abstract class TileFluxConnector extends TileEntity implements IEnergyCon
             for (int i = 0; i < 6 && buffer.stored() >= voltage; i++) {
                 ForgeDirection side = ForgeDirection.VALID_DIRECTIONS[(cursor + i) % 6];
                 TileEntity tile = neighbour(side);
-                if (!(tile instanceof IEnergyConnected target) || tile instanceof TileFluxConnector) continue;
+                if (!(tile instanceof IEnergyConnected target) || tile instanceof TileEntityFluxConnector) continue;
                 ForgeDirection opposite = side.getOpposite();
                 if (!acceptsPointEnergy(tile, opposite, true)) continue;
                 long offered = buffer.stored() / voltage;
@@ -382,7 +383,7 @@ public abstract class TileFluxConnector extends TileEntity implements IEnergyCon
      * @return whether the point may offer packets to this face
      */
     public static boolean acceptsPointEnergy(TileEntity tile, ForgeDirection inputSide, boolean waitForActive) {
-        if (!(tile instanceof IEnergyConnected target) || tile instanceof TileFluxConnector) return false;
+        if (!(tile instanceof IEnergyConnected target) || tile instanceof TileEntityFluxConnector) return false;
         if (tile instanceof BaseMetaPipeEntity pipe && pipe.getMetaTileEntity() instanceof MTECable cable) {
             return cable.isConnectedAtSide(inputSide);
         }
@@ -399,7 +400,7 @@ public abstract class TileFluxConnector extends TileEntity implements IEnergyCon
      * @return whether the source has a physical output connection to this plug
      */
     public static boolean suppliesPlugEnergy(TileEntity tile, ForgeDirection outputSide) {
-        if (!(tile instanceof IEnergyConnected source) || tile instanceof TileFluxConnector) return false;
+        if (!(tile instanceof IEnergyConnected source) || tile instanceof TileEntityFluxConnector) return false;
         if (tile instanceof BaseMetaPipeEntity pipe && pipe.getMetaTileEntity() instanceof MTECable cable) {
             return cable.isConnectedAtSide(outputSide);
         }

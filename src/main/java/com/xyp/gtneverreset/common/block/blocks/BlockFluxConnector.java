@@ -18,9 +18,9 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.cleanroommc.modularui.factory.TileEntityGuiFactory;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxConnector;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxPlug;
-import com.xyp.gtneverreset.common.block.blocks.tile.TileFluxPoint;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxConnector;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxPlug;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxPoint;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.flux.FluxDropData;
 
@@ -56,7 +56,7 @@ public final class BlockFluxConnector extends Block {
 
     @Override
     public TileEntity createTileEntity(World world, int metadata) {
-        return plug ? new TileFluxPlug() : new TileFluxPoint();
+        return plug ? new TileEntityFluxPlug() : new TileEntityFluxPoint();
     }
 
     @Override
@@ -69,7 +69,7 @@ public final class BlockFluxConnector extends Block {
 
     @Override
     public void onBlockPlacedBy(World world, int x, int y, int z, EntityLivingBase entity, ItemStack stack) {
-        if (world.isRemote || !(world.getTileEntity(x, y, z) instanceof TileFluxConnector tile)) return;
+        if (world.isRemote || !(world.getTileEntity(x, y, z) instanceof TileEntityFluxConnector tile)) return;
         if (stack.hasTagCompound()) tile.readSettings(stack.getTagCompound());
         tile.configureOnPlacement();
         if (entity instanceof EntityPlayer player) tile.placedBy(player);
@@ -77,7 +77,7 @@ public final class BlockFluxConnector extends Block {
 
     @Override
     public void breakBlock(World world, int x, int y, int z, Block block, int metadata) {
-        if (world.getTileEntity(x, y, z) instanceof TileFluxConnector tile) tile.returnBufferToNetwork();
+        if (world.getTileEntity(x, y, z) instanceof TileEntityFluxConnector tile) tile.returnBufferToNetwork();
         super.breakBlock(world, x, y, z, block, metadata);
     }
 
@@ -101,7 +101,7 @@ public final class BlockFluxConnector extends Block {
     public ArrayList<ItemStack> getDrops(World world, int x, int y, int z, int metadata, int fortune) {
         ArrayList<ItemStack> result = new ArrayList<>();
         ItemStack item = new ItemStack(this);
-        if (world.getTileEntity(x, y, z) instanceof TileFluxConnector tile) {
+        if (world.getTileEntity(x, y, z) instanceof TileEntityFluxConnector tile) {
             NBTTagCompound tag = new NBTTagCompound();
             tile.writeSettings(tag);
             item.setTagCompound(tag);
@@ -117,7 +117,7 @@ public final class BlockFluxConnector extends Block {
     }
 
     public boolean connects(IBlockAccess world, int x, int y, int z, ForgeDirection side) {
-        return world.getTileEntity(x, y, z) instanceof TileFluxConnector connector
+        return world.getTileEntity(x, y, z) instanceof TileEntityFluxConnector connector
             && connector.hasVisualConnection(side);
     }
 
@@ -126,8 +126,8 @@ public final class BlockFluxConnector extends Block {
         int nx = x + side.offsetX, ny = y + side.offsetY, nz = z + side.offsetZ;
         if (world instanceof World actual && !actual.blockExists(nx, ny, nz)) return false;
         TileEntity tile = world.getTileEntity(nx, ny, nz);
-        return plug ? TileFluxConnector.suppliesPlugEnergy(tile, side.getOpposite())
-            : TileFluxConnector.acceptsPointEnergy(tile, side.getOpposite(), false);
+        return plug ? TileEntityFluxConnector.suppliesPlugEnergy(tile, side.getOpposite())
+            : TileEntityFluxConnector.acceptsPointEnergy(tile, side.getOpposite(), false);
     }
 
     @Override
