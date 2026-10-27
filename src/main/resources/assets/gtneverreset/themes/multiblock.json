@@ -1,5 +1,5 @@
 {
-  "parent": "gregtech:standard",
+  "parent": "gorge",
   "button": {
     "background": { "type": "texture", "id": "gregtech:button_gorge" },
     "color": "#FFFFFFFF"
