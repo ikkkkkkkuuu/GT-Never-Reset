@@ -23,6 +23,17 @@ public final class LateMixinsLoader implements ILateMixinLoader {
     public List<String> getMixins(Set<String> loadedMods) {
         List<String> mixins = new ArrayList<>();
         if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
+            mixins.addAll(
+                Arrays.asList(
+                    "gregtech.RecipeSpeedMixin",
+                    "gregtech.SteamFurnaceSpeedMixin",
+                    "gregtech.ScannerSpeedMixin",
+                    "gregtech.AssemblyLineSpeedMixin",
+                    "gregtech.PurificationPlantSpeedMixin",
+                    "gregtech.ExtremeEntityCrusherSpeedMixin",
+                    "gregtech.ThermalBoilerSpeedMixin",
+                    "gregtech.FurnaceBackendMixin",
+                    "gregtech.BasicMachineOutputMixin"));
             mixins.add("gregtech.OverclockCalculatorAccessorMixin");
             mixins.add("gregtech.AutoStructureTooltipMixin");
             mixins.add("gregtech.PatternInputHatchElementMixin");

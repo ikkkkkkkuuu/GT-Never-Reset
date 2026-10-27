@@ -1,0 +1,11 @@
+Global recipe speed mixins ported from GT-Not-Good.
+Source revision: 048fd1963de8c6458ef6f800c411be0087cbafdb
+Source paths: src/main/java/com/xyp/gtnotgood/mixins/late/cutcorners/*.java,
+  src/main/java/com/xyp/gtnotgood/mixins/minecraft/VanillaFurnaceMixin.java,
+  src/main/java/com/xyp/gtnotgood/config/Config.java (duration policy).
+License: MIT, included beside this notice.
+
+Adaptations: GT-Never-Reset packages and mixin names; GTNHLib MainConfig settings;
+early configuration loading through ConfigLoader; speed disabled by default and
+full fluid output enabled by default; preserve original boiler output calculation
+when speed is disabled.

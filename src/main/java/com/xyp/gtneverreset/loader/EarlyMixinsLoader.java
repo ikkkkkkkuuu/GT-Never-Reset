@@ -20,7 +20,8 @@ public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLo
 
     @Override
     public List<String> getMixins(Set<String> loadedCoreMods) {
-        return Arrays.asList("wireless.MixinWirelessTileData", "gtnhlib.ServerThreadUtilMixin");
+        return Arrays
+            .asList("wireless.MixinWirelessTileData", "gtnhlib.ServerThreadUtilMixin", "minecraft.VanillaFurnaceMixin");
     }
 
     @Override

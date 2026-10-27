@@ -2,6 +2,8 @@ package com.xyp.gtneverreset.loader;
 
 import java.io.File;
 
+import net.minecraft.launchwrapper.Launch;
+
 import com.gtnewhorizon.gtnhlib.config.Config;
 import com.gtnewhorizon.gtnhlib.config.ConfigException;
 import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
@@ -13,6 +15,10 @@ public final class ConfigLoader {
     private static boolean migrateLegacyClientConfig;
 
     private ConfigLoader() {}
+
+    public static void ensureLoaded() {
+        if (!registered) register(new File(Launch.minecraftHome, "config"));
+    }
 
     public static void register(File configDirectory) {
         if (registered) return;
