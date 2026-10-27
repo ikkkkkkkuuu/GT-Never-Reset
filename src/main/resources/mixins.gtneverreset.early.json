@@ -5,6 +5,6 @@
   "refmap": "mixins.gtneverreset.refmap.json",
   "compatibilityLevel": "JAVA_8",
   "mixins": ["wireless.MixinWirelessTileData"],
-  "client": [],
+  "client": ["minecraft.KeyBindingAccessor"],
   "server": []
 }

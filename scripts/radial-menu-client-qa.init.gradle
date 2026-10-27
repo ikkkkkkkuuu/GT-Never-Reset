@@ -1,0 +1,62 @@
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    def qa = root.file(gradle.startParameter.projectProperties.get('radialMenuQaRoot')
+        ?: 'build/radial-menu-client-qa')
+    def etFuturum = root.file(gradle.startParameter.projectProperties.get('radialMenuEtFuturumJar')
+        ?: '../GT-Not-Good/build/factory-qa-dependencies/etfuturum-2.6.59-GTNH-dev.jar')
+    if (!etFuturum.exists()) throw new GradleException('Radial menu QA requires the Et Futurum dev runtime')
+    root.dependencies.add('runtimeOnlyNonPublishable', root.files(etFuturum))
+    def pack = root.extensions.getByName('elytraModpackVersion')
+    ['Galacticraft', 'Galaxy-Space-GTNH'].each {
+        root.dependencies.add('runtimeOnlyNonPublishable', pack.gtnhdev(it) as String)
+    }
+    root.extensions.findByName('spotless')?.java {
+        target root.files(root.fileTree('src/main/java') { include '**/*.java' },
+            root.fileTree('src/test/java') { include '**/*.java' },
+            root.file('scripts/qa/WirelessCardCompatibilityChecks.java'),
+            root.file('scripts/qa/RadialMenuClientChecks.java'))
+    }
+    root.tasks.named('compileTestJava').configure {
+        options.release.set(17)
+        destinationDirectory.set(new File(qa, 'client-classes'))
+        setSource(root.files('scripts/qa/RadialMenuClientChecks.java'))
+    }
+    root.tasks.named('runClient17').configure {
+        javaLauncher.set(root.javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) })
+        dependsOn root.tasks.named('testClasses')
+        classpath += root.files(new File(qa, 'client-classes'))
+        classpath += root.configurations.testRuntimeClasspath.filter { it.name.startsWith('jvmdowngrader-java-api-') }
+        workingDir new File(qa, 'client-run')
+        systemProperty 'gtnr.radialMenu.qa', 'true'
+        systemProperty 'gtnr.radialMenu.qa.output', qa.absolutePath
+        systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
+        systemProperty 'sun.net.client.defaultReadTimeout', '15000'
+        args '--width', '1100', '--height', '800'
+        notCompatibleWithConfigurationCache('isolated radial menu client verification')
+        doFirst {
+            new File(workingDir, 'config').mkdirs()
+            java.nio.file.Files.deleteIfExists(new File(qa, 'result.txt').toPath())
+            new File(workingDir, 'options.txt').setText(
+                'lang:zh_CN\nguiScale:1\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsoundCategory_music:0.0\nmusic:0.0\nsound:0.0\n', 'UTF-8')
+            new File(workingDir, 'config/splash.properties').setText('enabled=false\n', 'UTF-8')
+            new File(workingDir, 'config/DreamCoreMod.properties').setText('showConfirmExitWindow=false\n', 'UTF-8')
+            root.copy {
+                from root.file('run/client/falsepattern')
+                include '*.jar'
+                into new File(workingDir, 'falsepattern')
+            }
+            def helper = new File(qa, 'HideRadialMenuClient.ps1')
+            helper.setText(root.file('scripts/qa/HideWildcardClient.ps1').getText('UTF-8')
+                .replace('gtnr.wildcard.qa', 'gtnr.radialMenu.qa'), 'UTF-8')
+            new ProcessBuilder('powershell.exe', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
+                '-ExecutionPolicy', 'Bypass', '-File', helper.absolutePath,
+                '-Workspace', root.projectDir.absolutePath)
+                .redirectErrorStream(true).redirectOutput(new File(qa, 'window-helper.log')).start()
+        }
+        doLast {
+            def result = new File(qa, 'result.txt')
+            if (!result.exists() || !result.text.startsWith('PASS'))
+                throw new GradleException('Radial menu QA failed; inspect result.txt and client log')
+        }
+    }
+}

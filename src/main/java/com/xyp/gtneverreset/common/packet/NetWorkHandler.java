@@ -81,6 +81,10 @@ public final class NetWorkHandler {
             RecursivePatternResultPacket.class,
             nextPacketId++,
             Side.CLIENT);
+        registerServerbound(ToolBeltSwapPacket.class, ToolBeltSwapPacket::handle);
+        registerServerbound(ToolBeltResizePacket.class, ToolBeltResizePacket::handle);
+        CHANNEL
+            .registerMessage(ToolBeltSyncPacket.Handler.class, ToolBeltSyncPacket.class, nextPacketId++, Side.CLIENT);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);

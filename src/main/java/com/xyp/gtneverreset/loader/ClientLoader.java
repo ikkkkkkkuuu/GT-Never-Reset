@@ -37,6 +37,7 @@ public final class ClientLoader {
 
     public static void preInit(File configDirectory) {
         NEIWirelessTerminalConfig.migrateLegacySettings(configDirectory);
+        RadialMenuLoader.preInit();
     }
 
     public static void init() {
@@ -49,6 +50,7 @@ public final class ClientLoader {
                 0xD3EB6C));
         ((IReloadableResourceManager) Minecraft.getMinecraft()
             .getResourceManager()).registerReloadListener(EffectTextRenderer.INSTANCE);
+        RadialMenuLoader.init();
         RenderingRegistry.registerEntityRenderingHandler(StableEndCrystalEntity.class, new StableEndCrystalRender());
         BlockFluxConnector.renderId = RenderingRegistry.getNextAvailableRenderId();
         RenderingRegistry.registerBlockHandler(new FluxConnectorRender());

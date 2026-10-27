@@ -14,6 +14,7 @@ import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
+import com.xyp.gtneverreset.common.world.ToolBeltEvents;
 import com.xyp.gtneverreset.common.world.WirelessWorldListener;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.loader.ConfigLoader;
@@ -50,6 +51,11 @@ public class CommonProxy {
         BlockLoader.registerBlocks();
         EntityLoader.registerEntities();
         NetWorkHandler.register();
+        ToolBeltEvents toolBeltEvents = new ToolBeltEvents();
+        MinecraftForge.EVENT_BUS.register(toolBeltEvents);
+        FMLCommonHandler.instance()
+            .bus()
+            .register(toolBeltEvents);
         NetworkRegistry.INSTANCE.registerGuiHandler(GTNeverReset.INSTANCE, new WirelessTerminalGuiHandler());
 
         GTNeverReset.LOG.info("loading {} version {}", GTNeverReset.NAME, Tags.VERSION);
