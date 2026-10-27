@@ -64,6 +64,7 @@ import appeng.api.config.ItemSubstitution;
 import appeng.api.config.PatternBeSubstitution;
 import appeng.api.config.PatternSlotConfig;
 import appeng.api.config.PinsRows;
+import appeng.api.config.SearchBoxMode;
 import appeng.api.config.Settings;
 import appeng.api.config.StringOrder;
 import appeng.api.config.TerminalStyle;
@@ -189,6 +190,7 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
     private ModeButton craftingModeButton;
     private ModeButton processing4ModeButton;
     private CompactTerminalSwitchButton switchToCraftingButton;
+    private InterfaceSearchButton fillSearchButton;
     private InterfaceSuffixButton appendSuffixButton;
     private GuiTabButton craftingStatusButton;
     private RightEncodingButton encodeButton;
@@ -198,7 +200,7 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
     private int pendingTargetSelectionTicks;
     private boolean pendingAutoPlace;
     private int suppressExtensionButton = -1;
-    private int appendSuffixClickButton = -1;
+    private int interfaceSettingClickButton = -1;
     private int storageScrollPosition;
     private boolean draggingStorageScrollBar;
     private boolean draggingInterfaceScrollBar;
@@ -273,6 +275,8 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         switchToCraftingButton = new CompactTerminalSwitchButton(
             StatCollector.translateToLocal("gtneverreset.tooltip.switch_to_crafting_terminal"));
         buttonList.add(switchToCraftingButton);
+        fillSearchButton = new InterfaceSearchButton();
+        buttonList.add(fillSearchButton);
         appendSuffixButton = new InterfaceSuffixButton();
         buttonList.add(appendSuffixButton);
 
@@ -562,6 +566,11 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         if (appendSuffixButton != null) {
             appendSuffixButton.xPosition = interfaceColumnX;
             appendSuffixButton.yPosition = y;
+            y += 18;
+        }
+        if (fillSearchButton != null) {
+            fillSearchButton.xPosition = interfaceColumnX;
+            fillSearchButton.yPosition = y;
             y += 18;
         }
         if (switchToCraftingButton != null) {
@@ -963,6 +972,12 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
 
     @Override
     protected void actionPerformed(GuiButton button) {
+        if (button == fillSearchButton) {
+            var settings = MainConfig.client.wirelessTerminal;
+            settings.fillSearchFromNeiRecipes = !settings.fillSearchFromNeiRecipes;
+            ConfigLoader.save();
+            return;
+        }
         if (button == appendSuffixButton) {
             var settings = MainConfig.client.wirelessTerminal;
             settings.appendNonConsumableItemNumbers = !settings.appendNonConsumableItemNumbers;
@@ -1057,12 +1072,14 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         currentMouseY = mouseY;
         draggedStorageSlots.clear();
         storageShiftDrag = false;
-        if ((button == 0 || button == 1) && appendSuffixButton != null
-            && appendSuffixButton.mousePressed(mc, mouseX, mouseY)) {
-            appendSuffixButton.func_146113_a(mc.getSoundHandler());
-            appendSuffixClickButton = button;
-            actionPerformed(appendSuffixButton);
-            return;
+        if (button == 0 || button == 1) {
+            for (GuiButton settingButton : new GuiButton[] { fillSearchButton, appendSuffixButton }) {
+                if (settingButton == null || !settingButton.mousePressed(mc, mouseX, mouseY)) continue;
+                settingButton.func_146113_a(mc.getSoundHandler());
+                interfaceSettingClickButton = button;
+                actionPerformed(settingButton);
+                return;
+            }
         }
         int patternSide = patternScrollSide(mouseX, mouseY, true);
         if (button == 0 && patternSide >= 0) {
@@ -1219,8 +1236,8 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
 
     @Override
     protected void mouseMovedOrUp(int mouseX, int mouseY, int state) {
-        if (state >= 0 && state == appendSuffixClickButton) {
-            appendSuffixClickButton = -1;
+        if (state >= 0 && state == interfaceSettingClickButton) {
+            interfaceSettingClickButton = -1;
             return;
         }
         if (state == 0 && draggingPatternScrollBar >= 0) {
@@ -1247,7 +1264,7 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
 
     @Override
     protected void mouseClickMove(int mouseX, int mouseY, int button, long timeSinceLastClick) {
-        if (button == appendSuffixClickButton) return;
+        if (button == interfaceSettingClickButton) return;
         if (draggingPatternScrollBar >= 0 && button == 0) {
             dragPatternScrollBar(mouseY);
             return;
@@ -1694,6 +1711,44 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
             GL11.glPopMatrix();
             mouseDragged(minecraft, mouseX, mouseY);
             GL11.glColor4f(1F, 1F, 1F, 1F);
+        }
+    }
+
+    private static final class InterfaceSearchButton extends GuiImgButton {
+
+        private InterfaceSearchButton() {
+            super(0, 0, Settings.SEARCH_MODE, SearchBoxMode.MANUAL_SEARCH);
+        }
+
+        @Override
+        public void drawButton(Minecraft minecraft, int mouseX, int mouseY) {
+            set(
+                MainConfig.client.wirelessTerminal.fillSearchFromNeiRecipes ? SearchBoxMode.AUTOSEARCH
+                    : SearchBoxMode.MANUAL_SEARCH);
+            super.drawButton(minecraft, mouseX, mouseY);
+        }
+
+        @Override
+        public String getMessage() {
+            // #tr gtneverreset.terminal.quick.fill_search
+            // # Autofill interface search from NEI recipes
+            // # zh_CN 用 NEI 配方自动填充接口搜索
+            String title = StatCollector.translateToLocal("gtneverreset.terminal.quick.fill_search");
+            // #tr gtneverreset.terminal.quick.fill_search.on
+            // # Enabled
+            // # zh_CN 已开启
+            String on = StatCollector.translateToLocal("gtneverreset.terminal.quick.fill_search.on");
+            // #tr gtneverreset.terminal.quick.fill_search.off
+            // # Disabled
+            // # zh_CN 已关闭
+            String off = StatCollector.translateToLocal("gtneverreset.terminal.quick.fill_search.off");
+            // #tr gtneverreset.terminal.quick.fill_search.detail
+            // # Fill the interface name search when importing an NEI recipe
+            // # zh_CN 导入 NEI 配方时，自动填入接口名称搜索框
+            String detail = StatCollector.translateToLocal("gtneverreset.terminal.quick.fill_search.detail");
+            String status = MainConfig.client.wirelessTerminal.fillSearchFromNeiRecipes ? EnumChatFormatting.GREEN + on
+                : EnumChatFormatting.RED + off;
+            return title + "\n" + status + "\n" + EnumChatFormatting.GRAY + detail;
         }
     }
 
