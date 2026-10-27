@@ -47,6 +47,8 @@
 ## 格式与验证
 
 - 格式以本项目 `.editorconfig` 和 Gradle 提供的 Spotless 配置为准：Java 使用 4 空格、UTF-8、LF、末尾换行；导入、花括号及长调用换行交给 formatter。参考项目为 120 列，不为模仿外观替换本项目构建配置。
+- 每次执行 Git 提交前，先运行 `./gradlew.bat spotlessApply`，再运行 `spotlessCheck` 和本次修改对应的构建验证；检查格式化产生的改动后再暂存、提交。
+- 用户要求“提交”时只创建本地 Git 提交；只有用户明确要求“推送”时才推送到远程。
 - 新代码先确定每个类的职责和文件落点，再实现；交付时核对是否仍有 UI、状态、注册等不同职责挤在同一功能包或大类中。
 - Java 修改运行项目 Spotless 检查及 `compileJava`；资源修改补充 `processResources`。Git 可用时检查 `git diff --check`，当前目录没有 Git 元数据时如实说明。
 
