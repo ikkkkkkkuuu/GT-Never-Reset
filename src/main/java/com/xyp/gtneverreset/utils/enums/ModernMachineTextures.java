@@ -12,7 +12,8 @@ public enum ModernMachineTextures {
 
     MIXER("mixer", true, true, false),
     ELECTROLYZER("electrolyzer", true, false, true),
-    CHEMICAL_REACTOR("chemical_reactor", false, false, true);
+    CHEMICAL_REACTOR("chemical_reactor", false, false, true),
+    CENTRIFUGE("centrifuge", true, true, false);
 
     private static final ITexture[][] CASINGS = createCasings();
 

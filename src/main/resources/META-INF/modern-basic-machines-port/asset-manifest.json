@@ -295,6 +295,66 @@
       "source": "assets/gtceu/textures/block/casings/voltage/uv/top.png",
       "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_casings/uv/top.png",
       "sha256": "792fbb0918a798e6967d6146465d38448e11178d6fae17491abf070f6ead9b08"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_back.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_back.png",
+      "sha256": "8d9285e57657d4bf53b0e4f77fa52cd66c518722b77c44eb33f0869a18787181"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_back_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_back_active.png",
+      "sha256": "8d9285e57657d4bf53b0e4f77fa52cd66c518722b77c44eb33f0869a18787181"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_back_active.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_back_active.png.mcmeta",
+      "sha256": "df8cd1c1eb95fb115037fed23e4fbabb2b12ca0b6d642424a84392ad0d433e85"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_front.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_front.png",
+      "sha256": "2175e271cdde89a82f0131560af137be6790c36278f1a4c9e45bf3da01c26a69"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_front_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_front_active.png",
+      "sha256": "48c5370bdc10c3c96d98e041527e057a1d104219f207fbbcc0e896bc47a1ded0"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_front_active.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_front_active.png.mcmeta",
+      "sha256": "8d2bc958c292165e59eaa0541db2d193636faa99839dc329b3218d44f23c1f7e"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_side.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_side.png",
+      "sha256": "2175e271cdde89a82f0131560af137be6790c36278f1a4c9e45bf3da01c26a69"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_side_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_side_active.png",
+      "sha256": "48c5370bdc10c3c96d98e041527e057a1d104219f207fbbcc0e896bc47a1ded0"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_side_active.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_side_active.png.mcmeta",
+      "sha256": "8d2bc958c292165e59eaa0541db2d193636faa99839dc329b3218d44f23c1f7e"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_top.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_top.png",
+      "sha256": "cc2b058a29180e76fc8a289b71b6d1e1b5ac93555d8314de09f210e531783a39"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_top_active.png",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_top_active.png",
+      "sha256": "ee195ffef394ec98d6adb9f0b6a369f7e5a64ba9a57cf3f9bfdf42c4149321ee"
+    },
+    {
+      "source": "assets/gtceu/textures/block/machines/centrifuge/overlay_top_active.png.mcmeta",
+      "destination": "src/main/resources/assets/gtneverreset/textures/blocks/basicmachines/modern_centrifuge/overlay_top_active.png.mcmeta",
+      "sha256": "8d2bc958c292165e59eaa0541db2d193636faa99839dc329b3218d44f23c1f7e"
     }
   ]
 }

@@ -61,7 +61,9 @@ public enum GTNRMachineID {
     ModernElectrolyzerLV(29508),
     ModernElectrolyzerUV(29515),
     ModernChemicalReactorLV(29516),
-    ModernChemicalReactorUV(29523);
+    ModernChemicalReactorUV(29523),
+    ModernCentrifugeLV(29524),
+    ModernCentrifugeUV(29531);
 
     public final int id;
 

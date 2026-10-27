@@ -1,7 +1,7 @@
 # GTM 小型流体机器移植与验证
 
 以 GregTech CEu Modern `v7.4.0-1.20.1` 为外观、槽位及液槽容量依据，
-新增 LV–UV 的小型搅拌机、小型电解机和小型化学反应釜，共 24 台。
+新增 LV–UV 的小型搅拌机、小型电解机、小型化学反应釜和小型离心机，共 32 台。
 贴图、动画、各档外壳及许可证来源记录在
 `src/main/resources/META-INF/modern-basic-machines-port/`，其中的资源清单记录原始路径和 SHA-256。
 
@@ -10,11 +10,12 @@
 | 小型搅拌机 | 6 / 1 | 2 / 1 | LV 8,000 L；MV 12,000 L；HV–UV 16,000 L |
 | 小型电解机 | 2 / 6 | 1 / 6 | LV 32,000 L；MV 48,000 L；HV–UV 64,000 L |
 | 小型化学反应釜 | 2 / 2 | 3 / 2 | 各档均为 16,000 L |
+| 小型离心机 | 2 / 6 | 1 / 6 | LV 32,000 L；MV 48,000 L；HV–UV 64,000 L |
 
 容量来自 GTM 的 `hvCappedTankSizeFunction`、`largeTankSizeFunction` 和化反固定容量函数。
 运行与空闲贴图、原版动画元数据及 LV–UV 外壳均使用上游资源。
 
-三类机器共用 `common.machine.basicMachine.ModernFluidMachine` 和
+四类机器共用 `common.machine.basicMachine.ModernFluidMachine` 和
 `common.gui.modularui.ModernFluidMachineGui`；注册由 `loader.MachineLoader` 编排，
 配方表集中在 `loader.GTNRRecipeMaps`，自定义配方适配位于
 `common.recipe.gtneverreset.ModernFluidMachineRecipes`，装配机升级配方位于
@@ -31,7 +32,7 @@
 明确禁止转换的配方和没有对应流体的 IC2 电解水单元。
 确定性同类流体可以合并；随机流体保留各自概率。
 
-专用服务端回归已通过 206 项断言；当前真实转换配方数量依次为搅拌 415、电解 413、化反 1,071。
+专用服务端回归已通过 327 项断言；当前真实转换配方数量依次为搅拌 415、电解 413、化反 1,071、离心 1,177，共 3,076 条。
 客户端回归已取得 PASS，包括全部槽位同步、贴图动画、两种自动输出开关，以及 Shift 输出侧弹窗的服务器和客户端朝向同步。
 
 ## 验证命令
@@ -48,21 +49,21 @@ git diff --check
 .\gradlew.bat -I scripts/modern-fluid-machine-client-qa.init.gradle runClient17 --no-configuration-cache
 ```
 
-两个 QA 入口使用 `build/` 下的独立运行目录和隔离世界，测试类不进入发布 JAR。
+QA 入口使用 `build/` 下的独立运行目录和隔离世界，测试类不进入发布 JAR。
 服务端结果写入 `build/modern-fluid-machine-qa/result.txt`；客户端结果和截图写入
-`build/modern-fluid-machine-client-qa/`。客户端截图覆盖三类 GUI、LV–UV 外壳、
+`build/modern-fluid-machine-client-qa/`。客户端截图覆盖四类 GUI、LV–UV 外壳、
 空闲与运行状态动画，以及物品和流体的 Shift 输出侧弹窗。
 
 ## NEI 多流体布局回归
 
-三张配方表使用 GT 原生 `LargeNEIFrontend` 的三列布局。电解机六个流体输出槽排成两行，
+四张配方表使用 GT 原生 `LargeNEIFrontend` 的三列布局。电解机和离心机的六个流体输出槽排成两行，
 全部槽位保持在 170×82 的配方背景内，并避开 GT 标志和进度条。
 
-以下客户端回归已通过：三种真实配方页、三表最大槽位边界与重叠检查、实际缓存配方的槽位坐标，
-以及同时占满六个物品和六个流体输出槽的独立显示样例。显示样例不写入正式配方表。
+客户端回归覆盖四种真实配方页、四表最大槽位边界与重叠检查、实际缓存配方的槽位坐标，
+以及电解机和离心机同时占满六个物品和六个流体输出槽的独立显示样例。显示样例不写入正式配方表。
 
 ```powershell
 .\gradlew.bat -I scripts/modern-fluid-machine-nei-client-qa.init.gradle runClient17 --no-configuration-cache
 ```
 
-结果和四张配方页截图位于 `build/modern-fluid-machine-nei-client-qa/`。
+结果和六张配方页截图位于 `build/modern-fluid-machine-nei-client-qa/`。

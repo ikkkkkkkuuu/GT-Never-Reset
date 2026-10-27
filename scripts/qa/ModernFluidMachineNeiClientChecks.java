@@ -43,8 +43,10 @@ import gregtech.nei.GTNEIDefaultHandler;
 public final class ModernFluidMachineNeiClientChecks {
 
     private static final RecipeMap<?>[] MAPS = { GTNRRecipeMaps.MODERN_MIXER_RECIPES,
-        GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES, GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES };
-    private static final String[] NAMES = { "mixer", "electrolyzer", "chemical_reactor" };
+        GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES, GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
+        GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES };
+    private static final String[] NAMES = { "mixer", "electrolyzer", "chemical_reactor", "centrifuge" };
+    private static final int[] FULL_SLOT_FAMILIES = { 1, 3 };
 
     private final StringBuilder report = new StringBuilder();
     private boolean launched;
@@ -107,22 +109,26 @@ public final class ModernFluidMachineNeiClientChecks {
                 return;
             }
             if (!(mc.currentScreen instanceof GuiCraftingRecipe) || ++frames < 50) return;
-            RecipeMap<?> map = MAPS[page < 3 ? page : 1];
-            checkCachedRecipe(map.getFrontend(), cached, page == 3 ? "electrolyzer full-slot fixture" : NAMES[page]);
-            if (page == 1) require(
-                cached.mRecipe.mFluidOutputs.length >= 2,
-                "real electrolyzer recipe contains at least two direct-fluid products");
-            if (page == 3) require(
+            int family = familyForPage(page);
+            RecipeMap<?> map = MAPS[family];
+            boolean fixture = page >= MAPS.length;
+            checkCachedRecipe(map.getFrontend(), cached, NAMES[family] + (fixture ? " full-slot fixture" : ""));
+            if (!fixture && map.getFrontend()
+                .getUIProperties().maxFluidOutputs == 6)
+                require(
+                    cached.mRecipe.mFluidOutputs.length >= 2,
+                    "real " + NAMES[family] + " recipe contains at least two direct-fluid products");
+            if (fixture) require(
                 cached.mOutputs.size() == 12 && cached.mRecipe.mFluidOutputs.length == 6,
-                "six item and six direct-fluid products all enter the real NEI renderer");
-            capture(page < 3 ? NAMES[page] + "-nei-real-recipe.png" : "electrolyzer-nei-six-fluid-layout-fixture.png");
+                NAMES[family] + ": six item and six direct-fluid products all enter the real NEI renderer");
+            capture(NAMES[family] + (fixture ? "-nei-six-fluid-layout-fixture.png" : "-nei-real-recipe.png"));
             frames = 0;
-            if (++page < 4) {
+            if (++page < MAPS.length + FULL_SLOT_FAMILIES.length) {
                 openPage();
             } else {
                 Files.writeString(new File(output(), "client-result.txt").toPath(), "PASS\n" + report);
                 System.out.println(
-                    "MODERN_FLUID_MACHINE_NEI_CLIENT_QA PASS: all maximum slots, logo/progress clearance, cached stack positions, three real recipe pages and full six-fluid output layout");
+                    "MODERN_FLUID_MACHINE_NEI_CLIENT_QA PASS: all maximum slots, logo/progress clearance, cached stack positions, four real recipe pages and electrolyzer/centrifuge full six-fluid output layouts");
                 finished = true;
             }
         } catch (Throwable failure) {
@@ -145,6 +151,9 @@ public final class ModernFluidMachineNeiClientChecks {
             nei.recipeBackgroundSize.width,
             nei.recipeBackgroundSize.height,
             "NEI background");
+        require(
+            background.width == 170 && background.height == 82,
+            label + " retains the standard 170x82 NEI recipe background");
         Rect logo = new Rect(ui.logoPos.x, ui.logoPos.y, ui.logoSize.width, ui.logoSize.height, "GregTech logo");
         Rect progress = new Rect(
             ui.progressBarPos.x,
@@ -160,7 +169,7 @@ public final class ModernFluidMachineNeiClientChecks {
             for (int other = index + 1; other < slots.size(); other++)
                 require(!slot.intersects(slots.get(other)), label + " item/fluid slots do not overlap: " + slot);
         }
-        if (map == MAPS[1]) {
+        if (ui.maxFluidOutputs == 6) {
             List<Pos2d> fluids = frontend.getFluidOutputPositions(6);
             require(
                 fluids.stream()
@@ -171,7 +180,7 @@ public final class ModernFluidMachineNeiClientChecks {
                         .map(position -> position.y)
                         .distinct()
                         .count() == 2,
-                "electrolyzer has two rows of three direct-fluid output slots");
+                label + " has two rows of three direct-fluid output slots");
         }
         report.append(label)
             .append(": all ")
@@ -192,15 +201,17 @@ public final class ModernFluidMachineNeiClientChecks {
     }
 
     private void openPage() throws Exception {
-        int family = page < 3 ? page : 1;
+        int family = familyForPage(page);
         RecipeMap<?> map = MAPS[family];
         GTNEIDefaultHandler handler = new GTNEIDefaultHandler(map.getDefaultRecipeCategory());
-        if (page < 3) {
+        if (page < MAPS.length) {
             handler.loadCraftingRecipes(map.unlocalizedName);
             cached = handler.arecipes.stream()
                 .map(recipe -> (GTNEIDefaultHandler.CachedDefaultRecipe) recipe)
                 .filter(recipe -> recipe.mRecipe.mSpecialItems == null)
-                .filter(recipe -> family != 1 || recipe.mRecipe.mFluidOutputs.length >= 2)
+                .filter(
+                    recipe -> map.getFrontend()
+                        .getUIProperties().maxFluidOutputs != 6 || recipe.mRecipe.mFluidOutputs.length >= 2)
                 .max(
                     Comparator.comparingInt(
                         recipe -> recipe.mRecipe.mFluidOutputs.length * 100 + recipe.mRecipe.mFluidInputs.length * 10
@@ -219,12 +230,19 @@ public final class ModernFluidMachineNeiClientChecks {
                 .append(cached.mRecipe.mFluidOutputs.length)
                 .append(" fluid products.\n");
         } else {
-            GTRecipe fixture = fullElectrolyzerFixture();
+            int productionCount = map.getAllRecipes()
+                .size();
+            GTRecipe fixture = fullOutputFixture();
             fixture.setRecipeCategory(map.getDefaultRecipeCategory());
             cached = handler.new CachedDefaultRecipe(fixture);
             handler.arecipes.add(cached);
-            report.append(
-                "Full-slot electrolyzer fixture is local to the QA handler; production recipe maps are unchanged.\n");
+            require(
+                map.getAllRecipes()
+                    .size() == productionCount,
+                "full-slot fixture does not enter production recipe map");
+            report.append("Full-slot ")
+                .append(NAMES[family])
+                .append(" fixture is local to the QA handler; production recipe maps are unchanged.\n");
         }
         require(handler.numRecipes() == 1, "isolated actual NEI recipe page");
         ArrayList<ICraftingHandler> handlers = new ArrayList<>();
@@ -233,6 +251,10 @@ public final class ModernFluidMachineNeiClientChecks {
         constructor.setAccessible(true);
         Minecraft.getMinecraft()
             .displayGuiScreen(constructor.newInstance(handlers));
+    }
+
+    private static int familyForPage(int page) {
+        return page < MAPS.length ? page : FULL_SLOT_FAMILIES[page - MAPS.length];
     }
 
     private void checkCachedRecipe(RecipeMapFrontend frontend, GTNEIDefaultHandler.CachedDefaultRecipe recipe,
@@ -284,7 +306,7 @@ public final class ModernFluidMachineNeiClientChecks {
             .toList();
     }
 
-    private static GTRecipe fullElectrolyzerFixture() {
+    private static GTRecipe fullOutputFixture() {
         ItemStack[] products = { new ItemStack(Items.iron_ingot), new ItemStack(Items.gold_ingot),
             new ItemStack(Items.redstone), new ItemStack(Items.diamond), new ItemStack(Items.coal),
             new ItemStack(Items.quartz) };

@@ -53,18 +53,22 @@ import gregtech.api.metatileentity.BaseMetaTileEntity;
     dependencies = "after:gtneverreset")
 public final class ModernFluidMachineClientChecks {
 
-    private static final String[] NAMES = { "mixer", "electrolyzer", "chemical_reactor" };
-    private static final int[] ITEM_SLOTS = { 7, 8, 4 };
-    private static final int[] FLUID_SLOTS = { 3, 7, 5 };
+    private static final String[] NAMES = { "mixer", "electrolyzer", "chemical_reactor", "centrifuge" };
+    private static final int[] ITEM_SLOTS = { 7, 8, 4, 8 };
+    private static final int[] FLUID_SLOTS = { 3, 7, 5, 7 };
+    private static final int ATLAS_PANELS_PER_PAGE = 10;
     private static final String[][] PANELS = { { "mixer", "front", "Mixer front idle" },
         { "mixer", "front_active", "Mixer front active" }, { "mixer", "top", "Mixer top idle" },
         { "mixer", "top_active", "Mixer top active" }, { "electrolyzer", "front", "Electrolyzer idle" },
         { "electrolyzer", "front_active", "Electrolyzer active" }, { "electrolyzer", "side", "Electrolyzer side" },
         { "electrolyzer", "side_active", "Electrolyzer active side" },
         { "chemical_reactor", "front", "Chemical reactor idle" },
-        { "chemical_reactor", "front_active", "Chemical reactor active" } };
+        { "chemical_reactor", "front_active", "Chemical reactor active" },
+        { "centrifuge", "front", "Centrifuge front idle" }, { "centrifuge", "front_active", "Centrifuge front active" },
+        { "centrifuge", "side", "Centrifuge side idle" }, { "centrifuge", "side_active", "Centrifuge side active" },
+        { "centrifuge", "top", "Centrifuge top idle" }, { "centrifuge", "top_active", "Centrifuge top active" } };
 
-    private final BaseMetaTileEntity[] tiles = new BaseMetaTileEntity[3];
+    private final BaseMetaTileEntity[] tiles = new BaseMetaTileEntity[NAMES.length];
     private final StringBuilder report = new StringBuilder();
     private volatile int stage;
     private volatile int requested = 0;
@@ -75,6 +79,7 @@ public final class ModernFluidMachineClientChecks {
     private int serverTicks;
     private int frames;
     private int controlStage;
+    private int atlasPage;
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
@@ -103,7 +108,7 @@ public final class ModernFluidMachineClientChecks {
                 .clearChatMessages();
             ready = mc.theWorld != null;
             if (ready) {
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < NAMES.length; i++)
                     ready &= mc.theWorld.getTileEntity(i * 3, 10, 0) instanceof BaseMetaTileEntity tile
                         && tile.getMetaTileEntity() instanceof ModernFluidMachine;
             }
@@ -132,14 +137,14 @@ public final class ModernFluidMachineClientChecks {
             int target = requested;
             requested = -1;
             player.closeScreen();
-            if (target < 3) {
+            if (target < NAMES.length) {
                 player.playerNetServerHandler.setPlayerLocation(target * 3 + 0.5, 11, -3, 0, 10);
                 ModernFluidMachine machine = (ModernFluidMachine) tiles[target].getMetaTileEntity();
                 require(machine.onRightclick(tiles[target], player), "native machine GUI opens: " + NAMES[target]);
                 stage = target + 1;
             } else {
-                player.playerNetServerHandler.setPlayerLocation(3, 13, -7, 0, 18);
-                stage = 4;
+                player.playerNetServerHandler.setPlayerLocation((NAMES.length - 1) * 1.5, 13, -9, 0, 18);
+                stage = NAMES.length + 1;
             }
         } catch (Throwable failure) {
             fail(failure);
@@ -162,7 +167,7 @@ public final class ModernFluidMachineClientChecks {
             new ItemStack(Items.redstone), new ItemStack(Items.diamond), new ItemStack(Items.coal),
             new ItemStack(Items.quartz) };
         ItemStack[][] families = families();
-        for (int family = 0; family < 3; family++) {
+        for (int family = 0; family < NAMES.length; family++) {
             int x = family * 3;
             player.worldObj.setBlock(x, 10, 0, GregTechAPI.sBlockMachines, 0, 3);
             BaseMetaTileEntity tile = (BaseMetaTileEntity) player.worldObj.getTileEntity(x, 10, 0);
@@ -177,8 +182,8 @@ public final class ModernFluidMachineClientChecks {
             tile.setFrontFacing(ForgeDirection.SOUTH);
             machine.mItemTransfer = false;
             machine.mFluidTransfer = false;
-            int inputs = family == 0 ? 6 : 2;
-            int outputs = family == 0 ? 1 : family == 1 ? 6 : 2;
+            int inputs = machine.mInputSlotCount;
+            int outputs = machine.mOutputItems.length;
             for (int i = 0; i < inputs; i++)
                 machine.setInventorySlotContents(machine.getInputSlot() + i, items[i].copy());
             for (int i = 0; i < outputs; i++)
@@ -197,7 +202,7 @@ public final class ModernFluidMachineClientChecks {
         if (event.phase != TickEvent.Phase.END || finished || stage == 0) return;
         try {
             Minecraft mc = Minecraft.getMinecraft();
-            if (stage <= 3) {
+            if (stage <= NAMES.length) {
                 if (!(mc.currentScreen instanceof GuiContainerWrapper wrapper) || ++frames < 40) return;
                 int family = stage - 1;
                 if (family == 0 && controlStage < 7) {
@@ -212,26 +217,33 @@ public final class ModernFluidMachineClientChecks {
                 int next = stage;
                 stage = 0;
                 requested = next;
-            } else if (stage == 4) {
+            } else if (stage == NAMES.length + 1) {
                 if (mc.currentScreen != null || ++frames < 60) return;
                 capture("modern-machines-world.png");
                 checkAtlas();
                 mc.displayGuiScreen(new Preview(false));
-                stage = 5;
+                stage = NAMES.length + 2;
                 frames = 0;
-            } else if (stage == 5) {
+            } else if (stage == NAMES.length + 2) {
                 if (!(mc.currentScreen instanceof Preview) || ++frames < 30) return;
                 capture("modern-machines-lv-through-uv.png");
                 mc.displayGuiScreen(new Preview(true));
-                stage = 6;
+                stage = NAMES.length + 3;
                 frames = 0;
-            } else if (stage == 6 && mc.currentScreen instanceof Preview) {
-                if (++frames == 30) capture("modern-machines-idle-active-atlas.png");
+            } else if (stage == NAMES.length + 3 && mc.currentScreen instanceof Preview) {
+                String imageName = atlasPage == 0 ? "modern-machines-idle-active-atlas"
+                    : "centrifuge-idle-active-atlas";
+                if (++frames == 30) capture(imageName + ".png");
                 if (frames < 65) return;
-                capture("modern-machines-idle-active-atlas-next.png");
+                capture(imageName + "-next.png");
+                if (++atlasPage * ATLAS_PANELS_PER_PAGE < PANELS.length) {
+                    mc.displayGuiScreen(new Preview(true, atlasPage));
+                    frames = 0;
+                    return;
+                }
                 Files.writeString(new File(output(), "client-result.txt").toPath(), "PASS\n" + report);
                 System.out.println(
-                    "MODERN_FLUID_MACHINE_CLIENT_QA PASS: native GUIs, synchronized slots, all tier casings and animated atlas textures");
+                    "MODERN_FLUID_MACHINE_CLIENT_QA PASS: four native GUIs, synchronized slots, all tier casings and animated atlas textures");
                 finished = true;
             }
         } catch (Throwable failure) {
@@ -373,7 +385,7 @@ public final class ModernFluidMachineClientChecks {
                 "active emissive animation: " + machine);
         }
         for (String[] panel : PANELS) {
-            int family = panel[0].equals("mixer") ? 0 : panel[0].equals("electrolyzer") ? 1 : 2;
+            int family = familyIndex(panel[0]);
             ModernFluidMachine machine = (ModernFluidMachine) tiles[family].getMetaTileEntity();
             boolean active = panel[1].endsWith("active");
             ForgeDirection face = panel[1].startsWith("top") ? ForgeDirection.UP
@@ -383,7 +395,7 @@ public final class ModernFluidMachineClientChecks {
                 "machine selects casing and " + panel[2] + " overlay");
         }
         report.append(
-            "All 24 LV-UV casing sprites, idle/active front and mixer top overlays, and animated emissive sprites are present in the real block atlas.\n");
+            "All 24 LV-UV casing sprites; idle/active overlays of all four machines including centrifuge front, side and top; and animated emissive sprites are present in the real block atlas.\n");
     }
 
     private static TextureAtlasSprite sprite(String suffix) {
@@ -406,7 +418,12 @@ public final class ModernFluidMachineClientChecks {
 
     private static ItemStack[][] families() {
         return new ItemStack[][] { MachineLoader.MODERN_MIXERS, MachineLoader.MODERN_ELECTROLYZERS,
-            MachineLoader.MODERN_CHEMICAL_REACTORS };
+            MachineLoader.MODERN_CHEMICAL_REACTORS, MachineLoader.MODERN_CENTRIFUGES };
+    }
+
+    private static int familyIndex(String name) {
+        for (int i = 0; i < NAMES.length; i++) if (NAMES[i].equals(name)) return i;
+        throw new AssertionError("unknown machine family: " + name);
     }
 
     private static File output() {
@@ -438,10 +455,16 @@ public final class ModernFluidMachineClientChecks {
     private static final class Preview extends GuiScreen {
 
         private final boolean textures;
+        private final int texturePage;
         private final RenderItem items = new RenderItem();
 
         private Preview(boolean textures) {
+            this(textures, 0);
+        }
+
+        private Preview(boolean textures, int texturePage) {
             this.textures = textures;
+            this.texturePage = texturePage;
         }
 
         @Override
@@ -459,11 +482,16 @@ public final class ModernFluidMachineClientChecks {
                 16,
                 0xffffff);
             if (textures) {
-                for (int i = 0; i < PANELS.length; i++) drawPanel(i, 18 + i % 5 * 104, 52 + i / 5 * 135);
+                int start = texturePage * ATLAS_PANELS_PER_PAGE;
+                int end = Math.min(start + ATLAS_PANELS_PER_PAGE, PANELS.length);
+                for (int i = start; i < end; i++) {
+                    int local = i - start;
+                    drawPanel(i, 18 + local % 5 * 104, 52 + local / 5 * 135);
+                }
                 return;
             }
             ItemStack[][] families = families();
-            for (int family = 0; family < 3; family++) {
+            for (int family = 0; family < NAMES.length; family++) {
                 int y = 55 + family * 94;
                 drawString(fontRendererObj, NAMES[family], 18, y - 16, 0xffffff);
                 for (int tier = 1; tier <= 8; tier++) {
@@ -494,7 +522,7 @@ public final class ModernFluidMachineClientChecks {
                 .bindTexture(TextureMap.locationBlocksTexture);
             quad(sprite("modern_casings/lv/" + (panel[1].startsWith("top") ? "top" : "side")), x, y);
             quad(sprite("modern_" + panel[0] + "/overlay_" + panel[1]), x, y);
-            if (!panel[0].equals("mixer"))
+            if (panel[0].equals("electrolyzer") || panel[0].equals("chemical_reactor"))
                 quad(sprite("modern_" + panel[0] + "/overlay_" + panel[1] + "_emissive"), x, y);
             GL11.glDisable(GL11.GL_BLEND);
             int textY = y + 70;

@@ -65,6 +65,7 @@ public final class MachineLoader {
     public static final ItemStack[] MODERN_MIXERS = new ItemStack[VoltageIndex.UV + 1];
     public static final ItemStack[] MODERN_ELECTROLYZERS = new ItemStack[VoltageIndex.UV + 1];
     public static final ItemStack[] MODERN_CHEMICAL_REACTORS = new ItemStack[VoltageIndex.UV + 1];
+    public static final ItemStack[] MODERN_CENTRIFUGES = new ItemStack[VoltageIndex.UV + 1];
 
     public static void registry() {
         registerHatch();
@@ -254,9 +255,26 @@ public final class MachineLoader {
                 16000,
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL).getStackForm(1);
+            // #tr gtnr.machine.modern_centrifuge.name
+            // # %s Small Centrifuge
+            // # zh_CN %s 小型离心机
+            MODERN_CENTRIFUGES[tier] = new ModernFluidMachine(
+                GTNRMachineID.ModernCentrifugeLV.id + tier - VoltageIndex.LV,
+                "gtneverreset.modern_centrifuge.tier." + tier,
+                StatCollector.translateToLocalFormatted("gtnr.machine.modern_centrifuge.name", GTValues.VN[tier]),
+                tier,
+                GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                mixerTankCapacity * 4,
+                ModernMachineTextures.CENTRIFUGE,
+                SoundResource.GTCEU_LOOP_CENTRIFUGE).getStackForm(1);
             AnimatedTooltipHandler.addItemTooltip(MODERN_MIXERS[tier], AnimatedText.GT_NEVER_RESET);
             AnimatedTooltipHandler.addItemTooltip(MODERN_ELECTROLYZERS[tier], AnimatedText.GT_NEVER_RESET);
             AnimatedTooltipHandler.addItemTooltip(MODERN_CHEMICAL_REACTORS[tier], AnimatedText.GT_NEVER_RESET);
+            AnimatedTooltipHandler.addItemTooltip(MODERN_CENTRIFUGES[tier], AnimatedText.GT_NEVER_RESET);
         }
     }
 

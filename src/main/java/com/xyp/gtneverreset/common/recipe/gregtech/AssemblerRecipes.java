@@ -49,11 +49,15 @@ public final class AssemblerRecipes {
             ItemList.Machine_HV_ChemicalReactor, ItemList.Machine_EV_ChemicalReactor,
             ItemList.Machine_IV_ChemicalReactor, ItemList.ChemicalReactorLuV, ItemList.ChemicalReactorZPM,
             ItemList.ChemicalReactorUV };
+        ItemList[] centrifuges = { ItemList.Machine_LV_Centrifuge, ItemList.Machine_MV_Centrifuge,
+            ItemList.Machine_HV_Centrifuge, ItemList.Machine_EV_Centrifuge, ItemList.Machine_IV_Centrifuge,
+            ItemList.CentrifugeLuV, ItemList.CentrifugeZPM, ItemList.CentrifugeUV };
         for (int tier = VoltageIndex.LV; tier <= VoltageIndex.UV; tier++) {
             int index = tier - VoltageIndex.LV;
             registerUpgrade(mixers[index], pumps[index], MachineLoader.MODERN_MIXERS[tier], tier);
             registerUpgrade(electrolyzers[index], pumps[index], MachineLoader.MODERN_ELECTROLYZERS[tier], tier);
             registerUpgrade(chemicalReactors[index], pumps[index], MachineLoader.MODERN_CHEMICAL_REACTORS[tier], tier);
+            registerUpgrade(centrifuges[index], pumps[index], MachineLoader.MODERN_CENTRIFUGES[tier], tier);
         }
     }
 

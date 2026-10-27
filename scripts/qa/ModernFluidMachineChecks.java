@@ -86,6 +86,7 @@ public final class ModernFluidMachineChecks {
         verifyRegistration();
         verifyNativeRecipes();
         verifyTankAccess();
+        verifyCentrifugePersistence();
         verifyProcessingAndPersistence();
         verifyOverclock();
     }
@@ -93,11 +94,13 @@ public final class ModernFluidMachineChecks {
     private void verifyRegistration() {
         Set<Integer> ids = new HashSet<>();
         ItemStack[][] families = { MachineLoader.MODERN_MIXERS, MachineLoader.MODERN_ELECTROLYZERS,
-            MachineLoader.MODERN_CHEMICAL_REACTORS };
-        int[][] fluidSlots = { { 2, 1 }, { 1, 6 }, { 3, 2 } };
+            MachineLoader.MODERN_CHEMICAL_REACTORS, MachineLoader.MODERN_CENTRIFUGES };
+        int[][] itemSlots = { { 6, 1 }, { 2, 6 }, { 2, 2 }, { 2, 6 } };
+        int[][] fluidSlots = { { 2, 1 }, { 1, 6 }, { 3, 2 }, { 1, 6 } };
         int[][] capacities = { { 8000, 12000, 16000, 16000, 16000, 16000, 16000, 16000 },
             { 32000, 48000, 64000, 64000, 64000, 64000, 64000, 64000 },
-            { 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000 } };
+            { 16000, 16000, 16000, 16000, 16000, 16000, 16000, 16000 },
+            { 32000, 48000, 64000, 64000, 64000, 64000, 64000, 64000 } };
         for (int family = 0; family < families.length; family++) {
             for (int tier = 1; tier <= 8; tier++) {
                 ItemStack stack = families[family][tier];
@@ -109,6 +112,10 @@ public final class ModernFluidMachineChecks {
                     "registered modern machine implementation " + family + "/" + tier);
                 ModernFluidMachine prototype = (ModernFluidMachine) GregTechAPI.METATILEENTITIES[stack.getItemDamage()];
                 require(prototype.mTier == tier, "native voltage tier " + family + "/" + tier);
+                require(
+                    prototype.mInputSlotCount == itemSlots[family][0]
+                        && prototype.mOutputItems.length == itemSlots[family][1],
+                    "GTM item IO shape " + family + "/" + tier);
                 require(
                     prototype.getCapacity() == capacities[family][tier - 1],
                     "original GTM tank capacity " + family + "/" + tier);
@@ -125,6 +132,7 @@ public final class ModernFluidMachineChecks {
                     "survival assembler recipe " + family + "/" + tier);
             }
         }
+        require(ids.size() == 32, "four modern machine families register 32 unique LV-through-UV machines");
     }
 
     private void verifyNativeRecipes() {
@@ -145,6 +153,10 @@ public final class ModernFluidMachineChecks {
             MachineLoader.MODERN_CHEMICAL_REACTORS[8],
             recipe -> recipe.mFluidInputs.length >= 2,
             "native multi-fluid small chemical reaction without cells");
+        processNative(
+            MachineLoader.MODERN_CENTRIFUGES[8],
+            recipe -> recipe.mFluidOutputs.length >= 2,
+            "native centrifuging with multiple direct fluid products");
     }
 
     private void processNative(ItemStack stack, Predicate<GTRecipe> selection, String label) {
@@ -214,6 +226,85 @@ public final class ModernFluidMachineChecks {
         require(
             amount(machine.getOutputTanks(), Materials.Water.getFluid(1)) == 500,
             "typed drain preserves first tank");
+    }
+
+    private void verifyCentrifugePersistence() {
+        BaseMetaTileEntity tile = place(MachineLoader.MODERN_CENTRIFUGES[1]);
+        ModernFluidMachine machine = machine(tile);
+        GTRecipe recipe = fixtureRecipe(
+            new FluidStack[] { Materials.Water.getFluid(200) },
+            new FluidStack[] { Materials.Water.getFluid(10), Materials.Hydrogen.getGas(20), Materials.Oxygen.getGas(30),
+                Materials.Nitrogen.getGas(40), Materials.Chlorine.getGas(50), Materials.Helium.getGas(60) },
+            16,
+            80);
+        machine.getRecipeMap()
+            .add(recipe);
+        supply(machine, recipe);
+        for (FluidStack input : recipe.mFluidInputs) {
+            require(
+                amount(machine.getInputTanks(), input) == input.amount,
+                "centrifuge retains its direct fluid input");
+        }
+        require(
+            machine.fill(Materials.Hydrogen.getGas(100), false) == 0,
+            "GTM 7.4 centrifuge rejects a second distinct fluid in simulated fill");
+        require(
+            machine.fill(Materials.Hydrogen.getGas(100), true) == 0,
+            "GTM 7.4 centrifuge rejects a second distinct fluid in committed fill");
+        require(
+            amount(machine.getInputTanks(), Materials.Water.getFluid(1)) == 200
+                && amount(machine.getInputTanks(), Materials.Hydrogen.getGas(1)) == 0,
+            "rejected second fluid preserves the centrifuge input tank");
+        NBTTagCompound idleSnapshot = new NBTTagCompound();
+        machine.saveNBTData(idleSnapshot);
+        BaseMetaTileEntity idleRestoredTile = place(MachineLoader.MODERN_CENTRIFUGES[1]);
+        ModernFluidMachine idleRestored = machine(idleRestoredTile);
+        idleRestored.loadNBTData(idleSnapshot);
+        for (FluidStack input : recipe.mFluidInputs) {
+            require(
+                amount(idleRestored.getInputTanks(), input) == input.amount,
+                "centrifuge NBT retains each direct fluid input");
+        }
+        require(machine.checkRecipe() == 2, "centrifuge starts a one-fluid-input six-product process");
+        for (FluidStack input : recipe.mFluidInputs) {
+            require(amount(machine.getInputTanks(), input) == 0, "centrifuge consumes its direct fluid input");
+        }
+        NBTTagCompound activeSnapshot = new NBTTagCompound();
+        machine.saveNBTData(activeSnapshot);
+        BaseMetaTileEntity restoredTile = place(MachineLoader.MODERN_CENTRIFUGES[1]);
+        ModernFluidMachine restored = machine(restoredTile);
+        restored.loadNBTData(activeSnapshot);
+        require(
+            restored.mMaxProgresstime == machine.mMaxProgresstime && restored.mEUt == machine.mEUt,
+            "centrifuge NBT retains active process time and energy use");
+        complete(restoredTile, "restored centrifuge six-product recipe");
+        for (FluidStack output : recipe.mFluidOutputs) {
+            require(
+                amount(restored.getOutputTanks(), output) == output.amount,
+                "centrifuge NBT delivers each of six pending fluid products once");
+        }
+        restored.onPostTick(restoredTile, 101);
+        for (FluidStack output : recipe.mFluidOutputs) {
+            require(
+                amount(restored.getOutputTanks(), output) == output.amount,
+                "centrifuge completed process does not duplicate any fluid product");
+        }
+        FluidStack simulated = restoredTile.drain(ForgeDirection.UNKNOWN, Materials.Helium.getGas(15), false);
+        require(simulated != null && simulated.amount == 15, "typed drain simulation locates sixth centrifuge output");
+        require(
+            amount(restored.getOutputTanks(), Materials.Helium.getGas(1)) == 60,
+            "typed drain simulation preserves sixth centrifuge output");
+        FluidStack drained = restoredTile.drain(ForgeDirection.UNKNOWN, Materials.Helium.getGas(15), true);
+        require(drained != null && drained.amount == 15, "typed drain extracts sixth centrifuge output");
+        require(
+            amount(restored.getOutputTanks(), Materials.Helium.getGas(1)) == 45,
+            "typed drain changes only requested amount of sixth centrifuge output");
+        for (int index = 0; index < recipe.mFluidOutputs.length - 1; index++) {
+            FluidStack output = recipe.mFluidOutputs[index];
+            require(
+                amount(restored.getOutputTanks(), output) == output.amount,
+                "typed sixth-product drain preserves other centrifuge products");
+        }
     }
 
     private void verifyProcessingAndPersistence() {

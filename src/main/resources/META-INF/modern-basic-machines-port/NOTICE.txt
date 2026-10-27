@@ -9,7 +9,7 @@ License: GNU Lesser General Public License version 3.
 Upstream license: https://github.com/GregTechCEu/GregTech-Modern/blob/v7.4.0-1.20.1/LICENSE
 
 Included material:
-- Single-block mixer, electrolyzer and chemical reactor face textures.
+- Single-block mixer, electrolyzer, chemical reactor and centrifuge face textures.
 - LV through UV voltage casing bottom, side and top textures.
 - Minecraft animation metadata belonging to these textures.
 

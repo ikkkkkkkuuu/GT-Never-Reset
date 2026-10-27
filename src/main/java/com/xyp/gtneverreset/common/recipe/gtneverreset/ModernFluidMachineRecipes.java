@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.common.recipe.gtneverreset;
 
+import static com.xyp.gtneverreset.loader.GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES;
 import static com.xyp.gtneverreset.loader.GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES;
 import static com.xyp.gtneverreset.loader.GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES;
 import static com.xyp.gtneverreset.loader.GTNRRecipeMaps.MODERN_MIXER_RECIPES;
@@ -38,6 +39,7 @@ public final class ModernFluidMachineRecipes {
         convertRecipes(RecipeMaps.mixerRecipes, MODERN_MIXER_RECIPES, 6, 1, 2, 1);
         convertRecipes(RecipeMaps.electrolyzerRecipes, MODERN_ELECTROLYZER_RECIPES, 2, 6, 1, 6);
         convertRecipes(RecipeMaps.chemicalReactorRecipes, MODERN_CHEMICAL_RECIPES, 2, 2, 3, 2);
+        convertRecipes(RecipeMaps.centrifugeRecipes, MODERN_CENTRIFUGE_RECIPES, 2, 6, 1, 6);
     }
 
     private static void convertRecipes(RecipeMap<?> source, RecipeMap<?> target, int itemInputs, int itemOutputs,
