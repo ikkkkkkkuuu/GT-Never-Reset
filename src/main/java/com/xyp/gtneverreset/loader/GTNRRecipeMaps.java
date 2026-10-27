@@ -23,6 +23,7 @@ public final class GTNRRecipeMaps {
         .maxIO(6, 1, 2, 1)
         .progressBar(GTUITextures.PROGRESSBAR_MIXER, ProgressBar.Direction.CIRCULAR_CW)
         .progressBarMUI2(GTGuiTextures.PROGRESSBAR_MIXER, ProgressWidget.Direction.CIRCULAR_CW)
+        .frontend(LargeNEIFrontend::new)
         .build();
 
     // #tr gtnr.recipe.modern_electrolyzer
@@ -33,6 +34,7 @@ public final class GTNRRecipeMaps {
         .maxIO(2, 6, 1, 6)
         .progressBar(GTUITextures.PROGRESSBAR_EXTRACT)
         .progressBarMUI2(GTGuiTextures.PROGRESSBAR_EXTRACT)
+        .frontend(LargeNEIFrontend::new)
         .build();
 
     // #tr gtnr.recipe.modern_chemical_reactor
@@ -43,6 +45,7 @@ public final class GTNRRecipeMaps {
         .maxIO(2, 2, 3, 2)
         .progressBar(GTUITextures.PROGRESSBAR_ARROW_MULTIPLE)
         .progressBarMUI2(GTGuiTextures.PROGRESSBAR_ARROW_MULTIPLE)
+        .frontend(LargeNEIFrontend::new)
         .build();
 
     public static final RecipeMap<FragmentWorldCollectionBackend> FRAGMENT_WORLD_COLLECTION_RECIPES = RecipeMapBuilder

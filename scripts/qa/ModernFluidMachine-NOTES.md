@@ -52,3 +52,17 @@ git diff --check
 服务端结果写入 `build/modern-fluid-machine-qa/result.txt`；客户端结果和截图写入
 `build/modern-fluid-machine-client-qa/`。客户端截图覆盖三类 GUI、LV–UV 外壳、
 空闲与运行状态动画，以及物品和流体的 Shift 输出侧弹窗。
+
+## NEI 多流体布局回归
+
+三张配方表使用 GT 原生 `LargeNEIFrontend` 的三列布局。电解机六个流体输出槽排成两行，
+全部槽位保持在 170×82 的配方背景内，并避开 GT 标志和进度条。
+
+以下客户端回归已通过：三种真实配方页、三表最大槽位边界与重叠检查、实际缓存配方的槽位坐标，
+以及同时占满六个物品和六个流体输出槽的独立显示样例。显示样例不写入正式配方表。
+
+```powershell
+.\gradlew.bat -I scripts/modern-fluid-machine-nei-client-qa.init.gradle runClient17 --no-configuration-cache
+```
+
+结果和四张配方页截图位于 `build/modern-fluid-machine-nei-client-qa/`。
