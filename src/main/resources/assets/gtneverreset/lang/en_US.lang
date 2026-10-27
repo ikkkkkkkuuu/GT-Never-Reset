@@ -587,6 +587,7 @@ gtnr.large_furnace.scaling=LV: 64 parallels, 6 threads; both double per voltage 
 gtnr.large_furnace.lava=56 stationary lava blocks; steel casing positions accept hatches
 gtnr.ore_processor.modules=Parameter Module
 gtnr.ore_processor.description=Processes ores and ore intermediates into dusts, gems and byproducts
+gtnr.ore_processor.unprocessed=Items without an ore-processing recipe are transferred to the output in one batch
 gtnr.QuantumComputer.name=Quantum Computer
 gtnr.QuantumComputer.tooltip.allocation=Allocates AE crafting CPUs as jobs are submitted
 gtnr.QuantumComputer.tooltip.capacity=Maximum crafting storage and coprocessor count

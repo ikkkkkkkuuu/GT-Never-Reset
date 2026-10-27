@@ -587,6 +587,7 @@ gtnr.large_furnace.scaling=LV：64 并行、6 线程；每升一档电压，两�
 gtnr.large_furnace.lava=56 格静止岩浆；钢机械方块位置可替换为仓室
 gtnr.ore_processor.modules=参数模块
 gtnr.ore_processor.description=将矿石及选矿中间产物加工为矿粉、宝石和副产物
+gtnr.ore_processor.unprocessed=没有矿石处理配方的物品会整批转移到输出总线
 gtnr.QuantumComputer.name=量子计算机
 gtnr.QuantumComputer.tooltip.allocation=按合成任务动态分配 AE 合成 CPU
 gtnr.QuantumComputer.tooltip.capacity=提供最高合成存储容量与协处理器数量

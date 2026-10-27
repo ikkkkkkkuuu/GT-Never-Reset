@@ -8,6 +8,7 @@ import java.util.List;
 
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -17,6 +18,7 @@ import com.xyp.gtneverreset.common.machine.multiMachineBase.GTNRMultiBlockBase;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeOreProcessor;
 import com.xyp.gtneverreset.loader.GTNRRecipeMaps;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
+import com.xyp.gtneverreset.utils.machine.OreRecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadTask;
 import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
@@ -36,6 +38,7 @@ import gregtech.api.enums.VoidingMode;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.logic.ProcessingLogic;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
+import gregtech.api.metatileentity.implementations.MTEHatch;
 import gregtech.api.metatileentity.implementations.MTEHatchInputBus;
 import gregtech.api.metatileentity.implementations.MTEHatchOutputBus;
 import gregtech.api.recipe.RecipeMaps;
@@ -184,6 +187,7 @@ public final class OreProcessorChecks {
         ItemStack iron = GTOreDictUnificator.get(OrePrefixes.ore, Materials.Iron, 5);
         ItemStack copper = GTOreDictUnificator.get(OrePrefixes.ore, Materials.Copper, 5);
         require(iron != null && copper != null, "representative GT ores exist");
+        verifyUnprocessedBatch(iron);
         RecipeThreadProcessingLogic probe = new RecipeThreadProcessingLogic();
         Method setup = GTNRMultiBlockBase.class.getDeclaredMethod("setupProcessingLogic", ProcessingLogic.class);
         setup.setAccessible(true);
@@ -212,15 +216,16 @@ public final class OreProcessorChecks {
         require(
             machine.getRecipeThreadTasks()
                 .stream()
-                .allMatch(task -> task.getEUt() > 0),
-            "every thread consumes energy");
+                .filter(task -> task.getEUt() > 0)
+                .count() >= 2,
+            "ore recipe threads consume energy");
         int dirt = 0;
         for (int slot = 0; slot < input.getSizeInventory(); slot++) {
             ItemStack stack = input.getStackInSlot(slot);
             if (stack != null && stack.getItem() == net.minecraft.item.Item.getItemFromBlock(Blocks.dirt))
                 dirt += stack.stackSize;
         }
-        require(dirt == 3, "unprocessed items remain in input bus");
+        require(dirt == 0, "unprocessed items leave the input bus in one batch");
         long before = energy.getStoredEU();
         int duration = machine.getRecipeThreadTasks()
             .stream()
@@ -239,12 +244,100 @@ public final class OreProcessorChecks {
             if (stack != null) produced += stack.stackSize;
         }
         require(produced > 0, "ore processing delivers its products");
+        require(countItem(output, new ItemStack(Blocks.dirt)) == 3, "unprocessed items arrive unchanged at the output");
+
+        for (int slot = 0; slot < output.getSizeInventory(); slot++)
+            output.setInventorySlotContents(slot, new ItemStack(Blocks.cobblestone, 64));
+        input.setInventorySlotContents(0, new ItemStack(Blocks.dirt, 64));
+        input.setInventorySlotContents(1, new ItemStack(Blocks.dirt, 64));
+        input.setInventorySlotContents(2, new ItemStack(Blocks.dirt, 17));
+        run.invoke(machine, tile, 100L);
+        run.invoke(machine, tile, 101L);
+        require(countItem(input, new ItemStack(Blocks.dirt)) == 0, "batch transfer exceeds the 64 parallel limit");
+        require(
+            machine.getRecipeThreadTasks()
+                .size() == 1,
+            "blocked transfer remains in one output ledger");
+        require(
+            machine.getRecipeThreadTasks()
+                .get(0)
+                .isFinished(),
+            "transfer waits only for output space");
+        NBTTagCompound saved = new NBTTagCompound();
+        machine.saveNBTData(saved);
+        machine.loadNBTData(saved);
+        output.setInventorySlotContents(0, null);
+        run.invoke(machine, tile, 102L);
+        int partial = countItem(output, new ItemStack(Blocks.dirt));
+        require(partial > 0 && partial <= 64, "available output space accepts a partial batch");
+        require(
+            machine.getRecipeThreadTasks()
+                .size() == 1,
+            "remaining items survive reload and partial output");
+        for (int slot = 1; slot < output.getSizeInventory(); slot++) output.setInventorySlotContents(slot, null);
+        run.invoke(machine, tile, 103L);
+        require(countItem(output, new ItemStack(Blocks.dirt)) == 145, "full batch arrives without loss or duplication");
+        require(
+            machine.getRecipeThreadTasks()
+                .isEmpty(),
+            "completed transfer releases its thread");
+        run.invoke(machine, tile, 105L);
+        require(countItem(output, new ItemStack(Blocks.dirt)) == 145, "later checks do not duplicate the batch");
 
         machine.clearHatches();
         world.setBlock(7, 11, 8, GregTechAPI.sBlockCasings2, 0, 3);
         errors.clear();
         machine.checkMachine(tile, null, errors);
         require(!errors.isEmpty(), "missing energy hatch rejects formation");
+    }
+
+    private void verifyUnprocessedBatch(ItemStack ore) {
+        OreRecipeThreadProcessingLogic logic = new OreRecipeThreadProcessingLogic();
+        ItemStack mineral = ore.copy();
+        ItemStack first = new ItemStack(Blocks.dirt, 64);
+        first.setStackDisplayName("Unprocessed batch");
+        ItemStack second = new ItemStack(Blocks.dirt, 64);
+        ItemStack circuit = GTUtility.getIntegratedCircuit(1);
+        circuit.stackSize = 1;
+        logic.setRecipeMap(GTNRRecipeMaps.ORE_PROCESSING_RECIPES)
+            .setAvailableVoltage(0)
+            .setAvailableAmperage(0)
+            .setInputItems(mineral, first, first, second, circuit);
+        logic.prepareRecipe(0);
+        require(
+            logic.process()
+                .wasSuccessful(),
+            "unsupported batch transfers without recipe power");
+        require(first.stackSize == 64 && second.stackSize == 64, "batch does not consume before commit");
+        require(logic.getOutputItems().length == 2, "aliased input stacks are not duplicated");
+        require(
+            logic.getOutputItems()[0].getDisplayName()
+                .equals("Unprocessed batch"),
+            "transfer preserves item NBT");
+        require(logic.getCalculatedEut() == 0 && logic.getDuration() == 1, "transfer is one free output cycle");
+        require(logic.commitInputs(), "batch input transaction commits");
+        require(first.stackSize == 0 && second.stackSize == 0, "commit consumes the entire unsupported batch");
+        require(
+            mineral.stackSize == ore.stackSize && circuit.stackSize == 1,
+            "valid ore and configuration circuit remain");
+        logic.clear();
+        logic.setInputItems(mineral);
+        logic.prepareRecipe(0);
+        require(
+            !logic.process()
+                .wasSuccessful(),
+            "power-starved ore is not transferred as unsupported");
+        logic.finishRecipe();
+        require(mineral.stackSize == ore.stackSize, "failed processing preserves ore input");
+    }
+
+    private static int countItem(MTEHatch hatch, ItemStack item) {
+        int count = 0;
+        for (int slot = 0; slot < hatch.getSizeInventory(); slot++) {
+            ItemStack stack = hatch.getStackInSlot(slot);
+            if (stack != null && GTUtility.areStacksEqual(stack, item)) count += stack.stackSize;
+        }
+        return count;
     }
 
     private static BaseMetaTileEntity place(World world, int x, int y, ItemStack stack) {

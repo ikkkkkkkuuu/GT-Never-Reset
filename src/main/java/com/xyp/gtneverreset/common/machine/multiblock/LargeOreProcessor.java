@@ -27,6 +27,8 @@ import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.GTNRMultiBlockBase;
 import com.xyp.gtneverreset.loader.GTNRRecipeMaps;
+import com.xyp.gtneverreset.utils.machine.OreRecipeThreadProcessingLogic;
+import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
 
 import gregtech.api.GregTechAPI;
@@ -83,6 +85,16 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
     @Override
     protected boolean hasPerfectOverclock() {
         return true;
+    }
+
+    @Override
+    protected RecipeThreadProcessingLogic createRecipeThreadProcessingLogic() {
+        return new OreRecipeThreadProcessingLogic();
+    }
+
+    @Override
+    protected boolean canUseControllerSlotForRecipe() {
+        return false;
     }
 
     @Override
@@ -149,6 +161,10 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
         // # Processes ores and ore intermediates into dusts, gems and byproducts
         // # zh_CN 将矿石及选矿中间产物加工为矿粉、宝石和副产物
         lines.add(StatCollector.translateToLocal("gtnr.ore_processor.description"));
+        // #tr gtnr.ore_processor.unprocessed
+        // # Items without an ore-processing recipe are transferred to the output in one batch
+        // # zh_CN 没有矿石处理配方的物品会整批转移到输出总线
+        lines.add(StatCollector.translateToLocal("gtnr.ore_processor.unprocessed"));
         return lines;
     }
 
