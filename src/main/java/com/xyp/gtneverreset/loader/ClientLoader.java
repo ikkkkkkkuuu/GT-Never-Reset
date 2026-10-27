@@ -2,8 +2,12 @@ package com.xyp.gtneverreset.loader;
 
 import java.io.File;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.IReloadableResourceManager;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 
+import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.event.WirelessCardInput;
 import com.xyp.gtneverreset.client.event.WirelessTerminalInputHandler;
 import com.xyp.gtneverreset.client.nei.NEIWirelessTerminalConfig;
@@ -13,9 +17,13 @@ import com.xyp.gtneverreset.client.quantum.RecursivePatternReport;
 import com.xyp.gtneverreset.client.render.FluxConnectorRender;
 import com.xyp.gtneverreset.client.render.StableEndCrystalRender;
 import com.xyp.gtneverreset.client.render.WirelessWorldHighlightRender;
+import com.xyp.gtneverreset.client.text.EffectTextRenderer;
+import com.xyp.gtneverreset.client.text.TextEffectRegistry;
+import com.xyp.gtneverreset.client.text.effect.ShaderTextEffect;
 import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
 import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
+import com.xyp.gtneverreset.utils.text.effect.TextEffects;
 
 import appeng.api.AEApi;
 import appeng.api.parts.IPartItem;
@@ -32,6 +40,15 @@ public final class ClientLoader {
     }
 
     public static void init() {
+        TextEffectRegistry.register(
+            TextEffects.EXOTIC_RAINBOW.rendererId(),
+            new ShaderTextEffect(
+                new ResourceLocation(GTNeverReset.MODID, "shaders/text/exotic_rainbow.frag.glsl"),
+                0xFF6B6B,
+                0x7DC4E1,
+                0xD3EB6C));
+        ((IReloadableResourceManager) Minecraft.getMinecraft()
+            .getResourceManager()).registerReloadListener(EffectTextRenderer.INSTANCE);
         RenderingRegistry.registerEntityRenderingHandler(StableEndCrystalEntity.class, new StableEndCrystalRender());
         BlockFluxConnector.renderId = RenderingRegistry.getNextAvailableRenderId();
         RenderingRegistry.registerBlockHandler(new FluxConnectorRender());

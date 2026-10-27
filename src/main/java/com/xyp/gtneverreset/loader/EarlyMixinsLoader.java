@@ -1,12 +1,13 @@
 package com.xyp.gtneverreset.loader;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.gtnewhorizon.gtnhmixins.IEarlyMixinLoader;
 
+import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
 
 @IFMLLoadingPlugin.MCVersion("1.7.10")
@@ -20,8 +21,19 @@ public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLo
 
     @Override
     public List<String> getMixins(Set<String> loadedCoreMods) {
-        return Arrays
-            .asList("wireless.MixinWirelessTileData", "gtnhlib.ServerThreadUtilMixin", "minecraft.VanillaFurnaceMixin");
+        List<String> mixins = new ArrayList<>(
+            List.of(
+                "wireless.MixinWirelessTileData",
+                "gtnhlib.ServerThreadUtilMixin",
+                "minecraft.VanillaFurnaceMixin"));
+        if (FMLLaunchHandler.side()
+            .isClient()) {
+            mixins.add("texteffect.MixinFontRendererTextEffects");
+            if (loadedCoreMods.contains("com.gtnewhorizons.angelica.loading.AngelicaTweaker")) {
+                mixins.add("texteffect.angelica.MixinFontBatchTextEffects");
+            }
+        }
+        return mixins;
     }
 
     @Override

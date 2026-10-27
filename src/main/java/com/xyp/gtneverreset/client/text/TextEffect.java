@@ -1,0 +1,23 @@
+package com.xyp.gtneverreset.client.text;
+
+/** A registered effect shades an existing mask without owning text layout. */
+@cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
+public interface TextEffect extends AutoCloseable {
+
+    void render(TextRenderContext context);
+
+    default float padding(float height) {
+        return height;
+    }
+
+    default float padding(float width, float height) {
+        return padding(height);
+    }
+
+    default int fallbackColor() {
+        return 0xFFFFFF;
+    }
+
+    @Override
+    default void close() {}
+}
