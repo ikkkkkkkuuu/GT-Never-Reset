@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.SoundCategory;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.item.EntityItem;
@@ -227,7 +228,8 @@ public final class EndCrystalClientChecks {
         if (event.phase != TickEvent.Phase.END || !ready || finished) return;
         try {
             Minecraft mc = Minecraft.getMinecraft();
-            if (mc.currentScreen != null || mc.theWorld == null) return;
+            if ((mc.currentScreen != null && !(mc.currentScreen instanceof TooltipPreview)) || mc.theWorld == null)
+                return;
             require(
                 mc.theWorld.loadedEntityList.stream()
                     .anyMatch(e -> e instanceof StableEndCrystalEntity),
@@ -242,6 +244,24 @@ public final class EndCrystalClientChecks {
                 ScreenShotHelper.saveScreenshot(
                     output(),
                     "stable-crystal-animation.png",
+                    mc.displayWidth,
+                    mc.displayHeight,
+                    mc.getFramebuffer());
+                mc.displayGuiScreen(new TooltipPreview(GTNRItemList.EndCrystalResonatorLV));
+            }
+            if (frames == 140) {
+                ScreenShotHelper.saveScreenshot(
+                    output(),
+                    "resonator-lv-tooltip.png",
+                    mc.displayWidth,
+                    mc.displayHeight,
+                    mc.getFramebuffer());
+                mc.displayGuiScreen(new TooltipPreview(GTNRItemList.EndCrystalResonatorMV));
+            }
+            if (frames == 170) {
+                ScreenShotHelper.saveScreenshot(
+                    output(),
+                    "resonator-mv-tooltip.png",
                     mc.displayWidth,
                     mc.displayHeight,
                     mc.getFramebuffer());
@@ -269,5 +289,25 @@ public final class EndCrystalClientChecks {
 
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
+    }
+
+    private static final class TooltipPreview extends GuiScreen {
+
+        private final ItemStack stack;
+
+        private TooltipPreview(GTNRItemList machine) {
+            stack = machine.get(1);
+        }
+
+        @Override
+        public boolean doesGuiPauseGame() {
+            return false;
+        }
+
+        @Override
+        public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+            drawDefaultBackground();
+            drawHoveringText(stack.getTooltip(mc.thePlayer, false), 20, 60, fontRendererObj);
+        }
     }
 }

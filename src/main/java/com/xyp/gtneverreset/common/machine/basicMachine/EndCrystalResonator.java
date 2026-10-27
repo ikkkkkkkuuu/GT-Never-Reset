@@ -13,7 +13,6 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
 import com.xyp.gtneverreset.common.item.items.StableEndCrystalItem;
@@ -26,6 +25,7 @@ import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.implementations.MTETieredMachineBlock;
 import gregtech.api.render.TextureFactory;
 import gregtech.api.util.GTUtility;
+import gregtech.api.util.tooltip.TooltipHelper;
 import gregtech.common.misc.WirelessNetworkManager;
 
 @IMetaTileEntity.SkipGenerateName
@@ -75,12 +75,24 @@ public final class EndCrystalResonator extends MTETieredMachineBlock {
             // # Requires a Stable End Crystal directly above; it is not consumed
             // # zh_CN 正上方一格需要稳定末影水晶；运行时不消耗水晶
             StatCollector.translateToLocal("tooltip.gtnr.crystal_resonator.crystal"),
+            // #tr tooltip.gtnr.crystal_resonator.voltage
+            // # Rated voltage: %s
+            // # zh_CN 额定电压：%s
+            StatCollector.translateToLocalFormatted(
+                "tooltip.gtnr.crystal_resonator.voltage",
+                TooltipHelper.voltageText(V[mTier])),
+            // #tr tooltip.gtnr.crystal_resonator.amperage
+            // # Equivalent current: %s A
+            // # zh_CN 等效电流：%s A
+            StatCollector.translateToLocalFormatted(
+                "tooltip.gtnr.crystal_resonator.amperage",
+                TooltipHelper.ampText(generationForTier(mTier) / V[mTier])),
             // #tr tooltip.gtnr.crystal_resonator.rate
-            // # Generation: %s EU/t
-            // # zh_CN 发电量：%s EU/t
+            // # Generation: %s
+            // # zh_CN 发电量：%s
             StatCollector.translateToLocalFormatted(
                 "tooltip.gtnr.crystal_resonator.rate",
-                NumberFormatUtil.formatNumber(generationForTier(mTier))),
+                TooltipHelper.euRateText(generationForTier(mTier))),
             // #tr tooltip.gtnr.crystal_resonator.wireless
             // # Deposits EU into the owner's GT wireless network every second
             // # zh_CN 每秒将 EU 存入机主所属的 GT 无线电网
