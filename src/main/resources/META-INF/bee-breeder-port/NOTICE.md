@@ -4,4 +4,4 @@ Adapted from the adjacent GT-Not-Good source tree under its MIT port license, in
 
 Sources: LargeBeeBreeder, BeeBreedingHelper (breeder functionality only), BeeBreedingPlanner, DronePool, LargeBeeBreederRecipes, BeeSpeciesDropTextField and the English/Chinese machine descriptions.
 
-Changes: GT Never Reset packages and registration; native GT custom processing lifecycle; MUI2 operation/archive/reachable-species/route pages; transitive reachable-species lookup from the archive; server-authoritative target selection and localized display. Global Forestry mixins are not included.
+Changes: GT Never Reset packages and registration; native GT custom processing lifecycle; MUI2 operation/archive/reachable-species/route pages; transitive reachable-species lookup from the archive; LV-based distinct-species concurrency and duration scaling; parameter module support; server-authoritative target selection and localized display. Global Forestry mixins are not included.

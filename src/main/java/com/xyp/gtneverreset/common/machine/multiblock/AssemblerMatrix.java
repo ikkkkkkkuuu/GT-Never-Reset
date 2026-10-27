@@ -5,9 +5,7 @@ package com.xyp.gtneverreset.common.machine.multiblock;
 
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
@@ -477,10 +475,20 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     }
 
     @Override
-    public Map<String, Object> getTooltipVariables() {
-        Map<String, Object> values = new LinkedHashMap<>();
-        values.put("patternCapacity", PATTERN_CAPACITY);
-        return values;
+    public List<String> getTooltipFeatureLines() {
+        return List.of(
+            // #tr gtnr.AssemblerMatrix.tooltip.patterns
+            // # Executes AE crafting patterns
+            // # zh_CN 执行 AE 合成样板
+            StatCollector.translateToLocal("gtnr.AssemblerMatrix.tooltip.patterns"),
+            // #tr gtnr.AssemblerMatrix.tooltip.capacity
+            // # 1-tick crafting; up to %s patterns
+            // # zh_CN 1 tick 合成，最多容纳 %s 个样板
+            StatCollector.translateToLocalFormatted("gtnr.AssemblerMatrix.tooltip.capacity", PATTERN_CAPACITY),
+            // #tr gtnr.AssemblerMatrix.tooltip.energy
+            // # Requires no upgrades, EU or AE crafting energy
+            // # zh_CN 无需升级，不消耗 EU 或 AE 合成能量
+            StatCollector.translateToLocal("gtnr.AssemblerMatrix.tooltip.energy"));
     }
 
     @Override

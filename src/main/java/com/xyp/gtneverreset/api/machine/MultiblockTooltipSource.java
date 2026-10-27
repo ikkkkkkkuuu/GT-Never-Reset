@@ -4,7 +4,6 @@
 package com.xyp.gtneverreset.api.machine;
 
 import java.util.List;
-import java.util.Map;
 import java.util.OptionalInt;
 
 import gregtech.api.enums.HeatingCoilLevel;
@@ -60,10 +59,6 @@ public interface MultiblockTooltipSource {
 
     default String getTooltipMachineType() {
         return null;
-    }
-
-    default Map<String, Object> getTooltipVariables() {
-        return Map.of();
     }
 
     default List<String> getTooltipStructureNotes() {

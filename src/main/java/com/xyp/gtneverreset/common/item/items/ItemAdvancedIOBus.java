@@ -13,11 +13,14 @@ import net.minecraft.world.World;
 
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.part.PartAdvancedIOBus;
+import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModList;
 
 import appeng.api.AEApi;
+import appeng.api.config.Upgrades;
 import appeng.api.parts.IPart;
 import appeng.api.parts.IPartItem;
+import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -38,6 +41,13 @@ public final class ItemAdvancedIOBus extends Item implements IPartItem {
         setUnlocalizedName(REGISTRY_NAME);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
         setTextureName(ModList.GTNeverReset.getResourcePath("advancedio/advanced_io_bus"));
+        GameRegistry.registerItem(this, REGISTRY_NAME);
+        GTNRItemList.AdvancedIOBus.set(this);
+        Upgrades.SPEED.registerItem(new ItemStack(this), 4);
+        Upgrades.SUPERSPEED.registerItem(new ItemStack(this), 4);
+        Upgrades.SUPERLUMINALSPEED.registerItem(new ItemStack(this), 4);
+        Upgrades.CAPACITY.registerItem(new ItemStack(this), 5);
+        Upgrades.REDSTONE.registerItem(new ItemStack(this), 1);
     }
 
     @Override

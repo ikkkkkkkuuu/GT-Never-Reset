@@ -122,6 +122,31 @@ public class EffectTextRenderer implements IResourceManagerReloadListener {
         }
     }
 
+    /** Draws a standalone HUD line with an explicit style, without adding global inline syntax. */
+    public void drawStyledLine(FontRenderer font, String text, TextEffectStyle style, float x, float y) {
+        FontBatchBridge bridge = AngelicaTextAdapter.bridge(font);
+        int depth = bridge == null ? 0 : bridge.gtnr$suspendBatch();
+        try {
+            AngelicaTextAdapter.beginForeignDraw();
+            drawRun(
+                font,
+                text,
+                style,
+                x,
+                y,
+                font.getStringWidth(text),
+                EffectTextLayout.fontHeight(font),
+                0xFFFFFFFF,
+                true);
+        } finally {
+            try {
+                AngelicaTextAdapter.endForeignDraw();
+            } finally {
+                if (bridge != null) bridge.gtnr$resumeBatch(depth);
+            }
+        }
+    }
+
     private int drawLayout(FontRenderer font, Layout layout, float x, float y, int color, boolean shadow) {
         try (TextRenderState ignored = new TextRenderState()) {
             for (DrawRun run : layout.runs()) {

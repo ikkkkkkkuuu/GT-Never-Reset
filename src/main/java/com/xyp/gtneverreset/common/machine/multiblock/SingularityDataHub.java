@@ -422,6 +422,44 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     }
 
     @Override
+    public List<String> getTooltipFeatureLines() {
+        return List.of(
+            // #tr gtnr.singularity_data_hub.tooltip.storage
+            // # Stores items and fluids in a shared vault
+            // # zh_CN 集中存储物品与流体
+            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.storage"),
+            // #tr gtnr.singularity_data_hub.tooltip.capacity
+            // # Shared byte capacity; each item and fluid type also has a storage limit
+            // # zh_CN 物品与流体共用字节容量，各类型另有存储上限
+            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.capacity"),
+            // #tr gtnr.singularity_data_hub.tooltip.energy
+            // # Requires no EU
+            // # zh_CN 不消耗 EU
+            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.energy"),
+            "",
+            // #tr gtnr.singularity_data_hub.tooltip.transfers
+            // # Use the vault port for transfers; output buses and output hatches are not supported
+            // # zh_CN 通过仓库端口存取物资，不支持输出总线或输出仓
+            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.transfers"),
+            // #tr gtnr.singularity_data_hub.tooltip.port_count
+            // # Requires exactly one Vault Port Hatch
+            // # zh_CN 必须安装且只能安装 1 个仓库端口仓
+            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.port_count"),
+            // #tr gtnr.singularity_data_hub.tooltip.binding
+            // # The vault port binds automatically when the structure forms
+            // # zh_CN 结构成型时自动绑定仓库端口
+            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.binding"),
+            // #tr gtnr.singularity_data_hub.tooltip.scanner
+            // # Use a Tricorder to inspect stored item indices
+            // # zh_CN 使用扫描仪查看已存物品的索引
+            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.scanner"),
+            // #tr gtnr.singularity_data_hub.tooltip.voiding
+            // # Screwdriver: toggle voiding of excess inputs
+            // # zh_CN 螺丝刀右键切换输入溢出销毁
+            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.voiding"));
+    }
+
+    @Override
     public ITexture[] getTexture(IGregTechTileEntity aBaseMetaTileEntity, ForgeDirection side, ForgeDirection facing,
         int colorIndex, boolean aActive, boolean aRedstone) {
         if (side != facing) return new ITexture[] { BlockLoader.eddingtonWallCasing.getCasingTexture() };

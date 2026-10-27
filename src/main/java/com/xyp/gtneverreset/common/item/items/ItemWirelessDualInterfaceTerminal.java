@@ -15,15 +15,19 @@ import net.minecraft.world.World;
 import org.lwjgl.input.Keyboard;
 
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.client.event.WirelessTerminalInputHandler;
+import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtneverreset.utils.inventory.WirelessTerminalSession;
 
+import appeng.api.AEApi;
 import appeng.api.implementations.guiobjects.IGuiItem;
 import appeng.api.implementations.guiobjects.IGuiItemObject;
 import appeng.items.contents.WirelessCraftingTerminalGuiObject;
 import appeng.items.tools.powered.ToolWirelessTerminal;
 import baubles.api.expanded.BaubleExpandedSlots;
+import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -37,6 +41,13 @@ public final class ItemWirelessDualInterfaceTerminal extends ToolWirelessTermina
         // # zh_CN ME无线二合一接口终端
         setUnlocalizedName(REGISTRY_NAME);
         setTextureName(GTNeverReset.MODID + ":" + REGISTRY_NAME);
+        setCreativeTab(GTNRCreativeTabs.ITEMS);
+        GameRegistry.registerItem(this, REGISTRY_NAME);
+        GTNRItemList.WirelessDualInterfaceTerminal.set(this);
+        AEApi.instance()
+            .registries()
+            .wireless()
+            .registerWirelessHandler(this);
     }
 
     @Override

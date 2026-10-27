@@ -4,18 +4,12 @@
 // Structure display updated from commit a6ee80aea6eaf98e2478e847a96dfdc3a620847b.
 package com.xyp.gtneverreset.utils.structure;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 
-import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource.TooltipStats;
 import com.xyp.gtneverreset.utils.structure.PerformanceSummary.BonusStat;
@@ -27,7 +21,6 @@ import com.xyp.gtneverreset.utils.structure.StructureSummary.Size;
 
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
 import gregtech.api.util.MultiblockTooltipBuilder;
-import gregtech.api.util.tooltip.MarkdownTooltipLoader;
 
 public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder {
 
@@ -76,16 +69,6 @@ public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder
                 addStaticEuEffInfo((float) stats.energyUsage());
                 for (String line : MultiblockPerformanceFormatter.bonuses(performance, BonusStat.ENERGY)) addInfo(line);
             }
-        }
-        Map<String, Object> variables = new LinkedHashMap<>(source.getTooltipVariables());
-        if (stats != null) {
-            variables.putIfAbsent("parallels", stats.parallels());
-            variables.putIfAbsent("speed", stats.speed());
-            variables.putIfAbsent("energy_usage", stats.energyUsage());
-        }
-        ResourceLocation description = new ResourceLocation(GTNeverReset.MODID, descriptionName(machine));
-        for (String line : loadDescription(description, variables)) {
-            addInfo(line);
         }
         for (String line : source.getTooltipFeatureLines()) addInfo(line);
         for (String line : MultiblockPerformanceFormatter.rules(performance)) addInfo(line);
@@ -262,26 +245,6 @@ public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder
                 + ": "
                 + EnumChatFormatting.GRAY
                 + String.join(" / ", locations));
-    }
-
-    public static String descriptionName(MTEEnhancedMultiBlockBase<?> machine) {
-        return machine.getClass()
-            .getSimpleName()
-            .replaceAll("([A-Z]+)([A-Z][a-z])", "$1-$2")
-            .replaceAll("([a-z0-9])([A-Z])", "$1-$2")
-            .toLowerCase(Locale.ROOT);
-    }
-
-    private static List<String> loadDescription(ResourceLocation description, Map<String, Object> variables) {
-        String language = MarkdownTooltipLoader.getCurrentLanguage();
-        for (String candidate : language.equals("en_US") ? List.of(language) : List.of(language, "en_US")) {
-            try {
-                return MarkdownTooltipLoader.STANDARD.loadStandardPath(description, candidate, variables);
-            } catch (IOException ignored) {
-                // A machine may use only generated information and have no Markdown description.
-            }
-        }
-        return List.of();
     }
 
 }

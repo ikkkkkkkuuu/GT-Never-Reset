@@ -195,6 +195,23 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
     }
 
     @Override
+    public List<String> getTooltipFeatureLines() {
+        return List.of(
+            // #tr gtnr.QuantumComputer.tooltip.allocation
+            // # Allocates AE crafting CPUs as jobs are submitted
+            // # zh_CN 按合成任务动态分配 AE 合成 CPU
+            StatCollector.translateToLocal("gtnr.QuantumComputer.tooltip.allocation"),
+            // #tr gtnr.QuantumComputer.tooltip.capacity
+            // # Maximum crafting storage and coprocessor count
+            // # zh_CN 提供最高合成存储容量与协处理器数量
+            StatCollector.translateToLocal("gtnr.QuantumComputer.tooltip.capacity"),
+            // #tr gtnr.QuantumComputer.tooltip.energy
+            // # Requires no upgrades, EU or AE crafting energy
+            // # zh_CN 无需升级，不消耗 EU 或 AE 合成能量
+            StatCollector.translateToLocal("gtnr.QuantumComputer.tooltip.energy"));
+    }
+
+    @Override
     public void onFirstTick(IGregTechTileEntity baseMetaTileEntity) {
         super.onFirstTick(baseMetaTileEntity);
         if (checkStructure(true, getBaseMetaTileEntity())) {

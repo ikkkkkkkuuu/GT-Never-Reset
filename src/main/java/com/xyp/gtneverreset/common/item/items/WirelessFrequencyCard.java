@@ -35,8 +35,10 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.gtnewhorizon.gtnhlib.item.ItemStackNBT;
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui;
 import com.xyp.gtneverreset.mixins.late.appliedenergistics2.wireless.AccessorTileController;
+import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.machine.wireless.AutomaticWirelessEntrances;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardBinding;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardInventory;
@@ -57,6 +59,7 @@ import appeng.api.parts.SelectedPart;
 import baubles.api.BaubleType;
 import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleExpanded;
+import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -68,6 +71,9 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
         setUnlocalizedName(GTNeverReset.MODID + "." + REGISTRY_NAME);
         setTextureName(GTNeverReset.MODID + ":" + REGISTRY_NAME);
         setMaxStackSize(1);
+        setCreativeTab(GTNRCreativeTabs.ITEMS);
+        GameRegistry.registerItem(this, REGISTRY_NAME);
+        GTNRItemList.WirelessFrequencyCard.set(this);
     }
 
     @Override

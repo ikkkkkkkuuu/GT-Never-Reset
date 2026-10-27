@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
 
 import appeng.api.util.IInterfaceViewable;
@@ -53,7 +54,7 @@ public abstract class LargeInterfaceTerminalRowsMixin {
         Map<IInterfaceViewable, Integer> snapshots = gtnr$rowSnapshots();
         snapshots.clear();
         for (IInterfaceViewable machine : tracked.keySet()) {
-            if (machine instanceof AssemblerMatrix) {
+            if (machine instanceof AssemblerMatrix || machine instanceof TileEntityPackagedProvider) {
                 snapshots.put(machine, machine.rows());
             }
         }

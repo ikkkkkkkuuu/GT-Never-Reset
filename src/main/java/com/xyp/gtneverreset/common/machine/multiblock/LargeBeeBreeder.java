@@ -18,10 +18,12 @@ import static gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_DISTILLATION_
 import static gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_DISTILLATION_TOWER_GLOW;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.chainAllGlasses;
+import static gregtech.api.util.GTStructureUtility.ofHatchAdder;
+import static gregtech.api.util.GTUtility.validMTEList;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,6 +44,8 @@ import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
 import com.xyp.gtneverreset.common.gui.modularui.LargeBeeBreederGui;
+import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
+import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 import com.xyp.gtneverreset.utils.machine.bee.BeeBreedingHelper;
 import com.xyp.gtneverreset.utils.machine.bee.BeeBreedingPlanner;
 import com.xyp.gtneverreset.utils.machine.bee.DronePool;
@@ -50,10 +54,12 @@ import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
 
 import forestry.api.apiculture.IAlleleBeeSpecies;
 import gregtech.api.GregTechAPI;
+import gregtech.api.enums.GTValues;
 import gregtech.api.enums.HatchElement;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.api.enums.Textures;
+import gregtech.api.enums.VoltageIndex;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
@@ -66,7 +72,9 @@ import gregtech.api.render.TextureFactory;
 import gregtech.api.structure.error.ErrorType;
 import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrors;
+import gregtech.api.structure.error.TranslatableText;
 import gregtech.api.util.GTOreDictUnificator;
+import gregtech.api.util.GTUtility;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
 import lombok.Getter;
@@ -75,13 +83,9 @@ import lombok.Getter;
 public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBreeder>
     implements ISurvivalConstructable, MultiblockTooltipSource {
 
-    private static final long BASE_EUT_PER_BREEDING = 400L;
-
-    private static final long EUT_PER_GLASS_TIER = 400L;
-
-    private static final int TICKS_PER_BREEDING = 64;
-
-    private static final int MAX_PARALLEL_STEPS = 16;
+    private static final long BASE_EUT_PER_BREEDING = 15L;
+    private static final int TICKS_PER_BREEDING = 20 * 20;
+    private static final int BASE_PARALLEL_SPECIES = 2;
 
     private static final byte OPERATION_NONE = 0;
     private static final byte OPERATION_BREEDING = 1;
@@ -150,6 +154,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     private boolean hasStainlessSteelGear;
     private int glassTier = -1;
     private IStructureDefinition<LargeBeeBreeder> structureDefinition;
+    private final List<ParameterModuleHatch> parameterModules = new ArrayList<>();
 
     @Getter
     private String targetBeeSpecies = "";
@@ -223,6 +228,12 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
                 .addElement(
                     'G',
                     ofChain(
+                        StructureTooltipHooks.describeAsHatch(
+                            ofHatchAdder(LargeBeeBreeder::addParameterModuleToMachineList, 10, 1),
+                            // #tr gtnr.bee_breeder.modules
+                            // # Parameter Module
+                            // # zh_CN 参数模块
+                            "gtnr.bee_breeder.modules"),
                         buildHatchAdder(LargeBeeBreeder.class)
                             .atLeast(InputBus, OutputBus, Energy.or(ExoticEnergy), Maintenance)
                             .casingIndex(10)
@@ -289,6 +300,51 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
             && !StructureTooltipHooks.onCheckHatches(this, 1, Integer.MAX_VALUE, HatchElement.Maintenance)
             && mMaintenanceHatches.isEmpty())
             errors.add(StructureErrors.hatchCount(ErrorType.TOO_FEW, Maintenance, 0, 1));
+        Map<MachineModuleType, Integer> moduleCounts = new EnumMap<>(MachineModuleType.class);
+        for (ParameterModuleHatch module : parameterModules)
+            moduleCounts.merge(module.getModuleType(), 1, Integer::sum);
+        for (var entry : moduleCounts.entrySet()) {
+            if (entry.getValue() > 1) errors.add(
+                StructureErrors.hatchCount(
+                    ErrorType.TOO_MANY,
+                    TranslatableText.lang(moduleTypeKey(entry.getKey())),
+                    entry.getValue(),
+                    1));
+        }
+    }
+
+    @Override
+    public void clearHatches() {
+        super.clearHatches();
+        for (ParameterModuleHatch module : parameterModules) module.setWorking(false);
+        parameterModules.clear();
+    }
+
+    public boolean addParameterModuleToMachineList(IGregTechTileEntity tile, int casingIndex) {
+        if (tile == null || !(tile.getMetaTileEntity() instanceof ParameterModuleHatch module)) return false;
+        if (!parameterModules.contains(module)) {
+            module.updateTexture(casingIndex);
+            module.updateCraftingIcon(getMachineCraftingIcon());
+            parameterModules.add(module);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean addToMachineList(IGregTechTileEntity tile, int casingIndex) {
+        return addParameterModuleToMachineList(tile, casingIndex) || super.addToMachineList(tile, casingIndex);
+    }
+
+    @Override
+    public long getMaxInputVoltage() {
+        long voltage = 0;
+        for (var hatch : validMTEList(getExoticAndNormalEnergyHatchList())) {
+            voltage = Math.max(
+                voltage,
+                hatch.getBaseMetaTileEntity()
+                    .getInputVoltage());
+        }
+        return voltage;
     }
 
     @Override
@@ -298,7 +354,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
 
     @Override
     public int getMaxParallelRecipes() {
-        return 1;
+        return getMaxParallelBreedingSteps();
     }
 
     @Override
@@ -329,6 +385,9 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     @Override
     public void onPostTick(IGregTechTileEntity aBaseMetaTileEntity, long aTick) {
         super.onPostTick(aBaseMetaTileEntity, aTick);
+        if (aBaseMetaTileEntity.isServerSide()) {
+            for (ParameterModuleHatch module : parameterModules) module.setWorking(aBaseMetaTileEntity.isActive());
+        }
         if (aBaseMetaTileEntity.isServerSide() && aTick % 20 == 0) {
             boolean gearBefore = hasStainlessSteelGear;
             hasStainlessSteelGear = checkStainlessSteelGear(getControllerSlot());
@@ -382,6 +441,9 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         if (pendingPrincessOutputs <= 0) {
             return CheckRecipeResultRegistry.NO_RECIPE;
         }
+        if (getMaxInputVoltage() < GTValues.V[VoltageIndex.LV]) {
+            return CheckRecipeResultRegistry.insufficientPower(GTValues.V[VoltageIndex.LV]);
+        }
 
         if (dronePool.hasDrone(targetBeeSpecies)) {
             ItemStack princess = BeeBreedingHelper.createPrincess(targetBeeSpecies);
@@ -402,7 +464,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         }
 
         List<BeeBreedingHelper.BreedingStep> readySteps = breedingPlan
-            .getReadySteps(dronePool.getAvailableSpecies(), MAX_PARALLEL_STEPS);
+            .getReadySteps(dronePool.getAvailableSpecies(), getMaxParallelBreedingSteps());
         if (readySteps.isEmpty()) {
             allTasksBlocked = true;
             missingDroneSpecies = breedingPlan.getFirstMissingSpecies();
@@ -413,6 +475,11 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
             // # zh_CN 物种档案中缺少必要亲本！
             return SimpleCheckRecipeResult.ofFailure("gtnr_bee_breeder_missing_drone");
         }
+
+        long eutPerSpecies = getEuPerBreedingAttempt();
+        long affordableSpecies = getMaxInputEu() / eutPerSpecies;
+        if (affordableSpecies < 1) return CheckRecipeResultRegistry.insufficientPower(eutPerSpecies);
+        if (readySteps.size() > affordableSpecies) readySteps = readySteps.subList(0, (int) affordableSpecies);
 
         double chanceBonus = (hasStainlessSteelGear ? 2.0D : 0.0D) + Math.max(0, glassTier);
         List<BreedingAttempt> batch = new ArrayList<>(readySteps.size());
@@ -429,16 +496,63 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     }
 
     private long getEnergyCostPerTick(int parallelAttempts) {
-        long eutPerAttempt = BASE_EUT_PER_BREEDING + (long) Math.max(0, glassTier) * EUT_PER_GLASS_TIER;
-        return Math.max(0L, eutPerAttempt * Math.max(0, parallelAttempts));
+        long eutPerAttempt = getEuPerBreedingAttempt();
+        return eutPerAttempt * Math.min(Math.max(0, parallelAttempts), Long.MAX_VALUE / eutPerAttempt);
     }
 
     public long getEuPerBreedingAttempt() {
-        return getEnergyCostPerTick(1);
+        ParameterModuleHatch overclock = parameterModule(MachineModuleType.Overclock);
+        ParameterModuleHatch power = parameterModule(MachineModuleType.PowerConsumption);
+        double increase = (overclock == null ? 4 : overclock.getPowerIncrease()) / 2D;
+        return Math.max(
+            1L,
+            (long) Math.ceil(
+                BASE_EUT_PER_BREEDING * Math.pow(increase, getVoltageUpgrades())
+                    * (power == null ? 1 : power.getPowerMultiplier())));
     }
 
     public int getMaxParallelBreedingSteps() {
-        return MAX_PARALLEL_STEPS;
+        ParameterModuleHatch parallel = parameterModule(MachineModuleType.Parallel);
+        long multiplier = parallel == null ? 1 : 1L + parallel.getParameter();
+        long base = Math.min(Integer.MAX_VALUE, (long) BASE_PARALLEL_SPECIES << getVoltageUpgrades());
+        return (int) Math.min(Integer.MAX_VALUE, base * multiplier);
+    }
+
+    public int getBreedingVoltageTier() {
+        return Math.max(VoltageIndex.LV, Math.min(GTValues.V.length - 1, GTUtility.getTier(getMaxInputVoltage())));
+    }
+
+    private int getVoltageUpgrades() {
+        return getBreedingVoltageTier() - VoltageIndex.LV;
+    }
+
+    public int getBreedingDurationTicks() {
+        ParameterModuleHatch speed = parameterModule(MachineModuleType.Speed);
+        ParameterModuleHatch overclock = parameterModule(MachineModuleType.Overclock);
+        int timeReduction = overclock == null ? 2 : overclock.getTimeReduction();
+        return Math.max(
+            1,
+            (int) Math.ceil(
+                TICKS_PER_BREEDING / Math.pow(timeReduction, getVoltageUpgrades())
+                    / (speed == null ? 1 : speed.getParameter())));
+    }
+
+    public int getActiveBreedingSpecies() {
+        return mMaxProgresstime > 0 && activeOperation == OPERATION_BREEDING ? activeBreedingBatch.size() : 0;
+    }
+
+    public List<String> getActiveBreedingSpeciesUids() {
+        if (getActiveBreedingSpecies() == 0) return Collections.emptyList();
+        return activeBreedingBatch.stream()
+            .map(attempt -> attempt.step.result)
+            .toList();
+    }
+
+    private ParameterModuleHatch parameterModule(MachineModuleType type) {
+        for (ParameterModuleHatch module : parameterModules) {
+            if (module.getModuleType() == type) return module;
+        }
+        return null;
     }
 
     public int getMutationChanceBonus() {
@@ -446,7 +560,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     }
 
     private void prepareBreedingCycle(long eut) {
-        mMaxProgresstime = TICKS_PER_BREEDING;
+        mMaxProgresstime = getBreedingDurationTicks();
         mEfficiency = 10000;
         mEfficiencyIncrease = 10000;
         lEUt = -eut;
@@ -683,16 +797,101 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
 
     @Override
     public TooltipStats getTooltipStats() {
-        return new TooltipStats(MAX_PARALLEL_STEPS, Double.NaN, Double.NaN, false);
+        return new TooltipStats(BASE_PARALLEL_SPECIES, Double.NaN, Double.NaN, false);
     }
 
     @Override
-    public Map<String, Object> getTooltipVariables() {
-        Map<String, Object> values = new LinkedHashMap<>();
-        values.put("attemptSeconds", TICKS_PER_BREEDING / 20D);
-        values.put("baseEu", BASE_EUT_PER_BREEDING);
-        values.put("glassEu", EUT_PER_GLASS_TIER);
-        return values;
+    public List<String> getTooltipFeatureLines() {
+        return List.of(
+            // #tr gtnr.bee_breeder.tooltip.breeding
+            // # Automatically breeds bees through a planned mutation chain
+            // # zh_CN 自动规划杂交链，培育目标蜂种
+            StatCollector.translateToLocal("gtnr.bee_breeder.tooltip.breeding"),
+            // #tr gtnr.bee_breeder.tooltip.base
+            // # LV base: %s seconds per attempt, up to %s distinct species at once
+            // # zh_CN LV 基准：每次尝试耗时 %s 秒，同时最多杂交 %s 种蜂
+            StatCollector.translateToLocalFormatted(
+                "gtnr.bee_breeder.tooltip.base",
+                TICKS_PER_BREEDING / 20D,
+                BASE_PARALLEL_SPECIES),
+            // #tr gtnr.bee_breeder.tooltip.voltage
+            // # Each voltage tier halves the duration and doubles parallel species, with a minimum duration of 1 tick
+            // # zh_CN 电压每升一级，耗时减半、并行蜂种数翻倍，耗时最低 1 tick
+            StatCollector.translateToLocal("gtnr.bee_breeder.tooltip.voltage"),
+            // #tr gtnr.bee_breeder.tooltip.parallel
+            // # Only distinct ready species in the current route run in parallel; both parents must already be archived
+            // # zh_CN 并行只计算当前路线中亲本均已存档的不同蜂种，不会重复尝试同一种蜂
+            StatCollector.translateToLocal("gtnr.bee_breeder.tooltip.parallel"),
+            // #tr gtnr.bee_breeder.tooltip.energy
+            // # LV uses %s EU/t per species, doubling per voltage tier; a full base batch uses that tier's recipe power
+            // # zh_CN LV 每个蜂种消耗 %s EU/t，升压后每级翻倍；满基础并行消耗当前档位配方功率
+            StatCollector.translateToLocalFormatted("gtnr.bee_breeder.tooltip.energy", BASE_EUT_PER_BREEDING),
+            // @formatter:off
+            // #tr gtnr.bee_breeder.tooltip.modules
+            // # Supports speed, parallel, power and overclock modules; changes apply to new cycles and power limits concurrency
+            // # zh_CN 支持速度、并行、能耗和超频模块；模块参数对新一轮任务生效，实际并行受供电功率限制
+            // @formatter:on
+            StatCollector.translateToLocal("gtnr.bee_breeder.tooltip.modules"),
+            // @formatter:off
+            // #tr gtnr.bee_breeder.tooltip.overclock
+            // # Overclock modules replace the default time and power ratios; voltage-based parallelism still doubles per tier
+            // # zh_CN 超频模块可替代默认的升压耗时和能耗倍率；升压并行仍按每级翻倍
+            // @formatter:on
+            StatCollector.translateToLocal("gtnr.bee_breeder.tooltip.overclock"),
+            // #tr gtnr.bee_breeder.tooltip.mutation
+            // # Uses Forestry mutation chances
+            // # zh_CN 采用林业杂交概率
+            StatCollector.translateToLocal("gtnr.bee_breeder.tooltip.mutation"),
+            // #tr gtnr.bee_breeder.tooltip.glass
+            // # Each glass tier adds 1 percentage point to mutation chance
+            // # zh_CN 玻璃每升 1 级，杂交成功率增加 1 个百分点
+            StatCollector.translateToLocal("gtnr.bee_breeder.tooltip.glass"),
+            "",
+            // #tr gtnr.bee_breeder.tooltip.archive
+            // # Input princesses or drones to permanently unlock their species
+            // # zh_CN 投入公主蜂或雄蜂，永久解锁对应蜂种
+            StatCollector.translateToLocal("gtnr.bee_breeder.tooltip.archive"),
+            // #tr gtnr.bee_breeder.tooltip.target
+            // # Set the target in the GUI; reachable mutation steps run automatically
+            // # zh_CN 在 GUI 设置目标，机器自动执行可达的杂交步骤
+            StatCollector.translateToLocal("gtnr.bee_breeder.tooltip.target"),
+            // #tr gtnr.bee_breeder.tooltip.princess
+            // # Each input princess requests one target princess
+            // # zh_CN 每投入一只公主蜂，可输出一只目标公主蜂
+            StatCollector.translateToLocal("gtnr.bee_breeder.tooltip.princess"),
+            // #tr gtnr.bee_breeder.tooltip.gear
+            // # A Stainless Steel Gear in the controller adds 2 percentage points to mutation chance
+            // # zh_CN 控制器槽放入不锈钢齿轮，杂交成功率增加 2 个百分点
+            StatCollector.translateToLocal("gtnr.bee_breeder.tooltip.gear"));
+    }
+
+    @Override
+    public List<String> getTooltipStructureNotes() {
+        // #tr gtnr.multiblock.modules.limit
+        // # At most one EU, one speed, one parallel and one overclock module per machine
+        // # zh_CN 每台机器最多安装一个 EU 模块、一个速度模块、一个并行模块和一个超频模块
+        return List.of(StatCollector.translateToLocal("gtnr.multiblock.modules.limit"));
+    }
+
+    private static String moduleTypeKey(MachineModuleType type) {
+        return switch (type) {
+            // #tr gtnr.module.type.parallel
+            // # Parallel Module
+            // # zh_CN 并行模块
+            case Parallel -> "gtnr.module.type.parallel";
+            // #tr gtnr.module.type.speed
+            // # Speed Module
+            // # zh_CN 速度模块
+            case Speed -> "gtnr.module.type.speed";
+            // #tr gtnr.module.type.eu
+            // # EU Module
+            // # zh_CN EU 模块
+            case PowerConsumption -> "gtnr.module.type.eu";
+            // #tr gtnr.module.type.overclock
+            // # Overclock Module
+            // # zh_CN 超频模块
+            case Overclock -> "gtnr.module.type.overclock";
+        };
     }
 
     @Override
@@ -721,6 +920,9 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         // # zh_CN 待转换公主蜂：%s
         info[superInfo.length + 3] = StatCollector
             .translateToLocalFormatted("gtnr.bee_breeder.pending", pendingPrincessOutputs);
+        // #tr gtnr.bee_breeder.energy
+        // # Per species: %s EU/t | Chance bonus: +%s%%
+        // # zh_CN 每蜂种：%s EU/t | 成功率加成：+%s%%
         info[superInfo.length + 4] = StatCollector.translateToLocalFormatted(
             "gtnr.bee_breeder.energy",
             NumberFormatUtil.formatNumber(getEnergyCostPerTick(1)),

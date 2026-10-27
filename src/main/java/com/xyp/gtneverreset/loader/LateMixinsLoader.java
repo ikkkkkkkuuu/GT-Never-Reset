@@ -22,7 +22,17 @@ public final class LateMixinsLoader implements ILateMixinLoader {
     @Override
     public List<String> getMixins(Set<String> loadedMods) {
         List<String> mixins = new ArrayList<>();
+        if (loadedMods.contains(ModList.ModIds.BLOOD_MAGIC)) {
+            mixins.add("bloodmagic.MixinPackagedBloodAltar");
+        }
+        if (loadedMods.contains(ModList.ModIds.THAUMCRAFT)
+            && loadedMods.contains(ModList.ModIds.APPLIED_ENERGISTICS_2)) {
+            mixins.add("thaumcraft.MixinPackagedEssentiaHandler");
+            mixins.add("thaumcraft.MixinPackagedInfusionSource");
+            mixins.add("thaumcraft.MixinPackagedCrucible");
+        }
         if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
+            mixins.add("gregtech.AssemblyLineDataAccessMixin");
             mixins.addAll(
                 Arrays.asList(
                     "gregtech.RecipeSpeedMixin",

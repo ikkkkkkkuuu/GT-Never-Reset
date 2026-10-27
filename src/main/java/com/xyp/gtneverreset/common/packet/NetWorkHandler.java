@@ -85,6 +85,19 @@ public final class NetWorkHandler {
         registerServerbound(ToolBeltResizePacket.class, ToolBeltResizePacket::handle);
         CHANNEL
             .registerMessage(ToolBeltSyncPacket.Handler.class, ToolBeltSyncPacket.class, nextPacketId++, Side.CLIENT);
+        registerServerbound(PackagedConnectorPacket.class, PackagedConnectorPacket::handle);
+        // ID 17 is reserved for PackagedConnectorPacket.
+        nextPacketId = 18;
+        CHANNEL.registerMessage(
+            WirelessMonitorRequestPacket.Handler.class,
+            WirelessMonitorRequestPacket.class,
+            nextPacketId++,
+            Side.SERVER);
+        CHANNEL.registerMessage(
+            WirelessMonitorSnapshotPacket.Handler.class,
+            WirelessMonitorSnapshotPacket.class,
+            nextPacketId++,
+            Side.CLIENT);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);
@@ -113,11 +126,11 @@ public final class NetWorkHandler {
     private static <T extends IMessage> void registerServerbound(Class<T> type, BiConsumer<T, EntityPlayerMP> action) {
         IMessageHandler<T, IMessage> handler = (message, context) -> {
             EntityPlayerMP player = context.getServerHandler().playerEntity;
-            SERVER_ACTIONS.add(
-                () -> {
-                    if (!player.isDead && player.playerNetServerHandler.netManager.isChannelOpen())
-                        action.accept(message, player);
-                });
+            var requestWorld = player.worldObj;
+            SERVER_ACTIONS.add(() -> {
+                if (!player.isDead && player.worldObj == requestWorld
+                    && player.playerNetServerHandler.netManager.isChannelOpen()) action.accept(message, player);
+            });
             return null;
         };
         CHANNEL.registerMessage(handler, type, nextPacketId++, Side.SERVER);

@@ -29,6 +29,7 @@ import com.xyp.gtneverreset.utils.machine.ChatComponentInterfaceNameSuffix;
 import com.xyp.gtneverreset.utils.machine.flux.FluxTransferScheduler;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessAutoConnect;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager;
+import com.xyp.gtneverreset.utils.world.WirelessMonitorService;
 
 import appeng.api.AEApi;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -51,6 +52,9 @@ public class CommonProxy {
         BlockLoader.registerBlocks();
         EntityLoader.registerEntities();
         NetWorkHandler.register();
+        FMLCommonHandler.instance()
+            .bus()
+            .register(new WirelessMonitorService());
         ToolBeltEvents toolBeltEvents = new ToolBeltEvents();
         MinecraftForge.EVENT_BUS.register(toolBeltEvents);
         FMLCommonHandler.instance()
@@ -89,6 +93,7 @@ public class CommonProxy {
     }
 
     public void serverStarting(FMLServerStartingEvent event) {
+        WirelessMonitorService.reset();
         TickHandler.instance()
             .openSession();
     }
@@ -101,6 +106,7 @@ public class CommonProxy {
     }
 
     public void serverStopped(FMLServerStoppedEvent event) {
+        WirelessMonitorService.reset();
         FluxTransferScheduler.clear();
         WirelessChannelManager.clear();
     }

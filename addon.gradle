@@ -1,6 +1,49 @@
 // Ported from GT-Not-Good; see scripts/translation-NOTICE.
 apply from: 'scripts/translation-format.gradle'
 
+// A running LaunchClassLoader keeps ZIP offsets. Rebuilding its JAR in place corrupts lazy class loads.
+// Give each game process its own copies, outside build/ so even clean cannot remove live inputs.
+afterEvaluate {
+    tasks.withType(JavaExec).matching { it.name.startsWith('runClient') || it.name.startsWith('runServer') }.each { runTask ->
+        def buildRoot = layout.buildDirectory
+        def runtimeRoot = layout.projectDirectory.dir('.gradle/game-runtime/' + runTask.name)
+        def launchSnapshot = null
+        def cleanup = tasks.register(runTask.name + 'CleanupSnapshot') {
+            description = 'Remove only the JAR snapshot owned by this completed game launch'
+            notCompatibleWithConfigurationCache('cleanup uses the snapshot allocated by this game launch')
+            doLast {
+                if (launchSnapshot == null) return
+                def expectedParent = runtimeRoot.asFile.toPath().toAbsolutePath().normalize()
+                if (launchSnapshot.parent != expectedParent || !launchSnapshot.fileName.toString().startsWith('launch-')) {
+                    throw new GradleException('Refusing to delete a game snapshot outside its launch directory')
+                }
+                project.delete(launchSnapshot.toFile())
+                logger.lifecycle('[game runtime] removed launch JAR snapshot: {}', launchSnapshot)
+            }
+        }
+        // Finalizers also run when JavaExec fails (for example, a client exits with a crash code).
+        runTask.finalizedBy(cleanup)
+        runTask.notCompatibleWithConfigurationCache('game launches snapshot their generated JARs immediately before execution')
+        runTask.doFirst {
+            def generatedRoot = buildRoot.get().asFile.toPath().toAbsolutePath().normalize()
+            def snapshotRoot = runtimeRoot.asFile.toPath().toAbsolutePath().normalize()
+            java.nio.file.Files.createDirectories(snapshotRoot)
+            def snapshot = java.nio.file.Files.createTempDirectory(snapshotRoot, 'launch-')
+            launchSnapshot = snapshot
+            def launchClasspath = classpath.files.collect { entry ->
+                def source = entry.toPath().toAbsolutePath().normalize()
+                if (!entry.isFile() || !entry.name.endsWith('.jar') || !source.startsWith(generatedRoot)) return entry
+                def target = snapshot.resolve(generatedRoot.relativize(source))
+                java.nio.file.Files.createDirectories(target.parent)
+                java.nio.file.Files.copy(source, target)
+                target.toFile()
+            }
+            classpath = project.files(launchClasspath)
+            logger.lifecycle('[game runtime] launch JAR snapshot: {}', snapshot)
+        }
+    }
+}
+
 // Keep Windows NIO socket files outside redirected user temporary directories.
 // Apply this to compiler workers and the Minecraft launch configurations generated for the IDE.
 if (providers.systemProperty('os.name').get().startsWith('Windows')) {

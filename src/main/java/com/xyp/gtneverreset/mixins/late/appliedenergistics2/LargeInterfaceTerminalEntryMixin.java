@@ -49,6 +49,7 @@ public abstract class LargeInterfaceTerminalEntryMixin {
     private boolean gtnr$isLargeInterface() {
         if (selfRep == null) return false;
         ItemStack matrix = GTNRItemList.AssemblerMatrix.get(1);
-        return matrix != null && selfRep.isItemEqual(matrix);
+        ItemStack packaged = GTNRItemList.WirelessPackagedPatternProvider.get(1);
+        return matrix != null && selfRep.isItemEqual(matrix) || packaged != null && selfRep.isItemEqual(packaged);
     }
 }

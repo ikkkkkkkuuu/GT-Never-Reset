@@ -3,9 +3,11 @@ package com.xyp.gtneverreset.qa;
 import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -25,11 +27,13 @@ import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerGhostIngre
 import com.cleanroommc.modularui.screen.GuiContainerWrapper;
 import com.cleanroommc.modularui.value.sync.BooleanSyncValue;
 import com.cleanroommc.modularui.value.sync.GenericListSyncHandler;
+import com.cleanroommc.modularui.value.sync.IntSyncValue;
 import com.cleanroommc.modularui.value.sync.StringSyncValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.PageButton;
 import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
+import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeBeeBreeder;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
@@ -47,6 +51,8 @@ import gregtech.api.enums.ItemList;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.metatileentity.implementations.MTEHatchInputBus;
 import gregtech.api.recipe.RecipeMaps;
+import gregtech.api.structure.error.StructureError;
+import gregtech.api.util.shutdown.ShutDownReasonRegistry;
 
 @Mod(modid = "beebreederqa", name = "Bee Breeder QA", version = "1", dependencies = "after:gtneverreset")
 public final class BeeBreederClientChecks {
@@ -55,6 +61,8 @@ public final class BeeBreederClientChecks {
     private BaseMetaTileEntity tile;
     private LargeBeeBreeder machine;
     private MTEHatchInputBus input;
+    private BaseMetaTileEntity displayEnergy;
+    private BaseMetaTileEntity mvEnergy;
     private String forest;
     private String meadows;
     private String common;
@@ -68,6 +76,10 @@ public final class BeeBreederClientChecks {
     private volatile boolean ready;
     private volatile boolean finished;
     private volatile boolean archiveCommon;
+    private volatile boolean upgradeVoltage;
+    private volatile int progressPreviewAction;
+    private int heldProgress = -1;
+    private NBTTagCompound progressBaseline;
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
@@ -116,6 +128,38 @@ public final class BeeBreederClientChecks {
         try {
             EntityPlayerMP player = (EntityPlayerMP) server.getConfigurationManager().playerEntityList.get(0);
             if (++ticks == 1) setup(player);
+            if (upgradeVoltage) {
+                upgradeVoltage = false;
+                machine.mEnergyHatches.clear();
+                displayEnergy = mvEnergy;
+            }
+            machine.addToMachineList(displayEnergy, 10);
+            if (progressPreviewAction == 1) {
+                progressPreviewAction = 0;
+                resetRoute(progressBaseline, mvEnergy);
+                require(
+                    machine.checkProcessing()
+                        .wasSuccessful(),
+                    "progress preview starts a four-species batch");
+                heldProgress = 50;
+            } else if (progressPreviewAction == 2) {
+                progressPreviewAction = 0;
+                heldProgress = 100;
+            } else if (progressPreviewAction == 3) {
+                progressPreviewAction = 0;
+                heldProgress = -1;
+                machine.stopMachine(ShutDownReasonRegistry.NONE);
+            }
+            if (heldProgress >= 0) {
+                // Hold deterministic native timers while the unformed fixture is being photographed.
+                machine.mProgresstime = heldProgress;
+                machine.mMaxProgresstime = 200;
+                if (heldProgress == 100) {
+                    BaseMetaTileEntity speed = (BaseMetaTileEntity) player.worldObj.getTileEntity(14, 10, 0);
+                    ((ParameterModuleHatch) speed.getMetaTileEntity()).setParameter(2);
+                    machine.addParameterModuleToMachineList(speed, 10);
+                }
+            }
             if (archiveCommon) {
                 archiveCommon = false;
                 if (!machine.mInputBusses.contains(input)) machine.mInputBusses.add(input);
@@ -201,6 +245,17 @@ public final class BeeBreederClientChecks {
         tile = place(player, 0, GTNRMachineID.LargeBeeBreeder.id);
         machine = (LargeBeeBreeder) tile.getMetaTileEntity();
         machine.fixAllIssues();
+        displayEnergy = place(
+            player,
+            6,
+            ItemList.Hatch_Energy_LV.get(1)
+                .getItemDamage());
+        mvEnergy = place(
+            player,
+            8,
+            ItemList.Hatch_Energy_MV.get(1)
+                .getItemDamage());
+        machine.addToMachineList(displayEnergy, 10);
         BaseMetaTileEntity inputTile = place(
             player,
             2,
@@ -230,6 +285,7 @@ public final class BeeBreederClientChecks {
 
         NBTTagCompound saved = new NBTTagCompound();
         machine.saveNBTData(saved);
+        progressBaseline = (NBTTagCompound) saved.copy();
         LargeBeeBreeder restored = (LargeBeeBreeder) place(player, 4, GTNRMachineID.LargeBeeBreeder.id)
             .getMetaTileEntity();
         restored.loadNBTData(saved);
@@ -260,8 +316,12 @@ public final class BeeBreederClientChecks {
         completion.invoke(machine);
         require(machine.getPendingPrincessOutputs() == 0, "completion is idempotent");
 
+        checkVoltageAndModules(player, saved, completion);
+
         // Restore a populated, unfinished route for visual and interaction checks.
         machine.loadNBTData(saved);
+        machine.clearHatches();
+        machine.addToMachineList(displayEnergy, 10);
         machine.setTargetBeeSpecies(cultivated);
         machine.mProgresstime = 0;
         machine.mMaxProgresstime = 0;
@@ -273,6 +333,166 @@ public final class BeeBreederClientChecks {
         player.sendPlayerAbilities();
         player.playerNetServerHandler.setPlayerLocation(0.5, 11, -3, 0, 10);
         Files.writeString(new File(output(), "core-result.txt").toPath(), "PASS\n" + report);
+    }
+
+    private void checkVoltageAndModules(EntityPlayerMP player, NBTTagCompound saved, Method completion)
+        throws Exception {
+        BaseMetaTileEntity hv = place(
+            player,
+            10,
+            ItemList.Hatch_Energy_HV.get(1)
+                .getItemDamage());
+        BaseMetaTileEntity secondLv = place(
+            player,
+            12,
+            ItemList.Hatch_Energy_LV.get(1)
+                .getItemDamage());
+        resetRoute(saved, displayEnergy);
+        require(
+            machine.getMaxParallelBreedingSteps() == 2 && machine.getBreedingDurationTicks() == 400,
+            "LV base is two species and 20 seconds");
+        machine.addToMachineList(secondLv, 10);
+        require(
+            machine.getMaxParallelBreedingSteps() == 2 && machine.getBreedingDurationTicks() == 400,
+            "multiple LV hatches do not increase voltage tier");
+        require(
+            machine.checkProcessing()
+                .wasSuccessful() && machine.getActiveBreedingSpecies() == 2
+                && machine.mMaxProgresstime == 400
+                && machine.getEUtForDamageCalc() == -30,
+            "LV starts two ready species at 30 EU/t");
+        NBTTagCompound batch = new NBTTagCompound();
+        machine.saveNBTData(batch);
+        var attempts = batch.getTagList("beeBreederActiveBatch", 10);
+        Set<String> results = new HashSet<>();
+        for (int i = 0; i < attempts.tagCount(); i++) results.add(
+            attempts.getCompoundTagAt(i)
+                .getString("result"));
+        require(
+            results.size() == 2 && !results.contains(cultivated),
+            "parallel slots contain distinct ready species only");
+        require(
+            new HashSet<>(machine.getActiveBreedingSpeciesUids()).equals(results),
+            "active display exposes only the species in the running batch");
+        LargeBeeBreeder loaded = (LargeBeeBreeder) place(player, 28, GTNRMachineID.LargeBeeBreeder.id)
+            .getMetaTileEntity();
+        loaded.loadNBTData(batch);
+        require(
+            new HashSet<>(loaded.getActiveBreedingSpeciesUids()).equals(results) && loaded.mMaxProgresstime == 400,
+            "active species and original cycle duration survive NBT reload");
+        completion.invoke(machine);
+        require(
+            machine.getActiveBreedingSpeciesUids()
+                .isEmpty(),
+            "completion clears the active species display");
+        require(
+            machine.getDronePool()
+                .hasDrone(common)
+                && !machine.getDronePool()
+                    .hasDrone(cultivated),
+            "dependent route species are not completed in the same batch");
+
+        resetRoute(saved, mvEnergy);
+        require(
+            machine.getMaxParallelBreedingSteps() == 4 && machine.checkProcessing()
+                .wasSuccessful()
+                && machine.getActiveBreedingSpecies() == 4
+                && machine.mMaxProgresstime == 200
+                && machine.getEUtForDamageCalc() == -120,
+            "MV runs four ready species in 10 seconds");
+        resetRoute(saved, hv);
+        require(
+            machine.getMaxParallelBreedingSteps() == 8 && machine.checkProcessing()
+                .wasSuccessful() && machine.getActiveBreedingSpecies() == 4 && machine.mMaxProgresstime == 100,
+            "HV allows eight species in five seconds without filling unused slots with duplicates");
+
+        BaseMetaTileEntity speed = place(player, 14, GTNRMachineID.DynamicSpeedControllerT1.id);
+        BaseMetaTileEntity parallel = place(player, 16, GTNRMachineID.DynamicParallelControllerT1.id);
+        BaseMetaTileEntity power = place(player, 18, GTNRMachineID.PowerConsumptionControllerT8.id);
+        BaseMetaTileEntity overclock = place(player, 20, GTNRMachineID.LowSpeedPerfectOverclockController.id);
+        resetRoute(saved, mvEnergy);
+        require(machine.addParameterModuleToMachineList(speed, 10), "parameter module hatch is accepted");
+        require(
+            machine.checkProcessing()
+                .wasSuccessful() && machine.mMaxProgresstime == 200,
+            "dynamic speed module initially uses its selected parameter");
+        ((ParameterModuleHatch) speed.getMetaTileEntity()).setParameter(2);
+        require(
+            machine.mMaxProgresstime == 200 && machine.getBreedingDurationTicks() == 100,
+            "module changes leave the running cycle duration unchanged");
+        machine.checkProcessing();
+        require(machine.mMaxProgresstime == 100, "speed module applies to the next cycle");
+        machine.addParameterModuleToMachineList(parallel, 10);
+        ((ParameterModuleHatch) parallel.getMetaTileEntity()).setParameter(8);
+        require(machine.getMaxParallelBreedingSteps() == 36, "parallel module multiplies distinct-species capacity");
+        machine.addParameterModuleToMachineList(power, 10);
+        require(
+            machine.getEuPerBreedingAttempt() == 8,
+            "power module reduces per-species consumption with safe rounding");
+        machine.addParameterModuleToMachineList(overclock, 10);
+        require(
+            machine.getBreedingDurationTicks() == 50 && machine.checkProcessing()
+                .wasSuccessful() && -machine.getEUtForDamageCalc() <= machine.getMaxInputEu(),
+            "overclock module changes tier duration and batch stays within available power");
+        List<StructureError> before = new ArrayList<>();
+        machine.collectTooltipStructureRequirements(before);
+        machine.addParameterModuleToMachineList(place(player, 22, GTNRMachineID.StaticSpeedControllerT1.id), 10);
+        List<StructureError> after = new ArrayList<>();
+        machine.collectTooltipStructureRequirements(after);
+        require(after.size() == before.size() + 1, "duplicate module types reject structure formation");
+
+        resetRoute(saved, hv);
+        machine.addParameterModuleToMachineList(place(player, 24, GTNRMachineID.StaticSpeedControllerT8.id), 10);
+        machine.addParameterModuleToMachineList(place(player, 26, GTNRMachineID.StaticParallelControllerT8.id), 10);
+        require(
+            machine.getBreedingDurationTicks() == 1 && machine.getMaxParallelBreedingSteps() == Integer.MAX_VALUE,
+            "extreme module settings clamp duration and parallel capacity safely");
+        machine.clearHatches();
+        require(
+            !machine.checkProcessing()
+                .wasSuccessful(),
+            "unpowered controller cannot start a breeding cycle");
+    }
+
+    private void resetRoute(NBTTagCompound saved, BaseMetaTileEntity energy) throws Exception {
+        machine.loadNBTData(saved);
+        machine.clearHatches();
+        machine.addToMachineList(energy, 10);
+        machine.setTargetBeeSpecies(cultivated);
+        machine.mProgresstime = 0;
+        machine.mMaxProgresstime = 0;
+        machine.mOutputItems = null;
+        // Controlled branching DAG isolates the scheduler from Forestry's actual mutation choices.
+        String diligent = BeeBreedingHelper.getSpeciesByName("Diligent")
+            .getUID();
+        String noble = BeeBreedingHelper.getSpeciesByName("Noble")
+            .getUID();
+        String majestic = BeeBreedingHelper.getSpeciesByName("Majestic")
+            .getUID();
+        String unweary = BeeBreedingHelper.getSpeciesByName("Unweary")
+            .getUID();
+        String imperial = BeeBreedingHelper.getSpeciesByName("Imperial")
+            .getUID();
+        List<BeeBreedingHelper.BreedingStep> steps = List.of(
+            new BeeBreedingHelper.BreedingStep(forest, meadows, common, 100),
+            new BeeBreedingHelper.BreedingStep(forest, meadows, diligent, 100),
+            new BeeBreedingHelper.BreedingStep(forest, meadows, noble, 100),
+            new BeeBreedingHelper.BreedingStep(forest, meadows, majestic, 100),
+            new BeeBreedingHelper.BreedingStep(common, diligent, unweary, 100),
+            new BeeBreedingHelper.BreedingStep(noble, majestic, imperial, 100),
+            new BeeBreedingHelper.BreedingStep(unweary, imperial, cultivated, 100));
+        var constructor = BeeBreedingPlanner.Plan.class
+            .getDeclaredConstructor(String.class, List.class, Set.class, double.class);
+        constructor.setAccessible(true);
+        setMachineField("breedingPlan", constructor.newInstance(cultivated, steps, Set.of(), 0D));
+        setMachineField("breedingChain", new ArrayList<>(steps));
+        setMachineField("breedingPlanDirty", false);
+    }
+
+    private void setMachineField(String name, Object value) throws Exception {
+        Field field = LargeBeeBreeder.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(machine, value);
     }
 
     private BaseMetaTileEntity place(EntityPlayerMP player, int x, int id) {
@@ -306,9 +526,15 @@ public final class BeeBreederClientChecks {
                 "four MUI2 pages");
             switch (stage++) {
                 case 0 -> {
-                    require(panel.getArea().width == 360 && panel.getArea().height == 300, "panel bounds");
+                    require(panel.getArea().width == 360 && panel.getArea().height == 348, "panel bounds");
                     Files.writeString(new File(output(), "operation-layout.txt").toPath(), layout(panel, ""));
                     capture("bee-operation.png");
+                    require(
+                        sync.findSyncHandler("beeParallelSpecies", IntSyncValue.class)
+                            .getIntValue() == 2
+                            && sync.findSyncHandler("beeDuration", IntSyncValue.class)
+                                .getIntValue() == 400,
+                        "LV species capacity and duration are synchronized to the GUI");
                     tabs.get(1)
                         .onMousePressed(0);
                 }
@@ -434,6 +660,61 @@ public final class BeeBreederClientChecks {
                         archived.contains(common) && !candidates.contains(common) && candidates.contains(cultivated),
                         "input bus archive update removes only the unlocked candidate from the live GUI");
                     capture("bee-reachable-updated.png");
+                    tabs.get(0)
+                        .onMousePressed(0);
+                    upgradeVoltage = true;
+                }
+                case 16 -> {
+                    require(
+                        sync.findSyncHandler("beeParallelSpecies", IntSyncValue.class)
+                            .getIntValue() == 4
+                            && sync.findSyncHandler("beeDuration", IntSyncValue.class)
+                                .getIntValue() == 200,
+                        "voltage upgrade refreshes displayed species capacity and duration");
+                    capture("bee-operation-mv.png");
+                    progressPreviewAction = 1;
+                }
+                case 17 -> {
+                    List<?> active = sync.findSyncHandler("beeActiveBreeding", GenericListSyncHandler.class)
+                        .getValue();
+                    require(
+                        active.size() == 4 && active.contains(common) && !active.contains(cultivated),
+                        "GUI lists the four active species instead of the selected final target");
+                    require(
+                        sync.findSyncHandler("progressTime", IntSyncValue.class)
+                            .getIntValue() == 50
+                            && sync.findSyncHandler("maxProgressTime", IntSyncValue.class)
+                                .getIntValue() == 200,
+                        "GUI receives actual batch timing at 25 percent");
+                    capture("bee-active-progress-25.png");
+                    progressPreviewAction = 2;
+                }
+                case 18 -> {
+                    require(
+                        sync.findSyncHandler("progressTime", IntSyncValue.class)
+                            .getIntValue() == 100
+                            && sync.findSyncHandler("maxProgressTime", IntSyncValue.class)
+                                .getIntValue() == 200
+                            && sync.findSyncHandler("beeDuration", IntSyncValue.class)
+                                .getIntValue() == 100,
+                        "running progress uses original cycle duration after a speed module change");
+                    capture("bee-active-progress-50.png");
+                    collect(pages.getCurrentPage(), ButtonWidget.class).get(2)
+                        .onMousePressed(0);
+                }
+                case 19 -> {
+                    capture("bee-active-progress-page-2.png");
+                    progressPreviewAction = 3;
+                }
+                case 20 -> {
+                    require(
+                        sync.findSyncHandler("beeActiveBreeding", GenericListSyncHandler.class)
+                            .getValue()
+                            .isEmpty()
+                            && sync.findSyncHandler("maxProgressTime", IntSyncValue.class)
+                                .getIntValue() == 0,
+                        "stopping clears active species and timing on the client");
+                    capture("bee-active-progress-stopped.png");
                     Files.writeString(new File(output(), "client-result.txt").toPath(), "PASS\n" + report);
                     finished = true;
                 }

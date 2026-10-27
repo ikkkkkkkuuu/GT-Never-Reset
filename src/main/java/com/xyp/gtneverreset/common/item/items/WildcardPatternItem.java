@@ -16,14 +16,17 @@ import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.client.gui.PixelFontModularScreen;
 import com.xyp.gtneverreset.common.gui.WildcardPatternGui;
+import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.recipes.wildcard.WildcardPatternGenerator;
 import com.xyp.gtneverreset.utils.recipes.wildcard.WildcardPatternState;
 
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.items.misc.ItemEncodedPattern;
+import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -40,6 +43,9 @@ public class WildcardPatternItem extends ItemEncodedPattern implements IGuiHolde
         // # zh_CN 通配样板符
         setUnlocalizedName(UNLOCALIZED_NAME);
         setTextureName(GTNeverReset.MODID + ":wildcard_pattern");
+        setCreativeTab(GTNRCreativeTabs.ITEMS);
+        GameRegistry.registerItem(this, ITEM_NAME);
+        GTNRItemList.WildcardPattern.set(this);
     }
 
     @Override

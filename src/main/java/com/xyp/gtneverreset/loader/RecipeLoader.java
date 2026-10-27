@@ -2,6 +2,7 @@ package com.xyp.gtneverreset.loader;
 
 import com.xyp.gtneverreset.common.recipe.ae2.AdvancedIORecipes;
 import com.xyp.gtneverreset.common.recipe.ae2.CompactAEMachineRecipes;
+import com.xyp.gtneverreset.common.recipe.ae2.PackagedRecipes;
 import com.xyp.gtneverreset.common.recipe.ae2.StockIOInterfaceRecipes;
 import com.xyp.gtneverreset.common.recipe.ae2.WildcardPatternRecipes;
 import com.xyp.gtneverreset.common.recipe.ae2.WirelessFrequencyCardRecipes;
@@ -26,6 +27,7 @@ public final class RecipeLoader {
     private RecipeLoader() {}
 
     public static void registerRecipes() {
+        PackagedRecipes.register();
         WirelessTerminalRecipes.register(GTNRItemList.WirelessDualInterfaceTerminal.get(1));
         WirelessFrequencyCardRecipes.register();
         PatternInputRecipes.register();

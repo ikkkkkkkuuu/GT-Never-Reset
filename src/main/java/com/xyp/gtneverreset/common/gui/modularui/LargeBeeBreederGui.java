@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 import net.minecraft.item.ItemStack;
@@ -21,6 +22,8 @@ import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerGhostIngredientSlot;
 import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
+import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.value.sync.BooleanSyncValue;
@@ -31,6 +34,7 @@ import com.cleanroommc.modularui.value.sync.LongSyncValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.value.sync.StringSyncValue;
 import com.cleanroommc.modularui.widget.ParentWidget;
+import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.PageButton;
@@ -43,15 +47,19 @@ import com.xyp.gtneverreset.utils.machine.bee.BeeBreedingHelper;
 import com.xyp.gtneverreset.utils.machine.bee.BeeBreedingPlanner;
 
 import cpw.mods.fml.common.network.ByteBufUtils;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+import gregtech.api.enums.GTValues;
 import gregtech.api.modularui2.GTGuiTextures;
 import gregtech.api.modularui2.GTWidgetThemes;
 
 public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBreeder> {
 
     private static final int PAGE_WIDTH = 348;
-    private static final int PAGE_HEIGHT = 180;
+    private static final int PAGE_HEIGHT = 228;
     private static final int SPECIES_ROWS = 6;
     private static final int ROUTE_ROWS = 3;
+    private static final int ACTIVE_ROWS = 2;
 
     private final PagedWidget.Controller pages = new PagedWidget.Controller();
     private String targetDraft;
@@ -62,6 +70,8 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
     private List<String> archive = Collections.emptyList();
     private List<String> reachable = Collections.emptyList();
     private List<NBTTagCompound> steps = Collections.emptyList();
+    private List<String> activeBreeding = Collections.emptyList();
+    private int activePage;
     private int routePage;
     private final SpeciesListView archiveView = new SpeciesListView(() -> archive);
     private final SpeciesListView reachableView = new SpeciesListView(() -> reachable);
@@ -72,6 +82,12 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
     private IntSyncValue total;
     private IntSyncValue completed;
     private IntSyncValue bonus;
+    private IntSyncValue parallelSpecies;
+    private IntSyncValue activeSpecies;
+    private IntSyncValue duration;
+    private IntSyncValue voltageTier;
+    private IntSyncValue elapsed;
+    private IntSyncValue cycleDuration;
     private LongSyncValue energy;
     private StringSyncValue missing;
 
@@ -83,6 +99,8 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
     @Override
     protected void registerSyncValues(PanelSyncManager sync) {
         super.registerSyncValues(sync);
+        elapsed = sync.findSyncHandler("progressTime", IntSyncValue.class);
+        cycleDuration = sync.findSyncHandler("maxProgressTime", IntSyncValue.class);
         target = new StringSyncValue(multiblock::getTargetBeeSpecies);
         draft = new StringSyncValue(
             () -> targetDraft,
@@ -92,6 +110,10 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
         total = new IntSyncValue(multiblock::getChainTotalSteps);
         completed = new IntSyncValue(multiblock::getChainCompletedSteps);
         bonus = new IntSyncValue(multiblock::getMutationChanceBonus);
+        parallelSpecies = new IntSyncValue(multiblock::getMaxParallelBreedingSteps);
+        activeSpecies = new IntSyncValue(multiblock::getActiveBreedingSpecies);
+        duration = new IntSyncValue(multiblock::getBreedingDurationTicks);
+        voltageTier = new IntSyncValue(multiblock::getBreedingVoltageTier);
         energy = new LongSyncValue(multiblock::getEuPerBreedingAttempt);
         missing = new StringSyncValue(() -> multiblock.isAllTasksBlocked() ? multiblock.getMissingDroneSpecies() : "");
         sync.syncValue("beeTarget", target);
@@ -101,6 +123,10 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
         sync.syncValue("beeTotal", total);
         sync.syncValue("beeCompleted", completed);
         sync.syncValue("beeBonus", bonus);
+        sync.syncValue("beeParallelSpecies", parallelSpecies);
+        sync.syncValue("beeActiveSpecies", activeSpecies);
+        sync.syncValue("beeDuration", duration);
+        sync.syncValue("beeVoltageTier", voltageTier);
         sync.syncValue("beeEnergy", energy);
         sync.syncValue("beeMissing", missing);
         sync.syncValue("beeApply", new InteractionSyncHandler().setOnMousePressed(mouse -> {
@@ -140,6 +166,12 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
                 String::equals,
                 value -> value));
         sync.syncValue("beeRoute", routeSync);
+        sync.syncValue(
+            "beeActiveBreeding",
+            new GenericListSyncHandler<>(multiblock::getActiveBreedingSpeciesUids, value -> {
+                activeBreeding = value;
+                activePage = Math.min(activePage, activePageCount() - 1);
+            }, ByteBufUtils::readUTF8String, ByteBufUtils::writeUTF8String, String::equals, value -> value));
     }
 
     private List<String> archiveSnapshot() {
@@ -193,7 +225,7 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
 
     @Override
     protected int getBasePanelHeight() {
-        return 300;
+        return 348;
     }
 
     @Override
@@ -243,7 +275,8 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
     }
 
     private ParentWidget<?> operationPage(ModularPanel panel, PanelSyncManager sync) {
-        ParentWidget<?> page = new ParentWidget<>().size(PAGE_WIDTH, PAGE_HEIGHT);
+        ParentWidget<?> page = new ParentWidget<>().size(PAGE_WIDTH, PAGE_HEIGHT)
+            .background(new Rectangle().color(0xFFC6C6C6));
         // #tr gtnr.bee_breeder.target_hint
         // # Enter a species name / UID, or drop a bee from NEI
         // # zh_CN 输入蜂种名称 / UID，或从 NEI 拖入蜜蜂
@@ -287,25 +320,120 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
                 83,
                 PAGE_WIDTH));
         // #tr gtnr.bee_breeder.overview
-        // # Waiting: %s | Archived: %s | Parallel limit: %s
-        // # zh_CN 待转换：%s | 已解锁：%s | 并行上限：%s
+        // # Waiting: %s | Archived: %s | Parallel species: %s/%s
+        // # zh_CN 待转换：%s | 已解锁：%s | 并行蜂种：%s/%s
         page.child(
             text(
                 () -> tr(
                     "gtnr.bee_breeder.overview",
                     pending.getIntValue(),
                     archive.size(),
-                    multiblock.getMaxParallelBreedingSteps()),
+                    activeSpecies.getIntValue(),
+                    parallelSpecies.getIntValue()),
                 0,
                 55,
-                PAGE_WIDTH));
-        // #tr gtnr.bee_breeder.energy
-        // # Per attempt: %s EU/t | Chance bonus: +%s%%
-        // # zh_CN 每次尝试：%s EU/t | 成功率加成：+%s%%
+                PAGE_WIDTH).tooltipBuilder(t -> {
+                    // #tr gtnr.bee_breeder.parallel_hint
+                    // # One slot per ready species. Both parents must be archived. Power limits concurrency.
+                    // # zh_CN 每个并行位尝试路线中一个不同蜂种；两个亲本必须已存档。实际并行还受供电功率限制。
+                    t.addLine(IKey.lang("gtnr.bee_breeder.parallel_hint"));
+                }));
+        // #tr gtnr.bee_breeder.performance
+        // # %s | %s s/cycle | %s EU/t/species | Chance +%s%%
+        // # zh_CN %s | %s 秒/次 | %s EU/t/蜂种 | 成功率 +%s%%
         page.child(
-            text(() -> tr("gtnr.bee_breeder.energy", energy.getLongValue(), bonus.getIntValue()), 0, 69, PAGE_WIDTH));
-        page.child(createTerminalRow(panel, sync).pos(0, 100));
+            text(
+                () -> tr(
+                    "gtnr.bee_breeder.performance",
+                    GTValues.VN[voltageTier.getIntValue()],
+                    String.format(Locale.ROOT, "%.2f", duration.getIntValue() / 20D),
+                    energy.getLongValue(),
+                    bonus.getIntValue()),
+                0,
+                69,
+                PAGE_WIDTH));
+        addActiveBreedingRows(page);
+        page.child(createTerminalRow(panel, sync).pos(0, 174));
         return page;
+    }
+
+    private void addActiveBreedingRows(ParentWidget<?> page) {
+        // #tr gtnr.bee_breeder.active_title
+        // # Breeding now: %s species
+        // # zh_CN 正在杂交：%s 种蜂
+        page.child(
+            text(() -> tr("gtnr.bee_breeder.active_title", activeBreeding.size()), 0, 100, 252).tooltipBuilder(t -> {
+                // #tr gtnr.bee_breeder.active_hint
+                // # Species in the same batch share the cycle timer. Progress is time, not success chance.
+                // # zh_CN 同批蜂种同时开始和结算，进度相同；此处显示本次尝试耗时进度，不代表成功率。
+                t.addLine(IKey.lang("gtnr.bee_breeder.active_hint"));
+            }));
+        page.child(
+            new ButtonWidget<>().pos(262, 99)
+                .size(18, 14)
+                .background(GTGuiTextures.BUTTON_STANDARD)
+                .hoverBackground(GTGuiTextures.BUTTON_STANDARD_PRESSED)
+                .overlay(IKey.str("<"))
+                .onMousePressed(mouse -> {
+                    if (mouse == 0) activePage = Math.max(0, activePage - 1);
+                    return true;
+                }));
+        page.child(text(() -> (activePage + 1) + "/" + activePageCount(), 282, 100, 46).alignment(Alignment.Center));
+        page.child(
+            new ButtonWidget<>().pos(330, 99)
+                .size(18, 14)
+                .background(GTGuiTextures.BUTTON_STANDARD)
+                .hoverBackground(GTGuiTextures.BUTTON_STANDARD_PRESSED)
+                .overlay(IKey.str(">"))
+                .onMousePressed(mouse -> {
+                    if (mouse == 0) activePage = Math.min(activePageCount() - 1, activePage + 1);
+                    return true;
+                }));
+        // #tr gtnr.bee_breeder.active_empty
+        // # No species are currently being bred.
+        // # zh_CN 当前没有正在杂交的蜂种。
+        page.child(
+            text(() -> tr("gtnr.bee_breeder.active_empty"), 0, 125, PAGE_WIDTH)
+                .setEnabledIf(widget -> activeBreeding.isEmpty()));
+        for (int row = 0; row < ACTIVE_ROWS; row++) {
+            final int index = row;
+            ParentWidget<?> entry = new ParentWidget<>().pos(0, 116 + row * 25)
+                .size(PAGE_WIDTH, 22)
+                .setEnabledIf(widget -> !activeUid(index).isEmpty());
+            entry.child(
+                text(() -> BeeBreedingHelper.getSpeciesDisplayName(activeUid(index)), 0, 0, 168).tooltipAutoUpdate(true)
+                    .tooltipBuilder(t -> t.addLine(activeUid(index))));
+            entry.child(text(this::activeProgressText, 174, 0, PAGE_WIDTH - 174).alignment(Alignment.CenterRight));
+            entry.child(
+                new BreedingProgressWidget(this::activeProgress).pos(0, 15)
+                    .size(PAGE_WIDTH, 6));
+            page.child(entry);
+        }
+    }
+
+    private int activePageCount() {
+        return Math.max(1, (activeBreeding.size() + ACTIVE_ROWS - 1) / ACTIVE_ROWS);
+    }
+
+    private String activeUid(int row) {
+        int index = activePage * ACTIVE_ROWS + row;
+        return index < activeBreeding.size() ? activeBreeding.get(index) : "";
+    }
+
+    private double activeProgress() {
+        int ticks = cycleDuration.getIntValue();
+        return ticks <= 0 ? 0 : Math.max(0D, Math.min(1D, elapsed.getIntValue() / (double) ticks));
+    }
+
+    private String activeProgressText() {
+        int remaining = Math.max(0, cycleDuration.getIntValue() - Math.max(0, elapsed.getIntValue()));
+        // #tr gtnr.bee_breeder.active_progress
+        // # %s%% | %s s left
+        // # zh_CN %s%% | 剩余 %s 秒
+        return tr(
+            "gtnr.bee_breeder.active_progress",
+            (int) Math.floor(activeProgress() * 100),
+            String.format(Locale.ROOT, "%.1f", remaining / 20D));
     }
 
     @Override
@@ -315,7 +443,7 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
 
     @Override
     protected int getTerminalRowHeight() {
-        return 80;
+        return 54;
     }
 
     @Override
@@ -325,7 +453,26 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
 
     @Override
     protected int getTerminalWidgetHeight() {
-        return 80;
+        return 54;
+    }
+
+    @Override
+    protected ParentWidget<?> createTerminalParentWidget(ModularPanel panel, PanelSyncManager sync) {
+        return new ParentWidget<>().size(PAGE_WIDTH, getTerminalWidgetHeight())
+            .padding(4)
+            .widgetTheme(GTWidgetThemes.BACKGROUND_TERMINAL)
+            .child(
+                createTerminalTextWidget(sync, panel).size(PAGE_WIDTH - 82, getTerminalWidgetHeight() - 8)
+                    .collapseDisabledChild())
+            .child(
+                Flow.row()
+                    .coverChildren()
+                    .childPadding(4)
+                    .right(6)
+                    .bottom(6)
+                    .child(createShutdownReasonHoverableTerminal(sync))
+                    .child(createMaintIssueHoverableTerminal(sync))
+                    .child(makeLogoWidget(sync, panel)));
     }
 
     @Override
@@ -578,6 +725,28 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
 
     private static String tr(String key, Object... args) {
         return StatCollector.translateToLocalFormatted(key, args);
+    }
+
+    private static final class BreedingProgressWidget extends Widget<BreedingProgressWidget> {
+
+        private static final Rectangle TRACK = new Rectangle().color(0xFF565656);
+        private static final Rectangle FILL = new Rectangle().color(0xFF489855);
+        private final DoubleSupplier progress;
+
+        private BreedingProgressWidget(DoubleSupplier progress) {
+            this.progress = progress;
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void draw(ModularGuiContext context, WidgetThemeEntry<?> entry) {
+            var theme = getActiveWidgetTheme(entry, isHovering());
+            int width = getArea().width;
+            int height = getArea().height;
+            TRACK.draw(context, 0, 0, width, height, theme);
+            int fill = (int) Math.round((width - 2) * Math.max(0D, Math.min(1D, progress.getAsDouble())));
+            if (fill > 0) FILL.draw(context, 1, 1, fill, height - 2, theme);
+        }
     }
 
     private static final class SpeciesListView {

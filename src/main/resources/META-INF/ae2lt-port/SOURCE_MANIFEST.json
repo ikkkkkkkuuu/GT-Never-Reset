@@ -1,0 +1,264 @@
+{
+  "source_project": "../GT-Not-Good",
+  "source_revision": null,
+  "source_revision_note": "Local checkout has no Git metadata; source hashes identify the snapshot.",
+  "port_date": "2026-10-27",
+  "files": [
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/AltarStatus.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/enums/AltarStatus.java",
+      "source_sha256": "6c140bb62a4cf97a04c68fe87eebc67cdc991d6ead01b3955e6766a56474a6a2",
+      "destination_sha256": "d0665f1fbcace8bfce24740773d0cc9009b0275331f522795f44dfd3da2b410d",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/ArcaneWorkbenchAdapter.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/packaged/ArcaneWorkbenchAdapter.java",
+      "source_sha256": "e4f950e48332f6c663e343dc540d6e0d1afbc32da87be65ac0f8f08213f0614c",
+      "destination_sha256": "a33b68926b68231dba20bfb7e893576ead1f3d0f6bbbe97fe1cdc2588ead62b9",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/ArcaneWorkbenchPatterns.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/ae2/ArcaneWorkbenchPatterns.java",
+      "source_sha256": "b6e6af4bdc07cd43ff24737939e25dae8b589fd45705694f9bac1bd0b4ac9b27",
+      "destination_sha256": "2b3b255c070b63fc82534af93c90e33cdf93203dc40dac4eb70470f1daeedc7e",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/AssemblyLineAdapter.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/packaged/AssemblyLineAdapter.java",
+      "source_sha256": "ae242dbfe45179000ec96652ef4817f1c6d9e8ea26de6ce71fbd9e4d0593d7e4",
+      "destination_sha256": "648e6212c1c045808976c4fa27bd061cfd77a2141084a7b681d5b15f134b079d",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/AssemblyLineDataAccess.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/api/packaged/AssemblyLineDataAccess.java",
+      "source_sha256": "9f505472c064bb6bad0e34eddbd5fad11f1ef5c3bec7c8e83267fef2fec5ecd1",
+      "destination_sha256": "32f1661600e864af607d0449a73c581fa6f686cbbac026d2fd6a1747863cbd06",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/BlockPackagedProvider.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/block/blocks/BlockPackagedProvider.java",
+      "source_sha256": "e8581bf84002c21504802a964ce96701e61cb609eb80172eba5c74aa8d00ac21",
+      "destination_sha256": "80131a1999046996a543f32ada1a536ca98bab0ceb66fb39d874bccc3ebcc7ce",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/BloodAltarAccess.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/api/packaged/BloodAltarAccess.java",
+      "source_sha256": "977559e9f6f7d42099cb8efcbd2abf0854767fbebc373781261d63a72e5ad9b3",
+      "destination_sha256": "834174ffece139495e4afecc63ea2664190f7522170d6b2fc8ad3e9473334d1b",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/BloodAltarAdapter.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/packaged/BloodAltarAdapter.java",
+      "source_sha256": "4eba15514cfc871cc4145d958d7045a0b774542f2e4fb3df18d1087c8faea064",
+      "destination_sha256": "ed158230cc4e64750faccddc48e11808a7e504a2ae8790b924559b781ba65dea",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/CircuitAssemblyLineAdapter.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/packaged/CircuitAssemblyLineAdapter.java",
+      "source_sha256": "d6e892a562d97cf0f86c3f42d50b35ef6cf1efaa59d978a11d56b0bcf9a9e0f7",
+      "destination_sha256": "08350939fabb3db5464debb8c98c627c94364b7d81091f869f87eedc16d9113c",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/CrucibleCooldownAccess.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/api/packaged/CrucibleCooldownAccess.java",
+      "source_sha256": "73a083aade365e232ccef7dd21ce21a74ff8dd04982a44b4010a0a827d2422b2",
+      "destination_sha256": "207a1645c2d84ab09252848e2dc0473b1a1c4e0f7e4cf6d55001d63bccb0d3cc",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/DirectEssentiaSupply.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/packaged/DirectEssentiaSupply.java",
+      "source_sha256": "5f8775c65be0b5bbcf0e191436b66857fcb42abc5bd2f2b2a4830e738a9a4bce",
+      "destination_sha256": "ba383d455a5f381e6ebb8e042b5695ffdfbff851d3428d160dc1e5d53c5779af",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/InfusionSourceAccess.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/api/packaged/InfusionSourceAccess.java",
+      "source_sha256": "8e624f1baa68b45af16f83e17c991311faef308d337e90e64fef4f0532f8d03e",
+      "destination_sha256": "13edf5adb93cc4b252b9ab4b17df9bb80a48583635622c9282d22e3629f3e1af",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/PackagedCoreRegistry.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/api/packaged/PackagedCoreRegistry.java",
+      "source_sha256": "588bcbc7d14f2a4d507b85f1350079435614079cc7a2f8ab78597595e1823e36",
+      "destination_sha256": "5a261bd262d8406c2b717dd569e5cb100c889a8c40f5555536014d6f3cb09f17",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/PackagedCraftingLock.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/enums/PackagedCraftingLock.java",
+      "source_sha256": "5492670a37478cccdd0989b248728f6401c5de4d84c076085bf15cb9013b5767",
+      "destination_sha256": "47094892e103a2b5a136e9a5b0effe8cd93d0a77ea714b25e03f1353a09b8d54",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/PackagedProviderGui.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/gui/PackagedProviderGui.java",
+      "source_sha256": "13cac250138b4d6e41ff5e669d4729d28fbb63de65224ebe47d330d12acd660e",
+      "destination_sha256": "ed39319d7fb5a48ad75826ccb27925628569862db5b03633635a4491fa3bccb0",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/PackagedTarget.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/api/packaged/PackagedTarget.java",
+      "source_sha256": "94eaead099d92e90eeaf8e95caf38384a186c6ca5733d08e97e77168d5951ed7",
+      "destination_sha256": "330b4b542abb2834114a99d7a027f7431ecc4d55326bbd5e212160afbfc65fc9",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/ThaumcraftCrucibleAdapter.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/packaged/ThaumcraftCrucibleAdapter.java",
+      "source_sha256": "124f5b91de3d587c156aab6bc06bb323ed61e9cd271368e1b926a1e93a59dbe6",
+      "destination_sha256": "694fe882203f7f15aac373397407604809c64dc6db09c386b267158c303d233a",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/ThaumcraftInfusionAdapter.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/packaged/ThaumcraftInfusionAdapter.java",
+      "source_sha256": "01cf4702884df3d5d310c557f3f7a2f7f79837708aa1eb32af0f8d911d2673fa",
+      "destination_sha256": "7e28462878bbfe4e0921293e20604b7dd75535cb689220cbbc14cec129d526a7",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/ThaumicEnergisticsSupply.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/utils/machine/packaged/ThaumicEnergisticsSupply.java",
+      "source_sha256": "71c2699fb9ee0aa3f7ebe8bc769e7bb7e21fbb0b56655987462d37b54e765eb3",
+      "destination_sha256": "08d76d1dac3162b887ca0d441af35d88513d4ac4ae63e464699503efd8d3e7e0",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/packaged/TilePackagedProvider.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/block/blocks/tile/TileEntityPackagedProvider.java",
+      "source_sha256": "85445f9a79ea4f0c92a9daed7a5e490370ad4f45117da36f32c32d42dccdd851",
+      "destination_sha256": "6c98d6a4f8a231d195c9f54b9f97d6880cfd3f7440a9858dce4eecd637fcd90c",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/packaged/ItemPackagedCore.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/item/items/ItemPackagedCore.java",
+      "source_sha256": "b296cf6dac7caeda28a60f34c717b7a7efffbdfbceaf70487203bdf6a790bdcc",
+      "destination_sha256": "33dacae2d4ba9f45d03a479e43bca59f1eec9e21615f5f8b4f01a1ffb5098e40",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/items/packaged/ItemWirelessConnector.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/item/items/ItemWirelessConnector.java",
+      "source_sha256": "a0684f8e87e6f412ac6de5b7de4c30018fa9aba754fbf4219dd8484b88118993",
+      "destination_sha256": "57c7a8eaa290ab10561ebcfcde5a97f3342ff506047191762577af9e38a44525",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/client/packaged/PackagedCoreRenderer.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/render/PackagedCoreRenderer.java",
+      "source_sha256": "61ffba900e1497453ad60ab7de85c3ccbb9c62a9cf2124cb6b5b5c8999ce3925",
+      "destination_sha256": "24330e01601f1a17d73b9af2620deac7209fa269cc6066244113e1a6a795a28a",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/client/packaged/WirelessConnectorRenderer.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/client/render/WirelessConnectorRenderer.java",
+      "source_sha256": "45e176c2e9f0f2b00634178245cdcc27197ac0284f6971147220f5e78cceb4b1",
+      "destination_sha256": "20741060d56a086af2ed990c427794399106f84c3decb29fafaefe2311a793b3",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/bloodmagic/MixinPackagedBloodAltar.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/bloodmagic/MixinPackagedBloodAltar.java",
+      "source_sha256": "175015e78569dbb7a33d4fe3efbf16a7507faac7bc4ff5b4d4e4bb6b227079b0",
+      "destination_sha256": "c5cab3bc5ddfa88c5d6f0bbb322257e45ddab511f64781c86200a14730bd01f1",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/thaumcraft/MixinPackagedCrucible.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/thaumcraft/MixinPackagedCrucible.java",
+      "source_sha256": "6818eda823cea8e45d842355d26dd2cedde02f60481ba8c937afd67c6615a3be",
+      "destination_sha256": "973f5fb24adc91267c7da4f9ece395c6e42fe3051e8daf67c62b02e0275864fb",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/thaumcraft/MixinPackagedEssentiaHandler.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/thaumcraft/MixinPackagedEssentiaHandler.java",
+      "source_sha256": "ebd026b706d408c52dea2586140f599a1c7c21a6f9037320a5438f4659c314cc",
+      "destination_sha256": "222f5ca0df8c34ec56e78d252ec417cc2487b1855e22359e91f58d75ed23120d",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/thaumcraft/MixinPackagedInfusionSource.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/thaumcraft/MixinPackagedInfusionSource.java",
+      "source_sha256": "3bf65bec86598b2b191a6639264ad85972dd4e4c236ec89c12abef98d97af514",
+      "destination_sha256": "8a0224c7e4678b5e38824ae9a5a97583110d954edcdd9152d9b8f0e0d512892b",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/mixins/late/gregtech/AssemblyLineDataAccessMixin.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/mixins/late/gregtech/AssemblyLineDataAccessMixin.java",
+      "source_sha256": "949ba1add6de91f28d50e660756d94fbc92b1f8b64216aa339022407041ba608",
+      "destination_sha256": "640580e2b11ce31a53014dbb1c0f238afc81953ec28f68e89cba173ebd3303cc",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/recipe/gtnotgood/PackagedRecipes.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/ae2/PackagedRecipes.java",
+      "source_sha256": "62cdf0ce5dcea83ad2542937f7781c611362753b23d8f14d74537637042edb02",
+      "destination_sha256": "439ed222890f2e5ef4bced589f87c62ac6f4cb94cd9cd1ebb69550e0fb03435a",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/network/packaged/MessagePackagedConnector.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/packet/PackagedConnectorPacket.java",
+      "source_sha256": "08ab1a81c07b7c37bb64b5333609fb3bda35e543c66bf346226f886f69ade21a",
+      "destination_sha256": "e2172b1a708726aeb047c7bec9c924f7f2f3a036be7d2c032a8d4a04eeb2a179",
+      "license": "LGPL-3.0-only",
+      "modified": true
+    },
+    {
+      "source": "src/main/java/com/xyp/gtnotgood/common/blocks/mebridge/TileMEBridgeBase.java",
+      "destination": "src/main/java/com/xyp/gtneverreset/common/block/blocks/tile/TileEntityAENetworkBase.java",
+      "source_sha256": "c78a8f36c26abf52792dcd116049928f6c1ff5d830481876af6ecf45fde16150",
+      "destination_sha256": "65afff30cabbabe136a6c8783ec3702a1c4f734710eeed94153e25af578a0c5b",
+      "license": "MIT",
+      "modified": true
+    }
+  ]
+}

@@ -13,6 +13,17 @@ import gregtech.api.util.GTUtility;
 
 public enum GTNRItemList implements IItemContainer {
 
+    WirelessPackagedPatternProvider,
+    ItemWirelessConnector,
+    BasicPackagedCore,
+    BloodAltarCore,
+    AssemblyLineCore,
+    AdvancedAssemblyLineCore,
+    CircuitAssemblyLineCore,
+    ThaumcraftCrucibleCore,
+    ArcaneWorkbenchCore,
+    ThaumcraftInfusionCore,
+
     WirelessDualInterfaceTerminal,
     WirelessFrequencyCard,
     WildcardPattern,

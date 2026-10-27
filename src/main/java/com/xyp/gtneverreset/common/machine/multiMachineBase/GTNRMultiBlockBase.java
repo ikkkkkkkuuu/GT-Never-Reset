@@ -633,11 +633,6 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     }
 
     @Override
-    public Map<String, Object> getTooltipVariables() {
-        return Map.of("threads", getTotalRecipeThreads());
-    }
-
-    @Override
     public List<String> getTooltipFeatureLines() {
         // #tr gtnr.multiblock.threads.capacity
         // # Concurrent recipe threads: {\\AQUA}%s{\\RESET}
