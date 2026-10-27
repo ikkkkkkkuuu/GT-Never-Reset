@@ -56,6 +56,7 @@ public enum GTNRMachineID {
     SingularityDataHub(29451),
     VaultPortHatch(29452),
     FragmentWorldCollector(29453),
+    LargeBeeBreeder(29454),
     EndCrystalResonatorLV(29532),
     EndCrystalResonatorMV(29533),
     EndCrystalResonatorHV(29534),

@@ -70,6 +70,7 @@ public enum GTNRItemList implements IItemContainer {
     SingularityDataHub,
     VaultPortHatch,
     FragmentWorldCollector,
+    LargeBeeBreeder,
     StableEndCrystal,
     EndCrystalResonatorLV,
     EndCrystalResonatorMV,

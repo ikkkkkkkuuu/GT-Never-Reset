@@ -9,6 +9,7 @@ import com.xyp.gtneverreset.common.recipe.ae2.WirelessTerminalRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.AssemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.EndCrystalResonatorRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.FluxConnectorRecipes;
+import com.xyp.gtneverreset.common.recipe.gregtech.LargeBeeBreederRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.LargeFurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.MixerRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.ModuleHatchRecipes;
@@ -18,6 +19,7 @@ import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRec
 import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernFluidMachineRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.OreProcessingRecipes;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
+import com.xyp.gtneverreset.utils.enums.ModList;
 
 public final class RecipeLoader {
 
@@ -34,6 +36,7 @@ public final class RecipeLoader {
         AssemblerRecipes.registerOreProcessorRecipe();
         OreProcessingRecipes.register();
         LargeFurnaceRecipes.register();
+        if (ModList.Forestry.isModLoaded()) LargeBeeBreederRecipes.register();
         FluxConnectorRecipes.register();
         EndCrystalResonatorRecipes.register();
         CompactAEMachineRecipes.register();

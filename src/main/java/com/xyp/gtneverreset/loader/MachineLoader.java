@@ -14,6 +14,7 @@ import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputSlave;
 import com.xyp.gtneverreset.common.machine.hatch.VaultPortHatch;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
+import com.xyp.gtneverreset.common.machine.multiblock.LargeBeeBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeOreProcessor;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
@@ -21,6 +22,7 @@ import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
+import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.ModernMachineTextures;
 import com.xyp.gtneverreset.utils.text.AnimatedText;
 
@@ -121,6 +123,17 @@ public final class MachineLoader {
                 "gtneverreset.singularity_data_hub",
                 StatCollector.translateToLocal("gtnr.machine.singularity_data_hub.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.SingularityDataHub.get(1), AnimatedText.GT_NEVER_RESET);
+        if (ModList.Forestry.isModLoaded()) {
+            // #tr gtnr.machine.large_bee_breeder.name
+            // # Large Bee Breeder
+            // # zh_CN 大型蜜蜂杂交机
+            GTNRItemList.LargeBeeBreeder.set(
+                new LargeBeeBreeder(
+                    GTNRMachineID.LargeBeeBreeder.id,
+                    "gtneverreset.large_bee_breeder",
+                    StatCollector.translateToLocal("gtnr.machine.large_bee_breeder.name")));
+            AnimatedTooltipHandler.addItemTooltip(GTNRItemList.LargeBeeBreeder.get(1), AnimatedText.GT_NEVER_RESET);
+        }
     }
 
     public static void registerHatch() {
