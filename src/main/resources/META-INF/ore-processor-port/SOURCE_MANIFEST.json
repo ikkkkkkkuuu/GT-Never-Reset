@@ -22,7 +22,8 @@
     {
       "source": "src/main/java/com/xyp/gtnotgood/common/recipe/gtnotgood/OreProcessingRecipes.java",
       "source_sha256": "67d546497a8249c8cbabad94f893eabe7bfa6fb33db5bcc6c9b6ce7353da9765",
-      "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/gregtech/OreProcessingRecipes.java"
+      "destination": "src/main/java/com/xyp/gtneverreset/common/recipe/gtneverreset/OreProcessingRecipes.java",
+      "controller_recipe_destination": "src/main/java/com/xyp/gtneverreset/common/recipe/gregtech/AssemblerRecipes.java"
     }
   ]
 }

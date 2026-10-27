@@ -2,6 +2,7 @@
   "portSource": "https://github.com/ikkkkkkkuuu/GT-Not-Good",
   "portSourceCommit": "048fd1963de8c6458ef6f800c411be0087cbafdb",
   "dimensionRecipeSource": "src/main/java/com/xyp/gtnotgood/common/recipe/gregtech/MixerRecipes.java",
+  "dimensionRecipeDestination": "src/main/java/com/xyp/gtneverreset/common/recipe/gregtech/MixerRecipes.java",
   "dimensionRecipeLicense": "MIT; see LICENSE-GTNG",
   "dimensionRecipeModifications": "Only the collector's 16 dimension display recipes are ported; original rocket tiers, circuit numbers, one cobblestone input, LV power and five-second duration are preserved",
   "source": "https://github.com/GNSW/GTLCore",
@@ -14,7 +15,7 @@
   "recipeDataSha256": "3f454ecee30f7ecef3a3e6999655a64ac8e708fae13c9e5ca508370c45e8ad40",
   "recipeDataDestination": "assets/gtneverreset/recipes/fragment_world_collection.json",
   "recipeDataModifications": "Original six tables extracted to JSON; native material/dimension mappings are applied in Java",
-  "adaptedRecipeDestination": "src/main/java/com/xyp/gtneverreset/common/recipe/gregtech/FragmentWorldCollectorRecipes.java",
+  "adaptedRecipeDestination": "src/main/java/com/xyp/gtneverreset/common/recipe/gtneverreset/FragmentWorldCollectorRecipes.java",
   "adaptations": [
     "Minecraft 1.7.10 / GTNH native APIs",
     "Non-consumable dimension display blocks",

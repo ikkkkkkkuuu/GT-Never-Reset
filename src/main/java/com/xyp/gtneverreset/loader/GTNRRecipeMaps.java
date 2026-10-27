@@ -3,7 +3,7 @@ package com.xyp.gtneverreset.loader;
 import com.cleanroommc.modularui.widgets.ProgressWidget;
 import com.gtnewhorizons.modularui.common.widget.ProgressBar;
 import com.xyp.gtneverreset.client.nei.FragmentWorldCollectionFrontend;
-import com.xyp.gtneverreset.common.recipe.FragmentWorldCollectionBackend;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectionBackend;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import gregtech.api.gui.modularui.GTUITextures;

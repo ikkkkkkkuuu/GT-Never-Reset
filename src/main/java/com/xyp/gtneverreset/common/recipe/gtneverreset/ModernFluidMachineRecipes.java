@@ -1,4 +1,4 @@
-package com.xyp.gtneverreset.common.recipe.gregtech;
+package com.xyp.gtneverreset.common.recipe.gtneverreset;
 
 import static com.xyp.gtneverreset.loader.GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES;
 import static com.xyp.gtneverreset.loader.GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES;
@@ -14,12 +14,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.loader.MachineLoader;
 
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;
-import gregtech.api.enums.Materials;
-import gregtech.api.enums.VoltageIndex;
 import gregtech.api.recipe.RecipeMap;
 import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.recipe.RecipeMetadataKey;
@@ -30,32 +27,9 @@ import gregtech.api.util.GTUtility;
 
 public final class ModernFluidMachineRecipes {
 
-    private static final int UPGRADE_CIRCUIT = 24;
     private static boolean recipesConverted;
 
     private ModernFluidMachineRecipes() {}
-
-    public static void register() {
-        ItemList[] pumps = { ItemList.Electric_Pump_LV, ItemList.Electric_Pump_MV, ItemList.Electric_Pump_HV,
-            ItemList.Electric_Pump_EV, ItemList.Electric_Pump_IV, ItemList.Electric_Pump_LuV,
-            ItemList.Electric_Pump_ZPM, ItemList.Electric_Pump_UV };
-        ItemList[] mixers = { ItemList.Machine_LV_Mixer, ItemList.Machine_MV_Mixer, ItemList.Machine_HV_Mixer,
-            ItemList.Machine_EV_Mixer, ItemList.Machine_IV_Mixer, ItemList.MixerLuV, ItemList.MixerZPM,
-            ItemList.MixerUV };
-        ItemList[] electrolyzers = { ItemList.Machine_LV_Electrolyzer, ItemList.Machine_MV_Electrolyzer,
-            ItemList.Machine_HV_Electrolyzer, ItemList.Machine_EV_Electrolyzer, ItemList.Machine_IV_Electrolyzer,
-            ItemList.ElectrolyzerLuV, ItemList.ElectrolyzerZPM, ItemList.ElectrolyzerUV };
-        ItemList[] chemicalReactors = { ItemList.Machine_LV_ChemicalReactor, ItemList.Machine_MV_ChemicalReactor,
-            ItemList.Machine_HV_ChemicalReactor, ItemList.Machine_EV_ChemicalReactor,
-            ItemList.Machine_IV_ChemicalReactor, ItemList.ChemicalReactorLuV, ItemList.ChemicalReactorZPM,
-            ItemList.ChemicalReactorUV };
-        for (int tier = VoltageIndex.LV; tier <= VoltageIndex.UV; tier++) {
-            int index = tier - VoltageIndex.LV;
-            registerUpgrade(mixers[index], pumps[index], MachineLoader.MODERN_MIXERS[tier], tier);
-            registerUpgrade(electrolyzers[index], pumps[index], MachineLoader.MODERN_ELECTROLYZERS[tier], tier);
-            registerUpgrade(chemicalReactors[index], pumps[index], MachineLoader.MODERN_CHEMICAL_REACTORS[tier], tier);
-        }
-    }
 
     /** Converts only ordinary small-machine recipes, after the pack has finished adding them. */
     public static void registerLateRecipes() {
@@ -64,17 +38,6 @@ public final class ModernFluidMachineRecipes {
         convertRecipes(RecipeMaps.mixerRecipes, MODERN_MIXER_RECIPES, 6, 1, 2, 1);
         convertRecipes(RecipeMaps.electrolyzerRecipes, MODERN_ELECTROLYZER_RECIPES, 2, 6, 1, 6);
         convertRecipes(RecipeMaps.chemicalReactorRecipes, MODERN_CHEMICAL_RECIPES, 2, 2, 3, 2);
-    }
-
-    private static void registerUpgrade(ItemList original, ItemList pump, ItemStack result, int tier) {
-        GTValues.RA.stdBuilder()
-            .itemInputs(original.get(1), pump.get(2))
-            .circuit(UPGRADE_CIRCUIT)
-            .fluidInputs(Materials.Tin.getMolten(144))
-            .itemOutputs(result.copy())
-            .duration(10 * GTRecipeBuilder.SECONDS)
-            .eut(GTValues.VP[tier])
-            .addTo(RecipeMaps.assemblerRecipes);
     }
 
     private static void convertRecipes(RecipeMap<?> source, RecipeMap<?> target, int itemInputs, int itemOutputs,

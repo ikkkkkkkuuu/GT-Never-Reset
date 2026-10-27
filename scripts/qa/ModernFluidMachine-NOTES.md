@@ -16,8 +16,9 @@
 
 三类机器共用 `common.machine.basicMachine.ModernFluidMachine` 和
 `common.gui.modularui.ModernFluidMachineGui`；注册由 `loader.MachineLoader` 编排，
-配方表集中在 `loader.GTNRRecipeMaps`，配方适配和升级配方位于
-`common.recipe.gregtech.ModernFluidMachineRecipes`。
+配方表集中在 `loader.GTNRRecipeMaps`，自定义配方适配位于
+`common.recipe.gtneverreset.ModernFluidMachineRecipes`，装配机升级配方位于
+`common.recipe.gregtech.AssemblerRecipes`。
 机器复用 GTNH 的能量、普通超频、进度、无尘室接口和现有 `StockIORecipeBridge`。
 多流体槽、待产出流体及输出侧配置保存到 NBT；物品和流体自动输出分别开关，使用同一输出面。
 

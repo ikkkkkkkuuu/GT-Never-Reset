@@ -21,7 +21,7 @@ selectable circuit numbers, and optional-item availability checks. User-approved
 dimension substitutions: Reactor → Twilight Forest; Glacio → Triton.
 
 Adapted source:
-`com/xyp/gtneverreset/common/recipe/gregtech/FragmentWorldCollectorRecipes.java`.
+`com/xyp/gtneverreset/common/recipe/gtneverreset/FragmentWorldCollectorRecipes.java`.
 Extracted data: `assets/gtneverreset/recipes/fragment_world_collection.json`.
 Unmodified overlay destinations and checksums are listed in `MANIFEST.json`.
 The complete mapping, omissions, source evidence, and generation procedure are in
@@ -36,5 +36,6 @@ The native machine, GUI, recipe backend/frontend and dimension display acquisiti
 recipes are ported from the same GT-Not-Good commit under its MIT license; see
 `LICENSE-GTNG`. The dimension display recipes derive from
 `com/xyp/gtnotgood/common/recipe/gregtech/MixerRecipes.java`: only the collector's
-sixteen dimensions are included, preserving rocket tiers and circuit numbers,
+sixteen dimensions are included in
+`com/xyp/gtneverreset/common/recipe/gregtech/MixerRecipes.java`, preserving rocket tiers and circuit numbers,
 one cobblestone, LV power, and five-second processing time.

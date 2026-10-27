@@ -1,4 +1,4 @@
-package com.xyp.gtneverreset.common.recipe;
+package com.xyp.gtneverreset.common.recipe.gtneverreset;
 
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;

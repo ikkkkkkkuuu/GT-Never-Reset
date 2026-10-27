@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Adapted from GTLCore SkyTearsAndGregHeart; see META-INF/fragment-world-collector-port/NOTICE.md.
-package com.xyp.gtneverreset.common.recipe.gregtech;
+package com.xyp.gtneverreset.common.recipe.gtneverreset;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -31,8 +31,6 @@ import gregtech.api.enums.Materials;
 import gregtech.api.enums.Mods;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.api.enums.StoneType;
-import gregtech.api.enums.TierEU;
-import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.util.GTModHandler;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTRecipeBuilder;
@@ -69,32 +67,6 @@ public final class FragmentWorldCollectorRecipes {
             new Object[] { "WNW", "PCQ", "XNX", 'W', OrePrefixes.cableGt01.get(Materials.Lead), 'N', "logRubber", 'P',
                 ItemList.Sensor_LV.get(1), 'Q', ItemList.Emitter_LV.get(1), 'C', ItemList.Hull_LV.get(1), 'X',
                 new ItemStack(Blocks.anvil) });
-    }
-
-    public static void loadDimensionRecipes() {
-        if (!Mods.NEIOrePlugin.isModLoaded()) return;
-        if (Mods.GalacticraftCore.isModLoaded()) {
-            addDimensionRecipe(ModsItemlist.Tier1Rocket, ModsItemlist.DimensionOverworld, 1);
-            addDimensionRecipe(ModsItemlist.Tier1Rocket, ModsItemlist.DimensionNether, 2);
-            addDimensionRecipe(ModsItemlist.Tier1Rocket, ModsItemlist.DimensionTwilight, 3);
-            addDimensionRecipe(ModsItemlist.Tier1Rocket, ModsItemlist.DimensionEnd, 4);
-            addDimensionRecipe(ModsItemlist.Tier1Rocket, ModsItemlist.DimensionMoon, 7);
-        }
-        if (Mods.GalacticraftMars.isModLoaded()) {
-            addDimensionRecipe(ModsItemlist.Tier2Rocket, ModsItemlist.DimensionMars, 2);
-            addDimensionRecipe(ModsItemlist.Tier3Rocket, ModsItemlist.DimensionCeres, 3);
-            addDimensionRecipe(ModsItemlist.Tier3Rocket, ModsItemlist.DimensionGanymede, 5);
-        }
-        if (Mods.GalaxySpace.isModLoaded()) {
-            addDimensionRecipe(ModsItemlist.Tier4Rocket, ModsItemlist.DimensionIo, 1);
-            addDimensionRecipe(ModsItemlist.Tier4Rocket, ModsItemlist.DimensionMercury, 2);
-            addDimensionRecipe(ModsItemlist.Tier4Rocket, ModsItemlist.DimensionVenus, 3);
-            addDimensionRecipe(ModsItemlist.Tier5Rocket, ModsItemlist.DimensionEnceladus, 1);
-            addDimensionRecipe(ModsItemlist.Tier5Rocket, ModsItemlist.DimensionTitan, 4);
-            addDimensionRecipe(ModsItemlist.Tier6Rocket, ModsItemlist.DimensionTriton, 2);
-            addDimensionRecipe(ModsItemlist.Tier7Rocket, ModsItemlist.DimensionPluto, 4);
-            addDimensionRecipe(ModsItemlist.Tier8Rocket, ModsItemlist.DimensionBarnardC, 1);
-        }
     }
 
     public static void loadRecipes() {
@@ -149,19 +121,6 @@ public final class FragmentWorldCollectorRecipes {
             .itemInputs(DIMENSIONS[dimension].get(0), circuit(circuit))
             .eut(8)
             .duration(200);
-    }
-
-    private static void addDimensionRecipe(ModsItemlist rocket, ModsItemlist dimension, int circuit) {
-        ItemStack rocketStack = rocket.get(0);
-        ItemStack output = dimension.get(1);
-        if (rocketStack == null || output == null) return;
-        GTRecipeBuilder.builder()
-            .itemInputs(rocketStack, new ItemStack(Blocks.cobblestone))
-            .circuit(circuit)
-            .itemOutputs(output)
-            .duration(5 * GTRecipeBuilder.SECONDS)
-            .eut(TierEU.RECIPE_LV)
-            .addTo(RecipeMaps.mixerNonCellRecipes);
     }
 
     private static ItemStack circuit(int number) {

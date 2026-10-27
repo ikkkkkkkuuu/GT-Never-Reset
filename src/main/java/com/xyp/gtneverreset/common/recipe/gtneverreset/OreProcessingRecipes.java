@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-package com.xyp.gtneverreset.common.recipe.gregtech;
+package com.xyp.gtneverreset.common.recipe.gtneverreset;
 
 import static com.xyp.gtneverreset.loader.GTNRRecipeMaps.ORE_PROCESSING_RECIPES;
 
@@ -16,7 +16,6 @@ import net.minecraftforge.oredict.OreDictionary;
 
 import com.google.common.collect.Sets;
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import gregtech.api.GregTechAPI;
 import gregtech.api.enums.Materials;
@@ -64,7 +63,6 @@ public final class OreProcessingRecipes {
     private OreProcessingRecipes() {}
 
     public static void register() {
-        registerControllerRecipe();
         processGTMaterials();
         processIntermediateProducts();
         processOtherModOre(new ItemStack(Blocks.iron_ore), Materials.Iron, false);
@@ -560,19 +558,6 @@ public final class OreProcessingRecipes {
 
     private static boolean isRichOre(OrePrefixes prefix) {
         return prefix == OrePrefixes.oreNetherrack || prefix == OrePrefixes.oreEndstone;
-    }
-
-    private static void registerControllerRecipe() {
-        GTRecipeBuilder.builder()
-            .itemInputs(
-                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Copper, 4),
-                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Aluminium, 4),
-                new Object[] { OrePrefixes.circuit.get(Materials.LV), 4 },
-                GTUtility.getIntegratedCircuit(24))
-            .itemOutputs(GTNRItemList.LargeOreProcessor.get(1))
-            .duration(200)
-            .eut(32)
-            .addTo(RecipeMaps.assemblerRecipes);
     }
 
     /** One source recipe's independent slots for a single byproduct item. */

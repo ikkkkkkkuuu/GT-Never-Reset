@@ -28,6 +28,7 @@
 | 公共枚举 | 现有 `utils.enums` |
 
 - 包名沿用参考项目的职责词汇和目标项目已有大小写；`basicMachine`、`multiMachineBase` 等已有风格不另造一套。保留本项目根包，不复制 `com.science.gtnl`。
+- 配方子包按目标配方池归属划分：写入 GT 原有配方池的配方放在 `common.recipe.gregtech`，本模组自定义配方池的配方及专用后端放在 `common.recipe.gtneverreset`；同一功能同时涉及两类配方时拆开放置，不能仅因使用 GT API 或 GT 机器就全部归入 `gregtech`。
 - 对照 GTNL 的实际分类：`common.gui.modularui` 根层放完整的 GT 机器、仓室 GUI 类；普通方块、物品、覆盖板及 AE 部件 GUI 放在 `common.gui` 根层，共享 GUI 纹理定义也放在这一层。使用 ModularUI2 本身不是归入 `modularui` 的依据。
 - 参考 GTNL 的局部内部类型做法：只服务一个 GUI 的槽位适配器、控件、同步处理器、预览/选择面板及视图状态，优先写在所属 GUI 中；简短且单次调用的注册包装直接并回调用处，重复布局提取所属 GUI 的私有方法。同一流程的方法及相关内部类型放在一起，不为类别统一拆出 `handler`、`widget`、`sync`、`model` 目录。
 - 跨 GUI 复用或确有独立职责的复杂控件、同步实现才保留独立文件，按实际职责和 GTNL 的对应位置安排；不为减少文件数合并无关 GUI 或业务逻辑。Forge `IGuiHandler` 路由类与普通 GUI 入口同放 `common.gui`；跨 GUI、网络和会话共用的 GUI 类型枚举归 `utils.enums`。

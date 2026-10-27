@@ -6,14 +6,16 @@ import com.xyp.gtneverreset.common.recipe.ae2.StockIOInterfaceRecipes;
 import com.xyp.gtneverreset.common.recipe.ae2.WildcardPatternRecipes;
 import com.xyp.gtneverreset.common.recipe.ae2.WirelessFrequencyCardRecipes;
 import com.xyp.gtneverreset.common.recipe.ae2.WirelessTerminalRecipes;
+import com.xyp.gtneverreset.common.recipe.gregtech.AssemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.FluxConnectorRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.FragmentWorldCollectorRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.LargeFurnaceRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.ModernFluidMachineRecipes;
+import com.xyp.gtneverreset.common.recipe.gregtech.MixerRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.ModuleHatchRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.OreProcessingRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.PatternInputRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.SingularityDataHubRecipes;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernFluidMachineRecipes;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.OreProcessingRecipes;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 public final class RecipeLoader {
@@ -28,14 +30,15 @@ public final class RecipeLoader {
         WildcardPatternRecipes.register();
         AdvancedIORecipes.register();
         StockIOInterfaceRecipes.register();
+        AssemblerRecipes.registerOreProcessorRecipe();
         OreProcessingRecipes.register();
         LargeFurnaceRecipes.register();
         FluxConnectorRecipes.register();
         CompactAEMachineRecipes.register();
         SingularityDataHubRecipes.register();
-        ModernFluidMachineRecipes.register();
+        AssemblerRecipes.registerModernFluidMachineRecipes();
         FragmentWorldCollectorRecipes.loadMachineRecipe();
-        FragmentWorldCollectorRecipes.loadDimensionRecipes();
+        MixerRecipes.register();
     }
 
     public static void registerLateRecipes() {
