@@ -4,6 +4,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.StatCollector;
 
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
+import com.xyp.gtneverreset.common.machine.basicMachine.EndCrystalResonator;
 import com.xyp.gtneverreset.common.machine.basicMachine.FragmentWorldCollector;
 import com.xyp.gtneverreset.common.machine.basicMachine.ModernFluidMachine;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
@@ -194,6 +195,15 @@ public final class MachineLoader {
                 StatCollector.translateToLocal("gtnr.fragment_world_collector.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.FragmentWorldCollector.get(1), AnimatedText.GT_NEVER_RESET);
         registerModernFluidMachines();
+        for (int tier = VoltageIndex.LV; tier <= VoltageIndex.MAX; tier++) {
+            GTNRItemList entry = GTNRItemList.valueOf("EndCrystalResonator" + GTValues.VN[tier]);
+            entry.set(
+                new EndCrystalResonator(
+                    GTNRMachineID.valueOf(entry.name()).id,
+                    "gtneverreset.end_crystal_resonator.tier." + tier,
+                    tier));
+            AnimatedTooltipHandler.addItemTooltip(entry.get(1), AnimatedText.GT_NEVER_RESET);
+        }
     }
 
     private static void registerModuleHatches(GTNRItemList[] entries, MachineModuleType type, boolean dynamic) {

@@ -4,6 +4,7 @@ import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.item.ItemAdvancedIOBus;
 import com.xyp.gtneverreset.common.item.ItemStockIOInterface;
 import com.xyp.gtneverreset.common.item.ItemWirelessDualInterfaceTerminal;
+import com.xyp.gtneverreset.common.item.StableEndCrystalItem;
 import com.xyp.gtneverreset.common.item.WildcardPatternItem;
 import com.xyp.gtneverreset.common.item.WirelessFrequencyCard;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -17,6 +18,10 @@ public final class ItemLoader {
     private ItemLoader() {}
 
     public static void registerItems() {
+        StableEndCrystalItem crystal = new StableEndCrystalItem();
+        GameRegistry.registerItem(crystal, StableEndCrystalItem.REGISTRY_NAME);
+        GTNRItemList.StableEndCrystal.set(crystal);
+        crystal.setCreativeTab(GTNRCreativeTabs.ITEMS);
         ItemWirelessDualInterfaceTerminal terminal = new ItemWirelessDualInterfaceTerminal();
         GameRegistry.registerItem(terminal, ItemWirelessDualInterfaceTerminal.REGISTRY_NAME);
         GTNRItemList.WirelessDualInterfaceTerminal.set(terminal);

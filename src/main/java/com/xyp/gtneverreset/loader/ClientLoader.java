@@ -11,8 +11,10 @@ import com.xyp.gtneverreset.client.nei.WildcardRecipeImport;
 import com.xyp.gtneverreset.client.quantum.QuantumCraftingClientEvents;
 import com.xyp.gtneverreset.client.quantum.RecursivePatternReport;
 import com.xyp.gtneverreset.client.render.FluxConnectorRenderer;
+import com.xyp.gtneverreset.client.render.StableEndCrystalRenderer;
 import com.xyp.gtneverreset.client.render.WirelessWorldHighlight;
 import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
+import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import appeng.api.AEApi;
@@ -30,6 +32,7 @@ public final class ClientLoader {
     }
 
     public static void init() {
+        RenderingRegistry.registerEntityRenderingHandler(StableEndCrystalEntity.class, new StableEndCrystalRenderer());
         BlockFluxConnector.renderId = RenderingRegistry.getNextAvailableRenderId();
         RenderingRegistry.registerBlockHandler(new FluxConnectorRenderer());
         AEApi.instance()

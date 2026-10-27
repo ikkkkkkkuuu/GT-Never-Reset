@@ -20,6 +20,7 @@ import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.world.WirelessWorldListener;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.loader.ConfigLoader;
+import com.xyp.gtneverreset.loader.EntityLoader;
 import com.xyp.gtneverreset.loader.ItemLoader;
 import com.xyp.gtneverreset.loader.MachineLoader;
 import com.xyp.gtneverreset.loader.RecipeLoader;
@@ -56,6 +57,7 @@ public class CommonProxy {
         ConfigLoader.register(event.getModConfigurationDirectory());
         ItemLoader.registerItems();
         BlockLoader.registerBlocks();
+        EntityLoader.registerEntities();
         NetWorkHandler.register();
         NetworkRegistry.INSTANCE.registerGuiHandler(GTNeverReset.INSTANCE, new WirelessTerminalGuiHandler());
 

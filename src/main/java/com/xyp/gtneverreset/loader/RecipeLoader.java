@@ -7,6 +7,7 @@ import com.xyp.gtneverreset.common.recipe.ae2.WildcardPatternRecipes;
 import com.xyp.gtneverreset.common.recipe.ae2.WirelessFrequencyCardRecipes;
 import com.xyp.gtneverreset.common.recipe.ae2.WirelessTerminalRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.AssemblerRecipes;
+import com.xyp.gtneverreset.common.recipe.gregtech.EndCrystalResonatorRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.FluxConnectorRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.LargeFurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.MixerRecipes;
@@ -34,6 +35,7 @@ public final class RecipeLoader {
         OreProcessingRecipes.register();
         LargeFurnaceRecipes.register();
         FluxConnectorRecipes.register();
+        EndCrystalResonatorRecipes.register();
         CompactAEMachineRecipes.register();
         SingularityDataHubRecipes.register();
         AssemblerRecipes.registerModernFluidMachineRecipes();
