@@ -1,8 +1,3 @@
-/*
- * GUI adapted from Flux Networks 1.20 GuiFluxDeviceHome / GuiTabCore / FluxEditBox / SwitchButton.
- * Copyright (c) 2019-2021 BloCamLimb. GUI design/resources: CC BY-NC-SA 4.0.
- * See META-INF/flux-port/NOTICE.md for exact upstream revisions and adaptation scope.
- */
 package com.xyp.gtneverreset.common.gui;
 
 import java.util.function.BooleanSupplier;
@@ -39,8 +34,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 public final class FluxConnectorGui {
 
     private static final int COLOR = 0xFF295E8A;
-
-    private FluxConnectorGui() {}
 
     public static ModularPanel build(TileEntityFluxConnector tile, PanelSyncManager sync) {
         ModularPanel panel = ModularPanel.defaultPanel("flux_connector", 176, 202)

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import java.util.Arrays;
@@ -19,8 +17,6 @@ public class WirelessConstructionSites {
     public static final int QUIET_TICKS = 100;
     private static final Map<Object, Activity> ACTIVE = new Reference2ObjectOpenHashMap<>();
     private static long ticks;
-
-    private WirelessConstructionSites() {}
 
     public static void update(Object task, boolean building, Site... sites) {
         if (task == null) return;

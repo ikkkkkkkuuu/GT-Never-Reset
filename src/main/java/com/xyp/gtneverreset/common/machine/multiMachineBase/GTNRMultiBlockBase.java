@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
 package com.xyp.gtneverreset.common.machine.multiMachineBase;
 
 import static gregtech.api.util.GTUtility.validMTEList;
@@ -35,11 +34,13 @@ import com.xyp.gtneverreset.utils.machine.RecipeThreadOutputs;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadTask;
 import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
 
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.HeatingCoilLevel;
 import gregtech.api.enums.VoidingMode;
 import gregtech.api.enums.VoltageIndex;
+import gregtech.api.interfaces.IHatchElement;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.logic.ProcessingLogic;
 import gregtech.api.metatileentity.implementations.MTEExtendedPowerMultiBlockBase;
@@ -68,8 +69,17 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     private static final int HEAT_PROBE_EUT = 8;
     private static final int FIRST_HEAT_PROBE = 127;
     private static final int SECOND_HEAT_PROBE = 997;
-    private final List<ParameterModuleHatch> parameterModules = new ArrayList<>();
+
+    private static String threadCountText(int running, int total) {
+        // #tr gtnr.multiblock.threads
+        // # Running threads: {\\AQUA}%s{\\RESET} / {\\AQUA}%s{\\RESET}
+        // # zh_CN 运行线程：{\\AQUA}%s{\\RESET} / {\\AQUA}%s{\\RESET}
+        return StatCollector.translateToLocalFormatted("gtnr.multiblock.threads", running, total);
+    }
+
     private final Map<Integer, RecipeThreadTask> threadTasks = new TreeMap<>();
+
+    private final List<ParameterModuleHatch> parameterModules = new ArrayList<>();
     private final PatternInputScheduler patternScheduler = new PatternInputScheduler();
     private int preparingThread = -1;
     private boolean useRemainingPower;
@@ -86,75 +96,51 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     }
 
     @Override
-    protected GTNRMultiBlockBaseGui<?> getGui() {
-        return new GTNRMultiBlockBaseGui<>(this);
+    public final void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
+        checkMachineStructure(tile, stack, errors);
+        collectTooltipStructureRequirements(errors);
     }
 
-    /** Read live; subclasses may derive this from items, modules or structure state. */
-    public int getMaxRecipeThreads() {
-        return 1;
-    }
+    protected abstract void checkMachineStructure(IGregTechTileEntity tile, ItemStack stack,
+        List<StructureError> errors);
 
-    public final int getTotalRecipeThreads() {
-        return Math.max(1, getMaxRecipeThreads());
-    }
+    /** Pure hatch/casing counts, shared by formation checks and automatic structure tooltips. */
+    protected void checkMachineHatches(List<StructureError> errors) {}
 
-    public final int getRunningRecipeThreads() {
-        IGregTechTileEntity tile = getBaseMetaTileEntity();
-        if (paused || !mMachine || tile == null || !tile.isAllowedToWork()) return 0;
-        int total = getTotalRecipeThreads();
-        int running = 0;
-        for (RecipeThreadTask task : threadTasks.values()) {
-            if (task.getThread() < total && !task.isFinished()) running++;
+    protected final void checkHatchMin(List<StructureError> errors,
+        IHatchElement<? super GTNRMultiBlockBase<T>> element, int min) {
+        if (StructureTooltipHooks.onCheckHatches(this, min, StructureTooltipHooks.UNLIMITED, element)) return;
+        int count = Math.toIntExact(element.count(this));
+        if (count >= min) return;
+        List<String> keys = element.getDescriptionLangKeys();
+        TranslatableText name = TranslatableText.lang(keys.get(0));
+        for (int i = 1; i < keys.size(); i++) {
+            // #tr gtnr.structure.hatch.alternative
+            // # %s or %s
+            // # zh_CN %s或%s
+            name = TranslatableText.lang("gtnr.structure.hatch.alternative", name, TranslatableText.lang(keys.get(i)));
         }
-        return running;
-    }
-
-    public final List<RecipeThreadTask> getRecipeThreadTasks() {
-        return List.copyOf(threadTasks.values());
-    }
-
-    protected int getBaseParallelRecipes() {
-        return 1;
-    }
-
-    protected double getBaseSpeedMultiplier() {
-        return 1;
-    }
-
-    protected double getBaseEUtMultiplier() {
-        return 1;
-    }
-
-    protected boolean hasPerfectOverclock() {
-        return false;
+        errors.add(StructureErrors.hatchCount(ErrorType.TOO_FEW, name, count, min));
     }
 
     @Override
-    public final int getMaxParallelRecipes() {
-        ParameterModuleHatch module = parameterModule(MachineModuleType.Parallel);
-        long multiplier = module == null ? 1 : 1L + module.getParameter();
-        return (int) Math.min(Integer.MAX_VALUE, Math.max(1, getBaseParallelRecipes()) * multiplier);
-    }
-
-    public final double getSpeedMultiplier() {
-        ParameterModuleHatch module = parameterModule(MachineModuleType.Speed);
-        return getBaseSpeedMultiplier() * (module == null ? 1 : module.getParameter());
-    }
-
-    public final double getEUtMultiplier() {
-        ParameterModuleHatch module = parameterModule(MachineModuleType.PowerConsumption);
-        return getBaseEUtMultiplier() * (module == null ? 1 : module.getPowerMultiplier());
-    }
-
-    public final int getOverclockTimeReduction() {
-        ParameterModuleHatch module = parameterModule(MachineModuleType.Overclock);
-        return module == null ? (hasPerfectOverclock() ? 4 : 2) : module.getTimeReduction();
-    }
-
-    public final int getOverclockPowerIncrease() {
-        ParameterModuleHatch module = parameterModule(MachineModuleType.Overclock);
-        return module == null ? 4 : module.getPowerIncrease();
+    public final void collectTooltipStructureRequirements(List<StructureError> errors) {
+        checkMachineHatches(errors);
+        Map<MachineModuleType, Integer> counts = new EnumMap<>(MachineModuleType.class);
+        for (ParameterModuleHatch hatch : parameterModules) counts.merge(hatch.getModuleType(), 1, Integer::sum);
+        for (var entry : counts.entrySet()) {
+            int limit = getParameterModuleLimit(entry.getKey());
+            if (entry.getValue() > limit) {
+                errors.add(
+                    StructureErrors.hatchCount(
+                        ErrorType.TOO_MANY,
+                        TranslatableText.lang(
+                            entry.getKey()
+                                .getTranslationKey()),
+                        entry.getValue(),
+                        limit));
+            }
+        }
     }
 
     @Override
@@ -322,33 +308,38 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         updateThreadDisplay();
     }
 
-    @Override
-    public final void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        checkMachineStructure(tile, stack, errors);
-        collectTooltipStructureRequirements(errors);
+    private int firstFreeThread() {
+        int total = getTotalRecipeThreads();
+        for (int thread = 0; thread < total; thread++) {
+            if (!threadTasks.containsKey(thread)) return thread;
+        }
+        return -1;
     }
 
-    protected abstract void checkMachineStructure(IGregTechTileEntity tile, ItemStack stack,
-        List<StructureError> errors);
-
-    /** Pure hatch/casing counts, shared by formation checks and automatic structure tooltips. */
-    protected void checkMachineHatches(List<StructureError> errors) {}
-
-    @Override
-    public final void collectTooltipStructureRequirements(List<StructureError> errors) {
-        checkMachineHatches(errors);
-        Map<MachineModuleType, Integer> counts = new EnumMap<>(MachineModuleType.class);
-        for (ParameterModuleHatch hatch : parameterModules) counts.merge(hatch.getModuleType(), 1, Integer::sum);
-        for (var entry : counts.entrySet()) {
-            if (entry.getValue() > 1) {
-                errors.add(
-                    StructureErrors.hatchCount(
-                        ErrorType.TOO_MANY,
-                        TranslatableText.lang(moduleTypeKey(entry.getKey())),
-                        entry.getValue(),
-                        1));
+    private long usedThreadPower() {
+        int total = getTotalRecipeThreads();
+        long used = 0;
+        for (RecipeThreadTask task : threadTasks.values()) {
+            if (task.getThread() < total && !task.isFinished()) {
+                used += Math.min(Long.MAX_VALUE - used, task.getEUt());
             }
         }
+        return used;
+    }
+
+    private long remainingPower() {
+        return Math.max(0, getMaxInputEu() - usedThreadPower());
+    }
+
+    private long availableThreadPower() {
+        long remaining = remainingPower();
+        if (useRemainingPower || preparingThread < 0) return remaining;
+        int total = getTotalRecipeThreads();
+        long occupied = threadTasks.keySet()
+            .stream()
+            .filter(thread -> thread < total)
+            .count();
+        return remaining / Math.max(1, total - occupied);
     }
 
     @Override
@@ -365,6 +356,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
 
     public final boolean addParameterModuleToMachineList(IGregTechTileEntity tile, int casingIndex) {
         if (tile == null || !(tile.getMetaTileEntity() instanceof ParameterModuleHatch hatch)) return false;
+        if (getParameterModuleLimit(hatch.getModuleType()) <= 0) return false;
         if (!parameterModules.contains(hatch)) {
             hatch.updateTexture(casingIndex);
             hatch.updateCraftingIcon(getMachineCraftingIcon());
@@ -395,76 +387,11 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         return tooltipProbeState == null ? super.getMaxInputEu() : tooltipInputVoltage();
     }
 
-    @Override
-    public boolean supportsVoidProtection() {
-        return true;
-    }
-
-    @Override
-    public VoidingMode getDefaultVoidingMode() {
-        return VoidingMode.VOID_NONE;
-    }
-
-    @Override
-    public boolean supportsInputSeparation() {
-        return true;
-    }
-
-    @Override
-    public boolean getDefaultInputSeparationMode() {
-        return true;
-    }
-
-    @Override
-    public final boolean supportsSingleRecipeLocking() {
-        return true;
-    }
-
-    @Override
-    public boolean getDefaultRecipeLockingMode() {
-        return false;
-    }
-
-    @Override
-    public final boolean supportsBatchMode() {
-        return true;
-    }
-
-    @Override
-    public boolean getDefaultBatchMode() {
-        return true;
-    }
-
-    @Override
-    public void saveNBTData(NBTTagCompound tag) {
-        super.saveNBTData(tag);
-        NBTTagList tasks = new NBTTagList();
-        for (RecipeThreadTask task : threadTasks.values()) tasks.appendTag(task.save());
-        tag.setTag("gtnrRecipeThreads", tasks);
-    }
-
-    @Override
-    public void loadNBTData(NBTTagCompound tag) {
-        super.loadNBTData(tag);
-        if (!tag.hasKey(INPUT_SEPARATION_NBT_KEY)) inputSeparation = getDefaultInputSeparationMode();
-        threadTasks.clear();
-        NBTTagList tasks = tag.getTagList("gtnrRecipeThreads", 10);
-        for (int index = 0; index < tasks.tagCount(); index++) {
-            RecipeThreadTask task = RecipeThreadTask.load(tasks.getCompoundTagAt(index));
-            if (threadTasks.put(task.getThread(), task) != null) {
-                throw new IllegalStateException("Duplicate saved recipe thread");
-            }
+    private ParameterModuleHatch parameterModule(MachineModuleType type) {
+        for (ParameterModuleHatch module : parameterModules) {
+            if (module.getModuleType() == type) return module;
         }
-        paused = true;
-        updateThreadDisplay();
-    }
-
-    @Override
-    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
-        int z) {
-        super.getWailaNBTData(player, tile, tag, world, x, y, z);
-        tag.setInteger("gtnrRunningThreads", getRunningRecipeThreads());
-        tag.setInteger("gtnrTotalThreads", getTotalRecipeThreads());
+        return null;
     }
 
     @Override
@@ -570,24 +497,6 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         });
     }
 
-    /** Override only when the same heat-per-tier value is used by the machine's real heat formula. */
-    protected int getVoltageHeatPerTier() {
-        return 0;
-    }
-
-    protected int getVoltageHeatFromTier() {
-        return VoltageIndex.MV;
-    }
-
-    /** Shared by real machine heat and its tooltip; selecting a coil tier never changes the installed coil. */
-    protected final int coilAndVoltageHeat(HeatingCoilLevel runtimeCoil) {
-        HeatingCoilLevel coil = tooltipProbeState == null ? runtimeCoil
-            : HeatingCoilLevel.getFromTier((byte) getTooltipTier(TieredPart.COIL, runtimeCoil.getTier()));
-        long heat = coil.getHeat()
-            + (long) getVoltageHeatPerTier() * (GTUtility.getTier(getMaxInputEu()) - getVoltageHeatFromTier());
-        return (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, heat));
-    }
-
     private long tooltipInputVoltage() {
         return tooltipProbeState.part() == TieredPart.VOLTAGE ? GTValues.V[tooltipProbeState.tier()] : 0;
     }
@@ -641,83 +550,6 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             .of(StatCollector.translateToLocalFormatted("gtnr.multiblock.threads.capacity", getTotalRecipeThreads()));
     }
 
-    @Override
-    public List<String> getTooltipStructureNotes() {
-        // #tr gtnr.multiblock.modules.limit
-        // # At most one EU, one speed, one parallel and one overclock module per machine
-        // # zh_CN 每台机器最多安装一个 EU 模块、一个速度模块、一个并行模块和一个超频模块
-        return List.of(StatCollector.translateToLocal("gtnr.multiblock.modules.limit"));
-    }
-
-    private static String moduleTypeKey(MachineModuleType type) {
-        return switch (type) {
-            // #tr gtnr.module.type.parallel
-            // # Parallel Module
-            // # zh_CN 并行模块
-            case Parallel -> "gtnr.module.type.parallel";
-            // #tr gtnr.module.type.speed
-            // # Speed Module
-            // # zh_CN 速度模块
-            case Speed -> "gtnr.module.type.speed";
-            // #tr gtnr.module.type.eu
-            // # EU Module
-            // # zh_CN EU 模块
-            case PowerConsumption -> "gtnr.module.type.eu";
-            // #tr gtnr.module.type.overclock
-            // # Overclock Module
-            // # zh_CN 超频模块
-            case Overclock -> "gtnr.module.type.overclock";
-        };
-    }
-
-    private static String threadCountText(int running, int total) {
-        // #tr gtnr.multiblock.threads
-        // # Running threads: {\\AQUA}%s{\\RESET} / {\\AQUA}%s{\\RESET}
-        // # zh_CN 运行线程：{\\AQUA}%s{\\RESET} / {\\AQUA}%s{\\RESET}
-        return StatCollector.translateToLocalFormatted("gtnr.multiblock.threads", running, total);
-    }
-
-    private ParameterModuleHatch parameterModule(MachineModuleType type) {
-        for (ParameterModuleHatch module : parameterModules) {
-            if (module.getModuleType() == type) return module;
-        }
-        return null;
-    }
-
-    private int firstFreeThread() {
-        int total = getTotalRecipeThreads();
-        for (int thread = 0; thread < total; thread++) {
-            if (!threadTasks.containsKey(thread)) return thread;
-        }
-        return -1;
-    }
-
-    private long usedThreadPower() {
-        int total = getTotalRecipeThreads();
-        long used = 0;
-        for (RecipeThreadTask task : threadTasks.values()) {
-            if (task.getThread() < total && !task.isFinished()) {
-                used += Math.min(Long.MAX_VALUE - used, task.getEUt());
-            }
-        }
-        return used;
-    }
-
-    private long remainingPower() {
-        return Math.max(0, getMaxInputEu() - usedThreadPower());
-    }
-
-    private long availableThreadPower() {
-        long remaining = remainingPower();
-        if (useRemainingPower || preparingThread < 0) return remaining;
-        int total = getTotalRecipeThreads();
-        long occupied = threadTasks.keySet()
-            .stream()
-            .filter(thread -> thread < total)
-            .count();
-        return remaining / Math.max(1, total - occupied);
-    }
-
     private void updateThreadDisplay() {
         mOutputItems = null;
         mOutputFluids = null;
@@ -740,5 +572,173 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         }
     }
 
+    @Override
+    protected GTNRMultiBlockBaseGui<?> getGui() {
+        return new GTNRMultiBlockBaseGui<>(this);
+    }
+
+    @Override
+    public void saveNBTData(NBTTagCompound tag) {
+        super.saveNBTData(tag);
+        NBTTagList tasks = new NBTTagList();
+        for (RecipeThreadTask task : threadTasks.values()) tasks.appendTag(task.save());
+        tag.setTag("gtnrRecipeThreads", tasks);
+    }
+
+    @Override
+    public void loadNBTData(NBTTagCompound tag) {
+        super.loadNBTData(tag);
+        if (!tag.hasKey(INPUT_SEPARATION_NBT_KEY)) inputSeparation = getDefaultInputSeparationMode();
+        threadTasks.clear();
+        NBTTagList tasks = tag.getTagList("gtnrRecipeThreads", 10);
+        for (int index = 0; index < tasks.tagCount(); index++) {
+            RecipeThreadTask task = RecipeThreadTask.load(tasks.getCompoundTagAt(index));
+            if (threadTasks.put(task.getThread(), task) != null) {
+                throw new IllegalStateException("Duplicate saved recipe thread");
+            }
+        }
+        paused = true;
+        updateThreadDisplay();
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+        tag.setInteger("gtnrRunningThreads", getRunningRecipeThreads());
+        tag.setInteger("gtnrTotalThreads", getTotalRecipeThreads());
+    }
+
+    /** Read live; subclasses may derive this from items, modules or structure state. */
+    public int getMaxRecipeThreads() {
+        return 1;
+    }
+
+    public final int getTotalRecipeThreads() {
+        return Math.max(1, getMaxRecipeThreads());
+    }
+
+    public final int getRunningRecipeThreads() {
+        IGregTechTileEntity tile = getBaseMetaTileEntity();
+        if (paused || !mMachine || tile == null || !tile.isAllowedToWork()) return 0;
+        int total = getTotalRecipeThreads();
+        int running = 0;
+        for (RecipeThreadTask task : threadTasks.values()) {
+            if (task.getThread() < total && !task.isFinished()) running++;
+        }
+        return running;
+    }
+
+    public final List<RecipeThreadTask> getRecipeThreadTasks() {
+        return List.copyOf(threadTasks.values());
+    }
+
+    protected int getBaseParallelRecipes() {
+        return 1;
+    }
+
+    protected double getBaseSpeedMultiplier() {
+        return 1;
+    }
+
+    protected double getBaseEUtMultiplier() {
+        return 1;
+    }
+
+    protected boolean hasPerfectOverclock() {
+        return false;
+    }
+
+    @Override
+    public final int getMaxParallelRecipes() {
+        ParameterModuleHatch module = parameterModule(MachineModuleType.Parallel);
+        long multiplier = module == null ? 1 : 1L + module.getParameter();
+        return (int) Math.min(Integer.MAX_VALUE, Math.max(1, getBaseParallelRecipes()) * multiplier);
+    }
+
+    public final double getSpeedMultiplier() {
+        ParameterModuleHatch module = parameterModule(MachineModuleType.Speed);
+        return getBaseSpeedMultiplier() * (module == null ? 1 : module.getParameter());
+    }
+
+    public final double getEUtMultiplier() {
+        ParameterModuleHatch module = parameterModule(MachineModuleType.PowerConsumption);
+        return getBaseEUtMultiplier() * (module == null ? 1 : module.getPowerMultiplier());
+    }
+
+    public final int getOverclockTimeReduction() {
+        ParameterModuleHatch module = parameterModule(MachineModuleType.Overclock);
+        return module == null ? (hasPerfectOverclock() ? 4 : 2) : module.getTimeReduction();
+    }
+
+    public final int getOverclockPowerIncrease() {
+        ParameterModuleHatch module = parameterModule(MachineModuleType.Overclock);
+        return module == null ? 4 : module.getPowerIncrease();
+    }
+
+    @Override
+    public boolean supportsVoidProtection() {
+        return true;
+    }
+
+    @Override
+    public VoidingMode getDefaultVoidingMode() {
+        return VoidingMode.VOID_NONE;
+    }
+
+    @Override
+    public boolean supportsInputSeparation() {
+        return true;
+    }
+
+    @Override
+    public boolean getDefaultInputSeparationMode() {
+        return true;
+    }
+
+    @Override
+    public final boolean supportsSingleRecipeLocking() {
+        return true;
+    }
+
+    @Override
+    public boolean getDefaultRecipeLockingMode() {
+        return false;
+    }
+
+    @Override
+    public final boolean supportsBatchMode() {
+        return true;
+    }
+
+    @Override
+    public boolean getDefaultBatchMode() {
+        return true;
+    }
+
+    /** Override only when the same heat-per-tier value is used by the machine's real heat formula. */
+    protected int getVoltageHeatPerTier() {
+        return 0;
+    }
+
+    protected int getVoltageHeatFromTier() {
+        return VoltageIndex.MV;
+    }
+
+    /** Shared by real machine heat and its tooltip; selecting a coil tier never changes the installed coil. */
+    protected final int coilAndVoltageHeat(HeatingCoilLevel runtimeCoil) {
+        HeatingCoilLevel coil = tooltipProbeState == null ? runtimeCoil
+            : HeatingCoilLevel.getFromTier((byte) getTooltipTier(TieredPart.COIL, runtimeCoil.getTier()));
+        long heat = coil.getHeat()
+            + (long) getVoltageHeatPerTier() * (GTUtility.getTier(getMaxInputEu()) - getVoltageHeatFromTier());
+        return (int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, heat));
+    }
+
+    @Override
+    public int getParameterModuleLimit(MachineModuleType type) {
+        return 1;
+    }
+
     private record TooltipProbeState(TieredPart part, int tier) {}
+
 }

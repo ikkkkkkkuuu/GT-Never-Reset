@@ -8,8 +8,6 @@ public final class ChunkCoords {
 
     public static final int SIZE = 16;
 
-    private ChunkCoords() {}
-
     public static int chunkOf(int world) {
         return world >> 4;
     }

@@ -45,8 +45,6 @@ public final class ScriptSnippets {
             new Snippet("for", "for i = 1, 10 do\n  " + CARET + "\nend"),
             new Snippet("while", "while true do\n  " + CARET + "\nend")));
 
-    private ScriptSnippets() {}
-
     public static List<Snippet> all() {
         return ALL;
     }

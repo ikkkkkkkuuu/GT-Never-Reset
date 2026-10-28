@@ -12,8 +12,6 @@ public final class TextEffects {
         List.of(),
         1);
 
-    private TextEffects() {}
-
     public static String apply(String text) {
         Objects.requireNonNull(text, "text");
         return text.isEmpty() ? text : opening() + text + EffectTextParser.CLOSE;

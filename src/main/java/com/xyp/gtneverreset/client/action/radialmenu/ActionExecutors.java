@@ -18,8 +18,6 @@ public final class ActionExecutors {
 
     private static final Deque<ActionSpec> PENDING = new ArrayDeque<>();
 
-    private ActionExecutors() {}
-
     public static void register(IActionExecutor executor) {
         EXECUTORS.put(executor.typeId(), executor);
     }

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
 package com.xyp.gtneverreset.common.machine.basicMachine;
 
 import static gregtech.api.enums.GTValues.V;
@@ -51,8 +50,7 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
     private boolean baseTick;
 
     public ModernFluidMachine(int id, String name, String regionalName, int tier, RecipeMap<?> recipes, int itemInputs,
-        int itemOutputs, int fluidInputs, int fluidOutputs, int tankCapacity, ModernMachineTextures textures,
-        SoundResource sound) {
+        int itemOutputs, int fluidInputs, int fluidOutputs, ModernMachineTextures textures, SoundResource sound) {
         super(
             id,
             name,
@@ -64,7 +62,7 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
             itemOutputs,
             true,
             true,
-            tankCapacity,
+            getCapacityForTier(tier),
             sound,
             SpecialEffects.NONE,
             textures.getOverlays(),

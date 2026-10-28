@@ -32,8 +32,6 @@ public final class WildcardPatternGenerator {
     /** Client tooltip results retain no live stacks and are capped even before weak keys are collected. */
     private static final Map<ItemStack, WildcardPatternCache<Integer>> COUNT_CACHE = new WeakHashMap<>();
 
-    private WildcardPatternGenerator() {}
-
     public static boolean isWildcardPattern(ItemStack stack) {
         return stack != null
             && (stack.getItem() instanceof WildcardPatternItem || stack.hasTagCompound() && stack.getTagCompound()

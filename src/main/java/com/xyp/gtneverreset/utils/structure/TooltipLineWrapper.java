@@ -7,8 +7,6 @@ final class TooltipLineWrapper {
 
     private static final int LINE_WIDTH = 76;
 
-    private TooltipLineWrapper() {}
-
     static String[] wrap(String[] lines) {
         List<String> result = new ArrayList<>();
         for (String line : lines) {

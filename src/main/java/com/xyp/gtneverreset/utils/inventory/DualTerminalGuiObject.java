@@ -8,7 +8,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
-import com.xyp.gtneverreset.common.recipe.ae2.ArcaneWorkbenchPatterns;
+import com.xyp.gtneverreset.utils.recipes.ArcaneWorkbenchPatterns;
 
 import appeng.api.features.IWirelessTermHandler;
 import appeng.api.networking.energy.IEnergySource;

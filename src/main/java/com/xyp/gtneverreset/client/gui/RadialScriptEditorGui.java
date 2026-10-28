@@ -1403,8 +1403,6 @@ public class RadialScriptEditorGui extends RadialUiScreen implements RadialIconP
 
     private static final class IndentGuides {
 
-        private IndentGuides() {}
-
         public static int[] depths(List<String> lines) {
             int count = lines.size();
             int[] depths = new int[count];

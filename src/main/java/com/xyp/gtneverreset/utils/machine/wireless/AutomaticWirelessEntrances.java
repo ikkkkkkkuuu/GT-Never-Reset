@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import java.util.ArrayList;
@@ -132,8 +130,6 @@ public class AutomaticWirelessEntrances {
             return null;
         }
     }
-
-    private AutomaticWirelessEntrances() {}
 
     static void refresh(Collection<Cluster<IGridNode, Address>> clusters, PhysicalMeTopology topology,
         WirelessEntranceIndex entrances) {

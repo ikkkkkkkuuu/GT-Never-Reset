@@ -8,8 +8,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class HeldKeyResync {
 
-    private HeldKeyResync() {}
-
     public static void resyncHeldKeys() {
         for (KeyBinding binding : KeyBindingLookup.all()) {
             if (KeyInjector.isPhysicallyDown(binding)) {

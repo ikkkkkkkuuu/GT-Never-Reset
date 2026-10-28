@@ -28,8 +28,6 @@ public final class WirelessTerminalSession {
     public static final int BAUBLE_SLOT_OFFSET = 1000;
     private static final String LAST_GUI_MODE = "last_gui_mode";
 
-    private WirelessTerminalSession() {}
-
     public static void open(EntityPlayer player, int slot, WirelessTerminalGuiType requested) {
         ItemStack stack = getTerminalInSlot(player, slot);
         if (stack == null || !(stack.getItem() instanceof ItemWirelessDualInterfaceTerminal item)) return;

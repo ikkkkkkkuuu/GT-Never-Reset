@@ -9,8 +9,6 @@ import codechicken.nei.recipe.StackInfo;
 
 public final class NeiCraftingFluid {
 
-    private NeiCraftingFluid() {}
-
     public static FluidStack getFluid(ItemStack stack) {
         if (stack == null || !(StackInfo.isFluidDisplayItem(stack) || FluidDropCompat.isFluidDrop(stack))) return null;
         FluidStack fluid = StackInfo.getFluid(stack);

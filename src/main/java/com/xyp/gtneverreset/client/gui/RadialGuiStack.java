@@ -15,8 +15,6 @@ public final class RadialGuiStack {
     private static final Deque<GuiScreen> STACK = new ArrayDeque<>();
     private static GuiScreen requested;
 
-    private RadialGuiStack() {}
-
     public static void push(GuiScreen screen) {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.currentScreen != null) {

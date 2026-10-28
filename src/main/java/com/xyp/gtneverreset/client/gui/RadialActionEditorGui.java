@@ -98,8 +98,6 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
         specByType.put(typeId, spec);
     }
 
-    // -- building ------------------------------------------------------------------------------------------------
-
     /**
      * Builds the tabs, the selected type's fields and, for a chain, its steps. @return the y below everything it added
      */
@@ -396,8 +394,6 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
         fieldInputs.add(input);
     }
 
-    // -- input ---------------------------------------------------------------------------------------------------
-
     @Override
     public void handleMouseInput() {
         if (tabRowTop >= 0 && tabCount > tabVisible) {
@@ -659,8 +655,6 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
         captureInputs();
     }
 
-    // -- drawing -------------------------------------------------------------------------------------------------
-
     protected void drawActionSection() {
         int left = contentLeft();
 
@@ -822,8 +816,6 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
     }
 
     private static final class RadialActionSummary {
-
-        private RadialActionSummary() {}
 
         static String of(ActionSpec spec) {
             if (spec == null || spec.type == null) {

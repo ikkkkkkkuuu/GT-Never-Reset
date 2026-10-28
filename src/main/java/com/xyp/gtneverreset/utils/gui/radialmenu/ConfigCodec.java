@@ -13,8 +13,6 @@ public final class ConfigCodec {
         .registerTypeAdapterFactory(new StringMapAdapterFactory())
         .create();
 
-    private ConfigCodec() {}
-
     public static String writeProfile(Profile profile) {
         return GSON.toJson(profile);
     }

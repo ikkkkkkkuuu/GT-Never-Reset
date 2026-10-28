@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
 package com.xyp.gtneverreset.utils.enums;
 
 /** AE2 19.2.17 lock order and icons, adapted without changing the five user-visible modes. */

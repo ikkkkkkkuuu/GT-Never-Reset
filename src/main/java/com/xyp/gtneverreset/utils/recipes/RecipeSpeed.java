@@ -5,8 +5,6 @@ import com.xyp.gtneverreset.loader.ConfigLoader;
 
 public final class RecipeSpeed {
 
-    private RecipeSpeed() {}
-
     public static int getModifiedRecipeDuration(int original) {
         // Recipe registration can precede this mod's preInit.
         ConfigLoader.ensureLoaded();

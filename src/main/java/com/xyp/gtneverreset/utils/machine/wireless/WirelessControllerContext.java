@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import gregtech.api.metatileentity.implementations.MTEMultiBlockBase;
@@ -6,8 +5,6 @@ import gregtech.api.metatileentity.implementations.MTEMultiBlockBase;
 public final class WirelessControllerContext {
 
     private static final ThreadLocal<MTEMultiBlockBase> CURRENT = new ThreadLocal<>();
-
-    private WirelessControllerContext() {}
 
     public static MTEMultiBlockBase enter(MTEMultiBlockBase controller) {
         MTEMultiBlockBase previous = CURRENT.get();

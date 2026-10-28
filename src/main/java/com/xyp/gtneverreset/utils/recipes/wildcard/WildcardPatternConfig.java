@@ -31,8 +31,6 @@ public final class WildcardPatternConfig {
     private static final int TOKEN_MATCHER_CACHE_LIMIT = 128;
     private static final Map<String, List<TokenMatcher>> TOKEN_MATCHER_CACHE = new ConcurrentHashMap<>();
 
-    private WildcardPatternConfig() {}
-
     public static boolean shouldReplaceInputs(ItemStack stack) {
         return true;
     }

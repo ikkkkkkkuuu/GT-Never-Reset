@@ -1,6 +1,5 @@
 modLoader = "javafml"
 loaderVersion = "[47,48)"
-license = "LGPL-3.0"
 
 [[mods]]
 modId = "gtl_enhancedcore"

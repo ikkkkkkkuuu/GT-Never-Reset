@@ -24,8 +24,6 @@ import gregtech.common.items.ItemIntegratedCircuit;
 /** Runtime AE inputs preserve fluid NBT and leave the physical pattern's virtual tools unchanged. */
 public final class CircuitPatternCodec {
 
-    private CircuitPatternCodec() {}
-
     public static ICraftingPatternDetails decode(ItemStack pattern, World world) {
         if (pattern == null || !(pattern.getItem() instanceof ICraftingPatternItem item)) return null;
         try {

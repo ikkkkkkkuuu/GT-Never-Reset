@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import static com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.canBuild;
@@ -36,8 +34,6 @@ public class WirelessOperations {
 
     public static class Denied extends IllegalStateException {
     }
-
-    private WirelessOperations() {}
 
     public static Result toggle(EntityPlayer player, WirelessCardBinding binding, Address target)
         throws FailedConnection {

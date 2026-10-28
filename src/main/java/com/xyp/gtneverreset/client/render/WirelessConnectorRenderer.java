@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from AE2 Lightning Tech's WirelessConnectorRenderer (upstream authors retained in NOTICE.md).
-// GTNG port modifications (c) 2026 GTNG contributors.
 package com.xyp.gtneverreset.client.render;
 
 import java.util.ArrayList;

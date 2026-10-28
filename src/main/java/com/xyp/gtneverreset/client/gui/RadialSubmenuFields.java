@@ -17,8 +17,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 final class RadialSubmenuFields {
 
-    private RadialSubmenuFields() {}
-
     static ActionSpec toSpec(MenuNode node) {
         SlotLayout layout = node.layoutOrDefault();
         MenuStyle style = node.style;

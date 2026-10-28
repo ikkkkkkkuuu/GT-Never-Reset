@@ -25,8 +25,6 @@ public final class StockIORecipeBridge {
 
     private static final ThreadLocal<Attempt> active = new ThreadLocal<>();
 
-    private StockIORecipeBridge() {}
-
     /** ME inventory changes do not touch a machine slot, so idle machines retry once per second. */
     public static void retryIdle(MTEBasicMachine machine, IGregTechTileEntity base, long tick) {
         if (base.isServerSide() && tick % 20 == 0

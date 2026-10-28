@@ -4,8 +4,6 @@ public final class RadialGeometry {
 
     public static final int NO_SLOT = -1;
 
-    private RadialGeometry() {}
-
     public static double normalizeDegrees(double degrees) {
         double d = degrees % 360.0;
         return d < 0.0 ? d + 360.0 : d;

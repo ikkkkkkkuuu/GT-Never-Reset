@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
 package com.xyp.gtneverreset.common.machine.hatch;
 
 import java.util.HashMap;
@@ -35,6 +34,11 @@ import gregtech.api.render.TextureFactory;
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
 public final class ParameterModuleHatch extends MTEHatch {
+
+    // #tr gtnr.module.parameter.name
+    // # Parameter Module
+    // # zh_CN 参数模块
+    public static final String NAME_KEY = "gtnr.module.parameter.name";
 
     private static final int[] PARALLEL = { 8, 128, 2048, 32768, 524288, 8388608, 134217728, Integer.MAX_VALUE };
     private static final double[] POWER = { 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.5, 0.25 };

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Adapted from GT-Not-Good's SingularityDataHubGui and modern multiblock button styling.
 package com.xyp.gtneverreset.common.gui.modularui;
 
 import static gregtech.api.metatileentity.BaseTileEntity.TOOLTIP_DELAY;

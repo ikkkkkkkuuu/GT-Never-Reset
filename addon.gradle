@@ -1,44 +1,5 @@
 import java.util.regex.Pattern
 
-/*
-Translation generation and format validation were ported from GT-Not-Good.
-Source revision: 048fd1963de8c6458ef6f800c411be0087cbafdb
-Source paths: addon.gradle (translation generation), scripts/translation-format.gradle
-License: MIT (included below).
-
-Original source SHA-256:
-addon.gradle: 6653b18dd01112124d6e33a24391f71a57c0e5e2f6ae10bc4cdee888a2ff6703
-scripts/translation-format.gradle: e299f16f498736c435a2f425c607e61aadc4c64bafb4073a02d974d89f76b183
-
-Adaptations: retained only the translation build logic; use task inputs at execution
-for configuration-cache compatibility; sort source files and reset pending keys per
-file; preserve empty color replacements and translations; write generated files with LF.
-
-The validator and its checks are now consolidated into addon.gradle.
-
-MIT License
-
-Copyright (c) 2026 ChatGPT
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-
 /** Validates the Formatter syntax remaining after Minecraft 1.7.10 loads a language entry. */
 class TranslationFormatValidator {
     private static final Pattern NUMERIC = Pattern.compile('%(\\d+\\$)?[\\d\\.]*[df]')

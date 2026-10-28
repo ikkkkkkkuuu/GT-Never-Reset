@@ -10,8 +10,6 @@ import com.xyp.gtneverreset.utils.recipes.wildcard.model.io.PrefixIOComponent;
 
 public final class WildcardExpansion {
 
-    private WildcardExpansion() {}
-
     /**
      * 展开全部样板。
      *

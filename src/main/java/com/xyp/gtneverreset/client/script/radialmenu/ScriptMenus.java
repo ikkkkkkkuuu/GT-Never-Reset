@@ -18,8 +18,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 final class ScriptMenus {
 
-    private ScriptMenus() {}
-
     static MenuNode build(LuaValue items, LuaValue opts, String token, ScriptContext context, ScriptLimits limits) {
         LuaValue options = opts == null || !opts.istable() ? LuaValue.tableOf() : opts;
 

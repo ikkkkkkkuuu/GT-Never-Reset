@@ -25,8 +25,6 @@ public final class PotionIcons {
 
     private static List<String> names;
 
-    private PotionIcons() {}
-
     public static List<String> list() {
         load();
         return names;

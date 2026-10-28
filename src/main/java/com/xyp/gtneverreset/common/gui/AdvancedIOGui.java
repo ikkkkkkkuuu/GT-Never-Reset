@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-// Layout sources and asset licenses: META-INF/advancedio-port/NOTICE.md.
 package com.xyp.gtneverreset.common.gui;
 
 import java.math.BigDecimal;
@@ -78,8 +76,6 @@ import gregtech.api.util.GTUtility;
 public final class AdvancedIOGui {
 
     public static final Factory FACTORY = new Factory();
-
-    private AdvancedIOGui() {}
 
     static ModularPanel build(PartAdvancedIOBus part, PanelSyncManager sync) {
         var enabled = new IntSyncValue(part::availableSlots);

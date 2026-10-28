@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from GT-Not-Leisure PR #627 at 651396c75d108e6ff5399a44c56c12214ad27d3d.
-
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import java.util.Locale;
@@ -36,8 +33,6 @@ public class WirelessCardVisualisation {
             return !binding.equals(current) || dimension != viewerDimension || now < tick || now - tick >= 100;
         }
     }
-
-    private WirelessCardVisualisation() {}
 
     public static int mode(NBTTagCompound tag) {
         int value = tag == null ? 0 : tag.getInteger(MODE);

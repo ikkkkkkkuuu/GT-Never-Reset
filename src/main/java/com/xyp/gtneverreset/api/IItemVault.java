@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 package com.xyp.gtneverreset.api;
 
 import java.math.BigInteger;

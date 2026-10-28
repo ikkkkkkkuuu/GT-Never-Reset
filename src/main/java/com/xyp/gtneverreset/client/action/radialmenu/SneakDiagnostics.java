@@ -17,8 +17,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class SneakDiagnostics {
 
-    private SneakDiagnostics() {}
-
     public static void log(String what, KeyBinding binding) {
         if (!MainConfig.client.radialMenu.logKeyState) {
             return;

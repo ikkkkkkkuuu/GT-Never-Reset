@@ -1,56 +1,24 @@
 package com.xyp.gtneverreset.loader;
 
-import com.xyp.gtneverreset.common.recipe.ae2.AdvancedIORecipes;
-import com.xyp.gtneverreset.common.recipe.ae2.CompactAEMachineRecipes;
-import com.xyp.gtneverreset.common.recipe.ae2.PackagedRecipes;
-import com.xyp.gtneverreset.common.recipe.ae2.StockIOInterfaceRecipes;
-import com.xyp.gtneverreset.common.recipe.ae2.WildcardPatternRecipes;
-import com.xyp.gtneverreset.common.recipe.ae2.WirelessFrequencyCardRecipes;
-import com.xyp.gtneverreset.common.recipe.ae2.WirelessTerminalRecipes;
+import com.xyp.gtneverreset.common.recipe.CraftingTableRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.AssemblerRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.EndCrystalResonatorRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.FluxConnectorRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.LargeBeeBreederRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.LargeFurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.MixerRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.ModuleHatchRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.PatternInputRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.SingularityDataHubRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes;
-import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernFluidMachineRecipes;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernNonCellRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.OreProcessingRecipes;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
 
 public final class RecipeLoader {
 
-    private RecipeLoader() {}
-
     public static void registerRecipes() {
-        PackagedRecipes.register();
-        WirelessTerminalRecipes.register(GTNRItemList.WirelessDualInterfaceTerminal.get(1));
-        WirelessFrequencyCardRecipes.register();
-        PatternInputRecipes.register();
-        ModuleHatchRecipes.register();
-        WildcardPatternRecipes.register();
-        AdvancedIORecipes.register();
-        StockIOInterfaceRecipes.register();
-        AssemblerRecipes.registerOreProcessorRecipe();
+        CraftingTableRecipes.register();
+        AssemblerRecipes.register();
         OreProcessingRecipes.register();
-        LargeFurnaceRecipes.register();
-        if (ModList.Forestry.isModLoaded()) LargeBeeBreederRecipes.register();
-        FluxConnectorRecipes.register();
-        EndCrystalResonatorRecipes.register();
-        CompactAEMachineRecipes.register();
-        SingularityDataHubRecipes.register();
-        AssemblerRecipes.registerModernFluidMachineRecipes();
-        FragmentWorldCollectorRecipes.loadMachineRecipe();
         MixerRecipes.register();
     }
 
     public static void registerLateRecipes() {
         OreProcessingRecipes.registerExternalRecipes();
-        ModernFluidMachineRecipes.registerLateRecipes();
+        ModernNonCellRecipes.registerLateRecipes();
         FragmentWorldCollectorRecipes.scheduleRecipes();
     }
 }

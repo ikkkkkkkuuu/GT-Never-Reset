@@ -25,8 +25,6 @@ final class ScriptApi {
 
     private static final int DEFAULT_WAIT_TICKS = 60;
 
-    private ScriptApi() {}
-
     static void install(final ScriptTask task, Globals globals) {
         LuaTable chat = new LuaTable();
         chat.set("send", new VarArgFunction() {

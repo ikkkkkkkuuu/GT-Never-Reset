@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 package com.xyp.gtneverreset.utils.machine.bee;
 
 import java.util.ArrayList;
@@ -17,8 +16,6 @@ import lombok.Getter;
 public final class BeeBreedingPlanner {
 
     private static final double MIN_CHANCE_FOR_COST = 0.01D;
-
-    private BeeBreedingPlanner() {}
 
     public static List<String> findReachableSpecies(Set<String> unlockedSpecies) {
         if (unlockedSpecies == null || unlockedSpecies.isEmpty()) return Collections.emptyList();
@@ -198,17 +195,12 @@ public final class BeeBreedingPlanner {
                     .next();
         }
 
-        public List<BeeBreedingHelper.BreedingStep> getReadySteps(Set<String> unlockedSpecies, int limit) {
-            if (limit <= 0) return Collections.emptyList();
-            List<BeeBreedingHelper.BreedingStep> ready = new ArrayList<>();
+        public BeeBreedingHelper.BreedingStep getNextReadyStep(Set<String> unlockedSpecies) {
             for (BeeBreedingHelper.BreedingStep step : steps) {
                 if (unlockedSpecies.contains(step.result)) continue;
-                if (unlockedSpecies.contains(step.parent1) && unlockedSpecies.contains(step.parent2)) {
-                    ready.add(step);
-                    if (ready.size() >= limit) break;
-                }
+                if (unlockedSpecies.contains(step.parent1) && unlockedSpecies.contains(step.parent2)) return step;
             }
-            return ready;
+            return null;
         }
     }
 }

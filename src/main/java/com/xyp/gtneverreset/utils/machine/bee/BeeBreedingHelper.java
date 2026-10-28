@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 package com.xyp.gtneverreset.utils.machine.bee;
 
 import java.util.ArrayList;
@@ -33,8 +32,6 @@ public final class BeeBreedingHelper {
     private static Map<String, IAlleleBeeSpecies> uidSpeciesCache = null;
 
     private static Map<String, List<MutationData>> mutationsByUidCache = null;
-
-    private BeeBreedingHelper() {}
 
     public static IBeeRoot getBeeRoot() {
         return BeeManager.beeRoot;

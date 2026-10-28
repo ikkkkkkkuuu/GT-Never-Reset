@@ -30,8 +30,6 @@ public final class VaultCasingConnections {
     private static final ForgeDirection[] DOWN_DIRECTIONS = { ForgeDirection.SOUTH, ForgeDirection.SOUTH,
         ForgeDirection.DOWN, ForgeDirection.DOWN, ForgeDirection.DOWN, ForgeDirection.DOWN };
 
-    private VaultCasingConnections() {}
-
     public static int getMask(IBlockAccess world, int x, int y, int z, int side) {
         if (world == null || side < 0 || side >= ForgeDirection.VALID_DIRECTIONS.length) return 0;
         ForgeDirection face = ForgeDirection.VALID_DIRECTIONS[side];

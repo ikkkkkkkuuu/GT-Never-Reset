@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from GTNL PR #654, commit a6ee80aea6eaf98e2478e847a96dfdc3a620847b.
 package com.xyp.gtneverreset.utils.structure;
 
 import java.text.DecimalFormat;
@@ -24,8 +22,6 @@ import com.xyp.gtneverreset.utils.structure.PerformanceSummary.TierThreshold;
 import gregtech.api.enums.GTValues;
 
 final class MultiblockPerformanceFormatter {
-
-    private MultiblockPerformanceFormatter() {}
 
     static List<String> bonuses(PerformanceSummary summary, BonusStat... shown) {
         Map<TieredPart, List<TierBonus>> byPart = new LinkedHashMap<>();

@@ -36,8 +36,6 @@ public final class ScriptHost {
 
     private static long nextToken;
 
-    private ScriptHost() {}
-
     public static boolean start(ActionSpec spec) {
         String source = spec.getString(ActionTypes.PARAM_SCRIPT, "");
         if (source.trim()

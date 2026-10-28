@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from GTNL PR #654, commit 1cd98b4f61e4c77f65263171d3f03dda9c813382.
-// Structure variants updated from commit a6ee80aea6eaf98e2478e847a96dfdc3a620847b.
 package com.xyp.gtneverreset.api.machine;
 
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
+
+import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 
 import gregtech.api.enums.HeatingCoilLevel;
 import gregtech.api.enums.VoltageIndex;
@@ -59,6 +59,21 @@ public interface MultiblockTooltipSource {
 
     default String getTooltipMachineType() {
         return null;
+    }
+
+    /** Optional document below {@code assets/gtneverreset/lang/<language>/tooltip/}, without the .md extension. */
+    default String getTooltipPath() {
+        return null;
+    }
+
+    /** Shared formation limit; zero means this parameter module is not accepted. */
+    default int getParameterModuleLimit(MachineModuleType type) {
+        return 0;
+    }
+
+    /** Values for {var:name}; parallel, speed and energy stats are supplied by the builder. */
+    default Map<String, Object> getTooltipVars() {
+        return Map.of();
     }
 
     default List<String> getTooltipStructureNotes() {

@@ -16,8 +16,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class ChatSender {
 
-    private ChatSender() {}
-
     public static void send(String rawText) {
         Minecraft mc = Minecraft.getMinecraft();
         if (mc.thePlayer == null) {

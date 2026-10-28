@@ -1,15 +1,7 @@
 {
   "upstream": "https://github.com/Navatusein/GTNH-Radial-Menu",
   "commit": "6fc34b6904cf66b7aa818025542bb61a550a9312",
-  "license": "MIT",
-  "copyright": "Copyright (c) 2026 Navatusein",
   "auditDate": "2026-10-15",
-  "licenseFiles": [
-    "LICENSE-MIT.txt",
-    "LICENSE-Phosphor.txt",
-    "LICENSE-LuaJ.txt",
-    "LUAJ_COPYRIGHTS.txt"
-  ],
   "sourceMapping": {
     "files": [
       {
@@ -509,29 +501,13 @@
     {
       "source": "src/main/resources/assets/radialmenu/textures/icons/phosphor.png",
       "destination": "src/main/resources/assets/gtneverreset/radialmenu/textures/icons/phosphor.png",
-      "license": "MIT",
-      "copyright": "Copyright (c) 2020-2021 Phosphor Icons",
       "modified": false,
       "sourceSha256": "58fd2c20ce8789304d73cade0c5f462397ddb6eb1ef955dea049d35f2c059522",
       "destinationSha256": "58fd2c20ce8789304d73cade0c5f462397ddb6eb1ef955dea049d35f2c059522"
     },
     {
-      "source": "src/main/resources/assets/radialmenu/textures/icons/LICENSE-phosphor",
-      "destination": "src/main/resources/assets/gtneverreset/radialmenu/textures/icons/LICENSE-phosphor",
-      "license": "MIT",
-      "copyright": "Copyright (c) 2020-2021 Phosphor Icons",
-      "modified": false,
-      "sourceSha256": "e0cb08f4da9bf7853771e0a4888a3be5906417f014cb317a02db2bd80fb3571c",
-      "destinationSha256": "e0cb08f4da9bf7853771e0a4888a3be5906417f014cb317a02db2bd80fb3571c"
-    },
-    {
       "source": "src/main/resources/assets/radialmenu/icons/phosphor.json",
       "destination": "src/main/resources/assets/gtneverreset/radialmenu/icons/phosphor.json",
-      "license": "MIT",
-      "copyright": [
-        "Copyright (c) 2026 Navatusein",
-        "Copyright (c) 2020-2021 Phosphor Icons"
-      ],
       "modified": false,
       "sourceSha256": "b1b23e45c8864288e41dacd01d62045a92dce0179bee282c527402e463930d3f",
       "destinationSha256": "b1b23e45c8864288e41dacd01d62045a92dce0179bee282c527402e463930d3f"
@@ -539,16 +515,12 @@
     {
       "source": "src/main/resources/assets/radialmenu/scripts/prelude.lua",
       "destination": "src/main/resources/assets/gtneverreset/radialmenu/scripts/prelude.lua",
-      "license": "MIT",
-      "copyright": "Copyright (c) 2026 Navatusein",
       "modified": false,
       "sourceSha256": "810466d7e76f82fa319c03afed2ba2e94948b86b54815ea382a3cf13802a51df",
       "destinationSha256": "810466d7e76f82fa319c03afed2ba2e94948b86b54815ea382a3cf13802a51df"
     }
   ],
   "renderer": {
-    "license": "MIT",
-    "copyright": "Copyright (c) 2026 Navatusein",
     "sources": [
       {
         "source": "src/main/java/com/navatusein/radialmenu/client/gui/WheelRenderer.java",
@@ -628,16 +600,12 @@
   "dependencies": [
     {
       "coordinate": "org.luaj:luaj-jse:3.0.1",
-      "license": "MIT",
       "upstream": "https://sourceforge.net/projects/luaj/",
-      "licenseSource": "https://luaj.sourceforge.net/license.txt",
-      "licenseSha256": "94e20766f076ab59a1a444f385c204e4ae00d10ca6aa82323ee561a53b455909",
       "pomSha256": "b87e75ed289e48f78e03ed47cb6b719f04c56e03e1ba3addc978e200c58cd359",
       "jarSha256": "9b1f0a3e8f68427c6d74c2bf00ae0e6dbfce35994d3001fed4cef6ecda50be55",
       "sources": "https://repo.maven.apache.org/maven2/org/luaj/luaj-jse/3.0.1/luaj-jse-3.0.1-sources.jar",
       "sourcesSha256": "e9fc8eb5593ef489bafb79b5561b49114e8a233834f160c4657efe927a613f53",
-      "packaging": "Shaded dependency declared in dependencies.gradle.",
-      "inspection": "The cached binary JAR contains no license file. Its POM declares MIT; the official license and copyright lines from the matching sources JAR are retained alongside this manifest."
+      "packaging": "Shaded dependency declared in dependencies.gradle."
     }
   ],
   "referenceInputs": {

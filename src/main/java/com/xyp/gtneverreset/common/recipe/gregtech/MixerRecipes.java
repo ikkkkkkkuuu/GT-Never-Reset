@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Ported from GT-Not-Good; see META-INF/fragment-world-collector-port/NOTICE.md.
 package com.xyp.gtneverreset.common.recipe.gregtech;
 
 import net.minecraft.init.Blocks;
@@ -13,8 +11,6 @@ import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.util.GTRecipeBuilder;
 
 public final class MixerRecipes {
-
-    private MixerRecipes() {}
 
     public static void register() {
         if (!Mods.NEIOrePlugin.isModLoaded()) return;

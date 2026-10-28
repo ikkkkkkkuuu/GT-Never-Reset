@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from GTNL PR #654, commit 1cd98b4f61e4c77f65263171d3f03dda9c813382.
 package com.xyp.gtneverreset.mixins.late.structurelib;
 
 import java.util.List;

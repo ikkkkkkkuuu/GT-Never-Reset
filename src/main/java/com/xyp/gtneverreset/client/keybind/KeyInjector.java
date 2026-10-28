@@ -24,8 +24,6 @@ public final class KeyInjector {
 
     private static final Set<KeyBinding> LENT = Collections.newSetFromMap(new IdentityHashMap<KeyBinding, Boolean>());
 
-    private KeyInjector() {}
-
     private static void lendKeyCode(KeyBinding binding) {
         if (MainConfig.client.radialMenu.lendKeyCodeToUnbound && binding.getKeyCode() == 0 && LENT.add(binding)) {
             binding.setKeyCode(LENT_KEY_CODE);

@@ -16,8 +16,6 @@ public final class KeybindStateTracker {
 
     private static final Map<KeyBinding, Held> HELD = new HashMap<>();
 
-    private KeybindStateTracker() {}
-
     public static boolean activate(KeyBinding binding, Mode mode, int holdTicks, Modifiers modifiers) {
         if (binding == null) {
             return false;

@@ -7,8 +7,6 @@ public final class ArcLayout {
 
     private static final double FULL = 360.0;
 
-    private ArcLayout() {}
-
     public static Arc[] place(double[] centers, double[] spans) {
         int count = centers.length;
         Arc[] placed = new Arc[count];

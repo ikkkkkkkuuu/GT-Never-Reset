@@ -76,7 +76,6 @@ public enum ModList {
         public static final String ENDER_IO = "EnderIO";
         public static final String MATTER_MANIPULATOR = "matter-manipulator";
 
-        private ModIds() {}
     }
 
     public static class Names {
@@ -112,7 +111,6 @@ public enum ModList {
         public static final String ENDER_IO = "Ender IO";
         public static final String MATTER_MANIPULATOR = "Matter Manipulator";
 
-        private Names() {}
     }
 
     private final String id;

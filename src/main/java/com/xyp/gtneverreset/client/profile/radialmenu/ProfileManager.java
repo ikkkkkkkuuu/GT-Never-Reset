@@ -17,8 +17,6 @@ public final class ProfileManager {
 
     private static Profile active;
 
-    private ProfileManager() {}
-
     public static void load() {
         settings = ProfileStorage.loadSettings();
 

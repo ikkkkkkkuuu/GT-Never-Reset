@@ -17,8 +17,6 @@ public final class WildcardModelState {
     public static final String KEY_FILTER = "WPFilterComponents";
     public static final String KEY_EXPANDED_COUNT = "WPExpandedCount";
 
-    private WildcardModelState() {}
-
     public static boolean isNewModel(ItemStack stack) {
         NBTTagCompound tag = stack == null ? null : stack.getTagCompound();
         return tag != null && tag.getInteger(KEY_MODEL_VERSION) >= MODEL_VERSION;

@@ -2,7 +2,6 @@
   "repository": "https://github.com/ikkkkkkkuuu/GT-Not-Good",
   "revision": "048fd1963de8c6458ef6f800c411be0087cbafdb",
   "snapshot": "working tree",
-  "license": "LGPL-3.0-only",
   "structureReference": {
     "repository": "https://github.com/ABKQPO/GT-Not-Leisure",
     "branch": "dev-290",
@@ -433,7 +432,6 @@
       "repository": "https://github.com/ABKQPO/GT-Not-Leisure",
       "pullRequest": "https://github.com/ABKQPO/GT-Not-Leisure/pull/655",
       "revision": "81cd514129dbb2ce06fdea2d8d3cbdbeb14b05d8",
-      "license": "LGPL-3.0-only",
       "files": [
         {
           "source": "src/main/java/com/science/gtnl/common/wireless/IWirelessCopiedLink.java",

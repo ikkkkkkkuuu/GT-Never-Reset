@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from ABKQPO/GT-Not-Leisure, commit 6cbc6927af4f44c445ea7a879796b4764b00988d.
-// Adapted to GT Never Reset machine registries and GUI integration.
 package com.xyp.gtneverreset.common.gui.modularui;
 
 import net.minecraft.util.StatCollector;

@@ -57,8 +57,6 @@ public final class ItemLoader {
     public static final ItemAdvancedIOBus advancedIOBus = new ItemAdvancedIOBus();
     public static final ItemStockIOInterface stockIOInterface = new ItemStockIOInterface();
 
-    private ItemLoader() {}
-
     public static void registerItems() {
         if (ModList.BloodMagic.isModLoaded()) {
             // #tr item.blood_altar_packaged_core.name

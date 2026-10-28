@@ -28,8 +28,6 @@ public final class PatternMEOutputViews {
 
     private static final Field BASE_TILE = baseTileField();
 
-    private PatternMEOutputViews() {}
-
     /** Resolves the current master's output cache, including after a mirror is relinked. */
     public static PatternMEOutput resolve(MetaTileEntity input) {
         if (!input.isValid()) return null;

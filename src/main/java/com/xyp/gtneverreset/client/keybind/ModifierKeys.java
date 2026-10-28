@@ -10,8 +10,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class ModifierKeys {
 
-    private ModifierKeys() {}
-
     public static void hold(Modifiers modifiers) {
         if (modifiers == null || !modifiers.any()) {
             return;

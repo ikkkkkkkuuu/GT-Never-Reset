@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from pedroksl/AdvancedAE StockExportBusPart and AdvancedIOBusPart.
-// Exact revision, changes and asset provenance: META-INF/advancedio-port/NOTICE.md.
 package com.xyp.gtneverreset.common.part;
 
 import java.util.List;

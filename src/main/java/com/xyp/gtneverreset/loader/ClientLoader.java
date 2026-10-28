@@ -45,8 +45,6 @@ import thaumcraft.common.config.ConfigBlocks;
 
 public final class ClientLoader {
 
-    private ClientLoader() {}
-
     public static void preInit(File configDirectory) {
         NEIWirelessTerminalConfig.migrateLegacySettings(configDirectory);
         RadialMenuLoader.preInit();

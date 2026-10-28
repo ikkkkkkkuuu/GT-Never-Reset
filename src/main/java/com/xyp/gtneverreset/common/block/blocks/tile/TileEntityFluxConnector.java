@@ -1,7 +1,3 @@
-/*
- * Adapted from Flux Networks TileEntityFluxConnector and ConnectionTransfer.
- * Copyright (c) 2018 Ollie Lansdell. MIT; see META-INF/licenses/Flux-Networks-MIT.txt.
- */
 package com.xyp.gtneverreset.common.block.blocks.tile;
 
 import java.math.BigInteger;

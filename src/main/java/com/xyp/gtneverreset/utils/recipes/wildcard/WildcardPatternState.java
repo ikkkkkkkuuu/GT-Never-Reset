@@ -20,8 +20,6 @@ public final class WildcardPatternState {
     private static final String KEY_OUTPUT_COMPONENTS = "WildcardOutputComponents";
     private static final String KEY_EXPANDED_PATTERN_COUNT = "WildcardExpandedPatternCount";
 
-    private WildcardPatternState() {}
-
     public static void ensureInitialized(ItemStack stack) {
         if (stack == null) return;
 
@@ -128,8 +126,6 @@ public final class WildcardPatternState {
         copyIfPresent(config, tag, "WildcardOreDictPreferences");
         copyIfPresent(config, tag, KEY_EXPANDED_PATTERN_COUNT);
     }
-
-    // ========== 私有方法 ==========
 
     private static List<WildcardPatternEntry> getEntries(ItemStack stack, String key) {
         initializeFromPattern(stack);

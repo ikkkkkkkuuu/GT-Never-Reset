@@ -15,14 +15,12 @@ import gregtech.common.tileentities.machines.outputme.base.MTEHatchOutputMEBase;
  * the project-specific maximum by reflection while leaving the original AE2 network, filter, cache-mode, and GUI logic
  * untouched.
  */
-final class MaxCapacityMEOutputCapacity {
+public final class MaxCapacityMEOutputCapacity {
 
     static final long MAX_CACHE_CAPACITY = Long.MAX_VALUE;
 
     private static final Field BASE_CAPACITY_FIELD = getCapacityField("baseCapacity");
     private static final Field CACHE_CAPACITY_FIELD = getCapacityField("cacheCapacity");
-
-    private MaxCapacityMEOutputCapacity() {}
 
     /**
      * Writes the maximum capacity to both provider capacity fields.
@@ -34,7 +32,7 @@ final class MaxCapacityMEOutputCapacity {
      *
      * @param provider original GT5 ME output provider owned by the hatch or bus
      */
-    static void forceMaxCapacity(MTEHatchOutputMEBase<?> provider) {
+    public static void forceMaxCapacity(MTEHatchOutputMEBase<?> provider) {
         if (provider == null) return;
         try {
             BASE_CAPACITY_FIELD.setLong(provider, MAX_CACHE_CAPACITY);

@@ -3,8 +3,8 @@ package com.xyp.gtneverreset.loader;
 import com.cleanroommc.modularui.widgets.ProgressWidget;
 import com.gtnewhorizons.modularui.common.widget.ProgressBar;
 import com.xyp.gtneverreset.client.nei.FragmentWorldCollectionFrontend;
-import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectionBackend;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
+import com.xyp.gtneverreset.utils.recipes.FragmentWorldCollectionBackend;
 
 import gregtech.api.gui.modularui.GTUITextures;
 import gregtech.api.modularui2.GTGuiTextures;
@@ -92,5 +92,4 @@ public final class GTNRRecipeMaps {
                 .setMaxRecipesPerPage(1))
         .build();
 
-    private GTNRRecipeMaps() {}
 }

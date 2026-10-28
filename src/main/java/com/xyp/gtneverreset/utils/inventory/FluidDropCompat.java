@@ -9,8 +9,6 @@ import com.glodblock.github.common.item.ItemFluidDrop;
 
 public final class FluidDropCompat {
 
-    private FluidDropCompat() {}
-
     public static boolean isFluidDrop(@Nullable ItemStack stack) {
         return stack != null && stack.getItem() instanceof ItemFluidDrop;
     }

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
 package com.xyp.gtneverreset.common.gui.modularui;
 
 import com.cleanroommc.modularui.api.drawable.IKey;

@@ -1,6 +1,5 @@
 package com.xyp.gtneverreset.loader;
 
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.StatCollector;
 
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
@@ -9,6 +8,9 @@ import com.xyp.gtneverreset.common.machine.basicMachine.FragmentWorldCollector;
 import com.xyp.gtneverreset.common.machine.basicMachine.ModernFluidMachine;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternMirror;
+import com.xyp.gtneverreset.common.machine.hatch.MEOutputAssembly;
+import com.xyp.gtneverreset.common.machine.hatch.MaxCapacityMEOutputBus;
+import com.xyp.gtneverreset.common.machine.hatch.MaxCapacityMEOutputHatch;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputSlave;
@@ -26,49 +28,10 @@ import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.ModernMachineTextures;
 import com.xyp.gtneverreset.utils.text.AnimatedText;
 
-import gregtech.api.enums.GTValues;
 import gregtech.api.enums.SoundResource;
 import gregtech.api.enums.VoltageIndex;
 
 public final class MachineLoader {
-
-    public static final GTNRItemList[] STATIC_PARALLEL = { GTNRItemList.StaticParallelControllerT1,
-        GTNRItemList.StaticParallelControllerT2, GTNRItemList.StaticParallelControllerT3,
-        GTNRItemList.StaticParallelControllerT4, GTNRItemList.StaticParallelControllerT5,
-        GTNRItemList.StaticParallelControllerT6, GTNRItemList.StaticParallelControllerT7,
-        GTNRItemList.StaticParallelControllerT8 };
-
-    public static final GTNRItemList[] DYNAMIC_PARALLEL = { GTNRItemList.DynamicParallelControllerT1,
-        GTNRItemList.DynamicParallelControllerT2, GTNRItemList.DynamicParallelControllerT3,
-        GTNRItemList.DynamicParallelControllerT4, GTNRItemList.DynamicParallelControllerT5,
-        GTNRItemList.DynamicParallelControllerT6, GTNRItemList.DynamicParallelControllerT7,
-        GTNRItemList.DynamicParallelControllerT8 };
-
-    public static final GTNRItemList[] STATIC_SPEED = { GTNRItemList.StaticSpeedControllerT1,
-        GTNRItemList.StaticSpeedControllerT2, GTNRItemList.StaticSpeedControllerT3,
-        GTNRItemList.StaticSpeedControllerT4, GTNRItemList.StaticSpeedControllerT5,
-        GTNRItemList.StaticSpeedControllerT6, GTNRItemList.StaticSpeedControllerT7,
-        GTNRItemList.StaticSpeedControllerT8 };
-
-    public static final GTNRItemList[] DYNAMIC_SPEED = { GTNRItemList.DynamicSpeedControllerT1,
-        GTNRItemList.DynamicSpeedControllerT2, GTNRItemList.DynamicSpeedControllerT3,
-        GTNRItemList.DynamicSpeedControllerT4, GTNRItemList.DynamicSpeedControllerT5,
-        GTNRItemList.DynamicSpeedControllerT6, GTNRItemList.DynamicSpeedControllerT7,
-        GTNRItemList.DynamicSpeedControllerT8 };
-
-    public static final GTNRItemList[] POWER = { GTNRItemList.PowerConsumptionControllerT1,
-        GTNRItemList.PowerConsumptionControllerT2, GTNRItemList.PowerConsumptionControllerT3,
-        GTNRItemList.PowerConsumptionControllerT4, GTNRItemList.PowerConsumptionControllerT5,
-        GTNRItemList.PowerConsumptionControllerT6, GTNRItemList.PowerConsumptionControllerT7,
-        GTNRItemList.PowerConsumptionControllerT8 };
-
-    public static final GTNRItemList[] OVERCLOCK = { GTNRItemList.LowSpeedPerfectOverclockController,
-        GTNRItemList.PerfectOverclockController, GTNRItemList.SingularityPerfectOverclockController };
-
-    public static final ItemStack[] MODERN_MIXERS = new ItemStack[VoltageIndex.UV + 1];
-    public static final ItemStack[] MODERN_ELECTROLYZERS = new ItemStack[VoltageIndex.UV + 1];
-    public static final ItemStack[] MODERN_CHEMICAL_REACTORS = new ItemStack[VoltageIndex.UV + 1];
-    public static final ItemStack[] MODERN_CENTRIFUGES = new ItemStack[VoltageIndex.UV + 1];
 
     public static void registry() {
         registerHatch();
@@ -137,12 +100,338 @@ public final class MachineLoader {
     }
 
     public static void registerHatch() {
-        registerModuleHatches(STATIC_PARALLEL, MachineModuleType.Parallel, false);
-        registerModuleHatches(DYNAMIC_PARALLEL, MachineModuleType.Parallel, true);
-        registerModuleHatches(STATIC_SPEED, MachineModuleType.Speed, false);
-        registerModuleHatches(DYNAMIC_SPEED, MachineModuleType.Speed, true);
-        registerModuleHatches(POWER, MachineModuleType.PowerConsumption, false);
-        registerModuleHatches(OVERCLOCK, MachineModuleType.Overclock, false);
+        // #tr gtnr.hatch.max_capacity_me_output_bus.name
+        // # Max Capacity ME Output Bus
+        // # zh_CN 最大容量 ME 输出总线
+        GTNRItemList.MaxCapacityMEOutputBus.set(
+            new MaxCapacityMEOutputBus(
+                GTNRMachineID.MaxCapacityMEOutputBus.id,
+                "gtneverreset.max_capacity_me_output_bus",
+                StatCollector.translateToLocal("gtnr.hatch.max_capacity_me_output_bus.name")));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.MaxCapacityMEOutputBus.get(1), AnimatedText.GT_NEVER_RESET);
+
+        // #tr gtnr.hatch.max_capacity_me_output_hatch.name
+        // # Max Capacity ME Output Hatch
+        // # zh_CN 最大容量 ME 输出仓
+        GTNRItemList.MaxCapacityMEOutputHatch.set(
+            new MaxCapacityMEOutputHatch(
+                GTNRMachineID.MaxCapacityMEOutputHatch.id,
+                "gtneverreset.max_capacity_me_output_hatch",
+                StatCollector.translateToLocal("gtnr.hatch.max_capacity_me_output_hatch.name")));
+        AnimatedTooltipHandler
+            .addItemTooltip(GTNRItemList.MaxCapacityMEOutputHatch.get(1), AnimatedText.GT_NEVER_RESET);
+
+        // #tr gtnr.hatch.me_output_assembly.name
+        // # ME Output Assembly
+        // # zh_CN ME 输出总成
+        GTNRItemList.MEOutputAssembly.set(
+            new MEOutputAssembly(
+                GTNRMachineID.MEOutputAssembly.id,
+                "gtneverreset.me_output_assembly",
+                StatCollector.translateToLocal("gtnr.hatch.me_output_assembly.name")));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.MEOutputAssembly.get(1), AnimatedText.GT_NEVER_RESET);
+
+        GTNRItemList.StaticParallelControllerT1.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticParallelControllerT1.id,
+                "StaticParallelControllerT1",
+                MachineModuleType.Parallel,
+                1,
+                false));
+        GTNRItemList.StaticParallelControllerT2.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticParallelControllerT2.id,
+                "StaticParallelControllerT2",
+                MachineModuleType.Parallel,
+                2,
+                false));
+        GTNRItemList.StaticParallelControllerT3.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticParallelControllerT3.id,
+                "StaticParallelControllerT3",
+                MachineModuleType.Parallel,
+                3,
+                false));
+        GTNRItemList.StaticParallelControllerT4.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticParallelControllerT4.id,
+                "StaticParallelControllerT4",
+                MachineModuleType.Parallel,
+                4,
+                false));
+        GTNRItemList.StaticParallelControllerT5.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticParallelControllerT5.id,
+                "StaticParallelControllerT5",
+                MachineModuleType.Parallel,
+                5,
+                false));
+        GTNRItemList.StaticParallelControllerT6.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticParallelControllerT6.id,
+                "StaticParallelControllerT6",
+                MachineModuleType.Parallel,
+                6,
+                false));
+        GTNRItemList.StaticParallelControllerT7.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticParallelControllerT7.id,
+                "StaticParallelControllerT7",
+                MachineModuleType.Parallel,
+                7,
+                false));
+        GTNRItemList.StaticParallelControllerT8.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticParallelControllerT8.id,
+                "StaticParallelControllerT8",
+                MachineModuleType.Parallel,
+                8,
+                false));
+        GTNRItemList.DynamicParallelControllerT1.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicParallelControllerT1.id,
+                "DynamicParallelControllerT1",
+                MachineModuleType.Parallel,
+                1,
+                true));
+        GTNRItemList.DynamicParallelControllerT2.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicParallelControllerT2.id,
+                "DynamicParallelControllerT2",
+                MachineModuleType.Parallel,
+                2,
+                true));
+        GTNRItemList.DynamicParallelControllerT3.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicParallelControllerT3.id,
+                "DynamicParallelControllerT3",
+                MachineModuleType.Parallel,
+                3,
+                true));
+        GTNRItemList.DynamicParallelControllerT4.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicParallelControllerT4.id,
+                "DynamicParallelControllerT4",
+                MachineModuleType.Parallel,
+                4,
+                true));
+        GTNRItemList.DynamicParallelControllerT5.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicParallelControllerT5.id,
+                "DynamicParallelControllerT5",
+                MachineModuleType.Parallel,
+                5,
+                true));
+        GTNRItemList.DynamicParallelControllerT6.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicParallelControllerT6.id,
+                "DynamicParallelControllerT6",
+                MachineModuleType.Parallel,
+                6,
+                true));
+        GTNRItemList.DynamicParallelControllerT7.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicParallelControllerT7.id,
+                "DynamicParallelControllerT7",
+                MachineModuleType.Parallel,
+                7,
+                true));
+        GTNRItemList.DynamicParallelControllerT8.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicParallelControllerT8.id,
+                "DynamicParallelControllerT8",
+                MachineModuleType.Parallel,
+                8,
+                true));
+        GTNRItemList.StaticSpeedControllerT1.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticSpeedControllerT1.id,
+                "StaticSpeedControllerT1",
+                MachineModuleType.Speed,
+                1,
+                false));
+        GTNRItemList.StaticSpeedControllerT2.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticSpeedControllerT2.id,
+                "StaticSpeedControllerT2",
+                MachineModuleType.Speed,
+                2,
+                false));
+        GTNRItemList.StaticSpeedControllerT3.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticSpeedControllerT3.id,
+                "StaticSpeedControllerT3",
+                MachineModuleType.Speed,
+                3,
+                false));
+        GTNRItemList.StaticSpeedControllerT4.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticSpeedControllerT4.id,
+                "StaticSpeedControllerT4",
+                MachineModuleType.Speed,
+                4,
+                false));
+        GTNRItemList.StaticSpeedControllerT5.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticSpeedControllerT5.id,
+                "StaticSpeedControllerT5",
+                MachineModuleType.Speed,
+                5,
+                false));
+        GTNRItemList.StaticSpeedControllerT6.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticSpeedControllerT6.id,
+                "StaticSpeedControllerT6",
+                MachineModuleType.Speed,
+                6,
+                false));
+        GTNRItemList.StaticSpeedControllerT7.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticSpeedControllerT7.id,
+                "StaticSpeedControllerT7",
+                MachineModuleType.Speed,
+                7,
+                false));
+        GTNRItemList.StaticSpeedControllerT8.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.StaticSpeedControllerT8.id,
+                "StaticSpeedControllerT8",
+                MachineModuleType.Speed,
+                8,
+                false));
+        GTNRItemList.DynamicSpeedControllerT1.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicSpeedControllerT1.id,
+                "DynamicSpeedControllerT1",
+                MachineModuleType.Speed,
+                1,
+                true));
+        GTNRItemList.DynamicSpeedControllerT2.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicSpeedControllerT2.id,
+                "DynamicSpeedControllerT2",
+                MachineModuleType.Speed,
+                2,
+                true));
+        GTNRItemList.DynamicSpeedControllerT3.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicSpeedControllerT3.id,
+                "DynamicSpeedControllerT3",
+                MachineModuleType.Speed,
+                3,
+                true));
+        GTNRItemList.DynamicSpeedControllerT4.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicSpeedControllerT4.id,
+                "DynamicSpeedControllerT4",
+                MachineModuleType.Speed,
+                4,
+                true));
+        GTNRItemList.DynamicSpeedControllerT5.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicSpeedControllerT5.id,
+                "DynamicSpeedControllerT5",
+                MachineModuleType.Speed,
+                5,
+                true));
+        GTNRItemList.DynamicSpeedControllerT6.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicSpeedControllerT6.id,
+                "DynamicSpeedControllerT6",
+                MachineModuleType.Speed,
+                6,
+                true));
+        GTNRItemList.DynamicSpeedControllerT7.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicSpeedControllerT7.id,
+                "DynamicSpeedControllerT7",
+                MachineModuleType.Speed,
+                7,
+                true));
+        GTNRItemList.DynamicSpeedControllerT8.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.DynamicSpeedControllerT8.id,
+                "DynamicSpeedControllerT8",
+                MachineModuleType.Speed,
+                8,
+                true));
+        GTNRItemList.PowerConsumptionControllerT1.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.PowerConsumptionControllerT1.id,
+                "PowerConsumptionControllerT1",
+                MachineModuleType.PowerConsumption,
+                1,
+                false));
+        GTNRItemList.PowerConsumptionControllerT2.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.PowerConsumptionControllerT2.id,
+                "PowerConsumptionControllerT2",
+                MachineModuleType.PowerConsumption,
+                2,
+                false));
+        GTNRItemList.PowerConsumptionControllerT3.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.PowerConsumptionControllerT3.id,
+                "PowerConsumptionControllerT3",
+                MachineModuleType.PowerConsumption,
+                3,
+                false));
+        GTNRItemList.PowerConsumptionControllerT4.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.PowerConsumptionControllerT4.id,
+                "PowerConsumptionControllerT4",
+                MachineModuleType.PowerConsumption,
+                4,
+                false));
+        GTNRItemList.PowerConsumptionControllerT5.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.PowerConsumptionControllerT5.id,
+                "PowerConsumptionControllerT5",
+                MachineModuleType.PowerConsumption,
+                5,
+                false));
+        GTNRItemList.PowerConsumptionControllerT6.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.PowerConsumptionControllerT6.id,
+                "PowerConsumptionControllerT6",
+                MachineModuleType.PowerConsumption,
+                6,
+                false));
+        GTNRItemList.PowerConsumptionControllerT7.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.PowerConsumptionControllerT7.id,
+                "PowerConsumptionControllerT7",
+                MachineModuleType.PowerConsumption,
+                7,
+                false));
+        GTNRItemList.PowerConsumptionControllerT8.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.PowerConsumptionControllerT8.id,
+                "PowerConsumptionControllerT8",
+                MachineModuleType.PowerConsumption,
+                8,
+                false));
+        GTNRItemList.LowSpeedPerfectOverclockController.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.LowSpeedPerfectOverclockController.id,
+                "LowSpeedPerfectOverclockController",
+                MachineModuleType.Overclock,
+                1,
+                false));
+        GTNRItemList.PerfectOverclockController.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.PerfectOverclockController.id,
+                "PerfectOverclockController",
+                MachineModuleType.Overclock,
+                2,
+                false));
+        GTNRItemList.SingularityPerfectOverclockController.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.SingularityPerfectOverclockController.id,
+                "SingularityPerfectOverclockController",
+                MachineModuleType.Overclock,
+                3,
+                false));
 
         // #tr gtnr.hatch.super_pattern.name
         // # Super Pattern Input Assembly (ME)
@@ -208,97 +497,639 @@ public final class MachineLoader {
                 StatCollector.translateToLocal("gtnr.fragment_world_collector.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.FragmentWorldCollector.get(1), AnimatedText.GT_NEVER_RESET);
         registerModernFluidMachines();
-        for (int tier = VoltageIndex.LV; tier <= VoltageIndex.MAX; tier++) {
-            GTNRItemList entry = GTNRItemList.valueOf("EndCrystalResonator" + GTValues.VN[tier]);
-            entry.set(
-                new EndCrystalResonator(
-                    GTNRMachineID.valueOf(entry.name()).id,
-                    "gtneverreset.end_crystal_resonator.tier." + tier,
-                    tier));
-            AnimatedTooltipHandler.addItemTooltip(entry.get(1), AnimatedText.GT_NEVER_RESET);
-        }
-    }
-
-    private static void registerModuleHatches(GTNRItemList[] entries, MachineModuleType type, boolean dynamic) {
-        for (int i = 0; i < entries.length; i++) {
-            GTNRItemList entry = entries[i];
-            entry.set(
-                new ParameterModuleHatch(GTNRMachineID.valueOf(entry.name()).id, entry.name(), type, i + 1, dynamic));
-        }
+        GTNRItemList.EndCrystalResonatorLV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorLV.id,
+                "gtneverreset.end_crystal_resonator.tier.1",
+                VoltageIndex.LV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorLV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorMV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorMV.id,
+                "gtneverreset.end_crystal_resonator.tier.2",
+                VoltageIndex.MV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorMV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorHV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorHV.id,
+                "gtneverreset.end_crystal_resonator.tier.3",
+                VoltageIndex.HV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorHV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorEV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorEV.id,
+                "gtneverreset.end_crystal_resonator.tier.4",
+                VoltageIndex.EV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorEV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorIV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorIV.id,
+                "gtneverreset.end_crystal_resonator.tier.5",
+                VoltageIndex.IV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorIV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorLuV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorLuV.id,
+                "gtneverreset.end_crystal_resonator.tier.6",
+                VoltageIndex.LuV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorLuV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorZPM.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorZPM.id,
+                "gtneverreset.end_crystal_resonator.tier.7",
+                VoltageIndex.ZPM));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorZPM.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorUV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorUV.id,
+                "gtneverreset.end_crystal_resonator.tier.8",
+                VoltageIndex.UV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorUV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorUHV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorUHV.id,
+                "gtneverreset.end_crystal_resonator.tier.9",
+                VoltageIndex.UHV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorUHV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorUEV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorUEV.id,
+                "gtneverreset.end_crystal_resonator.tier.10",
+                VoltageIndex.UEV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorUEV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorUIV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorUIV.id,
+                "gtneverreset.end_crystal_resonator.tier.11",
+                VoltageIndex.UIV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorUIV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorUMV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorUMV.id,
+                "gtneverreset.end_crystal_resonator.tier.12",
+                VoltageIndex.UMV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorUMV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorUXV.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorUXV.id,
+                "gtneverreset.end_crystal_resonator.tier.13",
+                VoltageIndex.UXV));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorUXV.get(1), AnimatedText.GT_NEVER_RESET);
+        GTNRItemList.EndCrystalResonatorMAX.set(
+            new EndCrystalResonator(
+                GTNRMachineID.EndCrystalResonatorMAX.id,
+                "gtneverreset.end_crystal_resonator.tier.14",
+                VoltageIndex.MAX));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorMAX.get(1), AnimatedText.GT_NEVER_RESET);
     }
 
     private static void registerModernFluidMachines() {
-        for (int tier = VoltageIndex.LV; tier <= VoltageIndex.UV; tier++) {
-            int mixerTankCapacity = 4000 * (Math.min(tier, VoltageIndex.HV) + 1);
-            // #tr gtnr.machine.modern_mixer.name
-            // # %s Small Mixer
-            // # zh_CN %s 小型搅拌机
-            MODERN_MIXERS[tier] = new ModernFluidMachine(
-                GTNRMachineID.ModernMixerLV.id + tier - VoltageIndex.LV,
-                "gtneverreset.modern_mixer.tier." + tier,
-                StatCollector.translateToLocalFormatted("gtnr.machine.modern_mixer.name", GTValues.VN[tier]),
-                tier,
+        // #tr gtnr.machine.modern_mixer.lv.name
+        // # Basic Mixer
+        // # zh_CN 基础搅拌机
+        GTNRItemList.ModernMixerLV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernMixerLV.id,
+                "gtneverreset.modern_mixer.tier.1",
+                StatCollector.translateToLocal("gtnr.machine.modern_mixer.lv.name"),
+                VoltageIndex.LV,
                 GTNRRecipeMaps.MODERN_MIXER_RECIPES,
                 6,
                 1,
                 2,
                 1,
-                mixerTankCapacity,
                 ModernMachineTextures.MIXER,
-                SoundResource.GTCEU_LOOP_MIXER).getStackForm(1);
-            // #tr gtnr.machine.modern_electrolyzer.name
-            // # %s Small Electrolyzer
-            // # zh_CN %s 小型电解机
-            MODERN_ELECTROLYZERS[tier] = new ModernFluidMachine(
-                GTNRMachineID.ModernElectrolyzerLV.id + tier - VoltageIndex.LV,
-                "gtneverreset.modern_electrolyzer.tier." + tier,
-                StatCollector.translateToLocalFormatted("gtnr.machine.modern_electrolyzer.name", GTValues.VN[tier]),
-                tier,
+                SoundResource.GTCEU_LOOP_MIXER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerLV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_mixer.mv.name
+        // # Advanced Mixer
+        // # zh_CN 进阶搅拌机
+        GTNRItemList.ModernMixerMV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernMixerMV.id,
+                "gtneverreset.modern_mixer.tier.2",
+                StatCollector.translateToLocal("gtnr.machine.modern_mixer.mv.name"),
+                VoltageIndex.MV,
+                GTNRRecipeMaps.MODERN_MIXER_RECIPES,
+                6,
+                1,
+                2,
+                1,
+                ModernMachineTextures.MIXER,
+                SoundResource.GTCEU_LOOP_MIXER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerMV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_mixer.hv.name
+        // # Advanced Mixer II
+        // # zh_CN 进阶搅拌机 II
+        GTNRItemList.ModernMixerHV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernMixerHV.id,
+                "gtneverreset.modern_mixer.tier.3",
+                StatCollector.translateToLocal("gtnr.machine.modern_mixer.hv.name"),
+                VoltageIndex.HV,
+                GTNRRecipeMaps.MODERN_MIXER_RECIPES,
+                6,
+                1,
+                2,
+                1,
+                ModernMachineTextures.MIXER,
+                SoundResource.GTCEU_LOOP_MIXER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerHV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_mixer.ev.name
+        // # Advanced Mixer III
+        // # zh_CN 进阶搅拌机 III
+        GTNRItemList.ModernMixerEV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernMixerEV.id,
+                "gtneverreset.modern_mixer.tier.4",
+                StatCollector.translateToLocal("gtnr.machine.modern_mixer.ev.name"),
+                VoltageIndex.EV,
+                GTNRRecipeMaps.MODERN_MIXER_RECIPES,
+                6,
+                1,
+                2,
+                1,
+                ModernMachineTextures.MIXER,
+                SoundResource.GTCEU_LOOP_MIXER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerEV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_mixer.iv.name
+        // # Advanced Mixer IV
+        // # zh_CN 进阶搅拌机 IV
+        GTNRItemList.ModernMixerIV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernMixerIV.id,
+                "gtneverreset.modern_mixer.tier.5",
+                StatCollector.translateToLocal("gtnr.machine.modern_mixer.iv.name"),
+                VoltageIndex.IV,
+                GTNRRecipeMaps.MODERN_MIXER_RECIPES,
+                6,
+                1,
+                2,
+                1,
+                ModernMachineTextures.MIXER,
+                SoundResource.GTCEU_LOOP_MIXER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerIV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_mixer.luv.name
+        // # Elite Mixer
+        // # zh_CN 精英搅拌机
+        GTNRItemList.ModernMixerLuV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernMixerLuV.id,
+                "gtneverreset.modern_mixer.tier.6",
+                StatCollector.translateToLocal("gtnr.machine.modern_mixer.luv.name"),
+                VoltageIndex.LuV,
+                GTNRRecipeMaps.MODERN_MIXER_RECIPES,
+                6,
+                1,
+                2,
+                1,
+                ModernMachineTextures.MIXER,
+                SoundResource.GTCEU_LOOP_MIXER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerLuV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_mixer.zpm.name
+        // # Elite Mixer II
+        // # zh_CN 精英搅拌机 II
+        GTNRItemList.ModernMixerZPM.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernMixerZPM.id,
+                "gtneverreset.modern_mixer.tier.7",
+                StatCollector.translateToLocal("gtnr.machine.modern_mixer.zpm.name"),
+                VoltageIndex.ZPM,
+                GTNRRecipeMaps.MODERN_MIXER_RECIPES,
+                6,
+                1,
+                2,
+                1,
+                ModernMachineTextures.MIXER,
+                SoundResource.GTCEU_LOOP_MIXER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerZPM.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_mixer.uv.name
+        // # Ultimate Matter Organizer
+        // # zh_CN 终极物质组织者
+        GTNRItemList.ModernMixerUV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernMixerUV.id,
+                "gtneverreset.modern_mixer.tier.8",
+                StatCollector.translateToLocal("gtnr.machine.modern_mixer.uv.name"),
+                VoltageIndex.UV,
+                GTNRRecipeMaps.MODERN_MIXER_RECIPES,
+                6,
+                1,
+                2,
+                1,
+                ModernMachineTextures.MIXER,
+                SoundResource.GTCEU_LOOP_MIXER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerUV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_electrolyzer.lv.name
+        // # Basic Electrolyzer
+        // # zh_CN 基础电解机
+        GTNRItemList.ModernElectrolyzerLV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernElectrolyzerLV.id,
+                "gtneverreset.modern_electrolyzer.tier.1",
+                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.lv.name"),
+                VoltageIndex.LV,
                 GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
                 2,
                 6,
                 1,
                 6,
-                mixerTankCapacity * 4,
                 ModernMachineTextures.ELECTROLYZER,
-                SoundResource.GTCEU_LOOP_ELECTROLYZER).getStackForm(1);
-            // #tr gtnr.machine.modern_chemical_reactor.name
-            // # %s Small Chemical Reactor
-            // # zh_CN %s 小型化学反应釜
-            MODERN_CHEMICAL_REACTORS[tier] = new ModernFluidMachine(
-                GTNRMachineID.ModernChemicalReactorLV.id + tier - VoltageIndex.LV,
-                "gtneverreset.modern_chemical_reactor.tier." + tier,
-                StatCollector.translateToLocalFormatted("gtnr.machine.modern_chemical_reactor.name", GTValues.VN[tier]),
-                tier,
+                SoundResource.GTCEU_LOOP_ELECTROLYZER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerLV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_electrolyzer.mv.name
+        // # Advanced Electrolyzer
+        // # zh_CN 进阶电解机
+        GTNRItemList.ModernElectrolyzerMV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernElectrolyzerMV.id,
+                "gtneverreset.modern_electrolyzer.tier.2",
+                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.mv.name"),
+                VoltageIndex.MV,
+                GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.ELECTROLYZER,
+                SoundResource.GTCEU_LOOP_ELECTROLYZER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerMV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_electrolyzer.hv.name
+        // # Advanced Electrolyzer II
+        // # zh_CN 进阶电解机 II
+        GTNRItemList.ModernElectrolyzerHV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernElectrolyzerHV.id,
+                "gtneverreset.modern_electrolyzer.tier.3",
+                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.hv.name"),
+                VoltageIndex.HV,
+                GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.ELECTROLYZER,
+                SoundResource.GTCEU_LOOP_ELECTROLYZER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerHV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_electrolyzer.ev.name
+        // # Advanced Electrolyzer III
+        // # zh_CN 进阶电解机 III
+        GTNRItemList.ModernElectrolyzerEV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernElectrolyzerEV.id,
+                "gtneverreset.modern_electrolyzer.tier.4",
+                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.ev.name"),
+                VoltageIndex.EV,
+                GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.ELECTROLYZER,
+                SoundResource.GTCEU_LOOP_ELECTROLYZER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerEV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_electrolyzer.iv.name
+        // # Molecular Disintegrator E-4908
+        // # zh_CN 分子分解者 E-4908
+        GTNRItemList.ModernElectrolyzerIV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernElectrolyzerIV.id,
+                "gtneverreset.modern_electrolyzer.tier.5",
+                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.iv.name"),
+                VoltageIndex.IV,
+                GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.ELECTROLYZER,
+                SoundResource.GTCEU_LOOP_ELECTROLYZER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerIV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_electrolyzer.luv.name
+        // # Elite Electrolyzer
+        // # zh_CN 精英电解机
+        GTNRItemList.ModernElectrolyzerLuV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernElectrolyzerLuV.id,
+                "gtneverreset.modern_electrolyzer.tier.6",
+                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.luv.name"),
+                VoltageIndex.LuV,
+                GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.ELECTROLYZER,
+                SoundResource.GTCEU_LOOP_ELECTROLYZER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerLuV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_electrolyzer.zpm.name
+        // # Elite Electrolyzer II
+        // # zh_CN 精英电解机 II
+        GTNRItemList.ModernElectrolyzerZPM.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernElectrolyzerZPM.id,
+                "gtneverreset.modern_electrolyzer.tier.7",
+                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.zpm.name"),
+                VoltageIndex.ZPM,
+                GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.ELECTROLYZER,
+                SoundResource.GTCEU_LOOP_ELECTROLYZER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerZPM.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_electrolyzer.uv.name
+        // # Ultimate Ionizer
+        // # zh_CN 终极离子发生器
+        GTNRItemList.ModernElectrolyzerUV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernElectrolyzerUV.id,
+                "gtneverreset.modern_electrolyzer.tier.8",
+                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.uv.name"),
+                VoltageIndex.UV,
+                GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.ELECTROLYZER,
+                SoundResource.GTCEU_LOOP_ELECTROLYZER));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerUV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_chemical_reactor.lv.name
+        // # Basic Chemical Reactor
+        // # zh_CN 基础化学反应釜
+        GTNRItemList.ModernChemicalReactorLV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernChemicalReactorLV.id,
+                "gtneverreset.modern_chemical_reactor.tier.1",
+                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.lv.name"),
+                VoltageIndex.LV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
                 2,
                 2,
                 3,
                 2,
-                16000,
                 ModernMachineTextures.CHEMICAL_REACTOR,
-                SoundResource.GTCEU_LOOP_CHEMICAL).getStackForm(1);
-            // #tr gtnr.machine.modern_centrifuge.name
-            // # %s Small Centrifuge
-            // # zh_CN %s 小型离心机
-            MODERN_CENTRIFUGES[tier] = new ModernFluidMachine(
-                GTNRMachineID.ModernCentrifugeLV.id + tier - VoltageIndex.LV,
-                "gtneverreset.modern_centrifuge.tier." + tier,
-                StatCollector.translateToLocalFormatted("gtnr.machine.modern_centrifuge.name", GTValues.VN[tier]),
-                tier,
+                SoundResource.GTCEU_LOOP_CHEMICAL));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorLV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_chemical_reactor.mv.name
+        // # Advanced Chemical Reactor
+        // # zh_CN 进阶化学反应釜
+        GTNRItemList.ModernChemicalReactorMV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernChemicalReactorMV.id,
+                "gtneverreset.modern_chemical_reactor.tier.2",
+                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.mv.name"),
+                VoltageIndex.MV,
+                GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
+                2,
+                2,
+                3,
+                2,
+                ModernMachineTextures.CHEMICAL_REACTOR,
+                SoundResource.GTCEU_LOOP_CHEMICAL));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorMV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_chemical_reactor.hv.name
+        // # Advanced Chemical Reactor II
+        // # zh_CN 进阶化学反应釜 II
+        GTNRItemList.ModernChemicalReactorHV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernChemicalReactorHV.id,
+                "gtneverreset.modern_chemical_reactor.tier.3",
+                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.hv.name"),
+                VoltageIndex.HV,
+                GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
+                2,
+                2,
+                3,
+                2,
+                ModernMachineTextures.CHEMICAL_REACTOR,
+                SoundResource.GTCEU_LOOP_CHEMICAL));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorHV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_chemical_reactor.ev.name
+        // # Advanced Chemical Reactor III
+        // # zh_CN 进阶化学反应釜 III
+        GTNRItemList.ModernChemicalReactorEV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernChemicalReactorEV.id,
+                "gtneverreset.modern_chemical_reactor.tier.4",
+                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.ev.name"),
+                VoltageIndex.EV,
+                GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
+                2,
+                2,
+                3,
+                2,
+                ModernMachineTextures.CHEMICAL_REACTOR,
+                SoundResource.GTCEU_LOOP_CHEMICAL));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorEV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_chemical_reactor.iv.name
+        // # Advanced Chemical Reactor IV
+        // # zh_CN 进阶化学反应釜 IV
+        GTNRItemList.ModernChemicalReactorIV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernChemicalReactorIV.id,
+                "gtneverreset.modern_chemical_reactor.tier.5",
+                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.iv.name"),
+                VoltageIndex.IV,
+                GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
+                2,
+                2,
+                3,
+                2,
+                ModernMachineTextures.CHEMICAL_REACTOR,
+                SoundResource.GTCEU_LOOP_CHEMICAL));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorIV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_chemical_reactor.luv.name
+        // # Elite Chemical Reactor
+        // # zh_CN 精英化学反应釜
+        GTNRItemList.ModernChemicalReactorLuV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernChemicalReactorLuV.id,
+                "gtneverreset.modern_chemical_reactor.tier.6",
+                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.luv.name"),
+                VoltageIndex.LuV,
+                GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
+                2,
+                2,
+                3,
+                2,
+                ModernMachineTextures.CHEMICAL_REACTOR,
+                SoundResource.GTCEU_LOOP_CHEMICAL));
+        AnimatedTooltipHandler
+            .addItemTooltip(GTNRItemList.ModernChemicalReactorLuV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_chemical_reactor.zpm.name
+        // # Elite Chemical Reactor II
+        // # zh_CN 精英化学反应釜 II
+        GTNRItemList.ModernChemicalReactorZPM.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernChemicalReactorZPM.id,
+                "gtneverreset.modern_chemical_reactor.tier.7",
+                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.zpm.name"),
+                VoltageIndex.ZPM,
+                GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
+                2,
+                2,
+                3,
+                2,
+                ModernMachineTextures.CHEMICAL_REACTOR,
+                SoundResource.GTCEU_LOOP_CHEMICAL));
+        AnimatedTooltipHandler
+            .addItemTooltip(GTNRItemList.ModernChemicalReactorZPM.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_chemical_reactor.uv.name
+        // # Ultimate Chemical Performer
+        // # zh_CN 终极化学反应执行者
+        GTNRItemList.ModernChemicalReactorUV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernChemicalReactorUV.id,
+                "gtneverreset.modern_chemical_reactor.tier.8",
+                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.uv.name"),
+                VoltageIndex.UV,
+                GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
+                2,
+                2,
+                3,
+                2,
+                ModernMachineTextures.CHEMICAL_REACTOR,
+                SoundResource.GTCEU_LOOP_CHEMICAL));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorUV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_centrifuge.lv.name
+        // # Basic Centrifuge
+        // # zh_CN 基础离心机
+        GTNRItemList.ModernCentrifugeLV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernCentrifugeLV.id,
+                "gtneverreset.modern_centrifuge.tier.1",
+                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.lv.name"),
+                VoltageIndex.LV,
                 GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
                 2,
                 6,
                 1,
                 6,
-                mixerTankCapacity * 4,
                 ModernMachineTextures.CENTRIFUGE,
-                SoundResource.GTCEU_LOOP_CENTRIFUGE).getStackForm(1);
-            AnimatedTooltipHandler.addItemTooltip(MODERN_MIXERS[tier], AnimatedText.GT_NEVER_RESET);
-            AnimatedTooltipHandler.addItemTooltip(MODERN_ELECTROLYZERS[tier], AnimatedText.GT_NEVER_RESET);
-            AnimatedTooltipHandler.addItemTooltip(MODERN_CHEMICAL_REACTORS[tier], AnimatedText.GT_NEVER_RESET);
-            AnimatedTooltipHandler.addItemTooltip(MODERN_CENTRIFUGES[tier], AnimatedText.GT_NEVER_RESET);
-        }
+                SoundResource.GTCEU_LOOP_CENTRIFUGE));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeLV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_centrifuge.mv.name
+        // # Advanced Centrifuge
+        // # zh_CN 进阶离心机
+        GTNRItemList.ModernCentrifugeMV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernCentrifugeMV.id,
+                "gtneverreset.modern_centrifuge.tier.2",
+                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.mv.name"),
+                VoltageIndex.MV,
+                GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.CENTRIFUGE,
+                SoundResource.GTCEU_LOOP_CENTRIFUGE));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeMV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_centrifuge.hv.name
+        // # Turbo Centrifuge
+        // # zh_CN 涡轮离心机
+        GTNRItemList.ModernCentrifugeHV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernCentrifugeHV.id,
+                "gtneverreset.modern_centrifuge.tier.3",
+                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.hv.name"),
+                VoltageIndex.HV,
+                GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.CENTRIFUGE,
+                SoundResource.GTCEU_LOOP_CENTRIFUGE));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeHV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_centrifuge.ev.name
+        // # Molecular Separator
+        // # zh_CN 分子离心机
+        GTNRItemList.ModernCentrifugeEV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernCentrifugeEV.id,
+                "gtneverreset.modern_centrifuge.tier.4",
+                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.ev.name"),
+                VoltageIndex.EV,
+                GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.CENTRIFUGE,
+                SoundResource.GTCEU_LOOP_CENTRIFUGE));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeEV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_centrifuge.iv.name
+        // # Molecular Cyclone
+        // # zh_CN 旋风分子离心机
+        GTNRItemList.ModernCentrifugeIV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernCentrifugeIV.id,
+                "gtneverreset.modern_centrifuge.tier.5",
+                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.iv.name"),
+                VoltageIndex.IV,
+                GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.CENTRIFUGE,
+                SoundResource.GTCEU_LOOP_CENTRIFUGE));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeIV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_centrifuge.luv.name
+        // # Elite Centrifuge
+        // # zh_CN 精英离心机
+        GTNRItemList.ModernCentrifugeLuV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernCentrifugeLuV.id,
+                "gtneverreset.modern_centrifuge.tier.6",
+                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.luv.name"),
+                VoltageIndex.LuV,
+                GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.CENTRIFUGE,
+                SoundResource.GTCEU_LOOP_CENTRIFUGE));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeLuV.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_centrifuge.zpm.name
+        // # Elite Centrifuge II
+        // # zh_CN 精英离心机 II
+        GTNRItemList.ModernCentrifugeZPM.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernCentrifugeZPM.id,
+                "gtneverreset.modern_centrifuge.tier.7",
+                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.zpm.name"),
+                VoltageIndex.ZPM,
+                GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.CENTRIFUGE,
+                SoundResource.GTCEU_LOOP_CENTRIFUGE));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeZPM.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.modern_centrifuge.uv.name
+        // # Ultimate Molecular Tornado
+        // # zh_CN 终极分子龙卷风
+        GTNRItemList.ModernCentrifugeUV.set(
+            new ModernFluidMachine(
+                GTNRMachineID.ModernCentrifugeUV.id,
+                "gtneverreset.modern_centrifuge.tier.8",
+                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.uv.name"),
+                VoltageIndex.UV,
+                GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
+                2,
+                6,
+                1,
+                6,
+                ModernMachineTextures.CENTRIFUGE,
+                SoundResource.GTCEU_LOOP_CENTRIFUGE));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeUV.get(1), AnimatedText.GT_NEVER_RESET);
     }
 
 }

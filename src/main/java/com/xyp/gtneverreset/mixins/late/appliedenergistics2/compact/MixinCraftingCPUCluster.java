@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from ABKQPO/GT-Not-Leisure, commit 6cbc6927af4f44c445ea7a879796b4764b00988d.
-// Modified for compact, fixed-maximum, energy-free GT Not Good machines.
 package com.xyp.gtneverreset.mixins.late.appliedenergistics2.compact;
 
 import java.util.ArrayList;

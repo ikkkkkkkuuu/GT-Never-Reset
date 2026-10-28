@@ -1,15 +1,20 @@
-// SPDX-License-Identifier: MIT
 package com.xyp.gtneverreset.common.gui.modularui;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumChatFormatting;
@@ -17,14 +22,26 @@ import net.minecraft.util.StatCollector;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.cleanroommc.modularui.animation.Animator;
+import com.cleanroommc.modularui.api.UpOrDown;
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.layout.IViewport;
+import com.cleanroommc.modularui.api.layout.IViewportStack;
 import com.cleanroommc.modularui.api.widget.IWidget;
-import com.cleanroommc.modularui.drawable.Rectangle;
+import com.cleanroommc.modularui.api.widget.Interactable;
+import com.cleanroommc.modularui.drawable.ColorType;
+import com.cleanroommc.modularui.drawable.GuiDraw;
+import com.cleanroommc.modularui.drawable.ItemDrawable;
+import com.cleanroommc.modularui.drawable.Stencil;
+import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerGhostIngredientSlot;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
-import com.cleanroommc.modularui.theme.WidgetThemeEntry;
+import com.cleanroommc.modularui.theme.WidgetTheme;
 import com.cleanroommc.modularui.utils.Alignment;
+import com.cleanroommc.modularui.utils.Interpolation;
+import com.cleanroommc.modularui.value.DoubleValue;
 import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.value.sync.BooleanSyncValue;
 import com.cleanroommc.modularui.value.sync.GenericListSyncHandler;
@@ -34,11 +51,16 @@ import com.cleanroommc.modularui.value.sync.LongSyncValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.value.sync.StringSyncValue;
 import com.cleanroommc.modularui.widget.ParentWidget;
+import com.cleanroommc.modularui.widget.ScrollWidget;
 import com.cleanroommc.modularui.widget.Widget;
+import com.cleanroommc.modularui.widget.scroll.HorizontalScrollData;
+import com.cleanroommc.modularui.widget.scroll.VerticalScrollData;
+import com.cleanroommc.modularui.widget.sizer.Area;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.PageButton;
 import com.cleanroommc.modularui.widgets.PagedWidget;
+import com.cleanroommc.modularui.widgets.ProgressWidget;
 import com.cleanroommc.modularui.widgets.TextWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
@@ -52,14 +74,26 @@ import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.enums.GTValues;
 import gregtech.api.modularui2.GTGuiTextures;
 import gregtech.api.modularui2.GTWidgetThemes;
+import gregtech.common.modularui2.widget.SlotLikeButtonWidget;
 
 public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBreeder> {
 
-    private static final int PAGE_WIDTH = 348;
-    private static final int PAGE_HEIGHT = 228;
-    private static final int SPECIES_ROWS = 6;
-    private static final int ROUTE_ROWS = 3;
-    private static final int ACTIVE_ROWS = 2;
+    private static final int PAGE_WIDTH = 232;
+    private static final int PAGE_HEIGHT = 114;
+    private static final int PAGE_BODY_HEIGHT = PAGE_HEIGHT + 82;
+    private static final int SPECIES_COLUMNS = 10;
+    private static final int SPECIES_ROWS = 3;
+    private static final int SPECIES_PER_PAGE = SPECIES_COLUMNS * SPECIES_ROWS;
+    private static final int ROUTE_HEIGHT = PAGE_BODY_HEIGHT - 18;
+    private static final int ROUTE_WIDTH = PAGE_WIDTH - 4;
+    private static final float MIN_ROUTE_ZOOM = 0.25F;
+    private static final float MAX_ROUTE_ZOOM = 2F;
+    private static final UITexture ARROW_EMPTY = GTGuiTextures.PROGRESSBAR_ARROW_STANDARD.getSubArea(0, 0, 1, 0.5F);
+    private static final UITexture ARROW_FULL = GTGuiTextures.PROGRESSBAR_ARROW_STANDARD.getSubArea(0, 0.5F, 1, 1);
+    private static final UITexture ARROW_COMPLETE = ARROW_FULL.withColorOverride(0xFF55DD55);
+    private static final UITexture ROUTE_ARROW_EMPTY = new RouteArrowTexture(false, 0);
+    private static final UITexture ROUTE_ARROW_FULL = new RouteArrowTexture(true, 0);
+    private static final UITexture ROUTE_ARROW_COMPLETE = new RouteArrowTexture(true, 0xFF55DD55);
 
     private final PagedWidget.Controller pages = new PagedWidget.Controller();
     private String targetDraft;
@@ -67,29 +101,30 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
     private List<String> serverArchive = Collections.emptyList();
     private List<String> serverReachable = Collections.emptyList();
     private List<NBTTagCompound> serverSteps = Collections.emptyList();
+    private String serverRouteTarget = "";
+    private final Map<String, BeeBreedingHelper.BreedingStep> serverRoute = new LinkedHashMap<>();
     private List<String> archive = Collections.emptyList();
+    private Set<String> archivedSpecies = Collections.emptySet();
     private List<String> reachable = Collections.emptyList();
     private List<NBTTagCompound> steps = Collections.emptyList();
-    private List<String> activeBreeding = Collections.emptyList();
-    private int activePage;
-    private int routePage;
+    private Set<String> activeSpecies = Collections.emptySet();
+    private List<NBTTagCompound> activeSteps = Collections.emptyList();
+    private final Map<String, ItemStack> beeIcons = new HashMap<>();
     private final SpeciesListView archiveView = new SpeciesListView(() -> archive);
     private final SpeciesListView reachableView = new SpeciesListView(() -> reachable);
     private StringSyncValue draft;
     private StringSyncValue target;
     private BooleanSyncValue valid;
     private IntSyncValue pending;
-    private IntSyncValue total;
-    private IntSyncValue completed;
     private IntSyncValue bonus;
-    private IntSyncValue parallelSpecies;
-    private IntSyncValue activeSpecies;
     private IntSyncValue duration;
     private IntSyncValue voltageTier;
-    private IntSyncValue elapsed;
-    private IntSyncValue cycleDuration;
     private LongSyncValue energy;
     private StringSyncValue missing;
+    private IntSyncValue progressTime;
+    private IntSyncValue maxProgressTime;
+    private BooleanSyncValue machineActive;
+    private BreedingRouteWidget routeWidget;
 
     public LargeBeeBreederGui(LargeBeeBreeder multiblock) {
         super(multiblock);
@@ -99,19 +134,16 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
     @Override
     protected void registerSyncValues(PanelSyncManager sync) {
         super.registerSyncValues(sync);
-        elapsed = sync.findSyncHandler("progressTime", IntSyncValue.class);
-        cycleDuration = sync.findSyncHandler("maxProgressTime", IntSyncValue.class);
+        progressTime = sync.findSyncHandler("progressTime", IntSyncValue.class);
+        maxProgressTime = sync.findSyncHandler("maxProgressTime", IntSyncValue.class);
+        machineActive = sync.findSyncHandler("machineActive", BooleanSyncValue.class);
         target = new StringSyncValue(multiblock::getTargetBeeSpecies);
         draft = new StringSyncValue(
             () -> targetDraft,
             value -> targetDraft = value.length() > 256 ? value.substring(0, 256) : value).allowC2S();
         valid = new BooleanSyncValue(multiblock::isTargetInputValid);
         pending = new IntSyncValue(multiblock::getPendingPrincessOutputs);
-        total = new IntSyncValue(multiblock::getChainTotalSteps);
-        completed = new IntSyncValue(multiblock::getChainCompletedSteps);
         bonus = new IntSyncValue(multiblock::getMutationChanceBonus);
-        parallelSpecies = new IntSyncValue(multiblock::getMaxParallelBreedingSteps);
-        activeSpecies = new IntSyncValue(multiblock::getActiveBreedingSpecies);
         duration = new IntSyncValue(multiblock::getBreedingDurationTicks);
         voltageTier = new IntSyncValue(multiblock::getBreedingVoltageTier);
         energy = new LongSyncValue(multiblock::getEuPerBreedingAttempt);
@@ -120,11 +152,7 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
         sync.syncValue("beeDraft", draft);
         sync.syncValue("beeValid", valid);
         sync.syncValue("beePending", pending);
-        sync.syncValue("beeTotal", total);
-        sync.syncValue("beeCompleted", completed);
         sync.syncValue("beeBonus", bonus);
-        sync.syncValue("beeParallelSpecies", parallelSpecies);
-        sync.syncValue("beeActiveSpecies", activeSpecies);
         sync.syncValue("beeDuration", duration);
         sync.syncValue("beeVoltageTier", voltageTier);
         sync.syncValue("beeEnergy", energy);
@@ -140,17 +168,13 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
                 if (multiblock.isTargetInputValid()) targetDraft = multiblock.getTargetBeeSpecies();
             }
         }));
-        GenericListSyncHandler<String> archiveSync = new GenericListSyncHandler<>(
-            this::archiveSnapshot,
-            value -> archive = value,
-            ByteBufUtils::readUTF8String,
-            ByteBufUtils::writeUTF8String,
-            String::equals,
-            value -> value);
-        GenericListSyncHandler<NBTTagCompound> routeSync = new GenericListSyncHandler<>(this::routeSnapshot, value -> {
-            steps = value;
-            routePage = Math.min(routePage, routePageCount() - 1);
-        },
+        GenericListSyncHandler<String> archiveSync = new GenericListSyncHandler<>(this::archiveSnapshot, value -> {
+            archive = value;
+            archivedSpecies = new HashSet<>(value);
+        }, ByteBufUtils::readUTF8String, ByteBufUtils::writeUTF8String, String::equals, value -> value);
+        GenericListSyncHandler<NBTTagCompound> routeSync = new GenericListSyncHandler<>(
+            this::routeSnapshot,
+            value -> { steps = value; },
             ByteBufUtils::readTag,
             ByteBufUtils::writeTag,
             NBTTagCompound::equals,
@@ -166,12 +190,28 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
                 String::equals,
                 value -> value));
         sync.syncValue("beeRoute", routeSync);
-        sync.syncValue(
-            "beeActiveBreeding",
-            new GenericListSyncHandler<>(multiblock::getActiveBreedingSpeciesUids, value -> {
-                activeBreeding = value;
-                activePage = Math.min(activePage, activePageCount() - 1);
-            }, ByteBufUtils::readUTF8String, ByteBufUtils::writeUTF8String, String::equals, value -> value));
+        sync.syncValue("beeActiveSteps", new GenericListSyncHandler<>(this::activeSnapshot, value -> {
+            activeSteps = value;
+            activeSpecies = new HashSet<>();
+            for (NBTTagCompound step : value) activeSpecies.add(step.getString("result"));
+        },
+            ByteBufUtils::readTag,
+            ByteBufUtils::writeTag,
+            NBTTagCompound::equals,
+            value -> (NBTTagCompound) value.copy()));
+    }
+
+    private List<NBTTagCompound> activeSnapshot() {
+        List<NBTTagCompound> snapshot = new ArrayList<>();
+        for (BeeBreedingHelper.BreedingStep step : multiblock.getActiveBreedingSteps()) {
+            NBTTagCompound tag = new NBTTagCompound();
+            tag.setString("parent1", step.parent1);
+            tag.setString("parent2", step.parent2);
+            tag.setString("result", step.result);
+            tag.setDouble("chance", Math.min(100D, step.chance));
+            snapshot.add(tag);
+        }
+        return snapshot;
     }
 
     private List<String> archiveSnapshot() {
@@ -200,240 +240,229 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
             serverArchive = nextArchive;
             serverReachable = BeeBreedingPlanner.findReachableSpecies(new HashSet<>(serverArchive));
         }
-        serverSteps = new ArrayList<>();
+        String currentTarget = multiblock.getTargetBeeSpecies();
+        if (!serverRouteTarget.equals(currentTarget)) {
+            serverRouteTarget = currentTarget;
+            serverRoute.clear();
+        }
+        Set<String> remaining = new HashSet<>();
         for (BeeBreedingHelper.BreedingStep step : multiblock.getBreedingSteps()) {
+            remaining.add(step.result);
+            serverRoute.put(step.result, step);
+        }
+        // Keep completed steps visible; remove unfinished branches discarded by replanning.
+        serverRoute.entrySet()
+            .removeIf(
+                entry -> !remaining.contains(entry.getKey()) && !multiblock.getDronePool()
+                    .hasDrone(entry.getKey()));
+        serverSteps = new ArrayList<>();
+        for (BeeBreedingHelper.BreedingStep step : serverRoute.values()) {
             NBTTagCompound tag = new NBTTagCompound();
             tag.setString("parent1", step.parent1);
             tag.setString("parent2", step.parent2);
             tag.setString("result", step.result);
             tag.setDouble("chance", Math.min(100.0D, step.chance + multiblock.getMutationChanceBonus()));
-            byte status = multiblock.getDronePool()
-                .hasDrone(step.result) ? (byte) 2
-                    : multiblock.getDronePool()
-                        .hasDrone(step.parent1)
-                        && multiblock.getDronePool()
-                            .hasDrone(step.parent2) ? (byte) 1 : (byte) 0;
-            tag.setByte("status", status);
             serverSteps.add(tag);
         }
     }
 
     @Override
     protected int getBasePanelWidth() {
-        return 360;
+        return PAGE_WIDTH + 12;
     }
 
     @Override
     protected int getBasePanelHeight() {
-        return 348;
+        return PAGE_HEIGHT + 116;
     }
 
     @Override
     public Flow createMainColumn(ModularPanel panel, PanelSyncManager sync) {
         Flow tabs = Flow.row()
-            .size(PAGE_WIDTH, 20)
+            .size(PAGE_WIDTH, 18)
             .marginBottom(4);
-        // #tr gtnr.bee_breeder.run
-        // # Operation
-        // # zh_CN 运行
-        tabs.child(tab(0, "gtnr.bee_breeder.run"));
+        tabs.child(
+            // #tr gtnr.bee_breeder.tab_run
+            // # Run
+            // # zh_CN 运行
+            // #tr gtnr.bee_breeder.run
+            // # Operation
+            // # zh_CN 运行
+            tab(0, "gtnr.bee_breeder.tab_run", "gtnr.bee_breeder.run", GTGuiTextures.OVERLAY_BUTTON_POWER_SWITCH_ON));
+        // #tr gtnr.bee_breeder.tab_archive
+        // # Archive
+        // # zh_CN 档案
         // #tr gtnr.bee_breeder.archive
         // # Species Archive
         // # zh_CN 物种档案
-        tabs.child(tab(1, "gtnr.bee_breeder.archive"));
-        // #tr gtnr.bee_breeder.reachable
-        // # Breedable Bees
-        // # zh_CN 可杂交到蜂
-        tabs.child(tab(2, "gtnr.bee_breeder.reachable"));
+        tabs.child(tab(1, "gtnr.bee_breeder.tab_archive", "gtnr.bee_breeder.archive", new ItemDrawable(Items.book)));
+        tabs.child(
+            // #tr gtnr.bee_breeder.tab_reachable
+            // # Bees
+            // # zh_CN 可育
+            // #tr gtnr.bee_breeder.reachable
+            // # Breedable Bees
+            // # zh_CN 可杂交到蜂
+            tab(2, "gtnr.bee_breeder.tab_reachable", "gtnr.bee_breeder.reachable", new ItemDrawable(Items.wheat)));
+        // #tr gtnr.bee_breeder.tab_route
+        // # Tree
+        // # zh_CN 路线
         // #tr gtnr.bee_breeder.route
         // # Breeding Route
         // # zh_CN 杂交路线
-        tabs.child(tab(3, "gtnr.bee_breeder.route"));
+        tabs.child(tab(3, "gtnr.bee_breeder.tab_route", "gtnr.bee_breeder.route", new ItemDrawable(Items.map)));
+        Flow inventory = Flow.column()
+            .pos(0, PAGE_HEIGHT + 6)
+            .size(PAGE_WIDTH, 76)
+            .child(createInventoryRow(panel, sync));
+        PagedWidget<?> content = new PagedWidget<>().controller(pages)
+            .pos(0, 0)
+            .size(PAGE_WIDTH, PAGE_BODY_HEIGHT)
+            .addPage(operationPage(panel, sync))
+            // #tr gtnr.bee_breeder.search
+            // # Search name or UID; select a species to fill the target
+            // # zh_CN 搜索名称或 UID；点击蜂种可填入目标
+            // #tr gtnr.bee_breeder.no_matches
+            // # No matching archived species
+            // # zh_CN 没有符合条件的已解锁蜂种
+            .addPage(speciesPage(archiveView, "gtnr.bee_breeder.search", "gtnr.bee_breeder.no_matches"))
+            .addPage(
+                // #tr gtnr.bee_breeder.reachable_hint
+                // # Search name / UID: reachable but unarchived (all breeding steps)
+                // # zh_CN 搜索名称 / UID：根据档案可经多步杂交获得、尚未存档的蜂种
+                // #tr gtnr.bee_breeder.no_reachable_matches
+                // # No matching unarchived species are reachable from the current archive
+                // # zh_CN 当前档案没有符合条件的可杂交未存档蜂种
+                speciesPage(reachableView, "gtnr.bee_breeder.reachable_hint", "gtnr.bee_breeder.no_reachable_matches"))
+            .addPage(routePage())
+            .onPageChange(index -> inventory.setEnabled(index != 3));
         return Flow.column()
             .padding(6)
             .child(tabs)
             .child(
-                new PagedWidget<>().controller(pages)
-                    .size(PAGE_WIDTH, PAGE_HEIGHT)
-                    .addPage(operationPage(panel, sync))
-                    .addPage(archivePage())
-                    .addPage(reachablePage())
-                    .addPage(routePage()))
-            .child(
-                Flow.column()
-                    .size(PAGE_WIDTH, 76)
-                    .marginTop(6)
-                    .child(createInventoryRow(panel, sync)));
+                new ParentWidget<>().size(PAGE_WIDTH, PAGE_BODY_HEIGHT)
+                    .child(content)
+                    .child(inventory));
     }
 
-    private PageButton tab(int index, String key) {
-        return new PageButton(index, pages).size(84, 20)
+    private PageButton tab(int index, String key, String tooltipKey, IDrawable icon) {
+        IKey label = IKey.lang(key)
+            .scale(0.75f)
+            .color(0xFF202020)
+            .shadow(false);
+        return new PageButton(index, pages).size(55, 18)
             .marginRight(index == 3 ? 0 : 4)
             .background(false, GTGuiTextures.BUTTON_STANDARD)
             .background(true, GTGuiTextures.BUTTON_STANDARD_PRESSED)
-            .overlay(IKey.lang(key));
+            .overlay((context, x, y, width, height, theme) -> {
+                icon.draw(context, x + 3, y + 2, 14, 14, theme);
+                label.draw(context, x + 19, y + 3, 34, 12, theme);
+            })
+            .tooltipBuilder(t -> t.addLine(IKey.lang(tooltipKey)));
     }
 
     private ParentWidget<?> operationPage(ModularPanel panel, PanelSyncManager sync) {
-        ParentWidget<?> page = new ParentWidget<>().size(PAGE_WIDTH, PAGE_HEIGHT)
-            .background(new Rectangle().color(0xFFC6C6C6));
-        // #tr gtnr.bee_breeder.target_hint
-        // # Enter a species name / UID, or drop a bee from NEI
-        // # zh_CN 输入蜂种名称 / UID，或从 NEI 拖入蜜蜂
-        page.child(text(() -> tr("gtnr.bee_breeder.target_hint"), 0, 0, PAGE_WIDTH));
+        ParentWidget<?> page = new ParentWidget<>().pos(0, 0)
+            .size(PAGE_WIDTH, PAGE_HEIGHT);
         page.child(
             new BeeSpeciesDropTextField().value(draft)
                 .setMaxLength(256)
                 .autoUpdateOnChange(true)
-                .pos(0, 17)
-                .size(286, 18));
-        // #tr gtnr.bee_breeder.apply
-        // # Apply
-        // # zh_CN 应用
+                .pos(0, 0)
+                .size(PAGE_WIDTH - 48, 18)
+                .tooltipBuilder(
+                    // #tr gtnr.bee_breeder.target_hint
+                    // # Enter a species name / UID, or drop a bee from NEI
+                    // # zh_CN 输入蜂种名称 / UID，或从 NEI 拖入蜜蜂
+                    t -> t.addLine(IKey.lang("gtnr.bee_breeder.target_hint"))
+                        // #tr gtnr.bee_breeder.draft_hint
+                        // # Press Apply to confirm. Apply an empty field to clear the target.
+                        // # zh_CN 点击应用确认；留空后应用可清除目标。
+                        .addLine(IKey.lang("gtnr.bee_breeder.draft_hint"))));
         page.child(
-            new ButtonWidget<>().pos(292, 17)
-                .size(56, 18)
+            new ButtonWidget<>().pos(PAGE_WIDTH - 44, 0)
+                .size(44, 18)
                 .background(GTGuiTextures.BUTTON_STANDARD)
                 .hoverBackground(GTGuiTextures.BUTTON_STANDARD_PRESSED)
+                // #tr gtnr.bee_breeder.apply
+                // # Apply
+                // # zh_CN 应用
                 .overlay(IKey.lang("gtnr.bee_breeder.apply"))
-                .syncHandler("beeApply"));
-        // #tr gtnr.bee_breeder.current_target
-        // # Target: %s
-        // # zh_CN 当前目标：%s
+                .syncHandler("beeApply")
+                .tooltipAutoUpdate(true)
+                .tooltipBuilder(
+                    t -> t.addLine(
+                        IKey.lang(
+                            valid.getBoolValue() ? "gtnr.bee_breeder.draft_hint"
+                                // #tr gtnr.bee_breeder.invalid_target
+                                // # Unknown species. The current target has not changed.
+                                // # zh_CN 未找到该蜂种，当前目标保持不变。
+                                : "gtnr.bee_breeder.invalid_target"))));
         page.child(
-            text(
-                () -> tr("gtnr.bee_breeder.current_target", speciesOrEmpty(target.getStringValue())),
-                0,
-                40,
-                PAGE_WIDTH));
-        // #tr gtnr.bee_breeder.invalid_target
-        // # Unknown species. The current target has not changed.
-        // # zh_CN 未找到该蜂种，当前目标保持不变。
-        // #tr gtnr.bee_breeder.draft_hint
-        // # Press Apply to confirm. Apply an empty field to clear the target.
-        // # zh_CN 点击应用确认；留空后应用可清除目标。
+            fittedText(this::previewChance, 0, 22, 114, 0.85F).tooltipAutoUpdate(true)
+                .tooltipBuilder(
+                    // #tr gtnr.bee_breeder.current_target
+                    // # Target: %s
+                    // # zh_CN 当前目标：%s
+                    t -> t.addLine(tr("gtnr.bee_breeder.current_target", speciesOrEmpty(target.getStringValue())))));
         page.child(
-            text(
-                () -> valid.getBoolValue() ? tr("gtnr.bee_breeder.draft_hint")
-                    : EnumChatFormatting.RED + tr("gtnr.bee_breeder.invalid_target"),
-                0,
-                83,
-                PAGE_WIDTH));
-        // #tr gtnr.bee_breeder.overview
-        // # Waiting: %s | Archived: %s | Parallel species: %s/%s
-        // # zh_CN 待转换：%s | 已解锁：%s | 并行蜂种：%s/%s
+            fittedText(
+                // #tr gtnr.bee_breeder.total_progress
+                // # Total progress: %s%%
+                // # zh_CN 总进度：%s%%
+                () -> tr("gtnr.bee_breeder.total_progress", Math.round(routeProgress() * 100)),
+                124,
+                22,
+                PAGE_WIDTH - 124,
+                0.85F).tooltipAutoUpdate(true)
+                    .tooltipBuilder(t -> t.addLine(routeProgressText())
+                    // @formatter:off
+                            // #tr gtnr.bee_breeder.route_session
+                            // # Completed / planned breeding steps tracked while this GUI is open. Reopening starts from the remaining route.
+                            // # zh_CN 本次打开 GUI 后记录的已完成 / 规划杂交步骤；重新打开时从剩余路线开始统计。
+                            // @formatter:on
+                        .addLine(IKey.lang("gtnr.bee_breeder.route_session"))));
+        page.child(beeSlot(() -> previewSpecies("parent1"), 20, 38));
+        page.child(text(() -> "+", 44, 41, 10));
+        page.child(beeSlot(() -> previewSpecies("parent2"), 60, 38));
         page.child(
-            text(
-                () -> tr(
-                    "gtnr.bee_breeder.overview",
-                    pending.getIntValue(),
-                    archive.size(),
-                    activeSpecies.getIntValue(),
-                    parallelSpecies.getIntValue()),
-                0,
-                55,
-                PAGE_WIDTH).tooltipBuilder(t -> {
-                    // #tr gtnr.bee_breeder.parallel_hint
-                    // # One slot per ready species. Both parents must be archived. Power limits concurrency.
-                    // # zh_CN 每个并行位尝试路线中一个不同蜂种；两个亲本必须已存档。实际并行还受供电功率限制。
-                    t.addLine(IKey.lang("gtnr.bee_breeder.parallel_hint"));
+            breedingArrow(this::previewStep, this::previewProgress, 104, 38).tooltipAutoUpdate(true)
+                .tooltipBuilder(t -> {
+                    t.addLine(
+                        tr(
+                            // #tr gtnr.bee_breeder.attempt_time
+                            // # Current attempt: %.1f / %.1f s
+                            // # zh_CN 本次尝试：%.1f / %.1f 秒
+                            "gtnr.bee_breeder.attempt_time",
+                            progressTime.getIntValue() / 20D,
+                            maxProgressTime.getIntValue() / 20D));
+                    t.addLine(tr("gtnr.bee_breeder.energy", energy.getLongValue(), bonus.getIntValue()));
                 }));
-        // #tr gtnr.bee_breeder.performance
-        // # %s | %s s/cycle | %s EU/t/species | Chance +%s%%
-        // # zh_CN %s | %s 秒/次 | %s EU/t/蜂种 | 成功率 +%s%%
+        page.child(beeSlot(() -> previewSpecies("result"), 156, 38));
+        page.child(fittedText(() -> speciesOrEmpty(previewSpecies("result")), 180, 41, 52, 0.75F));
         page.child(
-            text(
-                () -> tr(
-                    "gtnr.bee_breeder.performance",
-                    GTValues.VN[voltageTier.getIntValue()],
-                    String.format(Locale.ROOT, "%.2f", duration.getIntValue() / 20D),
-                    energy.getLongValue(),
-                    bonus.getIntValue()),
+            fittedText(
+                // #tr gtnr.bee_breeder.overview
+                // # Waiting %s | Archive %s
+                // # zh_CN 待输出 %s | 档案 %s
+                () -> tr("gtnr.bee_breeder.overview", pending.getIntValue(), archive.size()),
                 0,
-                69,
-                PAGE_WIDTH));
-        addActiveBreedingRows(page);
-        page.child(createTerminalRow(panel, sync).pos(0, 174));
+                58,
+                PAGE_WIDTH,
+                0.8F).tooltipAutoUpdate(true)
+                    .tooltipBuilder(
+                        t -> t.addLine(routeProgressText())
+                            .addLine(tr("gtnr.bee_breeder.energy", energy.getLongValue(), bonus.getIntValue()))
+                            .addLine(
+                                tr(
+                                    // #tr gtnr.bee_breeder.cycle_settings
+                                    // # Voltage: %s | Next attempt: %.2f s
+                                    // # zh_CN 电压：%s | 下次尝试：%.2f 秒
+                                    "gtnr.bee_breeder.cycle_settings",
+                                    GTValues.VN[voltageTier.getIntValue()],
+                                    duration.getIntValue() / 20D))));
+        page.child(createTerminalRow(panel, sync).pos(0, 72));
         return page;
-    }
-
-    private void addActiveBreedingRows(ParentWidget<?> page) {
-        // #tr gtnr.bee_breeder.active_title
-        // # Breeding now: %s species
-        // # zh_CN 正在杂交：%s 种蜂
-        page.child(
-            text(() -> tr("gtnr.bee_breeder.active_title", activeBreeding.size()), 0, 100, 252).tooltipBuilder(t -> {
-                // #tr gtnr.bee_breeder.active_hint
-                // # Species in the same batch share the cycle timer. Progress is time, not success chance.
-                // # zh_CN 同批蜂种同时开始和结算，进度相同；此处显示本次尝试耗时进度，不代表成功率。
-                t.addLine(IKey.lang("gtnr.bee_breeder.active_hint"));
-            }));
-        page.child(
-            new ButtonWidget<>().pos(262, 99)
-                .size(18, 14)
-                .background(GTGuiTextures.BUTTON_STANDARD)
-                .hoverBackground(GTGuiTextures.BUTTON_STANDARD_PRESSED)
-                .overlay(IKey.str("<"))
-                .onMousePressed(mouse -> {
-                    if (mouse == 0) activePage = Math.max(0, activePage - 1);
-                    return true;
-                }));
-        page.child(text(() -> (activePage + 1) + "/" + activePageCount(), 282, 100, 46).alignment(Alignment.Center));
-        page.child(
-            new ButtonWidget<>().pos(330, 99)
-                .size(18, 14)
-                .background(GTGuiTextures.BUTTON_STANDARD)
-                .hoverBackground(GTGuiTextures.BUTTON_STANDARD_PRESSED)
-                .overlay(IKey.str(">"))
-                .onMousePressed(mouse -> {
-                    if (mouse == 0) activePage = Math.min(activePageCount() - 1, activePage + 1);
-                    return true;
-                }));
-        // #tr gtnr.bee_breeder.active_empty
-        // # No species are currently being bred.
-        // # zh_CN 当前没有正在杂交的蜂种。
-        page.child(
-            text(() -> tr("gtnr.bee_breeder.active_empty"), 0, 125, PAGE_WIDTH)
-                .setEnabledIf(widget -> activeBreeding.isEmpty()));
-        for (int row = 0; row < ACTIVE_ROWS; row++) {
-            final int index = row;
-            ParentWidget<?> entry = new ParentWidget<>().pos(0, 116 + row * 25)
-                .size(PAGE_WIDTH, 22)
-                .setEnabledIf(widget -> !activeUid(index).isEmpty());
-            entry.child(
-                text(() -> BeeBreedingHelper.getSpeciesDisplayName(activeUid(index)), 0, 0, 168).tooltipAutoUpdate(true)
-                    .tooltipBuilder(t -> t.addLine(activeUid(index))));
-            entry.child(text(this::activeProgressText, 174, 0, PAGE_WIDTH - 174).alignment(Alignment.CenterRight));
-            entry.child(
-                new BreedingProgressWidget(this::activeProgress).pos(0, 15)
-                    .size(PAGE_WIDTH, 6));
-            page.child(entry);
-        }
-    }
-
-    private int activePageCount() {
-        return Math.max(1, (activeBreeding.size() + ACTIVE_ROWS - 1) / ACTIVE_ROWS);
-    }
-
-    private String activeUid(int row) {
-        int index = activePage * ACTIVE_ROWS + row;
-        return index < activeBreeding.size() ? activeBreeding.get(index) : "";
-    }
-
-    private double activeProgress() {
-        int ticks = cycleDuration.getIntValue();
-        return ticks <= 0 ? 0 : Math.max(0D, Math.min(1D, elapsed.getIntValue() / (double) ticks));
-    }
-
-    private String activeProgressText() {
-        int remaining = Math.max(0, cycleDuration.getIntValue() - Math.max(0, elapsed.getIntValue()));
-        // #tr gtnr.bee_breeder.active_progress
-        // # %s%% | %s s left
-        // # zh_CN %s%% | 剩余 %s 秒
-        return tr(
-            "gtnr.bee_breeder.active_progress",
-            (int) Math.floor(activeProgress() * 100),
-            String.format(Locale.ROOT, "%.1f", remaining / 20D));
     }
 
     @Override
@@ -443,7 +472,7 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
 
     @Override
     protected int getTerminalRowHeight() {
-        return 54;
+        return 42;
     }
 
     @Override
@@ -453,86 +482,50 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
 
     @Override
     protected int getTerminalWidgetHeight() {
-        return 54;
-    }
-
-    @Override
-    protected ParentWidget<?> createTerminalParentWidget(ModularPanel panel, PanelSyncManager sync) {
-        return new ParentWidget<>().size(PAGE_WIDTH, getTerminalWidgetHeight())
-            .padding(4)
-            .widgetTheme(GTWidgetThemes.BACKGROUND_TERMINAL)
-            .child(
-                createTerminalTextWidget(sync, panel).size(PAGE_WIDTH - 82, getTerminalWidgetHeight() - 8)
-                    .collapseDisabledChild())
-            .child(
-                Flow.row()
-                    .coverChildren()
-                    .childPadding(4)
-                    .right(6)
-                    .bottom(6)
-                    .child(createShutdownReasonHoverableTerminal(sync))
-                    .child(createMaintIssueHoverableTerminal(sync))
-                    .child(makeLogoWidget(sync, panel)));
+        return 42;
     }
 
     @Override
     protected ListWidget<IWidget, ?> createTerminalTextWidget(PanelSyncManager sync, ModularPanel panel) {
-        return super.createTerminalTextWidget(sync, panel).child(terminalText(this::missingText));
+        return super.createTerminalTextWidget(sync, panel).paddingRight(64)
+            .child(terminalText(this::missingText));
     }
 
-    private ParentWidget<?> archivePage() {
-        // #tr gtnr.bee_breeder.search
-        // # Search name or UID; select a species to fill the target
-        // # zh_CN 搜索名称或 UID；点击蜂种可填入目标
-        // #tr gtnr.bee_breeder.no_matches
-        // # No matching archived species
-        // # zh_CN 没有符合条件的已解锁蜂种
-        return speciesPage(archiveView, "gtnr.bee_breeder.search", "gtnr.bee_breeder.no_matches");
-    }
-
-    private ParentWidget<?> reachablePage() {
-        // #tr gtnr.bee_breeder.reachable_hint
-        // # Search name / UID: reachable but unarchived (all breeding steps)
-        // # zh_CN 搜索名称 / UID：根据档案可经多步杂交获得、尚未存档的蜂种
-        // #tr gtnr.bee_breeder.no_reachable_matches
-        // # No matching unarchived species are reachable from the current archive
-        // # zh_CN 当前档案没有符合条件的可杂交未存档蜂种
-        return speciesPage(reachableView, "gtnr.bee_breeder.reachable_hint", "gtnr.bee_breeder.no_reachable_matches");
+    @Override
+    protected Flow createTerminalRightCornerColumn(ModularPanel panel, PanelSyncManager sync) {
+        return Flow.row()
+            .coverChildren()
+            .rightRel(0, 6, 0)
+            .bottomRel(0, 6, 0)
+            .childIf(multiblock.supportsShutdownReasonHoverable(), () -> createShutdownReasonHoverableTerminal(sync))
+            .childIf(multiblock.supportsMaintenanceIssueHoverable(), () -> createMaintIssueHoverableTerminal(sync))
+            .childIf(multiblock.supportsLogo(), () -> makeLogoWidget(sync, panel));
     }
 
     private ParentWidget<?> speciesPage(SpeciesListView view, String hintKey, String emptyKey) {
-        ParentWidget<?> page = new ParentWidget<>().size(PAGE_WIDTH, PAGE_HEIGHT)
-            .background(new Rectangle().color(0xFFC6C6C6));
-        page.child(
-            text(() -> tr(hintKey), 0, 0, PAGE_WIDTH).color(0xFF202020)
-                .shadow(false));
+        ParentWidget<?> page = new ParentWidget<>().pos(0, 0)
+            .size(PAGE_WIDTH, PAGE_HEIGHT);
         page.child(
             new TextFieldWidget().value(view.search)
                 .setMaxLength(128)
                 .autoUpdateOnChange(true)
-                .pos(0, 16)
-                .size(PAGE_WIDTH, 18));
-        for (int row = 0; row < SPECIES_ROWS; row++) {
-            final int index = row;
+                .pos(0, 0)
+                .size(PAGE_WIDTH, 18)
+                .tooltipBuilder(t -> t.addLine(IKey.lang(hintKey))));
+        for (int index = 0; index < SPECIES_PER_PAGE; index++) {
+            final int slot = index;
             page.child(
-                new ButtonWidget<>().pos(0, 38 + row * 17)
-                    .size(PAGE_WIDTH, 16)
-                    .background(GTGuiTextures.BUTTON_STANDARD)
-                    .hoverBackground(GTGuiTextures.BUTTON_STANDARD_PRESSED)
+                beeSlot(() -> view.uid(slot), 7 + index % SPECIES_COLUMNS * 22, 24 + index / SPECIES_COLUMNS * 22)
                     .setEnabledIf(
-                        widget -> index == 0 || !view.uid(index)
+                        widget -> !view.uid(slot)
                             .isEmpty())
-                    .overlay(
-                        IKey.dynamic(() -> speciesLabel(view, index, emptyKey))
-                            .color(0xFF202020)
-                            .shadow(false))
-                    .tooltipBuilder(t -> {
-                        String uid = view.uid(index);
-                        if (!uid.isEmpty()) t.addLine(uid);
-                    })
-                    .onMousePressed(mouse -> {
-                        if (mouse == 0) {
-                            String uid = view.uid(index);
+                    // #tr gtnr.bee_breeder.select_species
+                    // # Click to fill the target, then press Apply to confirm.
+                    // # zh_CN 点击填入目标，再点击应用确认。
+                    .tooltipBuilder(t -> t.addLine(IKey.lang("gtnr.bee_breeder.select_species")))
+                    .onMousePressed(button -> {
+                        if (button == 0) {
+                            String uid = view.uid(slot);
                             if (!uid.isEmpty()) {
                                 draft.setStringValue(uid);
                                 pages.setPage(0);
@@ -542,166 +535,163 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
                     }));
         }
         page.child(
-            new ButtonWidget<>().pos(0, 143)
-                .size(30, 16)
+            IKey.lang(emptyKey)
+                .asWidget()
+                .pos(6, 38)
+                .size(PAGE_WIDTH - 12, 44)
+                .color(0xFF202020)
+                .shadow(false)
+                .setEnabledIf(
+                    widget -> view.filtered()
+                        .isEmpty()));
+        page.child(
+            new ButtonWidget<>().pos(0, 96)
+                .size(18, 16)
                 .background(GTGuiTextures.BUTTON_STANDARD)
-                .hoverBackground(GTGuiTextures.BUTTON_STANDARD_PRESSED)
-                .overlay(
-                    IKey.str("<")
-                        .color(0xFF202020)
-                        .shadow(false))
-                .onMousePressed(mouse -> {
-                    if (mouse == 0) view.page = Math.max(0, view.page - 1);
+                .overlay(IKey.str("<"))
+                .onMousePressed(button -> {
+                    if (button == 0) view.page = Math.max(0, view.page - 1);
                     return true;
                 }));
         page.child(
-            new ButtonWidget<>().pos(318, 143)
-                .size(30, 16)
+            new ButtonWidget<>().pos(PAGE_WIDTH - 18, 96)
+                .size(18, 16)
                 .background(GTGuiTextures.BUTTON_STANDARD)
-                .hoverBackground(GTGuiTextures.BUTTON_STANDARD_PRESSED)
-                .overlay(
-                    IKey.str(">")
-                        .color(0xFF202020)
-                        .shadow(false))
-                .onMousePressed(mouse -> {
-                    if (mouse == 0) view.page = Math.min(view.pageCount() - 1, view.page + 1);
+                .overlay(IKey.str(">"))
+                .onMousePressed(button -> {
+                    if (button == 0) view.page = Math.min(view.pageCount() - 1, view.page + 1);
                     return true;
                 }));
-        // #tr gtnr.bee_breeder.archive_count
-        // # %s species | Page %s/%s
-        // # zh_CN %s 个蜂种 | 第 %s/%s 页
         page.child(
             text(
                 () -> tr(
+                    // #tr gtnr.bee_breeder.archive_count
+                    // # %s species | Page %s/%s
+                    // # zh_CN %s 个蜂种 | 第 %s/%s 页
                     "gtnr.bee_breeder.archive_count",
                     view.filtered()
                         .size(),
                     view.page + 1,
                     view.pageCount()),
-                40,
-                146,
-                268).color(0xFF202020)
-                    .shadow(false));
+                24,
+                98,
+                PAGE_WIDTH - 48).alignment(Alignment.CENTER));
         return page;
-    }
-
-    private String speciesLabel(SpeciesListView view, int row, String emptyKey) {
-        String uid = view.uid(row);
-        if (uid.isEmpty()) return row == 0 ? tr(emptyKey) : "";
-        return BeeBreedingHelper.getSpeciesDisplayName(uid);
     }
 
     private ParentWidget<?> routePage() {
-        ParentWidget<?> page = new ParentWidget<>().size(PAGE_WIDTH, PAGE_HEIGHT)
-            .background(new Rectangle().color(0xFFC6C6C6));
-        // #tr gtnr.bee_breeder.route_progress
-        // # Route: %s/%s | Target: %s
-        // # zh_CN 路线：%s/%s | 目标：%s
+        ParentWidget<?> page = new ParentWidget<>().pos(0, 0)
+            .size(PAGE_WIDTH, PAGE_BODY_HEIGHT);
+        VerticalScrollData vertical = new VerticalScrollData();
+        HorizontalScrollData horizontal = new HorizontalScrollData();
+        ScrollWidget<?> viewport = new BreedingRouteViewport(vertical).showScrollShadows(false)
+            .pos(0, 18)
+            .size(PAGE_WIDTH, ROUTE_HEIGHT)
+            .background(IDrawable.EMPTY);
+        viewport.getScrollArea()
+            .setScrollDataX(horizontal);
+        routeWidget = new BreedingRouteWidget(viewport, vertical, horizontal);
+        viewport.child(routeWidget);
+        page.child(progressArrow(this::routeProgress, 0, 0));
         page.child(
-            text(
-                () -> tr(
-                    "gtnr.bee_breeder.route_progress",
-                    completed.getIntValue(),
-                    total.getIntValue(),
-                    speciesOrEmpty(target.getStringValue())),
-                0,
-                0,
-                PAGE_WIDTH));
-        // #tr gtnr.bee_breeder.no_steps
-        // # No pending route. Select a target; archived targets need no further breeding.
-        // # zh_CN 暂无待杂交步骤。请选择目标；已解锁目标无需再次杂交。
+            fittedText(this::routeProgressText, 24, 3, PAGE_WIDTH - 90, 0.8F).tooltipAutoUpdate(true)
+                .tooltipBuilder(t -> t.addLine(IKey.lang("gtnr.bee_breeder.route_session"))
+                // @formatter:off
+                        // #tr gtnr.bee_breeder.route_hint
+                        // # Scroll or drag to pan; Ctrl + scroll to zoom. Green arrows mark completed mutations; filling arrows show active attempts.
+                        // # zh_CN 滚动或拖动查看亲本谱系，Ctrl + 滚轮缩放。绿色箭头表示繁育成功，填充中的箭头表示正在繁育。
+                        // @formatter:on
+                    .addLine(IKey.lang("gtnr.bee_breeder.route_hint"))));
         page.child(
+            new ButtonWidget<>().pos(PAGE_WIDTH - 58, 0)
+                .size(36, 18)
+                .background(GTGuiTextures.BUTTON_STANDARD)
+                .overlay(
+                    IKey.dynamic(() -> Math.round(routeWidget.zoom * 100) + "%")
+                        .scale(0.75F))
+                // #tr gtnr.bee_breeder.zoom_hint
+                // # Ctrl + scroll to zoom smoothly (25%%-200%%). Click to restore 100%%.
+                // # zh_CN Ctrl + 滚轮平滑缩放（25%%-200%%），点击恢复 100%%。
+                .tooltipBuilder(t -> t.addLine(IKey.lang("gtnr.bee_breeder.zoom_hint")))
+                .onMousePressed(button -> {
+                    if (button == 0) routeWidget.setZoom(1F, PAGE_WIDTH / 2F, ROUTE_HEIGHT / 2F);
+                    return true;
+                }));
+        page.child(
+            new ButtonWidget<>().pos(PAGE_WIDTH - 18, 0)
+                .size(18)
+                .background(GTGuiTextures.BUTTON_STANDARD)
+                .overlay(new ItemDrawable(Items.compass).asIcon())
+                // #tr gtnr.bee_breeder.focus_target
+                // # Scroll to the target bee
+                // # zh_CN 滚动到目标蜂种
+                .tooltipBuilder(t -> t.addLine(IKey.lang("gtnr.bee_breeder.focus_target")))
+                .onMousePressed(button -> {
+                    if (button == 0) routeWidget.focusTarget();
+                    return true;
+                }));
+        page.child(viewport);
+        page.child(
+            // #tr gtnr.bee_breeder.no_steps
+            // # No pending route. Select a target; archived targets need no further breeding.
+            // # zh_CN 暂无待杂交步骤。请选择目标；已解锁目标无需再次杂交。
             IKey.lang("gtnr.bee_breeder.no_steps")
                 .asWidget()
-                .pos(0, 17)
-                .size(PAGE_WIDTH, 40)
-                .setEnabledIf(widget -> steps.isEmpty()));
-        for (int row = 0; row < ROUTE_ROWS; row++) {
-            final int index = row;
-            page.child(new TextWidget<>(IKey.dynamic(() -> {
-                NBTTagCompound step = routeStep(index);
-                return step == null ? "" : routeLabel(step);
-            })).pos(0, 17 + row * 42)
-                .size(PAGE_WIDTH, 38)
-                .alignment(Alignment.CenterLeft)
-                .setEnabledIf(widget -> routeStep(index) != null)
-                .tooltipAutoUpdate(true)
-                .tooltipBuilder(t -> {
-                    NBTTagCompound step = routeStep(index);
-                    if (step != null) t.addLine(step.getString("parent1") + " + " + step.getString("parent2"))
-                        .addLine(step.getString("result"));
-                }));
-        }
-        page.child(
-            new ButtonWidget<>().pos(0, 143)
-                .size(30, 16)
-                .background(GTGuiTextures.BUTTON_STANDARD)
-                .hoverBackground(GTGuiTextures.BUTTON_STANDARD_PRESSED)
-                .overlay(IKey.str("<"))
-                .onMousePressed(mouse -> {
-                    if (mouse == 0) routePage = Math.max(0, routePage - 1);
-                    return true;
-                }));
-        page.child(
-            new ButtonWidget<>().pos(318, 143)
-                .size(30, 16)
-                .background(GTGuiTextures.BUTTON_STANDARD)
-                .hoverBackground(GTGuiTextures.BUTTON_STANDARD_PRESSED)
-                .overlay(IKey.str(">"))
-                .onMousePressed(mouse -> {
-                    if (mouse == 0) routePage = Math.min(routePageCount() - 1, routePage + 1);
-                    return true;
-                }));
-        // #tr gtnr.bee_breeder.route_page
-        // # Page %s/%s
-        // # zh_CN 第 %s/%s 页
-        page.child(text(() -> tr("gtnr.bee_breeder.route_page", routePage + 1, routePageCount()), 40, 146, 268));
-        page.child(text(this::missingText, 0, 166, PAGE_WIDTH));
+                .pos(12, 34)
+                .size(PAGE_WIDTH - 24, 54)
+                .color(0xFF202020)
+                .shadow(false)
+                .setEnabledIf(
+                    widget -> target.getStringValue()
+                        .isEmpty()));
         return page;
     }
 
-    private int routePageCount() {
-        return Math.max(1, (steps.size() + ROUTE_ROWS - 1) / ROUTE_ROWS);
+    private double cycleProgress() {
+        int duration = maxProgressTime.getIntValue();
+        return !machineActive.getBoolValue() || duration <= 0 ? 0D
+            : Math.max(0D, Math.min(1D, (double) progressTime.getIntValue() / duration));
     }
 
-    private NBTTagCompound routeStep(int row) {
-        int index = routePage * ROUTE_ROWS + row;
-        return index < steps.size() ? steps.get(index) : null;
+    private int completedRouteSteps() {
+        int count = 0;
+        for (NBTTagCompound step : steps) {
+            if (archivedSpecies.contains(step.getString("result"))) count++;
+        }
+        return count;
     }
 
-    private String routeLabel(NBTTagCompound step) {
-        byte status = step.getByte("status");
-        // #tr gtnr.bee_breeder.unlocked
-        // # Unlocked
-        // # zh_CN 已解锁
-        // #tr gtnr.bee_breeder.ready
-        // # Ready
-        // # zh_CN 可杂交
-        // #tr gtnr.bee_breeder.waiting
-        // # Waiting for parents
-        // # zh_CN 等待亲本
-        String state = status == 2 ? tr("gtnr.bee_breeder.unlocked")
-            : status == 1 ? tr("gtnr.bee_breeder.ready") : tr("gtnr.bee_breeder.waiting");
-        EnumChatFormatting color = status == 2 ? EnumChatFormatting.DARK_GREEN
-            : status == 1 ? EnumChatFormatting.DARK_AQUA : EnumChatFormatting.DARK_RED;
-        return color + state
-            + EnumChatFormatting.RESET
-            + "  "
-            + BeeBreedingHelper.getSpeciesDisplayName(step.getString("result"))
-            + "  "
-            + String.format(Locale.ROOT, "%.1f%%", step.getDouble("chance"))
-            + "\n"
-            + BeeBreedingHelper.getSpeciesDisplayName(step.getString("parent1"))
-            + " + "
-            + BeeBreedingHelper.getSpeciesDisplayName(step.getString("parent2"));
+    private double routeProgress() {
+        if (archivedSpecies.contains(target.getStringValue())) return 1D;
+        return steps.isEmpty() ? 0D : (double) completedRouteSteps() / steps.size();
+    }
+
+    private String routeProgressText() {
+        if (!target.getStringValue()
+            .isEmpty() && archivedSpecies.contains(target.getStringValue())) {
+            // #tr gtnr.bee_breeder.unlocked
+            // # Unlocked
+            // # zh_CN 已解锁
+            return tr("gtnr.bee_breeder.unlocked");
+        }
+        // #tr gtnr.bee_breeder.route_meter
+        // # Route %s/%s
+        // # zh_CN 路线 %s/%s
+        return tr("gtnr.bee_breeder.route_meter", completedRouteSteps(), steps.size());
+    }
+
+    private ItemStack beeIcon(String uid) {
+        if (uid.isEmpty()) return null;
+        if (!beeIcons.containsKey(uid)) beeIcons.put(uid, BeeBreedingHelper.createDrone(uid));
+        return beeIcons.get(uid);
     }
 
     private String missingText() {
-        // #tr gtnr.bee_breeder.missing
-        // # Missing parent: %s
-        // # zh_CN 缺少亲本：%s
         String uid = missing.getStringValue();
         return uid.isEmpty() ? ""
+            // #tr gtnr.bee_breeder.missing
+            // # Missing parent: %s
+            // # zh_CN 缺少亲本：%s
             : EnumChatFormatting.RED + tr("gtnr.bee_breeder.missing", BeeBreedingHelper.getSpeciesDisplayName(uid));
     }
 
@@ -712,10 +702,27 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
         return uid.isEmpty() ? tr("gtnr.bee_breeder.unset") : BeeBreedingHelper.getSpeciesDisplayName(uid);
     }
 
+    private static Widget<?> fittedText(Supplier<String> value, int x, int y, int width, float scale) {
+        return new Widget<>().pos(x, y)
+            .size(width, 12)
+            .overlay((context, left, top, w, h, theme) -> {
+                String full = value.get();
+                String label = full;
+                if (context.getFontRenderer()
+                    .getStringWidth(full) * scale > w) {
+                    label = context.getFontRenderer()
+                        .trimStringToWidth(full, (int) (w / scale) - 6) + "…";
+                }
+                GuiDraw.drawText(label, left, top + 2, scale, 0xFF202020, false);
+            });
+    }
+
     private static TextWidget<?> text(Supplier<String> value, int x, int y, int width) {
         return new TextWidget<>(IKey.dynamic(value)).pos(x, y)
             .size(width, 12)
-            .alignment(Alignment.CenterLeft);
+            .alignment(Alignment.CenterLeft)
+            .color(0xFF202020)
+            .shadow(false);
     }
 
     private static TextWidget<?> terminalText(Supplier<String> value) {
@@ -727,25 +734,471 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
         return StatCollector.translateToLocalFormatted(key, args);
     }
 
-    private static final class BreedingProgressWidget extends Widget<BreedingProgressWidget> {
+    private static ProgressWidget progressArrow(DoubleSupplier progress, int x, int y) {
+        return new ProgressWidget().value(new DoubleValue.Dynamic(progress, null))
+            .texture(GTGuiTextures.PROGRESSBAR_ARROW_STANDARD, 20)
+            .direction(ProgressWidget.Direction.RIGHT)
+            .pos(x, y)
+            .size(20, 18);
+    }
 
-        private static final Rectangle TRACK = new Rectangle().color(0xFF565656);
-        private static final Rectangle FILL = new Rectangle().color(0xFF489855);
-        private final DoubleSupplier progress;
+    private ProgressWidget breedingArrow(Supplier<NBTTagCompound> step, DoubleSupplier progress, int x, int y) {
+        return progressArrow(progress, x, y).texture(ARROW_EMPTY, ARROW_FULL, 20)
+            .onUpdateListener(widget -> {
+                NBTTagCompound current = step.get();
+                widget.texture(
+                    ARROW_EMPTY,
+                    current != null && archivedSpecies.contains(current.getString("result")) ? ARROW_COMPLETE
+                        : ARROW_FULL,
+                    20);
+            });
+    }
 
-        private BreedingProgressWidget(DoubleSupplier progress) {
-            this.progress = progress;
+    private NBTTagCompound previewStep() {
+        if (!activeSteps.isEmpty()) return activeSteps.get(0);
+        // #tr gtnr.bee_breeder.ready
+        // # Ready
+        // # zh_CN 可杂交
+        for (NBTTagCompound step : steps) if (routeState(step).equals("gtnr.bee_breeder.ready")) return step;
+        for (NBTTagCompound step : steps) if (!archivedSpecies.contains(step.getString("result"))) return step;
+        for (NBTTagCompound step : steps) if (step.getString("result")
+            .equals(target.getStringValue())) return step;
+        return null;
+    }
+
+    private double previewProgress() {
+        NBTTagCompound step = previewStep();
+        return step == null ? cycleProgress() : stepProgress(step);
+    }
+
+    private String previewSpecies(String key) {
+        NBTTagCompound step = previewStep();
+        return step != null ? step.getString(key) : key.equals("result") ? target.getStringValue() : "";
+    }
+
+    private String previewChance() {
+        // #tr gtnr.bee_breeder.invalid_short
+        // # Unknown bee species
+        // # zh_CN 未找到该蜂种
+        if (!valid.getBoolValue()) return EnumChatFormatting.DARK_RED + tr("gtnr.bee_breeder.invalid_short");
+        NBTTagCompound step = previewStep();
+        // #tr gtnr.bee_breeder.chance
+        // # Mutation chance: %.1f%%
+        // # zh_CN 杂交成功率：%.1f%%
+        if (step != null) return tr("gtnr.bee_breeder.chance", step.getDouble("chance"));
+        return tr(
+            archivedSpecies.contains(target.getStringValue()) ? "gtnr.bee_breeder.unlocked" : "gtnr.bee_breeder.unset");
+    }
+
+    private SlotLikeButtonWidget beeSlot(Supplier<String> species, int x, int y) {
+        return new SlotLikeButtonWidget(() -> beeIcon(species.get())).pos(x, y)
+            .size(18)
+            .tooltipAutoUpdate(true)
+            .tooltipBuilder(t -> {
+                ItemStack stack = beeIcon(species.get());
+                if (stack != null) t.addFromItem(stack);
+            });
+    }
+
+    private String routeState(NBTTagCompound step) {
+        String result = step.getString("result");
+        if (archivedSpecies.contains(result)) return "gtnr.bee_breeder.unlocked";
+        // #tr gtnr.bee_breeder.active
+        // # Breeding
+        // # zh_CN 正在杂交
+        if (machineActive.getBoolValue() && activeSpecies.contains(result)) return "gtnr.bee_breeder.active";
+        if (archivedSpecies.contains(step.getString("parent1")) && archivedSpecies.contains(step.getString("parent2")))
+            return "gtnr.bee_breeder.ready";
+        // #tr gtnr.bee_breeder.waiting
+        // # Waiting for parents
+        // # zh_CN 等待亲本
+        return "gtnr.bee_breeder.waiting";
+    }
+
+    private double stepProgress(NBTTagCompound step) {
+        return switch (routeState(step)) {
+            case "gtnr.bee_breeder.unlocked" -> 1D;
+            case "gtnr.bee_breeder.active" -> cycleProgress();
+            default -> 0D;
+        };
+    }
+
+    private NBTTagCompound currentStep(NBTTagCompound step) {
+        for (NBTTagCompound active : activeSteps) {
+            if (active.getString("result")
+                .equals(step.getString("result"))) return active;
+        }
+        return step;
+    }
+
+    private void addRouteLink(BreedingRouteWidget canvas, RouteLink link) {
+        canvas.child(
+            progressArrow(() -> stepProgress(link.result.step), link.x, link.y).size(link.length, 18)
+                .texture(ROUTE_ARROW_EMPTY, ROUTE_ARROW_FULL, link.length)
+                .transform((widget, stack) -> {
+                    stack.rotateZ(link.angle);
+                    stack.translate(0, -9);
+                })
+                .onUpdateListener(
+                    widget -> widget.texture(
+                        ROUTE_ARROW_EMPTY,
+                        archivedSpecies.contains(link.result.uid) ? ROUTE_ARROW_COMPLETE : ROUTE_ARROW_FULL,
+                        link.length))
+                .tooltipAutoUpdate(true)
+                .tooltipBuilder(
+                    t -> t.addLine(IKey.lang(routeState(link.result.step)))
+                        .addLine(tr("gtnr.bee_breeder.chance", currentStep(link.result.step).getDouble("chance")))));
+    }
+
+    private final class BreedingRouteWidget extends ParentWidget<BreedingRouteWidget>
+        implements IViewport, Interactable {
+
+        private final ScrollWidget<?> viewport;
+        private final VerticalScrollData vertical;
+        private final HorizontalScrollData horizontal;
+        private List<NBTTagCompound> lastSteps;
+        private String lastTarget = "";
+        private RouteLayout layout = new RouteLayout(Collections.emptyList(), "");
+        private final Animator zoomAnimation = new Animator().duration(160)
+            .curve(Interpolation.QUAD_OUT)
+            .onUpdate(this::applyZoom);
+        private float zoom = 1F;
+        private float targetZoom = 1F;
+        private float zoomAnchorX;
+        private float zoomAnchorY;
+        private float zoomContentX;
+        private float zoomContentY;
+        private int dragX;
+        private int dragY;
+        private int startScrollX;
+        private int startScrollY;
+
+        private BreedingRouteWidget(ScrollWidget<?> viewport, VerticalScrollData vertical,
+            HorizontalScrollData horizontal) {
+            this.viewport = viewport;
+            this.vertical = vertical;
+            this.horizontal = horizontal;
+            pos(0, 0).size(ROUTE_WIDTH, ROUTE_HEIGHT - 4);
+        }
+
+        @Override
+        public void onUpdate() {
+            super.onUpdate();
+            String currentTarget = target.getStringValue();
+            if (lastSteps == steps && lastTarget.equals(currentTarget)) return;
+            boolean targetChanged = !lastTarget.equals(currentTarget) || lastSteps == null
+                || (lastSteps.isEmpty() && !steps.isEmpty());
+            lastSteps = steps;
+            lastTarget = currentTarget;
+            if (targetChanged) stopZoom();
+            layout = new RouteLayout(steps, currentTarget);
+            removeAll();
+            for (RouteLink link : layout.links) addRouteLink(this, link);
+            for (RouteNode node : layout.nodes.values())
+                child(beeSlot(() -> node.uid, node.x, node.y).tooltipBuilder(t -> {
+                    if (node.step != null) t.addLine(IKey.lang(routeState(node.step)))
+                        .addLine(tr("gtnr.bee_breeder.chance", currentStep(node.step).getDouble("chance")));
+                }));
+            updateCanvasSize();
+            if (targetChanged) focusTarget();
+            else {
+                vertical.clamp(viewport.getScrollArea());
+                horizontal.clamp(viewport.getScrollArea());
+            }
+        }
+
+        private void focusTarget() {
+            stopZoom();
+            RouteNode node = layout.nodes.get(target.getStringValue());
+            vertical.scrollTo(viewport.getScrollArea(), node == null ? 0 : Math.round((node.y - 10) * zoom));
+            horizontal.scrollTo(
+                viewport.getScrollArea(),
+                node == null ? 0
+                    : Math.round(contentOffsetX() + (node.x + 9) * zoom)
+                        - horizontal.getFullVisibleSize(viewport.getScrollArea()) / 2);
+        }
+
+        @Override
+        public void transformChildren(IViewportStack stack) {
+            stack.translate(contentOffsetX(), 0);
+            stack.scale(zoom, zoom);
+        }
+
+        private float contentOffsetX() {
+            return Math.max(0F, (ROUTE_WIDTH - layout.width * zoom) / 2F);
+        }
+
+        private void setZoom(float value, float anchorX, float anchorY) {
+            float nextZoom = Math.max(MIN_ROUTE_ZOOM, Math.min(MAX_ROUTE_ZOOM, value));
+            if (nextZoom == targetZoom) return;
+            zoomAnimation.stop(true);
+            zoomAnchorX = anchorX;
+            zoomAnchorY = anchorY;
+            zoomContentX = (horizontal.getScroll() + anchorX - contentOffsetX()) / zoom;
+            zoomContentY = (vertical.getScroll() + anchorY) / zoom;
+            targetZoom = nextZoom;
+            zoomAnimation.bounds(zoom, targetZoom)
+                .animate();
+        }
+
+        private void applyZoom(double value) {
+            zoom = (float) value;
+            updateCanvasSize();
+            horizontal
+                .scrollTo(viewport.getScrollArea(), Math.round(contentOffsetX() + zoomContentX * zoom - zoomAnchorX));
+            vertical.scrollTo(viewport.getScrollArea(), Math.round(zoomContentY * zoom - zoomAnchorY));
+        }
+
+        private void updateCanvasSize() {
+            int width = Math.max(ROUTE_WIDTH, (int) Math.ceil(layout.width * zoom));
+            int height = Math.max(ROUTE_HEIGHT - 4, (int) Math.ceil(layout.height * zoom));
+            size(width, height);
+            getArea().setSize(width, height);
+            horizontal.setScrollSize(width);
+            vertical.setScrollSize(height);
+            viewport.scheduleResize();
+            scheduleResize();
+        }
+
+        private void stopZoom() {
+            zoomAnimation.stop(true);
+            targetZoom = zoom;
+        }
+
+        @Override
+        public void dispose() {
+            stopZoom();
+            super.dispose();
+        }
+
+        @Override
+        public @NotNull Result onMousePressed(int button) {
+            if (button != 0) return Result.IGNORE;
+            stopZoom();
+            dragX = getContext().getAbsMouseX();
+            dragY = getContext().getAbsMouseY();
+            startScrollX = horizontal.getScroll();
+            startScrollY = vertical.getScroll();
+            return Result.SUCCESS;
+        }
+
+        @Override
+        public void onMouseDrag(int button, long timeSinceClick) {
+            if (button == 0) {
+                vertical.scrollTo(viewport.getScrollArea(), startScrollY + dragY - getContext().getAbsMouseY());
+                horizontal.scrollTo(viewport.getScrollArea(), startScrollX + dragX - getContext().getAbsMouseX());
+            }
+        }
+    }
+
+    private final class BreedingRouteViewport extends ScrollWidget<BreedingRouteViewport> {
+
+        private final Area contentClip = new Area();
+
+        private BreedingRouteViewport(VerticalScrollData vertical) {
+            super(vertical);
+        }
+
+        @Override
+        public @NotNull Result onMousePressed(int button) {
+            if (button == 0) routeWidget.stopZoom();
+            return super.onMousePressed(button);
+        }
+
+        @Override
+        public boolean onMouseScroll(UpOrDown direction, int amount) {
+            if (Interactable.hasControlDown()) {
+                routeWidget.setZoom(
+                    routeWidget.targetZoom * (float) Math.pow(1.2D, direction.modifier),
+                    getContext().getMouseX(),
+                    getContext().getMouseY());
+                return true;
+            }
+            routeWidget.stopZoom();
+            var area = getScrollArea();
+            var scroll = area.getScrollX()
+                .isScrollBarActive(area)
+                && (Interactable.hasShiftDown() || !area.getScrollY()
+                    .isScrollBarActive(area)) ? area.getScrollX() : area.getScrollY();
+            if (!scroll.isScrollBarActive(area)) return false;
+            int previous = scroll.getScroll();
+            scroll.scrollBy(area, -direction.modifier * scroll.getScrollSpeed());
+            return previous != scroll.getScroll() || scroll.isCancelScrollEdge();
         }
 
         @Override
         @SideOnly(Side.CLIENT)
-        public void draw(ModularGuiContext context, WidgetThemeEntry<?> entry) {
-            var theme = getActiveWidgetTheme(entry, isHovering());
-            int width = getArea().width;
-            int height = getArea().height;
-            TRACK.draw(context, 0, 0, width, height, theme);
-            int fill = (int) Math.round((width - 2) * Math.max(0D, Math.min(1D, progress.getAsDouble())));
-            if (fill > 0) FILL.draw(context, 1, 1, fill, height - 2, theme);
+        public void preDraw(ModularGuiContext context, boolean transformed) {
+            if (!transformed) {
+                var area = getScrollArea();
+                contentClip.setSize(
+                    area.getScrollX()
+                        .getFullVisibleSize(area),
+                    area.getScrollY()
+                        .getFullVisibleSize(area));
+                Stencil.applyAtZero(contentClip, context);
+            }
+        }
+    }
+
+    private static final class RouteLayout {
+
+        private final Map<String, RouteNode> nodes = new LinkedHashMap<>();
+        private final List<RouteLink> links = new ArrayList<>();
+        private final int width;
+        private final int height;
+
+        private RouteLayout(List<NBTTagCompound> steps, String target) {
+            Map<String, NBTTagCompound> byResult = new HashMap<>();
+            for (NBTTagCompound step : steps) byResult.put(step.getString("result"), step);
+            RouteNode root = new RouteNode(target);
+            ArrayDeque<RouteNode> pending = new ArrayDeque<>();
+            if (!target.isEmpty()) {
+                nodes.put(target, root);
+                pending.add(root);
+            }
+            Set<String> expanded = new HashSet<>();
+            while (!pending.isEmpty()) {
+                RouteNode result = pending.remove();
+                result.step = byResult.get(result.uid);
+                if (result.step == null || !expanded.add(result.uid)) continue;
+                for (String key : new String[] { "parent1", "parent2" }) {
+                    String uid = result.step.getString(key);
+                    if (uid.isEmpty() || uid.equals(result.uid)) continue;
+                    if (result.parents.stream()
+                        .anyMatch(parent -> parent.uid.equals(uid))) continue;
+                    RouteNode parent = new RouteNode(uid);
+                    parent.depth = result.depth + 1;
+                    result.parents.add(parent);
+                    nodes.put("#parent:" + nodes.size(), parent);
+                    pending.add(parent);
+                }
+            }
+            int leaves = 0;
+            for (RouteNode node : nodes.values()) if (node.parents.isEmpty()) leaves++;
+            width = Math.max(ROUTE_WIDTH, leaves * 40 + 24);
+            int nextLeaf = (width - leaves * 40) / 2 + 20;
+            if (!target.isEmpty()) pending.push(root);
+            while (!pending.isEmpty()) {
+                RouteNode node = pending.pop();
+                if (node.parents.isEmpty()) {
+                    node.x = nextLeaf - 9;
+                    nextLeaf += 40;
+                } else {
+                    for (int i = node.parents.size() - 1; i >= 0; i--) pending.push(node.parents.get(i));
+                }
+            }
+            List<RouteNode> ordered = new ArrayList<>(nodes.values());
+            int bottom = 0;
+            for (int i = ordered.size() - 1; i >= 0; i--) {
+                RouteNode node = ordered.get(i);
+                if (!node.parents.isEmpty()) {
+                    int sum = 0;
+                    for (RouteNode parent : node.parents) sum += parent.x;
+                    node.x = sum / node.parents.size();
+                }
+                node.y = 10 + node.depth * 64;
+                bottom = Math.max(bottom, node.y + 28);
+            }
+            for (RouteNode node : nodes.values()) {
+                for (int i = 0; i < node.parents.size(); i++) links.add(new RouteLink(node.parents.get(i), node, i));
+            }
+            height = Math.max(ROUTE_HEIGHT - 4, bottom);
+        }
+    }
+
+    private static final class RouteNode {
+
+        private final String uid;
+        private final List<RouteNode> parents = new ArrayList<>(2);
+        private NBTTagCompound step;
+        private int depth;
+        private int x;
+        private int y;
+
+        private RouteNode(String uid) {
+            this.uid = uid;
+        }
+    }
+
+    private static final class RouteLink {
+
+        private final RouteNode result;
+        private final int x;
+        private final int y;
+        private final int length;
+        private final float angle;
+
+        private RouteLink(RouteNode parent, RouteNode result, int input) {
+            this.result = result;
+            double toX = result.x + (result.parents.size() == 1 ? 9 : input == 0 ? -2 : 20);
+            double toY = result.y + 20;
+            double dx = toX - parent.x - 9, dy = toY - parent.y - 9;
+            double inset = Math.min(11D / Math.abs(dx), 11D / Math.abs(dy));
+            x = (int) Math.round(parent.x + 9 + dx * inset);
+            y = (int) Math.round(parent.y + 9 + dy * inset);
+            length = (int) Math.round(Math.hypot(toX - x, toY - y));
+            angle = (float) Math.atan2(toY - y, toX - x);
+        }
+    }
+
+    private static final class RouteArrowTexture extends UITexture {
+
+        private RouteArrowTexture(boolean full, int color) {
+            super(
+                GTGuiTextures.PROGRESSBAR_ARROW_STANDARD.getLocation(),
+                0,
+                full ? 0.5F : 0,
+                1,
+                full ? 1 : 0.5F,
+                ColorType.DEFAULT,
+                false,
+                color);
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void draw(float x, float y, float width, float height) {
+            drawArrow(x, y, width, height, 0, width, 0, 1);
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void drawSubArea(float x, float y, float width, float height, float uStart, float vStart, float uEnd,
+            float vEnd, WidgetTheme theme) {
+            if (uEnd <= uStart) return;
+            applyColor(ColorType.DEFAULT.getColor(theme));
+            float fullWidth = width / (uEnd - uStart);
+            drawArrow(x, y, fullWidth, height, uStart * fullWidth, uEnd * fullWidth, vStart, vEnd);
+        }
+
+        @SideOnly(Side.CLIENT)
+        private void drawArrow(float x, float y, float width, float height, float from, float to, float vStart,
+            float vEnd) {
+            // Preserve the cap and arrowhead; only the straight shaft grows with the connection.
+            drawSlice(x, y, height, from, to, 0, 1, 0, 0.05F, vStart, vEnd);
+            drawSlice(x, y, height, from, to, 1, width - 10, 0.05F, 0.5F, vStart, vEnd);
+            drawSlice(x, y, height, from, to, width - 10, width, 0.5F, 1, vStart, vEnd);
+        }
+
+        @SideOnly(Side.CLIENT)
+        private void drawSlice(float x, float y, float height, float from, float to, float start, float end,
+            float sourceStart, float sourceEnd, float vStart, float vEnd) {
+            float left = Math.max(from, start), right = Math.min(to, end);
+            if (right <= left || end <= start) return;
+            float first = sourceStart + (sourceEnd - sourceStart) * (left - start) / (end - start);
+            float last = sourceStart + (sourceEnd - sourceStart) * (right - start) / (end - start);
+            GuiDraw.drawTexture(
+                location,
+                x + left - from,
+                y,
+                x + right - from,
+                y + height,
+                lerpU(first),
+                lerpV(vStart),
+                lerpU(last),
+                lerpV(vEnd),
+                nonOpaque);
         }
     }
 
@@ -789,12 +1242,12 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
         }
 
         private int pageCount() {
-            return Math.max(1, (filtered().size() + SPECIES_ROWS - 1) / SPECIES_ROWS);
+            return Math.max(1, (filtered().size() + SPECIES_PER_PAGE - 1) / SPECIES_PER_PAGE);
         }
 
         private String uid(int row) {
             List<String> values = filtered();
-            int index = page * SPECIES_ROWS + row;
+            int index = page * SPECIES_PER_PAGE + row;
             return index < values.size() ? values.get(index) : "";
         }
     }

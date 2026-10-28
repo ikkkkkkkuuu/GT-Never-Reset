@@ -17,7 +17,7 @@
 | 方块、对应 ItemBlock、TileEntity | 分别为 `common.block.blocks`、其下的 `item`、`tile` |
 | 普通物品 | `common.item.items`；物品基类及确有共用职责的基础类型放 `common.item` |
 | 单方块机器、多方块、仓室、机器基类 | 分别为 `common.machine.basicMachine`、`multiblock`、`hatch`、`multiMachineBase` |
-| 配方实现 | `common.recipe`，按配方所属系统细分；统一由 recipe loader 调用 |
+| 配方实现 | `common.recipe`，按实际目标配方池组织类；统一由 recipe loader 调用 |
 | GT 机器、仓室的 ModularUI 界面 | `common.gui.modularui`；控制器保留 UI 入口 |
 | 普通方块、物品、覆盖板及 AE 部件的 GUI | `common.gui`；方块、物品和部件保留 UI 入口 |
 | 原版容器 | `container` |
@@ -28,13 +28,15 @@
 | 公共枚举 | 现有 `utils.enums` |
 
 - 包名沿用参考项目的职责词汇和目标项目已有大小写；`basicMachine`、`multiMachineBase` 等已有风格不另造一套。保留本项目根包，不复制 `com.science.gtnl`。
-- 配方子包按目标配方池归属划分：写入 GT 原有配方池的配方放在 `common.recipe.gregtech`，本模组自定义配方池的配方及专用后端放在 `common.recipe.gtneverreset`；同一功能同时涉及两类配方时拆开放置，不能仅因使用 GT API 或 GT 机器就全部归入 `gregtech`。
+- 配方类按实际写入的配方池归并，例如装配机配方统一放在 `AssemblerRecipes`、工作台配方统一放在 `CraftingTableRecipes`；不得按产物所属功能或移植项目拆成 `ModuleHatchRecipes`、`PackagedRecipes` 等注册类。不同配方池通常分别组织；共用同一转换流程的 Modern 无单元配方集中在 `ModernNonCellRecipes`，分别写入对应配方池，不为每个池建立仅转发调用的类。共享转换算法放在 `utils.recipes`。配方后端、匹配算法、样板处理等非配方注册逻辑放在 `utils.recipes` 等对应职责包，不放在配方池注册目录。
+- 配方子包按目标配方池归属划分：写入 GT 原有配方池的配方放在 `common.recipe.gregtech`，本模组自定义配方池的配方注册类放在 `common.recipe.gtneverreset`；同一功能同时涉及两类配方时拆开放置，不能仅因使用 GT API 或 GT 机器就全部归入 `gregtech`。
 - 对照 GTNL 的实际分类：`common.gui.modularui` 根层放完整的 GT 机器、仓室 GUI 类；普通方块、物品、覆盖板及 AE 部件 GUI 放在 `common.gui` 根层，共享 GUI 纹理定义也放在这一层。使用 ModularUI2 本身不是归入 `modularui` 的依据。
 - 参考 GTNL 的局部内部类型做法：只服务一个 GUI 的槽位适配器、控件、同步处理器、预览/选择面板及视图状态，优先写在所属 GUI 中；简短且单次调用的注册包装直接并回调用处，重复布局提取所属 GUI 的私有方法。同一流程的方法及相关内部类型放在一起，不为类别统一拆出 `handler`、`widget`、`sync`、`model` 目录。
 - 跨 GUI 复用或确有独立职责的复杂控件、同步实现才保留独立文件，按实际职责和 GTNL 的对应位置安排；不为减少文件数合并无关 GUI 或业务逻辑。Forge `IGuiHandler` 路由类与普通 GUI 入口同放 `common.gui`；跨 GUI、网络和会话共用的 GUI 类型枚举归 `utils.enums`。
 - 客户端 GUI 同样按实际使用范围收拢：专用按钮、面板、弹窗、视图状态及界面契约优先放回所属客户端主 GUI，相关生命周期和辅助方法就近排列；被客户端 mixin 引用本身不等于跨界面复用。确实被不同界面使用的屏幕基类、按钮和纹理处理保留独立；不要为了合并文件把客户端实现移入公共端，或去掉原有 `@SideOnly(Side.CLIENT)` 隔离。物品专用提示文字及其小型辅助方法归所属物品的客户端提示入口。
 - 类名使用领域名加职责名，如 `XxxController`、`XxxGui`、`XxxPacket`、`XxxState`。一个文件一个主要顶层类型，文件名与类型名一致。
 - 方块沿用 `BlockXxx`、对应 ItemBlock 沿用 `ItemBlockXxx`，TileEntity 类（含基类）统一使用 `TileEntityXxx` 前缀，放在 `common.block.blocks.tile`。目录或类名调整时同步更新引用，但保留已有注册 ID、存档键和网络标识。
+- 多方块形状统一使用 GTNL 的 `MBS1` 二进制 `.mbs`，放在 `src/main/resources/assets/gtneverreset/multiblock/`，通过 `utils.structure.MultiblockStructureLoader` 加载；不再在 Java 类中嵌入形状字符串数组。Java 保留元素映射、结构 piece 名、控制器偏移和成型规则；迁移时逐字符核对空格、层顺序及转置方式。`.mbs` 必须按二进制提交，避免换行转换损坏。
 - 不把功能专属逻辑仅改名为 `Utils` 后堆入工具包；不为很小的逻辑创建没有独立职责的 Manager、接口或包装类。小型且只服务外部类的数据类型可用内部类。
 
 ## 类与方法的位置
@@ -44,8 +46,10 @@
 - 网络数据包统一在 `common.packet.NetWorkHandler#register` 注册，由代理调用；不另设功能专属的注册入口或通道。保留已有通道名、接收侧和包 ID，新增包追加到统一注册列表。
 - 配置沿用 GTNL 的 `MainConfig`、静态分类实例和内部分类类结构，使用 GTNHLib 的 `@Config`、默认值、说明及约束注解；由 `loader.ConfigLoader` 统一注册和保存。只创建已有功能需要的分类，纯客户端设置不标记 `@Sync`，不另用 NEI 配置标签保存同一设置。
 - 新类默认按“常量和字段 → 构造方法 → 生命周期及主要对外行为 → 辅助方法 → 局部内部类型”排列；同一流程的方法、重载及紧密相关的辅助方法相邻。修改已有类时先沿用同类附近的顺序，不机械按字母或可见性重排。
+- 多方块控制器及公共机器基类统一以 `common.machine.multiMachineBase.MachineBaseLayoutTemplate` 为排布模板，优先于上面的通用成员顺序：静态常量与静态工具方法 → 持久化字段 → 运行时字段 → 构造器 → 生命周期 → 结构检查与参数准备 → 配方与处理主流程 → 输入、输出、仓室与贴图 → 信息展示 → UI → NBT 与客户端同步 → 能力开关与策略 Getter → 底层辅助方法与内部类型。同一职责连续排列，覆写方法按职责归位；辅助方法和重载跟随所属流程，未使用区域可以省略。调整字段位置必须核对初始化依赖。模板仅作排布参考，不注册、不承载业务，也不要求机器继承它。
 - 类和接口用大驼峰，普通方法与字段用小驼峰，常量用大写下划线。已有 API、覆盖方法和兼容性名称按原约定保留。
 - 该成员顺序是本项目后续生成代码的默认约定；参考项目存在历史差异，不应声称其全仓采用严格统一的顺序。
+- 成员顺序通过实际排列体现，不添加“配方与处理主流程”等分区标题注释；连续字段不逐条插入空行，仅在必要的逻辑分组、方法之间保留空行。
 
 ## 格式与验证
 
@@ -56,6 +60,8 @@
 - Java 修改运行项目 Spotless 检查及 `compileJava`；资源修改补充 `processResources`。Git 可用时检查 `git diff --check`，当前目录没有 Git 元数据时如实说明。
 
 ## 语言键与翻译
+
+- 多方块的通用参数、等级加成和结构信息由 `AutoMultiblockTooltipBuilder` 自动生成；特殊说明维护在 `src/main/resources/assets/gtneverreset/lang/<语言>/tooltip/<机器名>.md`；结构说明不另建 Markdown，模块数量等规则与成型校验共用数据。通过 `MultiblockTooltipSource` 声明文档路径和 `{var:name}` 数值，不在 Markdown 重复维护能够自动读取的参数或结构数量。这些 Markdown 文案直接维护中英文，不走下方的 Java `#tr` 生成流程；其他语言键继续遵守原规则。
 
 - 沿用 GTNG 的 `#tr` 注释流程，在 Java 中使用语言键的位置紧邻上方声明译文，不直接编辑生成的 `.lang` 文件，不集中堆在类头。每条译文保持单行，避免 formatter 折行破坏提取。
 

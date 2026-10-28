@@ -1,4 +1,3 @@
-// Interface cuboids adapted from GTNH AE2 rv3-beta-1073-GTNH, AlgorithmX2, LGPL-3.0-or-later.
 package com.xyp.gtneverreset.common.part;
 
 import java.util.Collections;

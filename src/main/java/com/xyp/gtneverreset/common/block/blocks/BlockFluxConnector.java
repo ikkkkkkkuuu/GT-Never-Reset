@@ -1,4 +1,3 @@
-/* Flux Networks block/model port. Copyright (c) 2018 Ollie Lansdell, MIT. */
 package com.xyp.gtneverreset.common.block.blocks;
 
 import java.util.ArrayList;

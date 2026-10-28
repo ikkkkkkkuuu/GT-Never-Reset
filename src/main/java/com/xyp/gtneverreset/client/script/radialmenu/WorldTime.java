@@ -10,8 +10,6 @@ public final class WorldTime {
 
     public static final long DUSK = 12000L;
 
-    private WorldTime() {}
-
     public static long timeOfDay(long worldTime) {
         long time = worldTime % DAY;
         return time < 0 ? time + DAY : time;

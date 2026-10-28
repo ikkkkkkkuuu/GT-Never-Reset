@@ -5,13 +5,11 @@
     {
       "archive": "GTL-Enhancedcore-3.8.0.jar",
       "sha256": "555a9514c4d2fd11a029c091ac053d5cf7c52fba62411f2f043e04454094f7aa",
-      "license": "LGPL-3.0",
       "source_commit": null
     },
     {
       "archive": "gtceu-1.20.1-1.4.4.jar",
-      "sha256": "e7b5239e1fedd1096f55e9408cf673b01ddbed14c806f0368f02386137289f12",
-      "license": "LGPL-3.0"
+      "sha256": "e7b5239e1fedd1096f55e9408cf673b01ddbed14c806f0368f02386137289f12"
     }
   ],
   "assets": [
@@ -25,7 +23,6 @@
       "sha256": "eaa06261095cf2764d75130061f42341520b3dfa62fe4612557166a26f2984de",
       "width": 16,
       "height": 16,
-      "license": "LGPL-3.0",
       "modifications": "GTNG made 62 frame pixels transparent; this port preserves the current GTNG PNG byte-for-byte."
     },
     {
@@ -38,7 +35,6 @@
       "sha256": "8de6800c8b560a0669307d2eb1b4612268393199766fea8379dc80cd4a1a76f7",
       "width": 16,
       "height": 16,
-      "license": "LGPL-3.0",
       "modifications": "GTNG made 62 frame pixels transparent; this port preserves the current GTNG PNG byte-for-byte."
     },
     {
@@ -47,7 +43,6 @@
       "source": "src/main/resources/META-INF/large-furnace-port/large_furnace.pattern.gz",
       "destination": "META-INF/large-furnace-port/large_furnace.pattern.gz",
       "sha256": "2fbe85cdb4519f6aa4bf53dd1f5faf7ccf093357c29c819e955d28ac63feae44",
-      "license": "LGPL-3.0",
       "modifications": "None; provenance reference copied byte-for-byte."
     }
   ]

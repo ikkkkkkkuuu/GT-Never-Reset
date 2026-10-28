@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import java.util.ArrayDeque;
@@ -19,8 +17,6 @@ public class EntranceCandidates {
 
     private static final int NEED_RADIUS = 2;
     private static final int CAPTURE_RADIUS = 6;
-
-    private EntranceCandidates() {}
 
     public static <N> N select(Set<N> members, Collection<N> missing, Collection<N> occupied,
         Function<N, Iterable<N>> neighbours, Predicate<N> eligible, ToIntFunction<N> rank, ToIntFunction<N> capacity,

@@ -40,8 +40,6 @@ public final class IconRenderer {
 
     private static final Set<String> UNRENDERABLE = new HashSet<>();
 
-    private IconRenderer() {}
-
     public static void draw(IconSpec icon, int x, int y) {
         draw(icon, x, y, ICON_SIZE);
     }

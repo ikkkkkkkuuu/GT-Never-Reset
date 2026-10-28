@@ -2,8 +2,6 @@ package com.xyp.gtneverreset.utils.gui.radialmenu;
 
 public final class Colors {
 
-    private Colors() {}
-
     public static boolean hasAlpha(String value) {
         return digits(value).length() == 8;
     }

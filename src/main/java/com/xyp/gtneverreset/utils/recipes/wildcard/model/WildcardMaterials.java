@@ -31,8 +31,6 @@ public final class WildcardMaterials {
     private static volatile List<String> cachedExpandableNames;
     private static volatile int cachedOreNameCount = -1;
 
-    private WildcardMaterials() {}
-
     /** 判断材料是否为可用的真实材料（排除 _NULL / Empty）。 */
     public static boolean isRealMaterial(Materials material) {
         return material != null && material != Materials._NULL

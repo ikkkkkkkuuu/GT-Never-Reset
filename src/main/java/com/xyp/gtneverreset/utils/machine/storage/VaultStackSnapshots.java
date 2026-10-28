@@ -1,12 +1,9 @@
-// SPDX-License-Identifier: MIT
 package com.xyp.gtneverreset.utils.machine.storage;
 
 import appeng.api.storage.data.IAEItemStack;
 import appeng.util.item.AEItemStack;
 
 public final class VaultStackSnapshots {
-
-    private VaultStackSnapshots() {}
 
     /**
      * Rebuilds AE's mutable item definition instead of sharing it through {@link IAEItemStack#copy()}.

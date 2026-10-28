@@ -1,17 +1,18 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from GTNL PR #654, commit 1cd98b4f61e4c77f65263171d3f03dda9c813382.
-// Description styling updated from commit 8f3aaa38713b8b085338cb676b66cbd01c58875d.
-// Structure display updated from commit a6ee80aea6eaf98e2478e847a96dfdc3a620847b.
 package com.xyp.gtneverreset.utils.structure;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 
+import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource.TooltipStats;
+import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 import com.xyp.gtneverreset.utils.structure.PerformanceSummary.BonusStat;
 import com.xyp.gtneverreset.utils.structure.StructureSummary.BlockLine;
 import com.xyp.gtneverreset.utils.structure.StructureSummary.ControllerPosition;
@@ -21,6 +22,8 @@ import com.xyp.gtneverreset.utils.structure.StructureSummary.Size;
 
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
 import gregtech.api.util.MultiblockTooltipBuilder;
+import gregtech.api.util.tooltip.MarkdownTooltipLoader;
+import gregtech.api.util.tooltip.TooltipHelper;
 
 public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder {
 
@@ -70,12 +73,52 @@ public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder
                 for (String line : MultiblockPerformanceFormatter.bonuses(performance, BonusStat.ENERGY)) addInfo(line);
             }
         }
+        Map<String, Object> variables = tooltipVariables(source, stats);
+        for (String line : markdownLines(source.getTooltipPath(), variables)) addInfo(line);
         for (String line : source.getTooltipFeatureLines()) addInfo(line);
         for (String line : MultiblockPerformanceFormatter.rules(performance)) addInfo(line);
         if (stats != null && stats.perfectOverclock()) addPerfectOCInfo();
         addStructure(structure);
         for (String note : source.getTooltipStructureNotes()) addStructureInfo(note);
+        for (MachineModuleType module : MachineModuleType.values()) {
+            int limit = source.getParameterModuleLimit(module);
+            if (limit <= 0) continue;
+            // #tr gtnr.tooltip.structure.module_limit
+            // # %s: at most %s per machine
+            // # zh_CN %s：每台机器最多 %s 个
+            addStructureInfo(
+                StatCollector.translateToLocalFormatted(
+                    "gtnr.tooltip.structure.module_limit",
+                    StatCollector.translateToLocal(module.getTranslationKey()),
+                    limit));
+        }
         return this;
+    }
+
+    private static Map<String, Object> tooltipVariables(MultiblockTooltipSource source, TooltipStats stats) {
+        Map<String, Object> variables = new HashMap<>();
+        if (stats != null) {
+            variables.put("parallels", stats.parallels());
+            if (Double.isFinite(stats.speed())) {
+                variables.put("speed", TooltipHelper.percentageFormat.format(stats.speed()));
+            }
+            if (Double.isFinite(stats.energyUsage())) {
+                variables.put("energy_usage", TooltipHelper.percentageFormat.format(stats.energyUsage()));
+            }
+        }
+        variables.putAll(source.getTooltipVars());
+        return variables;
+    }
+
+    private static List<String> markdownLines(String path, Map<String, Object> variables) {
+        if (path == null || path.isEmpty()) return List.of();
+        try {
+            return MarkdownTooltipLoader.STANDARD
+                .loadStandardPath(new ResourceLocation(GTNeverReset.MODID, path), variables);
+        } catch (RuntimeException failure) {
+            GTNeverReset.LOG.warn("Cannot load tooltip document {}", path, failure);
+            return List.of();
+        }
     }
 
     private void addStructure(StructureSummary summary) {

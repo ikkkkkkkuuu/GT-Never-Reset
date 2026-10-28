@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from ABKQPO/GT-Not-Leisure, commit 6cbc6927af4f44c445ea7a879796b4764b00988d.
-// Modified for compact, fixed-maximum, energy-free GT Not Good machines.
 package com.xyp.gtneverreset.common.machine.multiblock;
 
 import java.util.EnumSet;
@@ -26,6 +23,7 @@ import com.xyp.gtneverreset.common.gui.modularui.QuantumComputerGui;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.machine.ECraftingCPUCluster;
 import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
@@ -81,17 +79,16 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
     public int width = 3;
     public int height = 2;
     public int depth = 1;
-
     public long maximumStorage = Long.MAX_VALUE;
     public int maximumParallel = Integer.MAX_VALUE;
-    public long usedStorage = 0;
-    public int usedParallel = 0;
     public boolean enabledSingularityCore = true;
     public String customName = "";
     public ECraftingCPUCluster virtualCPU = null;
     public final List<ECraftingCPUCluster> cpus = new ReferenceArrayList<>();
-
     private AENetworkProxy gridProxy;
+
+    public long usedStorage = 0;
+    public int usedParallel = 0;
     private boolean wasActive = false;
 
     public QuantumComputer(int aID, String aName, String aNameRegional) {
@@ -102,8 +99,302 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
         super(aName);
     }
 
-    public long getMaximumStorage() {
-        return Long.MAX_VALUE;
+    @Override
+    public IMetaTileEntity newMetaEntity(IGregTechTileEntity aTileEntity) {
+        return new QuantumComputer(mName);
+    }
+
+    @Override
+    public void onFirstTick(IGregTechTileEntity baseMetaTileEntity) {
+        super.onFirstTick(baseMetaTileEntity);
+        if (checkStructure(true, getBaseMetaTileEntity())) {
+            this.mStartUpCheck = -1;
+            this.mUpdate = 200;
+        }
+        getProxy().onReady();
+    }
+
+    @Override
+    public void onPostTick(IGregTechTileEntity aBaseMetaTileEntity, long aTick) {
+        super.onPostTick(aBaseMetaTileEntity, aTick);
+        if (aBaseMetaTileEntity.isAllowedToWork()) aBaseMetaTileEntity.disableWorking();
+        if (aBaseMetaTileEntity.isServerSide()) {
+            boolean active = isActive();
+            if (active != wasActive) {
+                wasActive = active;
+                if (active) createVirtualCPU();
+                postCPUClusterChangeEvent();
+            }
+        }
+    }
+
+    @Override
+    public void onBlockDestroyed() {
+        super.onBlockDestroyed();
+        clearCPUs();
+        postCPUClusterChangeEvent();
+    }
+
+    @Override
+    public IStructureDefinition<QuantumComputer> getStructureDefinition() {
+        return StructureDefinition.<QuantumComputer>builder()
+            .addShape("main", StructureUtility.transpose(MultiblockStructureLoader.load("quantum_computer")))
+            .addElement('A', StructureUtility.ofBlock(GregTechAPI.sBlockCasings2, 0))
+            .build();
+    }
+
+    @Override
+    public void construct(ItemStack stack, boolean hintsOnly) {
+        buildPiece("main", stack, hintsOnly, 1, 1, 0);
+    }
+
+    @Override
+    public int survivalConstruct(ItemStack stack, int budget, ISurvivalBuildEnvironment env) {
+        if (mMachine) return -1;
+        return survivalBuildPiece("main", stack, 1, 1, 0, budget, env, false, true);
+    }
+
+    @Override
+    public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
+        boolean formed = checkPiece("main", 1, 1, 0, errors);
+        getProxy().setValidSides(
+            formed ? EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)) : EnumSet.noneOf(ForgeDirection.class));
+        if (formed) createVirtualCPU();
+        postCPUClusterChangeEvent();
+    }
+
+    public void postCPUClusterChangeEvent() {
+        if (getProxy().getNode() == null) return;
+        try {
+            getProxy().getGrid()
+                .postEvent(new MENetworkCraftingCpuChange(getProxy().getNode()));
+        } catch (GridAccessException ignored) {}
+    }
+
+    public boolean isVirtualCPU(Object cluster) {
+        return virtualCPU == cluster;
+    }
+
+    public void forEachCPU(final Consumer<CraftingCPUCluster> consumer) {
+        if (!isActive()) return;
+
+        for (final CraftingCPUCluster cpu : cpus) {
+            consumer.accept(cpu);
+        }
+        if (virtualCPU != null) {
+            virtualCPU.setVirtualCPUOwner(this);
+            consumer.accept(virtualCPU);
+        }
+    }
+
+    public void onVirtualCPUSubmitJob(final long usedBytes) {
+        final boolean prevEmpty = cpus.isEmpty();
+
+        virtualCPU.setVirtualCPUOwner(this);
+        cpus.add(virtualCPU);
+
+        if (prevEmpty) {
+            markDirty();
+        }
+
+        virtualCPU.setAvailableStorage(usedBytes);
+        virtualCPU = null;
+        updateCPUNames();
+        createVirtualCPU();
+    }
+
+    public void createVirtualCPU() {
+        final long availableBytes = getAvailableBytes();
+        if (virtualCPU != null) {
+            virtualCPU.setAvailableStorage(availableBytes);
+            virtualCPU.setAccelerators(maximumParallel);
+            return;
+        }
+
+        WorldCoord pos = getWorldCoord();
+        virtualCPU = new ECraftingCPUCluster(pos, pos);
+        virtualCPU.setVirtualCPUOwner(this);
+        virtualCPU.setAvailableStorage(availableBytes);
+        virtualCPU.setAccelerators(maximumParallel);
+        if (hasCustomName()) virtualCPU.setName(customName);
+
+        postCPUClusterChangeEvent();
+    }
+
+    public void clearCPUs() {
+        IMEMonitor<IAEItemStack> itemInventory = null;
+        try {
+            var t = getBaseMetaTileEntity();
+            var te = t.getWorld()
+                .getTileEntity(t.getXCoord(), t.getYCoord() + 1, t.getZCoord());
+            if (te instanceof IGridHost igh) itemInventory = igh.getGridNode(ForgeDirection.UNKNOWN)
+                .getGrid()
+                .<IStorageGrid>getCache(IStorageGrid.class)
+                .getItemInventory();
+        } catch (Exception ignored) {}
+        final var s = new MachineSource(this);
+        for (var cpu : cpus) {
+            if (itemInventory != null) {
+                IItemList<IAEItemStack> itemList = AEApi.instance()
+                    .storage()
+                    .createItemList();
+                cpu.getInventory()
+                    .getAvailableItems(itemList);
+                for (var stack : itemList) {
+                    itemInventory.injectItems(stack, Actionable.MODULATE, s);
+                }
+            }
+            cpu.markDestroyed();
+        }
+        cpus.clear();
+    }
+
+    public void onCPUDestroyed(final ECraftingCPUCluster cluster) {
+        cpus.remove(cluster);
+        updateCPUNames();
+        createVirtualCPU();
+        postCPUClusterChangeEvent();
+        if (cpus.isEmpty()) {
+            markDirty();
+        }
+    }
+
+    @Override
+    public IGridNode getActionableNode() {
+        return getProxy().getNode();
+    }
+
+    @Override
+    public DimensionalCoord getLocation() {
+        return new DimensionalCoord(
+            getBaseMetaTileEntity().getWorld(),
+            getBaseMetaTileEntity().getXCoord(),
+            getBaseMetaTileEntity().getYCoord(),
+            getBaseMetaTileEntity().getZCoord());
+    }
+
+    @Override
+    public IGridNode getGridNode(ForgeDirection dir) {
+        return getProxy().getNode();
+    }
+
+    @Override
+    public AECableType getCableConnectionType(ForgeDirection forgeDirection) {
+        return AECableType.DENSE_COVERED;
+    }
+
+    @Override
+    public AENetworkProxy getProxy() {
+        if (gridProxy == null) {
+            var bmte = getBaseMetaTileEntity();
+            if (bmte instanceof IGridProxyable) {
+                gridProxy = new AENetworkProxy(this, "proxy", GTNRItemList.QuantumComputer.get(1), true);
+                gridProxy.setFlags(GridFlags.REQUIRE_CHANNEL);
+                gridProxy.setIdlePowerUsage(0);
+                if (bmte.getWorld() != null) {
+                    gridProxy.setOwner(
+                        bmte.getWorld()
+                            .getPlayerEntityByName(bmte.getOwnerName()));
+                }
+            }
+        }
+        return gridProxy;
+    }
+
+    @Override
+    public void securityBreak() {}
+
+    @MENetworkEventSubscribe
+    public void stateChange(final MENetworkPowerStatusChange c) {
+        final boolean currentActive = isActive();
+        if (wasActive != currentActive) {
+            wasActive = currentActive;
+            postCPUClusterChangeEvent();
+        }
+    }
+
+    @MENetworkEventSubscribe
+    public void stateChange(final MENetworkChannelsChanged c) {
+        final boolean currentActive = isActive();
+        if (wasActive != currentActive) {
+            wasActive = currentActive;
+            postCPUClusterChangeEvent();
+        }
+    }
+
+    public WorldCoord getWorldCoord() {
+        return new WorldCoord(
+            getBaseMetaTileEntity().getXCoord(),
+            getBaseMetaTileEntity().getYCoord(),
+            getBaseMetaTileEntity().getZCoord());
+    }
+
+    @Override
+    public ITexture[] getTexture(IGregTechTileEntity tile, ForgeDirection side, ForgeDirection facing, int color,
+        boolean active, boolean redstone) {
+        return side == facing
+            ? new ITexture[] { Textures.BlockIcons.getCasingTextureForId(getCasingTextureID()),
+                TextureFactory.of(
+                    active ? Textures.BlockIcons.OVERLAY_ME_INPUT_HATCH_ACTIVE
+                        : Textures.BlockIcons.OVERLAY_ME_INPUT_HATCH) }
+            : new ITexture[] { Textures.BlockIcons.getCasingTextureForId(getCasingTextureID()) };
+    }
+
+    public int getCasingTextureID() {
+        return GTUtility.getCasingTextureIndex(GregTechAPI.sBlockCasings2, 0);
+    }
+
+    public String getLocalNameKey() {
+        return "gtnr.QuantumComputer.name";
+    }
+
+    @Override
+    public MultiblockTooltipBuilder createTooltip() {
+        return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
+            .toolTipFinisher();
+    }
+
+    @Override
+    public String getTooltipMachineType() {
+        // #tr gtnr.QuantumComputer.name
+        // # Quantum Computer
+        // # zh_CN 量子计算机
+        return StatCollector.translateToLocal("gtnr.QuantumComputer.name");
+    }
+
+    @Override
+    public String getTooltipPath() {
+        return "quantum-computer";
+    }
+
+    @Override
+    public String getCustomName() {
+        return customName != null ? customName : getMachineCraftingIcon().getDisplayName();
+    }
+
+    @Override
+    public boolean hasCustomName() {
+        return customName != null && !customName.isEmpty();
+    }
+
+    @Override
+    public void setCustomName(String name) {
+        customName = name;
+        updateCPUNames();
+        if (virtualCPU != null || !cpus.isEmpty()) {
+            postCPUClusterChangeEvent();
+        }
+    }
+
+    public void updateCPUNames() {
+        final String parentName = hasCustomName() ? customName : "";
+        if (virtualCPU != null) {
+            virtualCPU.setName(parentName);
+        }
+        for (int index = 0; index < cpus.size(); index++) {
+            cpus.get(index)
+                .setName(parentName.isEmpty() ? "" : parentName + " #" + (index + 1));
+        }
     }
 
     public int getWidthForGui() {
@@ -167,79 +458,9 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
     }
 
     @Override
-    public boolean isCorrectMachinePart(ItemStack stack) {
-        return true;
-    }
-
-    public String getLocalNameKey() {
-        return "gtnr.QuantumComputer.name";
-    }
-
-    @Override
-    public IMetaTileEntity newMetaEntity(IGregTechTileEntity aTileEntity) {
-        return new QuantumComputer(mName);
-    }
-
-    @Override
-    public MultiblockTooltipBuilder createTooltip() {
-        return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
-            .toolTipFinisher();
-    }
-
-    @Override
-    public String getTooltipMachineType() {
-        // #tr gtnr.QuantumComputer.name
-        // # Quantum Computer
-        // # zh_CN 量子计算机
-        return StatCollector.translateToLocal("gtnr.QuantumComputer.name");
-    }
-
-    @Override
-    public List<String> getTooltipFeatureLines() {
-        return List.of(
-            // #tr gtnr.QuantumComputer.tooltip.allocation
-            // # Allocates AE crafting CPUs as jobs are submitted
-            // # zh_CN 按合成任务动态分配 AE 合成 CPU
-            StatCollector.translateToLocal("gtnr.QuantumComputer.tooltip.allocation"),
-            // #tr gtnr.QuantumComputer.tooltip.capacity
-            // # Maximum crafting storage and coprocessor count
-            // # zh_CN 提供最高合成存储容量与协处理器数量
-            StatCollector.translateToLocal("gtnr.QuantumComputer.tooltip.capacity"),
-            // #tr gtnr.QuantumComputer.tooltip.energy
-            // # Requires no upgrades, EU or AE crafting energy
-            // # zh_CN 无需升级，不消耗 EU 或 AE 合成能量
-            StatCollector.translateToLocal("gtnr.QuantumComputer.tooltip.energy"));
-    }
-
-    @Override
-    public void onFirstTick(IGregTechTileEntity baseMetaTileEntity) {
-        super.onFirstTick(baseMetaTileEntity);
-        if (checkStructure(true, getBaseMetaTileEntity())) {
-            this.mStartUpCheck = -1;
-            this.mUpdate = 200;
-        }
-        getProxy().onReady();
-    }
-
-    @Override
-    public void onPostTick(IGregTechTileEntity aBaseMetaTileEntity, long aTick) {
-        super.onPostTick(aBaseMetaTileEntity, aTick);
-        if (aBaseMetaTileEntity.isAllowedToWork()) aBaseMetaTileEntity.disableWorking();
-        if (aBaseMetaTileEntity.isServerSide()) {
-            boolean active = isActive();
-            if (active != wasActive) {
-                wasActive = active;
-                if (active) createVirtualCPU();
-                postCPUClusterChangeEvent();
-            }
-        }
-    }
-
-    @Override
-    public void onBlockDestroyed() {
-        super.onBlockDestroyed();
-        clearCPUs();
-        postCPUClusterChangeEvent();
+    @Nonnull
+    protected MTEMultiBlockBaseGui<?> getGui() {
+        return new QuantumComputerGui(this);
     }
 
     @Override
@@ -306,6 +527,15 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
         updateCPUNames();
     }
 
+    public long getMaximumStorage() {
+        return Long.MAX_VALUE;
+    }
+
+    @Override
+    public boolean isCorrectMachinePart(ItemStack stack) {
+        return true;
+    }
+
     @Override
     public boolean isRecipeLockingEnabled() {
         return false;
@@ -326,141 +556,8 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
         return false;
     }
 
-    @Override
-    public IGridNode getActionableNode() {
-        return getProxy().getNode();
-    }
-
-    @Override
-    public DimensionalCoord getLocation() {
-        return new DimensionalCoord(
-            getBaseMetaTileEntity().getWorld(),
-            getBaseMetaTileEntity().getXCoord(),
-            getBaseMetaTileEntity().getYCoord(),
-            getBaseMetaTileEntity().getZCoord());
-    }
-
-    @Override
-    public IGridNode getGridNode(ForgeDirection dir) {
-        return getProxy().getNode();
-    }
-
-    @Override
-    public AECableType getCableConnectionType(ForgeDirection forgeDirection) {
-        return AECableType.DENSE_COVERED;
-    }
-
-    @Override
-    public AENetworkProxy getProxy() {
-        if (gridProxy == null) {
-            var bmte = getBaseMetaTileEntity();
-            if (bmte instanceof IGridProxyable) {
-                gridProxy = new AENetworkProxy(this, "proxy", GTNRItemList.QuantumComputer.get(1), true);
-                gridProxy.setFlags(GridFlags.REQUIRE_CHANNEL);
-                gridProxy.setIdlePowerUsage(0);
-                if (bmte.getWorld() != null) {
-                    gridProxy.setOwner(
-                        bmte.getWorld()
-                            .getPlayerEntityByName(bmte.getOwnerName()));
-                }
-            }
-        }
-        return gridProxy;
-    }
-
-    @Override
-    public String getCustomName() {
-        return customName != null ? customName : getMachineCraftingIcon().getDisplayName();
-    }
-
-    @Override
-    public boolean hasCustomName() {
-        return customName != null && !customName.isEmpty();
-    }
-
-    @Override
-    public void setCustomName(String name) {
-        customName = name;
-        updateCPUNames();
-        if (virtualCPU != null || !cpus.isEmpty()) {
-            postCPUClusterChangeEvent();
-        }
-    }
-
-    public void updateCPUNames() {
-        final String parentName = hasCustomName() ? customName : "";
-        if (virtualCPU != null) {
-            virtualCPU.setName(parentName);
-        }
-        for (int index = 0; index < cpus.size(); index++) {
-            cpus.get(index)
-                .setName(parentName.isEmpty() ? "" : parentName + " #" + (index + 1));
-        }
-    }
-
-    @Override
-    public void securityBreak() {}
-
-    @MENetworkEventSubscribe
-    public void stateChange(final MENetworkPowerStatusChange c) {
-        final boolean currentActive = isActive();
-        if (wasActive != currentActive) {
-            wasActive = currentActive;
-            postCPUClusterChangeEvent();
-        }
-    }
-
-    @MENetworkEventSubscribe
-    public void stateChange(final MENetworkChannelsChanged c) {
-        final boolean currentActive = isActive();
-        if (wasActive != currentActive) {
-            wasActive = currentActive;
-            postCPUClusterChangeEvent();
-        }
-    }
-
-    public void postCPUClusterChangeEvent() {
-        if (getProxy().getNode() == null) return;
-        try {
-            getProxy().getGrid()
-                .postEvent(new MENetworkCraftingCpuChange(getProxy().getNode()));
-        } catch (GridAccessException ignored) {}
-    }
-
     public boolean isActive() {
         return mMachine && getProxy().isActive();
-    }
-
-    public boolean isVirtualCPU(Object cluster) {
-        return virtualCPU == cluster;
-    }
-
-    public void forEachCPU(final Consumer<CraftingCPUCluster> consumer) {
-        if (!isActive()) return;
-
-        for (final CraftingCPUCluster cpu : cpus) {
-            consumer.accept(cpu);
-        }
-        if (virtualCPU != null) {
-            virtualCPU.setVirtualCPUOwner(this);
-            consumer.accept(virtualCPU);
-        }
-    }
-
-    public void onVirtualCPUSubmitJob(final long usedBytes) {
-        final boolean prevEmpty = cpus.isEmpty();
-
-        virtualCPU.setVirtualCPUOwner(this);
-        cpus.add(virtualCPU);
-
-        if (prevEmpty) {
-            markDirty();
-        }
-
-        virtualCPU.setAvailableStorage(usedBytes);
-        virtualCPU = null;
-        updateCPUNames();
-        createVirtualCPU();
     }
 
     public long getAvailableBytes() {
@@ -481,97 +578,6 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
         return (int) Math.min(Integer.MAX_VALUE, (long) cpus.size() * Integer.MAX_VALUE);
     }
 
-    public void createVirtualCPU() {
-        final long availableBytes = getAvailableBytes();
-        if (virtualCPU != null) {
-            virtualCPU.setAvailableStorage(availableBytes);
-            virtualCPU.setAccelerators(maximumParallel);
-            return;
-        }
-
-        WorldCoord pos = getWorldCoord();
-        virtualCPU = new ECraftingCPUCluster(pos, pos);
-        virtualCPU.setVirtualCPUOwner(this);
-        virtualCPU.setAvailableStorage(availableBytes);
-        virtualCPU.setAccelerators(maximumParallel);
-        if (hasCustomName()) virtualCPU.setName(customName);
-
-        postCPUClusterChangeEvent();
-    }
-
-    public void clearCPUs() {
-        IMEMonitor<IAEItemStack> itemInventory = null;
-        try {
-            var t = getBaseMetaTileEntity();
-            var te = t.getWorld()
-                .getTileEntity(t.getXCoord(), t.getYCoord() + 1, t.getZCoord());
-            if (te instanceof IGridHost igh) itemInventory = igh.getGridNode(ForgeDirection.UNKNOWN)
-                .getGrid()
-                .<IStorageGrid>getCache(IStorageGrid.class)
-                .getItemInventory();
-        } catch (Exception ignored) {}
-        final var s = new MachineSource(this);
-        for (var cpu : cpus) {
-            if (itemInventory != null) {
-                IItemList<IAEItemStack> itemList = AEApi.instance()
-                    .storage()
-                    .createItemList();
-                cpu.getInventory()
-                    .getAvailableItems(itemList);
-                for (var stack : itemList) {
-                    itemInventory.injectItems(stack, Actionable.MODULATE, s);
-                }
-            }
-            cpu.markDestroyed();
-        }
-        cpus.clear();
-    }
-
-    public WorldCoord getWorldCoord() {
-        return new WorldCoord(
-            getBaseMetaTileEntity().getXCoord(),
-            getBaseMetaTileEntity().getYCoord(),
-            getBaseMetaTileEntity().getZCoord());
-    }
-
-    public void onCPUDestroyed(final ECraftingCPUCluster cluster) {
-        cpus.remove(cluster);
-        updateCPUNames();
-        createVirtualCPU();
-        postCPUClusterChangeEvent();
-        if (cpus.isEmpty()) {
-            markDirty();
-        }
-    }
-
-    @Override
-    public IStructureDefinition<QuantumComputer> getStructureDefinition() {
-        return StructureDefinition.<QuantumComputer>builder()
-            .addShape("main", StructureUtility.transpose(new String[][] { { "AAA" }, { "A~A" } }))
-            .addElement('A', StructureUtility.ofBlock(GregTechAPI.sBlockCasings2, 0))
-            .build();
-    }
-
-    @Override
-    public void construct(ItemStack stack, boolean hintsOnly) {
-        buildPiece("main", stack, hintsOnly, 1, 1, 0);
-    }
-
-    @Override
-    public int survivalConstruct(ItemStack stack, int budget, ISurvivalBuildEnvironment env) {
-        if (mMachine) return -1;
-        return survivalBuildPiece("main", stack, 1, 1, 0, budget, env, false, true);
-    }
-
-    @Override
-    public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        boolean formed = checkPiece("main", 1, 1, 0, errors);
-        getProxy().setValidSides(
-            formed ? EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)) : EnumSet.noneOf(ForgeDirection.class));
-        if (formed) createVirtualCPU();
-        postCPUClusterChangeEvent();
-    }
-
     @Override
     public boolean getDefaultHasMaintenanceChecks() {
         return false;
@@ -585,24 +591,4 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
     @Override
     public void checkMaintenance() {}
 
-    @Override
-    public ITexture[] getTexture(IGregTechTileEntity tile, ForgeDirection side, ForgeDirection facing, int color,
-        boolean active, boolean redstone) {
-        return side == facing
-            ? new ITexture[] { Textures.BlockIcons.getCasingTextureForId(getCasingTextureID()),
-                TextureFactory.of(
-                    active ? Textures.BlockIcons.OVERLAY_ME_INPUT_HATCH_ACTIVE
-                        : Textures.BlockIcons.OVERLAY_ME_INPUT_HATCH) }
-            : new ITexture[] { Textures.BlockIcons.getCasingTextureForId(getCasingTextureID()) };
-    }
-
-    public int getCasingTextureID() {
-        return GTUtility.getCasingTextureIndex(GregTechAPI.sBlockCasings2, 0);
-    }
-
-    @Override
-    @Nonnull
-    protected MTEMultiBlockBaseGui<?> getGui() {
-        return new QuantumComputerGui(this);
-    }
 }

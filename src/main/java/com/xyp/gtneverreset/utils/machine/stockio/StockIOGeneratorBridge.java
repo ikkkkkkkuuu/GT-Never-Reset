@@ -16,8 +16,6 @@ import gregtech.common.pollution.Pollution;
  */
 public final class StockIOGeneratorBridge {
 
-    private StockIOGeneratorBridge() {}
-
     public static void onPostTick(MTEBasicGenerator generator, IGregTechTileEntity base, long tick, Runnable original) {
         if (!burnTick(base, tick)) {
             original.run();

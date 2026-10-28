@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from GTNL PR #654, commit 1cd98b4f61e4c77f65263171d3f03dda9c813382.
-// Structure variants updated from commit a6ee80aea6eaf98e2478e847a96dfdc3a620847b.
 package com.xyp.gtneverreset.utils.structure;
 
 import java.util.List;

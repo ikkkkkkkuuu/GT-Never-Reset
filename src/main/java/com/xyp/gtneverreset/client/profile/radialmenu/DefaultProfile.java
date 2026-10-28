@@ -16,8 +16,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class DefaultProfile {
 
-    private DefaultProfile() {}
-
     public static Profile create() {
         Profile profile = Profile.empty("default");
         profile.root.layout = SlotLayout.fixed(8);

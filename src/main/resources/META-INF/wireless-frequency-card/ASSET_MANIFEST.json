@@ -7,7 +7,6 @@
     "intermediateCommit": "651396c75d108e6ff5399a44c56c12214ad27d3d",
     "intermediateSource": "src/main/resources/assets/sciencenotleisure/textures/items/wireless_frequency_card.png",
     "destination": "src/main/resources/assets/gtneverreset/textures/items/wireless_frequency_card.png",
-    "license": "CC-BY-NC-SA-3.0",
     "modified": false,
     "sha256": "5d991180c5b7d2e989c5e8de1d8b5eacfff5c0e0d4443b02b479240bb2426a88"
   }

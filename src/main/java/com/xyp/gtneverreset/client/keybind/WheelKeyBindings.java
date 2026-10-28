@@ -21,8 +21,6 @@ public final class WheelKeyBindings {
 
     public static KeyBinding openEditor;
 
-    private WheelKeyBindings() {}
-
     public static void register() {
         // #tr key.toolbelt.open
         // # Open Radial Menu

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
 package com.xyp.gtneverreset.utils.machine;
 
 import static gregtech.api.util.GTUtility.validMTEList;
@@ -33,8 +32,6 @@ import gregtech.common.tileentities.machines.MTEHatchInputME;
 
 /** Native stocking hatches simulate independently; their shared inventory and AE energy need a combined check. */
 public final class RecipeThreadInputPreflight {
-
-    private RecipeThreadInputPreflight() {}
 
     public static boolean canCommit(MTEMultiBlockBase machine, RecipeThreadProcessingLogic logic) {
         Requests<IAEItemStack> items = new Requests<>();

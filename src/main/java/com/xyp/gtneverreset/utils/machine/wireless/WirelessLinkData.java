@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import java.util.HashMap;
@@ -71,8 +69,6 @@ public class WirelessLinkData {
                     .collect(WirelessCollections.toImmutableSet());
         }
     }
-
-    private WirelessLinkData() {}
 
     public static Map<Slot, Claim> read(NBTTagCompound tileData) {
         // Callers edit their own slot map; Claim and its contents are immutable.

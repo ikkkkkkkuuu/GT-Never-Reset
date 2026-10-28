@@ -8,8 +8,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 final class RadialEditorRestrictions {
 
-    private RadialEditorRestrictions() {}
-
     static String builtInTip() {
         // #tr radialmenu.editor.builtIn.tip
         // # Store and retrieve items from the wheel. Edit the toolbelt entry separately

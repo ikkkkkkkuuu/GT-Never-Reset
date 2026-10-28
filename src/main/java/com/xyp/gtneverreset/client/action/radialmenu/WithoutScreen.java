@@ -17,8 +17,6 @@ public final class WithoutScreen {
     private static GuiScreen hiddenScreen;
     private static boolean hiddenFocus;
 
-    private WithoutScreen() {}
-
     public static boolean wheelIsUp() {
         return Minecraft.getMinecraft().currentScreen instanceof RadialMenuGui;
     }

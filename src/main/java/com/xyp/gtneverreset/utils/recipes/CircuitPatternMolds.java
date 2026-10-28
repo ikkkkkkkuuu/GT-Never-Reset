@@ -36,8 +36,6 @@ public final class CircuitPatternMolds {
     private static int cachedRecipeCount = -1;
     private static int cachedMapCount = -1;
 
-    private CircuitPatternMolds() {}
-
     /**
      * Only molds required with zero quantity by every matching recipe become virtual tools. Complete consumed
      * inputs must match the advertised output yield; omitted byproducts and integer batches are supported.

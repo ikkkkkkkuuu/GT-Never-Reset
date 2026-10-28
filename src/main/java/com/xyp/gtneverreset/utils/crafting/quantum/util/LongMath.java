@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from GT-Not-Leisure at 7b17611117a19b7cc2a921e7213b0578f1513504.
 package com.xyp.gtneverreset.utils.crafting.quantum.util;
 
 /**
@@ -23,7 +21,7 @@ public final class LongMath {
             // overflow impossible or did not happen
             return naiveDifference;
         }
-        // we did over/under flow
+
         return Long.MAX_VALUE + ((naiveDifference >>> (Long.SIZE - 1)) ^ 1);
     }
 
@@ -37,7 +35,7 @@ public final class LongMath {
         // the return value if we will overflow (which we calculate by overflowing a long :) )
         long limit = Long.MAX_VALUE + ((a ^ b) >>> (Long.SIZE - 1));
         if (leadingZeros < Long.SIZE | (a < 0 & b == Long.MIN_VALUE)) {
-            // overflow
+
             return limit;
         }
         long result = a * b;

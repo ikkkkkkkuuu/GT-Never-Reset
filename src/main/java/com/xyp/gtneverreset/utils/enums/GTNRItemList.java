@@ -13,7 +13,7 @@ import gregtech.api.util.GTUtility;
 
 public enum GTNRItemList implements IItemContainer {
 
-    WirelessPackagedPatternProvider,
+    // region 物品
     ItemWirelessConnector,
     BasicPackagedCore,
     BloodAltarCore,
@@ -27,10 +27,39 @@ public enum GTNRItemList implements IItemContainer {
     WirelessDualInterfaceTerminal,
     WirelessFrequencyCard,
     WildcardPattern,
+    StableEndCrystal,
+
+    AdvancedIOBus,
+    StockIOInterfacePart,
+    // endregion
+
+    // region 方块
+    EddingtonWallCasing,
+    WirelessPackagedPatternProvider,
+    StockIOInterface,
+    FluxPlug,
+    FluxPoint,
+    // endregion
+
+    // region 多方块
+    LargeOreProcessor,
+    LargeFurnace,
+    QuantumComputer,
+    AssemblerMatrix,
+    SingularityDataHub,
+    LargeBeeBreeder,
+    // endregion
+
+    // region 舱室
     SuperMTEHatchCraftingInputME,
     CircuitMEPatternBuffer,
     SuperMTEHatchCraftingInputSlave,
     CircuitMEPatternMirror,
+    MaxCapacityMEOutputBus,
+    MaxCapacityMEOutputHatch,
+    MEOutputAssembly,
+    VaultPortHatch,
+
     StaticParallelControllerT1,
     StaticParallelControllerT2,
     StaticParallelControllerT3,
@@ -39,6 +68,7 @@ public enum GTNRItemList implements IItemContainer {
     StaticParallelControllerT6,
     StaticParallelControllerT7,
     StaticParallelControllerT8,
+
     DynamicParallelControllerT1,
     DynamicParallelControllerT2,
     DynamicParallelControllerT3,
@@ -47,6 +77,7 @@ public enum GTNRItemList implements IItemContainer {
     DynamicParallelControllerT6,
     DynamicParallelControllerT7,
     DynamicParallelControllerT8,
+
     StaticSpeedControllerT1,
     StaticSpeedControllerT2,
     StaticSpeedControllerT3,
@@ -55,6 +86,7 @@ public enum GTNRItemList implements IItemContainer {
     StaticSpeedControllerT6,
     StaticSpeedControllerT7,
     StaticSpeedControllerT8,
+
     DynamicSpeedControllerT1,
     DynamicSpeedControllerT2,
     DynamicSpeedControllerT3,
@@ -63,6 +95,7 @@ public enum GTNRItemList implements IItemContainer {
     DynamicSpeedControllerT6,
     DynamicSpeedControllerT7,
     DynamicSpeedControllerT8,
+
     PowerConsumptionControllerT1,
     PowerConsumptionControllerT2,
     PowerConsumptionControllerT3,
@@ -71,18 +104,15 @@ public enum GTNRItemList implements IItemContainer {
     PowerConsumptionControllerT6,
     PowerConsumptionControllerT7,
     PowerConsumptionControllerT8,
-    LargeOreProcessor,
+
     LowSpeedPerfectOverclockController,
     PerfectOverclockController,
     SingularityPerfectOverclockController,
-    LargeFurnace,
-    QuantumComputer,
-    AssemblerMatrix,
-    SingularityDataHub,
-    VaultPortHatch,
+    // endregion
+
+    // region 单方块机器
     FragmentWorldCollector,
-    LargeBeeBreeder,
-    StableEndCrystal,
+
     EndCrystalResonatorLV,
     EndCrystalResonatorMV,
     EndCrystalResonatorHV,
@@ -97,12 +127,102 @@ public enum GTNRItemList implements IItemContainer {
     EndCrystalResonatorUMV,
     EndCrystalResonatorUXV,
     EndCrystalResonatorMAX,
-    EddingtonWallCasing,
-    AdvancedIOBus,
-    StockIOInterface,
-    StockIOInterfacePart,
-    FluxPlug,
-    FluxPoint;
+
+    ModernMixerLV,
+    ModernMixerMV,
+    ModernMixerHV,
+    ModernMixerEV,
+    ModernMixerIV,
+    ModernMixerLuV,
+    ModernMixerZPM,
+    ModernMixerUV,
+
+    ModernElectrolyzerLV,
+    ModernElectrolyzerMV,
+    ModernElectrolyzerHV,
+    ModernElectrolyzerEV,
+    ModernElectrolyzerIV,
+    ModernElectrolyzerLuV,
+    ModernElectrolyzerZPM,
+    ModernElectrolyzerUV,
+
+    ModernChemicalReactorLV,
+    ModernChemicalReactorMV,
+    ModernChemicalReactorHV,
+    ModernChemicalReactorEV,
+    ModernChemicalReactorIV,
+    ModernChemicalReactorLuV,
+    ModernChemicalReactorZPM,
+    ModernChemicalReactorUV,
+
+    ModernCentrifugeLV,
+    ModernCentrifugeMV,
+    ModernCentrifugeHV,
+    ModernCentrifugeEV,
+    ModernCentrifugeIV,
+    ModernCentrifugeLuV,
+    ModernCentrifugeZPM,
+    ModernCentrifugeUV;
+    // endregion
+
+    // region 舱室分组
+    public static final GTNRItemList[] STATIC_PARALLEL = { GTNRItemList.StaticParallelControllerT1,
+        GTNRItemList.StaticParallelControllerT2, GTNRItemList.StaticParallelControllerT3,
+        GTNRItemList.StaticParallelControllerT4, GTNRItemList.StaticParallelControllerT5,
+        GTNRItemList.StaticParallelControllerT6, GTNRItemList.StaticParallelControllerT7,
+        GTNRItemList.StaticParallelControllerT8 };
+
+    public static final GTNRItemList[] DYNAMIC_PARALLEL = { GTNRItemList.DynamicParallelControllerT1,
+        GTNRItemList.DynamicParallelControllerT2, GTNRItemList.DynamicParallelControllerT3,
+        GTNRItemList.DynamicParallelControllerT4, GTNRItemList.DynamicParallelControllerT5,
+        GTNRItemList.DynamicParallelControllerT6, GTNRItemList.DynamicParallelControllerT7,
+        GTNRItemList.DynamicParallelControllerT8 };
+
+    public static final GTNRItemList[] STATIC_SPEED = { GTNRItemList.StaticSpeedControllerT1,
+        GTNRItemList.StaticSpeedControllerT2, GTNRItemList.StaticSpeedControllerT3,
+        GTNRItemList.StaticSpeedControllerT4, GTNRItemList.StaticSpeedControllerT5,
+        GTNRItemList.StaticSpeedControllerT6, GTNRItemList.StaticSpeedControllerT7,
+        GTNRItemList.StaticSpeedControllerT8 };
+
+    public static final GTNRItemList[] DYNAMIC_SPEED = { GTNRItemList.DynamicSpeedControllerT1,
+        GTNRItemList.DynamicSpeedControllerT2, GTNRItemList.DynamicSpeedControllerT3,
+        GTNRItemList.DynamicSpeedControllerT4, GTNRItemList.DynamicSpeedControllerT5,
+        GTNRItemList.DynamicSpeedControllerT6, GTNRItemList.DynamicSpeedControllerT7,
+        GTNRItemList.DynamicSpeedControllerT8 };
+
+    public static final GTNRItemList[] POWER = { GTNRItemList.PowerConsumptionControllerT1,
+        GTNRItemList.PowerConsumptionControllerT2, GTNRItemList.PowerConsumptionControllerT3,
+        GTNRItemList.PowerConsumptionControllerT4, GTNRItemList.PowerConsumptionControllerT5,
+        GTNRItemList.PowerConsumptionControllerT6, GTNRItemList.PowerConsumptionControllerT7,
+        GTNRItemList.PowerConsumptionControllerT8 };
+
+    public static final GTNRItemList[] OVERCLOCK = { GTNRItemList.LowSpeedPerfectOverclockController,
+        GTNRItemList.PerfectOverclockController, GTNRItemList.SingularityPerfectOverclockController };
+
+    // endregion
+
+    // region 单方块机器分组
+    public static final GTNRItemList[] MODERN_MIXERS = { null, GTNRItemList.ModernMixerLV, GTNRItemList.ModernMixerMV,
+        GTNRItemList.ModernMixerHV, GTNRItemList.ModernMixerEV, GTNRItemList.ModernMixerIV, GTNRItemList.ModernMixerLuV,
+        GTNRItemList.ModernMixerZPM, GTNRItemList.ModernMixerUV };
+
+    public static final GTNRItemList[] MODERN_ELECTROLYZERS = { null, GTNRItemList.ModernElectrolyzerLV,
+        GTNRItemList.ModernElectrolyzerMV, GTNRItemList.ModernElectrolyzerHV, GTNRItemList.ModernElectrolyzerEV,
+        GTNRItemList.ModernElectrolyzerIV, GTNRItemList.ModernElectrolyzerLuV, GTNRItemList.ModernElectrolyzerZPM,
+        GTNRItemList.ModernElectrolyzerUV };
+
+    public static final GTNRItemList[] MODERN_CHEMICAL_REACTORS = { null, GTNRItemList.ModernChemicalReactorLV,
+        GTNRItemList.ModernChemicalReactorMV, GTNRItemList.ModernChemicalReactorHV,
+        GTNRItemList.ModernChemicalReactorEV, GTNRItemList.ModernChemicalReactorIV,
+        GTNRItemList.ModernChemicalReactorLuV, GTNRItemList.ModernChemicalReactorZPM,
+        GTNRItemList.ModernChemicalReactorUV };
+
+    public static final GTNRItemList[] MODERN_CENTRIFUGES = { null, GTNRItemList.ModernCentrifugeLV,
+        GTNRItemList.ModernCentrifugeMV, GTNRItemList.ModernCentrifugeHV, GTNRItemList.ModernCentrifugeEV,
+        GTNRItemList.ModernCentrifugeIV, GTNRItemList.ModernCentrifugeLuV, GTNRItemList.ModernCentrifugeZPM,
+        GTNRItemList.ModernCentrifugeUV };
+
+    // endregion
 
     private ItemStack stack;
 

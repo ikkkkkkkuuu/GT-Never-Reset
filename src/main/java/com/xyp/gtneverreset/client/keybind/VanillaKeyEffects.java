@@ -10,8 +10,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class VanillaKeyEffects {
 
-    private VanillaKeyEffects() {}
-
     public static boolean tryRun(KeyBinding binding) {
         Minecraft mc = Minecraft.getMinecraft();
         GameSettings settings = mc.gameSettings;

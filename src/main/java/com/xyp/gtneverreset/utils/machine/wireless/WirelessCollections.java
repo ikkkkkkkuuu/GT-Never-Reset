@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import java.util.ArrayList;
@@ -15,8 +13,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public final class WirelessCollections {
-
-    private WirelessCollections() {}
 
     @SafeVarargs
     public static <T> List<T> listOf(T... values) {

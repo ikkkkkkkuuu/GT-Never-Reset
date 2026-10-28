@@ -60,8 +60,6 @@ public final class ActionTypes {
 
     private static final Map<String, ActionType> TYPES = new LinkedHashMap<>();
 
-    private ActionTypes() {}
-
     public static void register(ActionType type) {
         TYPES.put(type.id, type);
     }

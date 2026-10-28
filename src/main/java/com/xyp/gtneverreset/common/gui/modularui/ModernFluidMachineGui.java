@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
 package com.xyp.gtneverreset.common.gui.modularui;
 
 import static gregtech.api.metatileentity.BaseTileEntity.TOOLTIP_DELAY;

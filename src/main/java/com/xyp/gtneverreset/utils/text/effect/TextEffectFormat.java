@@ -3,8 +3,6 @@ package com.xyp.gtneverreset.utils.text.effect;
 /** Native font formatting preserved around the fixed adder span. */
 public class TextEffectFormat {
 
-    private TextEffectFormat() {}
-
     public static String normalizeAmpersand(String token) {
         if (token.length() < 2 || token.charAt(0) != '&') return token;
         char code = Character.toLowerCase(token.charAt(1));

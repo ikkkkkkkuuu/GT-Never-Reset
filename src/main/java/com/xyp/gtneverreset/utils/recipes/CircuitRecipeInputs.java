@@ -11,8 +11,6 @@ import gregtech.api.util.GTRecipe;
 /** Validates complete input batches using GT's own ore-dictionary, alternative-input and NBT rules. */
 public final class CircuitRecipeInputs {
 
-    private CircuitRecipeInputs() {}
-
     /**
      * Compares total item counts and fluid amounts, without assuming representative input items are the only choices.
      * This is a cheap candidate filter only; {@link #batches} must validate the actual ingredient identities.

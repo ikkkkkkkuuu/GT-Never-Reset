@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from GTNL PR #654, commit a6ee80aea6eaf98e2478e847a96dfdc3a620847b.
 package com.xyp.gtneverreset.utils.structure;
 
 import java.util.ArrayList;
@@ -29,8 +27,6 @@ public final class MultiblockPerformanceReader {
 
     private static final int MAX_PROBE_TIER = 64;
     private static final double BONUS_TOLERANCE = 1e-6;
-
-    private MultiblockPerformanceReader() {}
 
     public static PerformanceSummary readPerformance(MTEEnhancedMultiBlockBase<?> machine) {
         return readPerformance(machine, null);

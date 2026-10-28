@@ -18,5 +18,4 @@ public final class AnimatedText {
         return StatCollector.translateToLocal("gtnr.tooltip.adder") + " " + MOD_NAME + AnimatedTooltipHandler.RESET;
     };
 
-    private AnimatedText() {}
 }

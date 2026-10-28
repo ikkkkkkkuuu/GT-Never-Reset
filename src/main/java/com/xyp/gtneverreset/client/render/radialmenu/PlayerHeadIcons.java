@@ -46,8 +46,6 @@ public final class PlayerHeadIcons {
 
     private static final Map<String, Head> HEADS = new HashMap<>();
 
-    private PlayerHeadIcons() {}
-
     public static ResourceLocation texture(String name) {
         String key = key(name);
         if (key == null) {

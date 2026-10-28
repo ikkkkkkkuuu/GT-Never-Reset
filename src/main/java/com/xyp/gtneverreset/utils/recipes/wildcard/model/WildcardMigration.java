@@ -25,8 +25,6 @@ public final class WildcardMigration {
     private static final String OLD_KEY_OUTPUT = "WildcardOutputComponents";
     private static final String OLD_KEY_GLOBAL_EXCLUDE = "WildcardGlobalExcludeMaterials";
 
-    private WildcardMigration() {}
-
     /** 若物品是旧模型则迁移到新模型；已是新模型则不动。 */
     public static void migrateIfNeeded(ItemStack stack) {
         if (stack == null) return;

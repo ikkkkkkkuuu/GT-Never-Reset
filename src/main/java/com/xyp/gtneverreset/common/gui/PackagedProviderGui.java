@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// GTNG port modifications (c) 2026 GTNG contributors.
-// Upstream authors and exact source mappings: META-INF/ae2lt-port/CODE_PORT_NOTES.md
 package com.xyp.gtneverreset.common.gui;
 
 import java.util.function.Supplier;
@@ -36,14 +33,14 @@ import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.item.items.ItemPackagedCore;
-import com.xyp.gtneverreset.common.recipe.ae2.ArcaneWorkbenchPatterns;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.PackagedCraftingLock;
+import com.xyp.gtneverreset.utils.recipes.ArcaneWorkbenchPatterns;
 
 import appeng.api.implementations.ICraftingPatternItem;
 
 /**
- * LGPL-3.0: layout adapted from AE2LTPP PackagedPatternProviderScreen/menu/style and AE2 UpgradesPanel.
+ * Layout adapted from AE2LTPP PackagedPatternProviderScreen/menu/style and AE2 UpgradesPanel.
  * Original authors and exact revisions are recorded in META-INF/ae2lt-port and reference/UPSTREAM_PORT_NOTES.md.
  * Original atlas pixels are retained with extra width for the pattern scrollbar.
  */
@@ -63,8 +60,6 @@ public final class PackagedProviderGui {
     private static final UITexture HOVER = texture("states", 256, 256, 212, 128, 18, 20);
     private static final UITexture OPTIMIZATION_ON = optimizationIcon(178);
     private static final UITexture OPTIMIZATION_OFF = optimizationIcon(194);
-
-    private PackagedProviderGui() {}
 
     private static UITexture texture(String name, int w, int h, int x, int y, int width, int height) {
         return UITexture.builder()

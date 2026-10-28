@@ -114,8 +114,6 @@ public class RadialColorPickerGui extends RadialUiScreen {
         addBottomBar("gui.done", null, "gui.cancel");
     }
 
-    // -- colour conversion -------------------------------------------------------------------------------------
-
     /** Hand-rolled rather than via AWT, so nothing here depends on a graphics environment being available. */
     private static int hsvToRgb(float h, float s, float v) {
         float r;
@@ -204,8 +202,6 @@ public class RadialColorPickerGui extends RadialUiScreen {
         }
         return String.format("#%02X%06X", Integer.valueOf(Math.round(alpha * 255f)), Integer.valueOf(currentRgb()));
     }
-
-    // -- drawing -----------------------------------------------------------------------------------------------
 
     @Override
     protected void drawContent(int mouseX, int mouseY, float partialTicks) {
@@ -298,8 +294,6 @@ public class RadialColorPickerGui extends RadialUiScreen {
         drawRect(x - 4, y, x + 5, y + 1, colour);
         drawRect(x, y - 4, x + 1, y + 5, colour);
     }
-
-    // -- input -------------------------------------------------------------------------------------------------
 
     @Override
     protected void actionPerformed(GuiButton button) {

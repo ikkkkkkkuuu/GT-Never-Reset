@@ -19,8 +19,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 final class ScriptSandbox {
 
-    private ScriptSandbox() {}
-
     static Globals newGlobals() {
         Globals globals = new Globals();
 

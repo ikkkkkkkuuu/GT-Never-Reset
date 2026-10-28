@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// GTNG port modifications (c) 2026 GTNG contributors.
-// Upstream authors and exact source mappings: META-INF/ae2lt-port/CODE_PORT_NOTES.md
 package com.xyp.gtneverreset.client.render;
 
 import java.util.function.Supplier;
@@ -22,7 +19,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 /**
- * LGPL-3.0 adaptation of AE2LTPP PackagedCoreItemRenderer: original core base plus a 0.45-scale target item.
+ * original core base plus a 0.45-scale target item.
  * Target art is rendered from installed TC4, GT5U or Blood Magic items, not copied into GTNG.
  * Registration for optional target mods remains guarded on the client.
  */

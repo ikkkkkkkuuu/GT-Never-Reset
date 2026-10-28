@@ -147,7 +147,6 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
 
     private @Nullable AENetworkProxy gridProxy = null;
 
-    // holds all internal inventories
     @SuppressWarnings("unchecked") // Java doesn't allow to create an array of a generic type.
     private final PatternSlot<SuperMTEHatchCraftingInputME>[] internalInventory = new PatternSlot[getPatternCount()];
 
@@ -582,7 +581,6 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
         meOutput.save(aNBT);
         if (usesDefaultPatternRefunds()) writePatternRefunds(aNBT, false);
 
-        // save internalInventory
         NBTTagList internalInventoryNBT = new NBTTagList();
         for (int i = 0; i < internalInventory.length; i++) {
             if (internalInventory[i] != null) {
@@ -618,7 +616,7 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
                 }
             }
         }
-        // load internalInventory
+
         NBTTagList internalInventoryNBT = aNBT.getTagList("internalInventory", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < internalInventoryNBT.tagCount(); i++) {
             NBTTagCompound internalInventorySlotNBT = internalInventoryNBT.getCompoundTagAt(i);
@@ -636,7 +634,6 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
             }
         }
 
-        // reconstruct patternDetailsPatternSlotMap
         patternDetailsPatternSlotMap.clear();
         for (PatternSlot<SuperMTEHatchCraftingInputME> patternSlot : internalInventory) {
             if (patternSlot != null) registerPatternOptions(patternSlot);
@@ -830,7 +827,6 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
 
         World world = getBaseMetaTileEntity().getWorld();
 
-        // remove old if applicable
         PatternSlot<SuperMTEHatchCraftingInputME> originalPattern = internalInventory[index];
         if (originalPattern != null) {
             if (originalPattern.hasChanged(newItem, world)) {
@@ -859,7 +855,6 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
             }
         }
 
-        // original does not exist or has changed
         if (newItem == null || !(newItem.getItem() instanceof ICraftingPatternItem)) {
             refreshLastNonNullIndex();
             return;

@@ -19,8 +19,6 @@ public final class BlockIcons {
     public static IIconContainer FragmentCollectorBottom;
     public static IIconContainer FragmentCollectorBack;
 
-    private BlockIcons() {}
-
     public static void registerIcons() {
         if (OVERLAY_FRONT_ITEMVAULTPORTHATCH != null) return;
         OVERLAY_FRONT_ITEMVAULTPORTHATCH = Textures.BlockIcons

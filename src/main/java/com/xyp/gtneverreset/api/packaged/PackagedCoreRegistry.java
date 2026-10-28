@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// GTNG port modifications (c) 2026 GTNG contributors.
-// Upstream authors and exact source mappings: META-INF/ae2lt-port/CODE_PORT_NOTES.md
 package com.xyp.gtneverreset.api.packaged;
 
 import java.util.Collections;
@@ -21,8 +18,6 @@ import appeng.api.networking.crafting.ICraftingPatternDetails;
 public final class PackagedCoreRegistry {
 
     private static final Map<String, Adapter> ADAPTERS = new LinkedHashMap<>();
-
-    private PackagedCoreRegistry() {}
 
     public static void register(String id, Adapter adapter) {
         if (id == null || id.isEmpty() || adapter == null || ADAPTERS.containsKey(id)) {

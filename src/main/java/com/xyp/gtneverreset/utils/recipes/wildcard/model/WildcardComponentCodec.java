@@ -21,8 +21,6 @@ public final class WildcardComponentCodec {
     private static final String KEY_TYPE = "type";
     private static final String KEY_DATA = "data";
 
-    private WildcardComponentCodec() {}
-
     public static NBTTagList writeIO(List<IWildcardIOComponent> components) {
         NBTTagList list = new NBTTagList();
         for (IWildcardIOComponent component : components) {

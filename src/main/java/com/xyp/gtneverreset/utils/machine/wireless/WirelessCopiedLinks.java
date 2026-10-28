@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import java.lang.ref.WeakReference;
@@ -49,8 +47,6 @@ public class WirelessCopiedLinks {
     private static int waiting;
     private static int claimBudget;
     private static long ticks;
-
-    private WirelessCopiedLinks() {}
 
     public static Map<ForgeDirection, CopiedLink> capture(TileEntity tile) {
         if (!(tile instanceof IWirelessTileData data) || !data.gtnr$hasWirelessData()

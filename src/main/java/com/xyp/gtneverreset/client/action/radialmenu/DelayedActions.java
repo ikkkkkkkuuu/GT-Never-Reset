@@ -16,8 +16,6 @@ public final class DelayedActions {
 
     private static final List<Entry> PENDING = new ArrayList<>();
 
-    private DelayedActions() {}
-
     public static void scheduleAction(Object owner, ActionSpec spec, int delayTicks) {
         Entry entry = new Entry();
         entry.owner = owner;

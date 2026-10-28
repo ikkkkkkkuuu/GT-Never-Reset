@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from GT-Not-Leisure PR #627 at 651396c75d108e6ff5399a44c56c12214ad27d3d.
-
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import java.util.LinkedHashSet;
@@ -30,14 +27,10 @@ import gregtech.api.util.GTUtility;
 
 public class WirelessCardTeleport {
 
-    private WirelessCardTeleport() {}
-
     public static class Landing {
 
         @Desugar
         record Position(int x, int y, int z) {}
-
-        private Landing() {}
 
         static Position find(int x, int y, int z, ForgeDirection front, Predicate<Position> safe) {
             Set<Position> candidates = new LinkedHashSet<>();

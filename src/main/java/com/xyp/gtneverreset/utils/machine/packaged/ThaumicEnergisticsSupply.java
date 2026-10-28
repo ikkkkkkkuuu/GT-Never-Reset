@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// New GTNG TC4 integration (c) 2026 GTNG contributors.
 package com.xyp.gtneverreset.utils.machine.packaged;
 
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
@@ -15,8 +13,6 @@ import thaumicenergistics.common.storage.AEEssentiaStackType;
 
 /** Optional ThE linkage, reached only after the loaded-mod check; never initializes without ThE installed. */
 final class ThaumicEnergisticsSupply {
-
-    private ThaumicEnergisticsSupply() {}
 
     /**
      * Simulates all missing aspects before extraction. Actual partial extractions remain in a persistent

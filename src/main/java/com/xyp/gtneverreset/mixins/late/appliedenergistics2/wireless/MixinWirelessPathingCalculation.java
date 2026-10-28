@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
 package com.xyp.gtneverreset.mixins.late.appliedenergistics2.wireless;
 
 import java.util.Map;

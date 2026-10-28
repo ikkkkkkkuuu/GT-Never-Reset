@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// New GTNG TC4 integration (c) 2026 GTNG contributors.
 package com.xyp.gtneverreset.utils.machine.packaged;
 
 import net.minecraft.nbt.NBTTagCompound;
@@ -22,8 +20,6 @@ import thaumcraft.common.tiles.TileInfusionMatrix;
 public final class DirectEssentiaSupply {
 
     public static final String TAG = "GTNGDirectEssentia";
-
-    private DirectEssentiaSupply() {}
 
     /**
      * After TC4 consumes one successfully supplied unit, consume at most the configured extra units of that aspect.

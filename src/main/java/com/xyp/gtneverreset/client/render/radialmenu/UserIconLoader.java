@@ -28,8 +28,6 @@ public final class UserIconLoader {
 
     private static final Map<String, Boolean> FAILED = new HashMap<>();
 
-    private UserIconLoader() {}
-
     public static ResourceLocation texture(String fileName) {
         if (fileName == null || fileName.isEmpty()) {
             return null;

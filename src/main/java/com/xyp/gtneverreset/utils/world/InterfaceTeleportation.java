@@ -15,8 +15,6 @@ import net.minecraftforge.common.util.ForgeDirection;
  */
 public final class InterfaceTeleportation {
 
-    private InterfaceTeleportation() {}
-
     /**
      * Teleports beside an interface selected from the server-validated wireless interface terminal list.
      *

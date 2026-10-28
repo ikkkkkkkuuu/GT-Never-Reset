@@ -76,5 +76,4 @@ public final class GTNRCreativeTabs {
         }
     };
 
-    private GTNRCreativeTabs() {}
 }

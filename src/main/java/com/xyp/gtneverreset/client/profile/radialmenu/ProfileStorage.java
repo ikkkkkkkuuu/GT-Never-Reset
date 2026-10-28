@@ -37,8 +37,6 @@ public final class ProfileStorage {
 
     private static File rootDir;
 
-    private ProfileStorage() {}
-
     public static void init(File gameDir) {
         rootDir = new File(new File(gameDir, ModList.GTNeverReset.getDisplayName()), "RadialMenu");
         mkdirs(rootDir);

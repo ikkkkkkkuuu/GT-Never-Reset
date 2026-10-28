@@ -1,29 +1,29 @@
-// SPDX-License-Identifier: LGPL-3.0-only
 package com.xyp.gtneverreset.common.machine.multiblock;
 
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofBlock;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofChain;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
 import static gregtech.api.enums.HatchElement.Energy;
+import static gregtech.api.enums.HatchElement.ExoticEnergy;
 import static gregtech.api.enums.HatchElement.InputBus;
 import static gregtech.api.enums.HatchElement.Maintenance;
 import static gregtech.api.enums.HatchElement.OutputBus;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofHatchAdder;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
+import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.GTNRMultiBlockBase;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.FurnaceRecipeThreadProcessingLogic;
@@ -55,6 +55,11 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
         .custom(ModList.GTNeverReset.getResourceLocation(), "parallel/furnace_front");
     private static final IIconContainer ACTIVE = Textures.BlockIcons
         .custom(ModList.GTNeverReset.getResourceLocation(), "parallel/furnace_active");
+
+    public static int scaleForTier(int base, int tier) {
+        return (int) Math.min(Integer.MAX_VALUE, (long) base << Math.min(30, Math.max(0, tier - 1)));
+    }
+
     private IStructureDefinition<LargeFurnace> definition;
 
     public LargeFurnace(int id, String name, String regionalName) {
@@ -71,36 +76,6 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
     }
 
     @Override
-    public RecipeMap<?> getRecipeMap() {
-        return RecipeMaps.furnaceRecipes;
-    }
-
-    @Override
-    public int getMaxRecipeThreads() {
-        return scaleForTier(BASE_THREADS, GTUtility.getTier(getMaxInputVoltage()));
-    }
-
-    @Override
-    protected int getBaseParallelRecipes() {
-        return scaleForTier(BASE_PARALLELS, GTUtility.getTier(getMaxInputVoltage()));
-    }
-
-    @Override
-    protected double getBaseSpeedMultiplier() {
-        return 2;
-    }
-
-    @Override
-    protected double getBaseEUtMultiplier() {
-        return 0.8;
-    }
-
-    @Override
-    protected RecipeThreadProcessingLogic createRecipeThreadProcessingLogic() {
-        return new FurnaceRecipeThreadProcessingLogic();
-    }
-
-    @Override
     public IStructureDefinition<LargeFurnace> getStructureDefinition() {
         if (definition == null) {
             var builder = StructureDefinition.<LargeFurnace>builder()
@@ -110,11 +85,9 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
                     ofChain(
                         StructureTooltipHooks.describeAsHatch(
                             ofHatchAdder(LargeFurnace::addParameterModuleToMachineList, CASING_TEXTURE_ID, 1),
-                            // #tr gtnr.large_furnace.modules
-                            // # Parameter Module
-                            // # zh_CN 参数模块
-                            "gtnr.large_furnace.modules"),
-                        buildHatchAdder(LargeFurnace.class).atLeast(InputBus, OutputBus, Energy, Maintenance)
+                            ParameterModuleHatch.NAME_KEY),
+                        buildHatchAdder(LargeFurnace.class)
+                            .atLeast(InputBus, OutputBus, Energy.or(ExoticEnergy), Maintenance)
                             .casingIndex(CASING_TEXTURE_ID)
                             .hint(1)
                             .buildAndChain(ofBlock(GregTechAPI.sBlockCasings2, 0))));
@@ -172,10 +145,14 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
     protected void checkMachineHatches(List<StructureError> errors) {
         checkHatchMin(errors, InputBus, 1);
         checkHatchMin(errors, OutputBus, 1);
-        checkHatchMin(errors, Energy, 1);
-        checkHatchMax(errors, Energy, 2);
+        checkHatchMin(errors, Energy.or(ExoticEnergy), 1);
         checkHatchMin(errors, Maintenance, 1);
         checkHatchMax(errors, Maintenance, 1);
+    }
+
+    @Override
+    protected RecipeThreadProcessingLogic createRecipeThreadProcessingLogic() {
+        return new FurnaceRecipeThreadProcessingLogic();
     }
 
     @Override
@@ -190,30 +167,38 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
     }
 
     @Override
-    public List<String> getTooltipFeatureLines() {
-        List<String> lines = new ArrayList<>(super.getTooltipFeatureLines());
-        // #tr gtnr.large_furnace.description
-        // # Smelts items using furnace recipes
-        // # zh_CN 使用熔炉配方冶炼物品
-        lines.add(StatCollector.translateToLocal("gtnr.large_furnace.description"));
-        // #tr gtnr.large_furnace.scaling
-        // # LV: 64 parallels, 6 threads; both double per voltage tier
-        // # zh_CN LV：64 并行、6 线程；每升一档电压，两者翻倍
-        lines.add(StatCollector.translateToLocal("gtnr.large_furnace.scaling"));
-        return lines;
+    public String getTooltipPath() {
+        return "large-furnace";
     }
 
     @Override
-    public List<String> getTooltipStructureNotes() {
-        List<String> lines = new ArrayList<>(super.getTooltipStructureNotes());
-        // #tr gtnr.large_furnace.lava
-        // # 56 stationary lava blocks; steel casing positions accept hatches
-        // # zh_CN 56 格静止岩浆；钢机械方块位置可替换为仓室
-        lines.add(StatCollector.translateToLocal("gtnr.large_furnace.lava"));
-        return lines;
+    public Map<String, Object> getTooltipVars() {
+        return Map.of("baseThreads", BASE_THREADS);
     }
 
-    public static int scaleForTier(int base, int tier) {
-        return (int) Math.min(Integer.MAX_VALUE, (long) base << Math.min(30, Math.max(0, tier - 1)));
+    @Override
+    public RecipeMap<?> getRecipeMap() {
+        return RecipeMaps.furnaceRecipes;
     }
+
+    @Override
+    public int getMaxRecipeThreads() {
+        return scaleForTier(BASE_THREADS, GTUtility.getTier(getMaxInputVoltage()));
+    }
+
+    @Override
+    protected int getBaseParallelRecipes() {
+        return scaleForTier(BASE_PARALLELS, GTUtility.getTier(getMaxInputVoltage()));
+    }
+
+    @Override
+    protected double getBaseSpeedMultiplier() {
+        return 2;
+    }
+
+    @Override
+    protected double getBaseEUtMultiplier() {
+        return 0.8;
+    }
+
 }

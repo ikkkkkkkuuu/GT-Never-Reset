@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// GTNG port modifications (c) 2026 GTNG contributors.
-// Upstream authors and exact source mappings: META-INF/ae2lt-port/CODE_PORT_NOTES.md
 package com.xyp.gtneverreset.common.block.blocks;
 
 import net.minecraft.block.Block;

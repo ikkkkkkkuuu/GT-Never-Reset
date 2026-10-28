@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
 package com.xyp.gtneverreset.mixins.late.gregtech.wireless;
 
 import java.util.Collections;

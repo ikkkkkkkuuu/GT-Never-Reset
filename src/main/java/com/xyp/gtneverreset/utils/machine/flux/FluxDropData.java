@@ -5,8 +5,6 @@ import net.minecraft.nbt.NBTTagCompound;
 
 public final class FluxDropData {
 
-    private FluxDropData() {}
-
     public static void normalize(ItemStack stack) {
         if (stack == null || !stack.hasTagCompound()) return;
         NBTTagCompound original = stack.getTagCompound();

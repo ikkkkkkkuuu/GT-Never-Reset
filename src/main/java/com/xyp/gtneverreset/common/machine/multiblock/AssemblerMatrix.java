@@ -1,11 +1,9 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from ABKQPO/GT-Not-Leisure, commit 6cbc6927af4f44c445ea7a879796b4764b00988d.
-// Modified for compact, fixed-maximum, energy-free GT Not Good and GT Never Reset machines.
 package com.xyp.gtneverreset.common.machine.multiblock;
 
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
@@ -39,6 +37,7 @@ import com.xyp.gtneverreset.utils.machine.AssemblerMatrixPatternInventory;
 import com.xyp.gtneverreset.utils.machine.AssemblerMatrixPatternState;
 import com.xyp.gtneverreset.utils.machine.DireCraftingPatternDetails;
 import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.Upgrades;
@@ -114,24 +113,49 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     public static final EnumSet<ForgeDirection> ALL_DIRECTIONS = EnumSet
         .complementOf(EnumSet.of(ForgeDirection.UNKNOWN));
     public static final EnumSet<ForgeDirection> NO_DIRECTIONS = EnumSet.noneOf(ForgeDirection.class);
-
     public static final int PATTERN_CAPACITY = 576;
-    public final int mMaxSlots = PATTERN_CAPACITY;
+
+    public static ItemStack resolveContainerItem(ItemStack stack) {
+        final var item = stack.getItem();
+        if (item == null) return null;
+        if (!item.hasContainerItem(stack)) return null;
+        final ItemStack containerItem = item.getContainerItem(stack.copy());
+        if (containerItem != null && containerItem.isItemStackDamageable()
+            && containerItem.getItemDamage() > containerItem.getMaxDamage()) {
+            return null;
+        }
+
+        return containerItem;
+    }
+
+    /** Returns the localized visibility label shared by controller, GUI and overlay. */
+    public static String patternVisibilityKey(boolean visible) {
+        // #tr gtnr.compact.interface.show_pattern.enabled
+        // # §aShow on Interface Terminal
+        // # zh_CN §a在接口终端显示
+        if (visible) return "gtnr.compact.interface.show_pattern.enabled";
+        // #tr gtnr.compact.interface.show_pattern.disabled
+        // # §cHide on Interface Terminal
+        // # zh_CN §c在接口终端隐藏
+        return "gtnr.compact.interface.show_pattern.disabled";
+    }
+
     public final long mMaxParallelLong = Long.MAX_VALUE;
     public boolean wirelessMode;
     @Getter
     public boolean showPattern = true;
-    public String costingEUText = "0";
     public long recipesDone;
     public long usedParallel = 0;
-
     private String customName = "";
-    private AENetworkProxy gridProxy;
-    private DualityInterface di;
-    private final MachineSource source = new MachineSource(this);
     @Getter
     private final AssemblerMatrixPatternInventory inventory = new AssemblerMatrixPatternInventory(this);
     private final AssemblerMatrixPatternState patternState = new AssemblerMatrixPatternState();
+
+    public final int mMaxSlots = PATTERN_CAPACITY;
+    public String costingEUText = "0";
+    private AENetworkProxy gridProxy;
+    private DualityInterface di;
+    private final MachineSource source = new MachineSource(this);
 
     /** Retains pattern notifications until the server has finished formation and the AE node is active. */
     private boolean needsPatternSync = true;
@@ -145,11 +169,6 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
 
     public AssemblerMatrix(String aName) {
         super(aName);
-    }
-
-    @Override
-    public String getLocalNameKey() {
-        return "gtnr.AssemblerMatrix.name";
     }
 
     @Override
@@ -210,56 +229,43 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     }
 
     @Override
-    public boolean onWireCutterRightClick(ForgeDirection side, ForgeDirection wrenchingSide, EntityPlayer aPlayer,
-        float aX, float aY, float aZ, ItemStack aTool) {
-        if (getBaseMetaTileEntity().isServerSide()) {
-            setShowPattern(!showPattern);
-            GTUtility.sendChatTrans(aPlayer, patternVisibilityKey(showPattern));
-        }
-        return true;
+    public void onColorChangeServer(byte aColor) {
+        updateAE2ProxyColor();
     }
 
     @Override
-    public void onScrewdriverRightClick(ForgeDirection side, EntityPlayer aPlayer, float aX, float aY, float aZ,
-        ItemStack aTool) {
-        if (!getBaseMetaTileEntity().isServerSide()) return;
-        if (this.mMaxProgresstime > 0) {
-            // #tr gtnr.compact.machine.message.mode_running
-            // # Can't change mode when running !
-            // # zh_CN 机器运行时无法切换模式！
-            GTUtility.sendChatTrans(aPlayer, "gtnr.compact.machine.message.mode_running");
-            return;
-        }
-        this.machineMode = (this.machineMode + 1) % 3;
-        GTUtility.sendChatTrans(aPlayer, getMachineModeKey());
+    public IStructureDefinition<AssemblerMatrix> getStructureDefinition() {
+        return StructureDefinition.<AssemblerMatrix>builder()
+            .addShape("main", StructureUtility.transpose(MultiblockStructureLoader.load("assembler_matrix")))
+            .addElement(
+                'A',
+                StructureUtility.ofChain(
+                    GTStructureUtility.buildHatchAdder(AssemblerMatrix.class)
+                        .casingIndex(getCasingTextureID())
+                        .hint(1)
+                        .atLeast(HatchElement.InputBus, HatchElement.OutputBus)
+                        .build(),
+                    StructureUtility.ofBlock(GregTechAPI.sBlockCasings2, 0)))
+            .build();
     }
 
-    public void setPatternMultiply(int patternMultiply) {
-        patternState.setPatternMultiply(patternMultiply);
-        if (getBaseMetaTileEntity() != null && getBaseMetaTileEntity().isServerSide()) {
-            upPatterns();
-            markDirty();
-        }
+    @Override
+    public void construct(ItemStack stack, boolean hintsOnly) {
+        buildPiece("main", stack, hintsOnly, 1, 1, 0);
     }
 
-    public int getPatternMultiply() {
-        return patternState.getPatternMultiply();
+    @Override
+    public int survivalConstruct(ItemStack stack, int budget, ISurvivalBuildEnvironment env) {
+        if (mMachine) return -1;
+        return survivalBuildPiece("main", stack, 1, 1, 0, budget, env, false, true);
     }
 
-    public List<IAEItemStack> getCachedPatternOutputsForGui() {
-        IAEItemStack[] cachedOutputItems = patternState.getCachedOutputItems();
-        if (cachedOutputItems == null || cachedOutputItems.length == 0) {
-            return Collections.emptyList();
-        }
-        return ObjectArrayList.wrap(cachedOutputItems);
-    }
-
-    public void setCachedPatternOutputsFromGui(List<IAEItemStack> cachedOutputItems) {
-        patternState.setCachedOutputItems(cachedOutputItems.toArray(new IAEItemStack[0]));
-    }
-
-    public String getGuiCustomName() {
-        return hasCustomName() ? customName : "";
+    @Override
+    public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
+        boolean formed = checkPiece("main", 1, 1, 0, errors);
+        getProxy().setValidSides(
+            formed ? EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)) : EnumSet.noneOf(ForgeDirection.class));
+        if (formed) upPatterns();
     }
 
     /**
@@ -271,247 +277,6 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
             || machineMode != MODE_OPERATING
             || !getBaseMetaTileEntity().isAllowedToWork()
             || !isActive();
-    }
-
-    /** A grid replacement must refresh both the advertised patterns and any accepted work awaiting processing. */
-    @Override
-    public void gridChanged() {
-        needsPatternSync = true;
-        scheduleRecipeCheck(RecipeCheckReason.IMMEDIATE);
-    }
-
-    @Override
-    public int getMaxParallelRecipes() {
-        return Integer.MAX_VALUE;
-    }
-
-    @Override
-    public boolean supportsSingleRecipeLocking() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsVoidProtection() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsInputSeparation() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsBatchMode() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsMachineModeSwitch() {
-        return true;
-    }
-
-    @Override
-    public int nextMachineMode() {
-        if (machineMode == MODE_INPUT) return MODE_OUTPUT;
-        else if (machineMode == MODE_OUTPUT) return MODE_OPERATING;
-        else return MODE_INPUT;
-    }
-
-    @Override
-    public String getMachineModeKey() {
-        return switch (machineMode) {
-            // #tr gtnr.compact.machine.assembler_matrix.mode.input
-            // # Input Mode
-            // # zh_CN 输入模式
-            case MODE_INPUT -> "gtnr.compact.machine.assembler_matrix.mode.input";
-            // #tr gtnr.compact.machine.assembler_matrix.mode.output
-            // # Output Mode
-            // # zh_CN 输出模式
-            case MODE_OUTPUT -> "gtnr.compact.machine.assembler_matrix.mode.output";
-            // #tr gtnr.compact.machine.assembler_matrix.mode.operating
-            // # Operating Mode
-            // # zh_CN 运行模式
-            default -> "gtnr.compact.machine.assembler_matrix.mode.operating";
-        };
-    }
-
-    @Override
-    public void setItemNBT(NBTTagCompound aNBT) {
-        super.setItemNBT(aNBT);
-        saveInvData(aNBT, false);
-    }
-
-    @Override
-    public void saveNBTData(NBTTagCompound aNBT) {
-        super.saveNBTData(aNBT);
-        aNBT.setInteger("patternMultiply", getPatternMultiply());
-        aNBT.setLong("mMaxParallelLong", mMaxParallelLong);
-        aNBT.setBoolean("wirelessMode", wirelessMode);
-        aNBT.setBoolean("showPattern", showPattern);
-        aNBT.setLong("recipesDone", recipesDone);
-        aNBT.setLong("usedParallel", usedParallel);
-        if (customName != null) aNBT.setString("customName", customName);
-        getProxy().writeToNBT(aNBT);
-        saveInvData(aNBT, false);
-    }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void saveInvData(NBTTagCompound aNBT, boolean external) {
-        NBTTagCompound storeRoot = new NBTTagCompound();
-
-        NBTTagList cachedList = new NBTTagList();
-        if (patternState.getCachedOutputItems() != null) {
-            for (IAEItemStack item : patternState.getCachedOutputItems()) {
-                if (item != null) {
-                    NBTTagCompound tag = new NBTTagCompound();
-                    item.writeToNBT(tag);
-                    cachedList.appendTag(tag);
-                }
-            }
-        }
-        storeRoot.setTag("CACHED_OUTPUT_ITEMS", cachedList);
-
-        NBTTagList outputList = new NBTTagList();
-        if (!patternState.getOutputs()
-            .isEmpty()) {
-            for (IAEItemStack stack : patternState.getOutputs()) {
-                if (stack != null) {
-                    NBTTagCompound tag = new NBTTagCompound();
-                    stack.writeToNBT(tag);
-                    outputList.appendTag(tag);
-                }
-            }
-        }
-        storeRoot.setTag("OUTPUT_ITEMS", outputList);
-
-        NBTTagList inputList = new NBTTagList();
-        if (!patternState.getInputs()
-            .isEmpty()) {
-            for (IAEItemStack stack : patternState.getInputs()) {
-                if (stack != null) {
-                    NBTTagCompound tag = new NBTTagCompound();
-                    stack.writeToNBT(tag);
-                    inputList.appendTag(tag);
-                }
-            }
-        }
-        storeRoot.setTag("INPUT_ITEMS", inputList);
-
-        NBTTagCompound invTag = new NBTTagCompound();
-        inventory.saveNBTData(invTag);
-        storeRoot.setTag("INVENTORY", invTag);
-
-        aNBT.setTag("CrafterInv", storeRoot);
-    }
-
-    @Override
-    public void loadNBTData(NBTTagCompound aNBT) {
-        super.loadNBTData(aNBT);
-        needsPatternSync = true;
-        patternState.clearRuntimeData();
-        setPatternMultiply(aNBT.getInteger("patternMultiply"));
-        usedParallel = aNBT.getLong("usedParallel");
-        wirelessMode = false;
-        if (aNBT.hasKey("showPattern")) setShowPattern(aNBT.getBoolean("showPattern"));
-        recipesDone = aNBT.getLong("recipesDone");
-        if (aNBT.hasKey("customName")) customName = aNBT.getString("customName");
-
-        NBTTagCompound storeRoot = null;
-
-        if (storeRoot == null && aNBT.hasKey("CrafterInv")) {
-            storeRoot = aNBT.getCompoundTag("CrafterInv");
-        }
-
-        if (storeRoot != null) {
-            NBTTagList cachedList = storeRoot.getTagList("CACHED_OUTPUT_ITEMS", 10);
-            if (cachedList != null && cachedList.tagCount() > 0) {
-                IAEItemStack[] cachedOutputItems = new IAEItemStack[cachedList.tagCount()];
-                for (int i = 0; i < cachedList.tagCount(); i++) {
-                    cachedOutputItems[i] = AEItemStack.loadItemStackFromNBT(cachedList.getCompoundTagAt(i));
-                }
-                patternState.setCachedOutputItems(cachedOutputItems);
-            }
-
-            NBTTagList outputList = storeRoot.getTagList("OUTPUT_ITEMS", 10);
-            if (outputList != null && outputList.tagCount() > 0) {
-                for (int i = 0; i < outputList.tagCount(); i++) {
-                    IAEItemStack aeStack = AEItemStack.loadItemStackFromNBT(outputList.getCompoundTagAt(i));
-                    if (aeStack != null) patternState.getOutputs()
-                        .add(aeStack);
-                }
-            }
-
-            NBTTagList inputList = storeRoot.getTagList("INPUT_ITEMS", 10);
-            if (inputList != null && inputList.tagCount() > 0) {
-                for (int i = 0; i < inputList.tagCount(); i++) {
-                    IAEItemStack aeStack = AEItemStack.loadItemStackFromNBT(inputList.getCompoundTagAt(i));
-                    if (aeStack != null) patternState.getInputs()
-                        .add(aeStack);
-                }
-            }
-
-            if (storeRoot.hasKey("INVENTORY")) {
-                inventory.loadNBTData(storeRoot.getCompoundTag("INVENTORY"));
-            }
-        }
-
-        getProxy().readFromNBT(aNBT);
-        updateAE2ProxyColor();
-        updateValidGridProxySides();
-    }
-
-    @Override
-    public MultiblockTooltipBuilder createTooltip() {
-        return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
-            .toolTipFinisher();
-    }
-
-    @Override
-    public String getTooltipMachineType() {
-        // #tr gtnr.AssemblerMatrix.name
-        // # Assembler Matrix
-        // # zh_CN 装配矩阵
-        return StatCollector.translateToLocal("gtnr.AssemblerMatrix.name");
-    }
-
-    @Override
-    public List<String> getTooltipFeatureLines() {
-        return List.of(
-            // #tr gtnr.AssemblerMatrix.tooltip.patterns
-            // # Executes AE crafting patterns
-            // # zh_CN 执行 AE 合成样板
-            StatCollector.translateToLocal("gtnr.AssemblerMatrix.tooltip.patterns"),
-            // #tr gtnr.AssemblerMatrix.tooltip.capacity
-            // # 1-tick crafting; up to %s patterns
-            // # zh_CN 1 tick 合成，最多容纳 %s 个样板
-            StatCollector.translateToLocalFormatted("gtnr.AssemblerMatrix.tooltip.capacity", PATTERN_CAPACITY),
-            // #tr gtnr.AssemblerMatrix.tooltip.energy
-            // # Requires no upgrades, EU or AE crafting energy
-            // # zh_CN 无需升级，不消耗 EU 或 AE 合成能量
-            StatCollector.translateToLocal("gtnr.AssemblerMatrix.tooltip.energy"));
-    }
-
-    @Override
-    public List<String> getTooltipStructureNotes() {
-        return List.of(
-            // #tr gtnr.AssemblerMatrix.casing
-            // # 5 positions: Solid Steel Machine Casing or input/output buses
-            // # zh_CN 5 个位置可使用坚实钢机械方块或输入、输出总线
-            StatCollector.translateToLocal("gtnr.AssemblerMatrix.casing"));
-    }
-
-    // Resolve container items returned after an input is consumed.
-    public static ItemStack resolveContainerItem(ItemStack stack) {
-        final var item = stack.getItem();
-        if (item == null) return null;
-        if (!item.hasContainerItem(stack)) return null;
-        final ItemStack containerItem = item.getContainerItem(stack.copy());
-        if (containerItem != null && containerItem.isItemStackDamageable()
-            && containerItem.getItemDamage() > containerItem.getMaxDamage()) {
-            return null;
-        }
-
-        return containerItem;
     }
 
     public void upPatterns() {
@@ -707,6 +472,312 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
         markDirty();
     }
 
+    /** A grid replacement must refresh both the advertised patterns and any accepted work awaiting processing. */
+    @Override
+    public void gridChanged() {
+        needsPatternSync = true;
+        scheduleRecipeCheck(RecipeCheckReason.IMMEDIATE);
+    }
+
+    @Override
+    public AENetworkProxy getProxy() {
+        if (gridProxy == null) {
+            var bmte = getBaseMetaTileEntity();
+            if (bmte instanceof IGridProxyable) {
+                gridProxy = new AENetworkProxy(this, "proxy", GTNRItemList.AssemblerMatrix.get(1), true);
+                gridProxy.setFlags(GridFlags.REQUIRE_CHANNEL);
+                gridProxy.setIdlePowerUsage(0);
+                updateValidGridProxySides();
+                if (bmte.getWorld() != null) {
+                    gridProxy.setOwner(
+                        bmte.getWorld()
+                            .getPlayerEntityByName(bmte.getOwnerName()));
+                }
+            }
+        }
+        return gridProxy;
+    }
+
+    public void updateValidGridProxySides() {
+        if (mMachine) {
+            getProxy().setValidSides(ALL_DIRECTIONS);
+        } else {
+            getProxy().setValidSides(NO_DIRECTIONS);
+        }
+    }
+
+    @Override
+    public DualityInterface getInterfaceDuality() {
+        if (di == null) {
+            di = new DualityInterface(this.getProxy(), this);
+        }
+        return di;
+    }
+
+    @MENetworkEventSubscribe
+    public void stateChange(final MENetworkChannelsChanged c) {
+        needsPatternSync = true;
+        this.getInterfaceDuality()
+            .notifyNeighbors();
+    }
+
+    @MENetworkEventSubscribe
+    public void stateChange(final MENetworkPowerStatusChange c) {
+        needsPatternSync = true;
+        this.getInterfaceDuality()
+            .notifyNeighbors();
+    }
+
+    /**
+     * Exposes currently available crafting patterns to the crafting network.
+     */
+    @Override
+    public void provideCrafting(ICraftingProviderHelper craftingTracker) {
+        if (mMachine && this.getProxy()
+            .isActive()
+            && !patternState.getPatterns()
+                .isEmpty()) {
+            for (var value : patternState.getPatterns()
+                .values()) {
+                craftingTracker.addCraftingOption(this, value);
+            }
+        }
+    }
+
+    /**
+     * Syncs pattern caches and queues a network change notification when the pattern inventory changes.
+     */
+    @Override
+    public void onChangeInventory(IInventory inv, int slot, InvOperation operation, ItemStack removedStack,
+        ItemStack newStack) {
+        inventory.markDirty();
+        if (patternState.onPatternInventoryChanged(this, removedStack, newStack)) {
+            needsPatternSync = true;
+        }
+    }
+
+    @Override
+    public boolean pushPattern(ICraftingPatternDetails patternDetails, InventoryCrafting table) {
+        if (isBusy()) return false;
+        boolean accepted = patternState.pushPattern(patternDetails, table);
+        if (accepted) {
+            markDirty();
+            scheduleRecipeCheck(RecipeCheckReason.IMMEDIATE);
+        }
+        return accepted;
+    }
+
+    @Override
+    public EnumSet<ForgeDirection> getTargets() {
+        return NO_DIRECTIONS;
+    }
+
+    @Override
+    public DimensionalCoord getLocation() {
+        return new DimensionalCoord(
+            getBaseMetaTileEntity().getWorld(),
+            getBaseMetaTileEntity().getXCoord(),
+            getBaseMetaTileEntity().getYCoord(),
+            getBaseMetaTileEntity().getZCoord());
+    }
+
+    @Override
+    public TileEntity getTileEntity() {
+        return (TileEntity) getBaseMetaTileEntity();
+    }
+
+    @Override
+    public void saveChanges() {
+        this.getInterfaceDuality()
+            .saveChanges();
+    }
+
+    @Override
+    public ItemStack getSelfRep() {
+        return GTNRItemList.AssemblerMatrix.get(1);
+    }
+
+    /**
+     * Returns the pattern inventory exposed to the interface terminal.
+     */
+    @Override
+    public IInventory getPatterns() {
+        return inventory;
+    }
+
+    @Override
+    public int getInstalledUpgrades(Upgrades u) {
+        return u == Upgrades.PATTERN_CAPACITY ? mMaxSlots / 9 - 1 : 0;
+    }
+
+    @Override
+    public TileEntity getTile() {
+        return getTileEntity();
+    }
+
+    @Override
+    public IInventory getInventoryByName(String name) {
+        if (name.equals("patterns")) {
+            return this.inventory;
+        }
+        return this.getInterfaceDuality()
+            .getInventoryByName(name);
+    }
+
+    @Override
+    public IGridNode getGridNode(ForgeDirection dir) {
+        return this.getProxy()
+            .getNode();
+    }
+
+    public void updateAE2ProxyColor() {
+        AENetworkProxy proxy = getProxy();
+        byte color = this.getColor();
+        if (color == -1) {
+            proxy.setColor(AEColor.Transparent);
+        } else {
+            proxy.setColor(AEColor.values()[Dyes.transformDyeIndex(color)]);
+        }
+        if (proxy.getNode() != null) {
+            proxy.getNode()
+                .updateState();
+        }
+    }
+
+    @Override
+    public void securityBreak() {}
+
+    @Override
+    public ItemStack getCrafterIcon() {
+        return GTNRItemList.AssemblerMatrix.get(1);
+    }
+
+    @Override
+    public ImmutableSet<ICraftingLink> getRequestedJobs() {
+        return this.getInterfaceDuality()
+            .getRequestedJobs();
+    }
+
+    @Override
+    public IAEStack<?> injectCraftedItems(ICraftingLink link, IAEStack<?> items, Actionable mode) {
+        return this.getInterfaceDuality()
+            .injectCraftedItems(link, items, mode);
+    }
+
+    @Override
+    public void jobStateChange(ICraftingLink link) {
+        this.getInterfaceDuality()
+            .jobStateChange(link);
+    }
+
+    @Override
+    public IGridNode getActionableNode() {
+        AENetworkProxy gp = getProxy();
+        return gp != null ? gp.getNode() : null;
+    }
+
+    @Override
+    public AECableType getCableConnectionType(ForgeDirection forgeDirection) {
+        return AECableType.SMART;
+    }
+
+    @Override
+    public boolean connectsToAllSides() {
+        return true;
+    }
+
+    @Override
+    public void setConnectsToAllSides(boolean connects) {}
+
+    @Override
+    public IConfigManager getConfigManager() {
+        return this.getInterfaceDuality()
+            .getConfigManager();
+    }
+
+    public Set<IAEItemStack> getPossibleOutputs() {
+        return patternState.getPossibleOutputs();
+    }
+
+    public void tryOutputInventory(IInventory inventory) {
+        int emptySlots = 0;
+        boolean ignoreEmptiness = false;
+
+        for (MTEHatchOutputBus outputBus : mOutputBusses) {
+            if (outputBus instanceof MTEHatchOutputBusME) {
+                ignoreEmptiness = true;
+                break;
+            }
+            for (int j = 0; j < outputBus.getSizeInventory(); j++) {
+                if (outputBus.isValidSlot(j) && outputBus.getStackInSlot(j) == null) {
+                    emptySlots++;
+                }
+            }
+        }
+
+        if (emptySlots == 0 && !ignoreEmptiness) return;
+
+        for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
+            ItemStack stack = inventory.getStackInSlot(slot);
+            if (stack == null) continue;
+
+            if (!ignoreEmptiness && emptySlots < 1) break;
+
+            ItemStack remaining = stack.copy();
+            addOutputPartial(remaining);
+
+            emptySlots--;
+
+            if (remaining.stackSize <= 0) inventory.setInventorySlotContents(slot, null);
+        }
+
+        needsPatternSync = true;
+    }
+
+    @Override
+    public ITexture[] getTexture(IGregTechTileEntity tile, ForgeDirection side, ForgeDirection facing, int color,
+        boolean active, boolean redstone) {
+        return side == facing
+            ? new ITexture[] { Textures.BlockIcons.getCasingTextureForId(getCasingTextureID()),
+                TextureFactory.of(
+                    active ? Textures.BlockIcons.OVERLAY_ME_INPUT_HATCH_ACTIVE
+                        : Textures.BlockIcons.OVERLAY_ME_INPUT_HATCH) }
+            : new ITexture[] { Textures.BlockIcons.getCasingTextureForId(getCasingTextureID()) };
+    }
+
+    public int getCasingTextureID() {
+        return GTUtility.getCasingTextureIndex(GregTechAPI.sBlockCasings2, 0);
+    }
+
+    @Override
+    public String getLocalNameKey() {
+        return "gtnr.AssemblerMatrix.name";
+    }
+
+    @Override
+    public MultiblockTooltipBuilder createTooltip() {
+        return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
+            .toolTipFinisher();
+    }
+
+    @Override
+    public String getTooltipMachineType() {
+        // #tr gtnr.AssemblerMatrix.name
+        // # Assembler Matrix
+        // # zh_CN 装配矩阵
+        return StatCollector.translateToLocal("gtnr.AssemblerMatrix.name");
+    }
+
+    @Override
+    public String getTooltipPath() {
+        return "assembler-matrix";
+    }
+
+    @Override
+    public Map<String, Object> getTooltipVars() {
+        return Map.of("patternCapacity", PATTERN_CAPACITY);
+    }
+
     @Override
     public String[] getInfoData() {
         List<String> info = new ObjectArrayList<>(super.getInfoData());
@@ -793,282 +864,6 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     }
 
     @Override
-    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
-        int z) {
-        super.getWailaNBTData(player, tile, tag, world, x, y, z);
-        boolean isActive = isActive();
-        boolean isPowered = isPowered();
-        tag.setBoolean("isAEActive", isActive);
-        tag.setBoolean("isAEPowered", isPowered);
-        tag.setLong("maxParallelLong", mMaxParallelLong);
-        tag.setBoolean("wirelessMode", wirelessMode);
-        tag.setBoolean("showPattern", showPattern);
-        if (wirelessMode) tag.setString("costingEUText", costingEUText);
-    }
-
-    public boolean isPowered() {
-        return getProxy() != null && getProxy().isPowered();
-    }
-
-    public boolean isActive() {
-        return getProxy() != null && getProxy().isActive();
-    }
-
-    @Override
-    public AENetworkProxy getProxy() {
-        if (gridProxy == null) {
-            var bmte = getBaseMetaTileEntity();
-            if (bmte instanceof IGridProxyable) {
-                gridProxy = new AENetworkProxy(this, "proxy", GTNRItemList.AssemblerMatrix.get(1), true);
-                gridProxy.setFlags(GridFlags.REQUIRE_CHANNEL);
-                gridProxy.setIdlePowerUsage(0);
-                updateValidGridProxySides();
-                if (bmte.getWorld() != null) {
-                    gridProxy.setOwner(
-                        bmte.getWorld()
-                            .getPlayerEntityByName(bmte.getOwnerName()));
-                }
-            }
-        }
-        return gridProxy;
-    }
-
-    public void updateValidGridProxySides() {
-        if (mMachine) {
-            getProxy().setValidSides(ALL_DIRECTIONS);
-        } else {
-            getProxy().setValidSides(NO_DIRECTIONS);
-        }
-    }
-
-    @Override
-    public DualityInterface getInterfaceDuality() {
-        if (di == null) {
-            di = new DualityInterface(this.getProxy(), this);
-        }
-        return di;
-    }
-
-    /**
-     * Updates the visibility read by the interface terminal and persists the matrix's own setting.
-     *
-     * @param visible whether the matrix should appear in the interface terminal
-     */
-    public void setShowPattern(boolean visible) {
-        showPattern = visible;
-        if (getBaseMetaTileEntity() != null && getBaseMetaTileEntity().isServerSide()) markDirty();
-    }
-
-    @MENetworkEventSubscribe
-    public void stateChange(final MENetworkChannelsChanged c) {
-        needsPatternSync = true;
-        this.getInterfaceDuality()
-            .notifyNeighbors();
-    }
-
-    @MENetworkEventSubscribe
-    public void stateChange(final MENetworkPowerStatusChange c) {
-        needsPatternSync = true;
-        this.getInterfaceDuality()
-            .notifyNeighbors();
-    }
-
-    /**
-     * Exposes currently available crafting patterns to the crafting network.
-     */
-    @Override
-    public void provideCrafting(ICraftingProviderHelper craftingTracker) {
-        if (mMachine && this.getProxy()
-            .isActive()
-            && !patternState.getPatterns()
-                .isEmpty()) {
-            for (var value : patternState.getPatterns()
-                .values()) {
-                craftingTracker.addCraftingOption(this, value);
-            }
-        }
-    }
-
-    /**
-     * Syncs pattern caches and queues a network change notification when the pattern inventory changes.
-     */
-    @Override
-    public void onChangeInventory(IInventory inv, int slot, InvOperation operation, ItemStack removedStack,
-        ItemStack newStack) {
-        inventory.markDirty();
-        if (patternState.onPatternInventoryChanged(this, removedStack, newStack)) {
-            needsPatternSync = true;
-        }
-    }
-
-    @Override
-    public boolean pushPattern(ICraftingPatternDetails patternDetails, InventoryCrafting table) {
-        if (isBusy()) return false;
-        boolean accepted = patternState.pushPattern(patternDetails, table);
-        if (accepted) {
-            markDirty();
-            scheduleRecipeCheck(RecipeCheckReason.IMMEDIATE);
-        }
-        return accepted;
-    }
-
-    @Override
-    public EnumSet<ForgeDirection> getTargets() {
-        return NO_DIRECTIONS;
-    }
-
-    @Override
-    public DimensionalCoord getLocation() {
-        return new DimensionalCoord(
-            getBaseMetaTileEntity().getWorld(),
-            getBaseMetaTileEntity().getXCoord(),
-            getBaseMetaTileEntity().getYCoord(),
-            getBaseMetaTileEntity().getZCoord());
-    }
-
-    @Override
-    public TileEntity getTileEntity() {
-        return (TileEntity) getBaseMetaTileEntity();
-    }
-
-    @Override
-    public void saveChanges() {
-        this.getInterfaceDuality()
-            .saveChanges();
-    }
-
-    /**
-     * Returns whether this machine should be visible in the interface terminal.
-     */
-    @Override
-    public boolean shouldDisplay() {
-        return showPattern;
-    }
-
-    @Override
-    public boolean allowsPatternOptimization() {
-        return false;
-    }
-
-    @Override
-    public ItemStack getSelfRep() {
-        return GTNRItemList.AssemblerMatrix.get(1);
-    }
-
-    @Override
-    public int rows() {
-        return inventory.getTerminalRows();
-    }
-
-    @Override
-    public int rowSize() {
-        return 9;
-    }
-
-    /**
-     * Returns the pattern inventory exposed to the interface terminal.
-     */
-    @Override
-    public IInventory getPatterns() {
-        return inventory;
-    }
-
-    @Override
-    public int getInstalledUpgrades(Upgrades u) {
-        return u == Upgrades.PATTERN_CAPACITY ? mMaxSlots / 9 - 1 : 0;
-    }
-
-    @Override
-    public TileEntity getTile() {
-        return getTileEntity();
-    }
-
-    @Override
-    public IInventory getInventoryByName(String name) {
-        if (name.equals("patterns")) {
-            return this.inventory;
-        }
-        return this.getInterfaceDuality()
-            .getInventoryByName(name);
-    }
-
-    @Override
-    public IGridNode getGridNode(ForgeDirection dir) {
-        return this.getProxy()
-            .getNode();
-    }
-
-    @Override
-    public void onColorChangeServer(byte aColor) {
-        updateAE2ProxyColor();
-    }
-
-    public void updateAE2ProxyColor() {
-        AENetworkProxy proxy = getProxy();
-        byte color = this.getColor();
-        if (color == -1) {
-            proxy.setColor(AEColor.Transparent);
-        } else {
-            proxy.setColor(AEColor.values()[Dyes.transformDyeIndex(color)]);
-        }
-        if (proxy.getNode() != null) {
-            proxy.getNode()
-                .updateState();
-        }
-    }
-
-    @Override
-    public void securityBreak() {}
-
-    @Override
-    public ItemStack getCrafterIcon() {
-        return GTNRItemList.AssemblerMatrix.get(1);
-    }
-
-    @Override
-    public ImmutableSet<ICraftingLink> getRequestedJobs() {
-        return this.getInterfaceDuality()
-            .getRequestedJobs();
-    }
-
-    @Override
-    public IAEStack<?> injectCraftedItems(ICraftingLink link, IAEStack<?> items, Actionable mode) {
-        return this.getInterfaceDuality()
-            .injectCraftedItems(link, items, mode);
-    }
-
-    @Override
-    public void jobStateChange(ICraftingLink link) {
-        this.getInterfaceDuality()
-            .jobStateChange(link);
-    }
-
-    @Override
-    public IGridNode getActionableNode() {
-        AENetworkProxy gp = getProxy();
-        return gp != null ? gp.getNode() : null;
-    }
-
-    @Override
-    public AECableType getCableConnectionType(ForgeDirection forgeDirection) {
-        return AECableType.SMART;
-    }
-
-    @Override
-    public boolean connectsToAllSides() {
-        return true;
-    }
-
-    @Override
-    public void setConnectsToAllSides(boolean connects) {}
-
-    @Override
-    public IConfigManager getConfigManager() {
-        return this.getInterfaceDuality()
-            .getConfigManager();
-    }
-
-    @Override
     public String getCustomName() {
         return hasCustomName() ? customName : getMachineCraftingIcon().getDisplayName();
     }
@@ -1109,78 +904,298 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
         return display;
     }
 
-    public Set<IAEItemStack> getPossibleOutputs() {
-        return patternState.getPossibleOutputs();
+    @Override
+    public boolean onWireCutterRightClick(ForgeDirection side, ForgeDirection wrenchingSide, EntityPlayer aPlayer,
+        float aX, float aY, float aZ, ItemStack aTool) {
+        if (getBaseMetaTileEntity().isServerSide()) {
+            setShowPattern(!showPattern);
+            GTUtility.sendChatTrans(aPlayer, patternVisibilityKey(showPattern));
+        }
+        return true;
     }
 
-    public void tryOutputInventory(IInventory inventory) {
-        int emptySlots = 0;
-        boolean ignoreEmptiness = false;
+    @Override
+    public void onScrewdriverRightClick(ForgeDirection side, EntityPlayer aPlayer, float aX, float aY, float aZ,
+        ItemStack aTool) {
+        if (!getBaseMetaTileEntity().isServerSide()) return;
+        if (this.mMaxProgresstime > 0) {
+            // #tr gtnr.compact.machine.message.mode_running
+            // # Can't change mode when running !
+            // # zh_CN 机器运行时无法切换模式！
+            GTUtility.sendChatTrans(aPlayer, "gtnr.compact.machine.message.mode_running");
+            return;
+        }
+        this.machineMode = (this.machineMode + 1) % 3;
+        GTUtility.sendChatTrans(aPlayer, getMachineModeKey());
+    }
 
-        for (MTEHatchOutputBus outputBus : mOutputBusses) {
-            if (outputBus instanceof MTEHatchOutputBusME) {
-                ignoreEmptiness = true;
-                break;
-            }
-            for (int j = 0; j < outputBus.getSizeInventory(); j++) {
-                if (outputBus.isValidSlot(j) && outputBus.getStackInSlot(j) == null) {
-                    emptySlots++;
+    public void setPatternMultiply(int patternMultiply) {
+        patternState.setPatternMultiply(patternMultiply);
+        if (getBaseMetaTileEntity() != null && getBaseMetaTileEntity().isServerSide()) {
+            upPatterns();
+            markDirty();
+        }
+    }
+
+    public int getPatternMultiply() {
+        return patternState.getPatternMultiply();
+    }
+
+    public List<IAEItemStack> getCachedPatternOutputsForGui() {
+        IAEItemStack[] cachedOutputItems = patternState.getCachedOutputItems();
+        if (cachedOutputItems == null || cachedOutputItems.length == 0) {
+            return Collections.emptyList();
+        }
+        return ObjectArrayList.wrap(cachedOutputItems);
+    }
+
+    public void setCachedPatternOutputsFromGui(List<IAEItemStack> cachedOutputItems) {
+        patternState.setCachedOutputItems(cachedOutputItems.toArray(new IAEItemStack[0]));
+    }
+
+    public String getGuiCustomName() {
+        return hasCustomName() ? customName : "";
+    }
+
+    /**
+     * Updates the visibility read by the interface terminal and persists the matrix's own setting.
+     *
+     * @param visible whether the matrix should appear in the interface terminal
+     */
+    public void setShowPattern(boolean visible) {
+        showPattern = visible;
+        if (getBaseMetaTileEntity() != null && getBaseMetaTileEntity().isServerSide()) markDirty();
+    }
+
+    @Override
+    @Nonnull
+    protected MTEMultiBlockBaseGui<?> getGui() {
+        return new AssemblerMatrixGui(this);
+    }
+
+    @Override
+    public void setItemNBT(NBTTagCompound aNBT) {
+        super.setItemNBT(aNBT);
+        saveInvData(aNBT, false);
+    }
+
+    @Override
+    public void saveNBTData(NBTTagCompound aNBT) {
+        super.saveNBTData(aNBT);
+        aNBT.setInteger("patternMultiply", getPatternMultiply());
+        aNBT.setLong("mMaxParallelLong", mMaxParallelLong);
+        aNBT.setBoolean("wirelessMode", wirelessMode);
+        aNBT.setBoolean("showPattern", showPattern);
+        aNBT.setLong("recipesDone", recipesDone);
+        aNBT.setLong("usedParallel", usedParallel);
+        if (customName != null) aNBT.setString("customName", customName);
+        getProxy().writeToNBT(aNBT);
+        saveInvData(aNBT, false);
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void saveInvData(NBTTagCompound aNBT, boolean external) {
+        NBTTagCompound storeRoot = new NBTTagCompound();
+
+        NBTTagList cachedList = new NBTTagList();
+        if (patternState.getCachedOutputItems() != null) {
+            for (IAEItemStack item : patternState.getCachedOutputItems()) {
+                if (item != null) {
+                    NBTTagCompound tag = new NBTTagCompound();
+                    item.writeToNBT(tag);
+                    cachedList.appendTag(tag);
                 }
             }
         }
+        storeRoot.setTag("CACHED_OUTPUT_ITEMS", cachedList);
 
-        if (emptySlots == 0 && !ignoreEmptiness) return;
+        NBTTagList outputList = new NBTTagList();
+        if (!patternState.getOutputs()
+            .isEmpty()) {
+            for (IAEItemStack stack : patternState.getOutputs()) {
+                if (stack != null) {
+                    NBTTagCompound tag = new NBTTagCompound();
+                    stack.writeToNBT(tag);
+                    outputList.appendTag(tag);
+                }
+            }
+        }
+        storeRoot.setTag("OUTPUT_ITEMS", outputList);
 
-        for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
-            ItemStack stack = inventory.getStackInSlot(slot);
-            if (stack == null) continue;
+        NBTTagList inputList = new NBTTagList();
+        if (!patternState.getInputs()
+            .isEmpty()) {
+            for (IAEItemStack stack : patternState.getInputs()) {
+                if (stack != null) {
+                    NBTTagCompound tag = new NBTTagCompound();
+                    stack.writeToNBT(tag);
+                    inputList.appendTag(tag);
+                }
+            }
+        }
+        storeRoot.setTag("INPUT_ITEMS", inputList);
 
-            if (!ignoreEmptiness && emptySlots < 1) break;
+        NBTTagCompound invTag = new NBTTagCompound();
+        inventory.saveNBTData(invTag);
+        storeRoot.setTag("INVENTORY", invTag);
 
-            ItemStack remaining = stack.copy();
-            addOutputPartial(remaining);
+        aNBT.setTag("CrafterInv", storeRoot);
+    }
 
-            emptySlots--;
+    @Override
+    public void loadNBTData(NBTTagCompound aNBT) {
+        super.loadNBTData(aNBT);
+        needsPatternSync = true;
+        patternState.clearRuntimeData();
+        setPatternMultiply(aNBT.getInteger("patternMultiply"));
+        usedParallel = aNBT.getLong("usedParallel");
+        wirelessMode = false;
+        if (aNBT.hasKey("showPattern")) setShowPattern(aNBT.getBoolean("showPattern"));
+        recipesDone = aNBT.getLong("recipesDone");
+        if (aNBT.hasKey("customName")) customName = aNBT.getString("customName");
 
-            if (remaining.stackSize <= 0) inventory.setInventorySlotContents(slot, null);
+        NBTTagCompound storeRoot = null;
+
+        if (storeRoot == null && aNBT.hasKey("CrafterInv")) {
+            storeRoot = aNBT.getCompoundTag("CrafterInv");
         }
 
-        needsPatternSync = true;
+        if (storeRoot != null) {
+            NBTTagList cachedList = storeRoot.getTagList("CACHED_OUTPUT_ITEMS", 10);
+            if (cachedList != null && cachedList.tagCount() > 0) {
+                IAEItemStack[] cachedOutputItems = new IAEItemStack[cachedList.tagCount()];
+                for (int i = 0; i < cachedList.tagCount(); i++) {
+                    cachedOutputItems[i] = AEItemStack.loadItemStackFromNBT(cachedList.getCompoundTagAt(i));
+                }
+                patternState.setCachedOutputItems(cachedOutputItems);
+            }
+
+            NBTTagList outputList = storeRoot.getTagList("OUTPUT_ITEMS", 10);
+            if (outputList != null && outputList.tagCount() > 0) {
+                for (int i = 0; i < outputList.tagCount(); i++) {
+                    IAEItemStack aeStack = AEItemStack.loadItemStackFromNBT(outputList.getCompoundTagAt(i));
+                    if (aeStack != null) patternState.getOutputs()
+                        .add(aeStack);
+                }
+            }
+
+            NBTTagList inputList = storeRoot.getTagList("INPUT_ITEMS", 10);
+            if (inputList != null && inputList.tagCount() > 0) {
+                for (int i = 0; i < inputList.tagCount(); i++) {
+                    IAEItemStack aeStack = AEItemStack.loadItemStackFromNBT(inputList.getCompoundTagAt(i));
+                    if (aeStack != null) patternState.getInputs()
+                        .add(aeStack);
+                }
+            }
+
+            if (storeRoot.hasKey("INVENTORY")) {
+                inventory.loadNBTData(storeRoot.getCompoundTag("INVENTORY"));
+            }
+        }
+
+        getProxy().readFromNBT(aNBT);
+        updateAE2ProxyColor();
+        updateValidGridProxySides();
     }
 
     @Override
-    public IStructureDefinition<AssemblerMatrix> getStructureDefinition() {
-        return StructureDefinition.<AssemblerMatrix>builder()
-            .addShape("main", StructureUtility.transpose(new String[][] { { "AAA" }, { "A~A" } }))
-            .addElement(
-                'A',
-                StructureUtility.ofChain(
-                    GTStructureUtility.buildHatchAdder(AssemblerMatrix.class)
-                        .casingIndex(getCasingTextureID())
-                        .hint(1)
-                        .atLeast(HatchElement.InputBus, HatchElement.OutputBus)
-                        .build(),
-                    StructureUtility.ofBlock(GregTechAPI.sBlockCasings2, 0)))
-            .build();
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+        boolean isActive = isActive();
+        boolean isPowered = isPowered();
+        tag.setBoolean("isAEActive", isActive);
+        tag.setBoolean("isAEPowered", isPowered);
+        tag.setLong("maxParallelLong", mMaxParallelLong);
+        tag.setBoolean("wirelessMode", wirelessMode);
+        tag.setBoolean("showPattern", showPattern);
+        if (wirelessMode) tag.setString("costingEUText", costingEUText);
     }
 
     @Override
-    public void construct(ItemStack stack, boolean hintsOnly) {
-        buildPiece("main", stack, hintsOnly, 1, 1, 0);
+    public int getMaxParallelRecipes() {
+        return Integer.MAX_VALUE;
     }
 
     @Override
-    public int survivalConstruct(ItemStack stack, int budget, ISurvivalBuildEnvironment env) {
-        if (mMachine) return -1;
-        return survivalBuildPiece("main", stack, 1, 1, 0, budget, env, false, true);
+    public boolean supportsSingleRecipeLocking() {
+        return false;
     }
 
     @Override
-    public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        boolean formed = checkPiece("main", 1, 1, 0, errors);
-        getProxy().setValidSides(
-            formed ? EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)) : EnumSet.noneOf(ForgeDirection.class));
-        if (formed) upPatterns();
+    public boolean supportsVoidProtection() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsInputSeparation() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsBatchMode() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsMachineModeSwitch() {
+        return true;
+    }
+
+    @Override
+    public int nextMachineMode() {
+        if (machineMode == MODE_INPUT) return MODE_OUTPUT;
+        else if (machineMode == MODE_OUTPUT) return MODE_OPERATING;
+        else return MODE_INPUT;
+    }
+
+    @Override
+    public String getMachineModeKey() {
+        return switch (machineMode) {
+            // #tr gtnr.compact.machine.assembler_matrix.mode.input
+            // # Input Mode
+            // # zh_CN 输入模式
+            case MODE_INPUT -> "gtnr.compact.machine.assembler_matrix.mode.input";
+            // #tr gtnr.compact.machine.assembler_matrix.mode.output
+            // # Output Mode
+            // # zh_CN 输出模式
+            case MODE_OUTPUT -> "gtnr.compact.machine.assembler_matrix.mode.output";
+            // #tr gtnr.compact.machine.assembler_matrix.mode.operating
+            // # Operating Mode
+            // # zh_CN 运行模式
+            default -> "gtnr.compact.machine.assembler_matrix.mode.operating";
+        };
+    }
+
+    public boolean isPowered() {
+        return getProxy() != null && getProxy().isPowered();
+    }
+
+    public boolean isActive() {
+        return getProxy() != null && getProxy().isActive();
+    }
+
+    /**
+     * Returns whether this machine should be visible in the interface terminal.
+     */
+    @Override
+    public boolean shouldDisplay() {
+        return showPattern;
+    }
+
+    @Override
+    public boolean allowsPatternOptimization() {
+        return false;
+    }
+
+    @Override
+    public int rows() {
+        return inventory.getTerminalRows();
+    }
+
+    @Override
+    public int rowSize() {
+        return 9;
     }
 
     @Override
@@ -1196,36 +1211,4 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     @Override
     public void checkMaintenance() {}
 
-    @Override
-    public ITexture[] getTexture(IGregTechTileEntity tile, ForgeDirection side, ForgeDirection facing, int color,
-        boolean active, boolean redstone) {
-        return side == facing
-            ? new ITexture[] { Textures.BlockIcons.getCasingTextureForId(getCasingTextureID()),
-                TextureFactory.of(
-                    active ? Textures.BlockIcons.OVERLAY_ME_INPUT_HATCH_ACTIVE
-                        : Textures.BlockIcons.OVERLAY_ME_INPUT_HATCH) }
-            : new ITexture[] { Textures.BlockIcons.getCasingTextureForId(getCasingTextureID()) };
-    }
-
-    public int getCasingTextureID() {
-        return GTUtility.getCasingTextureIndex(GregTechAPI.sBlockCasings2, 0);
-    }
-
-    @Override
-    @Nonnull
-    protected MTEMultiBlockBaseGui<?> getGui() {
-        return new AssemblerMatrixGui(this);
-    }
-
-    /** Returns the localized visibility label shared by controller, GUI and overlay. */
-    public static String patternVisibilityKey(boolean visible) {
-        // #tr gtnr.compact.interface.show_pattern.enabled
-        // # §aShow on Interface Terminal
-        // # zh_CN §a在接口终端显示
-        if (visible) return "gtnr.compact.interface.show_pattern.enabled";
-        // #tr gtnr.compact.interface.show_pattern.disabled
-        // # §cHide on Interface Terminal
-        // # zh_CN §c在接口终端隐藏
-        return "gtnr.compact.interface.show_pattern.disabled";
-    }
 }

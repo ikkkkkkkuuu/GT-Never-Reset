@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from GTLCore SkyTearsAndGregHeart; see META-INF/fragment-world-collector-port/NOTICE.md.
 package com.xyp.gtneverreset.common.recipe.gtneverreset;
 
 import java.io.InputStream;
@@ -21,12 +19,10 @@ import net.minecraftforge.oredict.OreDictionary;
 import com.google.gson.Gson;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.loader.GTNRRecipeMaps;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 
 import gregtech.api.GregTechAPI;
-import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.Mods;
 import gregtech.api.enums.OrePrefixes;
@@ -54,19 +50,9 @@ public final class FragmentWorldCollectorRecipes {
     private static final Set<String> unavailable = new LinkedHashSet<>();
     private static boolean loaded;
 
-    private FragmentWorldCollectorRecipes() {}
-
     public static void scheduleRecipes() {
         if (GregTechAPI.sGTCompleteLoad == null) loadRecipes();
         else GregTechAPI.sGTCompleteLoad.add(FragmentWorldCollectorRecipes::loadRecipes);
-    }
-
-    public static void loadMachineRecipe() {
-        GTModHandler.addCraftingRecipe(
-            GTNRItemList.FragmentWorldCollector.get(1),
-            new Object[] { "WNW", "PCQ", "XNX", 'W', OrePrefixes.cableGt01.get(Materials.Lead), 'N', "logRubber", 'P',
-                ItemList.Sensor_LV.get(1), 'Q', ItemList.Emitter_LV.get(1), 'C', ItemList.Hull_LV.get(1), 'X',
-                new ItemStack(Blocks.anvil) });
     }
 
     public static void loadRecipes() {

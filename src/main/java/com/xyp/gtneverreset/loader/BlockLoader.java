@@ -30,8 +30,6 @@ public final class BlockLoader {
 
     public static BlockEddingtonCasing eddingtonWallCasing;
 
-    private BlockLoader() {}
-
     public static void registerBlocks() {
         BlockIcons.registerIcons();
         eddingtonWallCasing = new BlockEddingtonCasing();

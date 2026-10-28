@@ -20,8 +20,6 @@ import gregtech.nei.GTNEIDefaultHandler;
 
 final class TerminalRecipeIngredients {
 
-    private TerminalRecipeIngredients() {}
-
     static List<Ingredient<?>> inputs(IRecipeHandler recipe, int index, boolean fluidsFirst) {
         List<PositionedStack> stacks = new ArrayList<>(safeList(recipe.getIngredientStacks(index)));
         String identifier = recipe.getOverlayIdentifier();

@@ -40,8 +40,6 @@ public final class RadialWheelRenderer {
 
     private static final ResourceLocation WIDGETS = new ResourceLocation("textures/gui/widgets.png");
 
-    private RadialWheelRenderer() {}
-
     public static WheelColors colorsFor(MenuNode menu, boolean editMode) {
         WheelColors colors = StyleResolver
             .resolve(MainConfig.client.radialMenu.colors.defaultColors(), ProfileManager.active().style, menu.style);

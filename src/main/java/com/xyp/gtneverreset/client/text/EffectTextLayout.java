@@ -18,8 +18,6 @@ import com.xyp.gtneverreset.utils.text.effect.TextEffects;
 @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
 public class EffectTextLayout {
 
-    private EffectTextLayout() {}
-
     public static Layout create(FontRenderer font, String text) {
         IFontParameters parameters = (IFontParameters) font;
         List<Glyph> glyphs = new ArrayList<>();

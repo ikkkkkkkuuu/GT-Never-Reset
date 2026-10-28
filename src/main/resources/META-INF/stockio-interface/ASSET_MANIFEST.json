@@ -4,7 +4,6 @@
     {
       "upstream": "https://github.com/pedroksl/AdvancedAE",
       "commit": "5ad43ee1e5f7a8b9fe7a1eacfaebdd44b61b624c",
-      "license": "LGPL-3.0",
       "author": "pedroksl and AdvancedAE contributors",
       "paths": [
         "assets/gtneverreset/textures/blocks/advancedio/advanced_io_bus.png",

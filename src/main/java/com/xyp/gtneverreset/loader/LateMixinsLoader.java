@@ -32,6 +32,10 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("thaumcraft.MixinPackagedCrucible");
         }
         if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
+            if (FMLLaunchHandler.side()
+                .isClient()) {
+                mixins.add("gregtech.ModifySomeConfigs");
+            }
             mixins.add("gregtech.AssemblyLineDataAccessMixin");
             mixins.addAll(
                 Arrays.asList(
@@ -96,6 +100,8 @@ public final class LateMixinsLoader implements ILateMixinLoader {
                         "appliedenergistics2.compact.MatrixInterfaceTerminalVisibilityMixin",
                         "appliedenergistics2.compact.MatrixPatternPersistenceMixin"));
                 mixins.add("appliedenergistics2.LargeInterfaceTerminalRowsMixin");
+                mixins.add("gregtech.MEOutputAssemblyMultiblockMixin");
+                mixins.add("gregtech.MEOutputAssemblyHatchElementMixin");
                 mixins.add("gregtech.BasicMachineStockIOMixin");
                 mixins.add("gregtech.BasicGeneratorStockIOMixin");
                 mixins.add("appliedenergistics2.MTEHatchCraftingInputMEMixin");

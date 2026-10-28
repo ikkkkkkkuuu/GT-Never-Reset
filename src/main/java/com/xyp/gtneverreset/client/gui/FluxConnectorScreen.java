@@ -1,4 +1,3 @@
-/* Keyboard flow ported from Flux Networks GuiFocusable; copyright SonarSonic/BloCamLimb, MIT. */
 package com.xyp.gtneverreset.client.gui;
 
 import net.minecraft.client.Minecraft;

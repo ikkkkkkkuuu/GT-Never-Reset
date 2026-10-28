@@ -39,8 +39,6 @@ public final class SpriteAtlas {
     private static int cell = 32;
     private static boolean loaded;
 
-    private SpriteAtlas() {}
-
     public static void load() {
         if (loaded) {
             return;

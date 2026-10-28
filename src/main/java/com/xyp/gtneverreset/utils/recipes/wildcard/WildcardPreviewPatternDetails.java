@@ -18,14 +18,12 @@ public class WildcardPreviewPatternDetails implements ICraftingPatternDetails {
         ItemStack representativeOutput) {
         this.patternStack = patternStack;
 
-        // 构建输入数组
         if (representativeInput != null) {
             this.inputs = new IAEItemStack[] { AEItemStack.create(representativeInput) };
         } else {
             this.inputs = new IAEItemStack[0];
         }
 
-        // 构建输出数组
         if (representativeOutput != null) {
             this.outputs = new IAEItemStack[] { AEItemStack.create(representativeOutput) };
         } else {

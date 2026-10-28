@@ -25,8 +25,6 @@ public final class QuickTerminalButtonTextures {
     private static boolean resourcePackDark;
     private static boolean resolved;
 
-    private QuickTerminalButtonTextures() {}
-
     public static ResourceLocation states() {
         String theme = MainConfig.client.wirelessTerminal.buttonTheme;
         if ("light".equalsIgnoreCase(theme)) return LIGHT_STATES;

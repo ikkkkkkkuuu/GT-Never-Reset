@@ -248,10 +248,6 @@ public class WildcardPatternGui {
         return backingStack != null ? backingStack.copy() : GTNRItemList.WildcardPattern.get(1);
     }
 
-    // ============================================================
-    // 主页/预览：源版双槽组与每秒轮播
-    // ============================================================
-
     private IWidget buildPreviewPage() {
         previewPage = new PreviewPage(this::excludePreviewMaterial);
         previewPage.refresh(WildcardExpansion.expand(inputs, outputs, filters));
@@ -279,10 +275,6 @@ public class WildcardPatternGui {
             return String.valueOf(stack.getItem());
         }
     }
-
-    // ============================================================
-    // 输入/输出页
-    // ============================================================
 
     private IWidget buildIOPage(boolean input) {
         List<IWildcardIOComponent> list = input ? inputs : outputs;
@@ -445,10 +437,6 @@ public class WildcardPatternGui {
         }
         return order[(idx + 1) % order.length];
     }
-
-    // ============================================================
-    // 过滤页
-    // ============================================================
 
     private IWidget buildFilterPage() {
         ListWidget<IWidget, ?> cards = new ListWidget<>().pos(0, 3)
@@ -638,10 +626,6 @@ public class WildcardPatternGui {
             });
     }
 
-    // ============================================================
-    // 公共按钮
-    // ============================================================
-
     private ButtonWidget<?> addButton(String langKey, Runnable action) {
         return THEME.button()
             .size(30, 20)
@@ -666,10 +650,6 @@ public class WildcardPatternGui {
                 return true;
             });
     }
-
-    // ============================================================
-    // 保存、同步与状态读写
-    // ============================================================
 
     private ButtonWidget<?> saveButton() {
         return THEME.button()

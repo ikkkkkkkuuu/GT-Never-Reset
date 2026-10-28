@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// Adapted from GT-Not-Leisure PR #627 at 651396c75d108e6ff5399a44c56c12214ad27d3d.
-
 package com.xyp.gtneverreset.common.gui;
 
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.CLOSE_DETAILS;
@@ -79,8 +76,6 @@ import galacticgreg.api.enums.DimensionDef;
 
 public final class WirelessFrequencyCardGui {
 
-    private WirelessFrequencyCardGui() {}
-
     public static ModularPanel build(PlayerInventoryGuiData data, PanelSyncManager syncManager, UISettings settings) {
         int index = data.getSlotIndex();
         int location = data.getInventoryType() == InventoryTypes.BAUBLES ? -index - 1
@@ -126,8 +121,6 @@ public final class WirelessFrequencyCardGui {
         public static final int RENAME_SOURCE = 70;
         public static final int DELETE_SOURCE = 80;
         private static final int ROW_STRIDE = 10;
-
-        private WirelessCardActions() {}
 
         public static int type(int id) {
             return isRowAction(id) ? id - rowIndex(id) : id;

@@ -28,8 +28,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class RadialMenuLoader {
 
-    private RadialMenuLoader() {}
-
     public static void preInit() {
         ProfileStorage.init(Minecraft.getMinecraft().mcDataDir);
         ActionTypes.registerDefaults();

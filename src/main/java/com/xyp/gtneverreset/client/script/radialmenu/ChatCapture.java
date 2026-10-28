@@ -23,8 +23,6 @@ public final class ChatCapture {
 
     private static long firstIndex;
 
-    private ChatCapture() {}
-
     static void drain() {
         String line;
         while ((line = INCOMING.poll()) != null) {

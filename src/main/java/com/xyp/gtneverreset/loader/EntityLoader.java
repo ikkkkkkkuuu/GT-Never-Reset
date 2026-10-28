@@ -7,8 +7,6 @@ import cpw.mods.fml.common.registry.EntityRegistry;
 
 public final class EntityLoader {
 
-    private EntityLoader() {}
-
     public static void registerEntities() {
         // #tr entity.gtneverreset.StableEndCrystal.name
         // # Stable End Crystal

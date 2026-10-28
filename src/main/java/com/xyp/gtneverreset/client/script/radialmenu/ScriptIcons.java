@@ -12,8 +12,6 @@ public final class ScriptIcons {
 
     private static final String[] PREFIXES = { "sprite", "file", "effect", "player", "item" };
 
-    private ScriptIcons() {}
-
     public static String spell(IconSpec icon) {
         if (icon == null || icon.id == null
             || icon.id.trim()

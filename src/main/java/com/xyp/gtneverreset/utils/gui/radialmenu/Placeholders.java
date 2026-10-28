@@ -10,8 +10,6 @@ public final class Placeholders {
     public static final String Y = "y";
     public static final String Z = "z";
 
-    private Placeholders() {}
-
     public static String apply(String text, Map<String, String> values) {
         if (text == null || text.indexOf('{') < 0 || values == null) {
             return text;

@@ -108,8 +108,6 @@ public final class LuaSyntax {
 
     private static final String OPERATOR_CHARS = "+-*/%^#=~<>(){}[];:,.";
 
-    private LuaSyntax() {}
-
     public static boolean isGlobal(String name) {
         return GLOBALS.contains(name);
     }

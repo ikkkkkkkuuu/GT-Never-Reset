@@ -2,7 +2,6 @@
   "adaptation_date": "2026-10-26",
   "source": "Adjacent GT-Not-Good working tree; source hashes identify local content beyond HEAD",
   "source_head": "048fd1963de8c6458ef6f800c411be0087cbafdb",
-  "source_license": "MIT; see GTNG-MIT-LICENSE.txt",
   "modifications": [
     "Responsibility-based GTNR packages and independent machine/recipe registration IDs",
     "Controller uses GTNRMultiBlockBase recipe threads instead of the free bulk-processing loop",

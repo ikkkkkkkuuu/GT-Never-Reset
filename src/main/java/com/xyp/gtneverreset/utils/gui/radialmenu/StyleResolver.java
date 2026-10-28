@@ -2,8 +2,6 @@ package com.xyp.gtneverreset.utils.gui.radialmenu;
 
 public final class StyleResolver {
 
-    private StyleResolver() {}
-
     public static WheelColors resolve(WheelColors defaults, MenuStyle profile, MenuStyle menu) {
         return apply(apply(defaults, profile), menu);
     }

@@ -58,8 +58,6 @@ public final class RadialUi {
     public static final int TEXT_ACTIVE = 0xFF55FF55;
     public static final int TEXT_ERROR = 0xFFFF5555;
 
-    private RadialUi() {}
-
     public static FontRenderer font() {
         return Minecraft.getMinecraft().fontRenderer;
     }

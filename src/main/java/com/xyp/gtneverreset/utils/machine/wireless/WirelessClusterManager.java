@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import static com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.controllerSource;
@@ -63,8 +61,6 @@ public class WirelessClusterManager {
 
     @Desugar
     public record Summary(int clusters, int active, int conflicted, int waiting, boolean scanLimited) {}
-
-    private WirelessClusterManager() {}
 
     public static class ScanSchedule {
 

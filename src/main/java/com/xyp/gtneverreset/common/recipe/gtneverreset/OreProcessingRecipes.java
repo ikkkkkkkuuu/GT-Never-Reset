@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 package com.xyp.gtneverreset.common.recipe.gtneverreset;
 
 import static com.xyp.gtneverreset.loader.GTNRRecipeMaps.ORE_PROCESSING_RECIPES;
@@ -59,8 +58,6 @@ public final class OreProcessingRecipes {
         OrePrefixes.oreMarble,
         OrePrefixes.oreNetherrack,
         OrePrefixes.oreEndstone);
-
-    private OreProcessingRecipes() {}
 
     public static void register() {
         processGTMaterials();

@@ -20,8 +20,6 @@ public final class KeyBuffer {
 
     private static Method scancodeOf;
 
-    private KeyBuffer() {}
-
     public static boolean isAvailable() {
         resolve();
         return store != null;

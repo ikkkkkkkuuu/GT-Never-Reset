@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Adapted from GT-Not-Good's GTNGGuiTextures; see the packaged port notices for texture provenance.
 package com.xyp.gtneverreset.common.gui;
 
 import com.cleanroommc.modularui.drawable.UITexture;
@@ -53,5 +51,4 @@ public final class VaultGuiTextures {
     public static final UITexture STRUCTURE_CHECK_OFF = UITexture
         .fullImage(GTNeverReset.MODID, "gui/overlay_button/structure_check_off");
 
-    private VaultGuiTextures() {}
 }

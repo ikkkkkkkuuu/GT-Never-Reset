@@ -360,8 +360,6 @@ public final class WirelessMonitorHud extends Gui {
 
     private static final class Format {
 
-        private Format() {}
-
         public static String number(BigDecimal value, boolean scientific, boolean fractional) {
             BigDecimal absolute = value.abs();
             if ((scientific && absolute.compareTo(BigDecimal.valueOf(1000)) >= 0)

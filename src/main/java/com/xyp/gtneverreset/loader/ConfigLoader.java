@@ -14,8 +14,6 @@ public final class ConfigLoader {
     private static boolean registered;
     private static boolean migrateLegacyClientConfig;
 
-    private ConfigLoader() {}
-
     public static void ensureLoaded() {
         if (!registered) register(new File(Launch.minecraftHome, "config"));
     }

@@ -1,4 +1,3 @@
-/* Copyright (c) 2018 Ollie Lansdell. MIT; ported from sonar.flux.common.tileentity.TileEntityFluxPoint. */
 package com.xyp.gtneverreset.common.block.blocks.tile;
 
 /** Flux Networks point port: delivers GT EU packets using the owner's GTNH wireless balance. */

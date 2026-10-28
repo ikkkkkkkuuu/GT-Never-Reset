@@ -12,8 +12,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class KeyBindingLookup {
 
-    private KeyBindingLookup() {}
-
     public static List<KeyBinding> all() {
         List<KeyBinding> bindings = new ArrayList<>();
         Minecraft mc = Minecraft.getMinecraft();

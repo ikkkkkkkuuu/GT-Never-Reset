@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-
 package com.xyp.gtneverreset.utils.machine.wireless;
 
 import static com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.sameSource;
@@ -74,8 +72,6 @@ public class WirelessLinkPersistence {
             return !slot.external() && tile instanceof IGridHost host ? host.getGridNode(slot.side()) : null;
         }
     }
-
-    private WirelessLinkPersistence() {}
 
     public static boolean discover(TileEntity tile) {
         if (!(tile instanceof IWirelessTileData data) || !data.gtnr$hasWirelessData()) return false;

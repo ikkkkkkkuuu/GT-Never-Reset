@@ -3,8 +3,6 @@ package com.xyp.gtneverreset.utils.machine.advancedio;
 /** Overflow-safe quantity decisions shared by item and millibucket transfers. */
 public final class StockPolicy {
 
-    private StockPolicy() {}
-
     public static long exportAmount(long current, long target, long budget) {
         return current >= target ? 0 : Math.min(target - current, budget);
     }

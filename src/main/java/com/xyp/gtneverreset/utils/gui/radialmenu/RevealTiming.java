@@ -6,8 +6,6 @@ public final class RevealTiming {
 
     private static final double SPREAD = 0.5;
 
-    private RevealTiming() {}
-
     public static double slotProgress(RevealAnimation animation, int slot, int slotCount, double elapsedSeconds,
         double durationSeconds) {
         if (animation == null || animation == RevealAnimation.NONE || durationSeconds <= 0.0 || slotCount <= 0) {

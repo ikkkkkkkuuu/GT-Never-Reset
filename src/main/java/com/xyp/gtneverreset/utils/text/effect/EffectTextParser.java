@@ -14,8 +14,6 @@ public class EffectTextParser {
     public static final String OPEN = "\u2063[gtnr:exotic_rainbow]\u2063";
     public static final String CLOSE = "\u2063[/gtnr]\u2063";
 
-    private EffectTextParser() {}
-
     public static boolean containsMarkers(String text) {
         return text != null && text.contains(OPEN);
     }

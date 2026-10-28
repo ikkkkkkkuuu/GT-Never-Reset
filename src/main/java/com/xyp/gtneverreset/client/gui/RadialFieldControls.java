@@ -26,8 +26,6 @@ final class RadialFieldControls {
 
     static final int CLEAR_WIDTH = 20;
 
-    private RadialFieldControls() {}
-
     static boolean hasClear(ActionField field) {
         return field.kind == ActionField.Kind.Color;
     }

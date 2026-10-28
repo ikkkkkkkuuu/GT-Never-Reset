@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 package com.xyp.gtneverreset.common.machine.multiblock;
 
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofBlock;
@@ -52,7 +51,7 @@ import com.xyp.gtneverreset.utils.enums.BlockIcons;
 import com.xyp.gtneverreset.utils.machine.storage.VaultStackSnapshots;
 import com.xyp.gtneverreset.utils.machine.storage.VaultStorageUsage;
 import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
-import com.xyp.gtneverreset.utils.structure.SingularityDataHubStructure;
+import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
 
 import appeng.api.AEApi;
@@ -91,40 +90,34 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     private static final int BYTES_PER_TYPE = 8;
     private static final int ITEMS_PER_BYTE = 8;
     private static final int FLUID_MB_PER_BYTE = 8 * 256;
-
     public static BigInteger maxItemCapacity = BigInteger.valueOf(MAX_STORAGE_BYTES)
         .multiply(BigInteger.valueOf(ITEMS_PER_BYTE));
     public static BigInteger maxFluidCapacity = BigInteger.valueOf(MAX_STORAGE_BYTES)
         .multiply(BigInteger.valueOf(FLUID_MB_PER_BYTE));
-
-    public long capacityPerItem = Long.MAX_VALUE;
-    public long capacityPerFluid = Long.MAX_VALUE;
+    private static final String STRUCTURE_PIECE_MAIN = "main";
+    private static final String[][] shape = MultiblockStructureLoader.load("singularity_data_hub");
+    private static final int HORIZONTAL_OFFSET = 1;
+    private static final int VERTICAL_OFFSET = 1;
+    private static final int DEPTH_OFFSET = 0;
+    public static NumberFormat nf = NumberFormat.getNumberInstance();
 
     public boolean wirelessMode = false;
     public boolean locked = true;
     @Setter
     public boolean doVoidExcess = false;
-    public VaultPortHatch portHatch = null;
-    public UUID ownerUUID;
-    public int mCountCasing = 0;
-
-    private static final String STRUCTURE_PIECE_MAIN = "main";
-    private static final String[][] shape = SingularityDataHubStructure.shape();
-    private IStructureDefinition<SingularityDataHub> structureDefinition;
-    private static final int HORIZONTAL_OFFSET = 1;
-    private static final int VERTICAL_OFFSET = 1;
-    private static final int DEPTH_OFFSET = 0;
-
-    public static NumberFormat nf = NumberFormat.getNumberInstance();
-
     private IItemList<IAEItemStack> storedItems = AEApi.instance()
         .storage()
         .createItemList();
-
     private IItemList<IAEFluidStack> storedFluids = AEApi.instance()
         .storage()
         .createFluidList();
 
+    public long capacityPerItem = Long.MAX_VALUE;
+    public long capacityPerFluid = Long.MAX_VALUE;
+    public VaultPortHatch portHatch = null;
+    public UUID ownerUUID;
+    public int mCountCasing = 0;
+    private IStructureDefinition<SingularityDataHub> structureDefinition;
     private final VaultStorageUsage storageUsage = new VaultStorageUsage(MAX_STORAGE_BYTES, BYTES_PER_TYPE);
 
     public SingularityDataHub(int aID, String aName, String aNameRegional) {
@@ -135,74 +128,9 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
         super(aName);
     }
 
-    public long getUsedStorageBytes() {
-        return storageUsage.usedBytes();
-    }
-
-    @Override
-    public boolean isCorrectMachinePart(ItemStack stack) {
-        return true;
-    }
-
-    @Override
-    protected ProcessingLogic createProcessingLogic() {
-        return new ProcessingLogic().enablePerfectOverclock()
-            .setMaxParallelSupplier(this::getTrueParallel);
-    }
-
-    @Override
-    public boolean supportsVoidProtection() {
-        return true;
-    }
-
-    @Override
-    public boolean supportsInputSeparation() {
-        return true;
-    }
-
-    @Override
-    public boolean supportsBatchMode() {
-        return true;
-    }
-
-    @Override
-    public boolean supportsSingleRecipeLocking() {
-        return true;
-    }
-
-    @Override
-    protected boolean forceUseMui2() {
-        return true;
-    }
-
-    @Override
-    protected @NotNull MTEMultiBlockBaseGui<?> getGui() {
-        return new SingularityDataHubGui(this);
-    }
-
     @Override
     public IMetaTileEntity newMetaEntity(IGregTechTileEntity aTileEntity) {
         return new SingularityDataHub(super.mName);
-    }
-
-    @Override
-    public long maxItemCount() {
-        return maxDistinctItems;
-    }
-
-    @Override
-    public long maxFluidCount() {
-        return maxDistinctFluids;
-    }
-
-    @Override
-    public boolean hasItem() {
-        return true;
-    }
-
-    @Override
-    public boolean hasFluid() {
-        return true;
     }
 
     @Override
@@ -232,90 +160,10 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     }
 
     @Override
-    public @NotNull CheckRecipeResult checkProcessing() {
-        mEfficiency = 10000;
-        mEfficiencyIncrease = 10000;
-        mEUt = 0;
-        lEUt = 0;
-        mMaxProgresstime = 20;
-
-        if (locked) return CheckRecipeResultRegistry.SUCCESSFUL;
-
-        ArrayList<ItemStack> inputItems = getStoredInputs();
-        ArrayList<FluidStack> inputFluids = getStoredFluids();
-
-        if (!inputItems.isEmpty()) {
-            for (ItemStack aItem : inputItems) {
-                ItemStack toDeplete = aItem.copy();
-                toDeplete.stackSize = injectItems(aItem, false);
-                if (toDeplete.stackSize > 0 && depleteInput(toDeplete)) injectItems(toDeplete, true);
-            }
-        }
-
-        if (!inputFluids.isEmpty()) {
-            for (FluidStack aFluid : inputFluids) {
-                FluidStack toDeplete = aFluid.copy();
-                toDeplete.amount = injectFluids(aFluid, false);
-                if (toDeplete.amount > 0 && depleteInput(toDeplete)) injectFluids(toDeplete, true);
-            }
-        }
-
-        return CheckRecipeResultRegistry.SUCCESSFUL;
-    }
-
-    @Override
-    public ArrayList<ItemStack> getStoredInputsForColor(Optional<Byte> color) {
-        ArrayList<ItemStack> rList = new ArrayList<>();
-        Map<ItemId, ItemStack> inputsFromME = new HashMap<>();
-        for (MTEHatchInputBus tHatch : GTUtility.validMTEList(mInputBusses)) {
-            if (tHatch instanceof MTEHatchCraftingInputME) {
-                continue;
-            }
-            byte busColor = tHatch.getColor();
-            if (color.isPresent() && busColor != -1 && busColor != color.get()) continue;
-            tHatch.mRecipeMap = getRecipeMap();
-            IGregTechTileEntity tileEntity = tHatch.getBaseMetaTileEntity();
-            boolean isMEBus = tHatch instanceof MTEHatchInputBusME;
-            for (int i = tileEntity.getSizeInventory() - 1; i >= 0; i--) {
-                ItemStack itemStack = tileEntity.getStackInSlot(i);
-                if (itemStack != null) {
-                    if (isMEBus) {
-                        // Prevent the same item from different ME buses from being recognized
-                        inputsFromME.put(ItemId.createNoCopy(itemStack), itemStack);
-                    } else {
-                        rList.add(itemStack);
-                    }
-                }
-            }
-        }
-
-        if (!inputsFromME.isEmpty()) {
-            rList.addAll(inputsFromME.values());
-        }
-        return rList;
-
-    }
-
-    @Override
     public void onPostTick(IGregTechTileEntity aBaseMetaTileEntity, long aTick) {
         super.onPostTick(aBaseMetaTileEntity, aTick);
         if (aBaseMetaTileEntity.isServerSide()) {
             this.locked = !aBaseMetaTileEntity.isActive();
-        }
-    }
-
-    @Override
-    public void onScrewdriverRightClick(ForgeDirection side, EntityPlayer aPlayer, float aX, float aY, float aZ,
-        ItemStack aTool) {
-        if (getBaseMetaTileEntity().isServerSide()) {
-            this.setDoVoidExcess(!doVoidExcess);
-            markDirty();
-            // #tr Info_SingularityDataHub_AutoVoiding
-            // # Auto-voiding: %b
-            // # zh_CN 自动销毁溢出: %b
-            GTUtility.sendChatToPlayer(
-                aPlayer,
-                StatCollector.translateToLocalFormatted("Info_SingularityDataHub_AutoVoiding", doVoidExcess));
         }
     }
 
@@ -371,22 +219,6 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     }
 
     @Override
-    public void clearHatches() {
-        super.clearHatches();
-        wirelessMode = false;
-        locked = true;
-        if (portHatch != null) {
-            portHatch.unbind();
-            portHatch = null;
-        }
-    }
-
-    @Override
-    public String[] getStructureDescription(ItemStack stackSize) {
-        return new String[0];
-    }
-
-    @Override
     public void construct(ItemStack stackSize, boolean hintsOnly) {
         if (StructureTooltipHooks
             .onBuildPiece(this, STRUCTURE_PIECE_MAIN, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET)) return;
@@ -408,55 +240,110 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
             true);
     }
 
-    public MultiblockTooltipBuilder createTooltip() {
-        return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
-            .toolTipFinisher();
+    @Override
+    protected ProcessingLogic createProcessingLogic() {
+        return new ProcessingLogic().enablePerfectOverclock()
+            .setMaxParallelSupplier(this::getTrueParallel);
     }
 
     @Override
-    public String getTooltipMachineType() {
-        // #tr SingularityDataHubRecipeType
-        // # Vault
-        // # zh_CN 保险库
-        return StatCollector.translateToLocal("SingularityDataHubRecipeType");
+    public @NotNull CheckRecipeResult checkProcessing() {
+        mEfficiency = 10000;
+        mEfficiencyIncrease = 10000;
+        mEUt = 0;
+        lEUt = 0;
+        mMaxProgresstime = 20;
+
+        if (locked) return CheckRecipeResultRegistry.SUCCESSFUL;
+
+        ArrayList<ItemStack> inputItems = getStoredInputs();
+        ArrayList<FluidStack> inputFluids = getStoredFluids();
+
+        if (!inputItems.isEmpty()) {
+            for (ItemStack aItem : inputItems) {
+                ItemStack toDeplete = aItem.copy();
+                toDeplete.stackSize = injectItems(aItem, false);
+                if (toDeplete.stackSize > 0 && depleteInput(toDeplete)) injectItems(toDeplete, true);
+            }
+        }
+
+        if (!inputFluids.isEmpty()) {
+            for (FluidStack aFluid : inputFluids) {
+                FluidStack toDeplete = aFluid.copy();
+                toDeplete.amount = injectFluids(aFluid, false);
+                if (toDeplete.amount > 0 && depleteInput(toDeplete)) injectFluids(toDeplete, true);
+            }
+        }
+
+        return CheckRecipeResultRegistry.SUCCESSFUL;
+    }
+
+    public long getUsedStorageBytes() {
+        return storageUsage.usedBytes();
     }
 
     @Override
-    public List<String> getTooltipFeatureLines() {
-        return List.of(
-            // #tr gtnr.singularity_data_hub.tooltip.storage
-            // # Stores items and fluids in a shared vault
-            // # zh_CN 集中存储物品与流体
-            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.storage"),
-            // #tr gtnr.singularity_data_hub.tooltip.capacity
-            // # Shared byte capacity; each item and fluid type also has a storage limit
-            // # zh_CN 物品与流体共用字节容量，各类型另有存储上限
-            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.capacity"),
-            // #tr gtnr.singularity_data_hub.tooltip.energy
-            // # Requires no EU
-            // # zh_CN 不消耗 EU
-            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.energy"),
-            "",
-            // #tr gtnr.singularity_data_hub.tooltip.transfers
-            // # Use the vault port for transfers; output buses and output hatches are not supported
-            // # zh_CN 通过仓库端口存取物资，不支持输出总线或输出仓
-            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.transfers"),
-            // #tr gtnr.singularity_data_hub.tooltip.port_count
-            // # Requires exactly one Vault Port Hatch
-            // # zh_CN 必须安装且只能安装 1 个仓库端口仓
-            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.port_count"),
-            // #tr gtnr.singularity_data_hub.tooltip.binding
-            // # The vault port binds automatically when the structure forms
-            // # zh_CN 结构成型时自动绑定仓库端口
-            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.binding"),
-            // #tr gtnr.singularity_data_hub.tooltip.scanner
-            // # Use a Tricorder to inspect stored item indices
-            // # zh_CN 使用扫描仪查看已存物品的索引
-            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.scanner"),
-            // #tr gtnr.singularity_data_hub.tooltip.voiding
-            // # Screwdriver: toggle voiding of excess inputs
-            // # zh_CN 螺丝刀右键切换输入溢出销毁
-            StatCollector.translateToLocal("gtnr.singularity_data_hub.tooltip.voiding"));
+    public long maxItemCount() {
+        return maxDistinctItems;
+    }
+
+    @Override
+    public long maxFluidCount() {
+        return maxDistinctFluids;
+    }
+
+    @Override
+    public boolean hasItem() {
+        return true;
+    }
+
+    @Override
+    public boolean hasFluid() {
+        return true;
+    }
+
+    @Override
+    public ArrayList<ItemStack> getStoredInputsForColor(Optional<Byte> color) {
+        ArrayList<ItemStack> rList = new ArrayList<>();
+        Map<ItemId, ItemStack> inputsFromME = new HashMap<>();
+        for (MTEHatchInputBus tHatch : GTUtility.validMTEList(mInputBusses)) {
+            if (tHatch instanceof MTEHatchCraftingInputME) {
+                continue;
+            }
+            byte busColor = tHatch.getColor();
+            if (color.isPresent() && busColor != -1 && busColor != color.get()) continue;
+            tHatch.mRecipeMap = getRecipeMap();
+            IGregTechTileEntity tileEntity = tHatch.getBaseMetaTileEntity();
+            boolean isMEBus = tHatch instanceof MTEHatchInputBusME;
+            for (int i = tileEntity.getSizeInventory() - 1; i >= 0; i--) {
+                ItemStack itemStack = tileEntity.getStackInSlot(i);
+                if (itemStack != null) {
+                    if (isMEBus) {
+                        // Prevent the same item from different ME buses from being recognized
+                        inputsFromME.put(ItemId.createNoCopy(itemStack), itemStack);
+                    } else {
+                        rList.add(itemStack);
+                    }
+                }
+            }
+        }
+
+        if (!inputsFromME.isEmpty()) {
+            rList.addAll(inputsFromME.values());
+        }
+        return rList;
+
+    }
+
+    @Override
+    public void clearHatches() {
+        super.clearHatches();
+        wirelessMode = false;
+        locked = true;
+        if (portHatch != null) {
+            portHatch.unbind();
+            portHatch = null;
+        }
     }
 
     @Override
@@ -476,266 +363,10 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
                 .build() };
     }
 
-    @Override
-    public boolean supportsPowerPanel() {
-        return false;
-    }
-
-    @Override
-    public String[] getInfoData() {
-        ArrayList<String> ll = new ArrayList<>();
-        // #tr Info_SingularityDataHub_StoredItems
-        // # Stored Items:
-        // # zh_CN 已存储物品：
-        ll.add(
-            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_StoredItems")
-                + EnumChatFormatting.RESET);
-
-        int i = 0;
-        for (IAEItemStack tank : storedItems) {
-            String localizedName = Objects.requireNonNull(
-                tank.getItem()
-                    .getItemStackDisplayName(tank.getItemStack()));
-            String amount = nf.format(tank.getStackSize());
-            String percentage = capacityPerItem > 0 ? BigInteger.valueOf(tank.getStackSize())
-                .multiply(BigInteger.valueOf(100))
-                .divide(BigInteger.valueOf(capacityPerItem))
-                .toString() : "";
-            ll.add(MessageFormat.format("{0} - {1}: {2} ({3}%)", i++, localizedName, amount, percentage));
-            if (i >= 32) break;
-        }
-
-        // #tr Info_SingularityDataHub_StoredFluids
-        // # Stored Fluids:
-        // # zh_CN 已存储流体：
-        ll.add(
-            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_StoredFluids")
-                + EnumChatFormatting.RESET);
-
-        int j = 0;
-        for (IAEFluidStack tank : storedFluids) {
-            String localizedName = Objects.requireNonNull(
-                tank.getFluid()
-                    .getLocalizedName(tank.getFluidStack()));
-            String amount = nf.format(tank.getStackSize());
-            String percentage = capacityPerFluid > 0 ? BigInteger.valueOf(tank.getStackSize())
-                .multiply(BigInteger.valueOf(100))
-                .divide(BigInteger.valueOf(capacityPerFluid))
-                .toString() : "";
-            ll.add(MessageFormat.format("{0} - {1}: {2} ({3}%)", j++, localizedName, amount, percentage));
-            if (j >= 32) break;
-        }
-
-        // #tr Info_SingularityDataHub_OperationalData
-        // # Operational Data
-        // # zh_CN 运行数据
-        ll.add(
-            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_OperationalData")
-                + EnumChatFormatting.RESET);
-
-        // #tr Info_SingularityDataHub_ItemUsed
-        // # Item Used Capacity: %s
-        // # zh_CN 已用物品容量: %s
-        ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_ItemUsed", nf.format(getItemStoredAmount())));
-        // #tr Info_SingularityDataHub_ItemTotal
-        // # Item Total Capacity: %s
-        // # zh_CN 物品总容量: %s
-        ll.add(
-            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_ItemTotal", nf.format(maxItemCapacity)));
-        // #tr Info_SingularityDataHub_PerItemCapacity
-        // # Per-Item Capacity: %s
-        // # zh_CN 每种物品容量: %s
-        ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_PerItemCapacity", nf.format(capacityPerItem)));
-        // #tr Info_SingularityDataHub_ItemUsedTypes
-        // # Item Used Type: %s
-        // # zh_CN 已用物品种类: %s
-        ll.add(
-            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_ItemUsedTypes", nf.format(itemsCount())));
-        // #tr Info_SingularityDataHub_ItemTotalTypes
-        // # Item Total Type: %s
-        // # zh_CN 物品总种类: %s
-        ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_ItemTotalTypes", nf.format(maxItemCount())));
-
-        // #tr Info_SingularityDataHub_FluidUsed
-        // # Fluid Used Capacity: %s
-        // # zh_CN 已用流体容量: %s
-        ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_FluidUsed", nf.format(getFluidStoredAmount())));
-        // #tr Info_SingularityDataHub_FluidTotal
-        // # Fluid Total Capacity: %s
-        // # zh_CN 流体总容量: %s
-        ll.add(
-            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_FluidTotal", nf.format(maxFluidCapacity)));
-        // #tr Info_SingularityDataHub_PerFluidCapacity
-        // # Per-Fluid Capacity: %s
-        // # zh_CN 每种流体容量: %s
-        ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_PerFluidCapacity", nf.format(capacityPerFluid)));
-        // #tr Info_SingularityDataHub_FluidUsedTypes
-        // # Fluid Used Type: %s
-        // # zh_CN 已用流体种类: %s
-        ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_FluidUsedTypes", nf.format(fluidsCount())));
-        // #tr Info_SingularityDataHub_FluidTotalTypes
-        // # Fluid Total Type: %s
-        // # zh_CN 流体总种类: %s
-        ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_FluidTotalTypes", nf.format(maxFluidCount())));
-
-        // #tr Info_SingularityDataHub_RunningCost
-        // # Running Cost: %dEU/t
-        // # zh_CN 运行成本: %dEU/t
-        ll.add(StatCollector.translateToLocalFormatted("Info_SingularityDataHub_RunningCost", getActualEnergyUsage()));
-        // #tr Info_SingularityDataHub_AutoVoiding
-        // # Auto-voiding: %b
-        // # zh_CN 自动销毁溢出: %b
-        ll.add(StatCollector.translateToLocalFormatted("Info_SingularityDataHub_AutoVoiding", doVoidExcess));
-        // #tr Waila_WirelessMode
-        // # Wireless Mode
-        // # zh_CN 无线模式
-        if (wirelessMode)
-            ll.add(EnumChatFormatting.LIGHT_PURPLE + StatCollector.translateToLocal("Waila_WirelessMode"));
-        ll.add(EnumChatFormatting.STRIKETHROUGH + "---------------------------------------------");
-
-        return ll.toArray(new String[0]);
-    }
-
-    public long getActualEnergyUsage() {
-        return 0;
-    }
-
-    @Override
-    public void setItemNBT(NBTTagCompound tag) {
-        super.setItemNBT(tag);
-        writeSettings(tag);
-        NBTTagCompound contents = writeContents();
-        File worldDir = DimensionManager.getCurrentSaveRootDirectory();
-        if (worldDir == null) {
-            copyContents(contents, tag);
-            return;
-        }
-        File dataDir = new File(worldDir, "data");
-        String uuid = UUID.randomUUID()
-            .toString();
-        File storeFile = new File(dataDir, "ItemVault_" + uuid + ".dat");
-        try {
-            if (!dataDir.isDirectory() && !dataDir.mkdirs()) {
-                throw new IOException("unable to create vault data directory " + dataDir);
-            }
-            CompressedStreamTools.safeWrite(contents, storeFile);
-            tag.setString("storeUUID", uuid);
-            tag.removeTag("STORE_ITEM");
-            tag.removeTag("STORE_FLUID");
-        } catch (IOException exception) {
-            GTNeverReset.LOG.error("failed to save dropped vault contents to {}", storeFile, exception);
-            copyContents(contents, tag);
-            tag.removeTag("storeUUID");
-        }
-    }
-
-    @Override
-    public void saveNBTData(NBTTagCompound tag) {
-        super.saveNBTData(tag);
-        writeSettings(tag);
-        copyContents(writeContents(), tag);
-        tag.removeTag("storeUUID");
-    }
-
-    @Override
-    public void loadNBTData(NBTTagCompound tag) {
-        super.loadNBTData(tag);
-        storedItems = AEApi.instance()
-            .storage()
-            .createItemList();
-        storedFluids = AEApi.instance()
-            .storage()
-            .createFluidList();
-        setDoVoidExcess(tag.getBoolean("doVoidExcess"));
-        locked = true;
-        wirelessMode = tag.getBoolean("wirelessMode");
-        if (tag.hasKey("STORE_ITEM", 9) || tag.hasKey("STORE_FLUID", 9)) {
-            readContents(tag);
-        } else if (tag.hasKey("storeUUID", 8)) {
-            loadDroppedContents(tag.getString("storeUUID"));
-        }
-        rebuildStorageUsage();
-    }
-
     private void rebuildStorageUsage() {
         storageUsage.clear();
         for (IAEItemStack item : storedItems) storageUsage.update(0, item.getStackSize(), ITEMS_PER_BYTE);
         for (IAEFluidStack fluid : storedFluids) storageUsage.update(0, fluid.getStackSize(), FLUID_MB_PER_BYTE);
-    }
-
-    private void writeSettings(NBTTagCompound tag) {
-        tag.setBoolean("wirelessMode", wirelessMode);
-        tag.setBoolean("doVoidExcess", doVoidExcess);
-        tag.setBoolean("locked", locked);
-    }
-
-    private NBTTagCompound writeContents() {
-        NBTTagCompound contents = new NBTTagCompound();
-        NBTTagList items = new NBTTagList();
-        for (IAEItemStack item : storedItems) {
-            NBTTagCompound entry = new NBTTagCompound();
-            item.writeToNBT(entry);
-            items.appendTag(entry);
-        }
-        NBTTagList fluids = new NBTTagList();
-        for (IAEFluidStack fluid : storedFluids) {
-            NBTTagCompound entry = new NBTTagCompound();
-            fluid.writeToNBT(entry);
-            fluids.appendTag(entry);
-        }
-        contents.setTag("STORE_ITEM", items);
-        contents.setTag("STORE_FLUID", fluids);
-        return contents;
-    }
-
-    private void copyContents(NBTTagCompound contents, NBTTagCompound target) {
-        target.setTag("STORE_ITEM", contents.getTag("STORE_ITEM"));
-        target.setTag("STORE_FLUID", contents.getTag("STORE_FLUID"));
-    }
-
-    private void readContents(NBTTagCompound contents) {
-        NBTTagList items = contents.getTagList("STORE_ITEM", 10);
-        for (int index = 0; index < items.tagCount(); index++) {
-            IAEItemStack item = AEItemStack.loadItemStackFromNBT(items.getCompoundTagAt(index));
-            if (item != null && item.getStackSize() > 0) storedItems.addStorage(item);
-        }
-        NBTTagList fluids = contents.getTagList("STORE_FLUID", 10);
-        for (int index = 0; index < fluids.tagCount(); index++) {
-            IAEFluidStack fluid = AEFluidStack.loadFluidStackFromNBT(fluids.getCompoundTagAt(index));
-            if (fluid != null && fluid.getStackSize() > 0) storedFluids.addStorage(fluid);
-        }
-    }
-
-    private void loadDroppedContents(String storedUuid) {
-        try {
-            String uuid = UUID.fromString(storedUuid)
-                .toString();
-            File worldDir = DimensionManager.getCurrentSaveRootDirectory();
-            if (worldDir == null) return;
-            File storeFile = new File(new File(worldDir, "data"), "ItemVault_" + uuid + ".dat");
-            if (!storeFile.isFile()) return;
-            NBTTagCompound contents = CompressedStreamTools.read(storeFile);
-            if (contents == null) throw new IOException("empty vault contents file " + storeFile);
-            readContents(contents);
-            if (!storeFile.delete())
-                GTNeverReset.LOG.warn("failed to delete restored vault contents file {}", storeFile);
-        } catch (IOException | IllegalArgumentException exception) {
-            GTNeverReset.LOG.error("failed to restore dropped vault contents {}", storedUuid, exception);
-        }
     }
 
     @Override
@@ -970,27 +601,6 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
         for (IAEFluidStack fluid : storedFluids) out.addStorage(fluid.copy());
     }
 
-    @Override
-    public void getWailaBody(ItemStack itemStack, List<String> currentTip, IWailaDataAccessor accessor,
-        IWailaConfigHandler config) {}
-
-    @Override
-    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
-        int z) {}
-
-    @Override
-    public void checkMaintenance() {}
-
-    @Override
-    public boolean getDefaultHasMaintenanceChecks() {
-        return false;
-    }
-
-    @Override
-    public boolean shouldCheckMaintenance() {
-        return false;
-    }
-
     public boolean addPortBusToMachineList(IGregTechTileEntity aTileEntity, int aBaseCasingIndex) {
         if (aTileEntity != null) {
             final IMetaTileEntity aMetaTileEntity = aTileEntity.getMetaTileEntity();
@@ -1006,6 +616,356 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     }
 
     @Override
+    public String[] getStructureDescription(ItemStack stackSize) {
+        return new String[0];
+    }
+
+    public MultiblockTooltipBuilder createTooltip() {
+        return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
+            .toolTipFinisher();
+    }
+
+    @Override
+    public String getTooltipMachineType() {
+        // #tr SingularityDataHubRecipeType
+        // # Vault
+        // # zh_CN 保险库
+        return StatCollector.translateToLocal("SingularityDataHubRecipeType");
+    }
+
+    @Override
+    public String getTooltipPath() {
+        return "singularity-data-hub";
+    }
+
+    @Override
+    public String[] getInfoData() {
+        ArrayList<String> ll = new ArrayList<>();
+        // #tr Info_SingularityDataHub_StoredItems
+        // # Stored Items:
+        // # zh_CN 已存储物品：
+        ll.add(
+            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_StoredItems")
+                + EnumChatFormatting.RESET);
+
+        int i = 0;
+        for (IAEItemStack tank : storedItems) {
+            String localizedName = Objects.requireNonNull(
+                tank.getItem()
+                    .getItemStackDisplayName(tank.getItemStack()));
+            String amount = nf.format(tank.getStackSize());
+            String percentage = capacityPerItem > 0 ? BigInteger.valueOf(tank.getStackSize())
+                .multiply(BigInteger.valueOf(100))
+                .divide(BigInteger.valueOf(capacityPerItem))
+                .toString() : "";
+            ll.add(MessageFormat.format("{0} - {1}: {2} ({3}%)", i++, localizedName, amount, percentage));
+            if (i >= 32) break;
+        }
+
+        // #tr Info_SingularityDataHub_StoredFluids
+        // # Stored Fluids:
+        // # zh_CN 已存储流体：
+        ll.add(
+            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_StoredFluids")
+                + EnumChatFormatting.RESET);
+
+        int j = 0;
+        for (IAEFluidStack tank : storedFluids) {
+            String localizedName = Objects.requireNonNull(
+                tank.getFluid()
+                    .getLocalizedName(tank.getFluidStack()));
+            String amount = nf.format(tank.getStackSize());
+            String percentage = capacityPerFluid > 0 ? BigInteger.valueOf(tank.getStackSize())
+                .multiply(BigInteger.valueOf(100))
+                .divide(BigInteger.valueOf(capacityPerFluid))
+                .toString() : "";
+            ll.add(MessageFormat.format("{0} - {1}: {2} ({3}%)", j++, localizedName, amount, percentage));
+            if (j >= 32) break;
+        }
+
+        // #tr Info_SingularityDataHub_OperationalData
+        // # Operational Data
+        // # zh_CN 运行数据
+        ll.add(
+            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_OperationalData")
+                + EnumChatFormatting.RESET);
+
+        // #tr Info_SingularityDataHub_ItemUsed
+        // # Item Used Capacity: %s
+        // # zh_CN 已用物品容量: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_ItemUsed", nf.format(getItemStoredAmount())));
+        // #tr Info_SingularityDataHub_ItemTotal
+        // # Item Total Capacity: %s
+        // # zh_CN 物品总容量: %s
+        ll.add(
+            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_ItemTotal", nf.format(maxItemCapacity)));
+        // #tr Info_SingularityDataHub_PerItemCapacity
+        // # Per-Item Capacity: %s
+        // # zh_CN 每种物品容量: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_PerItemCapacity", nf.format(capacityPerItem)));
+        // #tr Info_SingularityDataHub_ItemUsedTypes
+        // # Item Used Type: %s
+        // # zh_CN 已用物品种类: %s
+        ll.add(
+            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_ItemUsedTypes", nf.format(itemsCount())));
+        // #tr Info_SingularityDataHub_ItemTotalTypes
+        // # Item Total Type: %s
+        // # zh_CN 物品总种类: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_ItemTotalTypes", nf.format(maxItemCount())));
+
+        // #tr Info_SingularityDataHub_FluidUsed
+        // # Fluid Used Capacity: %s
+        // # zh_CN 已用流体容量: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_FluidUsed", nf.format(getFluidStoredAmount())));
+        // #tr Info_SingularityDataHub_FluidTotal
+        // # Fluid Total Capacity: %s
+        // # zh_CN 流体总容量: %s
+        ll.add(
+            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_FluidTotal", nf.format(maxFluidCapacity)));
+        // #tr Info_SingularityDataHub_PerFluidCapacity
+        // # Per-Fluid Capacity: %s
+        // # zh_CN 每种流体容量: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_PerFluidCapacity", nf.format(capacityPerFluid)));
+        // #tr Info_SingularityDataHub_FluidUsedTypes
+        // # Fluid Used Type: %s
+        // # zh_CN 已用流体种类: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_FluidUsedTypes", nf.format(fluidsCount())));
+        // #tr Info_SingularityDataHub_FluidTotalTypes
+        // # Fluid Total Type: %s
+        // # zh_CN 流体总种类: %s
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("Info_SingularityDataHub_FluidTotalTypes", nf.format(maxFluidCount())));
+
+        // #tr Info_SingularityDataHub_RunningCost
+        // # Running Cost: %dEU/t
+        // # zh_CN 运行成本: %dEU/t
+        ll.add(StatCollector.translateToLocalFormatted("Info_SingularityDataHub_RunningCost", getActualEnergyUsage()));
+        // #tr Info_SingularityDataHub_AutoVoiding
+        // # Auto-voiding: %b
+        // # zh_CN 自动销毁溢出: %b
+        ll.add(StatCollector.translateToLocalFormatted("Info_SingularityDataHub_AutoVoiding", doVoidExcess));
+        // #tr Waila_WirelessMode
+        // # Wireless Mode
+        // # zh_CN 无线模式
+        if (wirelessMode)
+            ll.add(EnumChatFormatting.LIGHT_PURPLE + StatCollector.translateToLocal("Waila_WirelessMode"));
+        ll.add(EnumChatFormatting.STRIKETHROUGH + "---------------------------------------------");
+
+        return ll.toArray(new String[0]);
+    }
+
+    @Override
+    public void getWailaBody(ItemStack itemStack, List<String> currentTip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {}
+
+    @Override
+    protected @NotNull MTEMultiBlockBaseGui<?> getGui() {
+        return new SingularityDataHubGui(this);
+    }
+
+    @Override
+    public void onScrewdriverRightClick(ForgeDirection side, EntityPlayer aPlayer, float aX, float aY, float aZ,
+        ItemStack aTool) {
+        if (getBaseMetaTileEntity().isServerSide()) {
+            this.setDoVoidExcess(!doVoidExcess);
+            markDirty();
+            // #tr Info_SingularityDataHub_AutoVoiding
+            // # Auto-voiding: %b
+            // # zh_CN 自动销毁溢出: %b
+            GTUtility.sendChatToPlayer(
+                aPlayer,
+                StatCollector.translateToLocalFormatted("Info_SingularityDataHub_AutoVoiding", doVoidExcess));
+        }
+    }
+
+    @Override
+    public void setItemNBT(NBTTagCompound tag) {
+        super.setItemNBT(tag);
+        writeSettings(tag);
+        NBTTagCompound contents = writeContents();
+        File worldDir = DimensionManager.getCurrentSaveRootDirectory();
+        if (worldDir == null) {
+            copyContents(contents, tag);
+            return;
+        }
+        File dataDir = new File(worldDir, "data");
+        String uuid = UUID.randomUUID()
+            .toString();
+        File storeFile = new File(dataDir, "ItemVault_" + uuid + ".dat");
+        try {
+            if (!dataDir.isDirectory() && !dataDir.mkdirs()) {
+                throw new IOException("unable to create vault data directory " + dataDir);
+            }
+            CompressedStreamTools.safeWrite(contents, storeFile);
+            tag.setString("storeUUID", uuid);
+            tag.removeTag("STORE_ITEM");
+            tag.removeTag("STORE_FLUID");
+        } catch (IOException exception) {
+            GTNeverReset.LOG.error("failed to save dropped vault contents to {}", storeFile, exception);
+            copyContents(contents, tag);
+            tag.removeTag("storeUUID");
+        }
+    }
+
+    @Override
+    public void saveNBTData(NBTTagCompound tag) {
+        super.saveNBTData(tag);
+        writeSettings(tag);
+        copyContents(writeContents(), tag);
+        tag.removeTag("storeUUID");
+    }
+
+    @Override
+    public void loadNBTData(NBTTagCompound tag) {
+        super.loadNBTData(tag);
+        storedItems = AEApi.instance()
+            .storage()
+            .createItemList();
+        storedFluids = AEApi.instance()
+            .storage()
+            .createFluidList();
+        setDoVoidExcess(tag.getBoolean("doVoidExcess"));
+        locked = true;
+        wirelessMode = tag.getBoolean("wirelessMode");
+        if (tag.hasKey("STORE_ITEM", 9) || tag.hasKey("STORE_FLUID", 9)) {
+            readContents(tag);
+        } else if (tag.hasKey("storeUUID", 8)) {
+            loadDroppedContents(tag.getString("storeUUID"));
+        }
+        rebuildStorageUsage();
+    }
+
+    private void writeSettings(NBTTagCompound tag) {
+        tag.setBoolean("wirelessMode", wirelessMode);
+        tag.setBoolean("doVoidExcess", doVoidExcess);
+        tag.setBoolean("locked", locked);
+    }
+
+    private NBTTagCompound writeContents() {
+        NBTTagCompound contents = new NBTTagCompound();
+        NBTTagList items = new NBTTagList();
+        for (IAEItemStack item : storedItems) {
+            NBTTagCompound entry = new NBTTagCompound();
+            item.writeToNBT(entry);
+            items.appendTag(entry);
+        }
+        NBTTagList fluids = new NBTTagList();
+        for (IAEFluidStack fluid : storedFluids) {
+            NBTTagCompound entry = new NBTTagCompound();
+            fluid.writeToNBT(entry);
+            fluids.appendTag(entry);
+        }
+        contents.setTag("STORE_ITEM", items);
+        contents.setTag("STORE_FLUID", fluids);
+        return contents;
+    }
+
+    private void copyContents(NBTTagCompound contents, NBTTagCompound target) {
+        target.setTag("STORE_ITEM", contents.getTag("STORE_ITEM"));
+        target.setTag("STORE_FLUID", contents.getTag("STORE_FLUID"));
+    }
+
+    private void readContents(NBTTagCompound contents) {
+        NBTTagList items = contents.getTagList("STORE_ITEM", 10);
+        for (int index = 0; index < items.tagCount(); index++) {
+            IAEItemStack item = AEItemStack.loadItemStackFromNBT(items.getCompoundTagAt(index));
+            if (item != null && item.getStackSize() > 0) storedItems.addStorage(item);
+        }
+        NBTTagList fluids = contents.getTagList("STORE_FLUID", 10);
+        for (int index = 0; index < fluids.tagCount(); index++) {
+            IAEFluidStack fluid = AEFluidStack.loadFluidStackFromNBT(fluids.getCompoundTagAt(index));
+            if (fluid != null && fluid.getStackSize() > 0) storedFluids.addStorage(fluid);
+        }
+    }
+
+    private void loadDroppedContents(String storedUuid) {
+        try {
+            String uuid = UUID.fromString(storedUuid)
+                .toString();
+            File worldDir = DimensionManager.getCurrentSaveRootDirectory();
+            if (worldDir == null) return;
+            File storeFile = new File(new File(worldDir, "data"), "ItemVault_" + uuid + ".dat");
+            if (!storeFile.isFile()) return;
+            NBTTagCompound contents = CompressedStreamTools.read(storeFile);
+            if (contents == null) throw new IOException("empty vault contents file " + storeFile);
+            readContents(contents);
+            if (!storeFile.delete())
+                GTNeverReset.LOG.warn("failed to delete restored vault contents file {}", storeFile);
+        } catch (IOException | IllegalArgumentException exception) {
+            GTNeverReset.LOG.error("failed to restore dropped vault contents {}", storedUuid, exception);
+        }
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {}
+
+    @Override
+    public boolean isCorrectMachinePart(ItemStack stack) {
+        return true;
+    }
+
+    @Override
+    public boolean supportsVoidProtection() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsInputSeparation() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsBatchMode() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsSingleRecipeLocking() {
+        return true;
+    }
+
+    @Override
+    protected boolean forceUseMui2() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsPowerPanel() {
+        return false;
+    }
+
+    public long getActualEnergyUsage() {
+        return 0;
+    }
+
+    @Override
+    public void checkMaintenance() {}
+
+    @Override
+    public boolean getDefaultHasMaintenanceChecks() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldCheckMaintenance() {
+        return false;
+    }
+
+    @Override
     public boolean isValid() {
         IGregTechTileEntity base = getBaseMetaTileEntity();
         return mMachine && base != null && !base.isDead();
@@ -1015,4 +975,5 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     public boolean getDoVoidExcess() {
         return doVoidExcess;
     }
+
 }

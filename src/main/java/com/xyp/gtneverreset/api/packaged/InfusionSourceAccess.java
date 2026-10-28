@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: LGPL-3.0-only
-// New GTNG TC4 integration (c) 2026 GTNG contributors.
 package com.xyp.gtneverreset.api.packaged;
 
 import net.minecraft.nbt.NBTTagCompound;

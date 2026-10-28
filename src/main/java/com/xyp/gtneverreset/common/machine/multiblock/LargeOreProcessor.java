@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
 package com.xyp.gtneverreset.common.machine.multiblock;
 
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofBlock;
@@ -6,29 +5,29 @@ import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofChain;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.onElementPass;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
 import static gregtech.api.enums.HatchElement.Energy;
+import static gregtech.api.enums.HatchElement.ExoticEnergy;
 import static gregtech.api.enums.HatchElement.InputBus;
-import static gregtech.api.enums.HatchElement.Maintenance;
 import static gregtech.api.enums.HatchElement.OutputBus;
 import static gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_ORE_FACTORY;
 import static gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_ORE_FACTORY_ACTIVE;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofHatchAdder;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
+import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.GTNRMultiBlockBase;
 import com.xyp.gtneverreset.loader.GTNRRecipeMaps;
 import com.xyp.gtneverreset.utils.machine.OreRecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
+import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
 
 import gregtech.api.GregTechAPI;
@@ -47,11 +46,16 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
     private static final int BASE_PARALLELS = 64;
     private static final int RECIPE_THREADS = 10;
     private static final String STRUCTURE_PIECE = "main";
-    private static final String[][] STRUCTURE_SHAPE = { { "AAA" }, { "AAA" }, { "A~A" } };
+    private static final String[][] STRUCTURE_SHAPE = MultiblockStructureLoader.load("large_ore_processor");
     private static final int HORIZONTAL_OFFSET = 1;
     private static final int VERTICAL_OFFSET = 2;
     private static final int DEPTH_OFFSET = 0;
     private static final int CASING_META = 0;
+
+    private static int getCasingTextureID() {
+        return GTUtility.getCasingTextureIndex(GregTechAPI.sBlockCasings2, CASING_META);
+    }
+
     private int casingCount;
 
     public LargeOreProcessor(int id, String name, String regionalName) {
@@ -68,36 +72,6 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
     }
 
     @Override
-    public RecipeMap<?> getRecipeMap() {
-        return GTNRRecipeMaps.ORE_PROCESSING_RECIPES;
-    }
-
-    @Override
-    public int getMaxRecipeThreads() {
-        return RECIPE_THREADS;
-    }
-
-    @Override
-    protected int getBaseParallelRecipes() {
-        return BASE_PARALLELS;
-    }
-
-    @Override
-    protected boolean hasPerfectOverclock() {
-        return true;
-    }
-
-    @Override
-    protected RecipeThreadProcessingLogic createRecipeThreadProcessingLogic() {
-        return new OreRecipeThreadProcessingLogic();
-    }
-
-    @Override
-    protected boolean canUseControllerSlotForRecipe() {
-        return false;
-    }
-
-    @Override
     public IStructureDefinition<LargeOreProcessor> getStructureDefinition() {
         return StructureDefinition.<LargeOreProcessor>builder()
             .addShape(STRUCTURE_PIECE, transpose(STRUCTURE_SHAPE))
@@ -106,13 +80,10 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
                 ofChain(
                     StructureTooltipHooks.describeAsHatch(
                         ofHatchAdder(LargeOreProcessor::addParameterModuleToMachineList, getCasingTextureID(), 1),
-                        // #tr gtnr.ore_processor.modules
-                        // # Parameter Module
-                        // # zh_CN 参数模块
-                        "gtnr.ore_processor.modules"),
+                        ParameterModuleHatch.NAME_KEY),
                     buildHatchAdder(LargeOreProcessor.class).casingIndex(getCasingTextureID())
                         .hint(1)
-                        .atLeast(InputBus, OutputBus, Energy, Maintenance)
+                        .atLeast(InputBus, OutputBus, Energy.or(ExoticEnergy))
                         .build(),
                     onElementPass(machine -> ++machine.casingCount, ofBlock(GregTechAPI.sBlockCasings2, CASING_META))))
             .build();
@@ -149,23 +120,12 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
         checkCasingMin(errors, casingCount, 1);
         checkHatchMin(errors, InputBus, 1);
         checkHatchMin(errors, OutputBus, 1);
-        checkHatchMin(errors, Energy, 1);
-        checkHatchMin(errors, Maintenance, 1);
-        checkHatchMax(errors, Maintenance, 1);
+        checkHatchMin(errors, Energy.or(ExoticEnergy), 1);
     }
 
     @Override
-    public List<String> getTooltipFeatureLines() {
-        List<String> lines = new ArrayList<>(super.getTooltipFeatureLines());
-        // #tr gtnr.ore_processor.description
-        // # Processes ores and ore intermediates into dusts, gems and byproducts
-        // # zh_CN 将矿石及选矿中间产物加工为矿粉、宝石和副产物
-        lines.add(StatCollector.translateToLocal("gtnr.ore_processor.description"));
-        // #tr gtnr.ore_processor.unprocessed
-        // # Items without an ore-processing recipe are transferred to the output in one batch
-        // # zh_CN 没有矿石处理配方的物品会整批转移到输出总线
-        lines.add(StatCollector.translateToLocal("gtnr.ore_processor.unprocessed"));
-        return lines;
+    protected RecipeThreadProcessingLogic createRecipeThreadProcessingLogic() {
+        return new OreRecipeThreadProcessingLogic();
     }
 
     @Override
@@ -179,7 +139,34 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
             .build() };
     }
 
-    private static int getCasingTextureID() {
-        return GTUtility.getCasingTextureIndex(GregTechAPI.sBlockCasings2, CASING_META);
+    @Override
+    public String getTooltipPath() {
+        return "large-ore-processor";
     }
+
+    @Override
+    public RecipeMap<?> getRecipeMap() {
+        return GTNRRecipeMaps.ORE_PROCESSING_RECIPES;
+    }
+
+    @Override
+    public int getMaxRecipeThreads() {
+        return RECIPE_THREADS;
+    }
+
+    @Override
+    protected int getBaseParallelRecipes() {
+        return BASE_PARALLELS;
+    }
+
+    @Override
+    protected boolean hasPerfectOverclock() {
+        return true;
+    }
+
+    @Override
+    protected boolean canUseControllerSlotForRecipe() {
+        return false;
+    }
+
 }

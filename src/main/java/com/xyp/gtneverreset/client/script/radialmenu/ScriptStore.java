@@ -32,8 +32,6 @@ public final class ScriptStore {
 
     private static boolean dirty;
 
-    private ScriptStore() {}
-
     public static synchronized String get(String key) {
         if (key == null || key.isEmpty()) {
             return null;

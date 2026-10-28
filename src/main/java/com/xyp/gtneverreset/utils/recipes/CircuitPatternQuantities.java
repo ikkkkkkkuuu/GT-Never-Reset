@@ -5,8 +5,6 @@ import java.util.Map;
 /** Compares complete processing-pattern quantities without rounding or overflowing batch sizes. */
 public final class CircuitPatternQuantities {
 
-    private CircuitPatternQuantities() {}
-
     /**
      * Recognizes duplicate recipe registrations independently of recipe object identity or ingredient order.
      * A scaled recipe is not an exact duplicate: one operation must consume and produce identical quantities.

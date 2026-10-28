@@ -66,8 +66,6 @@ public final class MainConfig {
     @Name("wireless_monitor")
     public static final WirelessMonitor wirelessMonitor = new WirelessMonitor();
 
-    private MainConfig() {}
-
     @Comment("无线电网 HUD 的本地显示设置")
     public static class WirelessMonitor {
 
@@ -324,6 +322,33 @@ public final class MainConfig {
 
     @Comment("仅影响本客户端，不与服务器同步")
     public static class Client {
+
+        @Comment("强制 GregTech 的 NEI 配方页面显示配方所属模组；关闭时遵循 GregTech 配置")
+        @DefaultBoolean(true)
+        @RequiresMcRestart
+        // #tr gtneverreset.gui.config.general.client.enableAlwaysDisplayRecipeOwner
+        // # Always display recipe owner
+        // # zh_CN 始终显示配方所属模组
+        @LangKey("gtneverreset.gui.config.general.client.enableAlwaysDisplayRecipeOwner")
+        public boolean enableAlwaysDisplayRecipeOwner = true;
+
+        @Comment("强制 GregTech 的 Waila 信息显示平均耗时(ns)；关闭时遵循 GregTech 配置")
+        @DefaultBoolean(true)
+        @RequiresMcRestart
+        // #tr gtneverreset.gui.config.general.client.enableAlwaysDisplayWailaAverageNS
+        // # Always display Waila average tick time
+        // # zh_CN 始终显示 Waila 平均耗时
+        @LangKey("gtneverreset.gui.config.general.client.enableAlwaysDisplayWailaAverageNS")
+        public boolean enableAlwaysDisplayWailaAverageNS = true;
+
+        @Comment("强制 GregTech 的 NEI 配方页面显示原始电压等级；关闭时遵循 GregTech 配置")
+        @DefaultBoolean(true)
+        @RequiresMcRestart
+        // #tr gtneverreset.gui.config.general.client.enableAlwaysDisplayNEIOriginalVoltage
+        // # Always display NEI original voltage
+        // # zh_CN 始终显示 NEI 原始电压
+        @LangKey("gtneverreset.gui.config.general.client.enableAlwaysDisplayNEIOriginalVoltage")
+        public boolean enableAlwaysDisplayNEIOriginalVoltage = true;
 
         @Comment("在 Windows 上隐藏本客户端的任务栏按钮，游戏窗口仍可正常使用。默认关闭，保存设置后即时生效。")
         @DefaultBoolean(false)
