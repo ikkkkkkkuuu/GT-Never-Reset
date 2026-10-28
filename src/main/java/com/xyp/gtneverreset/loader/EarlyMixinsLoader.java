@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.minecraft.launchwrapper.Launch;
+
 import com.gtnewhorizon.gtnhmixins.IEarlyMixinLoader;
 
 import cpw.mods.fml.relauncher.FMLLaunchHandler;
@@ -31,6 +33,13 @@ public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLo
             mixins.add("texteffect.MixinFontRendererTextEffects");
             if (loadedCoreMods.contains("com.gtnewhorizons.angelica.loading.AngelicaTweaker")) {
                 mixins.add("texteffect.angelica.MixinFontBatchTextEffects");
+                // Early loading has coremod names, not Forge's completed mod list.
+                boolean gtnlFontBatchPatch = loadedCoreMods.contains("com.science.gtnl.asm.GTNLEarlyCoreMod")
+                    && Launch.classLoader.getResource(
+                        "com/science/gtnl/mixins/early/texteffect/angelica/MixinFontBatchTextEffects.class") != null;
+                mixins.add(
+                    gtnlFontBatchPatch ? "texteffect.gtnl.MixinTextEffectCapture"
+                        : "texteffect.angelica.MixinFontBatchAntialiasing");
             }
         }
         return mixins;

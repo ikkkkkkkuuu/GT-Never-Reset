@@ -4,14 +4,12 @@ import net.minecraft.client.gui.FontRenderer;
 
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
-import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -20,7 +18,6 @@ import com.gtnewhorizons.angelica.config.FontConfig;
 import com.gtnewhorizons.angelica.glsm.GLStateManager;
 import com.xyp.gtneverreset.client.text.DeferredTextEffects;
 import com.xyp.gtneverreset.client.text.EffectTextRenderer;
-import com.xyp.gtneverreset.client.text.compat.AngelicaTextAdapter;
 import com.xyp.gtneverreset.client.text.compat.FontBatchBridge;
 import com.xyp.gtneverreset.utils.text.effect.EffectTextParser;
 
@@ -124,20 +121,6 @@ public abstract class MixinFontBatchTextEffects implements FontBatchBridge {
     private int gtnr$compositeMaskCoverage(int destinationAlpha) {
         // Bold copies must accumulate coverage instead of erasing strokes with their translucent edges.
         return EffectTextRenderer.isCapturing() ? GL11.GL_ONE_MINUS_SRC_ALPHA : destinationAlpha;
-    }
-
-    @Redirect(
-        method = { "flushBatchInner", "setupFontDrawState" },
-        at = @At(
-            value = "FIELD",
-            target = "Lcom/gtnewhorizons/angelica/config/FontConfig;fontAAMode:I",
-            opcode = Opcodes.GETSTATIC),
-        remap = false,
-        require = 3)
-    private int gtnr$sharpMaskCoverage() {
-        // Keep the comparison, cached mode and uniform consistent across both Angelica method layouts.
-        return EffectTextRenderer.isCapturing() && !AngelicaTextAdapter.usesCustomFont(underlying) ? 0
-            : FontConfig.fontAAMode;
     }
 
     @Inject(method = "flushBatch", at = @At("RETURN"))
