@@ -32,6 +32,7 @@ public final class AssemblerRecipes {
     public static void register() {
         registerPatternInputRecipes();
         registerMaxCapacityMEOutputRecipes();
+        registerSuperAdvancedMEInputRecipes();
         registerModuleHatchRecipes();
         registerLargeFurnaceRecipes();
         if (ModList.Forestry.isModLoaded()) registerLargeBeeBreederRecipes();
@@ -40,6 +41,27 @@ public final class AssemblerRecipes {
         registerSingularityDataHubRecipes();
         registerOreProcessorRecipe();
         registerModernFluidMachineRecipes();
+    }
+
+    private static void registerSuperAdvancedMEInputRecipes() {
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                ItemList.Hatch_Input_ME_Advanced.get(1),
+                new Object[] { OrePrefixes.circuit.get(Materials.LV), 2 },
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Aluminium, 2))
+            .itemOutputs(GTNRItemList.SuperAdvancedMEInputHatch.get(1))
+            .duration(5 * SECONDS)
+            .eut(RECIPE_LV)
+            .addTo(assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                ItemList.Hatch_Input_Bus_ME_Advanced.get(1),
+                new Object[] { OrePrefixes.circuit.get(Materials.LV), 2 },
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Aluminium, 2))
+            .itemOutputs(GTNRItemList.SuperAdvancedMEInputBus.get(1))
+            .duration(5 * SECONDS)
+            .eut(RECIPE_LV)
+            .addTo(assemblerRecipes);
     }
 
     private static void registerOreProcessorRecipe() {

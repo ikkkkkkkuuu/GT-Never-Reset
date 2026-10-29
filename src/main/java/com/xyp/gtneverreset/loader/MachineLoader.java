@@ -15,6 +15,8 @@ import com.xyp.gtneverreset.common.machine.hatch.MEOutputAssembly;
 import com.xyp.gtneverreset.common.machine.hatch.MaxCapacityMEOutputBus;
 import com.xyp.gtneverreset.common.machine.hatch.MaxCapacityMEOutputHatch;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
+import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputBus;
+import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputHatch;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputSlave;
 import com.xyp.gtneverreset.common.machine.hatch.VaultPortHatch;
@@ -114,6 +116,26 @@ public final class MachineLoader {
     }
 
     public static void registerHatch() {
+        // #tr gtnr.hatch.super_advanced_me_input_hatch.name
+        // # Super Advanced Stocking Input Hatch (ME)
+        // # zh_CN 超级 ME 输入仓
+        GTNRItemList.SuperAdvancedMEInputHatch.set(
+            new SuperAdvancedMEInputHatch(
+                GTNRMachineID.SuperAdvancedMEInputHatch.id,
+                "gtneverreset.super_advanced_me_input_hatch",
+                StatCollector.translateToLocal("gtnr.hatch.super_advanced_me_input_hatch.name")));
+        AnimatedTooltipHandler
+            .addItemTooltip(GTNRItemList.SuperAdvancedMEInputHatch.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.hatch.super_advanced_me_input_bus.name
+        // # Super Advanced Stocking Input Bus (ME)
+        // # zh_CN 超级 ME 输入总线
+        GTNRItemList.SuperAdvancedMEInputBus.set(
+            new SuperAdvancedMEInputBus(
+                GTNRMachineID.SuperAdvancedMEInputBus.id,
+                "gtneverreset.super_advanced_me_input_bus",
+                StatCollector.translateToLocal("gtnr.hatch.super_advanced_me_input_bus.name")));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.SuperAdvancedMEInputBus.get(1), AnimatedText.GT_NEVER_RESET);
+
         // #tr gtnr.hatch.max_capacity_me_output_bus.name
         // # Max Capacity ME Output Bus
         // # zh_CN 最大容量 ME 输出总线
