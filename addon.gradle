@@ -382,6 +382,6 @@ tasks.register('checkMEDataAccessContracts', JavaExec) {
 
 tasks.named('check') { dependsOn 'checkMEDataAccessContracts' }
 
-tasks.withType(Jar).configureEach {
+tasks.withType(Jar).matching { it.name in ['jar', 'shadowJar'] }.configureEach {
     from('licenses/me-data-access') { into 'META-INF/licenses/me-data-access' }
 }

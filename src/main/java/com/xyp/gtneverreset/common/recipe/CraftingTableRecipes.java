@@ -17,6 +17,7 @@ import net.minecraft.item.crafting.ShapelessRecipes;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 
+import com.xyp.gtneverreset.loader.ItemLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
@@ -34,6 +35,24 @@ import thaumcraft.common.config.ConfigBlocks;
 public final class CraftingTableRecipes {
 
     public static void register() {
+        GameRegistry.addRecipe(
+            new ItemStack(ItemLoader.permanentMagnetRing),
+            " I ",
+            "IRI",
+            " I ",
+            'I',
+            Items.iron_ingot,
+            'R',
+            Items.redstone);
+        GameRegistry.addRecipe(
+            new ItemStack(ItemLoader.harvestRing),
+            " G ",
+            "GWG",
+            " G ",
+            'G',
+            Items.gold_ingot,
+            'W',
+            Items.wheat);
         GTModHandler.addCraftingRecipe(
             GTNRItemList.VeinMiningPickaxe.get(1),
             new Object[] { "AAA", " B ", " A ", 'A', new ItemStack(Blocks.planks, 1, 0), 'B',

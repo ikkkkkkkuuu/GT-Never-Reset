@@ -1,12 +1,13 @@
 package com.xyp.gtneverreset.loader;
 
 import com.xyp.gtneverreset.api.packaged.PackagedCoreRegistry;
+import com.xyp.gtneverreset.common.item.items.HarvestRing;
 import com.xyp.gtneverreset.common.item.items.ItemAdvancedIOBus;
 import com.xyp.gtneverreset.common.item.items.ItemPackagedCore;
 import com.xyp.gtneverreset.common.item.items.ItemStockIOInterface;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessConnector;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
-import com.xyp.gtneverreset.common.item.items.HarvestRing;
+import com.xyp.gtneverreset.common.item.items.PermanentMagnetRing;
 import com.xyp.gtneverreset.common.item.items.StableEndCrystalItem;
 import com.xyp.gtneverreset.common.item.items.VeinMiningPickaxe;
 import com.xyp.gtneverreset.common.item.items.WildcardPatternItem;
@@ -22,6 +23,7 @@ import com.xyp.gtneverreset.utils.machine.packaged.ThaumcraftInfusionAdapter;
 
 public final class ItemLoader {
 
+    public static final PermanentMagnetRing permanentMagnetRing = new PermanentMagnetRing();
     public static final HarvestRing harvestRing = new HarvestRing();
 
     public static final ItemWirelessConnector wirelessConnector = new ItemWirelessConnector();
