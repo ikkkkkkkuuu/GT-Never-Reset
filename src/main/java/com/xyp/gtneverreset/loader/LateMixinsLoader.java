@@ -40,6 +40,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
                 .isClient()) {
                 mixins.add("gregtech.ModifySomeConfigs");
             }
+            mixins.add("gregtech.ToolCraftingDurabilityMixin");
             mixins.add("gregtech.AssemblyLineDataAccessMixin");
             mixins.addAll(
                 Arrays.asList(

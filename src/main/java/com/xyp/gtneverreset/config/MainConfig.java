@@ -25,6 +25,17 @@ import com.xyp.gtneverreset.utils.gui.radialmenu.WheelColors;
 @Comment("常规设置")
 public final class MainConfig {
 
+    @Name("tools")
+    public static final Tools tools = new Tools();
+
+    public static class Tools {
+
+        @Comment("GT 工具合成耐久消耗的除数；1 为原版，默认 10。消耗向上取整且至少为 1，不影响挖掘和攻击")
+        @DefaultDouble(10.0)
+        @RangeDouble(min = 1.0)
+        public double craftingDurabilityMultiplier = 10.0;
+    }
+
     @Name("cropsnh")
     public static final CropsNH cropsNH = new CropsNH();
 

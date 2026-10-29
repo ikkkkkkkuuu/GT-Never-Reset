@@ -169,4 +169,14 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
         return false;
     }
 
+    @Override
+    public boolean getDefaultHasMaintenanceChecks() {
+        return false;
+    }
+
+    @Override
+    public boolean shouldCheckMaintenance() {
+        return false;
+    }
+
 }
