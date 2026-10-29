@@ -26,6 +26,11 @@ public interface MultiblockTooltipSource {
         return null;
     }
 
+    /** Concurrent recipe capacity, or zero when this machine does not support recipe threads. */
+    default int getTooltipRecipeThreads() {
+        return 0;
+    }
+
     /** Reads one tiered part on a detached controller, or returns null when that part is unsupported. */
     default TooltipStats getTooltipStatsAtTier(TieredPart part, int tier) {
         return null;

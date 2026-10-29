@@ -166,6 +166,16 @@ tasks.register('checkTranslationFormatValidator') {
 
 tasks.named('check') { dependsOn 'checkTranslationFormatValidator' }
 
+tasks.register('checkWirelessFrequencyContracts', JavaExec) {
+    group = 'verification'
+    description = 'Checks wireless frequency persistence, multi-source migration and merge/split provenance.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'com.xyp.gtneverreset.utils.machine.wireless.WirelessFrequencyContracts'
+}
+
+tasks.named('check') { dependsOn 'checkWirelessFrequencyContracts' }
+
 // A running LaunchClassLoader keeps ZIP offsets. Rebuilding its JAR in place corrupts lazy class loads.
 // Give each game process its own copies, outside build/ so even clean cannot remove live inputs.
 afterEvaluate {

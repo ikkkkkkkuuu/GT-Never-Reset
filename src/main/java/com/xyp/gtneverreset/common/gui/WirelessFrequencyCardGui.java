@@ -62,6 +62,7 @@ import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardInventory;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardVisualisation;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessClusterManager;
+import com.xyp.gtneverreset.utils.machine.wireless.WirelessFrequencies;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessInterfaceView;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessMachineGroups;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessMachineGroups.Row;
@@ -187,8 +188,7 @@ public final class WirelessFrequencyCardGui {
                     if (!WirelessCardBinding.renameSource(card.getTagCompound(), (int) targetId - 1, text)) return;
                     WirelessCardInventory.sync(player, card);
                 } else {
-                    var node = selected.source()
-                        .node();
+                    var node = WirelessFrequencies.controllerNode(selected.frequency());
                     if (node != null && !WirelessChannelManager.canBuild(node, player)) {
                         message("denied");
                         return;
@@ -204,7 +204,7 @@ public final class WirelessFrequencyCardGui {
                     message("stale");
                 } else {
                     try {
-                        if (!WirelessOperations.rename(player, binding.source(), row, text)) message("denied");
+                        if (!WirelessOperations.rename(player, binding.frequency(), row, text)) message("denied");
                     } catch (WirelessOperations.Denied denied) {
                         message("denied");
                     } catch (IllegalStateException stale) {
@@ -213,7 +213,7 @@ public final class WirelessFrequencyCardGui {
                 }
             } else if (action == TELEPORT && player instanceof EntityPlayerMP serverPlayer) {
                 try {
-                    switch (WirelessOperations.teleport(serverPlayer, binding.source(), row)) {
+                    switch (WirelessOperations.teleport(serverPlayer, binding.frequency(), row)) {
                         case STALE -> message("stale");
                         case UNAVAILABLE -> message("teleport_unavailable");
                         case DENIED -> message("denied");
@@ -227,7 +227,7 @@ public final class WirelessFrequencyCardGui {
                 }
             } else if (action == HIGHLIGHT) {
                 try {
-                    if (!WirelessClusterManager.isCurrentLink(binding.source(), row)) {
+                    if (!WirelessClusterManager.isCurrentLink(binding.frequency(), row)) {
                         message("stale");
                         session.update(true);
                         return;
@@ -272,7 +272,7 @@ public final class WirelessFrequencyCardGui {
                     session.view.setDetailNode(row.node());
             } else if (action == TOGGLE_PAUSE) {
                 try {
-                    WirelessOperations.setPaused(player, binding.source(), row);
+                    WirelessOperations.setPaused(player, binding.frequency(), row);
                 } catch (WirelessOperations.Denied denied) {
                     message("denied");
                 } catch (IllegalStateException stale) {
@@ -316,7 +316,7 @@ public final class WirelessFrequencyCardGui {
         public Snapshot build(WirelessCardBinding binding, ItemStack card) {
             var interfaces = new WirelessInterfaceView();
             List<IWirelessLinkView> all = binding == null ? Collections.emptyList()
-                : new ArrayList<>(WirelessClusterManager.links(binding.source()));
+                : new ArrayList<>(WirelessClusterManager.links(binding.frequency()));
             boolean initializing = startup.waiting(all);
             var focus = detailNode == null ? null
                 : all.stream()
@@ -331,7 +331,7 @@ public final class WirelessFrequencyCardGui {
             renameState = nextRenameState;
             List<Row> rows = initializing ? Collections.emptyList()
                 : focus == null ? WirelessMachineGroups.group(all, interfaces)
-                    : WirelessClusterManager.entranceLinks(binding.source(), focus.cluster())
+                    : WirelessClusterManager.entranceLinks(binding.frequency(), focus.cluster())
                         .stream()
                         .map(Row::cluster)
                         .collect(Collectors.toList());
@@ -361,7 +361,7 @@ public final class WirelessFrequencyCardGui {
             data.setString(
                 "selectedSource",
                 binding == null ? ""
-                    : binding.source()
+                    : binding.frequency()
                         .toString());
             data.setString("sourceName", WirelessCardBinding.sourceName(card.getTagCompound(), binding));
             NBTTagList sources = new NBTTagList();
@@ -372,16 +372,15 @@ public final class WirelessFrequencyCardGui {
                 entry.setLong("targetId", i + 1);
                 entry.setString(
                     "sourceKey",
-                    saved.source()
+                    saved.frequency()
                         .toString());
                 entry.setString("name", WirelessCardBinding.sourceName(card.getTagCompound(), saved));
-                entry.setString("position", coordinates(saved.source()));
+                entry.setString("position", coordinates(saved.location()));
                 entry.setBoolean(
                     "selected",
-                    binding != null && saved.source()
-                        .equals(binding.source()));
-                var sourceNode = saved.source()
-                    .node();
+                    binding != null && saved.frequency()
+                        .equals(binding.frequency()));
+                var sourceNode = WirelessFrequencies.controllerNode(saved.frequency());
                 entry.setBoolean("loaded", sourceNode != null);
                 writeIcon(
                     entry,
@@ -396,7 +395,7 @@ public final class WirelessFrequencyCardGui {
                             .getMachineRepresentation());
                 writeDimensionName(
                     dimensions,
-                    saved.source()
+                    saved.location()
                         .dimension());
                 sources.appendTag(entry);
             }
@@ -405,14 +404,17 @@ public final class WirelessFrequencyCardGui {
                 data,
                 WirelessMachineGroups.summarize(focus == null ? all : Collections.singletonList(focus)));
             data.setInteger("total", focus == null ? all.size() : 1);
-            data.setInteger("entrances", binding == null ? 0 : WirelessChannelManager.entranceCount(binding.source()));
+            data.setInteger(
+                "entrances",
+                binding == null ? 0 : WirelessChannelManager.entranceCount(binding.frequency()));
             data.setInteger("entranceLimit", WirelessChannelManager.entranceLimit());
             if (binding != null) {
-                var sourceAddress = WirelessChannelManager.controllerSource(binding.source());
+                var sourceAddress = WirelessFrequencies.controller(binding.frequency());
+                if (sourceAddress == null) sourceAddress = binding.location();
+                data.setBoolean("frequencySplit", WirelessFrequencies.split(binding.frequency()));
                 data.setString("source", coordinates(sourceAddress));
                 writeDimensionName(dimensions, sourceAddress.dimension());
-                IGridNode source = binding.source()
-                    .node();
+                IGridNode source = WirelessFrequencies.controllerNode(binding.frequency());
                 data.setBoolean("sourceLoaded", source != null);
                 data.setBoolean("channels", WirelessChannelManager.channelsEnabled());
                 if (source != null && source.getGrid() != null) {

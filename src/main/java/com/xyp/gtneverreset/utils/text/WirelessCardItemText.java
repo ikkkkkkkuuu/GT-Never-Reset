@@ -200,6 +200,22 @@ public final class WirelessCardItemText {
             // # Multiple usable frequency cards found. Hold the card whose manager you want to open.
             // # zh_CN 有多张可用频率卡，请手持要打开管理界面的卡。
             case "gui_ambiguous" -> "item.gtneverreset.wireless_frequency_card.gui_ambiguous";
+            // #tr item.gtneverreset.wireless_frequency_card.adopt_confirm
+            // # Sneak-right-click this controller again within 5 seconds to take over this frequency and its links.
+            // # zh_CN 5 秒内再次潜行右击此控制器，接管当前频率及其所有链接。
+            case "adopt_confirm" -> "item.gtneverreset.wireless_frequency_card.adopt_confirm";
+            // #tr item.gtneverreset.wireless_frequency_card.adopt_denied
+            // # Takeover requires the registered creator and AE build permission. Ask an admin to assign legacy owners.
+            // # zh_CN 仅登记的频率创建者且具有 AE 建造权限时可以接管；迁移的旧频率须由管理员先指定创建者。
+            case "adopt_denied" -> "item.gtneverreset.wireless_frequency_card.adopt_denied";
+            // #tr item.gtneverreset.wireless_frequency_card.adopted
+            // # Frequency taken over. Existing links will reconnect when their devices are loaded.
+            // # zh_CN 已接管频率，原有链接将在设备加载后恢复。
+            case "adopted" -> "item.gtneverreset.wireless_frequency_card.adopted";
+            // #tr item.gtneverreset.wireless_frequency_card.frequency_split
+            // # This frequency belongs to multiple controller structures. Take over one structure to resolve the split.
+            // # zh_CN 此频率出现在多组控制器上；请接管其中一组以解除分裂。
+            case "frequency_split" -> "item.gtneverreset.wireless_frequency_card.frequency_split";
             default -> "item.gtneverreset.wireless_frequency_card." + suffix;
         };
     }

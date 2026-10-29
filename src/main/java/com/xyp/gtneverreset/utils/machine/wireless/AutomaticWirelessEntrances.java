@@ -33,23 +33,22 @@ public class AutomaticWirelessEntrances {
     private static final Map<IGrid, GridTargets> TARGETS = new IdentityHashMap<>();
     private static final Map<IGrid, ChannelCount> COUNTS = new IdentityHashMap<>();
 
-    @Desugar
-    private record GridTargets(List<Cluster<IGridNode, Address>> clusters, Map<IGridNode, Address> sources,
-        List<IGridNode> nodes, long fingerprint) {}
+    private record GridTargets(List<Cluster<IGridNode, WirelessFrequency>> clusters,
+        Map<IGridNode, WirelessFrequency> sources, List<IGridNode> nodes, long fingerprint) {}
 
     @Desugar
     private record ChannelCount(GridTargets targets, long revision, int served, List<IGridNode> missing) {}
 
     private static class Work {
 
-        public final List<Cluster<IGridNode, Address>> clusters = new ArrayList<>();
+        public final List<Cluster<IGridNode, WirelessFrequency>> clusters = new ArrayList<>();
         public final Set<IGridNode> occupied = Collections.newSetFromMap(new IdentityHashMap<>());
         public final List<IGridNode> missing = new ArrayList<>();
-        public final Address frequency;
+        public final WirelessFrequency frequency;
         public final IGridNode source;
         public int served;
 
-        Work(Address frequency, IGridNode source) {
+        Work(WirelessFrequency frequency, IGridNode source) {
             this.frequency = frequency;
             this.source = source;
         }
@@ -61,9 +60,9 @@ public class AutomaticWirelessEntrances {
         private final GridTargets targets;
         private final PhysicalMeTopology topology;
         private final Comparator<IGridNode> order;
-        private final Map<Cluster<IGridNode, Address>, EntranceCandidates.Batch<IGridNode>> batches = new IdentityHashMap<>();
-        private List<Cluster<IGridNode, Address>> ordered;
-        private Map<Cluster<IGridNode, Address>, List<IGridNode>> missing;
+        private final Map<Cluster<IGridNode, WirelessFrequency>, EntranceCandidates.Batch<IGridNode>> batches = new IdentityHashMap<>();
+        private List<Cluster<IGridNode, WirelessFrequency>> ordered;
+        private Map<Cluster<IGridNode, WirelessFrequency>, List<IGridNode>> missing;
 
         CandidateSearch(Work work, GridTargets targets, PhysicalMeTopology topology) {
             this.work = work;
@@ -77,7 +76,7 @@ public class AutomaticWirelessEntrances {
 
         private void prepare() {
             ordered = new ArrayList<>(work.clusters);
-            Map<Cluster<IGridNode, Address>, IGridNode> anchors = new IdentityHashMap<>();
+            Map<Cluster<IGridNode, WirelessFrequency>, IGridNode> anchors = new IdentityHashMap<>();
             for (var cluster : ordered) {
                 anchors.put(
                     cluster,
@@ -103,7 +102,7 @@ public class AutomaticWirelessEntrances {
 
         IGridNode select(Predicate<IGridNode> accepted) {
             if (ordered == null) prepare();
-            for (Cluster<IGridNode, Address> cluster : ordered) {
+            for (Cluster<IGridNode, WirelessFrequency> cluster : ordered) {
                 List<IGridNode> needs = missing.get(cluster);
                 if (needs == null || needs.isEmpty()) continue;
                 var batch = batches.computeIfAbsent(
@@ -131,20 +130,20 @@ public class AutomaticWirelessEntrances {
         }
     }
 
-    static void refresh(Collection<Cluster<IGridNode, Address>> clusters, PhysicalMeTopology topology,
+    static void refresh(Collection<Cluster<IGridNode, WirelessFrequency>> clusters, PhysicalMeTopology topology,
         WirelessEntranceIndex entrances) {
         Map<IGrid, Work> workByGrid = new IdentityHashMap<>();
-        for (Cluster<IGridNode, Address> cluster : clusters) {
+        for (Cluster<IGridNode, WirelessFrequency> cluster : clusters) {
             if (cluster.blocked() || cluster.frequencies()
                 .size() != 1) continue;
-            Address source = cluster.frequencies()
+            WirelessFrequency source = cluster.frequencies()
                 .iterator()
                 .next();
-            IGridNode sourceNode = source.node();
+            IGridNode sourceNode = WirelessFrequencies.controllerNode(source);
             if (sourceNode == null) continue;
             List<IGridNode> occupied = new ArrayList<>();
             for (Entrance entrance : entrances.forCluster(cluster)) {
-                if (WirelessChannelManager.sameSource(entrance.source(), source) && entrance.isLive()) {
+                if (WirelessFrequencies.same(entrance.frequency(), source) && entrance.isLive()) {
                     occupied.add(entrance.targetNode());
                 }
             }
@@ -162,7 +161,7 @@ public class AutomaticWirelessEntrances {
         for (var entry : workByGrid.entrySet()) run(entry.getKey(), entry.getValue(), topology, entrances);
     }
 
-    private static GridTargets targets(IGrid grid, List<Cluster<IGridNode, Address>> clusters) {
+    private static GridTargets targets(IGrid grid, List<Cluster<IGridNode, WirelessFrequency>> clusters) {
         GridTargets cached = TARGETS.get(grid);
         if (cached != null && cached.clusters()
             .size() == clusters.size()) {
@@ -171,9 +170,9 @@ public class AutomaticWirelessEntrances {
                 .get(index) == clusters.get(index)) index++;
             if (index == clusters.size()) return cached;
         }
-        Map<IGridNode, Address> sources = new IdentityHashMap<>();
+        Map<IGridNode, WirelessFrequency> sources = new IdentityHashMap<>();
         for (var cluster : clusters) {
-            Address source = cluster.frequencies()
+            WirelessFrequency source = cluster.frequencies()
                 .iterator()
                 .next();
             for (IGridNode node : cluster.nodes()) sources.put(node, source);
@@ -317,8 +316,8 @@ public class AutomaticWirelessEntrances {
         return planner != null && planner.hasTrial();
     }
 
-    private static boolean hasSourceConnection(IGridNode target, Address source) {
-        IGridNode sourceNode = source.node();
+    private static boolean hasSourceConnection(IGridNode target, WirelessFrequency source) {
+        IGridNode sourceNode = WirelessFrequencies.controllerNode(source);
         for (IGridConnection connection : target.getConnections()) {
             if (connection.getOtherSide(target) == sourceNode) return true;
         }
@@ -338,8 +337,8 @@ public class AutomaticWirelessEntrances {
         return value ^ value >>> 31;
     }
 
-    public static Status status(Address source) {
-        IGridNode node = source.node();
+    public static Status status(WirelessFrequency source) {
+        IGridNode node = WirelessFrequencies.controllerNode(source);
         AutomaticEntrancePlanner<IGridNode> planner = node == null ? null : PLANNERS.get(node.getGrid());
         return planner == null ? Status.WAITING : planner.status();
     }

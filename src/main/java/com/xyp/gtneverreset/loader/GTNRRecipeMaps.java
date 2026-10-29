@@ -42,7 +42,7 @@ public final class GTNRRecipeMaps {
     // # zh_CN 小型化学反应釜（直接流体）
     public static final RecipeMap<RecipeMapBackend> MODERN_CHEMICAL_RECIPES = RecipeMapBuilder
         .of("gtnr.recipe.modern_chemical_reactor")
-        .maxIO(2, 2, 3, 2)
+        .maxIO(6, 6, 6, 6)
         .progressBar(GTUITextures.PROGRESSBAR_ARROW_MULTIPLE)
         .progressBarMUI2(GTGuiTextures.PROGRESSBAR_ARROW_MULTIPLE)
         .frontend(LargeNEIFrontend::new)

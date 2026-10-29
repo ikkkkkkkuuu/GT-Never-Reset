@@ -15,7 +15,6 @@ import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.gtnhlib.compat.BaublesCompat;
 import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardSelection.Candidate;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Address;
 
 import baubles.common.container.InventoryBaubles;
 
@@ -55,16 +54,16 @@ public class WirelessCardInventory {
         return collect(player.inventory.mainInventory, BaublesCompat.getBaubles(player));
     }
 
-    static boolean hasBoundCard(EntityPlayer player, Address source) {
+    static boolean hasBoundCard(EntityPlayer player, WirelessFrequency source) {
         return hasBoundCard(player.getUniqueID(), source, carried(player));
     }
 
-    static boolean hasBoundCard(UUID owner, Address source, Iterable<ItemStack> cards) {
+    static boolean hasBoundCard(UUID owner, WirelessFrequency source, Iterable<ItemStack> cards) {
         for (ItemStack card : cards) {
             if (card == null || card.stackSize <= 0 || !(card.getItem() instanceof WirelessFrequencyCard)) continue;
             WirelessCardBinding binding = WirelessCardBinding.read(card.getTagCompound());
-            if (binding != null && binding.belongsTo(owner)
-                && WirelessChannelManager.sameSource(binding.source(), source)) return true;
+            if (binding != null && binding.belongsTo(owner) && WirelessFrequencies.same(binding.frequency(), source))
+                return true;
         }
         return false;
     }
@@ -162,7 +161,7 @@ public class WirelessCardInventory {
                 card = current;
             }
             return identity.equals(WirelessCardBinding.identity(card.getTagCompound()))
-                && binding.equals(WirelessCardBinding.read(card.getTagCompound()))
+                && binding.sameIdentity(WirelessCardBinding.read(card.getTagCompound()))
                 && WirelessCardBinding.automatic(card.getTagCompound());
         }
     }

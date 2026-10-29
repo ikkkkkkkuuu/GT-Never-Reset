@@ -12,7 +12,6 @@ import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofHatchAdder;
 
 import java.util.List;
-import java.util.Map;
 
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
@@ -169,11 +168,6 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
     @Override
     public String getTooltipPath() {
         return "large-furnace";
-    }
-
-    @Override
-    public Map<String, Object> getTooltipVars() {
-        return Map.of("baseThreads", BASE_THREADS);
     }
 
     @Override

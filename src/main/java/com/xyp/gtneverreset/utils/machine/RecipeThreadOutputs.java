@@ -2,6 +2,7 @@ package com.xyp.gtneverreset.utils.machine;
 
 import java.math.BigInteger;
 import java.util.Collections;
+import java.util.List;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -43,6 +44,33 @@ public final class RecipeThreadOutputs {
         for (BigInteger n : itemAmounts) largest = largest.max(n);
         for (BigInteger n : fluidAmounts) largest = largest.max(n);
         return largest;
+    }
+
+    /** Adds detached stacks for the native GUI; the output ledger remains authoritative. */
+    public void appendDisplayItems(List<ItemStack> itemOutputs) {
+        BigInteger stackLimit = BigInteger.valueOf(Integer.MAX_VALUE);
+        for (int i = 0; i < items.length; i++) {
+            for (BigInteger remaining = itemAmounts[i]; remaining.signum() > 0;) {
+                ItemStack stack = items[i].copy();
+                stack.stackSize = remaining.min(stackLimit)
+                    .intValueExact();
+                itemOutputs.add(stack);
+                remaining = remaining.subtract(BigInteger.valueOf(stack.stackSize));
+            }
+        }
+    }
+
+    public void appendDisplayFluids(List<FluidStack> fluidOutputs) {
+        BigInteger stackLimit = BigInteger.valueOf(Integer.MAX_VALUE);
+        for (int i = 0; i < fluids.length; i++) {
+            for (BigInteger remaining = fluidAmounts[i]; remaining.signum() > 0;) {
+                FluidStack stack = fluids[i].copy();
+                stack.amount = remaining.min(stackLimit)
+                    .intValueExact();
+                fluidOutputs.add(stack);
+                remaining = remaining.subtract(BigInteger.valueOf(stack.amount));
+            }
+        }
     }
 
     /**

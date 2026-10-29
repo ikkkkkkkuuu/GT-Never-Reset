@@ -11,6 +11,7 @@ import net.minecraft.item.ItemStack;
 
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;
@@ -302,18 +303,15 @@ public final class AssemblerRecipes {
     private static void registerLargeBeeBreederRecipes() {
         GTRecipeBuilder.builder()
             .itemInputs(
-                ItemList.Hull_MV.get(1L),
-                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Steel, 4),
-                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Steel, 8),
-                GTOreDictUnificator.get(OrePrefixes.gearGt, Materials.StainlessSteel, 1),
-                new Object[] { OrePrefixes.circuit.get(Materials.MV), 4 },
-                ItemList.Electric_Motor_MV.get(2L),
-                ItemList.Electric_Piston_MV.get(2L),
-                GTUtility.getIntegratedCircuit(24))
-            .fluidInputs(Materials.SolderingAlloy.getMolten(576))
+                ModsItemlist.ForestryRoyalJelly.get(64),
+                ModsItemlist.Alveary.get(32),
+                ItemList.Machine_IndustrialApiary.get(32),
+                new Object[] { OrePrefixes.circuit.get(Materials.UHV), 16 },
+                GTUtility.getIntegratedCircuit(17))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(576000))
             .itemOutputs(GTNRItemList.LargeBeeBreeder.get(1))
-            .duration(30 * SECONDS)
-            .eut(TierEU.RECIPE_MV)
+            .duration(36000 * SECONDS)
+            .eut(TierEU.RECIPE_UHV)
             .addTo(assemblerRecipes);
     }
 

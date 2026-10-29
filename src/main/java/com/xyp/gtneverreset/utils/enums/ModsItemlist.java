@@ -317,6 +317,9 @@ public enum ModsItemlist {
     TankBlock(Mods.BuildCraftFactory.ID, "tankBlock", 0),
 
     DiamondChisel(Mods.Chisel.ID, "diamondChisel", 0),
+    ChiselYellowHempcrete(Mods.Chisel.ID, "hempcrete", 4),
+    ChiselLightGrayHempcrete(Mods.Chisel.ID, "hempcrete", 8),
+    ChiselBlackHempcrete(Mods.Chisel.ID, "hempcrete", 15),
 
     CreativeMemory(Mods.Computronics.ID, "computronics.ocSpecialParts", 0),
 
@@ -439,6 +442,9 @@ public enum ModsItemlist {
     AstralSingularity(Mods.EternalSingularity.ID, "combined_singularity", 6),
 
     EternalSingularity(Mods.EternalSingularity.ID, "eternal_singularity", 0),
+
+    EtFuturumRequiemOrangeConcrete(Mods.EtFuturumRequiem.ID, "concrete", 1),
+    EtFuturumRequiemBrownConcrete(Mods.EtFuturumRequiem.ID, "concrete", 12),
 
     Blackstone(Mods.EtFuturumRequiem.ID, "blackstone", 0),
 

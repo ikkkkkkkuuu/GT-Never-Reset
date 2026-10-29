@@ -1,5 +1,8 @@
 package com.xyp.gtneverreset.loader;
 
+import net.minecraft.block.Block;
+import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.StatCollector;
 
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
@@ -26,10 +29,14 @@ import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.ModernMachineTextures;
+import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtneverreset.utils.text.AnimatedText;
 
 import gregtech.api.enums.SoundResource;
+import gregtech.api.enums.Textures;
 import gregtech.api.enums.VoltageIndex;
+import gregtech.api.render.TextureFactory;
+import gregtech.api.util.GTUtility;
 
 public final class MachineLoader {
 
@@ -87,6 +94,13 @@ public final class MachineLoader {
                 StatCollector.translateToLocal("gtnr.machine.singularity_data_hub.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.SingularityDataHub.get(1), AnimatedText.GT_NEVER_RESET);
         if (ModList.Forestry.isModLoaded()) {
+            ItemStack beeCasing = ModsItemlist.ChiselYellowHempcrete.get(1);
+            GTUtility.addTexturePage((byte) (LargeBeeBreeder.CASING_TEXTURE_ID >> 7));
+            Textures.BlockIcons.setCasingTextureForId(
+                LargeBeeBreeder.CASING_TEXTURE_ID,
+                beeCasing != null && beeCasing.getItem() instanceof ItemBlock
+                    ? TextureFactory.of(Block.getBlockFromItem(beeCasing.getItem()), beeCasing.getItemDamage())
+                    : Textures.BlockIcons.getCasingTextureForId(10));
             // #tr gtnr.machine.large_bee_breeder.name
             // # Large Bee Breeder
             // # zh_CN 大型蜜蜂杂交机
@@ -866,10 +880,10 @@ public final class MachineLoader {
                 StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.lv.name"),
                 VoltageIndex.LV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
-                2,
-                2,
-                3,
-                2,
+                6,
+                6,
+                6,
+                6,
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorLV.get(1), AnimatedText.GT_NEVER_RESET);
@@ -883,10 +897,10 @@ public final class MachineLoader {
                 StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.mv.name"),
                 VoltageIndex.MV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
-                2,
-                2,
-                3,
-                2,
+                6,
+                6,
+                6,
+                6,
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorMV.get(1), AnimatedText.GT_NEVER_RESET);
@@ -900,10 +914,10 @@ public final class MachineLoader {
                 StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.hv.name"),
                 VoltageIndex.HV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
-                2,
-                2,
-                3,
-                2,
+                6,
+                6,
+                6,
+                6,
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorHV.get(1), AnimatedText.GT_NEVER_RESET);
@@ -917,10 +931,10 @@ public final class MachineLoader {
                 StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.ev.name"),
                 VoltageIndex.EV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
-                2,
-                2,
-                3,
-                2,
+                6,
+                6,
+                6,
+                6,
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorEV.get(1), AnimatedText.GT_NEVER_RESET);
@@ -934,10 +948,10 @@ public final class MachineLoader {
                 StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.iv.name"),
                 VoltageIndex.IV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
-                2,
-                2,
-                3,
-                2,
+                6,
+                6,
+                6,
+                6,
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorIV.get(1), AnimatedText.GT_NEVER_RESET);
@@ -951,10 +965,10 @@ public final class MachineLoader {
                 StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.luv.name"),
                 VoltageIndex.LuV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
-                2,
-                2,
-                3,
-                2,
+                6,
+                6,
+                6,
+                6,
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler
@@ -969,10 +983,10 @@ public final class MachineLoader {
                 StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.zpm.name"),
                 VoltageIndex.ZPM,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
-                2,
-                2,
-                3,
-                2,
+                6,
+                6,
+                6,
+                6,
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler
@@ -987,10 +1001,10 @@ public final class MachineLoader {
                 StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.uv.name"),
                 VoltageIndex.UV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
-                2,
-                2,
-                3,
-                2,
+                6,
+                6,
+                6,
+                6,
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorUV.get(1), AnimatedText.GT_NEVER_RESET);

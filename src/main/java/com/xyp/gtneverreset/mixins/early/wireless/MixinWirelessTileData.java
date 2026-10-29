@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.xyp.gtneverreset.utils.machine.wireless.IWirelessTileData;
+import com.xyp.gtneverreset.utils.machine.wireless.WirelessFrequencies;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessLinkPersistence;
 
 @Mixin(TileEntity.class)
@@ -29,29 +30,31 @@ public class MixinWirelessTileData implements IWirelessTileData {
         return gtnr$wirelessData != null && gtnr$wirelessData.hasKey(KEY, 10);
     }
 
+    @Override
+    public boolean gtnr$hasFrequencyData() {
+        return gtnr$wirelessData != null && gtnr$wirelessData.hasKey(FREQUENCY_KEY, 10);
+    }
+
     @Inject(method = "readFromNBT", at = @At("RETURN"))
     private void gtnr$readWireless(NBTTagCompound data, CallbackInfo ci) {
-        gtnr$wirelessData = null;
-        if (data.hasKey(KEY, 10)) gtnr$wirelessData().setTag(
-            KEY,
-            data.getCompoundTag(KEY)
-                .copy());
+        gtnr$wirelessData = IWirelessTileData.load(data);
     }
 
     @Inject(method = "validate", at = @At("RETURN"))
     private void gtnr$placedWireless(CallbackInfo ci) {
-        if (gtnr$hasWirelessData()) WirelessLinkPersistence.placed((TileEntity) (Object) this);
+        TileEntity tile = (TileEntity) (Object) this;
+        if (gtnr$hasFrequencyData()) WirelessFrequencies.register(tile);
+        else WirelessFrequencies.controllerChanged(tile);
+        if (gtnr$hasWirelessData()) WirelessLinkPersistence.placed(tile);
+    }
+
+    @Inject(method = "invalidate", at = @At("RETURN"))
+    private void gtnr$removedWireless(CallbackInfo ci) {
+        WirelessFrequencies.controllerChanged((TileEntity) (Object) this);
     }
 
     @Inject(method = "writeToNBT", at = @At("RETURN"))
     private void gtnr$writeWireless(NBTTagCompound data, CallbackInfo ci) {
-        if (gtnr$wirelessData != null && gtnr$wirelessData.hasKey(KEY, 10)) {
-            data.setTag(
-                KEY,
-                gtnr$wirelessData.getCompoundTag(KEY)
-                    .copy());
-        } else {
-            data.removeTag(KEY);
-        }
+        IWirelessTileData.save(gtnr$wirelessData, data);
     }
 }

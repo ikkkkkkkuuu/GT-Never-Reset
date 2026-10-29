@@ -44,12 +44,14 @@ import gregtech.api.interfaces.IHatchElement;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.logic.ProcessingLogic;
 import gregtech.api.metatileentity.implementations.MTEExtendedPowerMultiBlockBase;
+import gregtech.api.metatileentity.implementations.MTEHatch;
 import gregtech.api.recipe.check.CheckRecipeResult;
 import gregtech.api.recipe.check.CheckRecipeResultRegistry;
 import gregtech.api.recipe.check.SimpleCheckRecipeResult;
 import gregtech.api.recipe.check.SingleRecipeCheck;
 import gregtech.api.structure.error.ErrorType;
 import gregtech.api.structure.error.StructureError;
+import gregtech.api.structure.error.StructureErrorRegistry;
 import gregtech.api.structure.error.StructureErrors;
 import gregtech.api.structure.error.TranslatableText;
 import gregtech.api.util.GTRecipe;
@@ -57,6 +59,7 @@ import gregtech.api.util.GTUtility;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.api.util.OverclockCalculator;
 import gregtech.api.util.shutdown.ShutDownReason;
+import gregtech.api.util.tooltip.TooltipHelper;
 import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
@@ -69,6 +72,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     private static final int HEAT_PROBE_EUT = 8;
     private static final int FIRST_HEAT_PROBE = 127;
     private static final int SECOND_HEAT_PROBE = 997;
+    private static final int NO_CASING_UNLOCK = -1;
 
     private static String threadCountText(int running, int total) {
         // #tr gtnr.multiblock.threads
@@ -80,6 +84,9 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     private final Map<Integer, RecipeThreadTask> threadTasks = new TreeMap<>();
 
     private final List<ParameterModuleHatch> parameterModules = new ArrayList<>();
+    protected HeatingCoilLevel mCoilLevel = HeatingCoilLevel.None;
+    protected int mGlassTier = -1;
+    protected int mCasingTier = -1;
     private final PatternInputScheduler patternScheduler = new PatternInputScheduler();
     private int preparingThread = -1;
     private boolean useRemainingPower;
@@ -97,8 +104,27 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
 
     @Override
     public final void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
+        mCoilLevel = HeatingCoilLevel.None;
+        mGlassTier = -1;
+        mCasingTier = -1;
         checkMachineStructure(tile, stack, errors);
         collectTooltipStructureRequirements(errors);
+        checkGlassEnergyHatchRequirement(errors);
+    }
+
+    protected void checkGlassEnergyHatchRequirement(List<StructureError> errors) {
+        int unlockTier = getGlassEnergyTierLimit();
+        if (unlockTier < 0 || mGlassTier >= unlockTier) return;
+        for (MTEHatch hatch : validMTEList(getExoticAndNormalEnergyHatchList())) {
+            if (hatch.getConnectionType() == MTEHatch.ConnectionType.LASER) {
+                errors.add(StructureErrors.glassTierNotEnough(unlockTier));
+                return;
+            }
+            if (hatch.mTier > mGlassTier) {
+                errors.add(StructureErrorRegistry.ENERGY_TIER_EXCEED_GLASS);
+                return;
+            }
+        }
     }
 
     protected abstract void checkMachineStructure(IGregTechTileEntity tile, ItemStack stack,
@@ -156,7 +182,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     protected void setupProcessingLogic(ProcessingLogic logic) {
         super.setupProcessingLogic(logic);
         long power = availableThreadPower();
-        long voltage = Math.min(power, Math.max(0, getMaxInputVoltage()));
+        long voltage = Math.min(power, Math.max(0, Math.min(getMaxInputVoltage(), getMachineVoltageLimit())));
         logic.setAvailableVoltage(voltage)
             .setAvailableAmperage(voltage == 0 ? 0 : Math.max(1, power / voltage))
             .setAmperageOC(false)
@@ -304,8 +330,15 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     @Override
     public void stopMachine(@Nonnull ShutDownReason reason) {
         super.stopMachine(reason);
+        // A hard stop aborts recipes just like GT's native output buffer. Finished outputs remain deliverable.
+        threadTasks.values()
+            .removeIf(task -> !task.isFinished());
+        pendingTask = null;
+        preparingThread = -1;
+        useRemainingPower = false;
         paused = true;
         updateThreadDisplay();
+        markDirty();
     }
 
     private int firstFreeThread() {
@@ -510,10 +543,19 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             throw new IllegalStateException("Performance probes require a detached tooltip controller");
         }
         TooltipProbeState previous = tooltipProbeState;
+        HeatingCoilLevel coil = mCoilLevel;
+        int glass = mGlassTier;
+        int casing = mCasingTier;
         tooltipProbeState = state;
         try {
+            mCoilLevel = HeatingCoilLevel.getFromTier((byte) getTooltipTier(TieredPart.COIL, coil.getTier()));
+            mGlassTier = getTooltipTier(TieredPart.GLASS, glass);
+            mCasingTier = getTooltipTier(TieredPart.CASING, casing);
             return read.get();
         } finally {
+            mCoilLevel = coil;
+            mGlassTier = glass;
+            mCasingTier = casing;
             tooltipProbeState = previous;
         }
     }
@@ -542,12 +584,59 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     }
 
     @Override
+    public int getTooltipRecipeThreads() {
+        return getTotalRecipeThreads();
+    }
+
+    @Override
     public List<String> getTooltipFeatureLines() {
-        // #tr gtnr.multiblock.threads.capacity
-        // # Concurrent recipe threads: {\\AQUA}%s{\\RESET}
-        // # zh_CN 跨配方线程数：{\\AQUA}%s{\\RESET}
-        return List
-            .of(StatCollector.translateToLocalFormatted("gtnr.multiblock.threads.capacity", getTotalRecipeThreads()));
+        List<String> lines = new ArrayList<>();
+        int unlockTier = getGlassEnergyTierLimit();
+        if (unlockTier >= 0) {
+            // #tr gtnr.tooltip.glass.energy_limit
+            // # Below %s glass: energy hatch tier <= glass tier; no laser energy hatches
+            // # zh_CN 玻璃低于%s级时，能源仓等级不能超过玻璃等级，且不能使用激光能源仓
+            lines.add(
+                StatCollector.translateToLocalFormatted(
+                    "gtnr.tooltip.glass.energy_limit",
+                    TooltipHelper.voltageTierText(unlockTier, false)));
+        }
+        CasingVoltageLimit limit = casingVoltageLimit();
+        if (limit != null) {
+            // #tr gtnr.tooltip.casing.voltage_limit
+            // # Maximum processing voltage tier: casing voltage tier + %s
+            // # zh_CN 最高处理电压等级：外壳对应电压等级 + %s
+            lines.add(StatCollector.translateToLocalFormatted("gtnr.tooltip.casing.voltage_limit", limit.tiersAbove()));
+            if (limit.unlockTier() != NO_CASING_UNLOCK) {
+                // #tr gtnr.tooltip.casing.voltage_unlock
+                // # The processing voltage limit is removed at %s casings
+                // # zh_CN 外壳达到%s级时解除处理电压限制
+                lines.add(
+                    StatCollector.translateToLocalFormatted(
+                        "gtnr.tooltip.casing.voltage_unlock",
+                        TooltipHelper.voltageTierText(limit.unlockTier(), false)));
+            }
+        }
+        return lines;
+    }
+
+    private CasingVoltageLimit casingVoltageLimit() {
+        Integer offset = null;
+        TierRange range = getTooltipTierRange(TieredPart.CASING);
+        for (int tier = range.first(); tier <= range.last(); tier++) {
+            long voltage = withTooltipProbe(
+                new TooltipProbeState(TieredPart.CASING, tier),
+                this::getMachineVoltageLimit);
+            if (voltage <= 0) return null;
+            int voltageTier = GTUtility.getTier(voltage);
+            if (voltageTier >= VoltageIndex.MAX) {
+                return offset == null ? null : new CasingVoltageLimit(offset, casingVoltageTier(tier));
+            }
+            int difference = voltageTier - casingVoltageTier(tier);
+            if (offset != null && offset != difference) return null;
+            offset = difference;
+        }
+        return offset == null ? null : new CasingVoltageLimit(offset, NO_CASING_UNLOCK);
     }
 
     private void updateThreadDisplay() {
@@ -725,6 +814,21 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         return VoltageIndex.MV;
     }
 
+    /** Glass tier that removes energy hatch restrictions; negative disables this rule. */
+    protected int getGlassEnergyTierLimit() {
+        return -1;
+    }
+
+    /** Shared processing voltage cap and tooltip source; independent of installed energy hatches. */
+    public long getMachineVoltageLimit() {
+        return GTValues.V[VoltageIndex.MAX];
+    }
+
+    /** Casing index zero represents LV unless a machine uses a different mapping. */
+    protected int casingVoltageTier(int casingTier) {
+        return casingTier + 1;
+    }
+
     /** Shared by real machine heat and its tooltip; selecting a coil tier never changes the installed coil. */
     protected final int coilAndVoltageHeat(HeatingCoilLevel runtimeCoil) {
         HeatingCoilLevel coil = tooltipProbeState == null ? runtimeCoil
@@ -740,5 +844,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     }
 
     private record TooltipProbeState(TieredPart part, int tier) {}
+
+    private record CasingVoltageLimit(int tiersAbove, int unlockTier) {}
 
 }

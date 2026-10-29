@@ -17,7 +17,7 @@ public final class ModernNonCellRecipes {
         FluidContainerRecipeConverter
             .convertRecipes(RecipeMaps.electrolyzerRecipes, GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES, 2, 6, 1, 6);
         FluidContainerRecipeConverter
-            .convertRecipes(RecipeMaps.chemicalReactorRecipes, GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES, 2, 2, 3, 2);
+            .convertRecipes(RecipeMaps.chemicalReactorRecipes, GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES, 6, 6, 6, 6);
         FluidContainerRecipeConverter
             .convertRecipes(RecipeMaps.centrifugeRecipes, GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES, 2, 6, 1, 6);
     }

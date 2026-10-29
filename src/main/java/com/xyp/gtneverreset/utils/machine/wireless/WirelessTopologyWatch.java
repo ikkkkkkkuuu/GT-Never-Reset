@@ -25,14 +25,15 @@ public class WirelessTopologyWatch implements IBlockStateListener {
     private final Map<World, LongSet> watched = new IdentityHashMap<>();
     private final Map<World, Long2ObjectMap<TileEntity>> tiles = new IdentityHashMap<>();
 
-    void update(Collection<Cluster<IGridNode, Address>> clusters, PhysicalMeTopology topology) {
+    void update(Collection<Cluster<IGridNode, WirelessFrequency>> clusters, PhysicalMeTopology topology) {
         Map<World, LongSet> next = new IdentityHashMap<>();
         Map<World, Long2ObjectMap<TileEntity>> nextTiles = new IdentityHashMap<>();
         for (var cluster : clusters) {
             if (cluster.frequencies()
                 .isEmpty()) continue;
             for (IGridNode node : cluster.nodes()) add(next, nextTiles, topology.nodeAddress(node));
-            for (Address source : cluster.frequencies()) add(next, nextTiles, source);
+            for (WirelessFrequency source : cluster.frequencies())
+                add(next, nextTiles, WirelessFrequencies.controller(source));
         }
         for (World world : tiles.keySet()) {
             if (!nextTiles.containsKey(world)) WirelessWorldListener.INSTANCE.unregisterBlockStateListener(world, this);

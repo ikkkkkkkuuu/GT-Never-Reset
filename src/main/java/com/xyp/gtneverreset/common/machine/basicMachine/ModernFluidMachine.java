@@ -22,6 +22,7 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.gtnewhorizons.modularui.common.fluid.FluidStackTank;
 import com.xyp.gtneverreset.common.gui.modularui.ModernFluidMachineGui;
+import com.xyp.gtneverreset.loader.GTNRRecipeMaps;
 import com.xyp.gtneverreset.utils.enums.ModernMachineTextures;
 import com.xyp.gtneverreset.utils.machine.stockio.StockIORecipeBridge;
 
@@ -41,6 +42,7 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
 
     private static final int AUTO_OUTPUT_INTERVAL = 20;
     private static final int AUTO_OUTPUT_AMOUNT = 1000;
+    private static final int LEGACY_CHEMICAL_ITEM_SLOTS = 2;
 
     private final FluidStack[] inputFluids;
     private final FluidStack[] outputFluids;
@@ -369,6 +371,7 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
     @Override
     public void saveNBTData(NBTTagCompound tag) {
         super.saveNBTData(tag);
+        tag.setBoolean("ModernExpandedChemicalSlots", true);
         writeFluids(tag, "ModernInput", inputStacks());
         writeFluids(tag, "ModernOutput", outputFluids);
         writeFluids(tag, "ModernPending", pendingFluids);
@@ -377,6 +380,14 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
     @Override
     public void loadNBTData(NBTTagCompound tag) {
         super.loadNBTData(tag);
+        if (mRecipes == GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES && !tag.getBoolean("ModernExpandedChemicalSlots")) {
+            // GT loads the inventory before this callback; old outputs now overlap the expanded input area.
+            int oldOutputSlot = getInputSlot() + LEGACY_CHEMICAL_ITEM_SLOTS;
+            for (int i = 0; i < LEGACY_CHEMICAL_ITEM_SLOTS; i++) {
+                mInventory[getOutputSlot() + i] = mInventory[oldOutputSlot + i];
+                mInventory[oldOutputSlot + i] = null;
+            }
+        }
         for (int i = 0; i < inputTanks.length; i++) setInput(i, readFluid(tag, "ModernInput", i));
         readFluids(tag, "ModernOutput", outputFluids);
         readFluids(tag, "ModernPending", pendingFluids);

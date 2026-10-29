@@ -1,6 +1,6 @@
 package com.xyp.gtneverreset.utils.machine.wireless;
 
-import static com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.sameSource;
+import static com.xyp.gtneverreset.utils.machine.wireless.WirelessFrequencies.same;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -74,7 +74,9 @@ public class WirelessLinkPersistence {
     }
 
     public static boolean discover(TileEntity tile) {
-        if (!(tile instanceof IWirelessTileData data) || !data.gtnr$hasWirelessData()) return false;
+        if (!(tile instanceof IWirelessTileData data)) return false;
+        if (data.gtnr$hasFrequencyData()) WirelessFrequencies.register(tile);
+        if (!data.gtnr$hasWirelessData()) return false;
         TILES.add(tile);
         return true;
     }
@@ -172,18 +174,18 @@ public class WirelessLinkPersistence {
         return pendingSeeds;
     }
 
-    static Set<Address> restore(IGridNode node, PhysicalMeTopology topology) {
+    static Set<WirelessFrequency> restore(IGridNode node, PhysicalMeTopology topology) {
         if (IMPORTED.containsKey(node)) return WirelessCollections.setOf();
         Claim saved = claim(node, topology);
-        return saved == null ? WirelessCollections.setOf() : saved.frequencies();
+        return saved == null ? WirelessCollections.setOf() : upgrade(saved.frequencies());
     }
 
-    static void synchronize(PhysicalClusterTracker<IGridNode, Address> tracker, PhysicalMeTopology topology) {
+    static void synchronize(PhysicalClusterTracker<IGridNode, WirelessFrequency> tracker, PhysicalMeTopology topology) {
         REMEMBERED_ENTRANCES.clear();
         Map<TileEntity, Map<Slot, Claim>> updates = new IdentityHashMap<>();
         Set<IGridNode> retained = Collections.newSetFromMap(new IdentityHashMap<>());
         for (var cluster : tracker.clusters()) {
-            Set<Address> paused = new HashSet<>();
+            Set<WirelessFrequency> paused = new HashSet<>();
             if (!cluster.limited()) for (IGridNode node : cluster.nodes()) {
                 Claim saved = claim(node, topology);
                 if (saved != null) paused.addAll(saved.paused());
@@ -198,14 +200,14 @@ public class WirelessLinkPersistence {
                 if (cluster.limited()) continue;
                 Map<Slot, Claim> claims = updates
                     .computeIfAbsent(endpoint.tile(), tile -> WirelessLinkData.read(IWirelessTileData.of(tile)));
-                Set<Address> frequencies = tracker.claimsOf(node);
+                Set<WirelessFrequency> frequencies = upgrade(tracker.claimsOf(node));
                 if (frequencies.isEmpty()) claims.remove(endpoint.slot());
                 else {
                     Claim old = claims.get(endpoint.slot());
-                    Set<Address> sourcePauses = new HashSet<>();
-                    for (Address source : frequencies) {
+                    Set<WirelessFrequency> sourcePauses = new HashSet<>();
+                    for (WirelessFrequency source : frequencies) {
                         if (paused.stream()
-                            .anyMatch(label -> sameSource(label, source))) sourcePauses.add(source);
+                            .anyMatch(label -> same(label, source))) sourcePauses.add(source);
                     }
                     // Entrance locations belong to the original node, never to every member of the cluster.
                     claims.put(
@@ -214,7 +216,7 @@ public class WirelessLinkPersistence {
                             endpoint.kind(),
                             frequencies,
                             sourcePauses,
-                            old == null ? WirelessCollections.setOf() : old.entrances()));
+                            old == null ? WirelessCollections.setOf() : upgrade(old.entrances())));
                 }
             }
         }
@@ -235,25 +237,26 @@ public class WirelessLinkPersistence {
             .equals(endpoint.kind()) ? saved : null;
     }
 
-    static Set<Address> pausedSources(Collection<IGridNode> nodes, PhysicalMeTopology topology) {
-        Set<Address> paused = new HashSet<>();
+    static Set<WirelessFrequency> pausedSources(Collection<IGridNode> nodes, PhysicalMeTopology topology) {
+        Set<WirelessFrequency> paused = new HashSet<>();
         for (IGridNode node : nodes) {
             Claim saved = claim(node, topology);
             if (saved != null) saved.paused()
                 .stream()
-                .map(WirelessChannelManager::controllerSource)
+                .map(WirelessFrequencies::canonical)
                 .forEach(paused::add);
         }
         return paused;
     }
 
-    static Set<IGridNode> savedEntrances(Collection<IGridNode> nodes, Address source, PhysicalMeTopology topology) {
+    static Set<IGridNode> savedEntrances(Collection<IGridNode> nodes, WirelessFrequency source,
+        PhysicalMeTopology topology) {
         Set<IGridNode> result = Collections.newSetFromMap(new IdentityHashMap<>());
         for (IGridNode node : nodes) {
             Claim saved = claim(node, topology);
             if (saved != null && saved.entrances()
                 .stream()
-                .anyMatch(label -> sameSource(label, source))) result.add(node);
+                .anyMatch(label -> same(label, source))) result.add(node);
         }
         return result;
     }
@@ -274,9 +277,9 @@ public class WirelessLinkPersistence {
         if (saved == null || !saved.kind()
             .equals(endpoint.kind())) return;
         boolean matched = false;
-        Set<Address> entrances = null;
-        for (Address label : saved.frequencies()) {
-            if (!sameSource(label, entrance.source())) continue;
+        Set<WirelessFrequency> entrances = null;
+        for (WirelessFrequency label : saved.frequencies()) {
+            if (!same(label, entrance.frequency())) continue;
             matched = true;
             if (saved.entrances()
                 .contains(label)) continue;
@@ -294,6 +297,14 @@ public class WirelessLinkPersistence {
 
     static void forgetEntrance(Entrance entrance) {
         REMEMBERED_ENTRANCES.remove(entrance);
+    }
+
+    private static Set<WirelessFrequency> upgrade(Set<WirelessFrequency> labels) {
+        if (labels.stream()
+            .noneMatch(WirelessFrequency::isLegacy)) return labels;
+        Set<WirelessFrequency> result = new HashSet<>();
+        for (WirelessFrequency label : labels) result.add(WirelessFrequencies.upgrade(label));
+        return result;
     }
 
     static Map<IGridNode, String> names(Collection<IGridNode> nodes) {
@@ -348,16 +359,17 @@ public class WirelessLinkPersistence {
         return !targets.isEmpty();
     }
 
-    static void setPaused(Collection<IGridNode> nodes, Address source, boolean paused, PhysicalMeTopology topology) {
+    static void setPaused(Collection<IGridNode> nodes, WirelessFrequency source, boolean paused,
+        PhysicalMeTopology topology) {
         for (IGridNode node : nodes) {
             Endpoint endpoint = endpoint(node, topology);
             if (endpoint == null) continue;
             Map<Slot, Claim> claims = WirelessLinkData.read(IWirelessTileData.of(endpoint.tile()));
             Claim saved = claims.get(endpoint.slot());
             if (saved == null) continue;
-            Set<Address> next = new HashSet<>(saved.paused());
-            for (Address label : saved.frequencies()) {
-                if (!sameSource(label, source)) continue;
+            Set<WirelessFrequency> next = new HashSet<>(saved.paused());
+            for (WirelessFrequency label : saved.frequencies()) {
+                if (!same(label, source)) continue;
                 if (paused) next.add(label);
                 else next.remove(label);
             }
@@ -395,7 +407,7 @@ public class WirelessLinkPersistence {
             .getName() : null;
     }
 
-    private static boolean loaded(TileEntity tile) {
+    static boolean loaded(TileEntity tile) {
         World world = tile.getWorldObj();
         return world != null && !world.isRemote
             && !tile.isInvalid()

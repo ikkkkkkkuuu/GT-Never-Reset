@@ -63,6 +63,15 @@ public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder
         if (stats != null) {
             if (stats.parallels() > 0) addStaticParallelInfo(stats.parallels());
             for (String line : MultiblockPerformanceFormatter.bonuses(performance, BonusStat.PARALLEL)) addInfo(line);
+        }
+        int recipeThreads = source.getTooltipRecipeThreads();
+        if (recipeThreads > 0) {
+            // #tr gtnr.multiblock.threads.capacity
+            // # Concurrent recipe threads: {\\AQUA}%s{\\RESET}
+            // # zh_CN 跨配方线程数：{\\AQUA}%s{\\RESET}
+            addInfo(StatCollector.translateToLocalFormatted("gtnr.multiblock.threads.capacity", recipeThreads));
+        }
+        if (stats != null) {
             if (Double.isFinite(stats.speed())) {
                 addStaticSpeedInfo((float) stats.speed());
                 for (String line : MultiblockPerformanceFormatter

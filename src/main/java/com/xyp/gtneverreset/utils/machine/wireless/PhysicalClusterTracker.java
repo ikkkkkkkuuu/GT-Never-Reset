@@ -179,13 +179,13 @@ public class PhysicalClusterTracker<N, F> {
         }
     }
 
-    public void link(Cluster<N, F> cluster, F frequency) {
+    public void link(Cluster<N, F> cluster, F frequency, UnaryOperator<F> frequencyIdentity) {
         if (cluster.limited() || cluster.blocked()
             || cluster.conflicted()
             || !cluster.frequencies()
                 .isEmpty()
                 && !cluster.frequencies()
-                    .contains(frequency)) {
+                    .contains(frequencyIdentity.apply(frequency))) {
             throw new IllegalArgumentException("This physical cluster is blocked or belongs to another frequency.");
         }
         Set<F> sharedClaim = WirelessCollections.setOf(frequency);
@@ -193,13 +193,14 @@ public class PhysicalClusterTracker<N, F> {
     }
 
     public void unlink(Cluster<N, F> cluster, F frequency, UnaryOperator<F> frequencyIdentity) {
+        F identity = frequencyIdentity.apply(frequency);
         for (N node : cluster.nodes()) {
             Set<F> previous = claims.get(node);
             if (previous == null) continue;
             Set<F> remaining = new HashSet<>(previous);
             remaining.removeIf(
                 label -> frequencyIdentity.apply(label)
-                    .equals(frequency));
+                    .equals(identity));
             if (remaining.isEmpty()) claims.remove(node);
             else claims.put(node, WirelessCollections.copySet(remaining));
         }

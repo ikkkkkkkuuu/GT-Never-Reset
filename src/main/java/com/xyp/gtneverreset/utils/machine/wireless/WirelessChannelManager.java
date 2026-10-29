@@ -1,6 +1,5 @@
 package com.xyp.gtneverreset.utils.machine.wireless;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -51,12 +50,11 @@ public class WirelessChannelManager {
     public static final WirelessChannelManager INSTANCE = new WirelessChannelManager();
     private static final Map<Integer, Entrance> ENTRANCES = new LinkedHashMap<>();
     private static List<Entrance> entranceSnapshot = WirelessCollections.listOf();
-    private static Map<Address, Integer> entranceCounts;
+    private static Map<WirelessFrequency, Integer> entranceCounts;
     private static final Map<IGridConnection, Entrance> OWNED_CONNECTIONS = new IdentityHashMap<>();
     private static final Map<IGrid, Allocation> ALLOCATIONS = new WeakHashMap<>();
     private static int nextId = 1;
     private static long allocationRevision;
-    private static final Map<Address, Address> CONTROLLER_SOURCES = new HashMap<>();
     private static Map<IGridNode, Set<IGridConnection>> connectionSnapshot;
     private static boolean creatingOwnedConnection;
     private static boolean entrancesVerified;
@@ -66,60 +64,9 @@ public class WirelessChannelManager {
             && (tile.getClass() == TileController.class || tile.getClass() == TileCreativeEnergyController.class);
     }
 
-    public static Address controllerSource(Address source) {
-        Address cached = CONTROLLER_SOURCES.get(source);
-        if (cached != null) return cached;
-        TileEntity tile = source.tile();
-        IGridNode start = isSupportedController(tile) ? source.node() : null;
-        if (start == null) return source;
-        Set<IGridNode> seen = Collections.newSetFromMap(new IdentityHashMap<>());
-        Set<Address> addresses = new HashSet<>();
-        ArrayDeque<IGridNode> pending = new ArrayDeque<>();
-        pending.add(start);
-        seen.add(start);
-        while (!pending.isEmpty()) {
-            if (seen.size() > 4096) return source;
-            IGridNode node = pending.removeFirst();
-            TileEntity controller = (TileEntity) node.getMachine();
-            addresses.add(
-                new Address(
-                    source.dimension(),
-                    controller.xCoord,
-                    controller.yCoord,
-                    controller.zCoord,
-                    ForgeDirection.UNKNOWN));
-            for (IGridConnection connection : node.getConnections()) {
-                if (isOwned(connection) || !connection.hasDirection()) continue;
-                IGridNode other = connection.getOtherSide(node);
-                if (!((Object) other.getMachine() instanceof TileEntity next) || !isSupportedController(next)
-                    || next.isInvalid()
-                    || next.getWorldObj() != tile.getWorldObj()
-                    || Math.abs(controller.xCoord - next.xCoord) + Math.abs(controller.yCoord - next.yCoord)
-                        + Math.abs(controller.zCoord - next.zCoord) != 1)
-                    continue;
-                Address address = new Address(
-                    source.dimension(),
-                    next.xCoord,
-                    next.yCoord,
-                    next.zCoord,
-                    ForgeDirection.UNKNOWN);
-                if (address.node() == other && seen.add(other)) pending.addLast(other);
-            }
-        }
-        Address representative = addresses.stream()
-            .min(Address.POSITION_ORDER)
-            .orElse(source);
-        for (Address address : addresses) CONTROLLER_SOURCES.put(address, representative);
-        return representative;
-    }
-
-    static void invalidateControllerSources() {
-        CONTROLLER_SOURCES.clear();
+    static void invalidateFrequencies() {
+        WirelessFrequencies.invalidate();
         entranceCounts = null;
-    }
-
-    static boolean sameSource(Address first, Address second) {
-        return first.equals(second) || controllerSource(first).equals(controllerSource(second));
     }
 
     private WirelessChannelManager() {}
@@ -162,9 +109,8 @@ public class WirelessChannelManager {
         }
     }
 
-    @Desugar
-    public record Entrance(int id, Address source, Address target, IGridNode sourceNode, IGridNode targetNode,
-        IGridConnection connection) {
+    public record Entrance(int id, WirelessFrequency frequency, Address source, Address target, IGridNode sourceNode,
+        IGridNode targetNode, IGridConnection connection) {
 
         public boolean isLive() {
             return hasConnection(sourceNode, connection) && hasConnection(targetNode, connection);
@@ -227,13 +173,14 @@ public class WirelessChannelManager {
         return ChannelBudget.capacityOf(controllers);
     }
 
-    public static int connect(Address source, Address target) throws FailedConnection {
+    public static int connect(WirelessFrequency frequency, Address target) throws FailedConnection {
         if (!IWirelessPathingAccess.class.isAssignableFrom(PathingCalculation.class)) {
             throw new IllegalArgumentException("Wireless pathing hooks are unavailable; no connection was created.");
         }
-        if (entranceLimitReached(source))
+        if (entranceLimitReached(frequency))
             throw new IllegalArgumentException("Wireless entrance limit reached for this frequency.");
-        TileEntity controller = source.tile();
+        Address source = WirelessFrequencies.controller(frequency);
+        TileEntity controller = source == null ? null : source.tile();
         if (!isSupportedController(controller)) {
             throw new IllegalArgumentException("Source must be a loaded ME Controller or Creative Energy Controller.");
         }
@@ -266,9 +213,9 @@ public class WirelessChannelManager {
             creatingOwnedConnection = false;
         }
         int id = nextId++;
-        Entrance entrance = new Entrance(id, source, target, from, to, connection);
+        Entrance entrance = new Entrance(id, frequency, source, target, from, to, connection);
         ENTRANCES.put(id, entrance);
-        entranceCountChanged(source, 1);
+        entranceCountChanged(frequency, 1);
         OWNED_CONNECTIONS.put(connection, entrance);
         // createGridConnection already schedules AE2's repath.
         invalidateAllocation(grid);
@@ -285,7 +232,7 @@ public class WirelessChannelManager {
         invalidateAllocation(
             entrance.targetNode()
                 .getGrid());
-        entranceCountChanged(entrance.source(), -1);
+        entranceCountChanged(entrance.frequency(), -1);
         WirelessLinkPersistence.forgetEntrance(entrance);
         if (entrance.isLive()) entrance.connection()
             .destroy();
@@ -294,7 +241,7 @@ public class WirelessChannelManager {
     }
 
     public static void clear() {
-        invalidateControllerSources();
+        invalidateFrequencies();
         for (int id : new ArrayList<>(ENTRANCES.keySet())) disconnect(id);
         entranceSnapshot = WirelessCollections.listOf();
         OWNED_CONNECTIONS.clear();
@@ -302,6 +249,8 @@ public class WirelessChannelManager {
         WirelessClusterManager.clear();
         WirelessAutoConnect.clear();
         WirelessCopiedLinks.clear();
+        WirelessOperations.clear();
+        WirelessFrequencies.clear();
         nextId = 1;
         allocationRevision = 0;
     }
@@ -319,27 +268,27 @@ public class WirelessChannelManager {
         return Math.max(1, MainConfig.wirelessFrequency.maxEntrances);
     }
 
-    public static int entranceCount(Address source) {
+    public static int entranceCount(WirelessFrequency frequency) {
         if (entranceCounts == null) {
             entranceCounts = new HashMap<>();
             for (Entrance entrance : ENTRANCES.values()) {
-                entranceCounts.merge(controllerSource(entrance.source()), 1, Integer::sum);
+                entranceCounts.merge(WirelessFrequencies.canonical(entrance.frequency()), 1, Integer::sum);
             }
         }
-        return entranceCounts.getOrDefault(controllerSource(source), 0);
+        return entranceCounts.getOrDefault(WirelessFrequencies.canonical(frequency), 0);
     }
 
-    private static void entranceCountChanged(Address source, int change) {
+    private static void entranceCountChanged(WirelessFrequency source, int change) {
         entranceSnapshot = null;
         if (entranceCounts == null) return;
-        Address frequency = controllerSource(source);
+        WirelessFrequency frequency = WirelessFrequencies.canonical(source);
         int count = entranceCounts.getOrDefault(frequency, 0) + change;
         if (count == 0) entranceCounts.remove(frequency);
         else entranceCounts.put(frequency, count);
     }
 
-    public static boolean entranceLimitReached(Address source) {
-        return entranceCount(source) >= entranceLimit();
+    public static boolean entranceLimitReached(WirelessFrequency frequency) {
+        return entranceCount(frequency) >= entranceLimit();
     }
 
     public static boolean channelsEnabled() {
@@ -358,12 +307,14 @@ public class WirelessChannelManager {
         if (event.phase != TickEvent.Phase.END) return;
         connectionSnapshot = new IdentityHashMap<>();
         try (var ignored = WirelessLinkData.readBatch()) {
-            invalidateControllerSources();
+            entranceCounts = null;
+            WirelessFrequencies.tick();
             for (Entrance entrance : entrances()) {
                 if (!entrance.isLive() || entrance.source()
                     .node() != entrance.sourceNode()
                     || entrance.target()
-                        .node() != entrance.targetNode()) {
+                        .node() != entrance.targetNode()
+                    || !WirelessFrequencies.hosts(entrance.frequency(), entrance.source())) {
                     disconnect(entrance.id());
                     WirelessClusterManager.invalidateTopology();
                 }
@@ -394,6 +345,7 @@ public class WirelessChannelManager {
     @SubscribeEvent
     public void unloadChunk(ChunkEvent.Unload event) {
         if (event.world.isRemote) return;
+        WirelessFrequencies.forget(address -> inChunk(address, event));
         boolean changed = WirelessClusterManager.forgetTargets(address -> inChunk(address, event));
         for (Entrance entrance : entrances()) {
             if (inChunk(entrance.source(), event) || inChunk(entrance.target(), event)) {
@@ -413,6 +365,7 @@ public class WirelessChannelManager {
     @SubscribeEvent
     public void unloadWorld(WorldEvent.Unload event) {
         if (event.world.isRemote) return;
+        WirelessFrequencies.forget(address -> address.dimension() == event.world.provider.dimensionId);
         WirelessClusterManager.forgetTargets(address -> address.dimension() == event.world.provider.dimensionId);
         WirelessClusterManager.invalidateTopology();
         for (Entrance entrance : entrances()) {

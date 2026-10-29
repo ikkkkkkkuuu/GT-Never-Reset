@@ -2,12 +2,16 @@ package com.xyp.gtneverreset.utils.machine.bee;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.oredict.OreDictionary;
 
 import forestry.api.apiculture.BeeManager;
 import forestry.api.apiculture.EnumBeeChromosome;
@@ -21,9 +25,14 @@ import forestry.api.genetics.AlleleManager;
 import forestry.api.genetics.IAllele;
 import forestry.api.genetics.IAlleleFloat;
 import forestry.api.genetics.IAlleleInteger;
+import forestry.api.genetics.IMutationCondition;
 import forestry.apiculture.genetics.alleles.AlleleEffect;
 import forestry.core.genetics.alleles.AlleleHelper;
 import forestry.core.genetics.alleles.EnumAllele;
+import forestry.core.genetics.mutations.Mutation;
+import forestry.core.genetics.mutations.MutationConditionRequiresResource;
+import forestry.core.genetics.mutations.MutationConditionRequiresResourceOreDict;
+import forestry.core.utils.InventoryUtil;
 
 public final class BeeBreedingHelper {
 
@@ -307,6 +316,30 @@ public final class BeeBreedingHelper {
         return best;
     }
 
+    public static BreedingStep findRegisteredStep(String parent1, String parent2, String result, double chance) {
+        for (MutationData mutation : getMutationsForUID(result)) {
+            if (Double.compare(mutation.chance, chance) != 0) continue;
+            if ((mutation.parent1.equals(parent1) && mutation.parent2.equals(parent2))
+                || (mutation.parent1.equals(parent2) && mutation.parent2.equals(parent1))) {
+                return new BreedingStep(parent1, parent2, result, chance, mutation.foundations);
+            }
+        }
+        return null;
+    }
+
+    private static List<FoundationRequirement> readFoundations(IBeeMutation mutation) {
+        if (!(mutation instanceof Mutation forestryMutation)) return Collections.emptyList();
+        List<FoundationRequirement> requirements = new ArrayList<>();
+        for (IMutationCondition condition : forestryMutation.getMutationConditions()) {
+            if (condition instanceof MutationConditionRequiresResource resource) {
+                requirements.add(new FoundationRequirement(resource.getBlockRequired(), ""));
+            } else if (condition instanceof MutationConditionRequiresResourceOreDict resource) {
+                requirements.add(new FoundationRequirement(null, OreDictionary.getOreName(resource.getOreDictId())));
+            }
+        }
+        return Collections.unmodifiableList(requirements);
+    }
+
     public static ItemStack createDrone(String speciesName) {
         IBeeRoot root = getBeeRoot();
         if (root == null) return null;
@@ -372,7 +405,13 @@ public final class BeeBreedingHelper {
             String p1 = parent1Allele != null ? parent1Allele.getUID() : "";
             String p2 = parent2Allele != null ? parent2Allele.getUID() : "";
             mutationsMap.computeIfAbsent(resultSpecies.getUID(), k -> new ArrayList<>())
-                .add(new MutationData(p1, p2, resultSpecies.getUID(), mutation.getBaseChance()));
+                .add(
+                    new MutationData(
+                        p1,
+                        p2,
+                        resultSpecies.getUID(),
+                        mutation.getBaseChance(),
+                        readFoundations(mutation)));
         }
 
         uidSpeciesCache = speciesMap;
@@ -409,18 +448,76 @@ public final class BeeBreedingHelper {
         }
     }
 
+    public static final class FoundationRequirement {
+
+        private final ItemStack block;
+        private final String oreName;
+
+        private FoundationRequirement(ItemStack block, String oreName) {
+            this.block = block == null ? null : block.copy();
+            this.oreName = oreName;
+        }
+
+        public String key() {
+            return !oreName.isEmpty() ? "ore:" + oreName
+                : block == null ? "missing"
+                    : Item.getIdFromItem(block.getItem()) + ":" + block.getItemDamage() + ":" + block.getTagCompound();
+        }
+
+        public boolean matches(ItemStack stack) {
+            if (stack == null || stack.stackSize <= 0) return false;
+            if (oreName.isEmpty()) return InventoryUtil.isItemEqual(block, stack, true, true);
+            int requiredId = OreDictionary.getOreID(oreName);
+            for (int id : OreDictionary.getOreIDs(stack)) if (id == requiredId) return true;
+            return false;
+        }
+
+        public List<ItemStack> getAlternatives() {
+            List<ItemStack> alternatives = new ArrayList<>();
+            List<ItemStack> candidates = oreName.isEmpty() ? Collections.singletonList(block)
+                : OreDictionary.getOres(oreName);
+            for (ItemStack candidate : candidates) {
+                if (candidate == null || candidate.getItem() == null) continue;
+                ItemStack copy = candidate.copy();
+                copy.stackSize = 1;
+                alternatives.add(copy);
+            }
+            return alternatives;
+        }
+
+        public NBTTagCompound toNBT() {
+            NBTTagCompound tag = new NBTTagCompound();
+            if (!oreName.isEmpty()) tag.setString("ore", oreName);
+            else if (block != null) tag.setTag("block", block.writeToNBT(new NBTTagCompound()));
+            return tag;
+        }
+
+        public static FoundationRequirement fromNBT(NBTTagCompound tag) {
+            return new FoundationRequirement(
+                tag.hasKey("block") ? ItemStack.loadItemStackFromNBT(tag.getCompoundTag("block")) : null,
+                tag.getString("ore"));
+        }
+    }
+
     public static class MutationData {
 
         public final String parent1;
         public final String parent2;
         public final String result;
         public final double chance;
+        public final List<FoundationRequirement> foundations;
 
         public MutationData(String parent1, String parent2, String result, double chance) {
+            this(parent1, parent2, result, chance, Collections.emptyList());
+        }
+
+        public MutationData(String parent1, String parent2, String result, double chance,
+            List<FoundationRequirement> foundations) {
             this.parent1 = parent1;
             this.parent2 = parent2;
             this.result = result;
             this.chance = chance;
+            this.foundations = foundations;
         }
     }
 
@@ -430,12 +527,19 @@ public final class BeeBreedingHelper {
         public final String parent2;
         public final String result;
         public final double chance;
+        public final List<FoundationRequirement> foundations;
 
         public BreedingStep(String parent1, String parent2, String result, double chance) {
+            this(parent1, parent2, result, chance, Collections.emptyList());
+        }
+
+        public BreedingStep(String parent1, String parent2, String result, double chance,
+            List<FoundationRequirement> foundations) {
             this.parent1 = parent1;
             this.parent2 = parent2;
             this.result = result;
             this.chance = chance;
+            this.foundations = foundations;
         }
 
         @Override

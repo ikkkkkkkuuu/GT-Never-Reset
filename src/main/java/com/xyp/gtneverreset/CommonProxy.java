@@ -7,6 +7,7 @@ import net.minecraftforge.common.MinecraftForge;
 
 import com.cleanroommc.modularui.factory.GuiManager;
 import com.gtnewhorizon.gtnhlib.chat.ChatComponentCustomRegistry;
+import com.xyp.gtneverreset.common.command.CommandWirelessFrequency;
 import com.xyp.gtneverreset.common.gui.AdvancedIOGui;
 import com.xyp.gtneverreset.common.gui.StockIOGui;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalGuiHandler;
@@ -93,6 +94,7 @@ public class CommonProxy {
     }
 
     public void serverStarting(FMLServerStartingEvent event) {
+        event.registerServerCommand(new CommandWirelessFrequency());
         WirelessMonitorService.reset();
         TickHandler.instance()
             .openSession();

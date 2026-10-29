@@ -1,11 +1,10 @@
 package com.xyp.gtneverreset.common.machine.multiblock;
 
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.error;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofBlock;
-import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofBlockAnyMeta;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofChain;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.onElementPass;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
-import static gregtech.api.GregTechAPI.sBlockCasings1;
 import static gregtech.api.enums.HatchElement.Energy;
 import static gregtech.api.enums.HatchElement.ExoticEnergy;
 import static gregtech.api.enums.HatchElement.InputBus;
@@ -16,20 +15,22 @@ import static gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_DISTILLATION_
 import static gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_DISTILLATION_TOWER_ACTIVE_GLOW;
 import static gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_DISTILLATION_TOWER_GLOW;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
-import static gregtech.api.util.GTStructureUtility.chainAllGlasses;
 import static gregtech.api.util.GTStructureUtility.ofHatchAdder;
 import static gregtech.api.util.GTUtility.validMTEList;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import net.minecraft.init.Blocks;
+import net.minecraft.block.Block;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -39,13 +40,16 @@ import net.minecraftforge.common.util.ForgeDirection;
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
+import com.gtnewhorizon.structurelib.structure.IStructureElement;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
 import com.xyp.gtneverreset.common.gui.modularui.LargeBeeBreederGui;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
+import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtneverreset.utils.machine.bee.BeeBreedingHelper;
+import com.xyp.gtneverreset.utils.machine.bee.BeeBreedingHelper.FoundationRequirement;
 import com.xyp.gtneverreset.utils.machine.bee.BeeBreedingPlanner;
 import com.xyp.gtneverreset.utils.machine.bee.DronePool;
 import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
@@ -53,7 +57,6 @@ import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
 
 import forestry.api.apiculture.IAlleleBeeSpecies;
-import gregtech.api.GregTechAPI;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.HatchElement;
 import gregtech.api.enums.Materials;
@@ -89,9 +92,12 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     private static final byte OPERATION_BREEDING = 1;
     private static final byte OPERATION_OUTPUT = 2;
     private static final String STRUCTURE_PIECE_MAIN = "main";
-    private static final int HORIZONTAL_OFFSET = 7;
-    private static final int VERTICAL_OFFSET = 8;
-    private static final int DEPTH_OFFSET = 0;
+    // Dedicated GTNR texture slot; independent of GTNL so both addons can coexist.
+    public static final int CASING_TEXTURE_ID = (126 << 7) | 127;
+    private static final int FOUNDATION_SCAN_INTERVAL = 200;
+    private static final int HORIZONTAL_OFFSET = 5;
+    private static final int VERTICAL_OFFSET = 9;
+    private static final int DEPTH_OFFSET = 3;
     private static final String[][] SHAPE = MultiblockStructureLoader.load("large_bee_breeder");
 
     @Getter
@@ -103,9 +109,14 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     @Getter
     private int pendingPrincessOutputs = 0;
 
+    private final List<ItemStack> foundationInputs = new ArrayList<>();
+    private final Map<String, ItemStack> foundationMatches = new HashMap<>();
+    private long lastFoundationScanTick = Long.MIN_VALUE;
+    private List<FoundationRequirement> missingFoundations = Collections.emptyList();
+    private boolean activeFoundationsChecked;
+
     private int mCountCasing;
     private boolean hasStainlessSteelGear;
-    private int glassTier = -1;
     private IStructureDefinition<LargeBeeBreeder> structureDefinition;
     private final List<ParameterModuleHatch> parameterModules = new ArrayList<>();
     private BeeBreedingPlanner.Plan breedingPlan = BeeBreedingPlanner.Plan.empty("");
@@ -139,6 +150,15 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
 
     @Override
     public void onPostTick(IGregTechTileEntity aBaseMetaTileEntity, long aTick) {
+        if (aBaseMetaTileEntity.isServerSide() && mMachine && isFoundationScanDue()) {
+            startRecipeProcessing();
+            try {
+                refreshFoundationInputs(getStoredInputs());
+            } finally {
+                endRecipeProcessing();
+            }
+            refreshBreedingPlan();
+        }
         super.onPostTick(aBaseMetaTileEntity, aTick);
         if (aBaseMetaTileEntity.isServerSide()) {
             for (ParameterModuleHatch module : parameterModules) module.setWorking(aBaseMetaTileEntity.isActive());
@@ -148,7 +168,14 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
             hasStainlessSteelGear = checkStainlessSteelGear(getControllerSlot());
             if (gearBefore != hasStainlessSteelGear) markBreedingChanged();
 
-            if (mMachine) scanInputBuses();
+            if (mMachine) {
+                startRecipeProcessing();
+                try {
+                    scanInputBuses();
+                } finally {
+                    endRecipeProcessing();
+                }
+            }
             refreshBreedingPlan();
 
         }
@@ -159,31 +186,31 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         if (structureDefinition == null) {
             structureDefinition = StructureDefinition.<LargeBeeBreeder>builder()
                 .addShape(STRUCTURE_PIECE_MAIN, transpose(SHAPE))
-                .addElement('A', chainAllGlasses(-1, (te, t) -> te.glassTier = t, te -> te.glassTier))
-                .addElement('B', ofChain(ofBlockAnyMeta(Blocks.dirt, 0), ofBlock(Blocks.grass, 0)))
                 .addElement(
-                    'G',
+                    'A',
                     ofChain(
                         StructureTooltipHooks.describeAsHatch(
-                            ofHatchAdder(LargeBeeBreeder::addParameterModuleToMachineList, 10, 1),
+                            ofHatchAdder(LargeBeeBreeder::addParameterModuleToMachineList, CASING_TEXTURE_ID, 1),
                             ParameterModuleHatch.NAME_KEY),
                         buildHatchAdder(LargeBeeBreeder.class)
                             .atLeast(InputBus, OutputBus, Energy.or(ExoticEnergy), Maintenance)
-                            .casingIndex(10)
+                            .casingIndex(CASING_TEXTURE_ID)
                             .hint(1)
                             .buildAndChain(),
-                        onElementPass(x -> ++x.mCountCasing, ofBlock(sBlockCasings1, 10))))
-                .addElement('H', ofBlock(Blocks.planks, 0))
-                .addElement('I', ofBlock(Blocks.wooden_slab, 0))
-                .addElement('J', ofBlock(GregTechAPI.sBlockFrames, (int) Materials.Bronze.mMetaItemSubID))
-                .addElement('K', ofBlock(GregTechAPI.sBlockFrames, (int) Materials.Bronze.mMetaItemSubID))
-                .addElement('L', ofBlock(GregTechAPI.sBlockFrames, (int) Materials.Bronze.mMetaItemSubID))
-                .addElement('N', ofBlock(GregTechAPI.sBlockFrames, (int) Materials.Bronze.mMetaItemSubID))
-                .addElement('O', ofBlock(GregTechAPI.sBlockFrames, (int) Materials.Bronze.mMetaItemSubID))
-                .addElement('P', ofBlock(GregTechAPI.sBlockFrames, (int) Materials.Bronze.mMetaItemSubID))
+                        onElementPass(x -> ++x.mCountCasing, ofStructureBlock(ModsItemlist.ChiselYellowHempcrete))))
+                .addElement('B', ofStructureBlock(ModsItemlist.ChiselLightGrayHempcrete))
+                .addElement('C', ofStructureBlock(ModsItemlist.ChiselBlackHempcrete))
+                .addElement('D', ofStructureBlock(ModsItemlist.EtFuturumRequiemOrangeConcrete))
+                .addElement('E', ofStructureBlock(ModsItemlist.EtFuturumRequiemBrownConcrete))
                 .build();
         }
         return structureDefinition;
+    }
+
+    private IStructureElement<LargeBeeBreeder> ofStructureBlock(ModsItemlist material) {
+        ItemStack stack = material.get(1);
+        if (stack == null || !(stack.getItem() instanceof ItemBlock)) return error();
+        return ofBlock(Block.getBlockFromItem(stack.getItem()), stack.getItemDamage());
     }
 
     @Override
@@ -209,7 +236,6 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     @Override
     public void checkMachine(IGregTechTileEntity aBaseMetaTileEntity, ItemStack aStack, List<StructureError> errors) {
         mCountCasing = 0;
-        glassTier = -1;
         if (!checkPiece(STRUCTURE_PIECE_MAIN, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors)) return;
         collectTooltipStructureRequirements(errors);
         hasStainlessSteelGear = checkStainlessSteelGear(getControllerSlot());
@@ -260,6 +286,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         scanInputBuses();
         activeOperation = OPERATION_NONE;
         activeBreedingAttempt = null;
+        activeFoundationsChecked = false;
 
         if (targetBeeSpecies == null || targetBeeSpecies.isEmpty()) {
             refreshBreedingPlan();
@@ -307,6 +334,12 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         long eut = getEuPerBreedingAttempt();
         if (getMaxInputEu() < eut) return CheckRecipeResultRegistry.insufficientPower(eut);
 
+        updateMissingFoundations(Collections.singletonList(nextStep));
+        if (!missingFoundations.isEmpty()) {
+            allTasksBlocked = true;
+            return missingFoundationResult();
+        }
+        activeFoundationsChecked = true;
         activeOperation = OPERATION_BREEDING;
         activeBreedingAttempt = new BreedingAttempt(nextStep, nextStep.chance + getMutationChanceBonus());
         allTasksBlocked = false;
@@ -323,7 +356,8 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
                 activeBreedingAttempt.step.parent1,
                 activeBreedingAttempt.step.parent2,
                 activeBreedingAttempt.step.result,
-                activeBreedingAttempt.effectiveChance));
+                activeBreedingAttempt.effectiveChance,
+                activeBreedingAttempt.step.foundations));
     }
 
     private void prepareBreedingCycle(long eut) {
@@ -331,6 +365,27 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         mEfficiency = 10000;
         mEfficiencyIncrease = 10000;
         lEUt = -eut;
+    }
+
+    @Override
+    public boolean onRunningTick(ItemStack stack) {
+        if (activeOperation == OPERATION_BREEDING) {
+            if (!activeFoundationsChecked) {
+                updateMissingFoundations(getActiveBreedingSteps());
+                activeFoundationsChecked = true;
+                checkRecipeResult = missingFoundations.isEmpty() ? CheckRecipeResultRegistry.SUCCESSFUL
+                    : missingFoundationResult();
+            }
+            if (!missingFoundations.isEmpty()) return false;
+        }
+        return super.onRunningTick(stack);
+    }
+
+    private CheckRecipeResult missingFoundationResult() {
+        // #tr GT5U.gui.text.recipe_result.gtnr_bee_breeder_missing_foundation
+        // # Missing mutation foundation in input buses!
+        // # zh_CN 输入总线中缺少杂交基石！
+        return SimpleCheckRecipeResult.ofFailure("gtnr_bee_breeder_missing_foundation");
     }
 
     @Override
@@ -390,6 +445,15 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
             }
         }
 
+        if (activeOperation == OPERATION_BREEDING) {
+            updateMissingFoundations(getActiveBreedingSteps());
+        } else if (pendingPrincessOutputs > 0 && !dronePool.hasDrone(targetBeeSpecies)) {
+            BeeBreedingHelper.BreedingStep next = breedingPlan.getNextReadyStep(dronePool.getAvailableSpecies());
+            updateMissingFoundations(next == null ? Collections.emptyList() : Collections.singletonList(next));
+        } else {
+            updateMissingFoundations(Collections.emptyList());
+        }
+        allTasksBlocked |= !missingFoundations.isEmpty();
         updateChainDisplayInfo();
         if (previousBlocked != allTasksBlocked || !Objects.equals(previousMissing, missingDroneSpecies)
             || previousCompleted != chainCompletedSteps) {
@@ -441,26 +505,28 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     public ITexture[] getTexture(IGregTechTileEntity aBaseMetaTileEntity, ForgeDirection side, ForgeDirection aFacing,
         int colorIndex, boolean aActive, boolean redstoneLevel) {
         if (side == aFacing) {
-            if (aActive) return new ITexture[] { Textures.BlockIcons.getCasingTextureForId(10), TextureFactory.builder()
-                .addIcon(OVERLAY_FRONT_DISTILLATION_TOWER_ACTIVE)
-                .extFacing()
-                .build(),
+            if (aActive) return new ITexture[] { Textures.BlockIcons.getCasingTextureForId(CASING_TEXTURE_ID),
+                TextureFactory.builder()
+                    .addIcon(OVERLAY_FRONT_DISTILLATION_TOWER_ACTIVE)
+                    .extFacing()
+                    .build(),
                 TextureFactory.builder()
                     .addIcon(OVERLAY_FRONT_DISTILLATION_TOWER_ACTIVE_GLOW)
                     .extFacing()
                     .glow()
                     .build() };
-            return new ITexture[] { Textures.BlockIcons.getCasingTextureForId(10), TextureFactory.builder()
-                .addIcon(OVERLAY_FRONT_DISTILLATION_TOWER)
-                .extFacing()
-                .build(),
+            return new ITexture[] { Textures.BlockIcons.getCasingTextureForId(CASING_TEXTURE_ID),
+                TextureFactory.builder()
+                    .addIcon(OVERLAY_FRONT_DISTILLATION_TOWER)
+                    .extFacing()
+                    .build(),
                 TextureFactory.builder()
                     .addIcon(OVERLAY_FRONT_DISTILLATION_TOWER_GLOW)
                     .extFacing()
                     .glow()
                     .build() };
         }
-        return new ITexture[] { Textures.BlockIcons.getCasingTextureForId(10) };
+        return new ITexture[] { Textures.BlockIcons.getCasingTextureForId(CASING_TEXTURE_ID) };
     }
 
     private ParameterModuleHatch parameterModule(MachineModuleType type) {
@@ -502,6 +568,59 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
             markBreedingChanged();
         }
 
+        if (isFoundationScanDue()) refreshFoundationInputs(inputs);
+    }
+
+    private boolean isFoundationScanDue() {
+        return lastFoundationScanTick == Long.MIN_VALUE
+            || mTotalRunTime - lastFoundationScanTick >= FOUNDATION_SCAN_INTERVAL;
+    }
+
+    private void refreshFoundationInputs(List<ItemStack> inputs) {
+        foundationInputs.clear();
+        for (ItemStack input : inputs) {
+            if (input == null || input.stackSize <= 0) continue;
+            ItemStack copy = input.copy();
+            copy.stackSize = 1;
+            foundationInputs.add(copy);
+        }
+        foundationMatches.clear();
+        lastFoundationScanTick = mTotalRunTime;
+        activeFoundationsChecked = false;
+        markBreedingChanged();
+    }
+
+    public ItemStack findFoundation(FoundationRequirement requirement) {
+        String key = requirement.key();
+        if (!foundationMatches.containsKey(key)) {
+            ItemStack match = null;
+            for (ItemStack input : foundationInputs) {
+                if (requirement.matches(input)) {
+                    match = input;
+                    break;
+                }
+            }
+            foundationMatches.put(key, match);
+        }
+        return foundationMatches.get(key);
+    }
+
+    private void updateMissingFoundations(List<BeeBreedingHelper.BreedingStep> steps) {
+        Map<String, FoundationRequirement> missing = new LinkedHashMap<>();
+        for (BeeBreedingHelper.BreedingStep step : steps) {
+            for (FoundationRequirement requirement : step.foundations) {
+                if (findFoundation(requirement) == null) missing.putIfAbsent(requirement.key(), requirement);
+            }
+        }
+        List<FoundationRequirement> next = new ArrayList<>(missing.values());
+        if (!missingFoundations.equals(next)) {
+            missingFoundations = next;
+            markBreedingChanged();
+        }
+    }
+
+    public List<FoundationRequirement> getMissingFoundations() {
+        return Collections.unmodifiableList(missingFoundations);
     }
 
     public String getMachineType() {
@@ -657,6 +776,11 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
 
         targetBeeSpecies = aNBT.getString("targetBeeSpecies");
         pendingPrincessOutputs = aNBT.getInteger("pendingPrincessOutputs");
+        foundationInputs.clear();
+        foundationMatches.clear();
+        lastFoundationScanTick = Long.MIN_VALUE;
+        missingFoundations = Collections.emptyList();
+        activeFoundationsChecked = false;
 
         if (aNBT.hasKey("dronePool")) {
             dronePool = DronePool.fromNBT(aNBT.getCompoundTag("dronePool"));
@@ -751,7 +875,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     }
 
     public int getMutationChanceBonus() {
-        return (hasStainlessSteelGear ? 2 : 0) + Math.max(0, glassTier);
+        return hasStainlessSteelGear ? 2 : 0;
     }
 
     @Override
@@ -799,11 +923,9 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
             String parent2 = tag.getString("parent2");
             String result = tag.getString("result");
             if (parent1.isEmpty() || parent2.isEmpty() || result.isEmpty()) return null;
-            BeeBreedingHelper.BreedingStep step = new BeeBreedingHelper.BreedingStep(
-                parent1,
-                parent2,
-                result,
-                tag.getDouble("baseChance"));
+            BeeBreedingHelper.BreedingStep step = BeeBreedingHelper
+                .findRegisteredStep(parent1, parent2, result, tag.getDouble("baseChance"));
+            if (step == null) return null;
             return new BreedingAttempt(step, tag.getDouble("effectiveChance"));
         }
     }

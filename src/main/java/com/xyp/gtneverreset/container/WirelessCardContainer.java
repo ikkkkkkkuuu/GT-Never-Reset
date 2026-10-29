@@ -55,6 +55,7 @@ public class WirelessCardContainer extends ModularContainer {
         cardInventory = slot == null ? null : slot.inventory();
         cardSlot = slot == null ? -1 : slot.index();
         card = slot == null ? null : cardInventory.getStackInSlot(cardSlot);
+        if (card != null && !player.worldObj.isRemote) WirelessCardBinding.upgrade(card, player);
         binding = card == null ? null : WirelessCardBinding.read(card.getTagCompound());
         // NetHandlerPlayServer queries this slot after onItemRightClick returns, even for an item GUI.
         if (slot != null) addSlotToContainer(new Slot(cardInventory, cardSlot, -10000, -10000) {

@@ -1,2 +1,2 @@
-Processes ores and ore intermediates into dusts, gems and byproducts
-Items without an ore-processing recipe are transferred to the output in one batch
+Processes ore blocks, raw ores, crushed ores and other forms of ore directly into dusts
+Some recipes yield the corresponding dust directly without special processing

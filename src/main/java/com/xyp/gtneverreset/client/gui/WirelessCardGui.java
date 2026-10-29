@@ -1840,6 +1840,10 @@ abstract class WirelessCardPanel extends ModularPanel {
     }
 
     static String budgetText(NBTTagCompound data) {
+        // #tr gtneverreset.wireless.gui.frequency_split
+        // # Frequency split: take over one controller structure to reconnect.
+        // # zh_CN 频率分裂：请接管一组控制器以恢复连接。
+        if (data.getBoolean("frequencySplit")) return tr("frequency_split");
         return !data.getBoolean("bound") ? tr("bind_hint")
             : !data.getBoolean("sourceLoaded") ? tr("source_waiting")
                 : !data.getBoolean("channels") ? tr("unlimited")

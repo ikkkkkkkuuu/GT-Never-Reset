@@ -34,6 +34,7 @@ import com.gtnewhorizon.gtnhlib.item.ItemStackNBT;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui;
+import com.xyp.gtneverreset.container.WirelessCardContainer;
 import com.xyp.gtneverreset.mixins.late.appliedenergistics2.wireless.AccessorTileController;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.machine.wireless.AutomaticWirelessEntrances;
@@ -44,6 +45,7 @@ import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Address;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Entrance;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessClusterManager;
+import com.xyp.gtneverreset.utils.machine.wireless.WirelessFrequencies;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessOperations;
 import com.xyp.gtneverreset.utils.text.WirelessCardItemText;
 
@@ -63,6 +65,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGuiHolder<PlayerInventoryGuiData> {
 
     public static final String REGISTRY_NAME = "wireless_frequency_card";
+    private static final int UPGRADE_INTERVAL = 100;
 
     public WirelessFrequencyCard() {
         setUnlocalizedName(GTNeverReset.MODID + "." + REGISTRY_NAME);
@@ -97,8 +100,12 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
 
     @Override
     public void onWornTick(ItemStack stack, EntityLivingBase player) {
-        if (player instanceof EntityPlayerMP serverPlayer && !player.worldObj.isRemote)
+        if (player instanceof EntityPlayerMP serverPlayer && !player.worldObj.isRemote) {
+            if (player.worldObj.getTotalWorldTime() % UPGRADE_INTERVAL == 0
+                && !(serverPlayer.openContainer instanceof WirelessCardContainer))
+                WirelessCardBinding.upgrade(stack, serverPlayer);
             WirelessCardVisualisation.update(stack, serverPlayer, 0);
+        }
     }
 
     @Override
@@ -121,8 +128,11 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
 
     @Override
     public void onUpdate(ItemStack stack, World world, Entity entity, int slot, boolean active) {
-        if (!world.isRemote && active && entity instanceof EntityPlayerMP player)
+        if (!world.isRemote && active && entity instanceof EntityPlayerMP player) {
+            if (world.getTotalWorldTime() % UPGRADE_INTERVAL == 0
+                && !(player.openContainer instanceof WirelessCardContainer)) WirelessCardBinding.upgrade(stack, player);
             WirelessCardVisualisation.update(stack, player, slot);
+        }
     }
 
     @Override
@@ -130,6 +140,7 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
         float hitX, float hitY, float hitZ) {
         // Returning true on the client here would prevent vanilla's block-use packet from being sent.
         if (world.isRemote) return false;
+        WirelessCardBinding.upgrade(stack, player);
         WirelessCardBinding binding = WirelessCardBinding.read(stack.getTagCompound());
         if (!ownerAllowed(binding, player)) return true;
         if (!player.canPlayerEdit(x, y, z, side, stack)) {
@@ -205,13 +216,32 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
             message(player, "unstable");
             return;
         }
-        source = WirelessChannelManager.controllerSource(source);
-        var next = new WirelessCardBinding(source, player.getUniqueID(), player.getCommandSenderName());
+        var binding = WirelessCardBinding.read(stack.getTagCompound());
+        if (WirelessOperations.adoptable(binding)) {
+            switch (WirelessOperations.adopt(player, binding, source.tile())) {
+                case WAITING -> message(player, "adopt_confirm");
+                case DENIED -> message(player, "adopt_denied");
+                case APPLIED -> {
+                    WirelessCardBinding.upgrade(stack, player);
+                    message(player, "adopted");
+                }
+                default -> message(player, "unavailable");
+            }
+            return;
+        }
+        var frequency = WirelessFrequencies.bind(source.tile(), player.getUniqueID());
+        source = WirelessFrequencies.controller(frequency);
+        var next = new WirelessCardBinding(
+            frequency,
+            source,
+            WirelessFrequencies.creator(frequency),
+            player.getUniqueID(),
+            player.getCommandSenderName());
         var saved = WirelessCardBinding.sources(stack.getTagCompound());
-        Address selectedSource = source;
+        var selectedSource = frequency;
         if (saved.size() >= WirelessCardBinding.MAX_SOURCES && saved.stream()
             .noneMatch(
-                entry -> entry.source()
+                entry -> entry.frequency()
                     .equals(selectedSource))) {
             message(player, "source_limit", WirelessCardBinding.MAX_SOURCES);
             return;
@@ -253,12 +283,9 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
     }
 
     private static IGridNode sourceNode(WirelessCardBinding binding, EntityPlayer player) {
-        TileEntity tile = binding.source()
-            .tile();
-        IGridNode node = WirelessChannelManager.isSupportedController(tile) ? binding.source()
-            .node() : null;
+        IGridNode node = WirelessFrequencies.controllerNode(binding.frequency());
         if (node == null) {
-            message(player, "unavailable");
+            message(player, WirelessFrequencies.split(binding.frequency()) ? "frequency_split" : "unavailable");
             return null;
         }
         return canBuild(node, player) ? node : null;
@@ -266,7 +293,7 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
 
     private static void showStatus(WirelessCardBinding binding, EntityPlayer player) {
         WirelessClusterManager.refreshIfStale();
-        var summary = WirelessClusterManager.summary(binding.source());
+        var summary = WirelessClusterManager.summary(binding.frequency());
         message(
             player,
             "cluster_status",
@@ -280,7 +307,7 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
             "planner_status",
             new ChatComponentTranslation(
                 WirelessCardItemText.key(
-                    "planner." + AutomaticWirelessEntrances.status(binding.source())
+                    "planner." + AutomaticWirelessEntrances.status(binding.frequency())
                         .name()
                         .toLowerCase(Locale.ROOT))));
         IGridNode node = sourceNode(binding, player);
@@ -332,7 +359,7 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
         if (binding == null) {
             tooltip.add(YELLOW + StatCollector.translateToLocal(WirelessCardItemText.key("source_unbound")));
         } else {
-            Address source = binding.source();
+            Address source = binding.location();
             tooltip.add(
                 AQUA + StatCollector.translateToLocalFormatted(
                     WirelessCardItemText.key("bound"),

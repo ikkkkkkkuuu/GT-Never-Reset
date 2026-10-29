@@ -3,14 +3,18 @@ package com.xyp.gtneverreset.common.machine.basicMachine;
 import static gregtech.api.enums.GTValues.V;
 import static gregtech.api.enums.GTValues.VN;
 
+import java.util.List;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.StatCollector;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.xyp.gtneverreset.GTNeverReset;
@@ -27,6 +31,8 @@ import gregtech.api.render.TextureFactory;
 import gregtech.api.util.GTUtility;
 import gregtech.api.util.tooltip.TooltipHelper;
 import gregtech.common.misc.WirelessNetworkManager;
+import mcp.mobius.waila.api.IWailaConfigHandler;
+import mcp.mobius.waila.api.IWailaDataAccessor;
 
 @IMetaTileEntity.SkipGenerateName
 @IMetaTileEntity.SkipGenerateDescription
@@ -101,6 +107,38 @@ public final class EndCrystalResonator extends MTETieredMachineBlock {
             // # Right-click the top with a Stable End Crystal to place it
             // # zh_CN 手持稳定末影水晶右键顶面放置
             StatCollector.translateToLocal("tooltip.gtnr.crystal_resonator.placement") };
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+        boolean generating = getBaseMetaTileEntity().isActive();
+        tag.setBoolean("resonatorGenerating", generating);
+        tag.setLong("resonatorGeneration", generating ? generationForTier(mTier) : 0L);
+    }
+
+    @Override
+    public void getWailaBody(ItemStack stack, List<String> lines, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        super.getWailaBody(stack, lines, accessor, config);
+        NBTTagCompound tag = accessor.getNBTData();
+        if (!tag.hasKey("resonatorGeneration")) return;
+        if (tag.getBoolean("resonatorGenerating")) {
+            // #tr waila.gtnr.crystal_resonator.generating
+            // # Generating power
+            // # zh_CN 正在发电
+            lines.add(StatCollector.translateToLocal("waila.gtnr.crystal_resonator.generating"));
+        } else {
+            // #tr waila.gtnr.crystal_resonator.idle
+            // # Not generating power
+            // # zh_CN 未在发电
+            lines.add(StatCollector.translateToLocal("waila.gtnr.crystal_resonator.idle"));
+        }
+        lines.add(
+            StatCollector.translateToLocalFormatted(
+                "tooltip.gtnr.crystal_resonator.rate",
+                TooltipHelper.euRateText(tag.getLong("resonatorGeneration"))));
     }
 
     @Override
