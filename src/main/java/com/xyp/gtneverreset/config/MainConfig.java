@@ -29,6 +29,7 @@ public final class MainConfig {
     public static final CropsNH cropsNH = new CropsNH();
 
     public static class CropsNH {
+
         @Comment("CropsNH 作物在生长判定时直接成熟")
         @DefaultBoolean(true)
         public boolean enableInstantGrowth = true;
