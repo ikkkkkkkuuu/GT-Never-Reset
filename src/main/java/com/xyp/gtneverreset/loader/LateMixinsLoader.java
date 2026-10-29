@@ -22,6 +22,10 @@ public final class LateMixinsLoader implements ILateMixinLoader {
     @Override
     public List<String> getMixins(Set<String> loadedMods) {
         List<String> mixins = new ArrayList<>();
+        if (loadedMods.contains(ModList.ModIds.CROPSNH)) {
+            mixins.add("cropsnh.MixinSeedStats");
+            mixins.add("cropsnh.MixinTileEntityCropSticks");
+        }
         if (loadedMods.contains(ModList.ModIds.BLOOD_MAGIC)) {
             mixins.add("bloodmagic.MixinPackagedBloodAltar");
         }

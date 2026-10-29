@@ -25,6 +25,21 @@ import com.xyp.gtneverreset.utils.gui.radialmenu.WheelColors;
 @Comment("常规设置")
 public final class MainConfig {
 
+    @Name("cropsnh")
+    public static final CropsNH cropsNH = new CropsNH();
+
+    public static class CropsNH {
+        @Comment("CropsNH 作物在生长判定时直接成熟")
+        @DefaultBoolean(true)
+        public boolean enableInstantGrowth = true;
+        @Comment("CropsNH 种子的生长、产量和抗性固定为 31")
+        @DefaultBoolean(true)
+        public boolean enableMaxStats = true;
+        @Comment("CropsNH 作物必定返回一粒种子，绕过抗性概率判定")
+        @DefaultBoolean(true)
+        public boolean enableGuaranteedSeedDrop = true;
+    }
+
     @Name("vein_miner_pickaxe")
     public static final VeinMinerPickaxe veinMinerPickaxe = new VeinMinerPickaxe();
 
