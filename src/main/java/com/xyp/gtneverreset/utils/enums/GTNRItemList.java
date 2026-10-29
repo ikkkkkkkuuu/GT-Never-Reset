@@ -61,6 +61,7 @@ public enum GTNRItemList implements IItemContainer {
     MaxCapacityMEOutputHatch,
     MEOutputAssembly,
     VaultPortHatch,
+    MEDataAccessHatch,
 
     StaticParallelControllerT1,
     StaticParallelControllerT2,

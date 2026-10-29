@@ -11,6 +11,7 @@ import com.xyp.gtneverreset.common.machine.basicMachine.FragmentWorldCollector;
 import com.xyp.gtneverreset.common.machine.basicMachine.ModernFluidMachine;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternMirror;
+import com.xyp.gtneverreset.common.machine.hatch.MEDataAccessHatch;
 import com.xyp.gtneverreset.common.machine.hatch.MEOutputAssembly;
 import com.xyp.gtneverreset.common.machine.hatch.MaxCapacityMEOutputBus;
 import com.xyp.gtneverreset.common.machine.hatch.MaxCapacityMEOutputHatch;
@@ -116,6 +117,15 @@ public final class MachineLoader {
     }
 
     public static void registerHatch() {
+        // #tr gtnr.hatch.me_data_access.name
+        // # Data Access Hatch (ME, IV)
+        // # zh_CN 数据访问仓 (ME, IV)
+        GTNRItemList.MEDataAccessHatch.set(
+            new MEDataAccessHatch(
+                GTNRMachineID.MEDataAccessHatch.id,
+                "gtneverreset.me_data_access",
+                StatCollector.translateToLocal("gtnr.hatch.me_data_access.name")));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.MEDataAccessHatch.get(1), AnimatedText.GT_NEVER_RESET);
         // #tr gtnr.hatch.super_advanced_me_input_hatch.name
         // # Super Advanced Stocking Input Hatch (ME)
         // # zh_CN 超级 ME 输入仓

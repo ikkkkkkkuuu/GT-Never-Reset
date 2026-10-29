@@ -30,6 +30,19 @@ public final class AssemblerRecipes {
     private static final int MODULE_CIRCUIT = 19;
 
     public static void register() {
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                ItemList.Hatch_DataAccess_EV.get(1),
+                ModsItemlist.MEInterface.get(1),
+                ItemList.Hull_IV.get(1),
+                new Object[] { OrePrefixes.circuit.get(Materials.IV), 2 },
+                ItemList.Sensor_IV.get(1),
+                ItemList.Emitter_IV.get(1))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(576))
+            .itemOutputs(GTNRItemList.MEDataAccessHatch.get(1))
+            .duration(20 * SECONDS)
+            .eut(TierEU.RECIPE_IV)
+            .addTo(assemblerRecipes);
         registerPatternInputRecipes();
         registerMaxCapacityMEOutputRecipes();
         registerSuperAdvancedMEInputRecipes();

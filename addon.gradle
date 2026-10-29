@@ -371,3 +371,17 @@ afterEvaluate {
         dependsOn preprocessLang
     }
 }
+
+tasks.register('checkMEDataAccessContracts', JavaExec) {
+    group = 'verification'
+    description = 'Checks read-only ME research snapshots, invalidation and reconnect behavior.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'com.xyp.gtneverreset.common.machine.hatch.MEDataAccessContracts'
+}
+
+tasks.named('check') { dependsOn 'checkMEDataAccessContracts' }
+
+tasks.withType(Jar).configureEach {
+    from('licenses/me-data-access') { into 'META-INF/licenses/me-data-access' }
+}

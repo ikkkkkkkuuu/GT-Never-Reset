@@ -74,7 +74,8 @@ public enum GTNRMachineID {
     SingularityPerfectOverclockController(29550),
     SuperAdvancedMEInputBus(29551),
     SuperAdvancedMEInputHatch(29552),
-    // 预留：29553–29599（47 个）。
+    MEDataAccessHatch(29553),
+    // 预留：29554–29599（46 个）。
     // endregion
 
     // region 单方块机器
