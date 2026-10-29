@@ -6,7 +6,9 @@ import com.xyp.gtneverreset.common.item.items.ItemPackagedCore;
 import com.xyp.gtneverreset.common.item.items.ItemStockIOInterface;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessConnector;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
+import com.xyp.gtneverreset.common.item.items.HarvestRing;
 import com.xyp.gtneverreset.common.item.items.StableEndCrystalItem;
+import com.xyp.gtneverreset.common.item.items.VeinMiningPickaxe;
 import com.xyp.gtneverreset.common.item.items.WildcardPatternItem;
 import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -19,6 +21,8 @@ import com.xyp.gtneverreset.utils.machine.packaged.ThaumcraftCrucibleAdapter;
 import com.xyp.gtneverreset.utils.machine.packaged.ThaumcraftInfusionAdapter;
 
 public final class ItemLoader {
+
+    public static final HarvestRing harvestRing = new HarvestRing();
 
     public static final ItemWirelessConnector wirelessConnector = new ItemWirelessConnector();
     public static final ItemPackagedCore basicPackagedCore = new ItemPackagedCore(false);
@@ -58,6 +62,7 @@ public final class ItemLoader {
     public static final ItemStockIOInterface stockIOInterface = new ItemStockIOInterface();
 
     public static void registerItems() {
+        new VeinMiningPickaxe();
         if (ModList.BloodMagic.isModLoaded()) {
             // #tr item.blood_altar_packaged_core.name
             // # Blood Altar Packaged Core

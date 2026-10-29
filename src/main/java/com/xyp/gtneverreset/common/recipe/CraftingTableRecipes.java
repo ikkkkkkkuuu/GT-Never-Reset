@@ -34,6 +34,11 @@ import thaumcraft.common.config.ConfigBlocks;
 public final class CraftingTableRecipes {
 
     public static void register() {
+        GTModHandler.addCraftingRecipe(
+            GTNRItemList.VeinMiningPickaxe.get(1),
+            new Object[] { "AAA", " B ", " A ", 'A', new ItemStack(Blocks.planks, 1, 0), 'B',
+                new ItemStack(Items.wooden_pickaxe, 1, 0) });
+
         registerPackagedRecipes();
         registerWirelessTerminalRecipes(GTNRItemList.WirelessDualInterfaceTerminal.get(1));
         registerWirelessFrequencyCardRecipes();

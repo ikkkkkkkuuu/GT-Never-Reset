@@ -1,0 +1,2 @@
+Source: adjacent GT-Not-Good checkout; VeinMiningPickaxe, settings, packet, input handler and SingularityPickaxe textures.
+Adapted registration, config and server scheduling. No root license found in source checkout.

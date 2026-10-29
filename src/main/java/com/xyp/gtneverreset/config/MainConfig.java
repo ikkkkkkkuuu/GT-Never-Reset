@@ -25,6 +25,21 @@ import com.xyp.gtneverreset.utils.gui.radialmenu.WheelColors;
 @Comment("常规设置")
 public final class MainConfig {
 
+    @Name("vein_miner_pickaxe")
+    public static final VeinMinerPickaxe veinMinerPickaxe = new VeinMinerPickaxe();
+
+    public static class VeinMinerPickaxe {
+
+        @Comment("单次连锁挖掘方块上限")
+        @DefaultInt(327670)
+        @RangeInt(min = 0)
+        public int maxAmount = 327670;
+        @Comment("匹配方块之间的最大间隔")
+        @DefaultInt(32)
+        @RangeInt(min = 0, max = 32)
+        public int maxRange = 32;
+    }
+
     // #tr gtneverreset.gui.config.general.client
     // # Client
     // # zh_CN 客户端

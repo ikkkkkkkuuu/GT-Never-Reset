@@ -98,6 +98,7 @@ public final class NetWorkHandler {
             WirelessMonitorSnapshotPacket.class,
             nextPacketId++,
             Side.CLIENT);
+        registerServerbound(VeinMiningSettingPacket.class, VeinMiningSettingPacket::handle);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);

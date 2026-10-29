@@ -13,6 +13,8 @@ import gregtech.api.util.GTUtility;
 
 public enum GTNRItemList implements IItemContainer {
 
+    VeinMiningPickaxe,
+
     // region 物品
     ItemWirelessConnector,
     BasicPackagedCore,
