@@ -9,9 +9,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 
-import com.glodblock.github.common.Config;
 import com.glodblock.github.inventory.item.WirelessMagnetCardFilterInventory;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalGuiHandler;
+import com.xyp.gtneverreset.config.MainConfig;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
 
 import appeng.api.config.SecurityPermissions;
@@ -53,7 +53,7 @@ public final class WirelessTerminalMagnet {
             .setLong(LAST_SCAN, time);
         int slot = WirelessTerminalSession.findTerminalSlot(player, stack);
         if (slot < 0) return;
-        double range = Math.max(0, Config.magnetRange);
+        double range = Math.max(1, Math.min(64, MainConfig.tools.wirelessTerminalMagnetRange));
         List<EntityItem> items = player.worldObj
             .getEntitiesWithinAABB(EntityItem.class, player.boundingBox.expand(range, range, range));
         var host = mode == 2 && !items.isEmpty() ? WirelessTerminalGuiHandler
