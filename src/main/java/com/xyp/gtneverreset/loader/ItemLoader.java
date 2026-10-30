@@ -12,6 +12,7 @@ import com.xyp.gtneverreset.common.item.items.StableEndCrystalItem;
 import com.xyp.gtneverreset.common.item.items.VeinMiningPickaxe;
 import com.xyp.gtneverreset.common.item.items.WildcardPatternItem;
 import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
+import com.xyp.gtneverreset.common.item.items.WirelessPowerCard;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.packaged.ArcaneWorkbenchAdapter;
@@ -59,6 +60,7 @@ public final class ItemLoader {
     public static final StableEndCrystalItem stableEndCrystal = new StableEndCrystalItem();
     public static final ItemWirelessDualInterfaceTerminal wirelessDualInterfaceTerminal = new ItemWirelessDualInterfaceTerminal();
     public static final WirelessFrequencyCard wirelessFrequencyCard = new WirelessFrequencyCard();
+    public static final WirelessPowerCard wirelessPowerCard = new WirelessPowerCard();
     public static final WildcardPatternItem wildcardPattern = new WildcardPatternItem();
     public static final ItemAdvancedIOBus advancedIOBus = new ItemAdvancedIOBus();
     public static final ItemStockIOInterface stockIOInterface = new ItemStockIOInterface();

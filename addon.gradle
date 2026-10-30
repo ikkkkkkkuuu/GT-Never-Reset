@@ -176,6 +176,16 @@ tasks.register('checkWirelessFrequencyContracts', JavaExec) {
 
 tasks.named('check') { dependsOn 'checkWirelessFrequencyContracts' }
 
+tasks.register('checkWirelessPowerContracts', JavaExec) {
+    group = 'verification'
+    description = 'Checks wireless power accounting limits, persistence and device ownership.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'com.xyp.gtneverreset.utils.machine.WirelessPowerContracts'
+}
+
+tasks.named('check') { dependsOn 'checkWirelessPowerContracts' }
+
 // A running LaunchClassLoader keeps ZIP offsets. Rebuilding its JAR in place corrupts lazy class loads.
 // Give each game process its own copies, outside build/ so even clean cannot remove live inputs.
 afterEvaluate {
@@ -381,6 +391,21 @@ tasks.register('checkMEDataAccessContracts', JavaExec) {
 }
 
 tasks.named('check') { dependsOn 'checkMEDataAccessContracts' }
+
+tasks.register('checkRecipeThreadInputPreflightContracts', JavaExec) {
+    group = 'verification'
+    description = 'Checks ME energy rounding and real shortfalls for recipe input preflight.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'com.xyp.gtneverreset.utils.machine.RecipeThreadInputPreflightContracts'
+}
+
+tasks.named('check') { dependsOn 'checkRecipeThreadInputPreflightContracts' }
+
+// Contract checks run through JavaExec tasks attached to check; QA mods are not JUnit tests.
+tasks.named('test', Test).configure {
+    failOnNoDiscoveredTests = false
+}
 
 tasks.withType(Jar).matching { it.name in ['jar', 'shadowJar'] }.configureEach {
     from('licenses/me-data-access') { into 'META-INF/licenses/me-data-access' }

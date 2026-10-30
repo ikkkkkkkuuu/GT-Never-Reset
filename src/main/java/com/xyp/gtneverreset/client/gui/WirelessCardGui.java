@@ -50,7 +50,6 @@ import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 
 import org.jetbrains.annotations.NotNull;
@@ -85,8 +84,8 @@ import com.xyp.gtneverreset.client.event.WirelessCardInput;
 import com.xyp.gtneverreset.client.gui.WirelessCardGui.Layout;
 import com.xyp.gtneverreset.client.gui.WirelessCardGui.WirelessCardButton;
 import com.xyp.gtneverreset.client.render.WirelessWorldHighlightRender;
+import com.xyp.gtneverreset.common.gui.WirelessCardGuiTextures;
 import com.xyp.gtneverreset.container.WirelessCardContainer;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.wireless.InterfaceNameLocalization;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardVisualisation;
 import com.xyp.gtneverreset.utils.text.WirelessCardText;
@@ -752,9 +751,9 @@ public class WirelessCardGui extends WirelessCardPanel {
     @SideOnly(Side.CLIENT)
     public static class WirelessCardButton {
 
-        public static final UITexture[] BUTTON_TEXTURES = { buttonTexture(0), buttonTexture(1), buttonTexture(2) };
-        private static final UITexture TOGGLE_BACKGROUND = toggleTexture(255), TOGGLE_ON = toggleTexture(129),
-            TOGGLE_OFF = toggleTexture(128);
+        public static final UITexture[] BUTTON_TEXTURES = WirelessCardGuiTextures.BUTTONS;
+        private static final UITexture TOGGLE_BACKGROUND = WirelessCardGuiTextures.TOGGLE_BACKGROUND,
+            TOGGLE_ON = WirelessCardGuiTextures.TOGGLE_ON, TOGGLE_OFF = WirelessCardGuiTextures.TOGGLE_OFF;
         private static final IDrawable[] TINTED_BUTTONS = { tinted(BUTTON_TEXTURES[0]), tinted(BUTTON_TEXTURES[1]),
             tinted(BUTTON_TEXTURES[2]) };
         public final int id;
@@ -956,23 +955,6 @@ public class WirelessCardGui extends WirelessCardPanel {
                     widget.getArea().width < 102 ? label : tr("visualisation_button", label),
                     widget.getArea().width - 8);
             }
-        }
-
-        private static UITexture buttonTexture(int state) {
-            return UITexture.builder()
-                .location(new ResourceLocation("minecraft", "textures/gui/widgets.png"))
-                .imageSize(256, 256)
-                .subAreaXYWH(0, 46 + state * 20, 200, 20)
-                .adaptable(2)
-                .build();
-        }
-
-        private static UITexture toggleTexture(int icon) {
-            return UITexture.builder()
-                .location(ModList.AE2.getResourceLocation("textures/guis/states.png"))
-                .imageSize(256, 256)
-                .subAreaXYWH(icon % 16 * 16, icon / 16 * 16, 16, 16)
-                .build();
         }
 
         private static String tr(String key, Object... args) {
@@ -1629,13 +1611,7 @@ abstract class WirelessCardPanel extends ModularPanel {
     WirelessCardPanel(String name, WirelessCardContainer container) {
         super(name);
         this.container = container;
-        background(
-            UITexture.builder()
-                .location(ModList.AE2.getResourceLocation("textures/guis/wireless_network_manager.png"))
-                .imageSize(256, 256)
-                .subAreaXYWH(0, 0, 106, 232)
-                .adaptable(4)
-                .build());
+        background(WirelessCardGuiTextures.BACKGROUND);
         for (int id : new int[] { PREVIOUS_PAGE, NEXT_PAGE, REFRESH, BACK }) addButton(id);
         addRowButtons(TOGGLE_PAUSE, COPY_POSITION, HIGHLIGHT, TELEPORT);
     }

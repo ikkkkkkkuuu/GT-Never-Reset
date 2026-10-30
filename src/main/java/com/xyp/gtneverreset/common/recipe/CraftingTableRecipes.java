@@ -61,6 +61,17 @@ public final class CraftingTableRecipes {
         registerPackagedRecipes();
         registerWirelessTerminalRecipes(GTNRItemList.WirelessDualInterfaceTerminal.get(1));
         registerWirelessFrequencyCardRecipes();
+        GameRegistry.addShapelessRecipe(
+            GTNRItemList.WirelessPowerCard.get(1),
+            AEApi.instance()
+                .definitions()
+                .materials()
+                .advCard()
+                .maybeStack(1)
+                .get(),
+            ItemList.Sensor_LV.get(1),
+            ItemList.Emitter_LV.get(1),
+            ItemList.Circuit_Basic.get(1));
         registerWildcardPatternRecipes();
         registerAdvancedIORecipes();
         registerStockIOInterfaceRecipes();

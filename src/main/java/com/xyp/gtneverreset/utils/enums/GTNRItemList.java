@@ -28,6 +28,7 @@ public enum GTNRItemList implements IItemContainer {
 
     WirelessDualInterfaceTerminal,
     WirelessFrequencyCard,
+    WirelessPowerCard,
     WildcardPattern,
     StableEndCrystal,
 

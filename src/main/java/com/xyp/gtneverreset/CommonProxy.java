@@ -16,6 +16,7 @@ import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.world.ToolBeltEvents;
+import com.xyp.gtneverreset.common.world.WirelessPowerEvents;
 import com.xyp.gtneverreset.common.world.WirelessWorldListener;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.loader.ConfigLoader;
@@ -70,11 +71,13 @@ public class CommonProxy {
         GuiManager.registerFactory(AdvancedIOGui.FACTORY);
         GuiManager.registerFactory(StockIOGui.FACTORY);
         MachineLoader.registry();
+        var eventBus = FMLCommonHandler.instance()
+            .bus();
         MinecraftForge.EVENT_BUS.register(WirelessChannelManager.INSTANCE);
-        FMLCommonHandler.instance()
-            .bus()
-            .register(WirelessChannelManager.INSTANCE);
+        eventBus.register(WirelessChannelManager.INSTANCE);
         MinecraftForge.EVENT_BUS.register(WirelessAutoConnect.INSTANCE);
+        MinecraftForge.EVENT_BUS.register(WirelessPowerEvents.INSTANCE);
+        eventBus.register(WirelessPowerEvents.INSTANCE);
         MinecraftForge.EVENT_BUS.register(new WirelessWorldListener());
     }
 
@@ -108,6 +111,7 @@ public class CommonProxy {
     }
 
     public void serverStopped(FMLServerStoppedEvent event) {
+        WirelessPowerEvents.INSTANCE.clear();
         WirelessMonitorService.reset();
         FluxTransferScheduler.clear();
         WirelessChannelManager.clear();

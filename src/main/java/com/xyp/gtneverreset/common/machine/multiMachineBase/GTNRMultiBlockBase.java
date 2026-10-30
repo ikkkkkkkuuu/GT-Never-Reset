@@ -47,7 +47,6 @@ import gregtech.api.metatileentity.implementations.MTEExtendedPowerMultiBlockBas
 import gregtech.api.metatileentity.implementations.MTEHatch;
 import gregtech.api.recipe.check.CheckRecipeResult;
 import gregtech.api.recipe.check.CheckRecipeResultRegistry;
-import gregtech.api.recipe.check.SimpleCheckRecipeResult;
 import gregtech.api.recipe.check.SingleRecipeCheck;
 import gregtech.api.structure.error.ErrorType;
 import gregtech.api.structure.error.StructureError;
@@ -225,12 +224,8 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             if (!result.wasSuccessful()) return result;
             long eut = logic.getCalculatedEut();
             if (eut < 0 || !logic.canCommitInputs()) return CheckRecipeResultRegistry.INTERNAL_ERROR;
-            if (!RecipeThreadInputPreflight.canCommit(this, logic)) {
-                // #tr GT5U.gui.text.recipe_result.gtnr_thread_me_unavailable
-                // # Insufficient ME stock or network energy
-                // # zh_CN ME 库存或网络能源不足
-                return SimpleCheckRecipeResult.ofFailure("gtnr_thread_me_unavailable");
-            }
+            CheckRecipeResult inputResult = RecipeThreadInputPreflight.check(this, logic);
+            if (!inputResult.wasSuccessful()) return inputResult;
             if (eut > availableThreadPower()) return CheckRecipeResultRegistry.insufficientPower(eut);
             RecipeThreadTask task = new RecipeThreadTask(
                 slot,

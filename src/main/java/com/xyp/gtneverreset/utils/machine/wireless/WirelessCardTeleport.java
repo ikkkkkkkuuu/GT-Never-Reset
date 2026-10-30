@@ -54,7 +54,7 @@ public class WirelessCardTeleport {
         }
     }
 
-    static boolean teleport(EntityPlayerMP player, Address target) {
+    public static boolean teleport(EntityPlayerMP player, Address target) {
         WorldServer world = DimensionManager.getWorld(target.dimension());
         TileEntity tile = target.tile();
         if (world == null || tile == null || tile.isInvalid()) return fail(player, "teleport_unavailable");

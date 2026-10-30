@@ -51,6 +51,8 @@ public abstract class MixinWirelessControllerVersion implements WirelessControll
         gtnr$recordHatches(controller.mInputBusses, controller);
         gtnr$recordHatches(controller.mOutputBusses, controller);
         gtnr$recordHatches(controller.mDualInputHatches, controller);
+        gtnr$recordHatches(controller.mEnergyHatches, controller);
+        gtnr$recordHatches(controller.getExoticEnergyHatches(), controller);
         gtnr$recordedStructureVersion = gtnr$wirelessStructureVersion;
     }
 

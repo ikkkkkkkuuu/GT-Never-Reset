@@ -17,14 +17,15 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.BlockEvent;
 
+import com.gtnewhorizon.cropsnh.api.ICropStickTile;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
+import com.xyp.gtneverreset.utils.enums.ModList;
 
 import baubles.api.BaubleType;
 import baubles.api.IBauble;
 import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import ic2.api.crops.ICropTile;
 
 public final class HarvestRing extends Item implements IBauble {
 
@@ -84,23 +85,23 @@ public final class HarvestRing extends Item implements IBauble {
         Block block = world.getBlock(x, y, z);
         int meta = world.getBlockMetadata(x, y, z);
         TileEntity tile = world.getTileEntity(x, y, z);
-        ICropTile crop = tile instanceof ICropTile value ? value : null;
+        ICropStickTile crop = ModList.CropsNH.isModLoaded() && tile instanceof ICropStickTile value ? value : null;
         Item seed = block == Blocks.wheat ? Items.wheat_seeds
             : block == Blocks.carrots ? Items.carrot
                 : block == Blocks.potatoes ? Items.potato : block == Blocks.nether_wart ? Items.nether_wart : null;
         if (crop != null) {
-            if (crop.getCrop() == null || !crop.getCrop()
-                .canBeHarvested(crop)
-                || crop.getSize() < crop.getCrop()
-                    .getOptimalHavestSize(crop))
-                return;
+            if (!crop.canHarvest()) return;
         } else if (seed == null || meta < (block == Blocks.nether_wart ? 3 : 7)) return;
         if (!world.canMineBlock(player, x, y, z) || !player.canPlayerEdit(x, y, z, 1, ring)) return;
         if (MinecraftForge.EVENT_BUS.post(new BlockEvent.BreakEvent(x, y, z, world, block, meta, player))) return;
         if (crop != null) {
-            crop.harvest(true);
-            tile.markDirty();
-            crop.updateState();
+            List<ItemStack> drops = crop.harvest(1.0D);
+            if (drops != null) {
+                for (ItemStack drop : drops) {
+                    if (drop != null && drop.stackSize > 0) crop.dropItem(drop);
+                }
+                tile.markDirty();
+            }
             return;
         }
         List<ItemStack> drops = block.getDrops(world, x, y, z, meta, 0);
@@ -141,8 +142,8 @@ public final class HarvestRing extends Item implements IBauble {
     @SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, EntityPlayer player, List<String> lines, boolean advanced) {
         // #tr tooltip.gtnr.harvest_ring
-        // # Harvests IC2 and vanilla crops within 8 horizontal and 3 vertical blocks. Sneak to pause.
-        // # zh_CN 装备于 Baubles 戒指栏：收获作物架、小麦、胡萝卜、马铃薯和地狱疣。水平半径8格、上下3格，潜行暂停。
+        // # Harvests Crops NH and vanilla crops within 8 horizontal and 3 vertical blocks. Sneak to pause.
+        // # zh_CN 装备于 Baubles 戒指栏：收获 Crops NH 作物架、小麦、胡萝卜、马铃薯和地狱疣。水平半径8格、上下3格，潜行暂停。
         lines.add(StatCollector.translateToLocal("tooltip.gtnr.harvest_ring"));
     }
 }

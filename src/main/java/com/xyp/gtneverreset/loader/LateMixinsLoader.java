@@ -41,6 +41,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
                 mixins.add("gregtech.ModifySomeConfigs");
             }
             mixins.add("gregtech.ToolCraftingDurabilityMixin");
+            mixins.add("gregtech.WirelessPowerReceiverMixin");
             mixins.add("gregtech.AssemblyLineDataAccessMixin");
             mixins.addAll(
                 Arrays.asList(

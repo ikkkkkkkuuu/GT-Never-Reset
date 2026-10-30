@@ -22,6 +22,7 @@ import org.lwjgl.opengl.GL11;
 
 import com.github.bsideup.jabel.Desugar;
 import com.xyp.gtneverreset.container.WirelessCardContainer;
+import com.xyp.gtneverreset.container.WirelessPowerCardContainer;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.relauncher.Side;
@@ -61,7 +62,9 @@ public class WirelessWorldHighlightRender {
                 .distinct()
                 .collect(Collectors.toList()),
             Minecraft.getSystemTime() + DURATION_MS);
-        if (!targets.isEmpty() && mc.thePlayer != null && mc.thePlayer.openContainer instanceof WirelessCardContainer) {
+        if (!targets.isEmpty() && mc.thePlayer != null
+            && (mc.thePlayer.openContainer instanceof WirelessCardContainer
+                || mc.thePlayer.openContainer instanceof WirelessPowerCardContainer)) {
             // Use the same eye position as vanilla ray tracing (including the 1.7.10 client player offset).
             var player = mc.thePlayer;
             var eyes = player.getPosition(1.0F);
