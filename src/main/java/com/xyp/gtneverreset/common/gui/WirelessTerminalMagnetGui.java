@@ -34,10 +34,10 @@ public final class WirelessTerminalMagnetGui implements ICustomButtonDataObject 
         modes = new GuiFCImgButton[3];
         String[] values = { "OFF", "INV", "ME" };
         for (int i = 0; i < modes.length; i++) {
-            modes[i] = new GuiFCImgButton(left + width - 17, top + height - 65, "MAGNET_CARD", values[i]);
+            modes[i] = new GuiFCImgButton(left + width - 17, top + height - 89, "MAGNET_CARD", values[i]);
             buttons.add(modes[i]);
         }
-        filter = new GuiFCImgButton(left + width - 17, top + height - 45, "MAGNET_CARD", "FILTER");
+        filter = new GuiFCImgButton(left + width - 17, top + height - 69, "MAGNET_CARD", "FILTER");
         buttons.add(filter);
         updateVisibility();
     }

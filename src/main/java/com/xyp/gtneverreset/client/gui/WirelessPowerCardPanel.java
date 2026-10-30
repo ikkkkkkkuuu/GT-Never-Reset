@@ -3,7 +3,10 @@ package com.xyp.gtneverreset.client.gui;
 import static com.xyp.gtneverreset.common.gui.WirelessPowerCardGui.*;
 import static net.minecraft.client.gui.Gui.drawRect;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -29,6 +32,7 @@ import org.lwjgl.opengl.GL11;
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.layout.IViewportStack;
 import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.drawable.UITexture;
@@ -114,7 +118,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         // # Refresh
         // # zh_CN 刷新
         refresh = button(() -> tr("power.gui.refresh"), REFRESH, () -> "", () -> true);
-        sourceLink = new ButtonWidget<>().background(IDrawable.EMPTY)
+        sourceLink = new CardButton().background(IDrawable.EMPTY)
             .hoverBackground(IDrawable.EMPTY)
             .onMousePressed(mouse -> {
                 if (mouse == 0) session.request(SOURCES, "");
@@ -131,7 +135,13 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         // #tr power.gui.search
         // # Search devices, sources or coordinates...
         // # zh_CN 搜索设备、电网或坐标…
-        search = new TextFieldWidget().background(
+        search = new TextFieldWidget() {
+
+            @Override
+            public boolean canBeSeen(IViewportStack stack) {
+                return isEnabled() && super.canBeSeen(stack);
+            }
+        }.background(
             new Rectangle().color(0xff000000),
             new Rectangle().color(0xffa0a0a0)
                 .hollow(1))
@@ -162,7 +172,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
                 () -> row(index).getString("id"),
                 () -> !selected(index));
             select[i].setEnabledIf(widget -> sources() && hasRow(index));
-            sourceRows[i] = new ButtonWidget<>().background(IDrawable.EMPTY)
+            sourceRows[i] = new CardButton().background(IDrawable.EMPTY)
                 .hoverBackground(IDrawable.EMPTY)
                 .onMousePressed(mouse -> {
                     if (mouse == 0) session.request(SELECT, row(index).getString("id"));
@@ -205,7 +215,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             highlight[i].setEnabledIf(widget -> device(index));
             power[i] = toggle(() -> !row(index).getBoolean("paused"), PAUSE, () -> row(index).getString("id"));
             power[i].setEnabledIf(widget -> device(index));
-            deviceRows[i] = new ButtonWidget<>().background(IDrawable.EMPTY)
+            deviceRows[i] = new CardButton().background(IDrawable.EMPTY)
                 .hoverBackground(IDrawable.EMPTY)
                 .onMousePressed(mouse -> {
                     if (mouse == 0 && row(index).getBoolean("group")) session.request(OPEN, row(index).getString("id"));
@@ -217,7 +227,16 @@ public final class WirelessPowerCardPanel extends ModularPanel {
                 tooltip.addLine(deviceName(row));
                 tooltip.addLine(position(row, true));
                 tooltip.addLine(row.getString("sourceName"));
-                tooltip.addLine(compact(Long.toString(row.getLong("transfer"))) + " EU/t");
+                if (row.hasKey("recipeEUt")) {
+                    // #tr power.gui.recipe_usage
+                    // # Recipe consumption: %s EU/t
+                    // # zh_CN 配方耗电：%s EU/t
+                    tooltip.addLine(tr("power.gui.recipe_usage", compact(Long.toString(row.getLong("recipeEUt")))));
+                }
+                // #tr power.gui.wireless_input
+                // # Wireless input (1s avg): %s EU/t
+                // # zh_CN 无线供电（近1秒平均）：%s EU/t
+                tooltip.addLine(tr("power.gui.wireless_input", rate(row.getDouble("transfer"))));
                 if (!row.getBoolean("loaded")) {
                     // #tr power.gui.unloaded_hint
                     // # This chunk is not loaded. The connection is kept and resumes when the chunk loads.
@@ -516,7 +535,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
     }
 
     private ButtonWidget<?> button(Supplier<String> label, Runnable action, BooleanSupplier available) {
-        ButtonWidget<?> button = new ButtonWidget<>();
+        ButtonWidget<?> button = new CardButton();
         IDrawable background = (context, x, y, width, height,
             theme) -> tinted(
                 WirelessCardGuiTextures.BUTTONS[!available.getAsBoolean() ? 0 : button.isHovering() ? 2 : 1])
@@ -537,6 +556,11 @@ public final class WirelessPowerCardPanel extends ModularPanel {
 
     private ToggleButton toggle(BooleanSupplier on, int action, Supplier<String> target) {
         ToggleButton button = new ToggleButton() {
+
+            @Override
+            public boolean canBeSeen(IViewportStack stack) {
+                return isEnabled() && super.canBeSeen(stack);
+            }
 
             @Override
             public @NotNull Result onMousePressed(int button) {
@@ -598,6 +622,22 @@ public final class WirelessPowerCardPanel extends ModularPanel {
     private static String compact(String value) {
         return value.length() <= 10 ? value
             : value.substring(0, 1) + "." + value.substring(1, 4) + "e" + (value.length() - 1);
+    }
+
+    private static String rate(double value) {
+        return value < 1_000_000_000 ? BigDecimal.valueOf(value)
+            .setScale(2, RoundingMode.HALF_UP)
+            .stripTrailingZeros()
+            .toPlainString() : String.format(Locale.ROOT, "%.3e", value);
+    }
+
+    private static final class CardButton extends ButtonWidget<CardButton> {
+
+        @Override
+        public boolean canBeSeen(IViewportStack stack) {
+            // ModularUI draws a dragged panel with ignoreEnabled=true, including its hidden children.
+            return isEnabled() && super.canBeSeen(stack);
+        }
     }
 
     private static final class Portrait {

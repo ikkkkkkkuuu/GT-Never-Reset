@@ -12,6 +12,7 @@ import net.minecraft.world.World;
 
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.PackagedConnectorPacket;
@@ -71,6 +72,16 @@ public final class ItemWirelessConnector extends Item {
     public static void use(EntityPlayer player, int x, int y, int z, int face) {
         World world = player.worldObj;
         ItemStack held = player.getHeldItem();
+        if (world.getTileEntity(x, y, z) instanceof TileEntityOverloadedProvider provider) {
+            if (player.isSneaking() || !provider.canConfigure(player)) return;
+            if (!held.hasTagCompound()) held.setTagCompound(new NBTTagCompound());
+            NBTTagCompound selected = new PackagedTarget(world.provider.dimensionId, x, y, z, face).write();
+            selected.setString("HostType", "overloaded_provider");
+            held.getTagCompound()
+                .setTag("SelectedProvider", selected);
+            player.addChatMessage(new ChatComponentTranslation("chat.packaged.selected", x, y, z));
+            return;
+        }
         if (world.getTileEntity(x, y, z) instanceof TileEntityPackagedProvider provider) {
             if (player.isSneaking() || !provider.canConfigure(player)) return;
             if (!held.hasTagCompound()) held.setTagCompound(new NBTTagCompound());
@@ -86,6 +97,13 @@ public final class ItemWirelessConnector extends Item {
         }
         if (!player.isSneaking()) return;
         PackagedTarget selected = selection(held);
+        if (selected != null && selected.resolve(world) instanceof TileEntityOverloadedProvider provider) {
+            if (!provider.canConfigure(player)) return;
+            boolean bound = provider.bind(new PackagedTarget(world.provider.dimensionId, x, y, z, face));
+            player.addChatMessage(
+                new ChatComponentTranslation(bound ? "chat.packaged.bound" : "chat.packaged.bind_failed", x, y, z));
+            return;
+        }
         if (selected == null || !(selected.resolve(world) instanceof TileEntityPackagedProvider provider)
             || !provider.canConfigure(player)) {
             // #tr chat.packaged.no_selection
@@ -109,6 +127,10 @@ public final class ItemWirelessConnector extends Item {
 
     @Override
     public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean advanced) {
+        // #tr tooltip.overloaded.connector
+        // # Also links Overloaded Wireless Pattern Providers: same dimension, 128 blocks, up to 1024 machines.
+        // # zh_CN 同样支持过载无线样板供应器：同维度，128 格内，最多 1024 台机器。
+        lines.add(StatCollector.translateToLocal("tooltip.overloaded.connector"));
         // #tr tooltip.packaged.connector_info
         // # Links a Wireless Packaged Pattern Provider to its machines.
         // # zh_CN 将无线封包样板供应器连接至目标机器。

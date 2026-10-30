@@ -409,4 +409,6 @@ tasks.named('test', Test).configure {
 
 tasks.withType(Jar).matching { it.name in ['jar', 'shadowJar'] }.configureEach {
     from('licenses/me-data-access') { into 'META-INF/licenses/me-data-access' }
+    from('licenses/overloaded-provider') { into 'META-INF/licenses/overloaded-provider' }
+    from('licenses/overloaded-singleblock') { into 'META-INF/licenses/overloaded-singleblock' }
 }

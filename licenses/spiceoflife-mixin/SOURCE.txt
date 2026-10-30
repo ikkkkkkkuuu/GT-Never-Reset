@@ -1,0 +1,4 @@
+Source: adjacent GT-Not-Good/src/main/java/com/xyp/gtnotgood/mixins/late/spiceoflife/MixinFoodModifier.java.
+Ported at user request; source checkout has no root license.
+Changes: namespace, GTNHLib configuration integration and server configuration synchronization.
+Behavior: optionally return the full food modifier while preserving food history and unrelated Spice of Life features.

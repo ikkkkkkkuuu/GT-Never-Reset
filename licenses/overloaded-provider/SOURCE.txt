@@ -1,0 +1,18 @@
+Feature reference: AE2 Lightning Tech, MOAKIEE.
+Original repository: https://github.com/MOAKIEE/AE2-Lightning-Tech
+Available source mirror: https://github.com/BusyOrc/ae2lt
+Reference revision: ab7807ccdefef89165ebfb0fd722143707ea361a
+The Minecraft 1.7.10 implementation is written for GT-Never-Reset, using the upstream guide as a behavior reference.
+Texture copied without modification:
+  upstream: src/main/resources/assets/ae2lt/textures/block/overloaded_pattern_provider.png
+  local: src/main/resources/assets/gtneverreset/textures/blocks/overloaded_provider.png
+Texture author: MOAKIEE / AE2 Lightning Tech contributors.
+Texture license: CC BY-NC-SA 3.0, see LICENSE_ASSETS.md.
+
+Connection overlay behavior reference at the same revision:
+  src/main/java/com/moakiee/ae2lt/client/WirelessConnectorRenderer.java
+The local shared renderer follows the upstream host/face/preview colors, internal
+host cube, face offset, and center-to-face line endpoints. Client connection
+snapshots use Forge 1.7.10 tile update packets. Existing local connector rules
+(Shift binding, one connection per target machine, and range validation) remain.
+Upstream code license: LGPL-3.0, see LICENSE-CODE-LGPL-3.0.txt.

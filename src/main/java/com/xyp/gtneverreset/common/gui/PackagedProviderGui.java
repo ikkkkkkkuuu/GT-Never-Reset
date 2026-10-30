@@ -54,19 +54,15 @@ public final class PackagedProviderGui {
         FRAME_FILL.draw(context, x + 169, y, 14, 245, theme);
         FRAME_RIGHT.draw(context, x + 183, y, 7, 245, theme);
     };
-    private static final UITexture PATTERN_SLOT = texture("ex_pattern_provider", 256, 256, 7, 41, 18, 18);
+    private static final UITexture PATTERN_SLOT = PatternProviderGuiTextures.PATTERN_SLOT;
     private static final UITexture CORE_FRAME = texture("extra_panels", 128, 128, 0, 0, 28, 30);
-    private static final UITexture BUTTON = texture("states", 256, 256, 176, 128, 18, 20);
-    private static final UITexture HOVER = texture("states", 256, 256, 212, 128, 18, 20);
+    private static final UITexture BUTTON = PatternProviderGuiTextures.BUTTON;
+    private static final UITexture HOVER = PatternProviderGuiTextures.HOVER;
     private static final UITexture OPTIMIZATION_ON = optimizationIcon(178);
     private static final UITexture OPTIMIZATION_OFF = optimizationIcon(194);
 
     private static UITexture texture(String name, int w, int h, int x, int y, int width, int height) {
-        return UITexture.builder()
-            .location(ModList.ModIds.GT_NEVER_RESET, "gui/packaged/" + name)
-            .imageSize(w, h)
-            .subAreaXYWH(x, y, width, height)
-            .build();
+        return PatternProviderGuiTextures.texture(name, w, h, x, y, width, height);
     }
 
     private static UITexture icon(String name) {

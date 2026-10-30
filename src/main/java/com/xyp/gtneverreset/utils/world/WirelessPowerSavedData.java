@@ -19,6 +19,7 @@ import net.minecraftforge.common.DimensionManager;
 
 import com.mojang.authlib.GameProfile;
 import com.xyp.gtneverreset.utils.machine.IWirelessPowerReceiver;
+import com.xyp.gtneverreset.utils.machine.WirelessPowerTransfer.TransferRate;
 
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.common.misc.GlobalVariableStorage;
@@ -188,7 +189,7 @@ public final class WirelessPowerSavedData extends WorldSavedData {
         public final String name;
         private boolean paused;
         private WeakReference<BaseMetaTileEntity> loaded = new WeakReference<>(null);
-        private long lastTick = Long.MIN_VALUE, lastTransfer;
+        private final TransferRate transferRate = new TransferRate();
 
         private Connection(UUID id, UUID owner, UUID source, BaseMetaTileEntity tile) {
             this.id = id;
@@ -233,9 +234,10 @@ public final class WirelessPowerSavedData extends WorldSavedData {
 
         public void observed(BaseMetaTileEntity tile, long transferred) {
             if (loaded.get() != tile) loaded = new WeakReference<>(tile);
-            lastTick = tile.getWorld()
-                .getTotalWorldTime();
-            lastTransfer = transferred;
+            transferRate.record(
+                tile.getWorld()
+                    .getTotalWorldTime(),
+                transferred);
         }
 
         public BaseMetaTileEntity loadedTile() {
@@ -259,10 +261,12 @@ public final class WirelessPowerSavedData extends WorldSavedData {
                 || !id.equals(((IWirelessPowerReceiver) tile).gtnr$powerConnection());
         }
 
-        public long lastTransfer() {
+        public double averageTransfer() {
             BaseMetaTileEntity tile = loadedTile();
-            return tile != null && tile.getWorld()
-                .getTotalWorldTime() - lastTick <= 1 ? lastTransfer : 0;
+            return tile == null ? 0
+                : transferRate.average(
+                    tile.getWorld()
+                        .getTotalWorldTime());
         }
 
         public NBTTagCompound write() {

@@ -21,6 +21,8 @@ import net.minecraftforge.event.world.BlockEvent;
 import org.lwjgl.input.Mouse;
 
 import com.cleanroommc.modularui.screen.GuiContainerWrapper;
+import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.screen.viewport.LocatedWidget;
 import com.xyp.gtneverreset.client.gui.WirelessPowerCardPanel;
 import com.xyp.gtneverreset.common.gui.WirelessPowerCardGui;
 import com.xyp.gtneverreset.common.gui.WirelessPowerCardGui.Session;
@@ -46,6 +48,10 @@ import gregtech.api.metatileentity.implementations.MTEHatchInputBus;
 import gregtech.api.metatileentity.implementations.MTEHatchMaintenance;
 import gregtech.api.metatileentity.implementations.MTEHatchMuffler;
 import gregtech.api.metatileentity.implementations.MTEHatchOutputBus;
+import gregtech.api.recipe.RecipeMap;
+import gregtech.api.recipe.RecipeMaps;
+import gregtech.api.util.GTRecipe;
+import gregtech.api.util.GTUtility;
 import gregtech.common.misc.WirelessNetworkManager;
 import gregtech.common.tileentities.machines.multi.MTEElectricBlastFurnace;
 import tectech.thing.metaTileEntity.hatch.MTEHatchEnergyTunnel;
@@ -60,6 +66,11 @@ public final class WirelessPowerChecks {
     private int ticks, frames, useDelay;
     private volatile int stage;
     private volatile String requestedSource;
+    private volatile String clientFailure;
+    private boolean dragging;
+    private int panelBeforeX, panelBeforeY, usageStart, usageFrames;
+    private BaseMetaTileEntity wiremill, bender;
+    private GTRecipe wireRecipe, bendRecipe;
     private ItemStack card, machine;
     private BaseMetaTileEntity receiver, automatic, canceled, furnace, energyA, energyB;
 
@@ -76,7 +87,7 @@ public final class WirelessPowerChecks {
         Minecraft mc = Minecraft.getMinecraft();
         mc.gameSettings.pauseOnLostFocus = false;
         mc.gameSettings.guiScale = 2;
-        Mouse.setCursorPosition(0, 0);
+        if (!dragging && stage < 23) Mouse.setCursorPosition(0, 0);
         if (!started && mc.theWorld == null && mc.currentScreen != null) {
             started = true;
             mc.launchIntegratedServer(
@@ -128,6 +139,7 @@ public final class WirelessPowerChecks {
             .getMinecraftServerInstance();
         if (server == null || server.getConfigurationManager().playerEntityList.isEmpty()) return;
         try {
+            if (clientFailure != null) throw new AssertionError(clientFailure);
             EntityPlayerMP player = (EntityPlayerMP) server.getConfigurationManager().playerEntityList.get(0);
             ticks++;
             if (ticks == 1) setup(player);
@@ -250,6 +262,44 @@ public final class WirelessPowerChecks {
                 stage = 18;
             }
             if (stage == 19) {
+                wiremill = place(
+                    player,
+                    8,
+                    registered(
+                        meta -> meta instanceof MTEBasicMachine basic && basic.maxEUInput() == 32
+                            && basic.getRecipeMap() == RecipeMaps.wiremillRecipes));
+                bender = place(
+                    player,
+                    10,
+                    registered(
+                        meta -> meta instanceof MTEBasicMachine basic && basic.maxEUInput() == 32
+                            && basic.getRecipeMap() == RecipeMaps.benderRecipes));
+                wireRecipe = recipe(RecipeMaps.wiremillRecipes, 4);
+                bendRecipe = recipe(RecipeMaps.benderRecipes, 24);
+                usageStart = ticks;
+                stage = 20;
+            }
+            if (stage == 20 && ticks >= usageStart + 10) {
+                player.playerNetServerHandler.setPlayerLocation(9, 10, -3, 0, -90);
+                WirelessNetworkManager.setUserEU(sourceB, BigInteger.valueOf(100000000));
+                require(
+                    WirelessPowerTransfer.connect(wiremill, player, sourceB)
+                        && WirelessPowerTransfer.connect(bender, player, sourceB),
+                    "connect real LV wiremill and bender");
+                feed(wiremill, wireRecipe);
+                feed(bender, bendRecipe);
+                stage = 21;
+            }
+            if (stage == 21 && ticks >= usageStart + 60) {
+                require(
+                    ((MTEBasicMachine) wiremill.getMetaTileEntity()).mEUt == 4 && wiremill.isActive(),
+                    "wiremill runs an actual 4 EU/t recipe");
+                require(
+                    ((MTEBasicMachine) bender.getMetaTileEntity()).mEUt == 24 && bender.isActive(),
+                    "bender runs an actual 24 EU/t recipe");
+                stage = 23;
+            }
+            if (stage == 25) {
                 finished = true;
                 System.out.println("WIRELESS_POWER_QA: PASS");
                 Minecraft.getMinecraft()
@@ -267,6 +317,37 @@ public final class WirelessPowerChecks {
                     () -> Minecraft.getMinecraft()
                         .shutdown());
         }
+    }
+
+    private static GTRecipe recipe(RecipeMap<?> map, int eut) {
+        return map.getAllRecipes()
+            .stream()
+            .filter(
+                recipe -> recipe.mEUt == eut && recipe.mDuration >= 200
+                    && recipe.mFluidInputs.length == 0
+                    && recipe.mInputs.length <= 2
+                    && recipe.mInputs.length > 0)
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Missing test recipe at " + eut + " EU/t"));
+    }
+
+    private static void feed(BaseMetaTileEntity tile, GTRecipe recipe) {
+        MTEBasicMachine machine = (MTEBasicMachine) tile.getMetaTileEntity();
+        machine.setEUVar(tile.getEUCapacity());
+        int slot = machine.getInputSlot();
+        for (ItemStack input : recipe.mInputs) {
+            if (input == null) continue;
+            ItemStack stack = input.copy();
+            if (stack.getItem() == GTUtility.getIntegratedCircuit(0)
+                .getItem()) {
+                stack.stackSize = 1;
+                tile.setInventorySlotContents(machine.getCircuitSlot(), stack);
+            } else {
+                stack.stackSize = Math.min(64, Math.max(1, stack.stackSize) * 16);
+                tile.setInventorySlotContents(slot++, stack);
+            }
+        }
+        tile.markDirty();
     }
 
     private void setupMultiblock(EntityPlayerMP player) {
@@ -493,6 +574,52 @@ public final class WirelessPowerChecks {
                     .size() > 1,
                 "controller detail opens in a popup");
             screenshot("wireless-power-controller.png");
+            ModularPanel details = wrapper.getScreen()
+                .getPanelManager()
+                .getTopMostPanel();
+            panelBeforeX = details.getArea().x;
+            panelBeforeY = details.getArea().y;
+            dragging = true;
+            require(
+                details.getContext()
+                    .onHoveredClick(0, LocatedWidget.of(details)),
+                "start controller popup drag through ModularUI");
+            Mouse.setCursorPosition(20, 20);
+        }
+        if (frames == 235 && stage == 7) {
+            ModularPanel details = wrapper.getScreen()
+                .getPanelManager()
+                .getTopMostPanel();
+            require(
+                details.getContext()
+                    .hasDraggable(),
+                "popup remains in the actual moving render path");
+            screenshot("wireless-power-dragging.png");
+            int hidden = 0;
+            for (var child : details.getChildren()) {
+                if (child.isEnabled()) continue;
+                hidden++;
+                if (child.canBeSeen(details.getContext()))
+                    clientFailure = "hidden controls became visible while dragging";
+            }
+            require(hidden > 0, "drag regression covers hidden search, source controls and empty rows");
+            if (clientFailure != null) return;
+            details.getContext()
+                .dropDraggable(false);
+            dragging = false;
+        }
+        if (frames == 245 && stage == 7) {
+            ModularPanel details = wrapper.getScreen()
+                .getPanelManager()
+                .getTopMostPanel();
+            require(
+                details.getArea().x != panelBeforeX || details.getArea().y != panelBeforeY,
+                "popup retains its new position after dropping");
+            require(
+                session.display()
+                    .getInteger("total") == 2,
+                "dragging preserves the two real energy inputs");
+            screenshot("wireless-power-dragged.png");
             session.request(WirelessPowerCardGui.CLOSE, "");
             stage = 8;
         }
@@ -529,6 +656,29 @@ public final class WirelessPowerChecks {
                     .getBoolean("group"),
                 "controller row disappears after its last connected input is removed");
             stage = 19;
+        }
+        if (stage == 23 && session.display()
+            .getInteger("total") == 3) {
+            require(
+                session.row(1)
+                    .getLong("recipeEUt") == 4
+                    && session.row(2)
+                        .getLong("recipeEUt") == 24,
+                "GUI distinguishes 4 and 24 EU/t recipe consumption from LV packet size");
+            require(
+                session.row(1)
+                    .getDouble("transfer") > 0
+                    && session.row(2)
+                        .getDouble("transfer") > 0,
+                "low-consumption working machines show nonzero averaged wireless input");
+            stage = 24;
+            int x = (panel.getArea().x + 60) * 2;
+            int y = mc.displayHeight - (panel.getArea().y + 82 + 24 + 8) * 2;
+            Mouse.setCursorPosition(x, y);
+        }
+        if (stage == 24 && ++usageFrames == 70) {
+            screenshot("wireless-power-usage.png");
+            stage = 25;
         }
     }
 

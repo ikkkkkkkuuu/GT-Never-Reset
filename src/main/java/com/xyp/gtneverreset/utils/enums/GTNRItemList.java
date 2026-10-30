@@ -39,6 +39,7 @@ public enum GTNRItemList implements IItemContainer {
     // region 方块
     EddingtonWallCasing,
     WirelessPackagedPatternProvider,
+    OverloadedWirelessPatternProvider,
     StockIOInterface,
     FluxPlug,
     FluxPoint,

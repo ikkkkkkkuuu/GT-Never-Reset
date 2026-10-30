@@ -7,7 +7,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.entity.Entity;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
@@ -17,6 +19,7 @@ import net.minecraftforge.event.world.WorldEvent;
 import org.lwjgl.opengl.GL11;
 
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessConnector;
 
@@ -27,7 +30,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 /**
  * Ports LT's held-connector overlay to Forge 1.7.10: blue bindings, yellow selection/preview,
  * an occluded inner host cube and lines ending at bound face centers. Only loaded hosts are inspected.
- * Source revision and geometry/render-state adaptations are recorded in CODE_PORT_NOTES.md.
+ * Connection coordinates are read from the server snapshot without loading target chunks.
  */
 @SideOnly(Side.CLIENT)
 public final class WirelessConnectorRenderer {
@@ -37,7 +40,7 @@ public final class WirelessConnectorRenderer {
     private static final int YELLOW_FACE = 0x60FFFF00;
     private static final int YELLOW_LINE = 0xC0FFFF00;
     private final List<PackagedTarget> hosts = new ArrayList<>();
-    private final List<TileEntityPackagedProvider> visible = new ArrayList<>();
+    private final List<TileEntity> visible = new ArrayList<>();
     private World cachedWorld;
     private long nextScan;
 
@@ -67,7 +70,8 @@ public final class WirelessConnectorRenderer {
         if (held == null || !(held.getItem() instanceof ItemWirelessConnector)) return;
         PackagedTarget selected = ItemWirelessConnector.selection(held);
         if (selected != null) {
-            if (selected.resolve(world) instanceof TileEntityPackagedProvider provider) visible.add(provider);
+            TileEntity provider = selected.resolve(world);
+            if (isProvider(provider) && matchesSelection(held, provider)) visible.add(provider);
         } else {
             if (world.getTotalWorldTime() >= nextScan) {
                 nextScan = world.getTotalWorldTime() + 4;
@@ -77,7 +81,8 @@ public final class WirelessConnectorRenderer {
                 int minZ = ((int) Math.floor(mc.thePlayer.posZ) - 64) >> 4;
                 int maxZ = ((int) Math.floor(mc.thePlayer.posZ) + 64) >> 4;
                 for (Object tile : world.loadedTileEntityList) {
-                    if (tile instanceof TileEntityPackagedProvider provider && !provider.isInvalid()
+                    if (tile instanceof TileEntity provider && isProvider(provider)
+                        && !provider.isInvalid()
                         && (provider.xCoord >> 4) >= minX
                         && (provider.xCoord >> 4) <= maxX
                         && (provider.zCoord >> 4) >= minZ
@@ -93,8 +98,8 @@ public final class WirelessConnectorRenderer {
                 }
             }
             for (PackagedTarget host : hosts) {
-                if (host.resolve(world) instanceof TileEntityPackagedProvider provider && !provider.isInvalid())
-                    visible.add(provider);
+                TileEntity provider = host.resolve(world);
+                if (isProvider(provider) && !provider.isInvalid()) visible.add(provider);
             }
         }
         if (visible.isEmpty()) return;
@@ -122,7 +127,7 @@ public final class WirelessConnectorRenderer {
             Tessellator t = Tessellator.instance;
             t.startDrawingQuads();
             color(t, selected == null ? 0x800080FF : 0x80FFFF00);
-            for (TileEntityPackagedProvider provider : visible) {
+            for (TileEntity provider : visible) {
                 for (int face = 0; face < 6; face++) {
                     quad(t, provider.xCoord + .25, provider.yCoord + .25, provider.zCoord + .25, .5, face, 0);
                 }
@@ -133,8 +138,8 @@ public final class WirelessConnectorRenderer {
             GL11.glBlendFunc(GL11.GL_DST_COLOR, GL11.GL_SRC_COLOR);
             t.startDrawingQuads();
             color(t, BLUE_FACE);
-            for (TileEntityPackagedProvider provider : visible) {
-                for (PackagedTarget target : provider.connections()) {
+            for (TileEntity provider : visible) {
+                for (PackagedTarget target : connections(provider)) {
                     if (target.dimension == world.provider.dimensionId)
                         quad(t, target.x, target.y, target.z, 1, target.face, .001);
                 }
@@ -149,8 +154,8 @@ public final class WirelessConnectorRenderer {
             GL11.glLineWidth(3);
             t.startDrawing(GL11.GL_LINES);
             color(t, BLUE_LINE);
-            for (TileEntityPackagedProvider provider : visible) {
-                for (PackagedTarget target : provider.connections()) {
+            for (TileEntity provider : visible) {
+                for (PackagedTarget target : connections(provider)) {
                     if (target.dimension == world.provider.dimensionId) line(t, provider, target);
                 }
             }
@@ -166,7 +171,7 @@ public final class WirelessConnectorRenderer {
     }
 
     /** Matches direct binding: an already-bound block cannot acquire another lane through a different face. */
-    private static PackagedTarget preview(Minecraft mc, TileEntityPackagedProvider provider) {
+    private static PackagedTarget preview(Minecraft mc, TileEntity provider) {
         MovingObjectPosition hit = mc.objectMouseOver;
         if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK
             || hit.sideHit < 0
@@ -178,18 +183,39 @@ public final class WirelessConnectorRenderer {
             hit.blockZ,
             hit.sideHit);
         if (target.resolve(mc.theWorld) == null || target.resolve(mc.theWorld) == provider
-            || provider.connections()
-                .size() >= TileEntityPackagedProvider.MAX_TARGETS)
-            return null;
-        for (PackagedTarget bound : provider.connections()) if (bound.sameBlock(target)) return null;
+            || connections(provider).size() >= TileEntityPackagedProvider.MAX_TARGETS) return null;
+        if (provider instanceof TileEntityOverloadedProvider) {
+            double dx = (double) target.x - provider.xCoord, dy = (double) target.y - provider.yCoord,
+                dz = (double) target.z - provider.zCoord;
+            if (!(target.resolve(mc.theWorld) instanceof IInventory) || dx * dx + dy * dy + dz * dz
+                > TileEntityOverloadedProvider.RANGE * TileEntityOverloadedProvider.RANGE) return null;
+        }
+        for (PackagedTarget bound : connections(provider)) if (bound.sameBlock(target)) return null;
         return target;
+    }
+
+    private static boolean isProvider(TileEntity tile) {
+        return tile instanceof TileEntityPackagedProvider || tile instanceof TileEntityOverloadedProvider;
+    }
+
+    private static boolean matchesSelection(ItemStack stack, TileEntity tile) {
+        String type = stack.getTagCompound()
+            .getCompoundTag("SelectedProvider")
+            .getString("HostType");
+        return tile instanceof TileEntityOverloadedProvider ? "overloaded_provider".equals(type)
+            : type.isEmpty() || "provider".equals(type);
+    }
+
+    private static List<PackagedTarget> connections(TileEntity tile) {
+        return tile instanceof TileEntityOverloadedProvider provider ? provider.visibleConnections()
+            : ((TileEntityPackagedProvider) tile).connections();
     }
 
     private static void color(Tessellator t, int argb) {
         t.setColorRGBA(argb >> 16 & 255, argb >> 8 & 255, argb & 255, argb >>> 24);
     }
 
-    private static void line(Tessellator t, TileEntityPackagedProvider provider, PackagedTarget target) {
+    private static void line(Tessellator t, TileEntity provider, PackagedTarget target) {
         ForgeDirection direction = ForgeDirection.getOrientation(target.face);
         t.addVertex(provider.xCoord + .5, provider.yCoord + .5, provider.zCoord + .5);
         t.addVertex(

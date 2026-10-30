@@ -33,7 +33,29 @@ public final class WirelessPowerContracts {
             require(transferred.longValueExact() == voltage * amperes, "safe long multiplication");
         }
         persistence();
+        transferRate();
         System.out.println("Wireless power contracts passed: 10000 transfer cases and persistence/access checks");
+    }
+
+    private static void transferRate() {
+        var rate = new WirelessPowerTransfer.TransferRate();
+        for (int tick = 0; tick < 80; tick++) {
+            rate.record(tick, 0);
+            if (tick % 8 == 0) rate.record(tick, 32);
+            if (tick >= 20) require(rate.average(tick) > 0, "4 EU/t receiver remains visible between LV packets");
+        }
+        require(Math.abs(rate.average(79) - 3.2) < 1e-9, "20-tick average preserves fractional EU/t");
+        require(rate.average(100) == 0, "stopped transfer expires after the window");
+        rate.record(100, 32);
+        require(Math.abs(rate.average(100) - 1.6) < 1e-9, "gap clears old samples");
+        rate.record(100, 64);
+        require(Math.abs(rate.average(100) - 3.2) < 1e-9, "same-tick accounting replaces rather than doubles samples");
+        rate.record(1, 20);
+        require(rate.average(1) == 1, "time reset discards old history");
+        for (int tick = 2; tick <= 21; tick++) rate.record(tick, Long.MAX_VALUE);
+        require(rate.average(21) == (double) Long.MAX_VALUE, "high-tier sampling does not overflow a long sum");
+        for (int tick = 22; tick <= 41; tick++) rate.record(tick, 0);
+        require(rate.average(41) == 0, "idle input becomes zero");
     }
 
     private static void persistence() {

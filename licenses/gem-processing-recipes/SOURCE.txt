@@ -1,0 +1,5 @@
+Source: adjacent GT-Not-Good/src/main/java/com/xyp/gtnotgood/common/recipe/gregtech/.
+Files: FurnaceRecipes.java, BenderRecipes.java, ExtruderRecipes.java.
+Ported at user request; source checkout has no root license.
+Changes: namespace and recipe-loader integration; only the five gem-related bender recipes are included, excluding the iridium alloy recipe.
+Extruder recipes retain the source material filters, standard lathe-route validation, duplicate checks, amounts, duration and EU calculation, and load during load-complete.

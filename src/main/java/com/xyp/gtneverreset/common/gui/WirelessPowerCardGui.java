@@ -39,6 +39,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import galacticgreg.api.enums.DimensionDef;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
+import gregtech.api.metatileentity.implementations.MTEBasicMachine;
 import gregtech.common.misc.WirelessNetworkManager;
 
 public final class WirelessPowerCardGui {
@@ -416,11 +417,14 @@ public final class WirelessPowerCardGui {
                         .allMatch(
                             member -> WirelessNetworkManager.getUserEU(member.source)
                                 .signum() > 0));
-                row.setLong(
+                row.setDouble(
                     "transfer",
                     members.stream()
-                        .mapToLong(Connection::lastTransfer)
-                        .reduce(0L, (sum, value) -> Long.MAX_VALUE - sum < value ? Long.MAX_VALUE : sum + value));
+                        .mapToDouble(Connection::averageTransfer)
+                        .sum());
+                BaseMetaTileEntity tile = first.loadedTile();
+                if (controller == null && tile != null && tile.getMetaTileEntity() instanceof MTEBasicMachine machine)
+                    row.setLong("recipeEUt", machine.mMaxProgresstime > 0 ? Math.max(0, machine.mEUt) : 0);
                 row.setString("sourceName", saved.name(first.source));
                 if (controller != null) {
                     row.setInteger("metaId", controller.getMetaTileID());

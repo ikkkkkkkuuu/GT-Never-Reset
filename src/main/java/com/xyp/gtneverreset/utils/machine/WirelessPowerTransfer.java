@@ -1,6 +1,7 @@
 package com.xyp.gtneverreset.utils.machine;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayer;
@@ -86,5 +87,34 @@ public final class WirelessPowerTransfer {
     public static long offeredAmperes(long voltage, long limit, long room, long available) {
         if (voltage <= 0 || limit <= 0 || room <= 0 || available <= 0) return 0;
         return Math.min(limit, Math.min(room / voltage, available / voltage));
+    }
+
+    public static final class TransferRate {
+
+        private static final int WINDOW_TICKS = 20;
+        private final long[] samples = new long[WINDOW_TICKS];
+        private long lastTick = Long.MIN_VALUE;
+
+        public void record(long tick, long transferred) {
+            if (lastTick == Long.MIN_VALUE || tick < lastTick || tick - lastTick >= WINDOW_TICKS) {
+                Arrays.fill(samples, 0);
+            } else {
+                for (int offset = 1; offset <= tick - lastTick; offset++) samples[index(lastTick + offset)] = 0;
+            }
+            // The transfer path first records zero, then replaces it with the amount actually accepted this tick.
+            samples[index(tick)] = Math.max(0, transferred);
+            lastTick = tick;
+        }
+
+        public double average(long tick) {
+            if (lastTick == Long.MIN_VALUE || tick < lastTick || tick - lastTick >= WINDOW_TICKS) return 0;
+            double total = 0;
+            for (int age = 0; age < WINDOW_TICKS - (tick - lastTick); age++) total += samples[index(lastTick - age)];
+            return total / WINDOW_TICKS;
+        }
+
+        private static int index(long tick) {
+            return (int) Math.floorMod(tick, (long) WINDOW_TICKS);
+        }
     }
 }

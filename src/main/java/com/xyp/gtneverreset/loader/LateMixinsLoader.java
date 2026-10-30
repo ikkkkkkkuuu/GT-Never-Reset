@@ -22,6 +22,9 @@ public final class LateMixinsLoader implements ILateMixinLoader {
     @Override
     public List<String> getMixins(Set<String> loadedMods) {
         List<String> mixins = new ArrayList<>();
+        if (loadedMods.contains(ModList.ModIds.SPICE_OF_LIFE)) {
+            mixins.add("spiceoflife.MixinFoodModifier");
+        }
         if (loadedMods.contains(ModList.ModIds.CROPSNH)) {
             mixins.add("cropsnh.MixinSeedStats");
             mixins.add("cropsnh.MixinTileEntityCropSticks");
@@ -36,6 +39,8 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("thaumcraft.MixinPackagedCrucible");
         }
         if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
+            mixins.add("gregtech.OverloadedMachineConfigurationMixin");
+            mixins.add("gregtech.BasicMachineMoldGuiMixin");
             if (FMLLaunchHandler.side()
                 .isClient()) {
                 mixins.add("gregtech.ModifySomeConfigs");

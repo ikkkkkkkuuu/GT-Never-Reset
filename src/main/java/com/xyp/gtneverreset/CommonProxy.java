@@ -7,6 +7,8 @@ import net.minecraftforge.common.MinecraftForge;
 
 import com.cleanroommc.modularui.factory.GuiManager;
 import com.gtnewhorizon.gtnhlib.chat.ChatComponentCustomRegistry;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.command.CommandWirelessFrequency;
 import com.xyp.gtneverreset.common.gui.AdvancedIOGui;
 import com.xyp.gtneverreset.common.gui.StockIOGui;
@@ -88,6 +90,8 @@ public class CommonProxy {
         interfaceTerminal.register(AssemblerMatrix.class);
         interfaceTerminal.register(SuperMTEHatchCraftingInputME.class);
         interfaceTerminal.register(CircuitMEPatternBuffer.class);
+        interfaceTerminal.register(TileEntityOverloadedProvider.class);
+        interfaceTerminal.register(TileEntityPackagedProvider.class);
         ChatComponentCustomRegistry.register(ChatComponentInterfaceNameSuffix::new);
         RecipeLoader.registerRecipes();
     }

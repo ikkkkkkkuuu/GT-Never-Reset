@@ -111,6 +111,23 @@ public final class CraftingTableRecipes {
                 .maybeStack(1)
                 .get());
         GameRegistry.addRecipe(
+            GTNRItemList.OverloadedWirelessPatternProvider.get(1),
+            "IWI",
+            "IPI",
+            'I',
+            definitions.blocks()
+                .iface()
+                .maybeStack(1)
+                .get(),
+            'W',
+            materials.wireless()
+                .maybeStack(1)
+                .get(),
+            'P',
+            materials.engProcessor()
+                .maybeStack(1)
+                .get());
+        GameRegistry.addRecipe(
             GTNRItemList.ItemWirelessConnector.get(1),
             " W",
             "F ",

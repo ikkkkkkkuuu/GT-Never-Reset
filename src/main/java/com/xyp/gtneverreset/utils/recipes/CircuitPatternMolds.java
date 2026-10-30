@@ -156,7 +156,7 @@ public final class CircuitPatternMolds {
         return commonMolds == null ? new ItemStack[0] : copy(commonMolds.toArray(new ItemStack[0]));
     }
 
-    static boolean isNonConsumed(GTRecipe recipe, ItemStack mold) {
+    public static boolean isNonConsumed(GTRecipe recipe, ItemStack mold) {
         boolean required = false;
         for (RecipeItemInput input : recipe.getCachedCombinedItemInputs()) {
             if (!input.matchesRecipe(GTOreDictUnificator.getAssociation(mold), mold)) continue;

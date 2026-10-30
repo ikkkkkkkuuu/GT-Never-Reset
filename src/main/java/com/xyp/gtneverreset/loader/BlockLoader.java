@@ -8,12 +8,14 @@ import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.block.blocks.BlockEddingtonCasing;
 import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
+import com.xyp.gtneverreset.common.block.blocks.BlockOverloadedProvider;
 import com.xyp.gtneverreset.common.block.blocks.BlockPackagedProvider;
 import com.xyp.gtneverreset.common.block.blocks.BlockStockIOInterface;
 import com.xyp.gtneverreset.common.block.blocks.item.ItemBlockFluxConnector;
 import com.xyp.gtneverreset.common.block.blocks.item.ItemBlockStockIOInterface;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxPlug;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxPoint;
+import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
 import com.xyp.gtneverreset.common.world.FluxChunkLoading;
@@ -22,7 +24,6 @@ import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.flux.FluxTransferScheduler;
 
-import appeng.api.AEApi;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.registry.GameRegistry;
 
@@ -49,10 +50,12 @@ public final class BlockLoader {
             TileEntityPackagedProvider.class,
             ModList.GTNeverReset.getResourcePath("wireless_packaged_pattern_provider"));
         GTNRItemList.WirelessPackagedPatternProvider.set(new ItemStack(packagedProvider));
-        AEApi.instance()
-            .registries()
-            .interfaceTerminal()
-            .register(TileEntityPackagedProvider.class);
+        BlockOverloadedProvider overloadedProvider = new BlockOverloadedProvider();
+        GameRegistry.registerBlock(overloadedProvider, "overloaded_wireless_pattern_provider");
+        GameRegistry.registerTileEntity(
+            TileEntityOverloadedProvider.class,
+            ModList.GTNeverReset.getResourcePath("overloaded_wireless_pattern_provider"));
+        GTNRItemList.OverloadedWirelessPatternProvider.set(new ItemStack(overloadedProvider));
         registerFluxBlocks();
     }
 

@@ -69,6 +69,17 @@ public final class MainConfig {
         public boolean enableGuaranteedSeedDrop = true;
     }
 
+    @Name("spice_of_life")
+    public static final SpiceOfLife spiceOfLife = new SpiceOfLife();
+
+    @Sync
+    public static class SpiceOfLife {
+
+        @Comment("关闭食物收益递减：重复食用仍恢复原本的饱食度与饱和度，进食时间不再延长；关闭此选项恢复 Spice of Life 原本规则")
+        @DefaultBoolean(true)
+        public boolean disableDiminishingReturns = true;
+    }
+
     @Name("vein_miner_pickaxe")
     public static final VeinMinerPickaxe veinMinerPickaxe = new VeinMinerPickaxe();
 

@@ -1,0 +1,12 @@
+Source: adjacent GT-Not-Good checkout, inspected 2026-10-30 (no Git metadata available).
+License: MIT, included in LICENSE.txt.
+Ported from common/compat/AutomaticMachineCircuit.java, CircuitInputBufferState.java,
+VirtualMachineMolds.java, CircuitRefillPolicy.java and the virtual mold mixin.
+Local implementation: OverloadedMachineInput, OverloadedMachineBuffer,
+OverloadedMachineMolds and OverloadedMachineConfigurationMixin.
+Existing CircuitPatternCodec / CircuitPatternMolds / CircuitRecipeInputs /
+CircuitPatternQuantities supply the shared non-consumable catalog and matching.
+Adaptations: only the overloaded provider calls special delivery; no ordinary AE
+interface interception or ICraftingMachine addition. Overflow belongs to the
+provider's saved lanes. Temporary machine configuration is released after work.
+GUI port also includes GTNG BasicMachineMoldGuiMixin and SingleblockMoldSelector; manual mold selections persist and are restored after temporary provider jobs.
