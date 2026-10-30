@@ -45,6 +45,7 @@ import com.glodblock.github.client.gui.GuiFCImgButton;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.nei.NeiCraftingFluid;
 import com.xyp.gtneverreset.client.nei.QuickTerminalRecipeTransferHandler;
+import com.xyp.gtneverreset.common.gui.WirelessTerminalMagnetGui;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.terminal.CPacketSwitchGuis;
 import com.xyp.gtneverreset.common.packet.terminal.CPacketTeleportToInterface;
@@ -103,6 +104,7 @@ import appeng.core.sync.packets.PacketInterfaceTerminalUpdate.PacketEntry;
 import appeng.core.sync.packets.PacketInterfaceTerminalUpdate.PacketRename;
 import appeng.core.sync.packets.PacketMonitorableAction;
 import appeng.core.sync.packets.PacketSwitchGuis;
+import appeng.helpers.ICustomButtonProvider;
 import appeng.helpers.MonitorableAction;
 import appeng.util.Platform;
 import appeng.util.item.AEFluidStack;
@@ -229,6 +231,10 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         int oldLeft = guiLeft;
         int oldTop = guiTop;
         List<GuiButton> nativeButtons = new ArrayList<>(buttonList);
+        if (patternContainer.getTarget() instanceof ICustomButtonProvider provider
+            && provider.getDataObject() instanceof WirelessTerminalMagnetGui magnet) {
+            nativeButtons.removeIf(magnet::ownsButton);
+        }
         ensureRegisteredTypeButtons(nativeButtons, oldLeft, oldTop);
 
         interfaceTerminal.initialize(mc, width, height);
@@ -300,6 +306,9 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         layoutButtons();
         layoutPatternSlots();
         layoutContainerSlots();
+        if (patternContainer.getTarget() instanceof ICustomButtonProvider provider) {
+            provider.initCustomButtons(guiLeft, guiTop, PATTERN_PANEL_X + PATTERN_PANEL_WIDTH, ySize, 0, 0, buttonList);
+        }
         pendingPinRefresh = true;
 
         // Returning from NEI or another GUI calls initGui again on the same

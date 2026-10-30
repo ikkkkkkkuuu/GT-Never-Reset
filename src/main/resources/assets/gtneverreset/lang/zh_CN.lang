@@ -45,6 +45,7 @@ gtneverreset.terminal.quick.keep_non_consumables.off=已关闭
 gtneverreset.terminal.quick.keep_non_consumables.detail=不消耗的电路和支持的虚拟模具按 1 件导入；忽略其他不消耗物品
 gtneverreset.terminal.quick.encode_alt_upload=Alt+点击编码并上传样板
 gtneverreset.terminal.quick.interface_ctrl_teleport=Ctrl+点击传送到此接口旁
+gtneverreset.quest.skip=跳过
 radialmenu.steps.edit.tip=编辑此步骤；箭头调整顺序，X 删除步骤
 radialmenu.steps.add=添加步骤
 radialmenu.steps.add.tip=在操作序列末尾添加步骤

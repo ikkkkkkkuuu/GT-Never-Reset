@@ -45,6 +45,7 @@ gtneverreset.terminal.quick.keep_non_consumables.off=Disabled
 gtneverreset.terminal.quick.keep_non_consumables.detail=Import supported non-consumed circuits and molds as 1 item; omit other catalysts
 gtneverreset.terminal.quick.encode_alt_upload=Alt-click to encode and upload the pattern
 gtneverreset.terminal.quick.interface_ctrl_teleport=Ctrl-click to teleport beside this interface
+gtneverreset.quest.skip=Skip
 radialmenu.steps.edit.tip=Edit this step. Use arrows to move it or X to remove it
 radialmenu.steps.add=Add step
 radialmenu.steps.add.tip=Add a step at the end of the sequence

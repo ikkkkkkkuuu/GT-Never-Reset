@@ -17,6 +17,7 @@ import com.xyp.gtneverreset.common.packet.terminal.CPacketSwitchGuis;
 import com.xyp.gtneverreset.common.packet.terminal.CPacketTeleportToInterface;
 import com.xyp.gtneverreset.common.packet.terminal.CPacketToggleInterfaceVisibility;
 import com.xyp.gtneverreset.common.packet.terminal.TerminalItemRequestPacket;
+import com.xyp.gtneverreset.common.packet.terminal.TerminalMagnetPacket;
 import com.xyp.gtneverreset.common.packet.wireless.OpenWirelessCardPacket;
 import com.xyp.gtneverreset.common.packet.wireless.ToggleWirelessCardPacket;
 import com.xyp.gtneverreset.common.packet.wireless.WirelessHighlightPacket;
@@ -99,6 +100,10 @@ public final class NetWorkHandler {
             nextPacketId++,
             Side.CLIENT);
         registerServerbound(VeinMiningSettingPacket.class, VeinMiningSettingPacket::handle);
+        registerServerbound(TerminalMagnetPacket.class, TerminalMagnetPacket::handle);
+        // ID 21 is reserved for TerminalMagnetPacket.
+        nextPacketId = 22;
+        registerServerbound(QuestSkipPacket.class, QuestSkipPacket::handle);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);

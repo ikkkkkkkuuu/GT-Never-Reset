@@ -40,6 +40,7 @@ public enum ModList {
     ThaumicEnergistics(ModIds.THAUMIC_ENERGISTICS, Names.THAUMIC_ENERGISTICS),
     EnderIO(ModIds.ENDER_IO, Names.ENDER_IO),
     BetterQuestingAPI(ModIds.BETTER_QUESTING_API, Names.BETTER_QUESTING_API),
+    BetterQuesting(ModIds.BETTER_QUESTING, Names.BETTER_QUESTING),
     WarpTheory(ModIds.WARP_THEORY, Names.WARP_THEORY),
     MatterManipulator(ModIds.MATTER_MANIPULATOR, Names.MATTER_MANIPULATOR);
 
@@ -54,6 +55,7 @@ public enum ModList {
         public static final String JOURNEY_MAP = "journeymap";
         public static final String NOT_ENOUGH_ITEMS = "NotEnoughItems";
         public static final String BETTER_QUESTING_API = "bqapi";
+        public static final String BETTER_QUESTING = "betterquesting";
         public static final String APPLIED_ENERGISTICS_2 = "appliedenergistics2";
         public static final String AE2_FLUID_CRAFT = "ae2fc";
         public static final String CROPSNH = "cropsnh";
@@ -89,6 +91,7 @@ public enum ModList {
         public static final String JOURNEY_MAP = "JourneyMap";
         public static final String NOT_ENOUGH_ITEMS = "Not Enough Items";
         public static final String BETTER_QUESTING_API = "Better Questing API";
+        public static final String BETTER_QUESTING = "Better Questing";
         public static final String APPLIED_ENERGISTICS_2 = "Applied Energistics 2";
         public static final String AE2_FLUID_CRAFT = "AE2 Fluid Crafting";
         public static final String CROPSNH = "CropsNH";

@@ -14,6 +14,7 @@ import com.xyp.gtneverreset.client.VeinMiningInputHandler;
 import com.xyp.gtneverreset.client.event.WindowsTaskbarButton;
 import com.xyp.gtneverreset.client.event.WirelessCardInput;
 import com.xyp.gtneverreset.client.event.WirelessTerminalInputHandler;
+import com.xyp.gtneverreset.client.gui.QuestSkipMenu;
 import com.xyp.gtneverreset.client.gui.WirelessMonitorHud;
 import com.xyp.gtneverreset.client.nei.NEIWirelessTerminalConfig;
 import com.xyp.gtneverreset.client.nei.WildcardRecipeImport;
@@ -37,6 +38,7 @@ import com.xyp.gtneverreset.utils.text.effect.TextEffects;
 import WayofTime.alchemicalWizardry.ModBlocks;
 import appeng.api.AEApi;
 import appeng.api.parts.IPartItem;
+import betterquesting.api2.client.gui.context.QuestContextMenuRegistry;
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.client.registry.RenderingRegistry;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -52,6 +54,7 @@ public final class ClientLoader {
     }
 
     public static void init() {
+        if (ModList.BetterQuesting.isModLoaded()) QuestContextMenuRegistry.register(new QuestSkipMenu());
         MinecraftForge.EVENT_BUS.register(new VeinMiningInputHandler());
         FMLCommonHandler.instance()
             .bus()

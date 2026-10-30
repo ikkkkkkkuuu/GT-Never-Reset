@@ -7,7 +7,10 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.world.World;
@@ -17,13 +20,18 @@ import org.lwjgl.input.Keyboard;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.client.event.WirelessTerminalInputHandler;
+import com.xyp.gtneverreset.common.gui.WirelessTerminalMagnetGui;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
+import com.xyp.gtneverreset.utils.inventory.WirelessTerminalMagnet;
 import com.xyp.gtneverreset.utils.inventory.WirelessTerminalSession;
 
 import appeng.api.AEApi;
 import appeng.api.implementations.guiobjects.IGuiItem;
 import appeng.api.implementations.guiobjects.IGuiItemObject;
+import appeng.helpers.ICustomButtonDataObject;
+import appeng.helpers.ICustomButtonProvider;
+import appeng.helpers.ICustomButtonSource;
 import appeng.items.contents.WirelessCraftingTerminalGuiObject;
 import appeng.items.tools.powered.ToolWirelessTerminal;
 import baubles.api.expanded.BaubleExpandedSlots;
@@ -31,7 +39,8 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-public final class ItemWirelessDualInterfaceTerminal extends ToolWirelessTerminal implements IGuiItem {
+public final class ItemWirelessDualInterfaceTerminal extends ToolWirelessTerminal
+    implements IGuiItem, ICustomButtonSource {
 
     public static final String REGISTRY_NAME = "wireless_dual_interface_terminal";
 
@@ -53,6 +62,25 @@ public final class ItemWirelessDualInterfaceTerminal extends ToolWirelessTermina
     @Override
     public boolean canHandle(ItemStack stack) {
         return stack != null && stack.getItem() == this;
+    }
+
+    @Override
+    public ICustomButtonDataObject getCustomDataObject(ICustomButtonProvider provider) {
+        return new WirelessTerminalMagnetGui();
+    }
+
+    @Override
+    public void onUpdate(ItemStack stack, World world, Entity entity, int slot, boolean selected) {
+        if (entity instanceof EntityPlayerMP player) {
+            WirelessTerminalMagnet.tick(stack, player);
+        }
+    }
+
+    @Override
+    public void onWornTick(ItemStack stack, EntityLivingBase wearer) {
+        if (wearer instanceof EntityPlayerMP player) {
+            WirelessTerminalMagnet.tick(stack, player);
+        }
     }
 
     @Override
@@ -114,6 +142,10 @@ public final class ItemWirelessDualInterfaceTerminal extends ToolWirelessTermina
             // # Access ME interfaces and encode patterns wirelessly
             // # zh_CN 无线访问 ME 接口并编码样板
             lines.add(I18n.format("gtneverreset.tooltip.wireless_dual_interface_terminal.desc"));
+            // #tr gtneverreset.tooltip.wireless_dual_interface_terminal.magnet
+            // # Built-in magnet: Off/Inventory/ME and filters via side buttons. Sneak to pause.
+            // # zh_CN 内置磁力功能，默认吸入背包；侧边按钮切换关闭/背包/ME及过滤设置，潜行暂停。
+            lines.add(I18n.format("gtneverreset.tooltip.wireless_dual_interface_terminal.magnet"));
             // #tr gtneverreset.tooltip.wireless_dual_interface_terminal.key_open
             // # §7Press §b%s§7 to open the terminal
             // # zh_CN §7按 §b%s§7 打开终端

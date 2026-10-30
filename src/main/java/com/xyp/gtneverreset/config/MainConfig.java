@@ -25,6 +25,17 @@ import com.xyp.gtneverreset.utils.gui.radialmenu.WheelColors;
 @Comment("常规设置")
 public final class MainConfig {
 
+    @Name("quests")
+    public static final Quests quests = new Quests();
+
+    @Sync
+    public static class Quests {
+
+        @Comment("允许玩家通过任务右键菜单跳过任务，标记完成并保留未领取的奖励；由服务端控制")
+        @DefaultBoolean(true)
+        public boolean enableSkipping = true;
+    }
+
     @Name("tools")
     public static final Tools tools = new Tools();
 

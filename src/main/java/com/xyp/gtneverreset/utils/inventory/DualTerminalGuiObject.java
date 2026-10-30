@@ -343,10 +343,14 @@ public final class DualTerminalGuiObject extends WirelessPatternTerminalGuiObjec
     }
 
     @Override
-    public void writeCustomButtonData() {}
+    public void writeCustomButtonData() {
+        super.writeCustomButtonData();
+    }
 
     @Override
-    public void readCustomButtonData() {}
+    public void readCustomButtonData() {
+        super.readCustomButtonData();
+    }
 
     /** Restores shaped positions after AE loads the unordered bill from an encoded workbench pattern. */
     private void restoreArcaneInputs() {

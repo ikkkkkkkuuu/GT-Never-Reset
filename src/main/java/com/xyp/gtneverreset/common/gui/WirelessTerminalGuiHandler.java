@@ -6,6 +6,8 @@ import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.glodblock.github.client.gui.container.ContainerMagnetFilter;
+import com.glodblock.github.inventory.item.WirelessMagnetCardFilterInventory;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
@@ -55,6 +57,11 @@ public final class WirelessTerminalGuiHandler implements IGuiHandler {
         if (type == null) return null;
         WirelessTerminalGuiObject host = buildHost(player, world, slot, type);
         if (host == null) return null;
+        if (type == WirelessTerminalGuiType.WirelessMagnetFilter) {
+            return new ContainerMagnetFilter(
+                player.inventory,
+                new WirelessMagnetCardFilterInventory(host.getItemStack(), host.getInventorySlot(), null, player));
+        }
         if (host.getActionableNode() == null) {
             player.addChatMessage(PlayerMessages.OutOfRange.get());
             return null;
