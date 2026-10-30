@@ -62,7 +62,8 @@ public final class WirelessTerminalInputHandler {
         for (ItemStack stack : player.inventory.mainInventory) {
             if (stack != null && stack.isItemEqual(block) && ItemStack.areItemStackTagsEqual(stack, block)) return;
         }
-        NetWorkHandler.sendToServer(new TerminalItemRequestPacket(block, !GuiScreen.isShiftKeyDown()));
+        NetWorkHandler.sendToServer(
+            new TerminalItemRequestPacket(block, !GuiScreen.isShiftKeyDown(), player.inventory.currentItem));
     }
 
 }

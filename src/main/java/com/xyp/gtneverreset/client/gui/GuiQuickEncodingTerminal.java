@@ -307,7 +307,7 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         layoutPatternSlots();
         layoutContainerSlots();
         if (patternContainer.getTarget() instanceof ICustomButtonProvider provider) {
-            provider.initCustomButtons(guiLeft, guiTop, PATTERN_PANEL_X + PATTERN_PANEL_WIDTH, ySize, 0, 0, buttonList);
+            provider.initCustomButtons(guiLeft, guiTop, xSize, ySize, 0, 0, buttonList);
         }
         pendingPinRefresh = true;
 

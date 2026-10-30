@@ -132,12 +132,19 @@ public final class WirelessTerminalSession {
     }
 
     public static void requestItem(EntityPlayerMP player, ItemStack requested, boolean fullStack) {
+        requestItem(player, requested, fullStack, -1);
+    }
+
+    public static void requestItem(EntityPlayerMP player, ItemStack requested, boolean fullStack, int targetSlot) {
         if (requested == null || requested.getItem() == null) return;
+        if (targetSlot < -1 || targetSlot >= 9) return;
+        if (targetSlot >= 0 && player.inventory.getStackInSlot(targetSlot) != null) return;
         WirelessTerminalGuiObject host = storageHost(player, SecurityPermissions.EXTRACT);
         if (host == null || host.getItemInventory() == null) return;
         ItemStack offer = requested.copy();
         offer.stackSize = fullStack ? offer.getMaxStackSize() : 1;
-        int free = availableSpace(player, offer);
+        int free = targetSlot >= 0 ? Math.min(offer.getMaxStackSize(), player.inventory.getInventoryStackLimit())
+            : availableSpace(player, offer);
         if (free == 0) return;
         IAEItemStack request = AEItemStack.create(offer);
         request.setStackSize(Math.min(offer.stackSize, free));
@@ -145,7 +152,11 @@ public final class WirelessTerminalSession {
             .poweredExtraction(host, host.getItemInventory(), request, new PlayerSource(player, host));
         if (extracted != null) {
             ItemStack result = extracted.getItemStack();
-            if (!player.inventory.addItemStackToInventory(result)) player.dropPlayerItemWithRandomChoice(result, false);
+            if (targetSlot >= 0) {
+                player.inventory.setInventorySlotContents(targetSlot, result);
+            } else if (!player.inventory.addItemStackToInventory(result)) {
+                player.dropPlayerItemWithRandomChoice(result, false);
+            }
             syncInventory(player, host);
         }
     }
