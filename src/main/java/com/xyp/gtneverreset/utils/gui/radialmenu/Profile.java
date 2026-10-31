@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.xyp.gtnrlib.gui.wheel.MenuStyle;
+import com.xyp.gtnrlib.gui.wheel.SlotLayout;
+
 public class Profile {
 
     public static final int CURRENT_FORMAT_VERSION = 1;

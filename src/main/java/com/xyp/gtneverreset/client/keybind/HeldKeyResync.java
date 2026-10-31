@@ -2,6 +2,8 @@ package com.xyp.gtneverreset.client.keybind;
 
 import net.minecraft.client.settings.KeyBinding;
 
+import com.xyp.gtnrlib.client.input.KeyBindingLookup;
+
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 

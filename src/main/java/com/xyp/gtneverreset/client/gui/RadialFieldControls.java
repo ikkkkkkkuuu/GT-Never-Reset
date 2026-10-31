@@ -12,10 +12,11 @@ import com.xyp.gtneverreset.utils.gui.radialmenu.ActionField;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionSpec;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionType;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionTypes;
-import com.xyp.gtneverreset.utils.gui.radialmenu.Colors;
 import com.xyp.gtneverreset.utils.gui.radialmenu.Placeholders;
-import com.xyp.gtneverreset.utils.gui.radialmenu.StyleResolver;
-import com.xyp.gtneverreset.utils.gui.radialmenu.WheelColors;
+import com.xyp.gtnrlib.gui.wheel.StyleResolver;
+import com.xyp.gtnrlib.gui.wheel.WheelColors;
+import com.xyp.gtnrlib.gui.widget.RadialUi;
+import com.xyp.gtnrlib.utils.Colors;
 
 import cpw.mods.fml.client.config.GuiSlider;
 import cpw.mods.fml.relauncher.Side;
@@ -89,10 +90,7 @@ final class RadialFieldControls {
     static String buttonLabel(ActionField field, String current) {
         switch (field.kind) {
             case KeybindRef:
-                // #tr radialmenu.editor.pickKeybind
-                // # Pick a keybinding
-                // # zh_CN 选择按键绑定
-                return current == null || current.isEmpty() ? I18n.format("radialmenu.editor.pickKeybind")
+                return current == null || current.isEmpty() ? I18n.format("gtnrlib.gui.keybind.pick")
                     : I18n.format(current);
             case ProfileRef:
                 // #tr radialmenu.action.profileSwitch.next

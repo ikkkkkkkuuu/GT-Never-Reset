@@ -4,12 +4,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.KeyBinding;
 
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.client.keybind.KeyBindingLookup;
 import com.xyp.gtneverreset.client.keybind.KeybindStateTracker;
-import com.xyp.gtneverreset.client.keybind.VanillaKeyEffects;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionSpec;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionTypes;
 import com.xyp.gtneverreset.utils.gui.radialmenu.Modifiers;
+import com.xyp.gtnrlib.client.input.KeyBindingLookup;
+import com.xyp.gtnrlib.client.input.VanillaKeyEffects;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

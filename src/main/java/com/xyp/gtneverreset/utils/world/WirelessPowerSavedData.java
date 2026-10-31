@@ -60,6 +60,28 @@ public final class WirelessPowerSavedData extends WorldSavedData {
         return connections.get(id);
     }
 
+    public Connection connectionAt(TileEntity tile) {
+        if (!(tile instanceof BaseMetaTileEntity base) || tile.getWorldObj() == null || tile.getWorldObj().isRemote)
+            return null;
+        Connection connection = connections.get(((IWirelessPowerReceiver) base).gtnr$powerConnection());
+        return connection != null && connection.matches(base) ? connection : null;
+    }
+
+    public void relocate(Connection previous, TileEntity target) {
+        if (previous == null || connections.get(previous.id) != previous
+            || !(target instanceof BaseMetaTileEntity tile)
+            || tile.getWorldObj() == null
+            || tile.getWorldObj().isRemote
+            || tile.isInvalid()
+            || tile.getMetaTileID() != previous.metaId
+            || !previous.id.equals(((IWirelessPowerReceiver) tile).gtnr$powerConnection())) return;
+        Connection relocated = new Connection(previous.id, previous.owner, previous.source, tile);
+        relocated.paused = previous.paused;
+        connections.put(relocated.id, relocated);
+        tile.markDirty();
+        markDirty();
+    }
+
     public Connection connect(BaseMetaTileEntity tile, UUID owner, UUID source) {
         connections.values()
             .removeIf(connection -> connection.matchesPosition(tile));

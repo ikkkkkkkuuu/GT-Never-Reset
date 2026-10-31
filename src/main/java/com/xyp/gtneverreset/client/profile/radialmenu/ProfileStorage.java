@@ -14,10 +14,10 @@ import java.util.Collections;
 import java.util.List;
 
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ConfigCodec;
 import com.xyp.gtneverreset.utils.gui.radialmenu.Profile;
 import com.xyp.gtneverreset.utils.gui.radialmenu.Settings;
+import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

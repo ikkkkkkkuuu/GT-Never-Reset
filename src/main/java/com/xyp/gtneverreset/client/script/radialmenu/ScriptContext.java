@@ -2,7 +2,7 @@ package com.xyp.gtneverreset.client.script.radialmenu;
 
 import java.util.List;
 
-import com.xyp.gtneverreset.utils.gui.radialmenu.AccentCoefficients;
+import com.xyp.gtnrlib.gui.wheel.AccentCoefficients;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

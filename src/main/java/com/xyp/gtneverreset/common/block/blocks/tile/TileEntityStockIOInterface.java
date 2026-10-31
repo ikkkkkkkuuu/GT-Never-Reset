@@ -14,11 +14,11 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
-import com.xyp.gtneverreset.client.gui.PixelFontModularScreen;
 import com.xyp.gtneverreset.common.gui.StockIOGui;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.stockio.StockIOLogic;
+import com.xyp.gtnrlib.client.gui.PixelFontModularScreen;
+import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;

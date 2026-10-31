@@ -1,0 +1,54 @@
+tasks.named('compileJava', JavaCompile) {
+    options.annotationProcessorPath = configurations.annotationProcessor
+}
+
+tasks.register('preprocessLangInJavaFiles') {
+    def translationFormats = rootProject.ext.translationFormatValidator
+    group = 'language'
+    description = 'Generate library translations from adjacent #tr declarations'
+    inputs.files(sourceSets.main.java)
+    inputs.file('addon.gradle')
+    def languageDirectory = file('src/main/resources/assets/gtnrlib/lang')
+    outputs.dir(languageDirectory)
+    doLast {
+        Map<String, Map<String, String>> languages = ['en_US': [:]]
+        Set<String> keys = [] as LinkedHashSet
+        inputs.files.filter { it.name.endsWith('.java') }.sort { it.path }.each { source ->
+            String key = null
+            source.getText('UTF-8').eachLine { line ->
+                def declaration = line =~ /\/\/\s*#tr\s+([a-zA-Z0-9._]+)/
+                def translation = line =~ /\/\/\s*#\s+([a-z]{2}_[A-Z]{2}\s+)?(.*)/
+                if (declaration) {
+                    key = declaration.group(1)
+                    keys.add(key)
+                } else if (key != null && translation) {
+                    String language = translation.group(1)?.trim() ?: 'en_US'
+                    if (!languages.containsKey(language)) languages[language] = [:]
+                    String value = translation.group(2)
+                    if (languages[language].containsKey(key) && languages[language][key] != value) {
+                        throw new GradleException("Conflicting library translation: ${language}:${key}")
+                    }
+                    languages[language][key] = value
+                } else {
+                    key = null
+                }
+            }
+        }
+        def errors = translationFormats.validate(languages)
+        if (!errors.empty) throw new GradleException(errors.join('\n'))
+        languageDirectory.mkdirs()
+        languages.each { language, translations ->
+            new File(languageDirectory, "${language}.lang").withWriter('UTF-8') { writer ->
+                keys.each { key ->
+                    String value = translations.containsKey(key) ? translations[key] : languages.en_US[key]
+                    if (value == null) throw new GradleException("Missing English library translation: ${key}")
+                    writer.write("${key}=${value}\n")
+                }
+            }
+        }
+    }
+}
+
+['processResources', 'sourcesJar'].each { task ->
+    tasks.named(task) { dependsOn 'preprocessLangInJavaFiles' }
+}

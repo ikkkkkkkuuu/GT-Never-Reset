@@ -8,7 +8,7 @@ import com.xyp.gtneverreset.utils.gui.radialmenu.ActionTypes;
 import com.xyp.gtneverreset.utils.gui.radialmenu.IconSpec;
 import com.xyp.gtneverreset.utils.gui.radialmenu.MenuNode;
 import com.xyp.gtneverreset.utils.gui.radialmenu.Profile;
-import com.xyp.gtneverreset.utils.gui.radialmenu.SlotLayout;
+import com.xyp.gtnrlib.gui.wheel.SlotLayout;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

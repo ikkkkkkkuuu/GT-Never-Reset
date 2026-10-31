@@ -19,6 +19,7 @@ import com.xyp.gtneverreset.utils.structure.StructureSummary.ControllerPosition;
 import com.xyp.gtneverreset.utils.structure.StructureSummary.HatchLine;
 import com.xyp.gtneverreset.utils.structure.StructureSummary.Section;
 import com.xyp.gtneverreset.utils.structure.StructureSummary.Size;
+import com.xyp.gtnrlib.text.TooltipLineWrapper;
 
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
 import gregtech.api.util.MultiblockTooltipBuilder;

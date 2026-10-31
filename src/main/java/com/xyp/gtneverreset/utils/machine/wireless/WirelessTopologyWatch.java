@@ -10,9 +10,10 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.gtnhlib.blockpos.BlockPos;
 import com.gtnewhorizon.gtnhlib.util.CoordinatePacker;
-import com.xyp.gtneverreset.common.world.WirelessWorldListener;
 import com.xyp.gtneverreset.utils.machine.wireless.PhysicalClusterTracker.Cluster;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Address;
+import com.xyp.gtnrlib.world.IBlockStateListener;
+import com.xyp.gtnrlib.world.WorldListener;
 
 import appeng.api.networking.IGridNode;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -36,7 +37,7 @@ public class WirelessTopologyWatch implements IBlockStateListener {
                 add(next, nextTiles, WirelessFrequencies.controller(source));
         }
         for (World world : tiles.keySet()) {
-            if (!nextTiles.containsKey(world)) WirelessWorldListener.INSTANCE.unregisterBlockStateListener(world, this);
+            if (!nextTiles.containsKey(world)) WorldListener.INSTANCE.unregisterBlockStateListener(world, this);
         }
         for (var entry : nextTiles.entrySet()) {
             Long2ObjectMap<TileEntity> previous = tiles.get(entry.getKey());
@@ -54,7 +55,7 @@ public class WirelessTopologyWatch implements IBlockStateListener {
                         CoordinatePacker.unpackY(position),
                         CoordinatePacker.unpackZ(position)))
                 .iterator();
-            WirelessWorldListener.INSTANCE.registerBlockStateListener(entry.getKey(), this, positions);
+            WorldListener.INSTANCE.registerBlockStateListener(entry.getKey(), this, positions);
         }
         watched.clear();
         watched.putAll(next);
@@ -113,7 +114,7 @@ public class WirelessTopologyWatch implements IBlockStateListener {
     }
 
     void clear() {
-        for (World world : tiles.keySet()) WirelessWorldListener.INSTANCE.unregisterBlockStateListener(world, this);
+        for (World world : tiles.keySet()) WorldListener.INSTANCE.unregisterBlockStateListener(world, this);
         watched.clear();
         tiles.clear();
     }

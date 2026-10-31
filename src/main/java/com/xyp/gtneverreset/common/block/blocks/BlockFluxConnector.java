@@ -20,8 +20,8 @@ import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxConnector;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxPlug;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxPoint;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.flux.FluxDropData;
+import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

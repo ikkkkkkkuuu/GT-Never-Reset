@@ -13,6 +13,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.github.bsideup.jabel.Desugar;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Address;
+import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 public class WirelessLinkData {
 
@@ -60,15 +61,15 @@ public class WirelessLinkData {
         Set<WirelessFrequency> entrances) {
 
         public Claim {
-            frequencies = WirelessCollections.copySet(frequencies);
-            entrances = entrances.isEmpty() ? WirelessCollections.setOf()
+            frequencies = ImmutableCollections.copySet(frequencies);
+            entrances = entrances.isEmpty() ? ImmutableCollections.setOf()
                 : entrances.stream()
                     .filter(frequencies::contains)
-                    .collect(WirelessCollections.toImmutableSet());
-            paused = paused.isEmpty() ? WirelessCollections.setOf()
+                    .collect(ImmutableCollections.toImmutableSet());
+            paused = paused.isEmpty() ? ImmutableCollections.setOf()
                 : paused.stream()
                     .filter(frequencies::contains)
-                    .collect(WirelessCollections.toImmutableSet());
+                    .collect(ImmutableCollections.toImmutableSet());
         }
     }
 
@@ -86,7 +87,7 @@ public class WirelessLinkData {
         NBTTagCompound payload = tileData.hasKey(KEY, 10) ? tileData.getCompoundTag(KEY) : null;
         Decoded saved = readBatch.get(tileData);
         if (saved == null || saved.payload() != payload) {
-            saved = new Decoded(payload, WirelessCollections.copyMap(decode(tileData)));
+            saved = new Decoded(payload, ImmutableCollections.copyMap(decode(tileData)));
             readBatch.put(tileData, saved);
         }
         return saved.claims();

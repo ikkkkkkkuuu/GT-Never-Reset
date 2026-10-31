@@ -23,6 +23,7 @@ import net.minecraftforge.event.world.WorldEvent;
 import com.github.bsideup.jabel.Desugar;
 import com.xyp.gtneverreset.config.MainConfig;
 import com.xyp.gtneverreset.mixins.late.appliedenergistics2.wireless.AccessorTileController;
+import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.AEApi;
 import appeng.api.config.SecurityPermissions;
@@ -49,7 +50,7 @@ public class WirelessChannelManager {
 
     public static final WirelessChannelManager INSTANCE = new WirelessChannelManager();
     private static final Map<Integer, Entrance> ENTRANCES = new LinkedHashMap<>();
-    private static List<Entrance> entranceSnapshot = WirelessCollections.listOf();
+    private static List<Entrance> entranceSnapshot = ImmutableCollections.listOf();
     private static Map<WirelessFrequency, Integer> entranceCounts;
     private static final Map<IGridConnection, Entrance> OWNED_CONNECTIONS = new IdentityHashMap<>();
     private static final Map<IGrid, Allocation> ALLOCATIONS = new WeakHashMap<>();
@@ -243,7 +244,7 @@ public class WirelessChannelManager {
     public static void clear() {
         invalidateFrequencies();
         for (int id : new ArrayList<>(ENTRANCES.keySet())) disconnect(id);
-        entranceSnapshot = WirelessCollections.listOf();
+        entranceSnapshot = ImmutableCollections.listOf();
         OWNED_CONNECTIONS.clear();
         ALLOCATIONS.clear();
         WirelessClusterManager.clear();
@@ -256,7 +257,7 @@ public class WirelessChannelManager {
     }
 
     public static List<Entrance> entrances() {
-        if (entranceSnapshot == null) entranceSnapshot = WirelessCollections.copyList(ENTRANCES.values());
+        if (entranceSnapshot == null) entranceSnapshot = ImmutableCollections.copyList(ENTRANCES.values());
         return entranceSnapshot;
     }
 

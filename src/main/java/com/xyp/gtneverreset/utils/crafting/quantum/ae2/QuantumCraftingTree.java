@@ -22,6 +22,7 @@ import com.xyp.gtneverreset.utils.crafting.quantum.api.crafting.IPatternDetails;
 import com.xyp.gtneverreset.utils.crafting.quantum.api.stacks.AEKey;
 import com.xyp.gtneverreset.utils.crafting.quantum.api.stacks.GenericStack;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.CraftingPlan;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import appeng.api.config.CraftingMode;
 import appeng.api.implementations.ICraftingPatternItem;
@@ -90,7 +91,7 @@ public final class QuantumCraftingTree {
 
     private void addToPool(Object2LongOpenHashMap<AEKey> pool, AEKey key, long amount) {
         if (amount <= 0) return;
-        pool.put(key, addSaturated(pool.getLong(key), amount));
+        pool.put(key, LongMath.saturatedAdd(pool.getLong(key), amount));
         final List<AEKey> group = this.poolKeysByGroup.computeIfAbsent(key.getPrimaryKey(), k -> new ArrayList<>(1));
         if (!group.contains(key)) {
             group.add(key);
@@ -159,12 +160,12 @@ public final class QuantumCraftingTree {
                 final long perCraft = outputAmount(pattern, candidate);
                 if (available <= 0 || perCraft <= 0) continue;
 
-                final long times = Math.min(available, ceilDiv(rest, perCraft));
+                final long times = Math.min(available, LongMath.ceilDiv(rest, perCraft));
                 this.crafts.put(pattern, available - times);
-                final long fulfilled = Math.min(rest, multiplySaturated(times, perCraft));
+                final long fulfilled = Math.min(rest, LongMath.saturatedMultiply(times, perCraft));
                 rest -= fulfilled;
                 for (GenericStack output : pattern.getOutputs()) {
-                    final long made = multiplySaturated(times, output.amount());
+                    final long made = LongMath.saturatedMultiply(times, output.amount());
                     if (output.what()
                         .equals(candidate)) {
                         addToPool(this.byproducts, candidate, made - fulfilled);
@@ -243,7 +244,7 @@ public final class QuantumCraftingTree {
             if (possible.length == 0) continue;
             final AEKey container = input.getRemainingKey(possible[0].what());
             if (container != null) {
-                addToPool(this.byproducts, container, multiplySaturated(input.getMultiplier(), times - 1));
+                addToPool(this.byproducts, container, LongMath.saturatedMultiply(input.getMultiplier(), times - 1));
             }
         }
     }
@@ -251,11 +252,12 @@ public final class QuantumCraftingTree {
     // A catalyst only has to be there for the first craft, each later one needs what the earlier ones did not give back
     private static long catalystRequired(long perCraft, long returned, long times) {
         final long lost = Math.max(0, perCraft - returned);
-        return addSaturated(perCraft, multiplySaturated(lost, times - 1));
+        return LongMath.saturatedAdd(perCraft, LongMath.saturatedMultiply(lost, times - 1));
     }
 
     private static long catalystReturned(long perCraft, long returned, long times) {
-        return returned < perCraft ? returned : addSaturated(perCraft, multiplySaturated(returned - perCraft, times));
+        return returned < perCraft ? returned
+            : LongMath.saturatedAdd(perCraft, LongMath.saturatedMultiply(returned - perCraft, times));
     }
 
     private Set<AEKey> producedKeys(IPatternDetails pattern) {
@@ -330,10 +332,10 @@ public final class QuantumCraftingTree {
         for (IPatternDetails.IInput input : pattern.getInputs()) {
             final GenericStack[] possible = input.possibleInputs();
             if (possible.length == 0) continue;
-            final long perCraft = multiplySaturated(possible[0].amount(), input.getMultiplier());
+            final long perCraft = LongMath.saturatedMultiply(possible[0].amount(), input.getMultiplier());
             final Request existing = byKey.get(possible[0].what());
             if (existing != null) {
-                existing.perCraft = addSaturated(existing.perCraft, perCraft);
+                existing.perCraft = LongMath.saturatedAdd(existing.perCraft, perCraft);
                 continue;
             }
             final Request child = new Request(possible[0].what(), 0, perCraft, mode, input, resolver);
@@ -346,7 +348,7 @@ public final class QuantumCraftingTree {
                 child.amount = catalystRequired(child.perCraft, returned, resolver.times);
                 child.returnsAfter = Math.min(child.amount, catalystReturned(child.perCraft, returned, resolver.times));
             } else {
-                child.amount = multiplySaturated(child.perCraft, resolver.times);
+                child.amount = LongMath.saturatedMultiply(child.perCraft, resolver.times);
             }
             child.loop = isLoop(child.key, resolver);
         }
@@ -364,7 +366,8 @@ public final class QuantumCraftingTree {
             final GenericStack[] possible = input.possibleInputs();
             if (possible.length > 0 && possible[0].what()
                 .equals(what)) {
-                amount = addSaturated(amount, multiplySaturated(possible[0].amount(), input.getMultiplier()));
+                amount = LongMath
+                    .saturatedAdd(amount, LongMath.saturatedMultiply(possible[0].amount(), input.getMultiplier()));
             }
         }
         return amount;
@@ -375,7 +378,7 @@ public final class QuantumCraftingTree {
         for (GenericStack output : pattern.getOutputs()) {
             if (output.what()
                 .equals(what)) {
-                amount = addSaturated(amount, output.amount());
+                amount = LongMath.saturatedAdd(amount, output.amount());
             }
         }
         return amount;
@@ -535,7 +538,7 @@ public final class QuantumCraftingTree {
             IOUtils.copy(bbis, gzos);
             gzos.finish();
         }
-        final int chunkCount = (int) ceilDiv(output.readableBytes(), CHUNK_SIZE);
+        final int chunkCount = (int) LongMath.ceilDiv(output.readableBytes(), CHUNK_SIZE);
         final List<PacketCraftingTreeData> chunks = new ArrayList<>(chunkCount);
         for (int chunk = 0; chunk < chunkCount; chunk++) {
             final int start = CHUNK_SIZE * chunk;
@@ -543,23 +546,6 @@ public final class QuantumCraftingTree {
             chunks.add(AccessorPacketCraftingTreeData.gtnr$create(output.slice(start, length), chunk, chunkCount));
         }
         return chunks;
-    }
-
-    private static long ceilDiv(long dividend, long divisor) {
-        return -Math.floorDiv(-dividend, divisor);
-    }
-
-    private static long multiplySaturated(long a, long b) {
-        try {
-            return Math.multiplyExact(a, b);
-        } catch (ArithmeticException overflow) {
-            return Long.MAX_VALUE;
-        }
-    }
-
-    private static long addSaturated(long a, long b) {
-        final long sum = a + b;
-        return ((a ^ sum) & (b ^ sum)) < 0 ? Long.MAX_VALUE : sum;
     }
 
     private enum Kind {

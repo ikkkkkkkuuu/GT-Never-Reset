@@ -5,6 +5,8 @@ import java.io.Reader;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
+import com.xyp.gtnrlib.config.json.LowercaseEnumAdapterFactory;
+import com.xyp.gtnrlib.config.json.StringMapAdapterFactory;
 
 public final class ConfigCodec {
 

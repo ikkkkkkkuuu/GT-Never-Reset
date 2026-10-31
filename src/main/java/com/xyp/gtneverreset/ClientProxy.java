@@ -10,7 +10,7 @@ import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
 import com.xyp.gtneverreset.client.render.VaultConnectedTextureRender;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalGuiHandler;
 import com.xyp.gtneverreset.config.MainConfig;
-import com.xyp.gtneverreset.loader.ClientLoader;
+import com.xyp.gtneverreset.loader.LifecycleLoader;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
 import com.xyp.gtneverreset.utils.inventory.DualTerminalGuiObject;
 
@@ -26,13 +26,13 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
-        ClientLoader.preInit(event.getModConfigurationDirectory());
+        LifecycleLoader.clientPreInit(event.getModConfigurationDirectory());
     }
 
     @Override
     public void init(FMLInitializationEvent event) {
         super.init(event);
-        ClientLoader.init();
+        LifecycleLoader.clientInit();
     }
 
     @Override

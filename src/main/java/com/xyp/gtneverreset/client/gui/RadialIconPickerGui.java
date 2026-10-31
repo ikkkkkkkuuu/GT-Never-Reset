@@ -20,10 +20,13 @@ import org.lwjgl.input.Mouse;
 import com.xyp.gtneverreset.client.profile.radialmenu.ProfileStorage;
 import com.xyp.gtneverreset.client.render.radialmenu.IconRenderer;
 import com.xyp.gtneverreset.client.render.radialmenu.PlayerHeadIcons;
-import com.xyp.gtneverreset.client.render.radialmenu.PotionIcons;
 import com.xyp.gtneverreset.client.render.radialmenu.SpriteAtlas;
 import com.xyp.gtneverreset.client.render.radialmenu.UserIconLoader;
 import com.xyp.gtneverreset.utils.gui.radialmenu.IconSpec;
+import com.xyp.gtnrlib.client.render.icon.PotionIcons;
+import com.xyp.gtnrlib.gui.widget.RadialUi;
+import com.xyp.gtnrlib.gui.widget.RadialUiCheckbox;
+import com.xyp.gtnrlib.gui.widget.RadialUiTabButton;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

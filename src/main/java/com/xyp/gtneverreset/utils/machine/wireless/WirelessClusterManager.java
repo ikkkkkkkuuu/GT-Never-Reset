@@ -29,6 +29,7 @@ import com.xyp.gtneverreset.utils.machine.wireless.VerifiedEntranceRecovery.Cand
 import com.xyp.gtneverreset.utils.machine.wireless.VerifiedEntranceRecovery.Result;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Address;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Entrance;
+import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.exceptions.FailedConnection;
 import appeng.api.networking.GridFlags;
@@ -131,11 +132,11 @@ public class WirelessClusterManager {
     }
 
     public static void refresh() {
-        refresh(WirelessCollections.listOf());
+        refresh(ImmutableCollections.listOf());
     }
 
     public static void refreshTarget(IGridNode target) {
-        refresh(WirelessCollections.listOf(target));
+        refresh(ImmutableCollections.listOf(target));
         var cluster = TRACKER.clusterOf(target);
         if (cluster != null && cluster.limited()) throw new PhysicalClusterTracker.ScanLimitException();
     }
@@ -241,7 +242,7 @@ public class WirelessClusterManager {
     }
 
     private static Set<Cluster<IGridNode, WirelessFrequency>> underConstruction() {
-        if (!WirelessConstructionSites.any()) return WirelessCollections.setOf();
+        if (!WirelessConstructionSites.any()) return ImmutableCollections.setOf();
         Set<Cluster<IGridNode, WirelessFrequency>> result = Collections.newSetFromMap(new IdentityHashMap<>());
         for (var cluster : TRACKER.clusters()) {
             if (cluster.frequencies()
@@ -269,7 +270,7 @@ public class WirelessClusterManager {
                 .iterator()
                 .next();
             if (paused(cluster, source)) continue;
-            for (IGridNode node : SAVED_ENTRANCES.getOrDefault(cluster, WirelessCollections.setOf())) {
+            for (IGridNode node : SAVED_ENTRANCES.getOrDefault(cluster, ImmutableCollections.setOf())) {
                 if (hasEntrance(node, source, entrances)) continue;
                 candidates.add(new Candidate<>(node, source));
             }
@@ -364,7 +365,7 @@ public class WirelessClusterManager {
     }
 
     private static boolean paused(Cluster<IGridNode, WirelessFrequency> cluster, WirelessFrequency source) {
-        return PAUSES.getOrDefault(cluster, WirelessCollections.setOf())
+        return PAUSES.getOrDefault(cluster, ImmutableCollections.setOf())
             .contains(canonical(source));
     }
 
@@ -407,7 +408,7 @@ public class WirelessClusterManager {
                             cluster,
                             measured -> WirelessNetworkStatistics
                                 .measure(measured.nodes(), WirelessChannelManager.channelsEnabled())),
-                        WirelessCollections.copySet(cluster.nodes())));
+                        ImmutableCollections.copySet(cluster.nodes())));
             }
             result.sort(
                 Comparator.comparing(ClusterView::statistics, WirelessNetworkStatistics.DISPLAY_ORDER)
@@ -458,7 +459,7 @@ public class WirelessClusterManager {
                 view -> view.target()
                     .toString()));
         // Keep the physical cluster actionable when pausing removes all runtime entrances.
-        return result.isEmpty() ? WirelessCollections.listOf(cluster) : result;
+        return result.isEmpty() ? ImmutableCollections.listOf(cluster) : result;
     }
 
     public static boolean isLinked(WirelessFrequency source, IGridNode target) {
@@ -537,7 +538,7 @@ public class WirelessClusterManager {
         }
 
         List<Address> internalAddresses() {
-            if (cluster == null) return WirelessCollections.listOf();
+            if (cluster == null) return ImmutableCollections.listOf();
             List<Address> addresses = new ArrayList<>(
                 cluster.nodes()
                     .size());

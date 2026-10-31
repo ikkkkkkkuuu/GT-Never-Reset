@@ -17,7 +17,7 @@ import com.xyp.gtneverreset.utils.crafting.quantum.crafting.execution.InputTempl
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.inv.ChildCraftingSimulationState;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.inv.CraftingSimulationState;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.inv.ICraftingInventory;
-import com.xyp.gtneverreset.utils.crafting.quantum.util.LongMath;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import appeng.api.config.Actionable;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -126,14 +126,6 @@ public class CraftingTreeNode {
     @SuppressWarnings("unused")
     boolean notRecursive(IPatternDetails details) {
         return true;
-    }
-
-    private static long divideCeil(long dividend, long divisor) {
-        long quotient = dividend / divisor;
-        if (dividend % divisor == 0) {
-            return quotient;
-        }
-        return quotient + 1;
     }
 
     /**
@@ -567,11 +559,11 @@ public class CraftingTreeNode {
             return 1;
         }
         if (usesFinalOutputAsIntermediateInput(pro)) {
-            return divideCeil(totalRequestedItems, craftedPerPattern);
+            return LongMath.ceilDiv(totalRequestedItems, craftedPerPattern);
         }
         long netOutput = recursiveBatch.netOutput() > 0 ? recursiveBatch.netOutput() : craftedPerPattern;
         long rootTimes = Math.max(1, recursiveBatch.rootTimes());
-        return LongMath.saturatedMultiply(divideCeil(totalRequestedItems, netOutput), rootTimes);
+        return LongMath.saturatedMultiply(LongMath.ceilDiv(totalRequestedItems, netOutput), rootTimes);
     }
 
     int getDepth() {

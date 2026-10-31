@@ -19,8 +19,8 @@ import net.minecraftforge.oredict.OreDictionary;
 import com.google.gson.Gson;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.loader.GTNRRecipeMaps;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
+import com.xyp.gtnrlib.mod.ModList;
 
 import gregtech.api.GregTechAPI;
 import gregtech.api.enums.Materials;

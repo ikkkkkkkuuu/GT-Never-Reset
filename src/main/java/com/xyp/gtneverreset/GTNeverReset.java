@@ -3,7 +3,7 @@ package com.xyp.gtneverreset;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.SidedProxy;
@@ -19,7 +19,7 @@ import cpw.mods.fml.common.event.FMLServerStoppingEvent;
     modid = GTNeverReset.MODID,
     version = Tags.VERSION,
     name = GTNeverReset.NAME,
-    dependencies = "required-after:" + ModList.ModIds.GREGTECH
+    dependencies = "required-after:gtnrlib;required-after:" + ModList.ModIds.GREGTECH
         + ";required-after:"
         + ModList.ModIds.GTNH_LIB
         + ";required-after:"

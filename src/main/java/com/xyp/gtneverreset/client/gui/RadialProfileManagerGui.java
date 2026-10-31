@@ -11,6 +11,8 @@ import org.lwjgl.input.Mouse;
 
 import com.xyp.gtneverreset.client.profile.radialmenu.ProfileManager;
 import com.xyp.gtneverreset.client.profile.radialmenu.ProfileStorage;
+import com.xyp.gtnrlib.gui.widget.RadialUi;
+import com.xyp.gtnrlib.gui.widget.RadialUiList;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

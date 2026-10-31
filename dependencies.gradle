@@ -48,6 +48,7 @@ dependencies {
     runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Angelica") as String)
     compileOnly(elytraModpackVersion.gtnhdev("ThaumicEnergistics") as String) { transitive = false }
     compileOnly(elytraModpackVersion.gtnhdev("MatterManipulator") as String) { transitive = false }
+    testCompileOnly(elytraModpackVersion.gtnhdev("MatterManipulator") as String) { transitive = false }
 
     implementation(elytraModpackVersion.gtnhdev("AE2FluidCraft-Rework") as String) {
         exclude group: "com.github.GTNewHorizons", module: "Applied-Energistics-2-Unofficial"

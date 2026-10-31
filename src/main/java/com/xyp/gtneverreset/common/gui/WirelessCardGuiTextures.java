@@ -3,7 +3,7 @@ package com.xyp.gtneverreset.common.gui;
 import net.minecraft.util.ResourceLocation;
 
 import com.cleanroommc.modularui.drawable.UITexture;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 public final class WirelessCardGuiTextures {
 

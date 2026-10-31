@@ -11,6 +11,7 @@ import org.lwjgl.input.Mouse;
 
 import com.xyp.gtneverreset.config.MainConfig;
 import com.xyp.gtneverreset.mixins.early.minecraft.KeyBindingAccessor;
+import com.xyp.gtnrlib.client.input.KeyBuffer;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.gameevent.InputEvent;

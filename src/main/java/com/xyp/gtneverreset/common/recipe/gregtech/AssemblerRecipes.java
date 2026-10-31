@@ -10,8 +10,8 @@ import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
+import com.xyp.gtnrlib.mod.ModList;
 
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;

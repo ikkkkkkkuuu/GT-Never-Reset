@@ -27,6 +27,7 @@ import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Addres
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Entrance;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessLinkData.Claim;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessLinkData.Slot;
+import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
@@ -175,9 +176,9 @@ public class WirelessLinkPersistence {
     }
 
     static Set<WirelessFrequency> restore(IGridNode node, PhysicalMeTopology topology) {
-        if (IMPORTED.containsKey(node)) return WirelessCollections.setOf();
+        if (IMPORTED.containsKey(node)) return ImmutableCollections.setOf();
         Claim saved = claim(node, topology);
-        return saved == null ? WirelessCollections.setOf() : upgrade(saved.frequencies());
+        return saved == null ? ImmutableCollections.setOf() : upgrade(saved.frequencies());
     }
 
     static void synchronize(PhysicalClusterTracker<IGridNode, WirelessFrequency> tracker, PhysicalMeTopology topology) {
@@ -216,7 +217,7 @@ public class WirelessLinkPersistence {
                             endpoint.kind(),
                             frequencies,
                             sourcePauses,
-                            old == null ? WirelessCollections.setOf() : upgrade(old.entrances())));
+                            old == null ? ImmutableCollections.setOf() : upgrade(old.entrances())));
                 }
             }
         }
@@ -312,7 +313,7 @@ public class WirelessLinkPersistence {
         for (IGridNode node : nodes) {
             if (node.getMachine() instanceof ICustomNameObject named) names.put(node, customName(named));
         }
-        return WirelessCollections.copyMap(names);
+        return ImmutableCollections.copyMap(names);
     }
 
     private static String customName(ICustomNameObject named) {
@@ -450,7 +451,7 @@ public class WirelessLinkPersistence {
     public static void clearLoadedClaims() {
         seeds();
         for (TileEntity tile : new ArrayList<>(TILES)) {
-            if (loaded(tile)) save(tile, WirelessCollections.emptyMap());
+            if (loaded(tile)) save(tile, ImmutableCollections.emptyMap());
         }
     }
 }

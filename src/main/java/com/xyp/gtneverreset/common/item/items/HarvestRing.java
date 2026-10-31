@@ -19,7 +19,7 @@ import net.minecraftforge.event.world.BlockEvent;
 
 import com.gtnewhorizon.cropsnh.api.ICropStickTile;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import baubles.api.BaubleType;
 import baubles.api.IBauble;

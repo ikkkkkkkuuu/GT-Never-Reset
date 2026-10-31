@@ -14,6 +14,9 @@ import org.luaj.vm2.lib.VarArgFunction;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionSpec;
+import com.xyp.gtnrlib.world.ChunkCoords;
+import com.xyp.gtnrlib.world.Facing;
+import com.xyp.gtnrlib.world.WorldTime;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

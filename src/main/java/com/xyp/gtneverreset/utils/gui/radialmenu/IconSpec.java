@@ -139,7 +139,7 @@ public class IconSpec {
             .isEmpty()) {
             return fallback;
         }
-        return com.xyp.gtneverreset.utils.gui.radialmenu.Colors.parseArgb(hex, fallback) & 0x00FFFFFF;
+        return com.xyp.gtnrlib.utils.Colors.parseArgb(hex, fallback) & 0x00FFFFFF;
     }
 
     public void normalize() {

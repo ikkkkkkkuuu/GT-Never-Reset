@@ -44,7 +44,7 @@ public abstract class TerminalPanelWidgetMixin {
             if (WirelessTerminalSession.findDualInterfaceTerminal(minecraft.thePlayer) < 0) return;
             NetWorkHandler.sendToServer(new TerminalItemRequestPacket(stack, control));
         } else if (!(minecraft.currentScreen instanceof GuiQuickEncodingTerminal terminal)
-            || !terminal.requestFluidCraft(stack)) {
+            || !terminal.requestNeiCraft(stack)) {
                 return;
             }
         draggedStack = null;

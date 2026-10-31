@@ -15,7 +15,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovingObjectPosition;
 
 import com.xyp.gtneverreset.config.MainConfig;
-import com.xyp.gtneverreset.utils.gui.radialmenu.AccentCoefficients;
+import com.xyp.gtnrlib.gui.wheel.AccentCoefficients;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

@@ -3,6 +3,7 @@ package com.xyp.gtneverreset.client.keybind;
 import org.lwjgl.input.Keyboard;
 
 import com.xyp.gtneverreset.utils.gui.radialmenu.Modifiers;
+import com.xyp.gtnrlib.client.input.KeyBuffer;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

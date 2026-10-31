@@ -5,11 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.minecraft.launchwrapper.Launch;
-
 import com.gtnewhorizon.gtnhmixins.IEarlyMixinLoader;
 
-import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
 
 @IFMLLoadingPlugin.MCVersion("1.7.10")
@@ -28,20 +25,6 @@ public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLo
                 "wireless.MixinWirelessTileData",
                 "gtnhlib.ServerThreadUtilMixin",
                 "minecraft.VanillaFurnaceMixin"));
-        if (FMLLaunchHandler.side()
-            .isClient()) {
-            mixins.add("texteffect.MixinFontRendererTextEffects");
-            if (loadedCoreMods.contains("com.gtnewhorizons.angelica.loading.AngelicaTweaker")) {
-                mixins.add("texteffect.angelica.MixinFontBatchTextEffects");
-                // Early loading has coremod names, not Forge's completed mod list.
-                boolean gtnlFontBatchPatch = loadedCoreMods.contains("com.science.gtnl.asm.GTNLEarlyCoreMod")
-                    && Launch.classLoader.getResource(
-                        "com/science/gtnl/mixins/early/texteffect/angelica/MixinFontBatchTextEffects.class") != null;
-                mixins.add(
-                    gtnlFontBatchPatch ? "texteffect.gtnl.MixinTextEffectCapture"
-                        : "texteffect.angelica.MixinFontBatchAntialiasing");
-            }
-        }
         return mixins;
     }
 

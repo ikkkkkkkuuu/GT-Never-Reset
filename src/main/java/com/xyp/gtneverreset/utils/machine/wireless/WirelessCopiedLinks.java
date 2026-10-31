@@ -24,6 +24,7 @@ import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Addres
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessLinkData.Claim;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessLinkData.Slot;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessOperations.Result;
+import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.networking.IGridNode;
 import appeng.api.parts.IPart;
@@ -65,7 +66,7 @@ public class WirelessCopiedLinks {
             CopiedLink link = CopiedLink.capture(source, part);
             if (link != null) links.put(side, link);
         });
-        return links.isEmpty() ? null : WirelessCollections.copyMap(links);
+        return links.isEmpty() ? null : ImmutableCollections.copyMap(links);
     }
 
     public static <T> Map<ForgeDirection, T> rotate(Map<ForgeDirection, T> links,
@@ -74,7 +75,7 @@ public class WirelessCopiedLinks {
         Map<ForgeDirection, T> rotated = new EnumMap<>(ForgeDirection.class);
         links.forEach(
             (side, source) -> rotated.put(side == ForgeDirection.UNKNOWN ? side : rotation.apply(side), source));
-        return WirelessCollections.copyMap(rotated);
+        return ImmutableCollections.copyMap(rotated);
     }
 
     public static void pasted(EntityPlayer player, TileEntity tile, Map<ForgeDirection, CopiedLink> links) {
@@ -144,7 +145,7 @@ public class WirelessCopiedLinks {
                         frequencies.iterator()
                             .next()));
         }
-        return links.isEmpty() ? null : WirelessCollections.copyMap(links);
+        return links.isEmpty() ? null : ImmutableCollections.copyMap(links);
     }
 
     static boolean enqueue(UUID player, Address position, TileEntity tile, IPart part, WirelessFrequency source) {

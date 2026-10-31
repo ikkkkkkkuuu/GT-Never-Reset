@@ -14,7 +14,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
 import com.xyp.gtneverreset.common.gui.StockIOGui;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

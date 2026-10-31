@@ -13,7 +13,7 @@ import net.minecraft.world.World;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.part.PartAdvancedIOBus;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.AEApi;
 import appeng.api.config.Upgrades;

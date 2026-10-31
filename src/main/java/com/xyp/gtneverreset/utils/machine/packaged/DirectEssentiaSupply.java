@@ -7,7 +7,7 @@ import com.xyp.gtneverreset.api.packaged.InfusionSourceAccess;
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.utils.enums.AltarStatus;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;

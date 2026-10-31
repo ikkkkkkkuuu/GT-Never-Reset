@@ -13,7 +13,7 @@ import com.cleanroommc.modularui.factory.TileEntityGuiFactory;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessConnector;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 public final class BlockOverloadedProvider extends Block {
 

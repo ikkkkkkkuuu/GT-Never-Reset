@@ -7,10 +7,13 @@ import com.xyp.gtneverreset.client.profile.radialmenu.ProfileManager;
 import com.xyp.gtneverreset.client.profile.radialmenu.ProfileStorage;
 import com.xyp.gtneverreset.config.MainConfig;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionTypes;
-import com.xyp.gtneverreset.utils.gui.radialmenu.Colors;
-import com.xyp.gtneverreset.utils.gui.radialmenu.MenuStyle;
 import com.xyp.gtneverreset.utils.gui.radialmenu.Profile;
-import com.xyp.gtneverreset.utils.gui.radialmenu.WheelColors;
+import com.xyp.gtnrlib.gui.wheel.MenuStyle;
+import com.xyp.gtnrlib.gui.wheel.WheelColors;
+import com.xyp.gtnrlib.gui.widget.RadialUi;
+import com.xyp.gtnrlib.gui.widget.RadialUiColorButton;
+import com.xyp.gtnrlib.gui.widget.RadialUiIconButton;
+import com.xyp.gtnrlib.utils.Colors;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

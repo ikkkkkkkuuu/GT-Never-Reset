@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import com.github.bsideup.jabel.Desugar;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Address;
+import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.networking.IGridNode;
 
@@ -53,7 +54,7 @@ public interface IWirelessLinkView {
             .distinct()
             .map(WirelessLinkPersistence::cleanName)
             .filter(name -> !name.isEmpty())
-            .collect(WirelessCollections.toImmutableSet());
+            .collect(ImmutableCollections.toImmutableSet());
     }
 
     default String name() {
@@ -70,8 +71,8 @@ public interface IWirelessLinkView {
         implements IWirelessLinkView {
 
         public ClusterView {
-            deviceNames = WirelessCollections.copyMap(deviceNames);
-            members = WirelessCollections.copySet(members);
+            deviceNames = ImmutableCollections.copyMap(deviceNames);
+            members = ImmutableCollections.copySet(members);
         }
 
         @Override

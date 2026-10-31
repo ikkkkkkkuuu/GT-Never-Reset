@@ -13,7 +13,7 @@ import com.xyp.gtneverreset.api.packaged.PackagedCoreRegistry;
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.utils.enums.AltarStatus;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.util.inv.MEInventoryCrafting;

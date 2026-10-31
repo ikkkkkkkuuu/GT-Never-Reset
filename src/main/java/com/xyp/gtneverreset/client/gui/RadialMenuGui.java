@@ -21,12 +21,12 @@ import com.xyp.gtneverreset.client.profile.radialmenu.ProfileManager;
 import com.xyp.gtneverreset.client.render.RadialWheelRenderer;
 import com.xyp.gtneverreset.client.script.radialmenu.ScriptHost;
 import com.xyp.gtneverreset.config.MainConfig;
-import com.xyp.gtneverreset.utils.gui.radialmenu.ArcLayout;
 import com.xyp.gtneverreset.utils.gui.radialmenu.MenuNode;
-import com.xyp.gtneverreset.utils.gui.radialmenu.RadialGeometry;
-import com.xyp.gtneverreset.utils.gui.radialmenu.RevealTiming;
-import com.xyp.gtneverreset.utils.gui.radialmenu.SlotLayout;
-import com.xyp.gtneverreset.utils.gui.radialmenu.WheelColors;
+import com.xyp.gtnrlib.gui.wheel.ArcLayout;
+import com.xyp.gtnrlib.gui.wheel.RadialGeometry;
+import com.xyp.gtnrlib.gui.wheel.RevealTiming;
+import com.xyp.gtnrlib.gui.wheel.SlotLayout;
+import com.xyp.gtnrlib.gui.wheel.WheelColors;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

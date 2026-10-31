@@ -14,6 +14,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Address;
+import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.networking.IGridNode;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -146,7 +147,7 @@ public class WirelessFrequencies {
         }
         if (!entries.isEmpty()) {
             Entry inherited = entries.get(canonical(entries.keySet()));
-            for (TileEntity block : unmarked) store(block, WirelessCollections.listOf(inherited));
+            for (TileEntity block : unmarked) store(block, ImmutableCollections.listOf(inherited));
         }
         Set<Address> positions = new ObjectOpenHashSet<>();
         for (TileEntity block : blocks) positions.add(WirelessLinkPersistence.address(block));
@@ -154,10 +155,10 @@ public class WirelessFrequencies {
             .min(Address.POSITION_ORDER)
             .orElseThrow();
         Structure structure = new Structure(
-            WirelessCollections.copyList(blocks),
-            WirelessCollections.copySet(positions),
+            ImmutableCollections.copyList(blocks),
+            ImmutableCollections.copySet(positions),
             representative,
-            WirelessCollections.copyMap(entries));
+            ImmutableCollections.copyMap(entries));
         for (TileEntity block : blocks) STRUCTURES.put(block, structure);
         return structure;
     }
@@ -333,7 +334,7 @@ public class WirelessFrequencies {
 
     private static List<Entry> entries(TileEntity tile) {
         return tile instanceof IWirelessTileData data && data.gtnr$hasFrequencyData() ? read(data.gtnr$wirelessData())
-            : WirelessCollections.listOf();
+            : ImmutableCollections.listOf();
     }
 
     private static void store(TileEntity tile, Collection<Entry> entries) {

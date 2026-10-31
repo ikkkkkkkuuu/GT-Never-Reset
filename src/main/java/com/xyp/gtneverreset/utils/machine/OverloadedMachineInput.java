@@ -123,6 +123,8 @@ public final class OverloadedMachineInput {
             || side == ForgeDirection.UNKNOWN
             || pattern.isCraftable()
             || !(table instanceof MEInventoryCrafting aeTable)) return false;
+        long crafts = table instanceof LargeInventoryCrafting large ? large.getAssemblerSize() : 1;
+        if (crafts <= 0) return false;
         MTEBasicMachine machine = (MTEBasicMachine) tile.getMetaTileEntity();
         if (!tile.isAllowedToWork()) return false;
         if (!overflow.isEmpty()) return false;
@@ -174,7 +176,7 @@ public final class OverloadedMachineInput {
         for (Match candidate : candidates) {
             long expectedBatches = CircuitPatternQuantities.requestedOutputBatches(candidate.outputs, expectedOutputs);
             if (candidate.recipe.mEUt > GTValues.V[machine.mTier] || expectedBatches <= 0
-                || matchingInputs(candidate, actual) != expectedBatches) continue;
+                || !matchesDeliveryBatches(expectedBatches, crafts, matchingInputs(candidate, actual))) continue;
             if (selected != null && !sameCircuit(selected.circuit, candidate.circuit))
                 return reportRejection(tile, pattern, aeTable, "ambiguous-circuit", candidates);
             // Several catalog lenses can produce the same encoded output from the same delivery.
@@ -308,6 +310,12 @@ public final class OverloadedMachineInput {
             .gtnr$setPending(!overflow.isEmpty());
         LAST_DELIVERIES.put(machine, selected);
         return true;
+    }
+
+    static boolean matchesDeliveryBatches(long patternBatches, long crafts, long deliveredBatches) {
+        return patternBatches > 0 && crafts > 0
+            && patternBatches <= Long.MAX_VALUE / crafts
+            && deliveredBatches == patternBatches * crafts;
     }
 
     /** Moves accepted overflow into physical machine inputs as processing frees capacity. */

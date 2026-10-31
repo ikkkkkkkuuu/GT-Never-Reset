@@ -17,12 +17,12 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
-import com.xyp.gtneverreset.client.gui.PixelFontModularScreen;
 import com.xyp.gtneverreset.common.gui.WildcardPatternGui;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.recipes.wildcard.WildcardPatternGenerator;
 import com.xyp.gtneverreset.utils.recipes.wildcard.WildcardPatternState;
+import com.xyp.gtnrlib.client.gui.PixelFontModularScreen;
+import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.items.misc.ItemEncodedPattern;

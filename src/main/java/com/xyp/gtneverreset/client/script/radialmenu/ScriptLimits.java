@@ -1,6 +1,6 @@
 package com.xyp.gtneverreset.client.script.radialmenu;
 
-import com.xyp.gtneverreset.utils.gui.radialmenu.SlotLayout;
+import com.xyp.gtnrlib.gui.wheel.SlotLayout;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

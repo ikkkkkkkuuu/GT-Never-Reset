@@ -13,7 +13,7 @@ import com.xyp.gtneverreset.utils.crafting.quantum.api.stacks.GenericStack;
 import com.xyp.gtneverreset.utils.crafting.quantum.api.stacks.KeyCounter;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.inv.ChildCraftingSimulationState;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.inv.CraftingSimulationState;
-import com.xyp.gtneverreset.utils.crafting.quantum.util.LongMath;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import appeng.api.config.Actionable;
 import it.unimi.dsi.fastutil.objects.Object2LongLinkedOpenHashMap;
@@ -135,7 +135,7 @@ public class CraftingTreeProcess {
         long perCraft = LongMath.saturatedMultiply(unit, multiplier);
         long lost = Math.max(0, perCraft - this.catalystReturns[slot]);
         long items = LongMath.saturatedAdd(perCraft, LongMath.saturatedMultiply(lost, times - 1));
-        return LongMath.saturatedAdd(items / unit, items % unit == 0 ? 0 : 1);
+        return LongMath.ceilDiv(items, unit);
     }
 
     // The most crafts of a batch that the given units of the input of a slot allow

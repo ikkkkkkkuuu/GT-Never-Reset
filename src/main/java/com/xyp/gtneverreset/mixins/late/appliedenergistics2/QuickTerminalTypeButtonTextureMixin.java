@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
 import com.xyp.gtneverreset.client.gui.QuickTerminalButtonTextures;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.client.gui.widgets.TypeToggleButton;
 

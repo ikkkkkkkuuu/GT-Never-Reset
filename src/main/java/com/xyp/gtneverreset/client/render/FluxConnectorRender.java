@@ -23,7 +23,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxConnector;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 import cpw.mods.fml.relauncher.Side;

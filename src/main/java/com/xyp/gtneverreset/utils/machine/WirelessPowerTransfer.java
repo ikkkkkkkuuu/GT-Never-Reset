@@ -5,6 +5,9 @@ import java.util.Arrays;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.xyp.gtneverreset.utils.world.WirelessPowerSavedData;
@@ -82,6 +85,46 @@ public final class WirelessPowerTransfer {
                 WirelessNetworkManager.addEUToGlobalEnergyMap(connection.source, reserved - accepted);
             connection.observed(tile, accepted);
         }
+    }
+
+    public static NBTTagCompound copySettings(TileEntity tile) {
+        if (tile == null || tile.getWorldObj() == null || tile.getWorldObj().isRemote) return null;
+        WirelessPowerSavedData data = WirelessPowerSavedData.get();
+        var connection = data == null ? null : data.connectionAt(tile);
+        if (connection == null) return null;
+        NBTTagCompound settings = new NBTTagCompound();
+        settings.setString("source", connection.source.toString());
+        settings.setInteger("metaId", connection.metaId);
+        settings.setBoolean("paused", connection.paused());
+        return settings;
+    }
+
+    public static void pasteSettings(EntityPlayer player, TileEntity target, NBTTagCompound settings) {
+        if (settings == null || player == null
+            || player instanceof FakePlayer
+            || !(target instanceof BaseMetaTileEntity tile)
+            || tile.getWorldObj() == null
+            || tile.getWorldObj().isRemote
+            || tile.isInvalid()
+            || player.worldObj != tile.getWorldObj()
+            || tile.getMetaTileID() != settings.getInteger("metaId")
+            || !supports(tile)
+            || !tile.playerOwnsThis(player, false)
+            || !player.canPlayerEdit(tile.xCoord, tile.yCoord, tile.zCoord, 1, player.getCurrentEquippedItem())
+            || tile.getWorldObj()
+                .getTileEntity(tile.xCoord, tile.yCoord, tile.zCoord) != tile)
+            return;
+        UUID source = WirelessPowerSavedData.uuid(settings, "source");
+        if (!WirelessPowerSavedData.sourceExists(source)) return;
+        WirelessPowerSavedData data = WirelessPowerSavedData.get();
+        if (data == null) return;
+        var old = data.connection(((IWirelessPowerReceiver) tile).gtnr$powerConnection());
+        boolean paused = settings.getBoolean("paused");
+        if (old != null && (!old.owner.equals(player.getUniqueID())
+            || old.matches(tile) && old.source.equals(source) && old.paused() == paused)) return;
+        data.remember(player.getUniqueID(), player.getCommandSenderName());
+        var connection = data.connect(tile, player.getUniqueID(), source);
+        if (paused) data.toggle(connection.id, connection.owner);
     }
 
     public static long offeredAmperes(long voltage, long limit, long room, long available) {

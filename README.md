@@ -6,11 +6,13 @@
 
 | GTNH 版本 | 模组版本 | 现状 | 下载 |
 | --- | --- | --- | --- |
-| `2.9.0-RC-2`（开发基准） | `0.1.7` | 已发布 | [![Download Releases](https://img.shields.io/badge/Download-Releases-blue)](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.7) |
+| `2.9.0-RC-2`（开发基准） | `0.1.8` | 已发布 | [![Download Releases](https://img.shields.io/badge/Download-Releases-blue)](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.8) |
 
-可在 [0.1.7 发行页](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.7) 下载正式模组文件 `gtneverreset-0.1.7.jar`。构建状态与日志可在 [Actions](https://github.com/ikkkkkkkuuu/GT-Never-Reset/actions) 查看。
+可在 [0.1.8 发行页](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.8) 下载正式模组文件 `gtneverreset-0.1.8.jar`。构建状态与日志可在 [Actions](https://github.com/ikkkkkkkuuu/GT-Never-Reset/actions) 查看。
 
 开发环境使用 Minecraft `1.7.10`、Forge `10.13.4.1614`，以 GTNH `2.9.0-RC-2` 的依赖清单为基准；其他 GTNH 版本的兼容性尚待验证。
+
+从 0.1.8 起，已将文字特效、共享 GUI 与轮盘基础、世界监听及通用工具拆为独立的 [GTNRLib](gtnrlib/README.md)。安装本版本时，需要同时安装同次构建的 `gtneverreset-*.jar` 与 `gtnrlib-*.jar`。`build/libs` 会收集两个模组的产物，`-dev`、`-sources` 和 `-predowngrade` 文件不用于正式安装。
 
 ## 🧩 功能介绍
 

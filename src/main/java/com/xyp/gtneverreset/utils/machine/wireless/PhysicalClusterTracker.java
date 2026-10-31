@@ -14,6 +14,7 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import com.github.bsideup.jabel.Desugar;
+import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 public class PhysicalClusterTracker<N, F> {
 
@@ -44,7 +45,7 @@ public class PhysicalClusterTracker<N, F> {
     private final int maxNodes;
     private Map<N, Set<F>> claims = new IdentityHashMap<>();
     private Map<N, Cluster<N, F>> byNode = new IdentityHashMap<>();
-    private List<Cluster<N, F>> clusters = WirelessCollections.listOf();
+    private List<Cluster<N, F>> clusters = ImmutableCollections.listOf();
 
     public PhysicalClusterTracker(int maxNodes) {
         this.maxNodes = maxNodes;
@@ -63,7 +64,7 @@ public class PhysicalClusterTracker<N, F> {
     }
 
     public Set<F> claimsOf(N node) {
-        return claims.getOrDefault(node, WirelessCollections.setOf());
+        return claims.getOrDefault(node, ImmutableCollections.setOf());
     }
 
     public void refresh(Topology<N> topology, Collection<N> extraSeeds, Function<N, Set<F>> savedClaims,
@@ -105,8 +106,8 @@ public class PhysicalClusterTracker<N, F> {
         components.forEach(
             (scan, members) -> scanned.add(
                 new Cluster<>(
-                    WirelessCollections.copySet(members),
-                    WirelessCollections.setOf(),
+                    ImmutableCollections.copySet(members),
+                    ImmutableCollections.setOf(),
                     members.stream()
                         .anyMatch(topology::blocksWireless),
                     scan.limited)));
@@ -114,7 +115,7 @@ public class PhysicalClusterTracker<N, F> {
     }
 
     void commitClaims(UnaryOperator<F> frequencyIdentity) {
-        rebuildClaims(clusters, node -> WirelessCollections.setOf(), frequencyIdentity);
+        rebuildClaims(clusters, node -> ImmutableCollections.setOf(), frequencyIdentity);
     }
 
     private void rebuildClaims(List<Cluster<N, F>> scanned, Function<N, Set<F>> savedClaims,
@@ -134,14 +135,14 @@ public class PhysicalClusterTracker<N, F> {
                 frequencies.addAll(labels);
             }
             Cluster<N, F> cluster = new Cluster<>(
-                WirelessCollections.copySet(members),
+                ImmutableCollections.copySet(members),
                 frequencies.stream()
                     .map(frequencyIdentity)
-                    .collect(WirelessCollections.toImmutableSet()),
+                    .collect(ImmutableCollections.toImmutableSet()),
                 blocked,
                 limited);
             Set<F> sharedClaim = frequencies.size() == 1 && !blocked && !limited
-                ? WirelessCollections.copySet(frequencies)
+                ? ImmutableCollections.copySet(frequencies)
                 : null;
             nextClusters.add(cluster);
             for (N node : members) {
@@ -158,7 +159,7 @@ public class PhysicalClusterTracker<N, F> {
         }
         claims = nextClaims;
         byNode = nextByNode;
-        clusters = WirelessCollections.copyList(nextClusters);
+        clusters = ImmutableCollections.copyList(nextClusters);
     }
 
     private static class Scan {
@@ -188,7 +189,7 @@ public class PhysicalClusterTracker<N, F> {
                     .contains(frequencyIdentity.apply(frequency))) {
             throw new IllegalArgumentException("This physical cluster is blocked or belongs to another frequency.");
         }
-        Set<F> sharedClaim = WirelessCollections.setOf(frequency);
+        Set<F> sharedClaim = ImmutableCollections.setOf(frequency);
         for (N node : cluster.nodes()) claims.put(node, sharedClaim);
     }
 
@@ -202,7 +203,7 @@ public class PhysicalClusterTracker<N, F> {
                 label -> frequencyIdentity.apply(label)
                     .equals(identity));
             if (remaining.isEmpty()) claims.remove(node);
-            else claims.put(node, WirelessCollections.copySet(remaining));
+            else claims.put(node, ImmutableCollections.copySet(remaining));
         }
     }
 
@@ -214,7 +215,7 @@ public class PhysicalClusterTracker<N, F> {
     public void clear() {
         claims.clear();
         byNode.clear();
-        clusters = WirelessCollections.listOf();
+        clusters = ImmutableCollections.listOf();
     }
 
     private static <N> Set<N> identitySet() {

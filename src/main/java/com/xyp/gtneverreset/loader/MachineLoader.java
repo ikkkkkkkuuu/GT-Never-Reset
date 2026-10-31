@@ -30,10 +30,10 @@ import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.ModernMachineTextures;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtneverreset.utils.text.AnimatedText;
+import com.xyp.gtnrlib.mod.ModList;
 
 import gregtech.api.enums.SoundResource;
 import gregtech.api.enums.Textures;

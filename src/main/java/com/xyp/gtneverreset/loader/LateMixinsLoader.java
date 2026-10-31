@@ -7,7 +7,7 @@ import java.util.Set;
 
 import com.gtnewhorizon.gtnhmixins.ILateMixinLoader;
 import com.gtnewhorizon.gtnhmixins.LateMixin;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.relauncher.FMLLaunchHandler;
 
@@ -39,6 +39,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("thaumcraft.MixinPackagedCrucible");
         }
         if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
+            mixins.add("gregtech.BrickedBlastFurnaceAutomationMixin");
             mixins.add("gregtech.OverloadedMachineConfigurationMixin");
             mixins.add("gregtech.BasicMachineMoldGuiMixin");
             if (FMLLaunchHandler.side()
@@ -47,6 +48,10 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             }
             mixins.add("gregtech.ToolCraftingDurabilityMixin");
             mixins.add("gregtech.WirelessPowerReceiverMixin");
+            if (loadedMods.contains(ModList.ModIds.MATTER_MANIPULATOR)) {
+                mixins.add("matterManipulator.MixinPendingBlockWirelessPower");
+                mixins.add("matterManipulator.MixinPendingMoveWirelessPower");
+            }
             mixins.add("gregtech.AssemblyLineDataAccessMixin");
             mixins.addAll(
                 Arrays.asList(
@@ -88,6 +93,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
                     "appliedenergistics2.wireless.MixinWirelessPathingCalculation",
                     "appliedenergistics2.wireless.MixinWirelessVisualiserTool",
                     "appliedenergistics2.DualityInterfaceMixin",
+                    "appliedenergistics2.MixinCraftingCPUClusterFollow",
                     "appliedenergistics2.ItemEncodedPatternMixin",
                     "appliedenergistics2.PatternMultiplierHelperMixin",
                     "appliedenergistics2.MatrixWildcardPatternOptimizationMixin"));

@@ -10,7 +10,7 @@ import net.minecraft.util.StatCollector;
 
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.common.registry.GameRegistry;
 

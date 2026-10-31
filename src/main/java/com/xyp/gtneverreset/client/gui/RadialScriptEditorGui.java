@@ -18,6 +18,7 @@ import com.xyp.gtneverreset.client.script.radialmenu.LuaSyntax;
 import com.xyp.gtneverreset.client.script.radialmenu.ScriptIcons;
 import com.xyp.gtneverreset.client.script.radialmenu.ScriptSnippets;
 import com.xyp.gtneverreset.utils.gui.radialmenu.IconSpec;
+import com.xyp.gtnrlib.gui.widget.RadialUi;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

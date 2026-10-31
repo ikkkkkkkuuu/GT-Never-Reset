@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiButton;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionSpec;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionType;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionTypes;
+import com.xyp.gtnrlib.gui.widget.RadialUi;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

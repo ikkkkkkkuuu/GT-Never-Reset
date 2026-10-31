@@ -10,6 +10,8 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.xyp.gtnrlib.utils.LongMath;
+
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.storage.IMEInventory;
 import appeng.api.storage.ISaveProvider;
@@ -349,7 +351,7 @@ public final class MEOutputAssemblyFluidOutput extends MTEHatchOutput {
             long amount = Math.min(stack.amount, availableSpace - pending.getTotal());
             if (needsTotalParallelData() && totalPerParallel > 0 && perParallel > 0) {
                 long parallels = Math.max(1, Math.min(Integer.MAX_VALUE, availableSpace / totalPerParallel));
-                long budget = perParallel > Long.MAX_VALUE / parallels ? Long.MAX_VALUE : perParallel * parallels;
+                long budget = LongMath.saturatedMultiply(perParallel, parallels);
                 amount = Math.min(amount, budget);
             }
             if (amount <= 0) return false;

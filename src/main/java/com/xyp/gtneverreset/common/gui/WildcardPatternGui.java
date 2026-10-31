@@ -4,16 +4,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTException;
@@ -21,27 +17,16 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fluids.FluidStack;
 
-import org.jetbrains.annotations.NotNull;
-
-import com.cleanroommc.modularui.api.MCHelper;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
-import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.drawable.DynamicDrawable;
 import com.cleanroommc.modularui.drawable.ItemDrawable;
 import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.drawable.UITexture;
-import com.cleanroommc.modularui.drawable.text.TextRenderer;
 import com.cleanroommc.modularui.factory.PlayerInventoryGuiData;
-import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerGhostIngredientSlot;
 import com.cleanroommc.modularui.screen.ModularPanel;
-import com.cleanroommc.modularui.screen.RichTooltip;
 import com.cleanroommc.modularui.screen.UISettings;
-import com.cleanroommc.modularui.screen.viewport.GuiContext;
-import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
-import com.cleanroommc.modularui.theme.WidgetTheme;
-import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.LongValue;
 import com.cleanroommc.modularui.value.StringValue;
@@ -49,7 +34,6 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.value.sync.StringSyncValue;
 import com.cleanroommc.modularui.value.sync.SyncHandler;
 import com.cleanroommc.modularui.widget.ParentWidget;
-import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widget.scroll.VerticalScrollData;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
@@ -58,11 +42,8 @@ import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.ScrollingTextWidget;
 import com.cleanroommc.modularui.widgets.SlotGroupWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
-import com.cleanroommc.modularui.widgets.menu.AbstractMenuButton;
-import com.cleanroommc.modularui.widgets.menu.Menu;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.inventory.FluidDropCompat;
 import com.xyp.gtneverreset.utils.recipes.wildcard.WildcardPatternGenerator;
 import com.xyp.gtneverreset.utils.recipes.wildcard.model.IWildcardFilterComponent;
@@ -78,6 +59,10 @@ import com.xyp.gtneverreset.utils.recipes.wildcard.model.filter.SubTagFilterComp
 import com.xyp.gtneverreset.utils.recipes.wildcard.model.io.FluidIOComponent;
 import com.xyp.gtneverreset.utils.recipes.wildcard.model.io.PrefixIOComponent;
 import com.xyp.gtneverreset.utils.recipes.wildcard.model.io.SimpleIOComponent;
+import com.xyp.gtnrlib.gui.theme.ModernGuiSkin;
+import com.xyp.gtnrlib.gui.widget.ItemStackSlot;
+import com.xyp.gtnrlib.gui.widget.ScrollingDropdown;
+import com.xyp.gtnrlib.mod.ModList;
 
 import gregtech.api.enums.FluidState;
 import gregtech.api.enums.Materials;
@@ -92,7 +77,7 @@ public class WildcardPatternGui {
     private static final int PANEL_W = 192;
     private static final int PANEL_H = 292;
 
-    private static final Theme THEME = Theme.INSTANCE;
+    private static final ModernGuiSkin THEME = new ModernGuiSkin(ModList.ModIds.GT_NEVER_RESET, "gui/ldlib/modern/");
 
     private static final IDrawable REFERENCE_PURPLE = THEME.button.withColorOverride(0xFF9933FF);
 
@@ -529,7 +514,7 @@ public class WildcardPatternGui {
 
     /** Source selector: changing the example replaces candidates and selects the first available property. */
     private IWidget propertyEditor(PropertyFilterComponent component) {
-        SelectorWidget selector = new SelectorWidget(
+        ScrollingDropdown selector = new ScrollingDropdown(
             "wildcard_property_" + filters.indexOf(component),
             THEME.button,
             propertyNames(component.getExample()))
@@ -578,7 +563,7 @@ public class WildcardPatternGui {
 
     /** Flags use 1.7.10 SubTags with the original source's candidate replacement interaction. */
     private IWidget subTagEditor(SubTagFilterComponent component) {
-        SelectorWidget selector = new SelectorWidget(
+        ScrollingDropdown selector = new ScrollingDropdown(
             "wildcard_subtag_" + filters.indexOf(component),
             THEME.button,
             subTagNames(component.getExample()))
@@ -747,63 +732,11 @@ public class WildcardPatternGui {
         public void readOnServer(int id, PacketBuffer buf) {}
     }
 
-    /**
-     * 一个类槽位的输入控件：渲染一个物品图标，支持
-     * <ul>
-     * <li>鼠标左键：把光标上拿着的物品放入（复制一份，数量置 1），空手点击则清空；</li>
-     * <li>从 NEI 拖入物品（实现 {@link RecipeViewerGhostIngredientSlot}）。</li>
-     * </ul>
-     * 放入/拖入的物品通过 {@code onDrop} 回调交给上层解析（矿辞前缀 / 真实名 / 固定物品）。
-     * 纯客户端交互，不做同步；结果由外层"保存"统一推送到服务端。
-     */
-    public static final class DropWidget extends Widget<DropWidget>
-        implements Interactable, RecipeViewerGhostIngredientSlot<ItemStack> {
-
-        private final Supplier<ItemStack> getter;
-        private final Consumer<ItemStack> onDrop;
+    public static final class DropWidget extends ItemStackSlot {
 
         private DropWidget(Supplier<ItemStack> getter, Consumer<ItemStack> onDrop) {
-            this.getter = getter;
-            this.onDrop = onDrop;
-            size(18);
-            background(Theme.INSTANCE.slot);
-        }
-
-        @Override
-        public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
-            ItemStack stack = getter == null ? null : getter.get();
-            stack = WildcardMaterials.toDisplayStack(stack);
-            if (stack != null && stack.getItem() != null) {
-                new ItemDrawable(stack).draw(context, 1, 1, 16, 16, widgetTheme.getTheme());
-            }
-        }
-
-        @Override
-        public @NotNull Result onMousePressed(int mouseButton) {
-            EntityPlayer player = MCHelper.getPlayer();
-            ItemStack held = player == null ? null : player.inventory.getItemStack();
-            if (held != null && held.getItem() != null) {
-                ItemStack copy = held.copy();
-                copy.stackSize = 1;
-                fire(copy);
-            } else {
-                fire(null);
-            }
-            Interactable.playButtonClickSound();
-            return Result.SUCCESS;
-        }
-
-        @Override
-        public boolean handleDragAndDrop(@NotNull ItemStack draggedStack, int button) {
-            if (draggedStack.getItem() == null) return false;
-            ItemStack copy = draggedStack.copy();
-            copy.stackSize = 1;
-            fire(copy);
-            return true;
-        }
-
-        private void fire(ItemStack stack) {
-            if (onDrop != null) onDrop.accept(stack);
+            super(() -> WildcardMaterials.toDisplayStack(getter == null ? null : getter.get()), THEME.slot);
+            onDrop(onDrop);
         }
     }
 
@@ -832,7 +765,7 @@ public class WildcardPatternGui {
                     .pos(2, 2)
                     .size(136, 15));
             child(
-                Theme.INSTANCE.button()
+                THEME.button()
                     .pos(140, 2)
                     .size(14)
                     .overlay(
@@ -854,8 +787,14 @@ public class WildcardPatternGui {
                     }));
             for (int i = 0; i < 6; i++) {
                 final int slot = i;
-                child(new IconWidget(() -> stack(true, slot)).pos(10 + i % 3 * 18, 18 + i / 3 * 18));
-                child(new IconWidget(() -> stack(false, slot)).pos(94 + i % 3 * 18, 18 + i / 3 * 18));
+                child(
+                    new ItemStackSlot(() -> WildcardMaterials.toDisplayStack(stack(true, slot)), THEME.slot)
+                        .itemTooltip()
+                        .pos(10 + i % 3 * 18, 18 + i / 3 * 18));
+                child(
+                    new ItemStackSlot(() -> WildcardMaterials.toDisplayStack(stack(false, slot)), THEME.slot)
+                        .itemTooltip()
+                        .pos(94 + i % 3 * 18, 18 + i / 3 * 18));
             }
             child(
                 UITexture.builder()
@@ -875,7 +814,7 @@ public class WildcardPatternGui {
                     .pos(2, 61)
                     .size(28, 12));
             child(
-                Theme.INSTANCE.textField()
+                THEME.textField()
                     .pos(32, 59)
                     .size(124, 16)
                     .autoUpdateOnChange(true)
@@ -933,277 +872,6 @@ public class WildcardPatternGui {
             return patterns.isEmpty() ? null : patterns.get(index).materialName;
         }
 
-        /**
-         * 只读物品图标格：每帧从 supplier 读取要显示的物品并绘制（带槽位背景）。用于预览页的输入/输出格。
-         */
-        private static final class IconWidget extends Widget<IconWidget> {
-
-            private final Supplier<ItemStack> getter;
-
-            private IconWidget(Supplier<ItemStack> getter) {
-                this.getter = getter;
-                size(18);
-                background(Theme.INSTANCE.slot);
-                tooltip().setAutoUpdate(true)
-                    .tooltipBuilder(tooltip -> {
-                        ItemStack stack = displayStack();
-                        if (stack != null && stack.getItem() != null) tooltip.addFromItem(stack);
-                    });
-            }
-
-            @Override
-            public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
-                ItemStack stack = displayStack();
-                if (stack != null && stack.getItem() != null) {
-                    new ItemDrawable(stack).draw(context, 1, 1, 16, 16, widgetTheme.getTheme());
-                }
-            }
-
-            /** Uses the same fluid display conversion for the icon and its item tooltip. */
-            private ItemStack displayStack() {
-                return WildcardMaterials.toDisplayStack(getter == null ? null : getter.get());
-            }
-
-            /** Supplies the current item to MUI tooltip events and rebuilds text as the preview cycles. */
-            @Override
-            public void drawForeground(ModularGuiContext context) {
-                ItemStack stack = displayStack();
-                RichTooltip tooltip = getTooltip();
-                if (stack != null && stack.getItem() != null
-                    && tooltip != null
-                    && isHoveringFor(tooltip.getShowUpTimer())
-                    && !context.hasDraggable()) {
-                    tooltip.draw(context, stack);
-                }
-            }
-        }
     }
 
-    /**
-     * Wildcard Pattern's LDLib selector interaction adapted to MUI2 floating menus.
-     * The button has dark text, while the translucent popup has white 15-pixel rows, at most five visible.
-     * Programmatic updates are silent; a user selection invokes the callback once and closes the menu.
-     * MUI2 owns the popup layer, outside-click dismissal and scroll clipping.
-     */
-    private static final class SelectorWidget extends AbstractMenuButton<SelectorWidget> {
-
-        /** MUI caches panel handlers by name for the screen lifetime, including removed filter rows. */
-        private static final AtomicLong NEXT_MENU_ID = new AtomicLong();
-        private static final IDrawable SELECTED = new Rectangle().color(0xFFFFFFFF)
-            .hollow(1);
-        private final List<String> candidates = new ArrayList<>();
-        private String value = "";
-        private Consumer<String> onChanged = ignored -> {};
-        private int maxCount = 5;
-
-        private SelectorWidget(String name, IDrawable button, List<String> candidates) {
-            super(name + "_menu_" + NEXT_MENU_ID.getAndIncrement());
-            name(name);
-            openOnHover = false;
-            size(80, 15);
-            padding(0);
-            background(button);
-            disableHoverBackground();
-            overlay(new ScrollingTextDrawable(() -> value, 0xFF444444, false));
-            tooltip().setAutoUpdate(true)
-                .tooltipBuilder(tooltip -> { if (!value.isEmpty()) tooltip.addLine(IKey.str(value)); });
-            setCandidates(candidates);
-        }
-
-        /** Replaces options and invalidates the popup; never selects or writes a model value implicitly. */
-        public SelectorWidget setCandidates(List<String> values) {
-            List<String> copy = new ArrayList<>(Objects.requireNonNull(values));
-            copy.forEach(Objects::requireNonNull);
-            if (isOpen()) closeMenu(false);
-            candidates.clear();
-            candidates.addAll(copy);
-            setMenu(null);
-            return this;
-        }
-
-        public List<String> getCandidates() {
-            return Collections.unmodifiableList(candidates);
-        }
-
-        public SelectorWidget setValue(String value) {
-            this.value = Objects.requireNonNull(value);
-            return this;
-        }
-
-        public String getSelectedValue() {
-            return value;
-        }
-
-        public SelectorWidget setOnChanged(Consumer<String> callback) {
-            onChanged = Objects.requireNonNull(callback);
-            return this;
-        }
-
-        public SelectorWidget setMaxCount(int count) {
-            if (count < 1) throw new IllegalArgumentException("Positive row count required");
-            maxCount = count;
-            setCandidates(new ArrayList<>(candidates));
-            return this;
-        }
-
-        @Override
-        public void openMenu(boolean soft) {
-            if (isValid() && areAncestorsEnabled() && !candidates.isEmpty()) super.openMenu(soft);
-        }
-
-        /**
-         * A menu may still receive close events while its panel is finishing its closing animation.
-         * Never walk a removed source's parent chain; also retire menus whose source page is hidden.
-         */
-        @Override
-        protected void checkClose(boolean soft, boolean requireNoHover) {
-            if (!isValid() || !areAncestorsEnabled()) {
-                closeMenu(false);
-                return;
-            }
-            super.checkClose(soft, requireNoHover);
-        }
-
-        /** Closes and drops the floating menu before MUI invalidates this row's parent and context. */
-        @Override
-        public void dispose() {
-            try {
-                closeMenu(false);
-                setMenu(null);
-            } finally {
-                super.dispose();
-            }
-        }
-
-        @Override
-        protected Menu<?> createMenu() {
-            ListWidget<IWidget, ?> list = new ListWidget<>().widthRel(1f)
-                .maxSize(maxCount * 15)
-                .scrollDirection(new VerticalScrollData(false, 4).texture(new Rectangle().color(0xFFFFFFFF)));
-            for (String candidate : candidates) {
-                list.child(
-                    new ButtonWidget<>().widthRel(1f)
-                        .height(15)
-                        .padding(0)
-                        .background(new DynamicDrawable(() -> candidate.equals(value) ? SELECTED : null))
-                        .disableHoverBackground()
-                        .overlay(new ScrollingTextDrawable(() -> candidate, 0xFFFFFFFF, true))
-                        .tooltipBuilder(tooltip -> tooltip.addLine(IKey.str(candidate)))
-                        .onMousePressed(mouse -> {
-                            if (mouse != 0) return false;
-                            if (!isValid() || !areAncestorsEnabled()) {
-                                closeMenu(false);
-                                return true;
-                            }
-                            if (candidates.contains(candidate)) {
-                                setValue(candidate);
-                                closeMenu(false);
-                                onChanged.accept(candidate);
-                            }
-                            return true;
-                        }));
-            }
-            return new Menu<>().widthRel(1f)
-                .coverChildrenHeight()
-                .padding(0)
-                .background(new Rectangle().color(0xAA000000))
-                .child(list);
-        }
-
-        /**
-         * Single-line selector caption: short text is centered, long text scrolls between its ends without wrapping.
-         * Uses MUI's clipping implementation so floating menus and scroll-list transforms remain aligned.
-         * Each caption owns its renderer and timing; changing its value resets the initial reading pause.
-         */
-        private static final class ScrollingTextDrawable implements IDrawable {
-
-            private final Supplier<String> text;
-            private final TextRenderer renderer = new TextRenderer();
-            private String previous;
-            private long started;
-
-            private ScrollingTextDrawable(Supplier<String> text, int color, boolean shadow) {
-                this.text = Objects.requireNonNull(text);
-                renderer.setColor(color);
-                renderer.setShadow(shadow);
-                renderer.setHardWrapOnBorder(false);
-            }
-
-            @Override
-            public void draw(GuiContext context, int x, int y, int width, int height, WidgetTheme theme) {
-                if (width <= 4 || height <= 0) return;
-                String supplied = text.get();
-                String value = supplied == null ? ""
-                    : supplied.replace('\n', ' ')
-                        .replace('\r', ' ');
-                long now = Minecraft.getSystemTime();
-                if (!value.equals(previous)) {
-                    previous = value;
-                    started = now;
-                }
-                int available = width - 4;
-                TextRenderer.Line line = renderer.line(value);
-                renderer.setPos(x + 2, y);
-                boolean overflow = line.getWidth() > available;
-                renderer.setAlignment(overflow ? Alignment.CenterLeft : Alignment.Center, available, height);
-                if (overflow) {
-                    long travel = Math.max(1000, (long) ((line.getWidth() - available) * 50));
-                    long phase = Math.max(0, now - started) % (travel * 2 + 1600);
-                    float progress = phase < 800 ? 0
-                        : phase < 800 + travel ? (phase - 800) / (float) travel
-                            : phase < 1600 + travel ? 1 : 1 - (phase - 1600 - travel) / (float) travel;
-                    renderer.drawScrolling(line, progress, null, context);
-                } else {
-                    renderer.drawSimple(value);
-                }
-            }
-        }
-    }
-
-    private static final class Theme {
-
-        private static final Theme INSTANCE = new Theme();
-
-        private final UITexture panel = texture("background", 256, 256, 2);
-        private final UITexture button = texture("button", 200, 20, 3);
-        private final UITexture hover = texture("button_highlighted", 200, 20, 3);
-        private final UITexture disabled = texture("button_disabled", 200, 20, 3);
-        private final UITexture slot = texture("slot", 18, 18, 1);
-        private final UITexture tab = sprite("tabs_left", 64, 84, 0, 28, 32, 28, 3);
-        private final UITexture selectedTab = sprite("tabs_left", 64, 84, 32, 28, 32, 28, 3);
-        private final UITexture input = sprite("text_field", 128, 128, 0, 0, 128, 12, 1);
-        private final UITexture inputFocused = sprite("text_field", 128, 128, 0, 24, 128, 12, 1);
-
-        private Theme() {}
-
-        private ButtonWidget<?> button() {
-            ButtonWidget<?> widget = new ButtonWidget<>();
-            return widget.background(new DynamicDrawable(() -> widget.isEnabled() ? button : disabled))
-                .hoverBackground(hover);
-        }
-
-        private TextFieldWidget textField() {
-            TextFieldWidget field = new TextFieldWidget();
-            return field.background(new DynamicDrawable(() -> field.isFocused() ? inputFocused : input))
-                .padding(3, 0)
-                .setTextAlignment(Alignment.CenterLeft)
-                .setTextColor(0xFFFFFFFF);
-        }
-
-        private static UITexture texture(String name, int width, int height, int border) {
-            return sprite(name, width, height, 0, 0, width, height, border);
-        }
-
-        private static UITexture sprite(String name, int imageWidth, int imageHeight, int x, int y, int width,
-            int height, int border) {
-            return UITexture.builder()
-                .location(ModList.ModIds.GT_NEVER_RESET, "gui/ldlib/modern/" + name)
-                .imageSize(imageWidth, imageHeight)
-                .nonOpaque()
-                .subAreaXYWH(x, y, width, height)
-                .adaptable(border)
-                .build()
-                .withColorOverride(0xFFFFFFFF);
-        }
-    }
 }

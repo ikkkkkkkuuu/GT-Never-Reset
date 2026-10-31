@@ -21,3 +21,4 @@ plugins {
 }
 
 rootProject.name = "GT-Never-Reset"
+include("gtnrlib")

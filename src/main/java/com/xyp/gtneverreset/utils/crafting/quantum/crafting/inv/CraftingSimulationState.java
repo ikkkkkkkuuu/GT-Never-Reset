@@ -11,7 +11,7 @@ import com.xyp.gtneverreset.utils.crafting.quantum.api.stacks.GenericStack;
 import com.xyp.gtneverreset.utils.crafting.quantum.api.stacks.KeyCounter;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.CraftingCalculation;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.CraftingPlan;
-import com.xyp.gtneverreset.utils.crafting.quantum.util.LongMath;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.FuzzyMode;

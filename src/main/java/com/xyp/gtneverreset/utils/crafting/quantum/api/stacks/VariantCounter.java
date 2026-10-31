@@ -7,6 +7,8 @@ import java.util.NoSuchElementException;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.xyp.gtnrlib.utils.LongMath;
+
 import appeng.api.config.FuzzyMode;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongMaps;
@@ -30,15 +32,7 @@ abstract class VariantCounter implements Iterable<Object2LongMap.Entry<AEKey>> {
     public void add(AEKey key, long amount) {
         var records = getRecords();
         if (saturating) {
-            long newAmount;
-            long left = records.getLong(key);
-            long result = left + amount;
-            if (((left ^ result) & (amount ^ result)) < 0) {
-                newAmount = result < 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
-            } else {
-                newAmount = result;
-            }
-            records.put(key, newAmount);
+            records.put(key, LongMath.saturatedAdd(records.getLong(key), amount));
         } else {
             records.addTo(key, amount);
         }

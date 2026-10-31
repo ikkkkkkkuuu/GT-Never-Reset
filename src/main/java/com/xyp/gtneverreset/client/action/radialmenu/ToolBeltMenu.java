@@ -15,8 +15,8 @@ import com.xyp.gtneverreset.common.packet.ToolBeltSwapPacket;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionSpec;
 import com.xyp.gtneverreset.utils.gui.radialmenu.IconSpec;
 import com.xyp.gtneverreset.utils.gui.radialmenu.MenuNode;
-import com.xyp.gtneverreset.utils.gui.radialmenu.SlotLayout;
 import com.xyp.gtneverreset.utils.inventory.ToolBeltData;
+import com.xyp.gtnrlib.gui.wheel.SlotLayout;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

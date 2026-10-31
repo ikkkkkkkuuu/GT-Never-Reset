@@ -4,6 +4,8 @@ import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 
+import com.xyp.gtnrlib.mod.ModList;
+
 import cpw.mods.fml.common.registry.GameRegistry;
 import gregtech.api.enums.MetaTileEntityIDs;
 import gregtech.api.enums.Mods;

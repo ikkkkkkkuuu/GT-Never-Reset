@@ -19,12 +19,13 @@ import com.xyp.gtneverreset.client.gui.RadialMenuGui.RadialWheelRing;
 import com.xyp.gtneverreset.client.profile.radialmenu.ProfileManager;
 import com.xyp.gtneverreset.client.render.radialmenu.IconRenderer;
 import com.xyp.gtneverreset.config.MainConfig;
-import com.xyp.gtneverreset.utils.enums.RevealAnimation;
 import com.xyp.gtneverreset.utils.enums.SlotPlate;
 import com.xyp.gtneverreset.utils.gui.radialmenu.MenuNode;
-import com.xyp.gtneverreset.utils.gui.radialmenu.RadialGeometry;
-import com.xyp.gtneverreset.utils.gui.radialmenu.StyleResolver;
-import com.xyp.gtneverreset.utils.gui.radialmenu.WheelColors;
+import com.xyp.gtnrlib.gui.wheel.RadialGeometry;
+import com.xyp.gtnrlib.gui.wheel.RevealAnimation;
+import com.xyp.gtnrlib.gui.wheel.StyleResolver;
+import com.xyp.gtnrlib.gui.wheel.WheelColors;
+import com.xyp.gtnrlib.utils.Colors;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -49,8 +50,8 @@ public final class RadialWheelRenderer {
         }
 
         return new WheelColors(
-            blend(colors.ring, 0xFFAA00, 0.25F),
-            blend(colors.highlight, 0xFFAA00, 0.45F),
+            Colors.blendRgb(colors.ring, 0xFFAA00, 0.25F),
+            Colors.blendRgb(colors.highlight, 0xFFAA00, 0.45F),
             colors.border,
             colors.highlightBorder,
             colors.background,
@@ -92,10 +93,10 @@ public final class RadialWheelRenderer {
             int color = slot == hoveredSlot ? colors.highlight : colors.ring;
             if (!filled) {
 
-                color = fade(color, 0.35F);
+                color = Colors.fadeAlpha(color, 0.35F);
             }
-            color = fade(color, reveal);
-            int lineColor = fade(colors.border, reveal);
+            color = Colors.fadeAlpha(color, reveal);
+            int lineColor = Colors.fadeAlpha(colors.border, reveal);
             double start = ring.slotStart(slot);
 
             fillSector(centerX, centerY, sectorInner, sectorOuter, start, span, gap, color);
@@ -147,7 +148,7 @@ public final class RadialWheelRenderer {
                 gap,
                 width,
                 width,
-                fade(colors.highlightBorder, reveal));
+                Colors.fadeAlpha(colors.highlightBorder, reveal));
         }
 
         endShapes();
@@ -589,19 +590,6 @@ public final class RadialWheelRenderer {
         int y = lines == 0 ? centerY - font.FONT_HEIGHT / 2 : centerY + lines * font.FONT_HEIGHT / 2 + 1;
 
         font.drawStringWithShadow(text, centerX - font.getStringWidth(text) / 2, y, 0xFFFFAA00);
-    }
-
-    private static int blend(int argb, int rgb, float amount) {
-        int alpha = argb >>> 24;
-        int r = Math.round(((argb >> 16) & 0xFF) * (1 - amount) + ((rgb >> 16) & 0xFF) * amount);
-        int g = Math.round(((argb >> 8) & 0xFF) * (1 - amount) + ((rgb >> 8) & 0xFF) * amount);
-        int b = Math.round((argb & 0xFF) * (1 - amount) + (rgb & 0xFF) * amount);
-        return (alpha << 24) | (r << 16) | (g << 8) | b;
-    }
-
-    private static int fade(int argb, float factor) {
-        int alpha = (int) (((argb >>> 24) & 0xFF) * factor);
-        return (alpha << 24) | (argb & 0xFFFFFF);
     }
 
 }

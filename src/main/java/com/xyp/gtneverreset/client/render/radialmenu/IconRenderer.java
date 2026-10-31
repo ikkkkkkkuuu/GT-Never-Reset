@@ -21,10 +21,11 @@ import org.lwjgl.opengl.GL12;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.profile.radialmenu.ProfileManager;
 import com.xyp.gtneverreset.config.MainConfig;
-import com.xyp.gtneverreset.utils.gui.radialmenu.Colors;
 import com.xyp.gtneverreset.utils.gui.radialmenu.IconSpec;
-import com.xyp.gtneverreset.utils.gui.radialmenu.StyleResolver;
-import com.xyp.gtneverreset.utils.gui.radialmenu.WheelColors;
+import com.xyp.gtnrlib.client.render.icon.PotionIcons;
+import com.xyp.gtnrlib.gui.wheel.StyleResolver;
+import com.xyp.gtnrlib.gui.wheel.WheelColors;
+import com.xyp.gtnrlib.utils.Colors;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

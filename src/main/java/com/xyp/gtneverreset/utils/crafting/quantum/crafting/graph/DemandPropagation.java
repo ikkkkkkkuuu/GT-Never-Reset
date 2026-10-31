@@ -4,7 +4,7 @@ import org.jetbrains.annotations.Nullable;
 
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.CraftingCalculation;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.inv.CraftingSimulationState;
-import com.xyp.gtneverreset.utils.crafting.quantum.util.LongMath;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import appeng.api.config.Actionable;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
@@ -154,6 +154,6 @@ public class DemandPropagation {
 
     private static long divideCeil(long dividend, long divisor) {
         if (dividend <= 0 || divisor <= 0) return 0;
-        return 1 + (dividend - 1) / divisor;
+        return LongMath.ceilDiv(dividend, divisor);
     }
 }

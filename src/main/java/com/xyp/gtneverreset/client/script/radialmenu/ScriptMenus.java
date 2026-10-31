@@ -2,15 +2,15 @@ package com.xyp.gtneverreset.client.script.radialmenu;
 
 import org.luaj.vm2.LuaValue;
 
-import com.xyp.gtneverreset.utils.gui.radialmenu.AccentCoefficients;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionSpec;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionTypes;
-import com.xyp.gtneverreset.utils.gui.radialmenu.Colors;
 import com.xyp.gtneverreset.utils.gui.radialmenu.IconSpec;
 import com.xyp.gtneverreset.utils.gui.radialmenu.MenuNode;
-import com.xyp.gtneverreset.utils.gui.radialmenu.MenuStyle;
-import com.xyp.gtneverreset.utils.gui.radialmenu.SlotLayout;
-import com.xyp.gtneverreset.utils.gui.radialmenu.WheelColors;
+import com.xyp.gtnrlib.gui.wheel.AccentCoefficients;
+import com.xyp.gtnrlib.gui.wheel.MenuStyle;
+import com.xyp.gtnrlib.gui.wheel.SlotLayout;
+import com.xyp.gtnrlib.gui.wheel.WheelColors;
+import com.xyp.gtnrlib.utils.Colors;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

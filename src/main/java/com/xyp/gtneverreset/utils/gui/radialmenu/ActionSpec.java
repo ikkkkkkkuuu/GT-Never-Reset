@@ -6,6 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.xyp.gtnrlib.config.json.LowercaseEnumAdapterFactory;
+
 public class ActionSpec {
 
     public String type;

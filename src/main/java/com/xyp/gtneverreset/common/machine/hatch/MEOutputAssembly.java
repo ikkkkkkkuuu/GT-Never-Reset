@@ -25,7 +25,7 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.common.gui.modularui.MaxCapacityMEOutputGui;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.storage.StorageChannel;
 import cpw.mods.fml.relauncher.Side;

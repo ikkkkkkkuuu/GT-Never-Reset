@@ -14,13 +14,13 @@ import com.xyp.gtneverreset.common.item.items.WildcardPatternItem;
 import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
 import com.xyp.gtneverreset.common.item.items.WirelessPowerCard;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.packaged.ArcaneWorkbenchAdapter;
 import com.xyp.gtneverreset.utils.machine.packaged.AssemblyLineAdapter;
 import com.xyp.gtneverreset.utils.machine.packaged.BloodAltarAdapter;
 import com.xyp.gtneverreset.utils.machine.packaged.CircuitAssemblyLineAdapter;
 import com.xyp.gtneverreset.utils.machine.packaged.ThaumcraftCrucibleAdapter;
 import com.xyp.gtneverreset.utils.machine.packaged.ThaumcraftInfusionAdapter;
+import com.xyp.gtnrlib.mod.ModList;
 
 public final class ItemLoader {
 

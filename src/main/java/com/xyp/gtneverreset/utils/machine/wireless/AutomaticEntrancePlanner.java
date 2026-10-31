@@ -9,6 +9,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.github.bsideup.jabel.Desugar;
+import com.xyp.gtnrlib.utils.ImmutableCollections;
+import com.xyp.gtnrlib.utils.LongMath;
 
 public class AutomaticEntrancePlanner<N> {
 
@@ -65,7 +67,7 @@ public class AutomaticEntrancePlanner<N> {
     }
 
     List<Integer> pendingEntrances() {
-        return trial == null ? WirelessCollections.listOf() : trial.ids();
+        return trial == null ? ImmutableCollections.listOf() : trial.ids();
     }
 
     boolean isPending(int entranceId) {
@@ -125,24 +127,21 @@ public class AutomaticEntrancePlanner<N> {
             return idle(Status.NO_CANDIDATE);
         }
         status = Status.EXPANDING;
-        return new Decision<>(Action.ADD, WirelessCollections.copyList(chosen), WirelessCollections.listOf());
+        return new Decision<>(Action.ADD, ImmutableCollections.copyList(chosen), ImmutableCollections.listOf());
     }
 
     static int batchSize(Observation observation) {
-        int demand = ceilDiv(observation.missing(), CHANNELS_PER_ENTRANCE);
-        int budget = ceilDiv(observation.capacity() - observation.used(), CHANNELS_PER_ENTRANCE);
+        int demand = (int) LongMath.ceilDiv(Math.max(0, observation.missing()), CHANNELS_PER_ENTRANCE);
+        int budget = (int) LongMath
+            .ceilDiv(Math.max(0, observation.capacity() - observation.used()), CHANNELS_PER_ENTRANCE);
         int batch = Math.min(MAX_BATCH, Math.min(observation.remainingEntrances(), Math.min(demand, budget)));
         return Math.max(1, batch);
     }
 
-    private static int ceilDiv(int value, int divisor) {
-        return value <= 0 ? 0 : (value + divisor - 1) / divisor;
-    }
-
     void created(List<N> targets, List<Integer> entranceIds, Observation before) {
         trial = new Trial<>(
-            WirelessCollections.copyList(targets),
-            WirelessCollections.copyList(entranceIds),
+            ImmutableCollections.copyList(targets),
+            ImmutableCollections.copyList(entranceIds),
             before.revision(),
             before.served(),
             before.used());
@@ -171,6 +170,6 @@ public class AutomaticEntrancePlanner<N> {
 
     private Decision<N> idle(Status newStatus) {
         status = newStatus;
-        return new Decision<>(Action.NONE, WirelessCollections.listOf(), WirelessCollections.listOf());
+        return new Decision<>(Action.NONE, ImmutableCollections.listOf(), ImmutableCollections.listOf());
     }
 }

@@ -13,7 +13,7 @@ import com.cleanroommc.modularui.factory.TileEntityGuiFactory;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessConnector;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 /** Upstream wireless blockstate uses the same cube-all art for every facing. */
 public final class BlockPackagedProvider extends Block {

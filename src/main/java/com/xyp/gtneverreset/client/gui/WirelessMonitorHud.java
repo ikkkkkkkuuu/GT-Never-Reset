@@ -21,15 +21,15 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
-import com.xyp.gtneverreset.client.text.EffectTextRenderer;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.WirelessMonitorRequestPacket;
 import com.xyp.gtneverreset.common.packet.WirelessMonitorSnapshotPacket;
 import com.xyp.gtneverreset.config.MainConfig;
 import com.xyp.gtneverreset.loader.ConfigLoader;
-import com.xyp.gtneverreset.utils.text.effect.TextEffectStyle;
-import com.xyp.gtneverreset.utils.text.effect.TextEffects;
 import com.xyp.gtneverreset.utils.world.WirelessEnergyHistory;
+import com.xyp.gtnrlib.client.text.EffectTextRenderer;
+import com.xyp.gtnrlib.text.TextEffectStyle;
+import com.xyp.gtnrlib.text.TextEffects;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.InputEvent;

@@ -62,11 +62,11 @@ import com.cleanroommc.modularui.widgets.slot.FluidSlot;
 import com.cleanroommc.modularui.widgets.slot.ModularSlot;
 import com.cleanroommc.modularui.widgets.slot.PhantomItemSlot;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
-import com.xyp.gtneverreset.client.gui.PixelFontModularScreen;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
 import com.xyp.gtneverreset.common.part.PartStockIOInterface;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.stockio.StockIOLogic;
+import com.xyp.gtnrlib.client.gui.PixelFontModularScreen;
+import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.config.SecurityPermissions;
 import appeng.api.networking.security.IActionHost;

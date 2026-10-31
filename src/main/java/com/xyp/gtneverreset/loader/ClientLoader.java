@@ -2,14 +2,10 @@ package com.xyp.gtneverreset.loader;
 
 import java.io.File;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraftforge.common.MinecraftForge;
 
-import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.VeinMiningInputHandler;
 import com.xyp.gtneverreset.client.event.WindowsTaskbarButton;
 import com.xyp.gtneverreset.client.event.WirelessCardInput;
@@ -25,15 +21,11 @@ import com.xyp.gtneverreset.client.render.PackagedCoreRenderer;
 import com.xyp.gtneverreset.client.render.StableEndCrystalRender;
 import com.xyp.gtneverreset.client.render.WirelessConnectorRenderer;
 import com.xyp.gtneverreset.client.render.WirelessWorldHighlightRender;
-import com.xyp.gtneverreset.client.text.EffectTextRenderer;
-import com.xyp.gtneverreset.client.text.TextEffectRegistry;
-import com.xyp.gtneverreset.client.text.effect.ShaderTextEffect;
 import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
 import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
-import com.xyp.gtneverreset.utils.text.effect.TextEffects;
+import com.xyp.gtnrlib.mod.ModList;
 
 import WayofTime.alchemicalWizardry.ModBlocks;
 import appeng.api.AEApi;
@@ -61,15 +53,6 @@ public final class ClientLoader {
             .register(new WindowsTaskbarButton());
         registerPackagedCoreRenderers();
         MinecraftForge.EVENT_BUS.register(new WirelessConnectorRenderer());
-        TextEffectRegistry.register(
-            TextEffects.EXOTIC_RAINBOW.rendererId(),
-            new ShaderTextEffect(
-                new ResourceLocation(GTNeverReset.MODID, "shaders/text/exotic_rainbow.frag.glsl"),
-                0xFF6B6B,
-                0x7DC4E1,
-                0xD3EB6C));
-        ((IReloadableResourceManager) Minecraft.getMinecraft()
-            .getResourceManager()).registerReloadListener(EffectTextRenderer.INSTANCE);
         RadialMenuLoader.init();
         RenderingRegistry.registerEntityRenderingHandler(StableEndCrystalEntity.class, new StableEndCrystalRender());
         BlockFluxConnector.renderId = RenderingRegistry.getNextAvailableRenderId();

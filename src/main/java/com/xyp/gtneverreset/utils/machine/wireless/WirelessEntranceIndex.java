@@ -7,6 +7,7 @@ import java.util.Map;
 
 import com.xyp.gtneverreset.utils.machine.wireless.PhysicalClusterTracker.Cluster;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Entrance;
+import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.networking.IGridNode;
 
@@ -24,12 +25,12 @@ public class WirelessEntranceIndex {
 
     List<Entrance> forCluster(Cluster<IGridNode, WirelessFrequency> cluster) {
         refresh();
-        return byCluster.getOrDefault(cluster, WirelessCollections.listOf());
+        return byCluster.getOrDefault(cluster, ImmutableCollections.listOf());
     }
 
     List<Entrance> atNode(IGridNode node) {
         refresh();
-        return byNode.getOrDefault(node, WirelessCollections.listOf());
+        return byNode.getOrDefault(node, ImmutableCollections.listOf());
     }
 
     private void refresh() {
@@ -45,8 +46,8 @@ public class WirelessEntranceIndex {
             if (cluster != null) byCluster.computeIfAbsent(cluster, ignored -> new ArrayList<>())
                 .add(entrance);
         }
-        byCluster.replaceAll((cluster, entries) -> WirelessCollections.copyList(entries));
-        byNode.replaceAll((node, entries) -> WirelessCollections.copyList(entries));
+        byCluster.replaceAll((cluster, entries) -> ImmutableCollections.copyList(entries));
+        byNode.replaceAll((node, entries) -> ImmutableCollections.copyList(entries));
         entrances = currentEntrances;
         clusters = currentClusters;
     }

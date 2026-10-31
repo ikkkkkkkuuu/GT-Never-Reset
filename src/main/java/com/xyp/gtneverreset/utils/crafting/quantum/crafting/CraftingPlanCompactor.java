@@ -16,7 +16,7 @@ import com.xyp.gtneverreset.utils.crafting.quantum.api.stacks.GenericStack;
 import com.xyp.gtneverreset.utils.crafting.quantum.api.stacks.KeyCounter;
 import com.xyp.gtneverreset.utils.crafting.quantum.core.AELog;
 import com.xyp.gtneverreset.utils.crafting.quantum.core.localization.PlayerMessages;
-import com.xyp.gtneverreset.utils.crafting.quantum.util.LongMath;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import it.unimi.dsi.fastutil.ints.Int2BooleanOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
@@ -514,7 +514,7 @@ final class CraftingPlanCompactor {
                 final long room = limits[recipe.index] - times[recipe.index];
                 final long net = recipe.net(key);
                 if (room <= 0 || net <= 0) continue;
-                final long crafts = Math.min(room, ceilDiv(-this.balance[key], net));
+                final long crafts = Math.min(room, LongMath.ceilDiv(-this.balance[key], net));
                 times[recipe.index] += crafts;
                 recipe.apply(this.balance, crafts);
                 touched.clear();
@@ -652,7 +652,7 @@ final class CraftingPlanCompactor {
                 final int fresh = defaultVariant(slot);
                 final long uses = chainLength(slot, fresh);
                 if (uses <= 1) break;
-                final long freshCrafts = Math.min(rest, ceilDiv(rest, uses));
+                final long freshCrafts = Math.min(rest, LongMath.ceilDiv(rest, uses));
                 take(slot, fresh, freshCrafts, touched);
                 rest -= freshCrafts;
                 freshTaken = true;
@@ -944,11 +944,6 @@ final class CraftingPlanCompactor {
             }
         }
         return result;
-    }
-
-    private static long ceilDiv(long dividend, long divisor) {
-        final long quotient = dividend / divisor;
-        return dividend % divisor == 0 ? quotient : quotient + 1;
     }
 
     private static final class Slot {

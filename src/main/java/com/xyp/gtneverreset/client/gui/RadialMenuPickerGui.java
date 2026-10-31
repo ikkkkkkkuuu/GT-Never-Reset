@@ -10,6 +10,7 @@ import net.minecraft.client.resources.I18n;
 import com.xyp.gtneverreset.client.profile.radialmenu.ProfileManager;
 import com.xyp.gtneverreset.client.render.radialmenu.IconRenderer;
 import com.xyp.gtneverreset.utils.gui.radialmenu.MenuNode;
+import com.xyp.gtnrlib.gui.widget.RadialUi;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

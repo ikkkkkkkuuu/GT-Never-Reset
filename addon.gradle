@@ -1,4 +1,67 @@
 import java.util.regex.Pattern
+import com.gtnewhorizons.retrofuturagradle.util.IJarOutputTask
+import org.gradle.api.services.BuildService
+import org.gradle.api.services.BuildServiceParameters
+
+abstract class RfgJarChainLock implements BuildService<BuildServiceParameters.None> {}
+
+def jarChainLock = gradle.sharedServices.registerIfAbsent('gtnrJarChainLock', RfgJarChainLock) {
+    maxParallelUsages = 1
+}
+allprojects {
+    tasks.withType(IJarOutputTask).configureEach { usesService(jarChainLock) }
+    configurations.matching { it.name == 'java17Dependencies' }.configureEach {
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements, LibraryElements.JAR))
+        }
+    }
+}
+
+dependencies { api project(':gtnrlib') }
+sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+
+def libraryDistribution = configurations.create('libraryDistribution') {
+    canBeConsumed = false
+    canBeResolved = true
+}
+dependencies { add('libraryDistribution', project(path: ':gtnrlib', configuration: 'distribution')) }
+tasks.register('collectLibraryArtifacts') {
+    def archives = objects.fileCollection().from(libraryDistribution)
+    def destination = layout.buildDirectory.dir('libs')
+    inputs.files(archives)
+    outputs.files(archives.elements.map { entries -> entries.collect { destination.get().file(it.asFile.name) } })
+    doLast {
+        def directory = destination.get().asFile
+        directory.mkdirs()
+        archives.files.each { archive ->
+            java.nio.file.Files.copy(archive.toPath(), new File(directory, archive.name).toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
+}
+tasks.named('assemble') { dependsOn 'collectLibraryArtifacts' }
+tasks.named('check') { dependsOn ':gtnrlib:check' }
+
+tasks.register('checkConfigurationContracts', JavaExec) {
+    group = 'verification'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'com.xyp.gtneverreset.config.ConfigurationContracts'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+}
+tasks.named('check') { dependsOn 'checkConfigurationContracts' }
+
+tasks.register('checkModuleArtifacts', JavaExec) {
+    group = 'verification'
+    dependsOn tasks.named('testClasses'), tasks.named('reobfJar'), tasks.named('collectLibraryArtifacts')
+    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'com.xyp.gtneverreset.ModuleArtifactContracts'
+    args layout.buildDirectory.file("libs/gtneverreset-${project.version}.jar").get().asFile.absolutePath,
+        layout.buildDirectory.file("libs/gtnrlib-${project.version}.jar").get().asFile.absolutePath
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+}
+tasks.named('check') { dependsOn 'checkModuleArtifacts' }
 
 /** Validates the Formatter syntax remaining after Minecraft 1.7.10 loads a language entry. */
 class TranslationFormatValidator {
@@ -190,7 +253,7 @@ tasks.named('check') { dependsOn 'checkWirelessPowerContracts' }
 // Give each game process its own copies, outside build/ so even clean cannot remove live inputs.
 afterEvaluate {
     tasks.withType(JavaExec).matching { it.name.startsWith('runClient') || it.name.startsWith('runServer') }.each { runTask ->
-        def buildRoot = layout.buildDirectory
+        def buildRoots = [layout.buildDirectory, project(':gtnrlib').layout.buildDirectory]
         def runtimeRoot = layout.projectDirectory.dir('.gradle/game-runtime/' + runTask.name)
         def launchSnapshot = null
         def cleanup = tasks.register(runTask.name + 'CleanupSnapshot') {
@@ -210,15 +273,16 @@ afterEvaluate {
         runTask.finalizedBy(cleanup)
         runTask.notCompatibleWithConfigurationCache('game launches snapshot their generated JARs immediately before execution')
         runTask.doFirst {
-            def generatedRoot = buildRoot.get().asFile.toPath().toAbsolutePath().normalize()
+            def generatedRoots = buildRoots.collect { it.get().asFile.toPath().toAbsolutePath().normalize() }
             def snapshotRoot = runtimeRoot.asFile.toPath().toAbsolutePath().normalize()
             java.nio.file.Files.createDirectories(snapshotRoot)
             def snapshot = java.nio.file.Files.createTempDirectory(snapshotRoot, 'launch-')
             launchSnapshot = snapshot
             def launchClasspath = classpath.files.collect { entry ->
                 def source = entry.toPath().toAbsolutePath().normalize()
-                if (!entry.isFile() || !entry.name.endsWith('.jar') || !source.startsWith(generatedRoot)) return entry
-                def target = snapshot.resolve(generatedRoot.relativize(source))
+                int owner = generatedRoots.findIndexOf { source.startsWith(it) }
+                if (!entry.isFile() || !entry.name.endsWith('.jar') || owner < 0) return entry
+                def target = snapshot.resolve(Integer.toString(owner)).resolve(generatedRoots[owner].relativize(source))
                 java.nio.file.Files.createDirectories(target.parent)
                 java.nio.file.Files.copy(source, target)
                 target.toFile()
@@ -401,6 +465,16 @@ tasks.register('checkRecipeThreadInputPreflightContracts', JavaExec) {
 }
 
 tasks.named('check') { dependsOn 'checkRecipeThreadInputPreflightContracts' }
+
+tasks.register('checkOverloadedProviderContracts', JavaExec) {
+    group = 'verification'
+    description = 'Checks overloaded provider cache invalidation, batch accounting and overflow persistence.'
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'com.xyp.gtneverreset.utils.machine.OverloadedProviderContracts'
+}
+
+tasks.named('check') { dependsOn 'checkOverloadedProviderContracts' }
 
 // Contract checks run through JavaExec tasks attached to check; QA mods are not JUnit tests.
 tasks.named('test', Test).configure {

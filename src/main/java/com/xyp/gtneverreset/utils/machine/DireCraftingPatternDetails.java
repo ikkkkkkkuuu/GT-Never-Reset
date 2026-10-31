@@ -7,6 +7,8 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 
+import com.xyp.gtnrlib.utils.LongMath;
+
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.util.Platform;
@@ -118,8 +120,7 @@ public class DireCraftingPatternDetails implements ICraftingPatternDetails {
 
     private static long multiplyStackSize(long stackSize, int multiplier) {
         if (stackSize <= 0) return stackSize;
-        if (stackSize > Long.MAX_VALUE / multiplier) return Long.MAX_VALUE;
-        return stackSize * multiplier;
+        return LongMath.saturatedMultiply(stackSize, multiplier);
     }
 
     private static AEItemStack fromTagCreateAEItem(final NBTTagCompound i) {

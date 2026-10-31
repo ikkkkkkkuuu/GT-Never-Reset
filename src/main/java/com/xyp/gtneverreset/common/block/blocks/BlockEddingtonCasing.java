@@ -10,8 +10,8 @@ import net.minecraft.world.World;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.structure.VaultCasingConnections;
+import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

@@ -31,7 +31,7 @@ import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.glodblock.github.loader.ItemAndBlockHolder;
 import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputHatch;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;

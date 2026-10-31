@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 import net.minecraft.util.StatCollector;
 
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
-import com.xyp.gtneverreset.utils.text.effect.TextEffects;
+import com.xyp.gtnrlib.text.TextEffects;
 
 public final class AnimatedText {
 

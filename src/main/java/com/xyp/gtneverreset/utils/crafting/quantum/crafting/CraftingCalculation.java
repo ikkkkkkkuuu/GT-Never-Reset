@@ -37,7 +37,7 @@ import com.xyp.gtneverreset.utils.crafting.quantum.crafting.inv.ChildCraftingSim
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.inv.CraftingSimulationState;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.inv.NetworkCraftingSimulationState;
 import com.xyp.gtneverreset.utils.crafting.quantum.hooks.ticking.TickHandler;
-import com.xyp.gtneverreset.utils.crafting.quantum.util.LongMath;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import appeng.api.config.Actionable;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -284,14 +284,6 @@ public class CraftingCalculation {
         }
     }
 
-    private static long divideCeil(long dividend, long divisor) {
-        long quotient = dividend / divisor;
-        if (dividend % divisor == 0) {
-            return quotient;
-        }
-        return quotient + 1;
-    }
-
     public void addMissing(AEKey what, long amount) {
         if (this.realSeededRecursiveKeys.contains(what) || this.realRecursiveSeeds.contains(what)
             || hasRealSeededRecursiveRequestFor(what)) {
@@ -345,7 +337,12 @@ public class CraftingCalculation {
             var pattern = candidates.get(i);
             long outputPerCraft = getPatternOutputCount(pattern, what);
             try {
-                return previewLocalPattern(what, pattern, divideCeil(requestedAmount, outputPerCraft), scope, parent);
+                return previewLocalPattern(
+                    what,
+                    pattern,
+                    LongMath.ceilDiv(requestedAmount, outputPerCraft),
+                    scope,
+                    parent);
             } catch (CraftBranchFailure failure) {
                 lastFailure = failure;
             }
@@ -1735,7 +1732,7 @@ public class CraftingCalculation {
             if (getPatternInputCount(selectedPattern, target) > 0) {
                 recursiveUse.set();
             }
-            long times = divideCeil(missingAmount, outputAmount);
+            long times = LongMath.ceilDiv(missingAmount, outputAmount);
             accumulatePatternNet(netByKey, selectedPattern, times);
         }
 

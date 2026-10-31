@@ -1,0 +1,12 @@
+{
+  "modListVersion": 2,
+  "modList": [{
+    "modid": "${modId}",
+    "name": "${modName}",
+    "description": "Shared text rendering, GUI primitives, world listeners and utilities for Minecraft 1.7.10.",
+    "version": "${modVersion}",
+    "mcversion": "${minecraftVersion}",
+    "authorList": ["xyp"],
+    "useDependencyInformation": false
+  }]
+}

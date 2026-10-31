@@ -1,14 +1,14 @@
 package com.xyp.gtneverreset.utils.world;
 
 import net.minecraft.block.Block;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.world.Teleporter;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.ForgeDirection;
+
+import com.xyp.gtnrlib.utils.TeleporterUtils;
 
 /**
  * Server-authoritative teleport helpers used by the wireless dual interface terminal.
@@ -63,7 +63,7 @@ public final class InterfaceTeleportation {
                 .transferPlayerToDimension(
                     player,
                     dimension,
-                    new DirectTeleportTeleporter(targetWorld, targetX, targetY, targetZ));
+                    new TeleporterUtils(targetWorld, targetX, targetY, targetZ));
         }
         return true;
     }
@@ -121,25 +121,4 @@ public final class InterfaceTeleportation {
             .blocksMovement();
     }
 
-    private static final class DirectTeleportTeleporter extends Teleporter {
-
-        private final double x;
-        private final double y;
-        private final double z;
-
-        private DirectTeleportTeleporter(WorldServer world, double x, double y, double z) {
-            super(world);
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-
-        @Override
-        public void placeInPortal(Entity entity, double ignoredX, double ignoredY, double ignoredZ, float yaw) {
-            entity.setLocationAndAngles(x, y, z, entity.rotationYaw, entity.rotationPitch);
-            entity.motionX = 0.0D;
-            entity.motionY = 0.0D;
-            entity.motionZ = 0.0D;
-        }
-    }
 }

@@ -3,7 +3,7 @@ package com.xyp.gtneverreset.utils.crafting.quantum.crafting.graph;
 import com.xyp.gtneverreset.utils.crafting.quantum.api.stacks.GenericStack;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.CraftingCalculation;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.inv.CraftingSimulationState;
-import com.xyp.gtneverreset.utils.crafting.quantum.util.LongMath;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import appeng.api.config.Actionable;
 

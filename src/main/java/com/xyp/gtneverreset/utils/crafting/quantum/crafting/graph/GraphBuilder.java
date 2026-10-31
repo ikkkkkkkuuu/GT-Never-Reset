@@ -10,7 +10,7 @@ import com.xyp.gtneverreset.utils.crafting.quantum.api.crafting.IPatternDetails;
 import com.xyp.gtneverreset.utils.crafting.quantum.api.stacks.AEKey;
 import com.xyp.gtneverreset.utils.crafting.quantum.api.stacks.GenericStack;
 import com.xyp.gtneverreset.utils.crafting.quantum.crafting.CraftingCalculation;
-import com.xyp.gtneverreset.utils.crafting.quantum.util.LongMath;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;

@@ -32,8 +32,8 @@ import com.xyp.gtneverreset.common.gui.PackagedProviderGui;
 import com.xyp.gtneverreset.common.item.items.ItemPackagedCore;
 import com.xyp.gtneverreset.utils.enums.AltarStatus;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.PackagedCraftingLock;
+import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.implementations.ICraftingPatternItem;
 import appeng.api.networking.GridFlags;

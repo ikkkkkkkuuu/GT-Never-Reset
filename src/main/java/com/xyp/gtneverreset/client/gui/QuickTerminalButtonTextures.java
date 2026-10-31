@@ -10,7 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 
 import com.xyp.gtneverreset.config.MainConfig;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 public final class QuickTerminalButtonTextures {
 

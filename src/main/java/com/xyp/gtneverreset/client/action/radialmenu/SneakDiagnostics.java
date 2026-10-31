@@ -7,9 +7,9 @@ import net.minecraft.client.settings.KeyBinding;
 import org.lwjgl.input.Keyboard;
 
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.client.keybind.KeyBuffer;
 import com.xyp.gtneverreset.client.keybind.KeyInjector;
 import com.xyp.gtneverreset.config.MainConfig;
+import com.xyp.gtnrlib.client.input.KeyBuffer;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -49,7 +49,7 @@ public final class SneakDiagnostics {
             .append(binding == sneak);
 
         int sameDescription = 0;
-        for (KeyBinding candidate : com.xyp.gtneverreset.client.keybind.KeyBindingLookup.all()) {
+        for (KeyBinding candidate : com.xyp.gtnrlib.client.input.KeyBindingLookup.all()) {
             if (sneak.getKeyDescription()
                 .equals(candidate.getKeyDescription())) {
                 sameDescription++;

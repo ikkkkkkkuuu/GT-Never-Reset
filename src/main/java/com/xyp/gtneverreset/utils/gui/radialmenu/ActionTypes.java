@@ -6,6 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.xyp.gtnrlib.gui.wheel.SlotLayout;
+
 public final class ActionTypes {
 
     public static final String KEYBIND = "keybind";

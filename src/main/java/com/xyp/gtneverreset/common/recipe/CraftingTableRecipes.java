@@ -19,8 +19,8 @@ import net.minecraft.world.World;
 
 import com.xyp.gtneverreset.loader.ItemLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
+import com.xyp.gtnrlib.mod.ModList;
 
 import WayofTime.alchemicalWizardry.ModBlocks;
 import appeng.api.AEApi;

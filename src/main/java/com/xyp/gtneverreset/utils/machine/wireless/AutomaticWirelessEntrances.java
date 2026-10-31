@@ -17,6 +17,7 @@ import com.xyp.gtneverreset.utils.machine.wireless.AutomaticEntrancePlanner.Stat
 import com.xyp.gtneverreset.utils.machine.wireless.PhysicalClusterTracker.Cluster;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Address;
 import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Entrance;
+import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.exceptions.FailedConnection;
 import appeng.api.networking.GridFlags;
@@ -184,9 +185,9 @@ public class AutomaticWirelessEntrances {
                     .hashCode());
         }
         GridTargets targets = new GridTargets(
-            WirelessCollections.copyList(clusters),
+            ImmutableCollections.copyList(clusters),
             sources,
-            WirelessCollections.copyList(sources.keySet()),
+            ImmutableCollections.copyList(sources.keySet()),
             fingerprint);
         TARGETS.put(grid, targets);
         return targets;
@@ -203,7 +204,7 @@ public class AutomaticWirelessEntrances {
             if (node.meetsChannelRequirements()) served++;
             else missing.add(node);
         }
-        ChannelCount count = new ChannelCount(targets, revision, served, WirelessCollections.copyList(missing));
+        ChannelCount count = new ChannelCount(targets, revision, served, ImmutableCollections.copyList(missing));
         if (revision >= 0) COUNTS.put(grid, count);
         else COUNTS.remove(grid);
         return count;

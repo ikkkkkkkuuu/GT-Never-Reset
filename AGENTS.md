@@ -12,7 +12,7 @@
 | 职责 | 默认位置 |
 | --- | --- |
 | 模组入口、代理 | 根包；保持简短，委托 loader 或对应实现 |
-| 配置 | `config.MainConfig`；对照 GTNL，用 GTNHLib 注解和内部分类集中声明 |
+| 配置 | `config.MainConfig` 保留静态分类实例；分类实现放在 `config` 下的 `XxxConfig`，用 GTNHLib 注解声明 |
 | 加载和注册编排 | `loader` |
 | 方块、对应 ItemBlock、TileEntity | 分别为 `common.block.blocks`、其下的 `item`、`tile` |
 | 普通物品 | `common.item.items`；物品基类及确有共用职责的基础类型放 `common.item` |
@@ -44,7 +44,9 @@
 - loader 和代理负责调用与注册；业务规则归机器、TileEntity 或相应管理类；GUI 负责界面与同步；包处理器负责接收和委托。注册方法里不展开整个功能实现。
 - 代理类先集中排列初始化和服务端启停生命周期，再放侧别入口及相关辅助方法；同一流程重复取得的注册器使用局部变量。客户端回包处理归对应包的客户端处理入口，保留客户端隔离、主线程调度及连接有效性检查，不在代理中堆叠功能专属回包实现；继续保留 loader 委托和 `common.gui` 中的 GUI 路由。
 - 网络数据包统一在 `common.packet.NetWorkHandler#register` 注册，由代理调用；不另设功能专属的注册入口或通道。保留已有通道名、接收侧和包 ID，新增包追加到统一注册列表。
-- 配置沿用 GTNL 的 `MainConfig`、静态分类实例和内部分类类结构，使用 GTNHLib 的 `@Config`、默认值、说明及约束注解；由 `loader.ConfigLoader` 统一注册和保存。只创建已有功能需要的分类，纯客户端设置不标记 `@Sync`，不另用 NEI 配置标签保存同一设置。
+- 配置保留 `MainConfig` 和静态分类实例，分类实现拆为 `config.XxxConfig`；仅属于一个分类的小型子分类保留内部类。使用 GTNHLib 的 `@Config`、默认值、说明及约束注解，由 `loader.ConfigLoader` 统一注册和保存，保留既有配置路径、分类名和字段名。只创建已有功能需要的分类，纯客户端设置不标记 `@Sync`，不另用 NEI 配置标签保存同一设置。
+- 公共库 `gtnrlib` 是独立 Gradle 子模块和 Forge 模组，根包为 `com.xyp.gtnrlib`，Mod ID 为 `gtnrlib`。只放不依赖 GTNR 业务和 GregTech 的通用实现；主模组单向依赖公共库。库拥有自己的资源、Mixin 配置、refmap 和初始化入口，不能从宿主重复注册。主模组生命周期由 `loader.LifecycleLoader` 统一编排，代理保留侧别入口。
+- 已抽出的轮盘几何、配色和动画复用库的 `gui.wheel`，共享控件和滚动屏幕复用 `gui.widget`，模组检测复用 `mod.ModList`，方块变化监听复用 `world.WorldListener`。业务枚举仍放主模组 `utils.enums`；轮盘动作、导航栈、配置文件和无线网络数据留在主模组。结构路径与缓存仍由 `MultiblockStructureLoader` 管理，MBS1 解码委托库的 `utils.StructureFileCodec`。
 - 新类默认按“常量和字段 → 构造方法 → 生命周期及主要对外行为 → 辅助方法 → 局部内部类型”排列；同一流程的方法、重载及紧密相关的辅助方法相邻。修改已有类时先沿用同类附近的顺序，不机械按字母或可见性重排。
 - 多方块控制器及公共机器基类统一以 `common.machine.multiMachineBase.MachineBaseLayoutTemplate` 为排布模板，优先于上面的通用成员顺序：静态常量与静态工具方法 → 持久化字段 → 运行时字段 → 构造器 → 生命周期 → 结构检查与参数准备 → 配方与处理主流程 → 输入、输出、仓室与贴图 → 信息展示 → UI → NBT 与客户端同步 → 能力开关与策略 Getter → 底层辅助方法与内部类型。同一职责连续排列，覆写方法按职责归位；辅助方法和重载跟随所属流程，未使用区域可以省略。调整字段位置必须核对初始化依赖。模板仅作排布参考，不注册、不承载业务，也不要求机器继承它。
 - 类和接口用大驼峰，普通方法与字段用小驼峰，常量用大写下划线。已有 API、覆盖方法和兼容性名称按原约定保留。

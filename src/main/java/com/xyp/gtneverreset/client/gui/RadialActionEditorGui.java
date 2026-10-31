@@ -21,7 +21,13 @@ import com.xyp.gtneverreset.utils.gui.radialmenu.ActionSteps;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionType;
 import com.xyp.gtneverreset.utils.gui.radialmenu.ActionTypes;
 import com.xyp.gtneverreset.utils.gui.radialmenu.Placeholders;
-import com.xyp.gtneverreset.utils.gui.radialmenu.StyleResolver;
+import com.xyp.gtnrlib.gui.wheel.StyleResolver;
+import com.xyp.gtnrlib.gui.widget.RadialUi;
+import com.xyp.gtnrlib.gui.widget.RadialUiCheckbox;
+import com.xyp.gtnrlib.gui.widget.RadialUiColorButton;
+import com.xyp.gtnrlib.gui.widget.RadialUiDragReorder;
+import com.xyp.gtnrlib.gui.widget.RadialUiIconButton;
+import com.xyp.gtnrlib.gui.widget.RadialUiTabButton;
 
 import cpw.mods.fml.client.config.GuiSlider;
 import cpw.mods.fml.relauncher.Side;

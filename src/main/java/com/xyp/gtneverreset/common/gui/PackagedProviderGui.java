@@ -33,9 +33,9 @@ import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.item.items.ItemPackagedCore;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.enums.PackagedCraftingLock;
 import com.xyp.gtneverreset.utils.recipes.ArcaneWorkbenchPatterns;
+import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.implementations.ICraftingPatternItem;
 

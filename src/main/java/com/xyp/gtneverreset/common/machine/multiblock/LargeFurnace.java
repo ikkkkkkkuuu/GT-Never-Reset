@@ -24,11 +24,11 @@ import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.GTNRMultiBlockBase;
-import com.xyp.gtneverreset.utils.enums.ModList;
 import com.xyp.gtneverreset.utils.machine.FurnaceRecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.utils.structure.LargeFurnaceStructure;
 import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
+import com.xyp.gtnrlib.mod.ModList;
 
 import gregtech.api.GregTechAPI;
 import gregtech.api.enums.Materials;

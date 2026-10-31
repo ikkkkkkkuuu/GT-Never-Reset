@@ -1,7 +1,7 @@
 package com.xyp.gtneverreset.common.gui;
 
 import com.cleanroommc.modularui.drawable.UITexture;
-import com.xyp.gtneverreset.utils.enums.ModList;
+import com.xyp.gtnrlib.mod.ModList;
 
 public final class PatternProviderGuiTextures {
 

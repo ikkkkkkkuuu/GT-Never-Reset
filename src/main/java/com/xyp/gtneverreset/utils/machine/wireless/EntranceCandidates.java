@@ -13,6 +13,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
 
+import com.xyp.gtnrlib.utils.ImmutableCollections;
+
 public class EntranceCandidates {
 
     private static final int NEED_RADIUS = 2;
@@ -30,7 +32,7 @@ public class EntranceCandidates {
         private final Function<N, Iterable<N>> neighbours;
         private final Map<N, Integer> distanceFromEntrance;
         private Collection<N> lastMissing;
-        private Set<N> missingSet = WirelessCollections.setOf();
+        private Set<N> missingSet = ImmutableCollections.setOf();
 
         public Batch(Set<N> members, Collection<N> occupied, Function<N, Iterable<N>> neighbours) {
             this.members = members;
@@ -51,7 +53,7 @@ public class EntranceCandidates {
                     .reversed()
                     .thenComparing(order));
             for (N need : needs) {
-                Map<N, Integer> local = distances(members, WirelessCollections.listOf(need), neighbours, NEED_RADIUS);
+                Map<N, Integer> local = distances(members, ImmutableCollections.listOf(need), neighbours, NEED_RADIUS);
                 Map<N, Integer> captured = new IdentityHashMap<>();
                 N best = local.keySet()
                     .stream()
