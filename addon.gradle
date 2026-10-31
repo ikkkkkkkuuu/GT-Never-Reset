@@ -21,25 +21,8 @@ allprojects {
 dependencies { api project(':gtnrlib') }
 sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
 
-def libraryDistribution = configurations.create('libraryDistribution') {
-    canBeConsumed = false
-    canBeResolved = true
-}
-dependencies { add('libraryDistribution', project(path: ':gtnrlib', configuration: 'distribution')) }
-tasks.register('collectLibraryArtifacts') {
-    def archives = objects.fileCollection().from(libraryDistribution)
-    def destination = layout.buildDirectory.dir('libs')
-    inputs.files(archives)
-    outputs.files(archives.elements.map { entries -> entries.collect { destination.get().file(it.asFile.name) } })
-    doLast {
-        def directory = destination.get().asFile
-        directory.mkdirs()
-        archives.files.each { archive ->
-            java.nio.file.Files.copy(archive.toPath(), new File(directory, archive.name).toPath(),
-                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-        }
-    }
-}
+// Copy task outputs directly: distribution JARs must not pass through RFG dependency transforms.
+tasks.register('collectLibraryArtifacts')
 tasks.named('assemble') { dependsOn 'collectLibraryArtifacts' }
 tasks.named('check') { dependsOn ':gtnrlib:check' }
 
@@ -485,4 +468,22 @@ tasks.withType(Jar).matching { it.name in ['jar', 'shadowJar'] }.configureEach {
     from('licenses/me-data-access') { into 'META-INF/licenses/me-data-access' }
     from('licenses/overloaded-provider') { into 'META-INF/licenses/overloaded-provider' }
     from('licenses/overloaded-singleblock') { into 'META-INF/licenses/overloaded-singleblock' }
+}
+
+// Configure the library after the root translation helpers have been defined.
+evaluationDependsOn(':gtnrlib')
+tasks.named('collectLibraryArtifacts') {
+    def archives = objects.fileCollection().from(
+        ['reobfJar', 'downgradeJar', 'sourcesJar'].collect { project(':gtnrlib').tasks.named(it) })
+    def destination = layout.buildDirectory.dir('libs')
+    inputs.files(archives)
+    outputs.files(["gtnrlib-${project.version}.jar", "gtnrlib-${project.version}-dev.jar", "gtnrlib-${project.version}-sources.jar"].collect { destination.get().file(it) })
+    doLast {
+        def directory = destination.get().asFile
+        directory.mkdirs()
+        archives.files.each { archive ->
+            java.nio.file.Files.copy(archive.toPath(), new File(directory, archive.name).toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
 }
