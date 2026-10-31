@@ -33,7 +33,7 @@
  *
  * For more details, see https://docs.gradle.org/8.0.1/userguide/java_library_plugin.html#sec:java_library_configurations_graph
  */
-// Match GTNG's fixed GTNH manifest.
+// Use the GTNH release selected in gradle.properties.
 def elytraModpackVersion = project.extensions.getByName("elytraModpackVersion")
 
 dependencies {
@@ -80,16 +80,20 @@ dependencies {
     compileOnly("com.github.ABKQPO:BetterQuestingAPI:1.1.3:dev") { transitive = false }
 }
 
-configurations.configureEach {
-    resolutionStrategy {
-        force elytraModpackVersion.gtnh("Applied-Energistics-2-Unofficial")
-        force elytraModpackVersion.gtnh("AE2FluidCraft-Rework")
-        force elytraModpackVersion.gtnh("CodeChickenCore")
-        force elytraModpackVersion.gtnh("GT5-Unofficial")
-        force elytraModpackVersion.gtnh("GTNHLib")
-        force elytraModpackVersion.gtnh("NotEnoughItems")
-        force elytraModpackVersion.gtnh("lwjgl3ify")
+// Transitive mod dependencies must use the same release as direct dependencies in both modules.
+def gtnhModVersions = elytraModpackVersion.getModVersions()
+allprojects {
+    configurations.configureEach {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'com.github.GTNewHorizons') {
+                def releaseVersion = gtnhModVersions[details.requested.name]
+                if (releaseVersion != null) details.useVersion(releaseVersion)
+            }
+        }
     }
+}
+
+configurations.configureEach {
     exclude group: "com.github.GTNewHorizons", module: "CodeChickenLib"
     exclude group: "com.github.GTNewHorizons", module: "Guide-API"
     exclude group: "com.github.GTNewHorizons", module: "Hodgepodge"

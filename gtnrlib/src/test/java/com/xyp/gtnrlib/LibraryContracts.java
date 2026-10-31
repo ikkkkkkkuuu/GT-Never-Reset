@@ -15,6 +15,7 @@ public final class LibraryContracts {
         LocalSupportContracts.verify();
         SharedImplementationContracts.verify();
         SharedGuiContracts.verify();
+        InputAndSyntaxContracts.verify();
         GTNRLibContractTest.main(new String[0]);
         PortCompatibilityContracts.verify();
         for (String text : new String[] { "", "plain", "中文", "line\nnext", "§aGreen §lbold", "emoji \uD83D\uDE00" }) {

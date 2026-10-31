@@ -11,7 +11,7 @@ import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 
 import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
-import com.xyp.gtneverreset.utils.machine.flux.FluxDropData;
+import com.xyp.gtneverreset.common.flux.FluxDropData;
 
 /** Explains the port's GT EU direction, automatic owner binding and configurable packet limits. */
 public final class ItemBlockFluxConnector extends ItemBlock {

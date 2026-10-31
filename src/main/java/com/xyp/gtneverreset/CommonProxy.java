@@ -4,7 +4,7 @@ import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.world.World;
 
-import com.xyp.gtneverreset.loader.LifecycleLoader;
+import com.xyp.gtneverreset.loader.ContentLoaders;
 
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
@@ -19,31 +19,31 @@ import gregtech.api.render.TextureFactory;
 public class CommonProxy {
 
     public void preInit(FMLPreInitializationEvent event) {
-        LifecycleLoader.preInit(event);
+        ContentLoaders.preInit(event);
     }
 
     public void init(FMLInitializationEvent event) {
-        LifecycleLoader.init(event);
+        ContentLoaders.init(event);
     }
 
     public void postInit(FMLPostInitializationEvent event) {
-        LifecycleLoader.postInit(event);
+        ContentLoaders.postInit(event);
     }
 
     public void loadComplete(FMLLoadCompleteEvent event) {
-        LifecycleLoader.loadComplete(event);
+        ContentLoaders.loadComplete(event);
     }
 
     public void serverStarting(FMLServerStartingEvent event) {
-        LifecycleLoader.serverStarting(event);
+        ContentLoaders.serverStarting(event);
     }
 
     public void serverStopping(FMLServerStoppingEvent event) {
-        LifecycleLoader.serverStopping(event);
+        ContentLoaders.serverStopping(event);
     }
 
     public void serverStopped(FMLServerStoppedEvent event) {
-        LifecycleLoader.serverStopped(event);
+        ContentLoaders.serverStopped(event);
     }
 
     public ITexture createVaultCasingTexture(Block block) {

@@ -4,7 +4,7 @@ import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
-import com.xyp.gtneverreset.config.MainConfig;
+import com.xyp.gtneverreset.config.VeinMinerPickaxeConfig;
 
 /** Limits scroll requests to the current pickaxe without replacing its other item data. */
 public final class VeinMiningSettings {
@@ -51,7 +51,7 @@ public final class VeinMiningSettings {
         }
 
         private int clamp(long value) {
-            int maximum = this == Range ? MainConfig.veinMinerPickaxe.maxRange : MainConfig.veinMinerPickaxe.maxAmount;
+            int maximum = this == Range ? VeinMinerPickaxeConfig.maxRange : VeinMinerPickaxeConfig.maxAmount;
             return (int) Math.max(0, Math.min(Math.max(0, maximum), value));
         }
     }

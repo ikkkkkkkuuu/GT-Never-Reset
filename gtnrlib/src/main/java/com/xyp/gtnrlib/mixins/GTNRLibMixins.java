@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum GTNRLibMixins implements IMixins {
 
+    KEY_INPUT(new MixinBuilder("Key binding input access").addClientMixins("input.KeyBindingAccessor")
+        .setPhase(Phase.EARLY)),
+
     TEXT_EFFECTS_COMMON(new MixinBuilder("Text effect formatting codes")
         .addClientMixins("texteffect.MixinEnumChatFormattingTextEffects")
         .setPhase(Phase.EARLY)),

@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.config;
 
+import com.gtnewhorizon.gtnhlib.config.Config;
 import com.gtnewhorizon.gtnhlib.config.Config.Comment;
 import com.gtnewhorizon.gtnhlib.config.Config.DefaultBoolean;
 import com.gtnewhorizon.gtnhlib.config.Config.DefaultString;
@@ -9,6 +10,16 @@ import com.gtnewhorizon.gtnhlib.config.Config.Pattern;
 import com.gtnewhorizon.gtnhlib.config.Config.RequiresMcRestart;
 
 @Comment("仅影响本客户端，不与服务器同步")
+// #tr gtneverreset.gui.config.general.client
+// # Client
+// # zh_CN 客户端
+@Config(
+    modid = "gtneverreset",
+    category = "client",
+    configSubDirectory = ConfigRegistry.DIRECTORY,
+    filename = ConfigRegistry.CLIENT_FILE,
+    categoryCulling = false)
+@Config.LangKeyPattern(pattern = "gtneverreset.gui.config.general.%cat.%field", fullyQualified = true)
 public class ClientConfig {
 
     @Comment("强制 GregTech 的 NEI 配方页面显示配方所属模组；关闭时遵循 GregTech 配置")
@@ -18,7 +29,7 @@ public class ClientConfig {
     // # Always display recipe owner
     // # zh_CN 始终显示配方所属模组
     @LangKey("gtneverreset.gui.config.general.client.enableAlwaysDisplayRecipeOwner")
-    public boolean enableAlwaysDisplayRecipeOwner = true;
+    public static boolean enableAlwaysDisplayRecipeOwner = true;
 
     @Comment("强制 GregTech 的 Waila 信息显示平均耗时(ns)；关闭时遵循 GregTech 配置")
     @DefaultBoolean(true)
@@ -27,7 +38,7 @@ public class ClientConfig {
     // # Always display Waila average tick time
     // # zh_CN 始终显示 Waila 平均耗时
     @LangKey("gtneverreset.gui.config.general.client.enableAlwaysDisplayWailaAverageNS")
-    public boolean enableAlwaysDisplayWailaAverageNS = true;
+    public static boolean enableAlwaysDisplayWailaAverageNS = true;
 
     @Comment("强制 GregTech 的 NEI 配方页面显示原始电压等级；关闭时遵循 GregTech 配置")
     @DefaultBoolean(true)
@@ -36,7 +47,7 @@ public class ClientConfig {
     // # Always display NEI original voltage
     // # zh_CN 始终显示 NEI 原始电压
     @LangKey("gtneverreset.gui.config.general.client.enableAlwaysDisplayNEIOriginalVoltage")
-    public boolean enableAlwaysDisplayNEIOriginalVoltage = true;
+    public static boolean enableAlwaysDisplayNEIOriginalVoltage = true;
 
     @Comment("在 Windows 上隐藏本客户端的任务栏按钮，游戏窗口仍可正常使用。默认关闭，保存设置后即时生效。")
     @DefaultBoolean(false)
@@ -44,21 +55,21 @@ public class ClientConfig {
     // # Hide Windows taskbar button
     // # zh_CN 隐藏 Windows 任务栏按钮
     @LangKey("gtneverreset.gui.config.general.client.hide_windows_taskbar_button")
-    public boolean hideWindowsTaskbarButton = false;
+    public static boolean hideWindowsTaskbarButton = false;
 
     // #tr gtneverreset.gui.config.general.client.radial_menu
     // # Radial Menu
     // # zh_CN 轮盘菜单
     @LangKey("gtneverreset.gui.config.general.client.radial_menu")
     @Name("radial_menu")
-    public final RadialMenuConfig radialMenu = new RadialMenuConfig();
+    public static final RadialMenuConfig radialMenu = new RadialMenuConfig();
 
     // #tr gtneverreset.gui.config.general.client.quantum_crafting
     // # Quantum Crafting
     // # zh_CN 量子合成
     @LangKey("gtneverreset.gui.config.general.client.quantum_crafting")
     @Name("quantum_crafting")
-    public final QuantumCrafting quantumCrafting = new QuantumCrafting();
+    public static final QuantumCrafting quantumCrafting = new QuantumCrafting();
 
     @Comment("量子合成客户端偏好")
     public static class QuantumCrafting {
@@ -73,7 +84,7 @@ public class ClientConfig {
     // # zh_CN 无线二合一接口终端
     @LangKey("gtneverreset.gui.config.general.client.wireless_terminal")
     @Name("wireless_terminal")
-    public final WirelessTerminal wirelessTerminal = new WirelessTerminal();
+    public static final WirelessTerminal wirelessTerminal = new WirelessTerminal();
 
     @Comment("无线二合一接口终端")
     public static class WirelessTerminal {

@@ -29,7 +29,8 @@ import cpw.mods.fml.common.event.FMLServerStoppingEvent;
         + ";required-after:"
         + ModList.ModIds.BAUBLES
         + ";",
-    acceptedMinecraftVersions = "[1.7.10]")
+    acceptedMinecraftVersions = "[1.7.10]",
+    guiFactory = "com.xyp.gtneverreset.config.ConfigGuiFactory")
 public class GTNeverReset {
 
     public static final String MODID = ModList.ModIds.GT_NEVER_RESET;

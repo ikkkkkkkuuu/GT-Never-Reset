@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.xyp.gtneverreset.utils.machine.DireCraftingPatternDetails;
+import com.xyp.gtneverreset.utils.DireCraftingPatternDetails;
 
 import appeng.api.implementations.ICraftingPatternItem;
 import appeng.api.networking.crafting.ICraftingPatternDetails;

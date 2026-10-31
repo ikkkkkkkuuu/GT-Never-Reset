@@ -12,8 +12,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputSlave;
-import com.xyp.gtneverreset.utils.machine.PatternMEOutput;
-import com.xyp.gtneverreset.utils.machine.PatternMEOutputViews;
+import com.xyp.gtneverreset.common.me.PatternMEOutput;
+import com.xyp.gtneverreset.common.me.PatternMEOutputViews;
 
 import gregtech.api.interfaces.IOutputBus;
 import gregtech.api.interfaces.IOutputHatch;

@@ -1,7 +1,7 @@
 package com.xyp.gtneverreset.common.machine.hatch;
 
-import static com.xyp.gtneverreset.utils.machine.WildcardPatternSlotSuper.KEY_ACTIVE_PATTERN;
-import static com.xyp.gtneverreset.utils.machine.WildcardPatternSlotSuper.KEY_ACTIVE_PATTERN_ID;
+import static com.xyp.gtneverreset.common.machine.hatch.WildcardPatternSlotSuper.KEY_ACTIVE_PATTERN;
+import static com.xyp.gtneverreset.common.machine.hatch.WildcardPatternSlotSuper.KEY_ACTIVE_PATTERN_ID;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,10 +21,10 @@ import net.minecraftforge.fluids.FluidStack;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import com.xyp.gtneverreset.utils.machine.CircuitPatternCodec;
-import com.xyp.gtneverreset.utils.machine.LongCircuitBuffer;
-import com.xyp.gtneverreset.utils.recipes.wildcard.WildcardPatternCache;
-import com.xyp.gtneverreset.utils.recipes.wildcard.WildcardPatternGenerator;
+import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
+import com.xyp.gtneverreset.common.me.LongCircuitBuffer;
+import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternCache;
+import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.crafting.ICraftingProviderHelper;

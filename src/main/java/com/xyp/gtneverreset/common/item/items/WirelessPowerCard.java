@@ -23,11 +23,11 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.gtnewhorizon.gtnhlib.item.ItemStackNBT;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.gui.WirelessPowerCardGui;
+import com.xyp.gtneverreset.common.wireless.IWirelessPowerReceiver;
+import com.xyp.gtneverreset.common.wireless.WirelessCardInventory;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerSavedData;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerTransfer;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.machine.IWirelessPowerReceiver;
-import com.xyp.gtneverreset.utils.machine.WirelessPowerTransfer;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardInventory;
-import com.xyp.gtneverreset.utils.world.WirelessPowerSavedData;
 
 import baubles.api.BaubleType;
 import baubles.api.expanded.BaubleExpandedSlots;

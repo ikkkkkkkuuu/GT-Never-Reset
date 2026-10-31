@@ -18,10 +18,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.xyp.gtneverreset.utils.crafting.quantum.ae2.QuantumCraftingJob;
-import com.xyp.gtneverreset.utils.crafting.quantum.ae2.QuantumPattern;
-import com.xyp.gtneverreset.utils.crafting.quantum.api.crafting.IPatternDetails;
-import com.xyp.gtneverreset.utils.crafting.quantum.crafting.CraftingPlan;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingJob;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumPattern;
+import com.xyp.gtneverreset.common.crafting.quantum.api.crafting.IPatternDetails;
+import com.xyp.gtneverreset.common.crafting.quantum.crafting.CraftingPlan;
 
 import appeng.api.AEApi;
 import appeng.api.networking.IGrid;

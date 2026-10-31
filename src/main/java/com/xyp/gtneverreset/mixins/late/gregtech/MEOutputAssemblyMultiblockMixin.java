@@ -34,9 +34,9 @@ public abstract class MEOutputAssemblyMultiblockMixin {
         MTEMultiBlockBase controller = (MTEMultiBlockBase) (Object) this;
         MTEHatchOutput fluidOutput = assembly.getFluidOutput();
         assembly.updateTexture(casing);
-        assembly.updateCraftingIcon(controller.getMachineCraftingIcon());
+        assembly.updateCraftingIcon(controller.getMachineCraftingIcon(), controller.getBaseMetaTileEntity());
         fluidOutput.updateTexture(casing);
-        fluidOutput.updateCraftingIcon(controller.getMachineCraftingIcon());
+        fluidOutput.updateCraftingIcon(controller.getMachineCraftingIcon(), controller.getBaseMetaTileEntity());
         if (!mOutputBusses.contains(assembly)) {
             controller.addIfSmartInput(assembly);
             mOutputBusses.add(assembly);

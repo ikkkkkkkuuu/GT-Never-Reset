@@ -8,9 +8,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.xyp.gtneverreset.api.mixinHelper.QuantumComputerCpuStatus;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
-import com.xyp.gtneverreset.utils.machine.ECraftingCPUCluster;
-import com.xyp.gtneverreset.utils.machine.QuantumComputerCpuStatus;
+import com.xyp.gtneverreset.utils.ECraftingCPUCluster;
 
 import appeng.api.networking.crafting.ICraftingCPU;
 import appeng.container.implementations.CraftingCPUStatus;

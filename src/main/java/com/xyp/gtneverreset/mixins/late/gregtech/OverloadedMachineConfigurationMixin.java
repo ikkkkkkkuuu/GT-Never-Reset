@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration;
-import com.xyp.gtneverreset.utils.machine.OverloadedMachineMolds;
+import com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineMolds;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEBasicMachine;

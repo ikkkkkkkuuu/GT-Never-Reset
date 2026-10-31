@@ -20,9 +20,9 @@ import com.cleanroommc.modularui.screen.GuiContainerWrapper;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.layout.Grid;
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
+import com.xyp.gtneverreset.common.block.blocks.tile.OverloadedProviderInventory;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.machine.OverloadedProviderInventory;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;

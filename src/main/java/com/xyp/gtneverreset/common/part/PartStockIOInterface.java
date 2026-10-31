@@ -13,7 +13,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.xyp.gtneverreset.common.gui.StockIOGui;
 import com.xyp.gtneverreset.common.item.items.ItemStockIOInterface;
-import com.xyp.gtneverreset.utils.machine.stockio.StockIOLogic;
+import com.xyp.gtneverreset.common.me.stockio.StockIOLogic;
 
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.security.BaseActionSource;

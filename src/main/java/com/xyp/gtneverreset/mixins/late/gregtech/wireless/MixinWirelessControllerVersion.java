@@ -13,9 +13,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessControllerContext;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessControllerVersion;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessHatchOwner;
+import com.xyp.gtneverreset.common.wireless.WirelessControllerContext;
+import com.xyp.gtneverreset.common.wireless.WirelessControllerVersion;
+import com.xyp.gtneverreset.common.wireless.WirelessHatchOwner;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEMultiBlockBase;

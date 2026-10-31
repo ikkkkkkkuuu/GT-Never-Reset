@@ -4,7 +4,7 @@ import org.spongepowered.asm.mixin.Mixin;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.xyp.gtneverreset.utils.machine.stockio.StockIOGeneratorBridge;
+import com.xyp.gtneverreset.common.me.stockio.StockIOGeneratorBridge;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEBasicGenerator;

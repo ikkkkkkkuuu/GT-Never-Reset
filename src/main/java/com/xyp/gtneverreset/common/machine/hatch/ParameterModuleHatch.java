@@ -17,7 +17,7 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.common.gui.modularui.ModuleParameterGui;
+import com.xyp.gtneverreset.common.gui.modularui.hatch.ModuleParameterGui;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 
 import cpw.mods.fml.relauncher.Side;

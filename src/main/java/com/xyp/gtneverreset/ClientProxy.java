@@ -9,10 +9,10 @@ import com.glodblock.github.inventory.item.WirelessMagnetCardFilterInventory;
 import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
 import com.xyp.gtneverreset.client.render.VaultConnectedTextureRender;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalGuiHandler;
-import com.xyp.gtneverreset.config.MainConfig;
-import com.xyp.gtneverreset.loader.LifecycleLoader;
+import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
+import com.xyp.gtneverreset.config.ClientConfig;
+import com.xyp.gtneverreset.loader.ContentLoaders;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
-import com.xyp.gtneverreset.utils.inventory.DualTerminalGuiObject;
 
 import appeng.client.gui.implementations.GuiCraftingTerm;
 import appeng.helpers.WirelessTerminalGuiObject;
@@ -26,13 +26,13 @@ public class ClientProxy extends CommonProxy {
     @Override
     public void preInit(FMLPreInitializationEvent event) {
         super.preInit(event);
-        LifecycleLoader.clientPreInit(event.getModConfigurationDirectory());
+        ContentLoaders.clientPreInit(event.getModConfigurationDirectory());
     }
 
     @Override
     public void init(FMLInitializationEvent event) {
         super.init(event);
-        LifecycleLoader.clientInit();
+        ContentLoaders.clientInit();
     }
 
     @Override
@@ -57,7 +57,7 @@ public class ClientProxy extends CommonProxy {
 
     @Override
     public boolean preferOwnInterfaceNames() {
-        return MainConfig.client.wirelessTerminal.preferOwnInterfaceNames;
+        return ClientConfig.wirelessTerminal.preferOwnInterfaceNames;
     }
 
 }

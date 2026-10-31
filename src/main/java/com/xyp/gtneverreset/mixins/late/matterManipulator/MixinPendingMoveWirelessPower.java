@@ -12,7 +12,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.recursive_pineapple.matter_manipulator.common.building.BlockSpec;
 import com.recursive_pineapple.matter_manipulator.common.building.PendingMove;
 import com.recursive_pineapple.matter_manipulator.common.items.manipulator.Location;
-import com.xyp.gtneverreset.utils.world.WirelessPowerSavedData;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerSavedData;
 
 @Mixin(value = PendingMove.class, remap = false)
 public abstract class MixinPendingMoveWirelessPower {

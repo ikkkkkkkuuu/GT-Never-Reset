@@ -16,8 +16,8 @@ import org.lwjgl.input.Keyboard;
 
 import com.google.common.collect.ImmutableList;
 import com.xyp.gtneverreset.client.quantum.CraftingCycleIndex.Match;
-import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.Cycle;
-import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.PatternLocation;
+import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder.Cycle;
+import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder.PatternLocation;
 
 import appeng.api.storage.data.IAEStack;
 import appeng.api.util.NamedDimensionalCoord;

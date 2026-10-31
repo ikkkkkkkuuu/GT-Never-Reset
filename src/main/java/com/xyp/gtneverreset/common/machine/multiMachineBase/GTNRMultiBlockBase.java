@@ -24,17 +24,17 @@ import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
-import com.xyp.gtneverreset.common.gui.modularui.GTNRMultiBlockBaseGui;
+import com.xyp.gtneverreset.common.gui.modularui.multiblock.GTNRMultiBlockBaseGui;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
+import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
+import com.xyp.gtneverreset.common.me.PatternInputScheduler;
 import com.xyp.gtneverreset.mixins.late.gregtech.OverclockCalculatorAccessorMixin;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
-import com.xyp.gtneverreset.utils.machine.PatternInputScheduler;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadInputPreflight;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadOutputs;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.utils.machine.RecipeThreadTask;
-import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
-import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
 
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.HeatingCoilLevel;
@@ -374,6 +374,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     public void clearHatches() {
         super.clearHatches();
         for (ParameterModuleHatch hatch : parameterModules) hatch.setWorking(false);
+        clearCraftingIcons(parameterModules);
         parameterModules.clear();
     }
 
@@ -387,7 +388,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         if (getParameterModuleLimit(hatch.getModuleType()) <= 0) return false;
         if (!parameterModules.contains(hatch)) {
             hatch.updateTexture(casingIndex);
-            hatch.updateCraftingIcon(getMachineCraftingIcon());
+            hatch.updateCraftingIcon(getMachineCraftingIcon(), getBaseMetaTileEntity());
             parameterModules.add(hatch);
         }
         return true;

@@ -1,39 +1,41 @@
 # GT-Never-Reset 开发规则
 
 - Minecraft 1.7.10 / Forge / GTNH addon；根包保持 `com.xyp.gtneverreset`，Mod ID 保持 `gtneverreset`。
-- 用户指定以相邻的 `../GT-Not-Leisure-dev-290` 为代码组织和格式参考。以下规则适用于今后新增和修改的代码；已有功能的大规模迁移另按实际任务处理。
+- 组织方式以 GTNotLeisure/GT-Not-Leisure PR #663 最终提交 `fdf3f3d0c4ca7a57d18b1421e84b12e8986c11ef` 为基准（2026-10-31）。参考：https://github.com/GTNotLeisure/GT-Not-Leisure/pull/663 。保留本项目根包、功能和兼容标识；后续上游更新先核实实际职责变化。
 
 ## 包和文件归位
 
-先按职责确定包，再在该职责下按需要细分对象或领域。一个新功能可以跨多个职责包，通过一致的名称关联，不能把它的方块、物品、机器、GUI、网络、数据、配方和注册全部塞进 `common.<功能名>`、`common.item.<功能名>` 或 `common.block.<功能名>`。
+先按类型职责归位，再组织业务领域。方块、物品、机器、GUI、容器、网络包、配置、配方注册和 loader 保持各自入口；领域内部的状态、持久化、调度和算法放在 `common.crafting`、`common.wireless`、`common.me`、`common.terminal`、`common.flux` 等实际所属系统。允许业务领域包，但不能把该系统的所有入口、GUI 和注册也一起塞进去。
 
 以下路径均位于 `src/main/java/com/xyp/gtneverreset/`，按实际需要创建，不预建空目录：
 
 | 职责 | 默认位置 |
 | --- | --- |
 | 模组入口、代理 | 根包；保持简短，委托 loader 或对应实现 |
-| 配置 | `config.MainConfig` 保留静态分类实例；分类实现放在 `config` 下的 `XxxConfig`，用 GTNHLib 注解声明 |
-| 加载和注册编排 | `loader` |
+| 配置 | `config.XxxConfig` 独立注解注册，顶层配置字段为静态字段；`ConfigRegistry` 维护分类，`ConfigMigration` 迁移旧文件 |
+| 加载和注册编排 | `loader.ContentLoaders` 按固定顺序调度 `IContentLoader`；机器注册细分 `loader.machine` |
 | 方块、对应 ItemBlock、TileEntity | 分别为 `common.block.blocks`、其下的 `item`、`tile` |
 | 普通物品 | `common.item.items`；物品基类及确有共用职责的基础类型放 `common.item` |
 | 单方块机器、多方块、仓室、机器基类 | 分别为 `common.machine.basicMachine`、`multiblock`、`hatch`、`multiMachineBase` |
 | 配方实现 | `common.recipe`，按实际目标配方池组织类；统一由 recipe loader 调用 |
-| GT 机器、仓室的 ModularUI 界面 | `common.gui.modularui`；控制器保留 UI 入口 |
+| GT 机器、仓室的 ModularUI 界面 | `common.gui.modularui.multiblock`、`hatch`、`singleblock`；控制器保留 UI 入口 |
 | 普通方块、物品、覆盖板及 AE 部件的 GUI | `common.gui`；方块、物品和部件保留 UI 入口 |
-| 原版容器 | `container` |
-| 客户端屏幕、渲染、NEI | `client` 下对应职责包；客户端类型不得由公共端直接加载 |
+| 容器 | `common.gui.container`，必要时按界面领域细分 |
+| 客户端屏幕、输入、渲染 | `client` 下对应领域，如 `client.wireless`、`client.quantum`、`client.radialmenu`；独立屏幕可放 `client.gui.<领域>`，保持端隔离 |
+| 可选模组兼容、NEI / Waila / BQ | `compat.<目标模组>`，可选模组检查后才调用；配方页布局放 `common.gui.recipe` |
 | 网络数据包、命令、实体、世界逻辑 | 分别为 `common.packet`、`common.command`、`common.entity`、`common.world` |
-| 扩展接口和稳定定义 | `api` 下相应领域；不要把内部实现都当 API |
-| 状态、算法及复用支持逻辑 | 复用现有对应职责包，必要时在 `utils.world`、`utils.machine`、`utils.recipes` 等下细分 |
+| 扩展接口和稳定定义 | `api` 下相应领域；跨领域 Mixin 接口放 `api.mixinHelper`，领域内部接口随所属系统 |
+| 状态、算法及辅助实现 | 优先所属业务目录；只有跨系统共用实现保留 `utils`，不依赖 GTNR / GregTech 的通用框架放 GTNRLib |
+| 多方块提示生成 | `common.machine.tooltip`；结构资源路径和缓存留在 `utils.structure.MultiblockStructureLoader` |
 | 公共枚举 | 现有 `utils.enums` |
 
 - 包名沿用参考项目的职责词汇和目标项目已有大小写；`basicMachine`、`multiMachineBase` 等已有风格不另造一套。保留本项目根包，不复制 `com.science.gtnl`。
-- 配方类按实际写入的配方池归并，例如装配机配方统一放在 `AssemblerRecipes`、工作台配方统一放在 `CraftingTableRecipes`；不得按产物所属功能或移植项目拆成 `ModuleHatchRecipes`、`PackagedRecipes` 等注册类。不同配方池通常分别组织；共用同一转换流程的 Modern 无单元配方集中在 `ModernNonCellRecipes`，分别写入对应配方池，不为每个池建立仅转发调用的类。共享转换算法放在 `utils.recipes`。配方后端、匹配算法、样板处理等非配方注册逻辑放在 `utils.recipes` 等对应职责包，不放在配方池注册目录。
+- 配方类按实际写入的配方池归并，例如装配机配方统一放在 `AssemblerRecipes`、工作台配方统一放在 `CraftingTableRecipes`；不得按产物所属功能或移植项目拆成 `ModuleHatchRecipes`、`PackagedRecipes` 等注册类。不同配方池通常分别组织；共用同一转换流程的 Modern 无单元配方集中在 `ModernNonCellRecipes`，分别写入对应配方池，不为每个池建立仅转发调用的类。跨配方池共享转换算法放在 `utils.recipes`；专属后端随所属配方池，机器专属处理逻辑随机器，样板与 AE 业务归 `common.me`。配方池稳定定义 `GTNRRecipeMaps` 放在 `common.recipe`，不放 loader。
 - 配方子包按目标配方池归属划分：写入 GT 原有配方池的配方放在 `common.recipe.gregtech`，本模组自定义配方池的配方注册类放在 `common.recipe.gtneverreset`；同一功能同时涉及两类配方时拆开放置，不能仅因使用 GT API 或 GT 机器就全部归入 `gregtech`。
-- 对照 GTNL 的实际分类：`common.gui.modularui` 根层放完整的 GT 机器、仓室 GUI 类；普通方块、物品、覆盖板及 AE 部件 GUI 放在 `common.gui` 根层，共享 GUI 纹理定义也放在这一层。使用 ModularUI2 本身不是归入 `modularui` 的依据。
+- 对照新版 GTNL：GT 多方块、仓室、小机器 GUI 分别归 `common.gui.modularui.multiblock`、`hatch`、`singleblock`。普通方块、物品、覆盖板及 AE 部件 GUI 放在 `common.gui`，复杂领域可细分；共享纹理按使用范围就近放置。使用 ModularUI2 本身不是归入 `modularui` 的依据。
 - 参考 GTNL 的局部内部类型做法：只服务一个 GUI 的槽位适配器、控件、同步处理器、预览/选择面板及视图状态，优先写在所属 GUI 中；简短且单次调用的注册包装直接并回调用处，重复布局提取所属 GUI 的私有方法。同一流程的方法及相关内部类型放在一起，不为类别统一拆出 `handler`、`widget`、`sync`、`model` 目录。
 - 跨 GUI 复用或确有独立职责的复杂控件、同步实现才保留独立文件，按实际职责和 GTNL 的对应位置安排；不为减少文件数合并无关 GUI 或业务逻辑。Forge `IGuiHandler` 路由类与普通 GUI 入口同放 `common.gui`；跨 GUI、网络和会话共用的 GUI 类型枚举归 `utils.enums`。
-- 客户端 GUI 同样按实际使用范围收拢：专用按钮、面板、弹窗、视图状态及界面契约优先放回所属客户端主 GUI，相关生命周期和辅助方法就近排列；被客户端 mixin 引用本身不等于跨界面复用。确实被不同界面使用的屏幕基类、按钮和纹理处理保留独立；不要为了合并文件把客户端实现移入公共端，或去掉原有 `@SideOnly(Side.CLIENT)` 隔离。物品专用提示文字及其小型辅助方法归所属物品的客户端提示入口。
+- 客户端 GUI 同样按实际使用范围收拢：专用按钮、面板、弹窗、视图状态及界面契约优先放回所属客户端主 GUI，相关生命周期和辅助方法就近排列；独立复杂视图模型按领域保留，被客户端 mixin 引用本身不等于通用库职责。确实被不同界面使用的屏幕基类、按钮和纹理处理保留独立；不要为了合并文件把客户端实现移入公共端，或去掉原有 `@SideOnly(Side.CLIENT)` 隔离。物品专用提示文字及其小型辅助方法归所属物品的客户端提示入口。
 - 类名使用领域名加职责名，如 `XxxController`、`XxxGui`、`XxxPacket`、`XxxState`。一个文件一个主要顶层类型，文件名与类型名一致。
 - 方块沿用 `BlockXxx`、对应 ItemBlock 沿用 `ItemBlockXxx`，TileEntity 类（含基类）统一使用 `TileEntityXxx` 前缀，放在 `common.block.blocks.tile`。目录或类名调整时同步更新引用，但保留已有注册 ID、存档键和网络标识。
 - 多方块形状统一使用 GTNL 的 `MBS1` 二进制 `.mbs`，放在 `src/main/resources/assets/gtneverreset/multiblock/`，通过 `utils.structure.MultiblockStructureLoader` 加载；不再在 Java 类中嵌入形状字符串数组。Java 保留元素映射、结构 piece 名、控制器偏移和成型规则；迁移时逐字符核对空格、层顺序及转置方式。`.mbs` 必须按二进制提交，避免换行转换损坏。
@@ -43,10 +45,13 @@
 
 - loader 和代理负责调用与注册；业务规则归机器、TileEntity 或相应管理类；GUI 负责界面与同步；包处理器负责接收和委托。注册方法里不展开整个功能实现。
 - 代理类先集中排列初始化和服务端启停生命周期，再放侧别入口及相关辅助方法；同一流程重复取得的注册器使用局部变量。客户端回包处理归对应包的客户端处理入口，保留客户端隔离、主线程调度及连接有效性检查，不在代理中堆叠功能专属回包实现；继续保留 loader 委托和 `common.gui` 中的 GUI 路由。
-- 网络数据包统一在 `common.packet.NetWorkHandler#register` 注册，由代理调用；不另设功能专属的注册入口或通道。保留已有通道名、接收侧和包 ID，新增包追加到统一注册列表。
-- 配置保留 `MainConfig` 和静态分类实例，分类实现拆为 `config.XxxConfig`；仅属于一个分类的小型子分类保留内部类。使用 GTNHLib 的 `@Config`、默认值、说明及约束注解，由 `loader.ConfigLoader` 统一注册和保存，保留既有配置路径、分类名和字段名。只创建已有功能需要的分类，纯客户端设置不标记 `@Sync`，不另用 NEI 配置标签保存同一设置。
-- 公共库 `gtnrlib` 是独立 Gradle 子模块和 Forge 模组，根包为 `com.xyp.gtnrlib`，Mod ID 为 `gtnrlib`。只放不依赖 GTNR 业务和 GregTech 的通用实现；主模组单向依赖公共库。库拥有自己的资源、Mixin 配置、refmap 和初始化入口，不能从宿主重复注册。主模组生命周期由 `loader.LifecycleLoader` 统一编排，代理保留侧别入口。
-- 已抽出的轮盘几何、配色和动画复用库的 `gui.wheel`，共享控件和滚动屏幕复用 `gui.widget`，模组检测复用 `mod.ModList`，方块变化监听复用 `world.WorldListener`。业务枚举仍放主模组 `utils.enums`；轮盘动作、导航栈、配置文件和无线网络数据留在主模组。结构路径与缓存仍由 `MultiblockStructureLoader` 管理，MBS1 解码委托库的 `utils.StructureFileCodec`。
+- 网络数据包集中在 `common.packet`，统一在 `NetWorkHandler#register` 注册，由 `NetworkLoader` 委托；不另设功能专属的注册入口或通道。保留已有通道名、接收侧和包 ID，新增包追加到统一注册列表。
+- 配置不再通过 `MainConfig` 聚合实例。各 `config.XxxConfig` 使用 GTNHLib `@Config`、默认值、说明及约束注解，顶层字段静态化，小型子分类保留实例与内部类。`ConfigRegistry` 列出公共端和客户端分类，`ConfigLoader` 处理加载时机。配置文件为 `config/GTNeverReset/{general,item,machine,recipe,client}.cfg`；同一文件可以有多个分类，禁止注册时剔除其他分类。纯客户端分类仅客户端注册、不标记 `@Sync`；客户端保存只保存客户端分类。不另用 NEI 配置标签保存同一设置。旧 `GTNeverReset.cfg` 按类别迁移，现有新文件优先，保留旧文件和字段名、默认值、约束、同步语义及已有语言键。
+- 公共库 `gtnrlib` 是独立 Gradle 子模块和 Forge 模组，根包为 `com.xyp.gtnrlib`，Mod ID 为 `gtnrlib`。只放不依赖 GTNR 业务和 GregTech 的通用实现；主模组单向依赖公共库。库拥有自己的资源、Mixin 配置、refmap 和初始化入口，不能从宿主重复注册。主模组生命周期由 `loader.ContentLoaders` 和 `IContentLoader` 统一编排，代理保留侧别入口。有静态注册字段的 loader 用内部 `Card` 延迟初始化，不能因构造登记表提前创建物品。保持原生命周期阶段和注册顺序，不照抄上游的机器注册阶段。
+- `MachineLoader` 只作机器注册总入口，依次调用 `loader.machine.HatchLoader`、`MultiblockLoader`、`BasicMachineLoader`；Modern 小机器随 BasicMachineLoader，模块仓随 HatchLoader。不为单台机器建立只转发的 loader。
+- Early coremod 入口放 `asm`，late mixin 加载入口放 `mixins`；移动入口时同步构建配置、manifest 和资源中的类路径。空的默认 mixin 配置不声明覆盖加载器的根包，实际 mixin 配置只声明 `mixins.early` / `mixins.late`，避免普通加载器被当作 mixin 类禁止加载。
+- 已抽出的轮盘几何、配色和动画复用库的 `gui.wheel`，共享控件和滚动屏幕复用 `gui.widget`，模组检测复用 `mod.ModList`，方块变化监听复用 `world.WorldListener`。业务枚举仍放主模组 `utils.enums`；轮盘动作、脚本、配置模型与存储归主模组 `client.radialmenu`，屏幕和导航栈归 `client.gui.radialmenu`；无线网络数据归 `common.wireless`。结构路径与缓存仍由 `MultiblockStructureLoader` 管理，MBS1 解码委托库的 `utils.StructureFileCodec`。
+- 图集解析、文件图标及玩家头像缓存复用 GTNRLib `client.render.icon`，每个调用方持有自己的缓存实例；资源命名空间、目录和日志由主模组传入。轮盘动作与配置留在主模组，按键模拟、修饰键和持续按键状态复用库的 `client.input`，主模组负责 tick、离开世界和切换配置时的释放。`KeyBindingAccessor` 仅由库的客户端 early mixin 注册。Lua 词法分析复用 `text.syntax.LuaSyntax`，主模组 `ScriptSyntax` 只声明自己的 API 词表，脚本执行和权限留在主模组。
 - 新类默认按“常量和字段 → 构造方法 → 生命周期及主要对外行为 → 辅助方法 → 局部内部类型”排列；同一流程的方法、重载及紧密相关的辅助方法相邻。修改已有类时先沿用同类附近的顺序，不机械按字母或可见性重排。
 - 多方块控制器及公共机器基类统一以 `common.machine.multiMachineBase.MachineBaseLayoutTemplate` 为排布模板，优先于上面的通用成员顺序：静态常量与静态工具方法 → 持久化字段 → 运行时字段 → 构造器 → 生命周期 → 结构检查与参数准备 → 配方与处理主流程 → 输入、输出、仓室与贴图 → 信息展示 → UI → NBT 与客户端同步 → 能力开关与策略 Getter → 底层辅助方法与内部类型。同一职责连续排列，覆写方法按职责归位；辅助方法和重载跟随所属流程，未使用区域可以省略。调整字段位置必须核对初始化依赖。模板仅作排布参考，不注册、不承载业务，也不要求机器继承它。
 - 类和接口用大驼峰，普通方法与字段用小驼峰，常量用大写下划线。已有 API、覆盖方法和兼容性名称按原约定保留。

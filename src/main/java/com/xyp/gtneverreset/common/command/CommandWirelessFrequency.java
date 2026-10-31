@@ -7,8 +7,8 @@ import net.minecraft.command.WrongUsageException;
 import net.minecraft.util.ChatComponentTranslation;
 
 import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardBinding;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessFrequencies;
+import com.xyp.gtneverreset.common.wireless.WirelessCardBinding;
+import com.xyp.gtneverreset.common.wireless.WirelessFrequencies;
 
 public class CommandWirelessFrequency extends CommandBase {
 

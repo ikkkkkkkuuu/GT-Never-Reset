@@ -23,16 +23,16 @@ import org.lwjgl.input.Mouse;
 import com.cleanroommc.modularui.screen.GuiContainerWrapper;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.viewport.LocatedWidget;
-import com.xyp.gtneverreset.client.gui.WirelessPowerCardPanel;
+import com.xyp.gtneverreset.client.wireless.WirelessPowerCardPanel;
 import com.xyp.gtneverreset.common.gui.WirelessPowerCardGui;
 import com.xyp.gtneverreset.common.gui.WirelessPowerCardGui.Session;
 import com.xyp.gtneverreset.common.item.items.WirelessPowerCard;
+import com.xyp.gtneverreset.common.wireless.IWirelessPowerReceiver;
+import com.xyp.gtneverreset.common.wireless.WirelessHatchOwner;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerSavedData;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerTransfer;
 import com.xyp.gtneverreset.common.world.WirelessPowerEvents;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.machine.IWirelessPowerReceiver;
-import com.xyp.gtneverreset.utils.machine.WirelessPowerTransfer;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessHatchOwner;
-import com.xyp.gtneverreset.utils.world.WirelessPowerSavedData;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
@@ -103,7 +103,7 @@ public final class WirelessPowerChecks {
         }
         if (stage == 9 && mc.currentScreen == null) {
             try {
-                var selection = com.xyp.gtneverreset.client.render.WirelessWorldHighlightRender.class
+                var selection = com.xyp.gtneverreset.client.wireless.WirelessWorldHighlightRender.class
                     .getDeclaredField("selection");
                 selection.setAccessible(true);
                 require(selection.get(null) != null, "highlight action creates a world selection and closes the card");

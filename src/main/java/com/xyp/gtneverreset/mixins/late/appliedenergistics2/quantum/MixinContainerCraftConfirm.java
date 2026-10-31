@@ -11,12 +11,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.xyp.gtneverreset.api.mixinHelper.QuantumComputerCpuStatus;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.IQuantumCraftConfirm;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingJob;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingTree;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtneverreset.common.packet.quantum.QuantumCraftConfirmPacket;
-import com.xyp.gtneverreset.utils.crafting.quantum.ae2.IQuantumCraftConfirm;
-import com.xyp.gtneverreset.utils.crafting.quantum.ae2.QuantumCraftingJob;
-import com.xyp.gtneverreset.utils.crafting.quantum.ae2.QuantumCraftingTree;
-import com.xyp.gtneverreset.utils.machine.QuantumComputerCpuStatus;
+import com.xyp.gtneverreset.common.packet.QuantumCraftConfirmPacket;
 
 import appeng.api.networking.crafting.ICraftingJob;
 import appeng.container.AEBaseContainer;

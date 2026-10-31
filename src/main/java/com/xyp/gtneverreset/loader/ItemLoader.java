@@ -13,13 +13,11 @@ import com.xyp.gtneverreset.common.item.items.VeinMiningPickaxe;
 import com.xyp.gtneverreset.common.item.items.WildcardPatternItem;
 import com.xyp.gtneverreset.common.item.items.WirelessFrequencyCard;
 import com.xyp.gtneverreset.common.item.items.WirelessPowerCard;
+import com.xyp.gtneverreset.common.machine.packaged.AssemblyLineAdapter;
+import com.xyp.gtneverreset.common.machine.packaged.CircuitAssemblyLineAdapter;
+import com.xyp.gtneverreset.compat.bloodmagic.BloodMagicCompat;
+import com.xyp.gtneverreset.compat.thaumcraft.ThaumcraftCompat;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.machine.packaged.ArcaneWorkbenchAdapter;
-import com.xyp.gtneverreset.utils.machine.packaged.AssemblyLineAdapter;
-import com.xyp.gtneverreset.utils.machine.packaged.BloodAltarAdapter;
-import com.xyp.gtneverreset.utils.machine.packaged.CircuitAssemblyLineAdapter;
-import com.xyp.gtneverreset.utils.machine.packaged.ThaumcraftCrucibleAdapter;
-import com.xyp.gtneverreset.utils.machine.packaged.ThaumcraftInfusionAdapter;
 import com.xyp.gtnrlib.mod.ModList;
 
 public final class ItemLoader {
@@ -67,41 +65,25 @@ public final class ItemLoader {
 
     public static void registerItems() {
         new VeinMiningPickaxe();
-        if (ModList.BloodMagic.isModLoaded()) {
-            // #tr item.blood_altar_packaged_core.name
-            // # Blood Altar Packaged Core
-            // # zh_CN 血魔法祭坛封包核心
-            bloodAltarCore = new ItemPackagedCore(
-                "blood_altar",
-                "blood_altar_packaged_core",
-                GTNRItemList.BloodAltarCore);
-            PackagedCoreRegistry.register("blood_altar", new BloodAltarAdapter());
-        }
+        if (ModList.BloodMagic.isModLoaded()) BloodMagicCompat.registerPackagedCores();
 
         PackagedCoreRegistry.register("assembly_line", new AssemblyLineAdapter(false));
         PackagedCoreRegistry.register("advanced_assembly_line", new AssemblyLineAdapter(true));
         PackagedCoreRegistry.register("circuit_assembly_line", new CircuitAssemblyLineAdapter());
 
-        if (ModList.Thaumcraft.isModLoaded()) {
-            // #tr item.tc4_crucible_packaged_core.name
-            // # Thaumcraft Crucible Packaged Core
-            // # zh_CN 神秘时代坩埚封包核心
-            thaumcraftCrucibleCore = new ItemPackagedCore(
-                "thaumcraft_crucible",
-                "tc4_crucible_packaged_core",
-                GTNRItemList.ThaumcraftCrucibleCore);
-            // #tr item.arcane_workbench_packaged_core.name
-            // # Arcane Workbench Packaged Core
-            // # zh_CN 奥术工作台封包核心
-            arcaneWorkbenchCore = new ItemPackagedCore(
-                "arcane_workbench",
-                "arcane_workbench_packaged_core",
-                GTNRItemList.ArcaneWorkbenchCore);
-            thaumcraftInfusionCore = new ItemPackagedCore(true);
+        if (ModList.Thaumcraft.isModLoaded()) ThaumcraftCompat.registerPackagedCores();
+    }
 
-            PackagedCoreRegistry.register("thaumcraft_crucible", new ThaumcraftCrucibleAdapter());
-            PackagedCoreRegistry.register("arcane_workbench", new ArcaneWorkbenchAdapter());
-            PackagedCoreRegistry.register("thaumcraft_infusion", new ThaumcraftInfusionAdapter());
+    public static final class Card implements IContentLoader {
+
+        @Override
+        public String name() {
+            return "item";
+        }
+
+        @Override
+        public void preInit(cpw.mods.fml.common.event.FMLPreInitializationEvent event) {
+            ItemLoader.registerItems();
         }
     }
 }

@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import com.google.common.collect.ImmutableList;
 import com.xyp.gtneverreset.client.quantum.CraftingCycleIndex.Match;
 import com.xyp.gtneverreset.client.quantum.CraftingTreeRings.Ring;
-import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.Cycle;
+import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder.Cycle;
 
 import appeng.api.config.CraftingMode;
 import appeng.api.implementations.ICraftingPatternItem;

@@ -3,7 +3,7 @@ package com.xyp.gtneverreset.mixins.late.appliedenergistics2.compact;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-import com.xyp.gtneverreset.utils.crafting.CraftingBatchPlanner.SessionSegment;
+import com.xyp.gtneverreset.common.crafting.batch.CraftingBatchPlanner.SessionSegment;
 
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.diagnostics.CraftingDiagnosticSessionId;
@@ -15,7 +15,7 @@ import appeng.me.diagnostics.CraftingDiagnosticSessionId;
  * Adapted AE crafting component; see reference/UPSTREAM_PORT_NOTES.md for provenance.
  */
 @Mixin(value = CraftingCPUCluster.TaskProgress.SessionCraftCount.class, remap = false)
-public interface AccessorSessionCraftCount extends SessionSegment<CraftingDiagnosticSessionId> {
+public abstract class AccessorSessionCraftCount implements SessionSegment<CraftingDiagnosticSessionId> {
 
     /**
      * Returns the diagnostics session owning this contiguous craft segment.
@@ -23,8 +23,12 @@ public interface AccessorSessionCraftCount extends SessionSegment<CraftingDiagno
      * @return owning session identifier
      */
     @Override
+    public CraftingDiagnosticSessionId getSessionId() {
+        return gtneverreset$getSessionId();
+    }
+
     @Accessor("sessionId")
-    CraftingDiagnosticSessionId getSessionId();
+    public abstract CraftingDiagnosticSessionId gtneverreset$getSessionId();
 
     /**
      * Returns the unconsumed craft count in this segment.
@@ -33,7 +37,7 @@ public interface AccessorSessionCraftCount extends SessionSegment<CraftingDiagno
      */
     @Override
     @Accessor("remaining")
-    long getRemaining();
+    public abstract long getRemaining();
 
     /**
      * Stores the positive remainder after a batch consumes part of this segment.
@@ -42,5 +46,5 @@ public interface AccessorSessionCraftCount extends SessionSegment<CraftingDiagno
      */
     @Override
     @Accessor("remaining")
-    void setRemaining(long remaining);
+    public abstract void setRemaining(long remaining);
 }

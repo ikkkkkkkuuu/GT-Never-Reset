@@ -1,6 +1,6 @@
 package com.xyp.gtneverreset.common.recipe.gtneverreset;
 
-import com.xyp.gtneverreset.loader.GTNRRecipeMaps;
+import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
 import com.xyp.gtneverreset.utils.recipes.FluidContainerRecipeConverter;
 
 import gregtech.api.recipe.RecipeMaps;

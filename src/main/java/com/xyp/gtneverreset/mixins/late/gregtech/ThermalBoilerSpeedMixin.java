@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
-import com.xyp.gtneverreset.config.MainConfig;
+import com.xyp.gtneverreset.config.RecipeSpeedConfig;
 import com.xyp.gtneverreset.loader.ConfigLoader;
 import com.xyp.gtneverreset.utils.recipes.RecipeSpeed;
 
@@ -52,7 +52,7 @@ public abstract class ThermalBoilerSpeedMixin {
         require = 1,
         allow = 1)
     private void gtneverreset$scaleSteamWithoutOverflow(FluidStack steam, int amount) {
-        if (MainConfig.recipeSpeed.mode == 0) {
+        if (RecipeSpeedConfig.mode == 0) {
             steam.amount = amount;
             return;
         }
@@ -62,7 +62,7 @@ public abstract class ThermalBoilerSpeedMixin {
 
     @Unique
     private static int scaledWarmupRate(int increase, int maximum) {
-        if (MainConfig.recipeSpeed.mode == 0 || increase <= 0 || maximum <= 0) return increase;
+        if (RecipeSpeedConfig.mode == 0 || increase <= 0 || maximum <= 0) return increase;
         int warmupTicks = (int) (((long) maximum + increase - 1) / increase);
         int duration = RecipeSpeed.getModifiedRecipeDuration(warmupTicks);
         return (int) (((long) maximum + duration - 1) / duration);
@@ -76,7 +76,7 @@ public abstract class ThermalBoilerSpeedMixin {
     @Unique
     private static int limitBatchDuration(int duration) {
         // Multiplier mode has already been applied by RecipeMapBackend.
-        if (MainConfig.recipeSpeed.mode != 1 || duration <= 0) return duration;
+        if (RecipeSpeedConfig.mode != 1 || duration <= 0) return duration;
         return Math.min(duration, RecipeSpeed.getModifiedRecipeDuration(duration));
     }
 }

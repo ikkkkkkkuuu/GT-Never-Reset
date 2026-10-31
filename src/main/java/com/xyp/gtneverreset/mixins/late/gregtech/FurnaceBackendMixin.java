@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.xyp.gtneverreset.config.MainConfig;
+import com.xyp.gtneverreset.config.RecipeSpeedConfig;
 import com.xyp.gtneverreset.utils.recipes.RecipeSpeed;
 
 import gregtech.api.recipe.maps.FurnaceBackend;
@@ -22,7 +22,7 @@ public abstract class FurnaceBackendMixin {
     @Inject(method = "overwriteFindRecipe", at = @At("RETURN"), remap = false, require = 0)
     private void gtneverreset$modifyFurnaceDuration(ItemStack[] items, FluidStack[] fluids,
         @Nullable ItemStack specialSlot, @Nullable GTRecipe cachedRecipe, CallbackInfoReturnable<GTRecipe> cir) {
-        if (MainConfig.recipeSpeed.mode == 0) {
+        if (RecipeSpeedConfig.mode == 0) {
             return;
         }
         GTRecipe recipe = cir.getReturnValue();

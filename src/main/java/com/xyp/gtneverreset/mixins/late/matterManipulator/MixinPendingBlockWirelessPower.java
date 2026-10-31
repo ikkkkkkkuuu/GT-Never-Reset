@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.recursive_pineapple.matter_manipulator.common.building.BlockAnalyzer.IBlockApplyContext;
 import com.recursive_pineapple.matter_manipulator.common.building.PendingBlock;
-import com.xyp.gtneverreset.utils.machine.WirelessPowerTransfer;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerTransfer;
 
 @Mixin(value = PendingBlock.class, remap = false)
 public abstract class MixinPendingBlockWirelessPower {

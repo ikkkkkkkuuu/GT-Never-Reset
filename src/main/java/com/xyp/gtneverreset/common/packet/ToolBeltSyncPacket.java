@@ -7,8 +7,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
 
-import com.xyp.gtneverreset.client.action.radialmenu.ToolBeltMenu;
-import com.xyp.gtneverreset.utils.inventory.ToolBeltData;
+import com.xyp.gtneverreset.client.radialmenu.action.ToolBeltMenu;
+import com.xyp.gtneverreset.common.item.ToolBeltData;
 
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;

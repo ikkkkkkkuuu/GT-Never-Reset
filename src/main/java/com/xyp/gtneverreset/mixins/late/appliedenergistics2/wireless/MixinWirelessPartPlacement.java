@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessAutoConnect;
+import com.xyp.gtneverreset.common.wireless.WirelessAutoConnect;
 
 import appeng.api.parts.IPart;
 import appeng.parts.CableBusContainer;

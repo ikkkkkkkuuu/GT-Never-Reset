@@ -5,7 +5,17 @@ import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
 
 import cpw.mods.fml.common.registry.EntityRegistry;
 
-public final class EntityLoader {
+public final class EntityLoader implements IContentLoader {
+
+    @Override
+    public String name() {
+        return "entity";
+    }
+
+    @Override
+    public void preInit(cpw.mods.fml.common.event.FMLPreInitializationEvent event) {
+        registerEntities();
+    }
 
     public static void registerEntities() {
         // #tr entity.gtneverreset.StableEndCrystal.name

@@ -14,8 +14,8 @@ import net.minecraft.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 import com.google.common.collect.ImmutableList;
-import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.Cycle;
-import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.PatternLocation;
+import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder.Cycle;
+import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder.PatternLocation;
 
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.storage.data.IAEStack;

@@ -44,15 +44,15 @@ import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.api.IItemVault;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
-import com.xyp.gtneverreset.common.gui.modularui.SingularityDataHubGui;
+import com.xyp.gtneverreset.common.gui.modularui.multiblock.SingularityDataHubGui;
 import com.xyp.gtneverreset.common.machine.hatch.VaultPortHatch;
+import com.xyp.gtneverreset.common.machine.storage.VaultStackSnapshots;
+import com.xyp.gtneverreset.common.machine.storage.VaultStorageUsage;
+import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.utils.enums.BlockIcons;
-import com.xyp.gtneverreset.utils.machine.storage.VaultStackSnapshots;
-import com.xyp.gtneverreset.utils.machine.storage.VaultStorageUsage;
-import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
-import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
 
 import appeng.api.AEApi;
 import appeng.api.storage.data.IAEFluidStack;
@@ -147,6 +147,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     public void onBlockDestroyed() {
         locked = true;
         if (portHatch != null) {
+            portHatch.updateCraftingIcon(null, getBaseMetaTileEntity());
             portHatch.unbind();
         }
         super.onBlockDestroyed();
@@ -607,7 +608,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
             if (aMetaTileEntity instanceof VaultPortHatch vaultPortHatch) {
                 if (portHatch != null) return false;
                 vaultPortHatch.updateTexture(aBaseCasingIndex);
-                vaultPortHatch.updateCraftingIcon(getMachineCraftingIcon());
+                vaultPortHatch.updateCraftingIcon(getMachineCraftingIcon(), getBaseMetaTileEntity());
                 portHatch = vaultPortHatch;
                 return true;
             }

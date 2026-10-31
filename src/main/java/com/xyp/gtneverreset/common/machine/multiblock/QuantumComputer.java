@@ -19,10 +19,10 @@ import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.gtnewhorizon.structurelib.structure.StructureUtility;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
-import com.xyp.gtneverreset.common.gui.modularui.QuantumComputerGui;
+import com.xyp.gtneverreset.common.gui.modularui.multiblock.QuantumComputerGui;
+import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.utils.ECraftingCPUCluster;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.machine.ECraftingCPUCluster;
-import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
 import appeng.api.AEApi;

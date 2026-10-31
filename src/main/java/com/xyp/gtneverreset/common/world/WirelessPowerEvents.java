@@ -13,10 +13,10 @@ import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.event.world.BlockEvent;
 
 import com.xyp.gtneverreset.common.item.items.WirelessPowerCard;
-import com.xyp.gtneverreset.utils.machine.IWirelessPowerReceiver;
-import com.xyp.gtneverreset.utils.machine.WirelessPowerTransfer;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardInventory;
-import com.xyp.gtneverreset.utils.world.WirelessPowerSavedData;
+import com.xyp.gtneverreset.common.wireless.IWirelessPowerReceiver;
+import com.xyp.gtneverreset.common.wireless.WirelessCardInventory;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerSavedData;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerTransfer;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;

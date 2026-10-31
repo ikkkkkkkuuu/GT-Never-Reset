@@ -1,6 +1,6 @@
 package com.xyp.gtneverreset.common.recipe.gtneverreset;
 
-import static com.xyp.gtneverreset.loader.GTNRRecipeMaps.ORE_PROCESSING_RECIPES;
+import static com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps.ORE_PROCESSING_RECIPES;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -4,7 +4,7 @@ import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 
-import com.xyp.gtneverreset.utils.world.QuestProgress;
+import com.xyp.gtneverreset.compat.betterquesting.QuestProgress;
 import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;

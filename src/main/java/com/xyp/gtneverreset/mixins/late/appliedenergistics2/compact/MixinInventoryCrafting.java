@@ -4,7 +4,7 @@ import org.spongepowered.asm.mixin.Intrinsic;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-import com.xyp.gtneverreset.utils.machine.LargeInventoryCrafting;
+import com.xyp.gtneverreset.api.mixinHelper.LargeInventoryCrafting;
 
 import appeng.util.inv.MEInventoryCrafting;
 

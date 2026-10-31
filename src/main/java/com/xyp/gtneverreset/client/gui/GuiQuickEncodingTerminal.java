@@ -43,18 +43,18 @@ import org.lwjgl.opengl.GL11;
 import com.glodblock.github.FluidCraft;
 import com.glodblock.github.client.gui.GuiFCImgButton;
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.client.nei.NeiCraftingFluid;
-import com.xyp.gtneverreset.client.nei.QuickTerminalRecipeTransferHandler;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalMagnetGui;
+import com.xyp.gtneverreset.common.gui.container.ContainerQuickEncodingTerminal;
+import com.xyp.gtneverreset.common.packet.CPacketSwitchGuis;
+import com.xyp.gtneverreset.common.packet.CPacketTeleportToInterface;
+import com.xyp.gtneverreset.common.packet.CPacketToggleInterfaceVisibility;
+import com.xyp.gtneverreset.common.packet.InterfacePatternTarget;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtneverreset.common.packet.terminal.CPacketSwitchGuis;
-import com.xyp.gtneverreset.common.packet.terminal.CPacketTeleportToInterface;
-import com.xyp.gtneverreset.common.packet.terminal.CPacketToggleInterfaceVisibility;
-import com.xyp.gtneverreset.common.packet.terminal.InterfacePatternTarget;
-import com.xyp.gtneverreset.common.packet.terminal.RecipeTransferPayload;
-import com.xyp.gtneverreset.common.packet.terminal.StorageFluidRequest;
-import com.xyp.gtneverreset.config.MainConfig;
-import com.xyp.gtneverreset.container.ContainerQuickEncodingTerminal;
+import com.xyp.gtneverreset.common.packet.RecipeTransferPayload;
+import com.xyp.gtneverreset.common.packet.StorageFluidRequest;
+import com.xyp.gtneverreset.compat.nei.NeiCraftingFluid;
+import com.xyp.gtneverreset.compat.nei.QuickTerminalRecipeTransferHandler;
+import com.xyp.gtneverreset.config.ClientConfig;
 import com.xyp.gtneverreset.loader.ConfigLoader;
 import com.xyp.gtneverreset.mixins.late.appliedenergistics2.AccessorGuiScrollbar;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
@@ -982,15 +982,15 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
     @Override
     protected void actionPerformed(GuiButton button) {
         if (button == fillSearchButton) {
-            var settings = MainConfig.client.wirelessTerminal;
+            var settings = ClientConfig.wirelessTerminal;
             settings.fillSearchFromNeiRecipes = !settings.fillSearchFromNeiRecipes;
-            ConfigLoader.save();
+            ConfigLoader.saveClient();
             return;
         }
         if (button == appendSuffixButton) {
-            var settings = MainConfig.client.wirelessTerminal;
+            var settings = ClientConfig.wirelessTerminal;
             settings.appendNonConsumableItemNumbers = !settings.appendNonConsumableItemNumbers;
-            ConfigLoader.save();
+            ConfigLoader.saveClient();
             return;
         }
         if (button == pinStateButton) {
@@ -1732,7 +1732,7 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         @Override
         public void drawButton(Minecraft minecraft, int mouseX, int mouseY) {
             set(
-                MainConfig.client.wirelessTerminal.fillSearchFromNeiRecipes ? SearchBoxMode.AUTOSEARCH
+                ClientConfig.wirelessTerminal.fillSearchFromNeiRecipes ? SearchBoxMode.AUTOSEARCH
                     : SearchBoxMode.MANUAL_SEARCH);
             super.drawButton(minecraft, mouseX, mouseY);
         }
@@ -1755,7 +1755,7 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
             // # Fill the interface name search when importing an NEI recipe
             // # zh_CN 导入 NEI 配方时，自动填入接口名称搜索框
             String detail = StatCollector.translateToLocal("gtneverreset.terminal.quick.fill_search.detail");
-            String status = MainConfig.client.wirelessTerminal.fillSearchFromNeiRecipes ? EnumChatFormatting.GREEN + on
+            String status = ClientConfig.wirelessTerminal.fillSearchFromNeiRecipes ? EnumChatFormatting.GREEN + on
                 : EnumChatFormatting.RED + off;
             return title + "\n" + status + "\n" + EnumChatFormatting.GRAY + detail;
         }
@@ -1831,7 +1831,7 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         }
 
         private boolean appendsSuffix() {
-            return MainConfig.client.wirelessTerminal.appendNonConsumableItemNumbers;
+            return ClientConfig.wirelessTerminal.appendNonConsumableItemNumbers;
         }
     }
 

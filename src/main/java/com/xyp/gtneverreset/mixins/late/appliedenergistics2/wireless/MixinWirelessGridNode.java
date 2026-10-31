@@ -5,8 +5,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessClusterManager;
+import com.xyp.gtneverreset.common.wireless.WirelessChannelManager;
+import com.xyp.gtneverreset.common.wireless.WirelessClusterManager;
 
 import appeng.api.networking.IGridConnection;
 import appeng.api.networking.IGridNode;

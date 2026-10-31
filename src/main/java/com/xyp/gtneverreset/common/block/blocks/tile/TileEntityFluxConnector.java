@@ -20,10 +20,10 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.client.gui.FluxConnectorScreen;
 import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
+import com.xyp.gtneverreset.common.flux.FluxTransferBuffer;
+import com.xyp.gtneverreset.common.flux.FluxTransferScheduler;
 import com.xyp.gtneverreset.common.gui.FluxConnectorGui;
 import com.xyp.gtneverreset.common.world.FluxChunkLoading;
-import com.xyp.gtneverreset.utils.machine.flux.FluxTransferBuffer;
-import com.xyp.gtneverreset.utils.machine.flux.FluxTransferScheduler;
 import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.relauncher.Side;

@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.gtnewhorizon.cropsnh.api.ISeedData;
 import com.gtnewhorizon.cropsnh.items.ItemGenericSeed;
 import com.gtnewhorizon.cropsnh.tileentity.TileEntityCropSticks;
-import com.xyp.gtneverreset.config.MainConfig;
+import com.xyp.gtneverreset.config.CropsNHConfig;
 import com.xyp.gtneverreset.loader.ConfigLoader;
 
 @Mixin(TileEntityCropSticks.class)
@@ -48,7 +48,7 @@ public abstract class MixinTileEntityCropSticks {
     @Inject(method = "doGrowth", at = @At("HEAD"), cancellable = true, remap = false)
     private void gtneverreset$instantGrowth(CallbackInfo ci) {
         ConfigLoader.ensureLoaded();
-        if (!MainConfig.cropsNH.enableInstantGrowth) return;
+        if (!CropsNHConfig.enableInstantGrowth) return;
         if (!this.hasCrop()) return;
         int duration = this.seed.getCrop()
             .getGrowthDuration();
@@ -72,7 +72,7 @@ public abstract class MixinTileEntityCropSticks {
     @Inject(method = "getSeedDrop", at = @At("HEAD"), cancellable = true, remap = false)
     private void gtneverreset$guaranteedSeedDrop(CallbackInfoReturnable<ItemStack> cir) {
         ConfigLoader.ensureLoaded();
-        if (!MainConfig.cropsNH.enableGuaranteedSeedDrop) return;
+        if (!CropsNHConfig.enableGuaranteedSeedDrop) return;
         if (this.hasCrop() && !this.hasWeed()) {
             ItemStack drop = this.getSeedStack();
             if (drop != null) {

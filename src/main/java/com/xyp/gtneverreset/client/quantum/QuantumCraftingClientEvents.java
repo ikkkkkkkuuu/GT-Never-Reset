@@ -10,13 +10,13 @@ public final class QuantumCraftingClientEvents {
 
     @SubscribeEvent
     public void connected(FMLNetworkEvent.ClientConnectedToServerEvent event) {
-        QuantumCraftingClientConfig.scheduleSync();
+        QuantumCraftingClientState.scheduleSync();
     }
 
     @SubscribeEvent
     public void tick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END && Minecraft.getMinecraft().thePlayer != null) {
-            QuantumCraftingClientConfig.syncIfScheduled();
+            QuantumCraftingClientState.syncIfScheduled();
         }
     }
 }

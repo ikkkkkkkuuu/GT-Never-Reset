@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.xyp.gtneverreset.utils.machine.wireless.IWirelessPathingState;
+import com.xyp.gtneverreset.common.wireless.IWirelessPathingState;
 
 import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;

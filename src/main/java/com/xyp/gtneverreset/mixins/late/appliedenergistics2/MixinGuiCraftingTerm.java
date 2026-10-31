@@ -13,8 +13,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.xyp.gtneverreset.client.gui.CompactTerminalSwitchButton;
 import com.xyp.gtneverreset.client.gui.QuickTerminalButtonTextures;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
+import com.xyp.gtneverreset.common.packet.CPacketSwitchGuis;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtneverreset.common.packet.terminal.CPacketSwitchGuis;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
 
 import appeng.api.config.ActionItems;

@@ -9,11 +9,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.xyp.gtneverreset.client.quantum.QuantumCraftingClientConfig;
+import com.xyp.gtneverreset.client.quantum.QuantumCraftingClientState;
 import com.xyp.gtneverreset.client.quantum.QuantumCraftingModeButton;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.IQuantumCraftAmountGui;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtneverreset.common.packet.quantum.QuantumCraftingModePacket;
-import com.xyp.gtneverreset.utils.crafting.quantum.ae2.IQuantumCraftAmountGui;
+import com.xyp.gtneverreset.common.packet.QuantumCraftingModePacket;
 
 import appeng.client.gui.implementations.GuiAmount;
 import appeng.client.gui.implementations.GuiCraftAmount;
@@ -42,7 +42,7 @@ public abstract class MixinGuiCraftAmount extends GuiAmount implements IQuantumC
     @Inject(method = "initGui", at = @At("TAIL"), remap = true)
     private void gtnr$addQuantumModeButton(CallbackInfo ci) {
         this.gtnr$quantumMode = new QuantumCraftingModeButton(this.guiLeft - 18, this.guiTop + 48);
-        this.gtnr$quantumMode.setState(QuantumCraftingClientConfig.isQuantumCraftingMode());
+        this.gtnr$quantumMode.setState(QuantumCraftingClientState.isQuantumCraftingMode());
         this.buttonList.add(this.gtnr$quantumMode);
         this.gtnr$updateQuantumModeVisibility();
         // The answer tells whether the network can run quantum jobs
@@ -86,7 +86,7 @@ public abstract class MixinGuiCraftAmount extends GuiAmount implements IQuantumC
     @Unique
     private void gtnr$setQuantumMode(boolean enabled) {
         this.gtnr$quantumMode.setState(enabled);
-        QuantumCraftingClientConfig.setQuantumCraftingMode(enabled);
+        QuantumCraftingClientState.setQuantumCraftingMode(enabled);
         NetWorkHandler.sendToServer(new QuantumCraftingModePacket(enabled));
     }
 

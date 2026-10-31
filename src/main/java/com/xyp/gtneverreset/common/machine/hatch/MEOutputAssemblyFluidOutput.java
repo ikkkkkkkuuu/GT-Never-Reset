@@ -35,6 +35,7 @@ import gregtech.common.tileentities.machines.outputme.util.AECacheCounter;
 public final class MEOutputAssemblyFluidOutput extends MTEHatchOutput {
 
     private static final String NBT_KEY = "assemblyFluidOutput";
+    private static final long DEFAULT_CACHE_CAPACITY = 128_000;
     private static final Field BASE_TILE = baseTileField();
     private final MEOutputAssembly owner;
     private final Provider provider;
@@ -185,6 +186,10 @@ public final class MEOutputAssemblyFluidOutput extends MTEHatchOutput {
 
     private final class Environment implements MTEHatchOutputMEBase.Environment<IAEFluidStack> {
 
+        public long getDefaultCapacity() {
+            return DEFAULT_CACHE_CAPACITY;
+        }
+
         public IGregTechTileEntity getBaseMetaTileEntity() {
             return owner.getBaseMetaTileEntity();
         }
@@ -274,7 +279,7 @@ public final class MEOutputAssemblyFluidOutput extends MTEHatchOutput {
         private final MEOutputAssemblyFluidOutput.Environment environment;
 
         Provider(MEOutputAssemblyFluidOutput.Environment environment) {
-            super(environment, 128_000);
+            super(environment);
             this.environment = environment;
             forceMaxCapacity();
         }

@@ -1,6 +1,6 @@
 package com.xyp.gtneverreset.mixins.late.gregtech;
 
-import static com.xyp.gtneverreset.utils.structure.StructureTooltipHooks.UNLIMITED;
+import static com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks.UNLIMITED;
 
 import java.util.List;
 
@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
+import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
 
 import gregtech.api.enums.HatchElement;
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;

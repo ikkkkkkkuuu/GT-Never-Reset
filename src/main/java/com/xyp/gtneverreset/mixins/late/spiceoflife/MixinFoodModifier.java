@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.xyp.gtneverreset.config.MainConfig;
+import com.xyp.gtneverreset.config.SpiceOfLifeConfig;
 import com.xyp.gtneverreset.loader.ConfigLoader;
 
 @Pseudo
@@ -20,7 +20,7 @@ public abstract class MixinFoodModifier {
         remap = false)
     private static void gtneverreset$fullFoodValue(CallbackInfoReturnable<Float> cir) {
         ConfigLoader.ensureLoaded();
-        if (MainConfig.spiceOfLife.disableDiminishingReturns) {
+        if (SpiceOfLifeConfig.disableDiminishingReturns) {
             cir.setReturnValue(1.0F);
         }
     }

@@ -15,8 +15,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.recursive_pineapple.matter_manipulator.common.building.PendingBlock;
 import com.recursive_pineapple.matter_manipulator.common.building.PendingBuild;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessConstructionSites;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessConstructionSites.Site;
+import com.xyp.gtneverreset.common.wireless.WirelessConstructionSites;
+import com.xyp.gtneverreset.common.wireless.WirelessConstructionSites.Site;
 
 @Mixin(value = PendingBuild.class, remap = false)
 public abstract class MixinPendingBuildWireless {

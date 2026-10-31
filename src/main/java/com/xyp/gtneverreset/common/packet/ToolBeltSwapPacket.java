@@ -2,7 +2,7 @@ package com.xyp.gtneverreset.common.packet;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 
-import com.xyp.gtneverreset.utils.inventory.ToolBeltData;
+import com.xyp.gtneverreset.common.item.ToolBeltData;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;

@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessInterfaceNameOverride;
+import com.xyp.gtneverreset.common.wireless.WirelessInterfaceNameOverride;
 
 import appeng.helpers.DualityInterface;
 import appeng.helpers.ICustomNameObject;

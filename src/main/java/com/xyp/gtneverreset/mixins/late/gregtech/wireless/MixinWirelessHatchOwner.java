@@ -14,9 +14,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessControllerContext;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessControllerVersion;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessHatchOwner;
+import com.xyp.gtneverreset.common.wireless.WirelessControllerContext;
+import com.xyp.gtneverreset.common.wireless.WirelessControllerVersion;
+import com.xyp.gtneverreset.common.wireless.WirelessHatchOwner;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEHatch;
@@ -57,9 +57,16 @@ public abstract class MixinWirelessHatchOwner implements WirelessHatchOwner {
         return Collections.unmodifiableSet(new HashSet<>(gtnr$owners.keySet()));
     }
 
-    @Inject(method = "updateCraftingIcon(Lnet/minecraft/item/ItemStack;)V", at = @At("TAIL"))
-    private void gtnr$recordHatchOwner(ItemStack icon, CallbackInfo ci) {
-        if (icon != null) wirelessFrequency$setController(WirelessControllerContext.current());
+    @Inject(
+        method = "updateCraftingIcon(Lnet/minecraft/item/ItemStack;Lgregtech/api/interfaces/tileentity/IGregTechTileEntity;)V",
+        at = @At("TAIL"))
+    private void gtnr$recordHatchOwner(ItemStack icon, IGregTechTileEntity owner, CallbackInfo ci) {
+        if (owner != null && owner.getMetaTileEntity() instanceof MTEMultiBlockBase controller) {
+            if (icon != null) wirelessFrequency$setController(controller);
+            else if (gtnr$owners != null) gtnr$owners.remove(controller);
+        } else if (icon != null) {
+            wirelessFrequency$setController(WirelessControllerContext.current());
+        }
     }
 
     @Inject(method = "updateTexture", at = @At("HEAD"))

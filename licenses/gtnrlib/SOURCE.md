@@ -84,3 +84,20 @@ the original sprite resources and their existing notices, wildcard model and
 fluid display conversion, recipe import, synchronization and page layout.
 Item copies retain NBT; existing GhostItemSlot and CycleDropdown semantics remain
 unchanged. Existing local ownership and licensing terms apply.
+
+## Icon, input and syntax extraction (2026-10-31)
+
+Extracted the existing host SpriteAtlas, UserIconLoader and PlayerHeadIcons into
+client/render/icon as instance-owned SpriteAtlas, FileIconCache and PlayerHeadCache.
+Host resource identifiers, file locations and logging are supplied by the caller.
+File icon refresh also releases textures owned by that cache.
+
+Moved key injection, held-key tracking and modifier handling into client/input;
+held-key resynchronization is part of KeyInjector. The library exclusively owns
+the client KeyBindingAccessor mixin. Host action settings and lifecycle dispatch
+remain in GT-Never-Reset. Mode spellings and serialized action fields are retained.
+
+Moved LuaSyntax lexical analysis into text/syntax, with caller-supplied immutable
+API vocabularies. The host keeps its script vocabulary and runtime. These changes
+retain the existing code ownership and licensing terms. See the radial-menu port
+source notice for its original source and attribution.

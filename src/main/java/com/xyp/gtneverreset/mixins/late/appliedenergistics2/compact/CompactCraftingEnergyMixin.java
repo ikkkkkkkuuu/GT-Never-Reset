@@ -7,7 +7,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
-import com.xyp.gtneverreset.utils.machine.ECraftingCPUCluster;
+import com.xyp.gtneverreset.utils.ECraftingCPUCluster;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;

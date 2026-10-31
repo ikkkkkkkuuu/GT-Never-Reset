@@ -40,7 +40,7 @@ import net.minecraftforge.oredict.OreDictionary;
 import com.github.bsideup.jabel.Desugar;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
-import com.xyp.gtneverreset.config.MainConfig;
+import com.xyp.gtneverreset.config.VeinMinerPickaxeConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -96,16 +96,16 @@ public class VeinMiningPickaxe extends ItemPickaxe {
         // # zh_CN 按住 Shift 挖掘，连锁开采矿脉中符合条件的方块。
         toolTip.add(StatCollector.translateToLocal("Tooltip_VeinMiningPickaxe_Use"));
         NBTTagCompound tags = itemStack.getTagCompound();
-        int range = Math.min(3, Math.max(0, MainConfig.veinMinerPickaxe.maxRange));
-        int amount = Math.max(0, MainConfig.veinMinerPickaxe.maxAmount);
+        int range = Math.min(3, Math.max(0, VeinMinerPickaxeConfig.maxRange));
+        int amount = Math.max(0, VeinMinerPickaxeConfig.maxAmount);
         boolean preciseMode = false;
 
         if (tags != null) {
             if (tags.hasKey("range")) {
-                range = Math.max(0, Math.min(MainConfig.veinMinerPickaxe.maxRange, tags.getInteger("range")));
+                range = Math.max(0, Math.min(VeinMinerPickaxeConfig.maxRange, tags.getInteger("range")));
             }
             if (tags.hasKey("amount")) {
-                amount = Math.max(0, Math.min(MainConfig.veinMinerPickaxe.maxAmount, tags.getInteger("amount")));
+                amount = Math.max(0, Math.min(VeinMinerPickaxeConfig.maxAmount, tags.getInteger("amount")));
             }
             if (tags.hasKey("preciseMode")) {
                 preciseMode = tags.getBoolean("preciseMode");
@@ -238,20 +238,20 @@ public class VeinMiningPickaxe extends ItemPickaxe {
         }
         if (playerMP.isSneaking()) {
             ItemStack stack = heldItem;
-            int range = Math.min(3, Math.max(0, MainConfig.veinMinerPickaxe.maxRange));
-            int amount = Math.max(0, MainConfig.veinMinerPickaxe.maxAmount);
+            int range = Math.min(3, Math.max(0, VeinMinerPickaxeConfig.maxRange));
+            int amount = Math.max(0, VeinMinerPickaxeConfig.maxAmount);
             boolean preciseMode = false;
 
             NBTTagCompound tags = stack.getTagCompound();
             if (tags != null) {
                 if (tags.hasKey("range")) {
-                    range = Math.max(-1, Math.min(MainConfig.veinMinerPickaxe.maxRange, tags.getInteger("range")));
+                    range = Math.max(-1, Math.min(VeinMinerPickaxeConfig.maxRange, tags.getInteger("range")));
                 }
                 if (tags.hasKey("preciseMode")) {
                     preciseMode = tags.getBoolean("preciseMode");
                 }
                 if (tags.hasKey("amount")) {
-                    amount = Math.max(0, Math.min(MainConfig.veinMinerPickaxe.maxAmount, tags.getInteger("amount")));
+                    amount = Math.max(0, Math.min(VeinMinerPickaxeConfig.maxAmount, tags.getInteger("amount")));
                 }
             }
 

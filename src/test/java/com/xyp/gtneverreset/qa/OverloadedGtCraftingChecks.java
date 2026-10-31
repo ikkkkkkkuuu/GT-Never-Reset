@@ -20,13 +20,13 @@ import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.xyp.gtneverreset.api.mixinHelper.LargeInventoryCrafting;
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
+import com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineBuffer;
+import com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineInput;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
+import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.machine.CircuitPatternCodec;
-import com.xyp.gtneverreset.utils.machine.LargeInventoryCrafting;
-import com.xyp.gtneverreset.utils.machine.OverloadedMachineBuffer;
-import com.xyp.gtneverreset.utils.machine.OverloadedMachineInput;
 
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;

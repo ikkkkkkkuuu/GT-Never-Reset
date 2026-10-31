@@ -5,7 +5,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.xyp.gtneverreset.config.MainConfig;
+import com.xyp.gtneverreset.config.RecipeSpeedConfig;
 import com.xyp.gtneverreset.loader.ConfigLoader;
 import com.xyp.gtneverreset.utils.recipes.RecipeSpeed;
 
@@ -18,7 +18,7 @@ public class RecipeSpeedMixin {
     @Inject(method = "compileRecipe", at = @At("HEAD"))
     private void gtneverreset$modifyRecipeDuration(GTRecipe recipe, CallbackInfoReturnable<GTRecipe> cir) {
         ConfigLoader.ensureLoaded();
-        if (MainConfig.recipeSpeed.mode == 0 || recipe == null) return;
+        if (RecipeSpeedConfig.mode == 0 || recipe == null) return;
         recipe.mDuration = RecipeSpeed.getModifiedRecipeDuration(recipe.mDuration);
     }
 }

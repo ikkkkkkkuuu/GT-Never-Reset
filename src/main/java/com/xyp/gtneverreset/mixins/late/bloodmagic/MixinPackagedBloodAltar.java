@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.xyp.gtneverreset.api.packaged.BloodAltarAccess;
+import com.xyp.gtneverreset.api.mixinHelper.BloodAltarAccess;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 
 import WayofTime.alchemicalWizardry.common.tileEntity.TEAltar;

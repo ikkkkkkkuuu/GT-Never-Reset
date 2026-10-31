@@ -13,9 +13,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import com.xyp.gtneverreset.utils.machine.wireless.ChannelBudget;
-import com.xyp.gtneverreset.utils.machine.wireless.IWirelessPathingAccess;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager;
+import com.xyp.gtneverreset.common.wireless.ChannelBudget;
+import com.xyp.gtneverreset.common.wireless.IWirelessPathingAccess;
+import com.xyp.gtneverreset.common.wireless.WirelessChannelManager;
 
 import appeng.api.networking.IGrid;
 import appeng.me.GridConnection;

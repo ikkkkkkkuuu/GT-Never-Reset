@@ -26,9 +26,9 @@ import com.recursive_pineapple.matter_manipulator.common.items.manipulator.ItemM
 import com.recursive_pineapple.matter_manipulator.common.items.manipulator.Location;
 import com.recursive_pineapple.matter_manipulator.common.items.manipulator.MMState;
 import com.recursive_pineapple.matter_manipulator.common.items.manipulator.Transform;
-import com.xyp.gtneverreset.utils.machine.IWirelessPowerReceiver;
-import com.xyp.gtneverreset.utils.machine.WirelessPowerTransfer;
-import com.xyp.gtneverreset.utils.world.WirelessPowerSavedData;
+import com.xyp.gtneverreset.common.wireless.IWirelessPowerReceiver;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerSavedData;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerTransfer;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;

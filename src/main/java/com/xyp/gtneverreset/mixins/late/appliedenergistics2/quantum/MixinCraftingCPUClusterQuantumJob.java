@@ -12,8 +12,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
-import com.xyp.gtneverreset.utils.crafting.quantum.ae2.QuantumCraftingJob;
-import com.xyp.gtneverreset.utils.machine.ECraftingCPUCluster;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingJob;
+import com.xyp.gtneverreset.utils.ECraftingCPUCluster;
 
 import appeng.api.networking.IGrid;
 import appeng.api.networking.crafting.ICraftingCPU;

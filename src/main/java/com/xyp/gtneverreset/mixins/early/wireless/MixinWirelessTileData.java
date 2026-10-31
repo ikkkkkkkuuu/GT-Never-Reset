@@ -9,9 +9,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.xyp.gtneverreset.utils.machine.wireless.IWirelessTileData;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessFrequencies;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessLinkPersistence;
+import com.xyp.gtneverreset.common.wireless.IWirelessTileData;
+import com.xyp.gtneverreset.common.wireless.WirelessFrequencies;
+import com.xyp.gtneverreset.common.wireless.WirelessLinkPersistence;
 
 @Mixin(TileEntity.class)
 public class MixinWirelessTileData implements IWirelessTileData {

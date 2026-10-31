@@ -18,10 +18,10 @@ import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityFluxPoint;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
+import com.xyp.gtneverreset.common.flux.FluxTransferScheduler;
 import com.xyp.gtneverreset.common.world.FluxChunkLoading;
 import com.xyp.gtneverreset.utils.enums.BlockIcons;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.machine.flux.FluxTransferScheduler;
 import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -80,5 +80,18 @@ public final class BlockLoader {
             .register(scheduler);
         MinecraftForge.EVENT_BUS.register(scheduler);
         ForgeChunkManager.setForcedChunkLoadingCallback(GTNeverReset.INSTANCE, new FluxChunkLoading());
+    }
+
+    public static final class Card implements IContentLoader {
+
+        @Override
+        public String name() {
+            return "block";
+        }
+
+        @Override
+        public void preInit(cpw.mods.fml.common.event.FMLPreInitializationEvent event) {
+            BlockLoader.registerBlocks();
+        }
     }
 }

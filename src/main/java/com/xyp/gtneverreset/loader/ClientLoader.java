@@ -2,32 +2,32 @@ package com.xyp.gtneverreset.loader;
 
 import java.io.File;
 
-import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.xyp.gtneverreset.client.VeinMiningInputHandler;
 import com.xyp.gtneverreset.client.event.WindowsTaskbarButton;
-import com.xyp.gtneverreset.client.event.WirelessCardInput;
-import com.xyp.gtneverreset.client.event.WirelessTerminalInputHandler;
-import com.xyp.gtneverreset.client.gui.QuestSkipMenu;
-import com.xyp.gtneverreset.client.gui.WirelessMonitorHud;
-import com.xyp.gtneverreset.client.nei.NEIWirelessTerminalConfig;
-import com.xyp.gtneverreset.client.nei.WildcardRecipeImport;
 import com.xyp.gtneverreset.client.quantum.QuantumCraftingClientEvents;
 import com.xyp.gtneverreset.client.quantum.RecursivePatternReport;
 import com.xyp.gtneverreset.client.render.FluxConnectorRender;
 import com.xyp.gtneverreset.client.render.PackagedCoreRenderer;
 import com.xyp.gtneverreset.client.render.StableEndCrystalRender;
 import com.xyp.gtneverreset.client.render.WirelessConnectorRenderer;
-import com.xyp.gtneverreset.client.render.WirelessWorldHighlightRender;
+import com.xyp.gtneverreset.client.terminal.WirelessTerminalInputHandler;
+import com.xyp.gtneverreset.client.wireless.WirelessCardInput;
+import com.xyp.gtneverreset.client.wireless.WirelessMonitorHud;
+import com.xyp.gtneverreset.client.wireless.WirelessWorldHighlightRender;
 import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
 import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
+import com.xyp.gtneverreset.compat.betterquesting.QuestSkipMenu;
+import com.xyp.gtneverreset.compat.bloodmagic.BloodMagicCompat;
+import com.xyp.gtneverreset.compat.nei.NEIWirelessTerminalConfig;
+import com.xyp.gtneverreset.compat.nei.WildcardRecipeImport;
+import com.xyp.gtneverreset.compat.thaumcraft.ThaumcraftCompat;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtnrlib.mod.ModList;
 
-import WayofTime.alchemicalWizardry.ModBlocks;
 import appeng.api.AEApi;
 import appeng.api.parts.IPartItem;
 import betterquesting.api2.client.gui.context.QuestContextMenuRegistry;
@@ -36,8 +36,8 @@ import cpw.mods.fml.client.registry.RenderingRegistry;
 import cpw.mods.fml.common.FMLCommonHandler;
 import ggfab.GGItemList;
 import gregtech.api.enums.ItemList;
-import thaumcraft.common.config.ConfigBlocks;
 
+@cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
 public final class ClientLoader {
 
     public static void preInit(File configDirectory) {
@@ -85,22 +85,8 @@ public final class ClientLoader {
     }
 
     private static void registerPackagedCoreRenderers() {
-        if (ModList.Thaumcraft.isModLoaded()) {
-            MinecraftForgeClient.registerItemRenderer(
-                GTNRItemList.ThaumcraftCrucibleCore.getItem(),
-                new PackagedCoreRenderer(() -> new ItemStack(ConfigBlocks.blockMetalDevice, 1, 0)));
-            MinecraftForgeClient.registerItemRenderer(
-                GTNRItemList.ArcaneWorkbenchCore.getItem(),
-                new PackagedCoreRenderer(() -> new ItemStack(ConfigBlocks.blockTable, 1, 15)));
-            MinecraftForgeClient.registerItemRenderer(
-                GTNRItemList.ThaumcraftInfusionCore.getItem(),
-                new PackagedCoreRenderer(() -> new ItemStack(ConfigBlocks.blockStoneDevice, 1, 2)));
-        }
-        if (ModList.BloodMagic.isModLoaded()) {
-            MinecraftForgeClient.registerItemRenderer(
-                GTNRItemList.BloodAltarCore.getItem(),
-                new PackagedCoreRenderer(() -> new ItemStack(ModBlocks.blockAltar)));
-        }
+        if (ModList.Thaumcraft.isModLoaded()) ThaumcraftCompat.registerRenderers();
+        if (ModList.BloodMagic.isModLoaded()) BloodMagicCompat.registerRenderers();
         MinecraftForgeClient.registerItemRenderer(
             GTNRItemList.AssemblyLineCore.getItem(),
             new PackagedCoreRenderer(() -> ItemList.Machine_Multi_Assemblyline.get(1)));
@@ -112,4 +98,23 @@ public final class ClientLoader {
             new PackagedCoreRenderer(() -> ModsItemlist.CircuitAssemblyLine.get(1)));
     }
 
+    public static final class Card implements IContentLoader {
+
+        @Override
+        public String name() {
+            return "client";
+        }
+
+        @Override
+        @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
+        public void clientPreInit(File directory) {
+            ClientLoader.preInit(directory);
+        }
+
+        @Override
+        @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
+        public void clientInit() {
+            ClientLoader.init();
+        }
+    }
 }

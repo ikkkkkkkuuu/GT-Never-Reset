@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.lwjgl.opengl.Display;
 
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.config.MainConfig;
+import com.xyp.gtneverreset.config.ClientConfig;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -36,7 +36,7 @@ public final class WindowsTaskbarButton {
     public void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !Display.isCreated()
             || running
-            || MainConfig.client.hideWindowsTaskbarButton == hidden
+            || ClientConfig.hideWindowsTaskbarButton == hidden
             || System.nanoTime() < nextAttemptAt) {
             return;
         }
@@ -45,7 +45,7 @@ public final class WindowsTaskbarButton {
             .startsWith("windows")) {
             return;
         }
-        boolean desiredHidden = MainConfig.client.hideWindowsTaskbarButton;
+        boolean desiredHidden = ClientConfig.hideWindowsTaskbarButton;
         running = true;
         Thread worker = new Thread(() -> setButtonHidden(desiredHidden), "GTNR-taskbar-button");
         worker.setDaemon(true);

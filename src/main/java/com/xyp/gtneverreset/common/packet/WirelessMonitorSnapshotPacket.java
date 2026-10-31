@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import net.minecraft.client.Minecraft;
 
-import com.xyp.gtneverreset.client.gui.WirelessMonitorHud;
+import com.xyp.gtneverreset.client.wireless.WirelessMonitorHud;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;

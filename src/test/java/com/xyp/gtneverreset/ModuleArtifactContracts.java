@@ -4,13 +4,22 @@ import java.io.DataInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.jar.JarFile;
 
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+
 public final class ModuleArtifactContracts {
 
     public static void main(String[] args) throws Exception {
         checkArchive(args[0], "gtneverreset", "com/xyp/gtnrlib/");
         checkArchive(args[1], "gtnrlib", "com/xyp/gtneverreset/");
         try (JarFile library = new JarFile(args[1])) {
-            for (String type : new String[] { "client/input/KeyBindingLookup", "client/input/KeyBuffer",
+            for (String type : new String[] { "client/render/icon/SpriteAtlas", "client/render/icon/FileIconCache",
+                "client/render/icon/PlayerHeadCache", "client/input/KeyInjector", "client/input/KeybindStateTracker",
+                "client/input/KeyModifiers", "client/input/ModifierKeys", "mixins/early/input/KeyBindingAccessor",
+                "text/syntax/LuaSyntax", "client/input/KeyBindingLookup", "client/input/KeyBuffer",
                 "client/input/VanillaKeyEffects", "client/render/icon/PotionIcons", "world/ChunkCoords", "world/Facing",
                 "world/WorldTime", "text/TooltipLineWrapper", "utils/ImmutableCollections",
                 "client/gui/ColorPickerScreen", "client/gui/ConfirmationScreen", "client/gui/TextPromptScreen",
@@ -35,11 +44,19 @@ public final class ModuleArtifactContracts {
                 require(library.getEntry(resource) != null, "Missing framework resource: " + resource);
         }
         try (JarFile host = new JarFile(args[0])) {
-            for (String type : new String[] { "client/keybind/KeyBindingLookup", "client/keybind/KeyBuffer",
-                "client/keybind/VanillaKeyEffects", "client/render/radialmenu/PotionIcons",
-                "client/script/radialmenu/ChunkCoords", "client/script/radialmenu/Facing",
-                "client/script/radialmenu/WorldTime", "utils/structure/TooltipLineWrapper",
-                "utils/machine/wireless/WirelessCollections",
+            for (String type : new String[] { "client/radialmenu/render/SpriteAtlas",
+                "client/radialmenu/render/UserIconLoader", "client/radialmenu/render/PlayerHeadIcons",
+                "client/radialmenu/input/KeyInjector", "client/radialmenu/input/KeybindStateTracker",
+                "client/radialmenu/input/ModifierKeys", "client/radialmenu/input/HeldKeyResync",
+                "client/radialmenu/Modifiers", "client/radialmenu/script/LuaSyntax",
+                "mixins/early/minecraft/KeyBindingAccessor", "loader/LifecycleLoader", "loader/EarlyMixinsLoader",
+                "loader/LateMixinsLoader", "config/MainConfig", "loader/GTNRRecipeMaps",
+                "utils/crafting/quantum/ae2/QuantumCraftingMode", "utils/machine/wireless/WirelessChannelManager",
+                "container/ContainerQuickEncodingTerminal", "client/nei/NEIMachineConfig",
+                "client/keybind/KeyBindingLookup", "client/keybind/KeyBuffer", "client/keybind/VanillaKeyEffects",
+                "client/render/radialmenu/PotionIcons", "client/script/radialmenu/ChunkCoords",
+                "client/script/radialmenu/Facing", "client/script/radialmenu/WorldTime",
+                "utils/structure/TooltipLineWrapper", "utils/machine/wireless/WirelessCollections",
                 "utils/world/InterfaceTeleportation$DirectTeleportTeleporter",
                 "common/gui/WildcardPatternGui$SelectorWidget", "common/gui/WildcardPatternGui$Theme",
                 "common/gui/WildcardPatternGui$PreviewPage$IconWidget" }) {
@@ -78,6 +95,11 @@ public final class ModuleArtifactContracts {
                 if (!name.endsWith(".class")) continue;
                 require(!name.contains(forbiddenPackage), modId + " contains other module's class: " + name);
                 if (name.startsWith("META-INF/versions/")) continue;
+                if (name.startsWith("com/xyp/") && name.contains("/mixins/")) {
+                    try (var input = archive.getInputStream(entry)) {
+                        checkAccessorMethods(new ClassReader(input), name);
+                    }
+                }
                 try (DataInputStream input = new DataInputStream(archive.getInputStream(entry))) {
                     require(input.readInt() == 0xCAFEBABE, "class header: " + name);
                     input.readUnsignedShort();
@@ -85,6 +107,31 @@ public final class ModuleArtifactContracts {
                 }
             }
         }
+    }
+
+    private static void checkAccessorMethods(ClassReader reader, String className) {
+        reader.accept(new ClassVisitor(Opcodes.ASM5) {
+
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                String[] exceptions) {
+                return new MethodVisitor(Opcodes.ASM5) {
+
+                    @Override
+                    public AnnotationVisitor visitAnnotation(String annotation, boolean visible) {
+                        if (annotation.equals("Lorg/spongepowered/asm/mixin/gen/Accessor;")) {
+                            require(
+                                (access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_STATIC)) != 0,
+                                "Non-abstract Mixin accessor (including compiler bridges): " + className
+                                    + "."
+                                    + name
+                                    + descriptor);
+                        }
+                        return null;
+                    }
+                };
+            }
+        }, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
     }
 
     private static void require(boolean condition, String message) {

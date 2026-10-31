@@ -19,12 +19,12 @@ import org.lwjgl.input.Keyboard;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
-import com.xyp.gtneverreset.client.event.WirelessTerminalInputHandler;
+import com.xyp.gtneverreset.client.terminal.WirelessTerminalInputHandler;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalMagnetGui;
+import com.xyp.gtneverreset.common.terminal.WirelessTerminalMagnet;
+import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
-import com.xyp.gtneverreset.utils.inventory.WirelessTerminalMagnet;
-import com.xyp.gtneverreset.utils.inventory.WirelessTerminalSession;
 
 import appeng.api.AEApi;
 import appeng.api.implementations.guiobjects.IGuiItem;

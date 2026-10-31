@@ -22,7 +22,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.gtnhlib.item.ItemStackNBT;
-import com.xyp.gtneverreset.utils.machine.PatternMEOutput;
+import com.xyp.gtneverreset.common.me.PatternMEOutput;
 
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;

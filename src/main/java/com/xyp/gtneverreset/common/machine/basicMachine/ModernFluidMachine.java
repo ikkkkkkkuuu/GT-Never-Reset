@@ -21,10 +21,10 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.gtnewhorizons.modularui.common.fluid.FluidStackTank;
-import com.xyp.gtneverreset.common.gui.modularui.ModernFluidMachineGui;
-import com.xyp.gtneverreset.loader.GTNRRecipeMaps;
+import com.xyp.gtneverreset.common.gui.modularui.singleblock.ModernFluidMachineGui;
+import com.xyp.gtneverreset.common.me.stockio.StockIORecipeBridge;
+import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
 import com.xyp.gtneverreset.utils.enums.ModernMachineTextures;
-import com.xyp.gtneverreset.utils.machine.stockio.StockIORecipeBridge;
 
 import gregtech.GTMod;
 import gregtech.api.enums.SoundResource;

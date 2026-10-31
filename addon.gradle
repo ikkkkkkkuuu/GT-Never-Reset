@@ -217,7 +217,7 @@ tasks.register('checkWirelessFrequencyContracts', JavaExec) {
     description = 'Checks wireless frequency persistence, multi-source migration and merge/split provenance.'
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.utils.machine.wireless.WirelessFrequencyContracts'
+    mainClass = 'com.xyp.gtneverreset.common.wireless.WirelessFrequencyContracts'
 }
 
 tasks.named('check') { dependsOn 'checkWirelessFrequencyContracts' }
@@ -227,7 +227,7 @@ tasks.register('checkWirelessPowerContracts', JavaExec) {
     description = 'Checks wireless power accounting limits, persistence and device ownership.'
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.utils.machine.WirelessPowerContracts'
+    mainClass = 'com.xyp.gtneverreset.common.wireless.WirelessPowerContracts'
 }
 
 tasks.named('check') { dependsOn 'checkWirelessPowerContracts' }
@@ -310,7 +310,7 @@ if (file('scripts/qa/WirelessCardCompatibilityChecks.java').isFile()) {
         dependsOn compileWirelessCompatibility
         javaLauncher.set(wirelessCompatibilityLauncher)
         classpath = files(wirelessCompatibilityClasses) + sourceSets.main.runtimeClasspath + sourceSets.main.compileClasspath
-        mainClass.set('com.xyp.gtneverreset.utils.machine.wireless.WirelessCardCompatibilityChecks')
+        mainClass.set('com.xyp.gtneverreset.common.wireless.WirelessCardCompatibilityChecks')
     }
 
     def wirelessCompatibilityFormatSources = files(
@@ -454,7 +454,7 @@ tasks.register('checkOverloadedProviderContracts', JavaExec) {
     description = 'Checks overloaded provider cache invalidation, batch accounting and overflow persistence.'
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.utils.machine.OverloadedProviderContracts'
+    mainClass = 'com.xyp.gtneverreset.common.block.blocks.tile.OverloadedProviderContracts'
 }
 
 tasks.named('check') { dependsOn 'checkOverloadedProviderContracts' }
@@ -486,4 +486,12 @@ tasks.named('collectLibraryArtifacts') {
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING)
         }
     }
+}
+
+// Keep upstream source and license records outside runtime source directories.
+tasks.named("processResources") {
+    from("licenses/ports") { into "META-INF" }
+}
+tasks.named("sourcesJar", Jar) {
+    from("licenses/ports") { into "META-INF" }
 }

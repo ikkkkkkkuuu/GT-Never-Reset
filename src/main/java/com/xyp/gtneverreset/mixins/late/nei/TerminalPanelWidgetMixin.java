@@ -12,11 +12,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
-import com.xyp.gtneverreset.client.nei.TerminalNeiCrafting;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtneverreset.common.packet.terminal.TerminalItemRequestPacket;
-import com.xyp.gtneverreset.utils.inventory.WirelessTerminalSession;
+import com.xyp.gtneverreset.common.packet.TerminalItemRequestPacket;
+import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
+import com.xyp.gtneverreset.compat.nei.TerminalNeiCrafting;
 
 import appeng.api.implementations.guiobjects.IGuiItemObject;
 import appeng.client.gui.AEBaseGui;

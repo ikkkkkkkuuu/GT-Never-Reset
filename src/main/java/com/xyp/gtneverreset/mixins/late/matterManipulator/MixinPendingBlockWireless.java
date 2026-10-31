@@ -16,9 +16,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.recursive_pineapple.matter_manipulator.common.building.BlockAnalyzer.IBlockApplyContext;
 import com.recursive_pineapple.matter_manipulator.common.building.PendingBlock;
 import com.recursive_pineapple.matter_manipulator.common.items.manipulator.Transform;
-import com.xyp.gtneverreset.utils.machine.wireless.IWirelessCopiedLink;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessCopiedLinks;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessCopiedLinks.CopiedLink;
+import com.xyp.gtneverreset.common.wireless.IWirelessCopiedLink;
+import com.xyp.gtneverreset.common.wireless.WirelessCopiedLinks;
+import com.xyp.gtneverreset.common.wireless.WirelessCopiedLinks.CopiedLink;
 
 @Mixin(value = PendingBlock.class, remap = false)
 public abstract class MixinPendingBlockWireless implements IWirelessCopiedLink {

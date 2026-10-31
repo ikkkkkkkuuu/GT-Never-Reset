@@ -3,7 +3,7 @@ package com.xyp.gtneverreset.mixins.late.thaumcraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
-import com.xyp.gtneverreset.api.packaged.CrucibleCooldownAccess;
+import com.xyp.gtneverreset.api.mixinHelper.CrucibleCooldownAccess;
 
 import thaumcraft.common.tiles.TileCrucible;
 

@@ -15,10 +15,8 @@ import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
-import com.xyp.gtneverreset.common.gui.modularui.MaxCapacityMEOutputGui;
-import com.xyp.gtneverreset.utils.machine.FilteredMEOutputTransaction;
-import com.xyp.gtneverreset.utils.machine.MaxCapacityMEOutputCapacity;
-import com.xyp.gtneverreset.utils.machine.MaxCapacityMEOutputFilters;
+import com.xyp.gtneverreset.common.gui.modularui.hatch.MaxCapacityMEOutputGui;
+import com.xyp.gtneverreset.common.me.FilteredMEOutputTransaction;
 
 import appeng.api.storage.StorageChannel;
 import gregtech.api.enums.OutputBusType;

@@ -11,9 +11,9 @@ import org.spongepowered.asm.mixin.injection.At;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.xyp.gtneverreset.utils.recipes.wildcard.WildcardPatternGenerator;
-import com.xyp.gtneverreset.utils.recipes.wildcard.WildcardPatternState;
-import com.xyp.gtneverreset.utils.recipes.wildcard.model.WildcardModelState;
+import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
+import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternState;
+import com.xyp.gtneverreset.common.me.wildcard.model.WildcardModelState;
 
 import appeng.api.AEApi;
 import appeng.container.implementations.ContainerOptimizePatterns;

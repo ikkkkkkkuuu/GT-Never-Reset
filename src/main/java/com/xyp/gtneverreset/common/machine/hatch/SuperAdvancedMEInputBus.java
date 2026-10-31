@@ -25,7 +25,7 @@ import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
-import com.xyp.gtneverreset.common.gui.modularui.SuperAdvancedMEInputBusGui;
+import com.xyp.gtneverreset.common.gui.modularui.hatch.SuperAdvancedMEInputBusGui;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.energy.IEnergyGrid;

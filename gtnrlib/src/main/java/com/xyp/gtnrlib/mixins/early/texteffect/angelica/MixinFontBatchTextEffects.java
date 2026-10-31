@@ -15,7 +15,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.gtnewhorizons.angelica.client.font.BatchingFontRenderer;
 import com.gtnewhorizons.angelica.config.FontConfig;
-import com.gtnewhorizons.angelica.glsm.GLStateManager;
+import com.gtnewhorizons.angelica.glsm.GLSMPrograms;
+import com.gtnewhorizons.angelica.glsm.GLSMQueries;
 import com.xyp.gtnrlib.client.text.DeferredTextEffects;
 import com.xyp.gtnrlib.client.text.EffectTextRenderer;
 import com.xyp.gtnrlib.client.text.compat.FontBatchBridge;
@@ -97,10 +98,10 @@ public abstract class MixinFontBatchTextEffects implements FontBatchBridge {
     }
 
     @ModifyArg(
-        method = { "flushBatchInner", "setupFontDrawState" },
+        method = "setupFontDrawState",
         at = @At(
             value = "INVOKE",
-            target = "Lcom/gtnewhorizons/angelica/glsm/GLStateManager;tryBlendFuncSeparate(IIII)V",
+            target = "Lcom/gtnewhorizons/angelica/glsm/GLSMBlend;tryBlendFuncSeparate(IIII)V",
             ordinal = 0),
         index = 3,
         remap = false,
@@ -115,13 +116,13 @@ public abstract class MixinFontBatchTextEffects implements FontBatchBridge {
     private void gtnr$restoreFontAntialiasing(CallbackInfo ci) {
         int configuredMode = FontConfig.fontAAMode;
         if (!EffectTextRenderer.isCapturing() || fontAAModeLast == configuredMode) return;
-        int previousProgram = GLStateManager.glGetInteger(GL20.GL_CURRENT_PROGRAM);
-        GLStateManager.glUseProgram(fontShaderId);
+        int previousProgram = GLSMQueries.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+        GLSMPrograms.glUseProgram(fontShaderId);
         try {
-            GLStateManager.glUniform1i(AAMode, configuredMode);
+            GLSMPrograms.glUniform1i(AAMode, configuredMode);
             fontAAModeLast = configuredMode;
         } finally {
-            GLStateManager.glUseProgram(previousProgram);
+            GLSMPrograms.glUseProgram(previousProgram);
         }
     }
 }

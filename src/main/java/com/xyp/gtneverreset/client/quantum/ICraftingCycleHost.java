@@ -2,7 +2,7 @@ package com.xyp.gtneverreset.client.quantum;
 
 import java.util.List;
 
-import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.Cycle;
+import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder.Cycle;
 
 import appeng.api.storage.data.IAEStack;
 

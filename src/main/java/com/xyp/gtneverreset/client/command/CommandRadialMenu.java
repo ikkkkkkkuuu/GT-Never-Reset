@@ -14,10 +14,10 @@ import net.minecraft.util.EnumChatFormatting;
 import com.gtnewhorizon.gtnhlib.config.ConfigException;
 import com.gtnewhorizon.gtnhlib.config.SimpleGuiConfig;
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.client.gui.RadialGuiStack;
-import com.xyp.gtneverreset.client.gui.RadialProfileManagerGui;
-import com.xyp.gtneverreset.client.profile.radialmenu.ProfileManager;
-import com.xyp.gtneverreset.client.profile.radialmenu.ProfileStorage;
+import com.xyp.gtneverreset.client.gui.radialmenu.RadialGuiStack;
+import com.xyp.gtneverreset.client.gui.radialmenu.RadialProfileManagerGui;
+import com.xyp.gtneverreset.client.radialmenu.profile.ProfileManager;
+import com.xyp.gtneverreset.client.radialmenu.profile.ProfileStorage;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

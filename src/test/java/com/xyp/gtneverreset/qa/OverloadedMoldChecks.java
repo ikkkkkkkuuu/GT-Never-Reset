@@ -334,12 +334,12 @@ public final class OverloadedMoldChecks {
         tag.setTag("out", out);
         tag.setBoolean("crafting", false);
         encoded.setTagCompound(tag);
-        var details = com.xyp.gtneverreset.utils.machine.CircuitPatternCodec.runtime(encoded, world);
+        var details = com.xyp.gtneverreset.common.me.CircuitPatternCodec.runtime(encoded, world);
         var table = new appeng.util.inv.MEInventoryCrafting(new appeng.container.ContainerNull(), 1, 1);
-        var buffer = new com.xyp.gtneverreset.utils.machine.OverloadedMachineBuffer();
+        var buffer = new com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineBuffer();
         table.setInventorySlotContents(0, AEItemStack.create(new ItemStack(net.minecraft.init.Items.iron_ingot, 64)));
         require(
-            !com.xyp.gtneverreset.utils.machine.OverloadedMachineInput
+            !com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineInput
                 .push(bender, details, table, ForgeDirection.UP, buffer),
             "wrong delivered quantity rejected atomically");
         require(
@@ -348,7 +348,7 @@ public final class OverloadedMoldChecks {
             "rejected delivery changes neither inventory nor configuration");
         table.setInventorySlotContents(0, AEItemStack.create(new ItemStack(net.minecraft.init.Items.iron_ingot, 65)));
         require(
-            com.xyp.gtneverreset.utils.machine.OverloadedMachineInput
+            com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineInput
                 .push(bender, details, table, ForgeDirection.UP, buffer),
             "oversized batch accepted outside AE planning limit");
         require(
@@ -357,18 +357,18 @@ public final class OverloadedMoldChecks {
             "64 inputs inserted and one retained in overflow");
         NBTTagCompound saved = new NBTTagCompound();
         buffer.writeToNBT(saved);
-        var restored = new com.xyp.gtneverreset.utils.machine.OverloadedMachineBuffer();
+        var restored = new com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineBuffer();
         restored.readFromNBT(saved);
         require(
             restored.getItems()
                 .get(0).stackSize == 1,
             "overflow survives serialization");
         machine.getStackInSlot(machine.getInputSlot()).stackSize--;
-        com.xyp.gtneverreset.utils.machine.OverloadedMachineInput.refill(machine, restored);
+        com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineInput.refill(machine, restored);
         require(
             restored.isEmpty() && machine.getStackInSlot(machine.getInputSlot()).stackSize == 64,
             "overflow refills exactly once when capacity is free");
-        com.xyp.gtneverreset.utils.machine.OverloadedMachineInput.refill(machine, restored);
+        com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineInput.refill(machine, restored);
         require(
             machine.getStackInSlot(machine.getInputSlot()).stackSize == 64,
             "repeated refill does not duplicate items");

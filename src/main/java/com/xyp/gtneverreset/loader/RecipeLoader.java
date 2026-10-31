@@ -10,7 +10,22 @@ import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRec
 import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernNonCellRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.OreProcessingRecipes;
 
-public final class RecipeLoader {
+public final class RecipeLoader implements IContentLoader {
+
+    @Override
+    public String name() {
+        return "recipe";
+    }
+
+    @Override
+    public void postInit() {
+        registerRecipes();
+    }
+
+    @Override
+    public void loadComplete() {
+        registerLateRecipes();
+    }
 
     public static void registerRecipes() {
         CraftingTableRecipes.register();

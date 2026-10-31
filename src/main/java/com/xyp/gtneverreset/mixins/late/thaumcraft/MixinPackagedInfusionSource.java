@@ -10,8 +10,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.xyp.gtneverreset.api.packaged.InfusionSourceAccess;
-import com.xyp.gtneverreset.utils.machine.packaged.DirectEssentiaSupply;
+import com.xyp.gtneverreset.api.mixinHelper.InfusionSourceAccess;
+import com.xyp.gtneverreset.compat.thaumcraft.DirectEssentiaSupply;
 
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;

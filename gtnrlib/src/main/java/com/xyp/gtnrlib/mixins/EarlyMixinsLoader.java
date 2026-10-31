@@ -27,7 +27,8 @@ public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLo
         if (!FMLLaunchHandler.side()
             .isClient()) return mixins;
         if (loadedCoreMods.contains("com.gtnewhorizons.angelica.loading.AngelicaTweaker")) {
-            boolean library = loadedCoreMods.contains("com.gtnllib.mixins.GTNLLibEarlyCoreMod")
+            boolean library = (loadedCoreMods.contains("com.gtnllib.core.GTNLLibEarlyCoreMod")
+                || loadedCoreMods.contains("com.gtnllib.mixins.GTNLLibEarlyCoreMod"))
                 && present("com/gtnllib/mixins/early/texteffect/angelica/MixinFontBatchTextEffects.class");
             boolean legacy = loadedCoreMods.contains("com.science.gtnl.asm.GTNLEarlyCoreMod")
                 && present("com/science/gtnl/mixins/early/texteffect/angelica/MixinFontBatchTextEffects.class");

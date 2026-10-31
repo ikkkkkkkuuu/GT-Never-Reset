@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 
-import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.Cycle;
+import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder.Cycle;
 
 import appeng.api.storage.data.IAEStack;
 

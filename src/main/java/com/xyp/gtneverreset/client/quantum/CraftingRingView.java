@@ -17,7 +17,7 @@ import org.lwjgl.opengl.GL11;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.xyp.gtneverreset.client.quantum.CraftingTreeRings.Ring;
-import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.Cycle;
+import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder.Cycle;
 
 import appeng.client.gui.AEBaseGui;
 import appeng.client.gui.widgets.GuiCraftingTree;

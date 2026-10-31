@@ -9,13 +9,13 @@ import net.minecraftforge.common.util.ForgeDirection;
 import com.glodblock.github.client.gui.container.ContainerMagnetFilter;
 import com.glodblock.github.inventory.item.WirelessMagnetCardFilterInventory;
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.common.gui.container.ContainerQuickEncodingTerminal;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
+import com.xyp.gtneverreset.common.packet.CPacketSwitchGuis;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtneverreset.common.packet.terminal.CPacketSwitchGuis;
-import com.xyp.gtneverreset.container.ContainerQuickEncodingTerminal;
+import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
+import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
-import com.xyp.gtneverreset.utils.inventory.DualTerminalGuiObject;
-import com.xyp.gtneverreset.utils.inventory.WirelessTerminalSession;
 
 import appeng.api.config.SecurityPermissions;
 import appeng.api.networking.security.ISecurityGrid;

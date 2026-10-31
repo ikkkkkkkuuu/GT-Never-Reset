@@ -5,7 +5,7 @@ import java.util.List;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-import com.xyp.gtneverreset.api.packaged.AssemblyLineDataAccess;
+import com.xyp.gtneverreset.api.mixinHelper.AssemblyLineDataAccess;
 
 import ggfab.mte.MTEAdvAssLine;
 import gregtech.api.metatileentity.implementations.MTEHatchDataAccess;

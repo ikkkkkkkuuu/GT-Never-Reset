@@ -15,8 +15,8 @@ import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.common.gui.StockIOGui;
+import com.xyp.gtneverreset.common.me.stockio.StockIOLogic;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.machine.stockio.StockIOLogic;
 import com.xyp.gtnrlib.client.gui.PixelFontModularScreen;
 import com.xyp.gtnrlib.mod.ModList;
 

@@ -44,17 +44,17 @@ import com.gtnewhorizon.structurelib.structure.IStructureElement;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
-import com.xyp.gtneverreset.common.gui.modularui.LargeBeeBreederGui;
+import com.xyp.gtneverreset.common.gui.modularui.multiblock.LargeBeeBreederGui;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
+import com.xyp.gtneverreset.common.machine.multiblock.bee.BeeBreedingHelper;
+import com.xyp.gtneverreset.common.machine.multiblock.bee.BeeBreedingHelper.FoundationRequirement;
+import com.xyp.gtneverreset.common.machine.multiblock.bee.BeeBreedingPlanner;
+import com.xyp.gtneverreset.common.machine.multiblock.bee.DronePool;
+import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
-import com.xyp.gtneverreset.utils.machine.bee.BeeBreedingHelper;
-import com.xyp.gtneverreset.utils.machine.bee.BeeBreedingHelper.FoundationRequirement;
-import com.xyp.gtneverreset.utils.machine.bee.BeeBreedingPlanner;
-import com.xyp.gtneverreset.utils.machine.bee.DronePool;
-import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
-import com.xyp.gtneverreset.utils.structure.StructureTooltipHooks;
 
 import forestry.api.apiculture.IAlleleBeeSpecies;
 import gregtech.api.enums.GTValues;
@@ -470,6 +470,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     public void clearHatches() {
         super.clearHatches();
         for (ParameterModuleHatch module : parameterModules) module.setWorking(false);
+        clearCraftingIcons(parameterModules);
         parameterModules.clear();
     }
 
@@ -478,7 +479,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         if (getParameterModuleLimit(module.getModuleType()) <= 0) return false;
         if (!parameterModules.contains(module)) {
             module.updateTexture(casingIndex);
-            module.updateCraftingIcon(getMachineCraftingIcon());
+            module.updateCraftingIcon(getMachineCraftingIcon(), getBaseMetaTileEntity());
             parameterModules.add(module);
         }
         return true;

@@ -26,14 +26,14 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.value.sync.SyncHandler;
 import com.gtnewhorizon.gtnhlib.util.ServerThreadUtil;
-import com.xyp.gtneverreset.client.gui.WirelessPowerCardPanel;
+import com.xyp.gtneverreset.client.wireless.WirelessPowerCardPanel;
+import com.xyp.gtneverreset.common.gui.container.WirelessPowerCardContainer;
 import com.xyp.gtneverreset.common.item.items.WirelessPowerCard;
-import com.xyp.gtneverreset.container.WirelessPowerCardContainer;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardTeleport;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessChannelManager.Address;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessHatchOwner;
-import com.xyp.gtneverreset.utils.world.WirelessPowerSavedData;
-import com.xyp.gtneverreset.utils.world.WirelessPowerSavedData.Connection;
+import com.xyp.gtneverreset.common.wireless.WirelessCardTeleport;
+import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Address;
+import com.xyp.gtneverreset.common.wireless.WirelessHatchOwner;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerSavedData;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerSavedData.Connection;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -343,7 +343,7 @@ public final class WirelessPowerCardGui {
                 .func_152344_a(() -> {
                     if (!isValid() || next == null) return;
                     if (id == 0) display = next;
-                    else com.xyp.gtneverreset.client.render.WirelessWorldHighlightRender
+                    else com.xyp.gtneverreset.client.wireless.WirelessWorldHighlightRender
                         .show(net.minecraft.client.Minecraft.getMinecraft(), next.getTagList("positions", 10));
                 });
         }

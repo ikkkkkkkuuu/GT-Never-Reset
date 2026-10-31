@@ -1,10 +1,21 @@
 package com.xyp.gtneverreset.config;
 
+import com.gtnewhorizon.gtnhlib.config.Config;
 import com.gtnewhorizon.gtnhlib.config.Config.Comment;
 import com.gtnewhorizon.gtnhlib.config.Config.DefaultInt;
 import com.gtnewhorizon.gtnhlib.config.Config.LangKey;
 import com.gtnewhorizon.gtnhlib.config.Config.RangeInt;
 
+// #tr gtneverreset.gui.config.general.packaged_provider
+// # Packaged Pattern Provider
+// # zh_CN 封包样板供应器
+@Config(
+    modid = "gtneverreset",
+    category = "packaged_provider",
+    configSubDirectory = ConfigRegistry.DIRECTORY,
+    filename = ConfigRegistry.MACHINE_FILE,
+    categoryCulling = false)
+@Config.LangKeyPattern(pattern = "gtneverreset.gui.config.general.%cat.%field", fullyQualified = true)
 public class PackagedProviderConfig {
 
     @Comment("奥术封包每单位基础源质转换的 Vis 点数；小数余量保留在供应器内")
@@ -14,5 +25,5 @@ public class PackagedProviderConfig {
     // # Arcane Vis per essentia
     // # zh_CN 每单位源质转换的 Vis
     @LangKey("gtneverreset.gui.config.general.packaged_provider.arcane_vis_per_essentia")
-    public int arcaneVisPerEssentia = 1;
+    public static int arcaneVisPerEssentia = 1;
 }

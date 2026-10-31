@@ -9,7 +9,7 @@ import javax.imageio.ImageIO;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 
-import com.xyp.gtneverreset.config.MainConfig;
+import com.xyp.gtneverreset.config.ClientConfig;
 import com.xyp.gtnrlib.mod.ModList;
 
 public final class QuickTerminalButtonTextures {
@@ -26,7 +26,7 @@ public final class QuickTerminalButtonTextures {
     private static boolean resolved;
 
     public static ResourceLocation states() {
-        String theme = MainConfig.client.wirelessTerminal.buttonTheme;
+        String theme = ClientConfig.wirelessTerminal.buttonTheme;
         if ("light".equalsIgnoreCase(theme)) return LIGHT_STATES;
         if (!"auto".equalsIgnoreCase(theme)) return DARK_STATES;
         if (!resolved) refresh();
@@ -38,7 +38,7 @@ public final class QuickTerminalButtonTextures {
     }
 
     public static void refresh() {
-        if (!"auto".equalsIgnoreCase(MainConfig.client.wirelessTerminal.buttonTheme)) return;
+        if (!"auto".equalsIgnoreCase(ClientConfig.wirelessTerminal.buttonTheme)) return;
         resourcePackDark = false;
         resolved = true;
         try (InputStream stream = Minecraft.getMinecraft()

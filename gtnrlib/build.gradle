@@ -6,7 +6,7 @@ buildscript {
 }
 
 // Library version changes only when its implementation or resources change.
-ext.modVersion = '0.1.9'
+ext.modVersion = '0.1.10'
 ext.modName = 'GTNRLib'
 ext.modId = 'gtnrlib'
 ext.modGroup = 'com.xyp.gtnrlib'
@@ -20,20 +20,22 @@ ext['gtnh.modules.ideIntegration'] = false
 apply plugin: 'com.gtnewhorizons.gtnhconvention'
 apply from: rootProject.file('repositories.gradle')
 
+def elytraModpackVersion = rootProject.extensions.getByName('elytraModpackVersion')
+
 dependencies {
-    api('com.github.GTNewHorizons:GTNHLib:0.11.52:dev') { transitive = false }
-    api('com.github.GTNewHorizons:ModularUI2:2.3.92-1.7.10:dev') { transitive = false }
-    runtimeOnly('com.github.GTNewHorizons:Baubles-Expanded:2.2.25-GTNH:dev') { transitive = false }
+    api(elytraModpackVersion.gtnhdev('GTNHLib') as String) { transitive = false }
+    api(elytraModpackVersion.gtnhdev('ModularUI2') as String) { transitive = false }
+    runtimeOnly(elytraModpackVersion.gtnhdev('Baubles-Expanded') as String) { transitive = false }
     implementation('com.github.GTNewHorizons:GTNHExtLib:1.0.5') { transitive = false }
     implementation('it.unimi.dsi:fastutil:8.5.18')
     implementation('org.joml:joml:1.10.8') { transitive = false }
-    compileOnly('com.github.GTNewHorizons:Angelica:2.2.28:dev') { transitive = false }
+    compileOnly(elytraModpackVersion.gtnhdev('Angelica') as String) { transitive = false }
     compileOnly('org.jetbrains:annotations:26.0.1')
-    compileOnly('com.github.GTNewHorizons:lwjgl3ify:3.0.37:api') { transitive = false }
+    compileOnly("${elytraModpackVersion.gtnh('lwjgl3ify')}:api") { transitive = false }
     implementation('org.ow2.asm:asm-commons:9.8')
-    compileOnly('com.github.GTNewHorizons:ModularUI:1.3.4:dev') { transitive = false }
-    compileOnly('com.github.GTNewHorizons:NotEnoughItems:2.8.155-GTNH:dev') { transitive = false }
-    compileOnly('com.github.GTNewHorizons:CodeChickenCore:1.4.22:dev') { transitive = false }
+    compileOnly(elytraModpackVersion.gtnhdev('ModularUI') as String) { transitive = false }
+    compileOnly(elytraModpackVersion.gtnhdev('NotEnoughItems') as String) { transitive = false }
+    compileOnly(elytraModpackVersion.gtnhdev('CodeChickenCore') as String) { transitive = false }
     compileOnly('curse.maven:neverenoughanimation-1062347:7664003-sources-7663978') { transitive = false }
     compileOnly('org.projectlombok:lombok:1.18.42')
     annotationProcessor('org.projectlombok:lombok:1.18.42')

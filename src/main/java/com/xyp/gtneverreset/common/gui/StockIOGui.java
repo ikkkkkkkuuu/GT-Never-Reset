@@ -63,8 +63,8 @@ import com.cleanroommc.modularui.widgets.slot.ModularSlot;
 import com.cleanroommc.modularui.widgets.slot.PhantomItemSlot;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
+import com.xyp.gtneverreset.common.me.stockio.StockIOLogic;
 import com.xyp.gtneverreset.common.part.PartStockIOInterface;
-import com.xyp.gtneverreset.utils.machine.stockio.StockIOLogic;
 import com.xyp.gtnrlib.client.gui.PixelFontModularScreen;
 import com.xyp.gtnrlib.mod.ModList;
 

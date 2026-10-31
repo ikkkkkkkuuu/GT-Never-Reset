@@ -7,8 +7,8 @@ import net.minecraft.nbt.NBTTagCompound;
 
 import com.glodblock.github.client.gui.GuiFCImgButton;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtneverreset.common.packet.terminal.TerminalMagnetPacket;
-import com.xyp.gtneverreset.utils.inventory.WirelessTerminalMagnet;
+import com.xyp.gtneverreset.common.packet.TerminalMagnetPacket;
+import com.xyp.gtneverreset.common.terminal.WirelessTerminalMagnet;
 
 import appeng.helpers.ICustomButtonDataObject;
 import cpw.mods.fml.relauncher.Side;

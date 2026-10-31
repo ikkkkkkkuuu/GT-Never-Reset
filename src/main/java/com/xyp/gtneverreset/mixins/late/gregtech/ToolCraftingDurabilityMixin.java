@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-import com.xyp.gtneverreset.config.MainConfig;
+import com.xyp.gtneverreset.config.ToolsConfig;
 import com.xyp.gtneverreset.loader.ConfigLoader;
 
 import gregtech.api.items.MetaGeneratedTool;
@@ -53,7 +53,7 @@ public abstract class ToolCraftingDurabilityMixin {
         require = 1)
     private long gtneverreset$scaleCraftingDamage(long damage) {
         ConfigLoader.ensureLoaded();
-        double multiplier = MainConfig.tools.craftingDurabilityMultiplier;
+        double multiplier = ToolsConfig.craftingDurabilityMultiplier;
         if (damage <= 0 || !Double.isFinite(multiplier) || multiplier <= 1.0F) return damage;
         return Math.max(1L, (long) Math.ceil(damage / multiplier));
     }

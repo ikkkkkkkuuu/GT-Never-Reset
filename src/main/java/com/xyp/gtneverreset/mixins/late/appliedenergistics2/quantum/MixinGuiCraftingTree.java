@@ -29,7 +29,7 @@ import com.xyp.gtneverreset.client.quantum.CraftingTreeRings;
 import com.xyp.gtneverreset.client.quantum.ICraftingTreeCycles;
 import com.xyp.gtneverreset.client.quantum.RecursivePatternButton;
 import com.xyp.gtneverreset.client.quantum.RecursivePatternReport;
-import com.xyp.gtneverreset.utils.crafting.cycle.RecursivePatternFinder.Cycle;
+import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder.Cycle;
 
 import appeng.api.storage.data.IAEStack;
 import appeng.client.gui.AEBaseGui;

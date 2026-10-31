@@ -12,8 +12,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtneverreset.common.packet.wireless.WirelessVisualisationPacket;
-import com.xyp.gtneverreset.utils.machine.wireless.WirelessCardVisualisation;
+import com.xyp.gtneverreset.common.packet.WirelessVisualisationPacket;
+import com.xyp.gtneverreset.common.wireless.WirelessCardVisualisation;
 
 import appeng.api.util.DimensionalCoord;
 import appeng.core.sync.AppEngPacket;

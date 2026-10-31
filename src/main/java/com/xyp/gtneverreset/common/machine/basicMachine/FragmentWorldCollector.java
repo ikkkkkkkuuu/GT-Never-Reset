@@ -7,8 +7,8 @@ import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
-import com.xyp.gtneverreset.common.gui.modularui.FragmentWorldCollectorGui;
-import com.xyp.gtneverreset.loader.GTNRRecipeMaps;
+import com.xyp.gtneverreset.common.gui.modularui.singleblock.FragmentWorldCollectorGui;
+import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
 import com.xyp.gtneverreset.utils.enums.BlockIcons;
 
 import gregtech.api.enums.Textures;

@@ -7,22 +7,7 @@ import java.util.function.BiConsumer;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.common.packet.quantum.QuantumCraftConfirmPacket;
-import com.xyp.gtneverreset.common.packet.quantum.QuantumCraftingAvailabilityPacket;
-import com.xyp.gtneverreset.common.packet.quantum.QuantumCraftingModePacket;
-import com.xyp.gtneverreset.common.packet.quantum.RecursivePatternQueryPacket;
-import com.xyp.gtneverreset.common.packet.quantum.RecursivePatternResultPacket;
-import com.xyp.gtneverreset.common.packet.terminal.CPacketSendHeldItemToNetwork;
-import com.xyp.gtneverreset.common.packet.terminal.CPacketSwitchGuis;
-import com.xyp.gtneverreset.common.packet.terminal.CPacketTeleportToInterface;
-import com.xyp.gtneverreset.common.packet.terminal.CPacketToggleInterfaceVisibility;
-import com.xyp.gtneverreset.common.packet.terminal.TerminalItemRequestPacket;
-import com.xyp.gtneverreset.common.packet.terminal.TerminalMagnetPacket;
-import com.xyp.gtneverreset.common.packet.wireless.OpenWirelessCardPacket;
-import com.xyp.gtneverreset.common.packet.wireless.ToggleWirelessCardPacket;
-import com.xyp.gtneverreset.common.packet.wireless.WirelessHighlightPacket;
-import com.xyp.gtneverreset.common.packet.wireless.WirelessVisualisationPacket;
-import com.xyp.gtneverreset.utils.crafting.quantum.ae2.QuantumCraftingMode;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingMode;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;

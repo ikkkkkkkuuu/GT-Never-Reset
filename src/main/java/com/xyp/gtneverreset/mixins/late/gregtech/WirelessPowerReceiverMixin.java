@@ -10,9 +10,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.xyp.gtneverreset.utils.machine.IWirelessPowerReceiver;
-import com.xyp.gtneverreset.utils.machine.WirelessPowerTransfer;
-import com.xyp.gtneverreset.utils.world.WirelessPowerSavedData;
+import com.xyp.gtneverreset.common.wireless.IWirelessPowerReceiver;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerSavedData;
+import com.xyp.gtneverreset.common.wireless.WirelessPowerTransfer;
 
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 

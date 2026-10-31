@@ -31,12 +31,10 @@ import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.gtnewhorizon.structurelib.structure.StructureUtility;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
-import com.xyp.gtneverreset.common.gui.modularui.AssemblerMatrixGui;
+import com.xyp.gtneverreset.common.gui.modularui.multiblock.AssemblerMatrixGui;
+import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.utils.DireCraftingPatternDetails;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtneverreset.utils.machine.AssemblerMatrixPatternInventory;
-import com.xyp.gtneverreset.utils.machine.AssemblerMatrixPatternState;
-import com.xyp.gtneverreset.utils.machine.DireCraftingPatternDetails;
-import com.xyp.gtneverreset.utils.structure.AutoMultiblockTooltipBuilder;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
 import appeng.api.config.Actionable;

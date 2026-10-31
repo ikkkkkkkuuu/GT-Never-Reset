@@ -49,7 +49,7 @@ import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.glodblock.github.common.item.ItemFluidPacket;
 import com.glodblock.github.util.Util;
 import com.xyp.gtneverreset.common.part.PartAdvancedIOBus;
-import com.xyp.gtneverreset.utils.inventory.FluidDropCompat;
+import com.xyp.gtneverreset.compat.ae2fc.FluidDropCompat;
 import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.config.RedstoneMode;
