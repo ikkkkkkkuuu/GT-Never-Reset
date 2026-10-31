@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
+import com.xyp.gtneverreset.client.nei.TerminalNeiCrafting;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.terminal.TerminalItemRequestPacket;
@@ -43,10 +44,9 @@ public abstract class TerminalPanelWidgetMixin {
         if (shift || control) {
             if (WirelessTerminalSession.findDualInterfaceTerminal(minecraft.thePlayer) < 0) return;
             NetWorkHandler.sendToServer(new TerminalItemRequestPacket(stack, control));
-        } else if (!(minecraft.currentScreen instanceof GuiQuickEncodingTerminal terminal)
-            || !terminal.requestNeiCraft(stack)) {
-                return;
-            }
+        } else if (!TerminalNeiCrafting.requestCraft(minecraft.currentScreen, stack)) {
+            return;
+        }
         draggedStack = null;
         callback.setReturnValue(true);
     }

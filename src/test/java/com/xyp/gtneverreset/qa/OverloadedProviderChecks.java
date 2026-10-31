@@ -18,6 +18,7 @@ import net.minecraft.world.WorldType;
 import com.cleanroommc.modularui.factory.TileEntityGuiFactory;
 import com.cleanroommc.modularui.screen.GuiContainerWrapper;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
+import com.cleanroommc.modularui.widgets.layout.Grid;
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -160,6 +161,22 @@ public final class OverloadedProviderChecks {
                         .equals(((TileEntityOverloadedProvider) mc.theWorld.getTileEntity(0, 10, 0)).getName()),
                     "custom name synchronizes to real client");
                 screenshot("overloaded-patterns.png");
+                Grid grid = (Grid) wrapper.getScreen()
+                    .getMainPanel()
+                    .getChildren()
+                    .stream()
+                    .filter(child -> child instanceof Grid)
+                    .findFirst()
+                    .orElseThrow();
+                require(
+                    grid.getChildren()
+                        .size() == 450,
+                    "GUI contains all 450 pattern slots");
+                require(
+                    grid.getScrollArea()
+                        .getScrollY()
+                        .isScrollBarActive(grid.getScrollArea()),
+                    "pattern grid has an active vertical scrollbar");
                 for (var child : wrapper.getScreen()
                     .getMainPanel()
                     .getChildren()) {
@@ -303,13 +320,58 @@ public final class OverloadedProviderChecks {
             "optimization and terminal visibility persist");
         require(
             provider.getPatterns()
-                .getSizeInventory() == 36
+                .getSizeInventory() == 450
                 && provider.getPatterns()
-                    .getStackInSlot(36) == null,
+                    .getStackInSlot(450) == null,
             "AE terminal sees patterns only");
         provider.togglePatternOptimization();
         provider.toggleTerminalVisibility();
         provider.setInventorySlotContents(0, null);
+        verifyPatternCapacity(provider, pattern);
+    }
+
+    private static void verifyPatternCapacity(TileEntityOverloadedProvider provider, ItemStack pattern) {
+        require(provider.rows() == 2, "empty terminal starts with two rows");
+        provider.getPatterns()
+            .setInventorySlotContents(8, pattern.copy());
+        require(provider.rows() == 3, "terminal expands after the first full row");
+        provider.getPatterns()
+            .setInventorySlotContents(8, null);
+        provider.getPatterns()
+            .setInventorySlotContents(449, pattern.copy());
+        require(provider.rows() == 50, "terminal exposes the final pattern row");
+        NBTTagCompound saved = new NBTTagCompound();
+        provider.writeToNBT(saved);
+        TileEntityOverloadedProvider restored = new TileEntityOverloadedProvider();
+        restored.readFromNBT(saved);
+        require(restored.getStackInSlot(449) != null && restored.rows() == 50, "last pattern slot survives reload");
+        provider.getPatterns()
+            .setInventorySlotContents(449, null);
+        require(provider.rows() == 2, "terminal shrinks after removing the last pattern");
+
+        NBTTagCompound legacy = new NBTTagCompound();
+        provider.writeToNBT(legacy);
+        legacy.removeTag("PatternSlots");
+        var inventory = legacy.getTagList("Inventory", 10);
+        NBTTagCompound oldPattern = pattern.writeToNBT(new NBTTagCompound());
+        oldPattern.setInteger("Slot", 35);
+        inventory.appendTag(oldPattern);
+        for (int i = 0; i < 9; i++) {
+            NBTTagCompound returned = new ItemStack(Items.iron_ingot, i + 1).writeToNBT(new NBTTagCompound());
+            returned.setInteger("Slot", 36 + i);
+            inventory.appendTag(returned);
+        }
+        restored.readFromNBT(legacy);
+        require(restored.getStackInSlot(35) != null, "legacy patterns retain their slots");
+        for (int i = 0; i < 9; i++) {
+            require(
+                restored.getStackInSlot(36 + i) == null && restored.getStackInSlot(450 + i).stackSize == i + 1,
+                "legacy return slot migrates without loss: " + i);
+        }
+        NBTTagCompound migrated = new NBTTagCompound();
+        restored.writeToNBT(migrated);
+        restored.readFromNBT(migrated);
+        require(restored.getStackInSlot(458).stackSize == 9, "migrated return slots remain stable after reload");
     }
 
     private static long patternAmount(TileEntityOverloadedProvider provider) {

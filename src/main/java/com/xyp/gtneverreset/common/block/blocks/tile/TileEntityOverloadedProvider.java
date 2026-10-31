@@ -52,12 +52,14 @@ import appeng.api.networking.security.MachineSource;
 import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.util.IInterfaceViewable;
+import appeng.container.ContainerNull;
 import appeng.helpers.ICustomNameObject;
 import appeng.me.GridAccessException;
 import appeng.me.cache.CraftingGridCache;
 import appeng.me.helpers.AENetworkProxy;
 import appeng.util.PatternMultiplierHelper;
 import appeng.util.Platform;
+import appeng.util.inv.MEInventoryCrafting;
 import appeng.util.item.AEFluidStack;
 import appeng.util.item.AEItemStack;
 import cpw.mods.fml.relauncher.Side;
@@ -69,9 +71,10 @@ import gregtech.api.recipe.RecipeMap;
 public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase implements IInventory,
     ICraftingProvider, IGuiHolder<PosGuiData>, IInterfaceViewable, ITerminalVisibilityToggle, ICustomNameObject {
 
-    public static final int PATTERNS = 36;
+    public static final int PATTERNS = 450;
     public static final int MAX_TARGETS = 1024;
     public static final int RANGE = 128;
+    private static final int LEGACY_PATTERNS = 36;
     private static final int WORK_PER_TICK = 8;
     private final ItemStack[] inventory = new ItemStack[PATTERNS + 9];
     private final List<Lane> lanes = new ArrayList<>();
@@ -222,7 +225,11 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
 
     @Override
     public int rows() {
-        return PATTERNS / 9;
+        int lastNonNullIndex = PATTERNS - 1;
+        while (lastNonNullIndex >= 0 && inventory[lastNonNullIndex] == null) lastNonNullIndex--;
+        int calculatedRows = (lastNonNullIndex + 9) / 9 + 1;
+        if ((lastNonNullIndex + 1) % 9 == 0) calculatedRows++;
+        return Math.min(calculatedRows, PATTERNS / 9);
     }
 
     @Override
@@ -411,11 +418,14 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
             || !patterns.contains(details)
             || lanes.isEmpty()) return false;
         // Ordinary inventories require a whole delivery to fit; only GT targets have persistent overflow.
+        boolean supported = false;
         for (Lane lane : lanes) {
-            if (!(lane.target.resolve(worldObj) instanceof BaseMetaTileEntity gt)
-                || !OverloadedMachineInput.supports(gt)) return false;
+            TileEntity target = lane.target.resolve(worldObj);
+            if (roundRobin && target == null) continue;
+            if (!(target instanceof BaseMetaTileEntity gt) || !OverloadedMachineInput.supports(gt)) return false;
+            supported = true;
         }
-        return true;
+        return supported;
     }
 
     @Override
@@ -431,6 +441,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
         if (isBusy() || !patterns.contains(details)) return false;
         long crafts = table instanceof LargeInventoryCrafting large ? large.getAssemblerSize() : 1;
         if (crafts <= 0 || crafts > 1 && !supportsBatchCrafting(details)) return false;
+        if (roundRobin && crafts > 1) return pushRoundRobinBatch(details, table, crafts);
         List<ItemStack> inputs = new ArrayList<>();
         for (int i = 0; i < table.getSizeInventory(); i++) {
             ItemStack stack = table.getStackInSlot(i);
@@ -459,18 +470,89 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
                     || !OverloadedProviderInventory.insert(target, lane.target.face, inputs, true)) continue;
                 lane.pending.addAll(inputs);
             }
-            lane.outputs.clear();
-            lane.fluidOutputs.clear();
-            for (var output : details.getCondensedAEOutputs()) {
-                if (output instanceof IAEItemStack item) lane.outputs.add(item.getItemStack());
-                else if (output instanceof IAEFluidStack fluid) lane.fluidOutputs.add(fluid.getFluidStack());
-            }
+            recordOutputs(lane, details);
             dispatchCursor = roundRobin ? index + 1 : index;
             markDirty();
             return true;
         }
         dispatchCursor = Math.floorMod(dispatchCursor + 16, lanes.size());
         return false;
+    }
+
+    private boolean pushRoundRobinBatch(ICraftingPatternDetails details, InventoryCrafting table, long crafts) {
+        if (!(table instanceof MEInventoryCrafting source)) return false;
+        MEInventoryCrafting single = splitBatch(source, crafts, 1);
+        if (single == null) return false;
+        List<Integer> candidates = new ArrayList<>();
+        for (int offset = 0; offset < lanes.size(); offset++) {
+            int index = Math.floorMod(dispatchCursor + offset, lanes.size());
+            Lane lane = lanes.get(index);
+            if (!lane.pending.isEmpty() || !lane.machineBuffer.isEmpty()) continue;
+            if (lane.target.resolve(worldObj) instanceof BaseMetaTileEntity gt && OverloadedMachineInput
+                .prepare(gt, details, single, ForgeDirection.getOrientation(lane.target.face), lane.machineBuffer)
+                != null) candidates.add(index);
+        }
+        while (!candidates.isEmpty()) {
+            List<OverloadedMachineInput.PreparedInput> prepared = new ArrayList<>();
+            long share = crafts / candidates.size();
+            int remainder = (int) (crafts % candidates.size());
+            boolean retry = false;
+            for (int i = 0; i < candidates.size(); i++) {
+                long allocated = share + (i < remainder ? 1 : 0);
+                if (allocated == 0) break;
+                Lane lane = lanes.get(candidates.get(i));
+                MEInventoryCrafting portion = splitBatch(source, crafts, allocated);
+                if (portion == null) return false;
+                var input = lane.target.resolve(worldObj) instanceof BaseMetaTileEntity gt ? OverloadedMachineInput
+                    .prepare(gt, details, portion, ForgeDirection.getOrientation(lane.target.face), lane.machineBuffer)
+                    : null;
+                if (input == null) {
+                    candidates.remove(i);
+                    retry = true;
+                    break;
+                }
+                prepared.add(input);
+            }
+            if (retry) continue;
+            if (!OverloadedMachineInput.commit(prepared)) return false;
+            for (int i = 0; i < prepared.size(); i++) {
+                Lane lane = lanes.get(candidates.get(i));
+                BaseMetaTileEntity gt = (BaseMetaTileEntity) lane.target.resolve(worldObj);
+                ((OverloadedMachineConfiguration) gt.getMetaTileEntity()).gtnr$setProvider(xCoord, yCoord, zCoord);
+                recordOutputs(lane, details);
+            }
+            int next = remainder > 0 ? remainder : prepared.size();
+            dispatchCursor = candidates.get(next - 1) + 1;
+            markDirty();
+            return true;
+        }
+        return false;
+    }
+
+    private static MEInventoryCrafting splitBatch(MEInventoryCrafting source, long total, long crafts) {
+        MEInventoryCrafting result = new MEInventoryCrafting(new ContainerNull(), source.getSizeInventory(), 1);
+        if (!(result instanceof LargeInventoryCrafting large)) return null;
+        large.setAssemblerSize(crafts);
+        for (int slot = 0; slot < source.getSizeInventory(); slot++) {
+            var stack = source.getAEStackInSlot(slot);
+            if (stack == null) continue;
+            long amount = stack.getStackSize();
+            if (amount <= 0 || amount % total != 0) return null;
+            result.setInventorySlotContents(
+                slot,
+                stack.copy()
+                    .setStackSize(amount / total * crafts));
+        }
+        return result;
+    }
+
+    private static void recordOutputs(Lane lane, ICraftingPatternDetails details) {
+        lane.outputs.clear();
+        lane.fluidOutputs.clear();
+        for (var output : details.getCondensedAEOutputs()) {
+            if (output instanceof IAEItemStack item) lane.outputs.add(item.getItemStack());
+            else if (output instanceof IAEFluidStack fluid) lane.fluidOutputs.add(fluid.getFluidStack());
+        }
     }
 
     private void service(Lane lane) {
@@ -611,6 +693,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
             stacks.appendTag(entry);
         }
         tag.setTag("Inventory", stacks);
+        tag.setInteger("PatternSlots", PATTERNS);
         tag.setTag("ReturnedFluids", writeFluids(returnedFluids));
         NBTTagList targets = new NBTTagList();
         for (Lane lane : lanes) {
@@ -637,9 +720,11 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
         readFluids(tag.getTagList("ReturnedFluids", 10), returnedFluids);
         java.util.Arrays.fill(inventory, null);
         NBTTagList stacks = tag.getTagList("Inventory", 10);
+        int savedPatternSlots = tag.hasKey("PatternSlots") ? tag.getInteger("PatternSlots") : LEGACY_PATTERNS;
         for (int i = 0; i < stacks.tagCount(); i++) {
             NBTTagCompound entry = stacks.getCompoundTagAt(i);
             int slot = entry.getInteger("Slot");
+            if (slot >= savedPatternSlots) slot += PATTERNS - savedPatternSlots;
             if (slot >= 0 && slot < inventory.length) inventory[slot] = ItemStack.loadItemStackFromNBT(entry);
         }
         lanes.clear();

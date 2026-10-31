@@ -25,6 +25,7 @@ import com.cleanroommc.modularui.value.sync.SyncHandler;
 import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.SlotGroupWidget;
+import com.cleanroommc.modularui.widgets.layout.Grid;
 import com.cleanroommc.modularui.widgets.slot.ItemSlot;
 import com.cleanroommc.modularui.widgets.slot.ModularSlot;
 import com.gtnewhorizon.gtnhlib.util.ServerThreadUtil;
@@ -65,13 +66,17 @@ public final class OverloadedProviderGui {
                         .pos(5, 5)
                         .size(138, 9)
                         .widgetTheme(GTWidgetThemes.TEXT_TITLE)));
-        for (int slot = 0; slot < TileEntityOverloadedProvider.PATTERNS; slot++) {
-            panel.child(
-                new PatternSlot().slot(
-                    new ModularSlot(inventory, slot).slotGroup("patterns")
-                        .filter(stack -> tile.isItemValidForSlot(0, stack)))
-                    .pos(7 + slot % 9 * 18, 6 + slot / 9 * 18));
-        }
+        panel.child(
+            new Grid().minColWidth(18)
+                .gridOfWidthHeight(
+                    9,
+                    TileEntityOverloadedProvider.PATTERNS / 9,
+                    (x, y, slot) -> new PatternSlot().slot(
+                        new ModularSlot(inventory, slot).slotGroup("patterns")
+                            .filter(stack -> tile.isItemValidForSlot(slot, stack))))
+                .pos(7, 6)
+                .size(9 * 18 + 4, 4 * 18)
+                .scrollable());
         BooleanSyncValue optimize = new BooleanSyncValue(tile::allowsPatternOptimization);
         BooleanSyncValue visible = new BooleanSyncValue(tile::shouldDisplay);
         BooleanSyncValue auto = new BooleanSyncValue(tile::getAutoReturn);

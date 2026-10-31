@@ -117,6 +117,19 @@ public final class OverloadedMachineInput {
      */
     public static boolean push(BaseMetaTileEntity tile, ICraftingPatternDetails pattern, InventoryCrafting table,
         ForgeDirection side, OverloadedMachineBuffer overflow) {
+        PreparedInput prepared = prepare(tile, pattern, table, side, overflow);
+        return prepared != null && commit(List.of(prepared));
+    }
+
+    /** Prepares a delivery without changing machine inputs or claiming its overflow buffer. */
+    public static PreparedInput prepare(BaseMetaTileEntity tile, ICraftingPatternDetails pattern,
+        InventoryCrafting table, ForgeDirection side, OverloadedMachineBuffer overflow) {
+        List<PreparedInput> prepared = new ArrayList<>(1);
+        return prepare(tile, pattern, table, side, overflow, prepared) ? prepared.get(0) : null;
+    }
+
+    private static boolean prepare(BaseMetaTileEntity tile, ICraftingPatternDetails pattern, InventoryCrafting table,
+        ForgeDirection side, OverloadedMachineBuffer overflow, List<PreparedInput> prepared) {
         if (!supports(tile) || tile.getWorldObj() == null
             || tile.getWorldObj().isRemote
             || side == null
@@ -276,39 +289,44 @@ public final class OverloadedMachineInput {
             System.arraycopy(original, 0, machine.mInventory, 0, original.length);
             OverloadedMachineMolds.set(machine, originalMold);
         }
-        // There is no intervening tick between simulation and commit. Use the normal sided fluid handler;
-        // guard against an inconsistent handler by restoring its input tank if it accepts only part of the batch.
-        if (insertedFluid != null) {
-            ItemStack oldCircuit = machine.mInventory[machine.getCircuitSlot()];
-            FluidStack originalFluid = oldFluid == null ? null : oldFluid.copy();
-            machine.mInventory[machine.getCircuitSlot()] = committed[machine.getCircuitSlot()];
-            OverloadedMachineMolds.set(machine, selected.mold);
-            boolean filled = false;
-            try {
-                filled = tile.fill(side, insertedFluid, true) == insertedFluid.amount;
-                if (!filled) return false;
-            } finally {
-                machine.mInventory[machine.getCircuitSlot()] = oldCircuit;
-                OverloadedMachineMolds.set(machine, originalMold);
-                if (!filled) machine.setFillableStack(originalFluid);
-            }
-        }
-        ((com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration) machine)
-            .gtnr$beginConfiguration(original[machine.getCircuitSlot()]);
-        OverloadedMachineMolds.set(machine, selected.mold);
-        tile.setInventorySlotContents(machine.getCircuitSlot(), committed[machine.getCircuitSlot()]);
-        for (int slot = first; slot < first + machine.mInputSlotCount; slot++) {
-            tile.setInventorySlotContents(slot, committed[slot]);
-        }
         FluidStack pendingFluid = null;
         if (fluid != null && insertedFluid != null && fluid.amount > insertedFluid.amount) {
             pendingFluid = fluid.copy();
             pendingFluid.amount -= insertedFluid.amount;
         }
-        overflow.replace(pendingItems, pendingFluid, side);
-        ((com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration) machine)
-            .gtnr$setPending(!overflow.isEmpty());
-        LAST_DELIVERIES.put(machine, selected);
+        prepared.add(
+            new PreparedInput(
+                tile,
+                selected,
+                original,
+                committed,
+                oldFluid,
+                insertedFluid,
+                pendingItems,
+                pendingFluid,
+                side,
+                overflow));
+        return true;
+    }
+
+    /** Commits freshly prepared deliveries on the same server tick, or restores every attempted fluid fill. */
+    public static boolean commit(List<PreparedInput> prepared) {
+        if (prepared.isEmpty()) return false;
+        Set<BaseMetaTileEntity> targets = new HashSet<>();
+        for (PreparedInput input : prepared) if (!targets.add(input.tile)) return false;
+        int attempted = 0;
+        boolean filled = false;
+        try {
+            for (PreparedInput input : prepared) {
+                attempted++;
+                if (!input.fill()) return false;
+            }
+            filled = true;
+        } finally {
+            if (!filled) for (int i = 0; i < attempted; i++) prepared.get(i)
+                .restoreFluid();
+        }
+        for (PreparedInput input : prepared) input.commit();
         return true;
     }
 
@@ -630,6 +648,70 @@ public final class OverloadedMachineInput {
         boolean compatibleBuffer) {
         if (!running && !buffered) return true;
         return sameCircuit && compatibleBuffer && (!running || sameDelivery);
+    }
+
+    public static final class PreparedInput {
+
+        private final BaseMetaTileEntity tile;
+        private final MTEBasicMachine machine;
+        private final Match selected;
+        private final ItemStack[] original;
+        private final ItemStack[] committed;
+        private final FluidStack oldFluid;
+        private final FluidStack insertedFluid;
+        private final List<ItemStack> pendingItems;
+        private final FluidStack pendingFluid;
+        private final ForgeDirection side;
+        private final OverloadedMachineBuffer overflow;
+
+        private PreparedInput(BaseMetaTileEntity tile, Match selected, ItemStack[] original, ItemStack[] committed,
+            FluidStack oldFluid, FluidStack insertedFluid, List<ItemStack> pendingItems, FluidStack pendingFluid,
+            ForgeDirection side, OverloadedMachineBuffer overflow) {
+            this.tile = tile;
+            this.machine = (MTEBasicMachine) tile.getMetaTileEntity();
+            this.selected = selected;
+            this.original = original;
+            this.committed = committed;
+            this.oldFluid = oldFluid == null ? null : oldFluid.copy();
+            this.insertedFluid = insertedFluid;
+            this.pendingItems = pendingItems;
+            this.pendingFluid = pendingFluid;
+            this.side = side;
+            this.overflow = overflow;
+        }
+
+        private boolean fill() {
+            if (insertedFluid == null) return true;
+            ItemStack oldCircuit = machine.mInventory[machine.getCircuitSlot()];
+            ItemStack oldMold = OverloadedMachineMolds.get(machine);
+            machine.mInventory[machine.getCircuitSlot()] = committed[machine.getCircuitSlot()];
+            OverloadedMachineMolds.set(machine, selected.mold);
+            try {
+                return tile.fill(side, insertedFluid, true) == insertedFluid.amount;
+            } finally {
+                machine.mInventory[machine.getCircuitSlot()] = oldCircuit;
+                OverloadedMachineMolds.set(machine, oldMold);
+            }
+        }
+
+        private void restoreFluid() {
+            if (insertedFluid != null) machine.setFillableStack(oldFluid == null ? null : oldFluid.copy());
+        }
+
+        private void commit() {
+            ((com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration) machine)
+                .gtnr$beginConfiguration(original[machine.getCircuitSlot()]);
+            OverloadedMachineMolds.set(machine, selected.mold);
+            tile.setInventorySlotContents(machine.getCircuitSlot(), committed[machine.getCircuitSlot()]);
+            int first = machine.getInputSlot();
+            for (int slot = first; slot < first + machine.mInputSlotCount; slot++) {
+                tile.setInventorySlotContents(slot, committed[slot]);
+            }
+            overflow.replace(pendingItems, pendingFluid, side);
+            ((com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration) machine)
+                .gtnr$setPending(!overflow.isEmpty());
+            LAST_DELIVERIES.put(machine, selected);
+        }
     }
 
     /** A recipe's consumed quantities and optional non-consumed circuit and mold configuration. */

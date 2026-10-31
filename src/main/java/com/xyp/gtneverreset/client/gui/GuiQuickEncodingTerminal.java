@@ -108,7 +108,6 @@ import appeng.helpers.ICustomButtonProvider;
 import appeng.helpers.MonitorableAction;
 import appeng.util.Platform;
 import appeng.util.item.AEFluidStack;
-import appeng.util.item.AEItemStack;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -793,15 +792,6 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
 
     private boolean isArcaneWorkbenchView() {
         return patternContainer.arcaneModeSync.get() && patternContainer.arcaneWorkbenchViewSync.get();
-    }
-
-    public boolean requestNeiCraft(ItemStack stack) {
-        if (requestFluidCraft(stack)) return true;
-        IAEItemStack item = AEItemStack.create(stack);
-        if (!isCraftableOnNetwork(item)) return false;
-        patternContainer.setTargetStack(item);
-        NetworkHandler.instance.sendToServer(new PacketMonitorableAction(MonitorableAction.AUTO_CRAFT, -1));
-        return true;
     }
 
     /** Starts a native fluid craft from an NEI synthetic fluid display item. */
