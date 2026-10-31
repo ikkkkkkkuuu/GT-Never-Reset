@@ -5,6 +5,8 @@ buildscript {
     }
 }
 
+// Library version changes only when its implementation or resources change.
+ext.modVersion = '0.1.9'
 ext.modName = 'GTNRLib'
 ext.modId = 'gtnrlib'
 ext.modGroup = 'com.xyp.gtnrlib'

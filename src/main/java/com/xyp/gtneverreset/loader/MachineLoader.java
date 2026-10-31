@@ -630,14 +630,14 @@ public final class MachineLoader {
     }
 
     private static void registerModernFluidMachines() {
-        // #tr gtnr.machine.modern_mixer.lv.name
+        // #tr gt.blockmachines.gtneverreset.modern_mixer.tier.1.name
         // # Basic Mixer
         // # zh_CN 基础搅拌机
         GTNRItemList.ModernMixerLV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernMixerLV.id,
                 "gtneverreset.modern_mixer.tier.1",
-                StatCollector.translateToLocal("gtnr.machine.modern_mixer.lv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_mixer.tier.1.name"),
                 VoltageIndex.LV,
                 GTNRRecipeMaps.MODERN_MIXER_RECIPES,
                 6,
@@ -647,14 +647,14 @@ public final class MachineLoader {
                 ModernMachineTextures.MIXER,
                 SoundResource.GTCEU_LOOP_MIXER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerLV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_mixer.mv.name
+        // #tr gt.blockmachines.gtneverreset.modern_mixer.tier.2.name
         // # Advanced Mixer
         // # zh_CN 进阶搅拌机
         GTNRItemList.ModernMixerMV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernMixerMV.id,
                 "gtneverreset.modern_mixer.tier.2",
-                StatCollector.translateToLocal("gtnr.machine.modern_mixer.mv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_mixer.tier.2.name"),
                 VoltageIndex.MV,
                 GTNRRecipeMaps.MODERN_MIXER_RECIPES,
                 6,
@@ -664,14 +664,14 @@ public final class MachineLoader {
                 ModernMachineTextures.MIXER,
                 SoundResource.GTCEU_LOOP_MIXER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerMV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_mixer.hv.name
+        // #tr gt.blockmachines.gtneverreset.modern_mixer.tier.3.name
         // # Advanced Mixer II
         // # zh_CN 进阶搅拌机 II
         GTNRItemList.ModernMixerHV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernMixerHV.id,
                 "gtneverreset.modern_mixer.tier.3",
-                StatCollector.translateToLocal("gtnr.machine.modern_mixer.hv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_mixer.tier.3.name"),
                 VoltageIndex.HV,
                 GTNRRecipeMaps.MODERN_MIXER_RECIPES,
                 6,
@@ -681,14 +681,14 @@ public final class MachineLoader {
                 ModernMachineTextures.MIXER,
                 SoundResource.GTCEU_LOOP_MIXER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerHV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_mixer.ev.name
+        // #tr gt.blockmachines.gtneverreset.modern_mixer.tier.4.name
         // # Advanced Mixer III
         // # zh_CN 进阶搅拌机 III
         GTNRItemList.ModernMixerEV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernMixerEV.id,
                 "gtneverreset.modern_mixer.tier.4",
-                StatCollector.translateToLocal("gtnr.machine.modern_mixer.ev.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_mixer.tier.4.name"),
                 VoltageIndex.EV,
                 GTNRRecipeMaps.MODERN_MIXER_RECIPES,
                 6,
@@ -698,14 +698,14 @@ public final class MachineLoader {
                 ModernMachineTextures.MIXER,
                 SoundResource.GTCEU_LOOP_MIXER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerEV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_mixer.iv.name
+        // #tr gt.blockmachines.gtneverreset.modern_mixer.tier.5.name
         // # Advanced Mixer IV
         // # zh_CN 进阶搅拌机 IV
         GTNRItemList.ModernMixerIV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernMixerIV.id,
                 "gtneverreset.modern_mixer.tier.5",
-                StatCollector.translateToLocal("gtnr.machine.modern_mixer.iv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_mixer.tier.5.name"),
                 VoltageIndex.IV,
                 GTNRRecipeMaps.MODERN_MIXER_RECIPES,
                 6,
@@ -715,14 +715,14 @@ public final class MachineLoader {
                 ModernMachineTextures.MIXER,
                 SoundResource.GTCEU_LOOP_MIXER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerIV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_mixer.luv.name
+        // #tr gt.blockmachines.gtneverreset.modern_mixer.tier.6.name
         // # Elite Mixer
         // # zh_CN 精英搅拌机
         GTNRItemList.ModernMixerLuV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernMixerLuV.id,
                 "gtneverreset.modern_mixer.tier.6",
-                StatCollector.translateToLocal("gtnr.machine.modern_mixer.luv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_mixer.tier.6.name"),
                 VoltageIndex.LuV,
                 GTNRRecipeMaps.MODERN_MIXER_RECIPES,
                 6,
@@ -732,14 +732,14 @@ public final class MachineLoader {
                 ModernMachineTextures.MIXER,
                 SoundResource.GTCEU_LOOP_MIXER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerLuV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_mixer.zpm.name
+        // #tr gt.blockmachines.gtneverreset.modern_mixer.tier.7.name
         // # Elite Mixer II
         // # zh_CN 精英搅拌机 II
         GTNRItemList.ModernMixerZPM.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernMixerZPM.id,
                 "gtneverreset.modern_mixer.tier.7",
-                StatCollector.translateToLocal("gtnr.machine.modern_mixer.zpm.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_mixer.tier.7.name"),
                 VoltageIndex.ZPM,
                 GTNRRecipeMaps.MODERN_MIXER_RECIPES,
                 6,
@@ -749,14 +749,14 @@ public final class MachineLoader {
                 ModernMachineTextures.MIXER,
                 SoundResource.GTCEU_LOOP_MIXER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerZPM.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_mixer.uv.name
+        // #tr gt.blockmachines.gtneverreset.modern_mixer.tier.8.name
         // # Ultimate Matter Organizer
         // # zh_CN 终极物质组织者
         GTNRItemList.ModernMixerUV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernMixerUV.id,
                 "gtneverreset.modern_mixer.tier.8",
-                StatCollector.translateToLocal("gtnr.machine.modern_mixer.uv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_mixer.tier.8.name"),
                 VoltageIndex.UV,
                 GTNRRecipeMaps.MODERN_MIXER_RECIPES,
                 6,
@@ -766,14 +766,14 @@ public final class MachineLoader {
                 ModernMachineTextures.MIXER,
                 SoundResource.GTCEU_LOOP_MIXER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernMixerUV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_electrolyzer.lv.name
+        // #tr gt.blockmachines.gtneverreset.modern_electrolyzer.tier.1.name
         // # Basic Electrolyzer
         // # zh_CN 基础电解机
         GTNRItemList.ModernElectrolyzerLV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernElectrolyzerLV.id,
                 "gtneverreset.modern_electrolyzer.tier.1",
-                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.lv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_electrolyzer.tier.1.name"),
                 VoltageIndex.LV,
                 GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
                 2,
@@ -783,14 +783,14 @@ public final class MachineLoader {
                 ModernMachineTextures.ELECTROLYZER,
                 SoundResource.GTCEU_LOOP_ELECTROLYZER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerLV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_electrolyzer.mv.name
+        // #tr gt.blockmachines.gtneverreset.modern_electrolyzer.tier.2.name
         // # Advanced Electrolyzer
         // # zh_CN 进阶电解机
         GTNRItemList.ModernElectrolyzerMV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernElectrolyzerMV.id,
                 "gtneverreset.modern_electrolyzer.tier.2",
-                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.mv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_electrolyzer.tier.2.name"),
                 VoltageIndex.MV,
                 GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
                 2,
@@ -800,14 +800,14 @@ public final class MachineLoader {
                 ModernMachineTextures.ELECTROLYZER,
                 SoundResource.GTCEU_LOOP_ELECTROLYZER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerMV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_electrolyzer.hv.name
+        // #tr gt.blockmachines.gtneverreset.modern_electrolyzer.tier.3.name
         // # Advanced Electrolyzer II
         // # zh_CN 进阶电解机 II
         GTNRItemList.ModernElectrolyzerHV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernElectrolyzerHV.id,
                 "gtneverreset.modern_electrolyzer.tier.3",
-                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.hv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_electrolyzer.tier.3.name"),
                 VoltageIndex.HV,
                 GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
                 2,
@@ -817,14 +817,14 @@ public final class MachineLoader {
                 ModernMachineTextures.ELECTROLYZER,
                 SoundResource.GTCEU_LOOP_ELECTROLYZER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerHV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_electrolyzer.ev.name
+        // #tr gt.blockmachines.gtneverreset.modern_electrolyzer.tier.4.name
         // # Advanced Electrolyzer III
         // # zh_CN 进阶电解机 III
         GTNRItemList.ModernElectrolyzerEV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernElectrolyzerEV.id,
                 "gtneverreset.modern_electrolyzer.tier.4",
-                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.ev.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_electrolyzer.tier.4.name"),
                 VoltageIndex.EV,
                 GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
                 2,
@@ -834,14 +834,14 @@ public final class MachineLoader {
                 ModernMachineTextures.ELECTROLYZER,
                 SoundResource.GTCEU_LOOP_ELECTROLYZER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerEV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_electrolyzer.iv.name
+        // #tr gt.blockmachines.gtneverreset.modern_electrolyzer.tier.5.name
         // # Molecular Disintegrator E-4908
         // # zh_CN 分子分解者 E-4908
         GTNRItemList.ModernElectrolyzerIV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernElectrolyzerIV.id,
                 "gtneverreset.modern_electrolyzer.tier.5",
-                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.iv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_electrolyzer.tier.5.name"),
                 VoltageIndex.IV,
                 GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
                 2,
@@ -851,14 +851,14 @@ public final class MachineLoader {
                 ModernMachineTextures.ELECTROLYZER,
                 SoundResource.GTCEU_LOOP_ELECTROLYZER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerIV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_electrolyzer.luv.name
+        // #tr gt.blockmachines.gtneverreset.modern_electrolyzer.tier.6.name
         // # Elite Electrolyzer
         // # zh_CN 精英电解机
         GTNRItemList.ModernElectrolyzerLuV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernElectrolyzerLuV.id,
                 "gtneverreset.modern_electrolyzer.tier.6",
-                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.luv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_electrolyzer.tier.6.name"),
                 VoltageIndex.LuV,
                 GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
                 2,
@@ -868,14 +868,14 @@ public final class MachineLoader {
                 ModernMachineTextures.ELECTROLYZER,
                 SoundResource.GTCEU_LOOP_ELECTROLYZER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerLuV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_electrolyzer.zpm.name
+        // #tr gt.blockmachines.gtneverreset.modern_electrolyzer.tier.7.name
         // # Elite Electrolyzer II
         // # zh_CN 精英电解机 II
         GTNRItemList.ModernElectrolyzerZPM.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernElectrolyzerZPM.id,
                 "gtneverreset.modern_electrolyzer.tier.7",
-                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.zpm.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_electrolyzer.tier.7.name"),
                 VoltageIndex.ZPM,
                 GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
                 2,
@@ -885,14 +885,14 @@ public final class MachineLoader {
                 ModernMachineTextures.ELECTROLYZER,
                 SoundResource.GTCEU_LOOP_ELECTROLYZER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerZPM.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_electrolyzer.uv.name
+        // #tr gt.blockmachines.gtneverreset.modern_electrolyzer.tier.8.name
         // # Ultimate Ionizer
         // # zh_CN 终极离子发生器
         GTNRItemList.ModernElectrolyzerUV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernElectrolyzerUV.id,
                 "gtneverreset.modern_electrolyzer.tier.8",
-                StatCollector.translateToLocal("gtnr.machine.modern_electrolyzer.uv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_electrolyzer.tier.8.name"),
                 VoltageIndex.UV,
                 GTNRRecipeMaps.MODERN_ELECTROLYZER_RECIPES,
                 2,
@@ -902,14 +902,14 @@ public final class MachineLoader {
                 ModernMachineTextures.ELECTROLYZER,
                 SoundResource.GTCEU_LOOP_ELECTROLYZER));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernElectrolyzerUV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_chemical_reactor.lv.name
+        // #tr gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.1.name
         // # Basic Chemical Reactor
         // # zh_CN 基础化学反应釜
         GTNRItemList.ModernChemicalReactorLV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernChemicalReactorLV.id,
                 "gtneverreset.modern_chemical_reactor.tier.1",
-                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.lv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.1.name"),
                 VoltageIndex.LV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
                 6,
@@ -919,14 +919,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorLV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_chemical_reactor.mv.name
+        // #tr gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.2.name
         // # Advanced Chemical Reactor
         // # zh_CN 进阶化学反应釜
         GTNRItemList.ModernChemicalReactorMV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernChemicalReactorMV.id,
                 "gtneverreset.modern_chemical_reactor.tier.2",
-                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.mv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.2.name"),
                 VoltageIndex.MV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
                 6,
@@ -936,14 +936,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorMV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_chemical_reactor.hv.name
+        // #tr gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.3.name
         // # Advanced Chemical Reactor II
         // # zh_CN 进阶化学反应釜 II
         GTNRItemList.ModernChemicalReactorHV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernChemicalReactorHV.id,
                 "gtneverreset.modern_chemical_reactor.tier.3",
-                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.hv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.3.name"),
                 VoltageIndex.HV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
                 6,
@@ -953,14 +953,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorHV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_chemical_reactor.ev.name
+        // #tr gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.4.name
         // # Advanced Chemical Reactor III
         // # zh_CN 进阶化学反应釜 III
         GTNRItemList.ModernChemicalReactorEV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernChemicalReactorEV.id,
                 "gtneverreset.modern_chemical_reactor.tier.4",
-                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.ev.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.4.name"),
                 VoltageIndex.EV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
                 6,
@@ -970,14 +970,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorEV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_chemical_reactor.iv.name
+        // #tr gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.5.name
         // # Advanced Chemical Reactor IV
         // # zh_CN 进阶化学反应釜 IV
         GTNRItemList.ModernChemicalReactorIV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernChemicalReactorIV.id,
                 "gtneverreset.modern_chemical_reactor.tier.5",
-                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.iv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.5.name"),
                 VoltageIndex.IV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
                 6,
@@ -987,14 +987,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorIV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_chemical_reactor.luv.name
+        // #tr gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.6.name
         // # Elite Chemical Reactor
         // # zh_CN 精英化学反应釜
         GTNRItemList.ModernChemicalReactorLuV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernChemicalReactorLuV.id,
                 "gtneverreset.modern_chemical_reactor.tier.6",
-                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.luv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.6.name"),
                 VoltageIndex.LuV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
                 6,
@@ -1005,14 +1005,14 @@ public final class MachineLoader {
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler
             .addItemTooltip(GTNRItemList.ModernChemicalReactorLuV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_chemical_reactor.zpm.name
+        // #tr gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.7.name
         // # Elite Chemical Reactor II
         // # zh_CN 精英化学反应釜 II
         GTNRItemList.ModernChemicalReactorZPM.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernChemicalReactorZPM.id,
                 "gtneverreset.modern_chemical_reactor.tier.7",
-                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.zpm.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.7.name"),
                 VoltageIndex.ZPM,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
                 6,
@@ -1023,14 +1023,14 @@ public final class MachineLoader {
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler
             .addItemTooltip(GTNRItemList.ModernChemicalReactorZPM.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_chemical_reactor.uv.name
+        // #tr gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.8.name
         // # Ultimate Chemical Performer
         // # zh_CN 终极化学反应执行者
         GTNRItemList.ModernChemicalReactorUV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernChemicalReactorUV.id,
                 "gtneverreset.modern_chemical_reactor.tier.8",
-                StatCollector.translateToLocal("gtnr.machine.modern_chemical_reactor.uv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_chemical_reactor.tier.8.name"),
                 VoltageIndex.UV,
                 GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES,
                 6,
@@ -1040,14 +1040,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CHEMICAL_REACTOR,
                 SoundResource.GTCEU_LOOP_CHEMICAL));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernChemicalReactorUV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_centrifuge.lv.name
+        // #tr gt.blockmachines.gtneverreset.modern_centrifuge.tier.1.name
         // # Basic Centrifuge
         // # zh_CN 基础离心机
         GTNRItemList.ModernCentrifugeLV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernCentrifugeLV.id,
                 "gtneverreset.modern_centrifuge.tier.1",
-                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.lv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_centrifuge.tier.1.name"),
                 VoltageIndex.LV,
                 GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
                 2,
@@ -1057,14 +1057,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CENTRIFUGE,
                 SoundResource.GTCEU_LOOP_CENTRIFUGE));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeLV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_centrifuge.mv.name
+        // #tr gt.blockmachines.gtneverreset.modern_centrifuge.tier.2.name
         // # Advanced Centrifuge
         // # zh_CN 进阶离心机
         GTNRItemList.ModernCentrifugeMV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernCentrifugeMV.id,
                 "gtneverreset.modern_centrifuge.tier.2",
-                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.mv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_centrifuge.tier.2.name"),
                 VoltageIndex.MV,
                 GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
                 2,
@@ -1074,14 +1074,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CENTRIFUGE,
                 SoundResource.GTCEU_LOOP_CENTRIFUGE));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeMV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_centrifuge.hv.name
+        // #tr gt.blockmachines.gtneverreset.modern_centrifuge.tier.3.name
         // # Turbo Centrifuge
         // # zh_CN 涡轮离心机
         GTNRItemList.ModernCentrifugeHV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernCentrifugeHV.id,
                 "gtneverreset.modern_centrifuge.tier.3",
-                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.hv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_centrifuge.tier.3.name"),
                 VoltageIndex.HV,
                 GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
                 2,
@@ -1091,14 +1091,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CENTRIFUGE,
                 SoundResource.GTCEU_LOOP_CENTRIFUGE));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeHV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_centrifuge.ev.name
+        // #tr gt.blockmachines.gtneverreset.modern_centrifuge.tier.4.name
         // # Molecular Separator
         // # zh_CN 分子离心机
         GTNRItemList.ModernCentrifugeEV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernCentrifugeEV.id,
                 "gtneverreset.modern_centrifuge.tier.4",
-                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.ev.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_centrifuge.tier.4.name"),
                 VoltageIndex.EV,
                 GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
                 2,
@@ -1108,14 +1108,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CENTRIFUGE,
                 SoundResource.GTCEU_LOOP_CENTRIFUGE));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeEV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_centrifuge.iv.name
+        // #tr gt.blockmachines.gtneverreset.modern_centrifuge.tier.5.name
         // # Molecular Cyclone
         // # zh_CN 旋风分子离心机
         GTNRItemList.ModernCentrifugeIV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernCentrifugeIV.id,
                 "gtneverreset.modern_centrifuge.tier.5",
-                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.iv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_centrifuge.tier.5.name"),
                 VoltageIndex.IV,
                 GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
                 2,
@@ -1125,14 +1125,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CENTRIFUGE,
                 SoundResource.GTCEU_LOOP_CENTRIFUGE));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeIV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_centrifuge.luv.name
+        // #tr gt.blockmachines.gtneverreset.modern_centrifuge.tier.6.name
         // # Elite Centrifuge
         // # zh_CN 精英离心机
         GTNRItemList.ModernCentrifugeLuV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernCentrifugeLuV.id,
                 "gtneverreset.modern_centrifuge.tier.6",
-                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.luv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_centrifuge.tier.6.name"),
                 VoltageIndex.LuV,
                 GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
                 2,
@@ -1142,14 +1142,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CENTRIFUGE,
                 SoundResource.GTCEU_LOOP_CENTRIFUGE));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeLuV.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_centrifuge.zpm.name
+        // #tr gt.blockmachines.gtneverreset.modern_centrifuge.tier.7.name
         // # Elite Centrifuge II
         // # zh_CN 精英离心机 II
         GTNRItemList.ModernCentrifugeZPM.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernCentrifugeZPM.id,
                 "gtneverreset.modern_centrifuge.tier.7",
-                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.zpm.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_centrifuge.tier.7.name"),
                 VoltageIndex.ZPM,
                 GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
                 2,
@@ -1159,14 +1159,14 @@ public final class MachineLoader {
                 ModernMachineTextures.CENTRIFUGE,
                 SoundResource.GTCEU_LOOP_CENTRIFUGE));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.ModernCentrifugeZPM.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.machine.modern_centrifuge.uv.name
+        // #tr gt.blockmachines.gtneverreset.modern_centrifuge.tier.8.name
         // # Ultimate Molecular Tornado
         // # zh_CN 终极分子龙卷风
         GTNRItemList.ModernCentrifugeUV.set(
             new ModernFluidMachine(
                 GTNRMachineID.ModernCentrifugeUV.id,
                 "gtneverreset.modern_centrifuge.tier.8",
-                StatCollector.translateToLocal("gtnr.machine.modern_centrifuge.uv.name"),
+                StatCollector.translateToLocal("gt.blockmachines.gtneverreset.modern_centrifuge.tier.8.name"),
                 VoltageIndex.UV,
                 GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES,
                 2,

@@ -1,5 +1,8 @@
 package com.xyp.gtneverreset.common.block.blocks.tile;
 
+import static appeng.util.item.AEFluidStackType.FLUID_STACK_TYPE;
+import static appeng.util.item.AEItemStackType.ITEM_STACK_TYPE;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,6 +54,7 @@ import appeng.api.networking.events.MENetworkCraftingPatternChange;
 import appeng.api.networking.security.MachineSource;
 import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.storage.data.IAEItemStack;
+import appeng.api.storage.data.IAEStackType;
 import appeng.api.util.IInterfaceViewable;
 import appeng.container.ContainerNull;
 import appeng.helpers.ICustomNameObject;
@@ -255,6 +259,11 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     @Override
     public ItemStack getSelfRep() {
         return getVisualRepresentation();
+    }
+
+    @Override
+    public IAEStackType<?>[] getSupportedStackTypes() {
+        return new IAEStackType<?>[] { ITEM_STACK_TYPE, FLUID_STACK_TYPE };
     }
 
     @Override

@@ -41,7 +41,7 @@ tasks.register('checkModuleArtifacts', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
     mainClass = 'com.xyp.gtneverreset.ModuleArtifactContracts'
     args layout.buildDirectory.file("libs/gtneverreset-${project.version}.jar").get().asFile.absolutePath,
-        layout.buildDirectory.file("libs/gtnrlib-${project.version}.jar").get().asFile.absolutePath
+        layout.buildDirectory.file("libs/gtnrlib-${project(":gtnrlib").version}.jar").get().asFile.absolutePath
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
 }
 tasks.named('check') { dependsOn 'checkModuleArtifacts' }
@@ -477,7 +477,7 @@ tasks.named('collectLibraryArtifacts') {
         ['reobfJar', 'downgradeJar', 'sourcesJar'].collect { project(':gtnrlib').tasks.named(it) })
     def destination = layout.buildDirectory.dir('libs')
     inputs.files(archives)
-    outputs.files(["gtnrlib-${project.version}.jar", "gtnrlib-${project.version}-dev.jar", "gtnrlib-${project.version}-sources.jar"].collect { destination.get().file(it) })
+    outputs.files(["gtnrlib-${project(":gtnrlib").version}.jar", "gtnrlib-${project(":gtnrlib").version}-dev.jar", "gtnrlib-${project(":gtnrlib").version}-sources.jar"].collect { destination.get().file(it) })
     doLast {
         def directory = destination.get().asFile
         directory.mkdirs()
