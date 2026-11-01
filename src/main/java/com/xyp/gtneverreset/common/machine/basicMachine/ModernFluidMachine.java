@@ -41,7 +41,6 @@ import gregtech.api.util.GTRecipe;
 public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
 
     private static final int AUTO_OUTPUT_INTERVAL = 20;
-    private static final int AUTO_OUTPUT_AMOUNT = 1000;
     private static final int LEGACY_CHEMICAL_ITEM_SLOTS = 2;
 
     private final FluidStack[] inputFluids;
@@ -259,7 +258,7 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
         if (neighbor == null) return;
         ForgeDirection side = tile.getBackFacing();
         for (FluidStackTank tank : outputTanks) {
-            FluidStack available = tank.drain(AUTO_OUTPUT_AMOUNT, false);
+            FluidStack available = tank.drain(Integer.MAX_VALUE, false);
             if (available == null) continue;
             if (!tile.getCoverAtSide(tile.getFrontFacing())
                 .letsFluidOut(available.getFluid())) continue;
@@ -273,7 +272,7 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
 
     @Override
     public boolean doesAutoOutputFluids() {
-        // The base tick pumps only one tank; our loop pumps every output with the same limit.
+        // The base tick pumps only one tank; our loop fully drains every output as space allows.
         return !baseTick && super.doesAutoOutputFluids();
     }
 
