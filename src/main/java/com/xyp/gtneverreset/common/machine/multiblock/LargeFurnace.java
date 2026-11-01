@@ -24,8 +24,9 @@ import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.GTNRMultiBlockBase;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
-import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
+import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 import com.xyp.gtnrlib.mod.ModList;
 
 import gregtech.api.GregTechAPI;
@@ -48,6 +49,7 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
     private static final int BASE_THREADS = 6;
     private static final int CASING_TEXTURE_ID = 16;
     private static final String STRUCTURE_PIECE = "main";
+    private static final int STRUCTURE_OFFSET_X = 5, STRUCTURE_OFFSET_Y = 11, STRUCTURE_OFFSET_Z = 0;
     private static final IIconContainer FRONT = Textures.BlockIcons
         .custom(ModList.GTNeverReset.getResourceLocation(), "parallel/furnace_front");
     private static final IIconContainer ACTIVE = Textures.BlockIcons
@@ -76,7 +78,7 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
     public IStructureDefinition<LargeFurnace> getStructureDefinition() {
         if (definition == null) {
             var builder = StructureDefinition.<LargeFurnace>builder()
-                .addShape(STRUCTURE_PIECE, transpose(LargeFurnaceStructure.shape()))
+                .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load("large_furnace")))
                 .addElement(
                     'L',
                     ofChain(
@@ -104,13 +106,7 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
 
     @Override
     public void construct(ItemStack stack, boolean hintsOnly) {
-        buildPiece(
-            STRUCTURE_PIECE,
-            stack,
-            hintsOnly,
-            LargeFurnaceStructure.OFFSET_X,
-            LargeFurnaceStructure.OFFSET_Y,
-            LargeFurnaceStructure.OFFSET_Z);
+        buildPiece(STRUCTURE_PIECE, stack, hintsOnly, STRUCTURE_OFFSET_X, STRUCTURE_OFFSET_Y, STRUCTURE_OFFSET_Z);
     }
 
     @Override
@@ -119,9 +115,9 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
         return survivalBuildPiece(
             STRUCTURE_PIECE,
             stack,
-            LargeFurnaceStructure.OFFSET_X,
-            LargeFurnaceStructure.OFFSET_Y,
-            LargeFurnaceStructure.OFFSET_Z,
+            STRUCTURE_OFFSET_X,
+            STRUCTURE_OFFSET_Y,
+            STRUCTURE_OFFSET_Z,
             elementBudget,
             environment,
             false,
@@ -130,12 +126,7 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
 
     @Override
     protected void checkMachineStructure(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        checkPiece(
-            STRUCTURE_PIECE,
-            LargeFurnaceStructure.OFFSET_X,
-            LargeFurnaceStructure.OFFSET_Y,
-            LargeFurnaceStructure.OFFSET_Z,
-            errors);
+        checkPiece(STRUCTURE_PIECE, STRUCTURE_OFFSET_X, STRUCTURE_OFFSET_Y, STRUCTURE_OFFSET_Z, errors);
     }
 
     @Override

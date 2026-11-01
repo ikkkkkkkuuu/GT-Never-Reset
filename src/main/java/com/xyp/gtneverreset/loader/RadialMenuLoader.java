@@ -1,9 +1,12 @@
 package com.xyp.gtneverreset.loader;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.IResourceManager;
+import net.minecraft.client.resources.SimpleReloadableResourceManager;
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.common.MinecraftForge;
 
+import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.command.CommandRadialMenu;
 import com.xyp.gtneverreset.client.radialmenu.ActionTypes;
 import com.xyp.gtneverreset.client.radialmenu.RadialMenuInputHandler;
@@ -18,7 +21,7 @@ import com.xyp.gtneverreset.client.radialmenu.action.ToolBeltMenu;
 import com.xyp.gtneverreset.client.radialmenu.input.WheelKeyBindings;
 import com.xyp.gtneverreset.client.radialmenu.profile.ProfileManager;
 import com.xyp.gtneverreset.client.radialmenu.profile.ProfileStorage;
-import com.xyp.gtneverreset.client.radialmenu.render.IconResourceReloadHandler;
+import com.xyp.gtneverreset.client.radialmenu.render.IconRenderer;
 import com.xyp.gtneverreset.client.radialmenu.script.ChatCapture;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -43,7 +46,13 @@ public final class RadialMenuLoader {
     public static void init() {
         ProfileManager.load();
         ClientCommandHandler.instance.registerCommand(new CommandRadialMenu());
-        IconResourceReloadHandler.register();
+        IResourceManager resources = Minecraft.getMinecraft()
+            .getResourceManager();
+        if (resources instanceof SimpleReloadableResourceManager reloadable) {
+            reloadable.registerReloadListener(manager -> IconRenderer.reloadResources());
+        } else {
+            GTNeverReset.LOG.warn("resource manager is not reloadable; icon caches will not refresh on pack changes");
+        }
         RadialMenuInputHandler input = new RadialMenuInputHandler();
         MinecraftForge.EVENT_BUS.register(input);
         MinecraftForge.EVENT_BUS.register(new ChatCapture.Listener());

@@ -30,10 +30,10 @@ import com.xyp.gtneverreset.common.crafting.batch.CraftingBatchPlanner.MediumStr
 import com.xyp.gtneverreset.common.crafting.batch.CraftingBatchPlanner.SessionAllocation;
 import com.xyp.gtneverreset.common.crafting.batch.CraftingBatchPlanner.SessionSegment;
 import com.xyp.gtneverreset.common.crafting.batch.CraftingBatchPlannerImpl;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingCpuCluster;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
-import com.xyp.gtneverreset.utils.DireCraftingPatternDetails;
-import com.xyp.gtneverreset.utils.ECraftingCPUCluster;
+import com.xyp.gtneverreset.common.me.DireCraftingPatternDetails;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
@@ -46,7 +46,6 @@ import appeng.me.cache.CraftingGridCache;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.diagnostics.CraftingDiagnosticSessionId;
 
-/** Adapted AE crafting component; see reference/UPSTREAM_PORT_NOTES.md for provenance. */
 @Mixin(value = CraftingCPUCluster.class, remap = false)
 public abstract class MixinCraftingCPUCluster {
 
@@ -114,12 +113,12 @@ public abstract class MixinCraftingCPUCluster {
         long requestedCrafts = context.taskValue();
         if (physicalHatch) {
             requestedCrafts = CraftingBatchPlannerImpl.limitPhysicalInputs(requestedCrafts, expandedInputs);
-            if (!(cluster instanceof ECraftingCPUCluster)) {
+            if (!(cluster instanceof QuantumCraftingCpuCluster)) {
                 requestedCrafts = Math.min(requestedCrafts, this.remainingOperations);
             }
         }
-        boolean freeDispatch = cluster instanceof ECraftingCPUCluster || !physicalHatch;
-        BatchPlan plan = cluster instanceof ECraftingCPUCluster quantum && quantum.hasVariantBudget(details)
+        boolean freeDispatch = cluster instanceof QuantumCraftingCpuCluster || !physicalHatch;
+        BatchPlan plan = cluster instanceof QuantumCraftingCpuCluster quantum && quantum.hasVariantBudget(details)
             ? GTNR$BATCH_PLANNER.plan(
                 requestedCrafts,
                 context.mediumStrategy(),

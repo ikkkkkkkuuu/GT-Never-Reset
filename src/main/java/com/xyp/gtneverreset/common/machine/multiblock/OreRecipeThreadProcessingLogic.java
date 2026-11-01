@@ -7,8 +7,8 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.item.ItemStack;
 
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
-import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
 
 import gregtech.api.recipe.RecipeMap;
 import gregtech.api.recipe.check.CheckRecipeResult;

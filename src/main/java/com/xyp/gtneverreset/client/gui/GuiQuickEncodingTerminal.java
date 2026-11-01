@@ -52,6 +52,7 @@ import com.xyp.gtneverreset.common.packet.InterfacePatternTarget;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.RecipeTransferPayload;
 import com.xyp.gtneverreset.common.packet.StorageFluidRequest;
+import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
 import com.xyp.gtneverreset.compat.nei.NeiCraftingFluid;
 import com.xyp.gtneverreset.compat.nei.QuickTerminalRecipeTransferHandler;
 import com.xyp.gtneverreset.config.ClientConfig;
@@ -132,7 +133,7 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
     private static final int PATTERN_PROCESSING_GRID_Y = 11;
     private static final int PATTERN_PROCESSING_OUTPUT_GRID_Y = 106;
     private static final int PATTERN_VISIBLE_ROWS = 4;
-    private static final int PATTERN_SCROLL_MAX = RecipeTransferPayload.SLOT_COUNT / 4 - PATTERN_VISIBLE_ROWS;
+    private static final int PATTERN_SCROLL_MAX = DualTerminalGuiObject.PATTERN_SLOT_COUNT / 4 - PATTERN_VISIBLE_ROWS;
     private static final int PATTERN_SCROLL_X = PATTERN_PROCESSING_GRID_X + 73;
     private static final int PATTERN_CRAFTING_GRID_X = 24;
     private static final int PATTERN_CRAFTING_GRID_Y = 20;

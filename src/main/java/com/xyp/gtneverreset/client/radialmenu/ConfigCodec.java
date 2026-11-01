@@ -37,14 +37,14 @@ public final class ConfigCodec {
         return profile;
     }
 
-    public static String writeSettings(Settings settings) {
+    public static String writeSettings(RadialMenuSettings settings) {
         return GSON.toJson(settings);
     }
 
-    public static Settings readSettings(Reader reader) {
-        Settings settings = GSON.fromJson(reader, Settings.class);
+    public static RadialMenuSettings readSettings(Reader reader) {
+        RadialMenuSettings settings = GSON.fromJson(reader, RadialMenuSettings.class);
         if (settings == null) {
-            settings = new Settings();
+            settings = new RadialMenuSettings();
         }
         settings.normalize();
         return settings;

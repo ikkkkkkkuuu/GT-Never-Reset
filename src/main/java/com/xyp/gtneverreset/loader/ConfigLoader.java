@@ -17,11 +17,6 @@ public final class ConfigLoader implements IContentLoader {
     private static boolean migrateLegacyClientConfig;
 
     @Override
-    public String name() {
-        return "config";
-    }
-
-    @Override
     public void preInit(FMLPreInitializationEvent event) {
         register(event.getModConfigurationDirectory());
     }

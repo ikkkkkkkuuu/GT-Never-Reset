@@ -7,11 +7,6 @@ import com.xyp.gtneverreset.loader.machine.MultiblockLoader;
 public final class MachineLoader implements IContentLoader {
 
     @Override
-    public String name() {
-        return "machine";
-    }
-
-    @Override
     public void init() {
         registry();
     }

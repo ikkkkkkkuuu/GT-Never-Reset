@@ -251,6 +251,11 @@ public final class IconRenderer {
         return stack;
     }
 
+    public static void reloadResources() {
+        ATLAS.invalidate();
+        clearCache();
+    }
+
     public static void clearCache() {
         ITEM_CACHE.clear();
         FILE_ICONS.refresh();

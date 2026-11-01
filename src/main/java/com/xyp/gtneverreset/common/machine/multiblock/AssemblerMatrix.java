@@ -1,6 +1,5 @@
 package com.xyp.gtneverreset.common.machine.multiblock;
 
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +13,6 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
@@ -31,15 +29,17 @@ import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.gtnewhorizon.structurelib.structure.StructureUtility;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
+import com.xyp.gtneverreset.common.crafting.batch.AssemblerMatrixTasks;
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.AssemblerMatrixGui;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
-import com.xyp.gtneverreset.utils.DireCraftingPatternDetails;
+import com.xyp.gtneverreset.common.me.AssemblerMatrixPatternInventory;
+import com.xyp.gtneverreset.common.me.AssemblerMatrixPatternState;
+import com.xyp.gtneverreset.common.me.DireCraftingPatternDetails;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.Upgrades;
-import appeng.api.implementations.ICraftingPatternItem;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.ICraftingLink;
@@ -66,7 +66,6 @@ import appeng.me.helpers.AENetworkProxy;
 import appeng.me.helpers.IGridProxyable;
 import appeng.tile.inventory.IAEAppEngInventory;
 import appeng.tile.inventory.InvOperation;
-import appeng.util.item.AEItemStack;
 import gregtech.api.GregTechAPI;
 import gregtech.api.enums.Dyes;
 import gregtech.api.enums.HatchElement;
@@ -148,6 +147,7 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     @Getter
     private final AssemblerMatrixPatternInventory inventory = new AssemblerMatrixPatternInventory(this);
     private final AssemblerMatrixPatternState patternState = new AssemblerMatrixPatternState();
+    private final AssemblerMatrixTasks tasks = new AssemblerMatrixTasks();
 
     public final int mMaxSlots = PATTERN_CAPACITY;
     public String costingEUText = "0";
@@ -204,10 +204,7 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
         }
         // Queued products can outlive the one-shot recipe check (offline AE or full storage). Retry only while
         // actual work is waiting; never turn a manually disabled controller back on.
-        if (active && timer % 20 == 0
-            && mMaxProgresstime <= 0
-            && !patternState.getOutputs()
-                .isEmpty()) {
+        if (active && timer % 20 == 0 && mMaxProgresstime <= 0 && tasks.hasPending()) {
             scheduleRecipeCheck(RecipeCheckReason.IMMEDIATE);
         }
         if (!needsPatternSync || timer % 10 != 0 || !active) return;
@@ -263,7 +260,7 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
         boolean formed = checkPiece("main", 1, 1, 0, errors);
         getProxy().setValidSides(
             formed ? EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)) : EnumSet.noneOf(ForgeDirection.class));
-        if (formed) upPatterns();
+        if (formed) rebuildPatterns();
     }
 
     /**
@@ -277,25 +274,8 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
             || !isActive();
     }
 
-    public void upPatterns() {
-        patternState.clearPatternData();
-
-        for (var newStack : this.inventory) {
-            if (newStack.getItem() instanceof ICraftingPatternItem ic) {
-                var pattern = ic.getPatternForItem(
-                    newStack,
-                    this.getBaseMetaTileEntity()
-                        .getWorld());
-                if (pattern == null) continue;
-                if (pattern.isCraftable()) {
-                    pattern = new DireCraftingPatternDetails(pattern);
-                }
-                if (pattern instanceof DireCraftingPatternDetails d) {
-                    d.setMultiply(getPatternMultiply());
-                    patternState.addPattern(newStack, d);
-                }
-            }
-        }
+    public void rebuildPatterns() {
+        patternState.rebuild(inventory, getBaseMetaTileEntity().getWorld());
         needsPatternSync = true;
     }
 
@@ -314,23 +294,15 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
                 boolean updated = false;
 
                 for (ItemStack input : storedInputs) {
-                    if (!(input.getItem() instanceof ICraftingPatternItem i)) continue;
                     int slot = inventory.getFirstEmptySlot();
                     if (slot == -1) continue;
-                    var p = i.getPatternForItem(
-                        input,
-                        this.getBaseMetaTileEntity()
-                            .getWorld());
-                    if (p == null) continue;
-                    if (p.isCraftable()) {
-                        p = new DireCraftingPatternDetails(p);
-                    }
-                    if (!(p instanceof DireCraftingPatternDetails d)) continue;
+                    DireCraftingPatternDetails details = patternState
+                        .decodePattern(input, getBaseMetaTileEntity().getWorld());
+                    if (details == null) continue;
                     ItemStack pattern = input.copy();
                     pattern.stackSize = 1;
                     inventory.setInventorySlotContents(slot, pattern);
-                    d.setMultiply(getPatternMultiply());
-                    patternState.addPattern(pattern, d);
+                    patternState.addPattern(pattern, details);
                     input.stackSize--;
                     updated = true;
                     if (inventory.size() >= mMaxSlots) break;
@@ -350,75 +322,22 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
             lEUt = 0;
             return CheckRecipeResultRegistry.SUCCESSFUL;
         } else if (isActive() && machineMode == MODE_OPERATING) {
-            if (mMaxSlots > 0 && !patternState.getOutputs()
-                .isEmpty()) {
+            if (mMaxSlots > 0 && tasks.hasPending()) {
                 costingEUText = "0";
-                long parallel = mMaxParallelLong;
-
-                int maximum = patternState.getOutputs()
-                    .size();
-                usedParallel = 0L;
-
-                if (!patternState.getInputs()
-                    .isEmpty()) {
+                if (tasks.hasReturns()) {
                     var grid = getProxy().getNode()
                         .getGrid();
-
                     IStorageGrid storageGrid = grid.getCache(IStorageGrid.class);
                     var storage = storageGrid.getItemInventory();
-                    final var s = patternState.getInputs()
-                        .size();
-                    for (int i = 0; i < s; i++) {
-                        var in = patternState.getInputs()
-                            .poll();
-                        if (in == null) continue;
-                        var leftover = storage.injectItems(in, Actionable.MODULATE, source);
-                        if (leftover != null) patternState.getInputs()
-                            .add(leftover);
-                    }
+                    tasks.sendReturns(stack -> storage.injectItems(stack, Actionable.MODULATE, source));
                 }
-
-                List<IAEItemStack> preparedOutputs = new ObjectArrayList<>(maximum);
-
-                IAEItemStack stack;
-                while (parallel > 0 && (stack = patternState.getOutputs()
-                    .poll()) != null) {
-                    long stackSize = stack.getStackSize();
-                    if (stackSize <= parallel) {
-                        parallel -= stackSize;
-                        usedParallel += stackSize;
-
-                        preparedOutputs.add(stack);
-                    } else {
-                        long remain = stackSize - parallel;
-                        usedParallel += parallel;
-                        stack.decStackSize(parallel);
-                        preparedOutputs.add(
-                            stack.copy()
-                                .setStackSize(parallel));
-
-                        if (remain > 0) {
-                            var remainStack = stack.copy();
-                            remainStack.setStackSize(remain);
-                            patternState.getOutputs()
-                                .add(remainStack);
-                        }
-
-                        parallel = 0;
-                    }
-
-                    if (patternState.getOutputs()
-                        .isEmpty() || --maximum == 0) break;
-                }
-
-                if (!preparedOutputs.isEmpty()) {
-                    this.lEUt = 0;
+                usedParallel = tasks.takeBatch(mMaxParallelLong);
+                if (tasks.hasBatch()) {
+                    lEUt = 0;
                     recipesDone += usedParallel;
-
-                    patternState.setCachedOutputItems(preparedOutputs.toArray(new IAEItemStack[0]));
-                    this.mEfficiency = 10000;
-                    this.mEfficiencyIncrease = 10000;
-                    this.mMaxProgresstime = 1;
+                    mEfficiency = 10000;
+                    mEfficiencyIncrease = 10000;
+                    mMaxProgresstime = 1;
                     return CheckRecipeResultRegistry.SUCCESSFUL;
                 }
             }
@@ -430,26 +349,13 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     @Override
     public void outputAfterRecipe() {
         super.outputAfterRecipe();
-        if (patternState.getCachedOutputItems() == null) return;
-        for (IAEItemStack stack : patternState.getCachedOutputItems()) {
-            if (stack != null) patternState.getOutputs()
-                .add(stack);
-        }
-        patternState.setCachedOutputItems(new IAEItemStack[0]);
+        tasks.requeueBatch();
         usedParallel = 0;
         if (!getProxy().isActive()) return;
         try {
             var storage = getProxy().getStorage()
                 .getItemInventory();
-            int count = patternState.getOutputs()
-                .size();
-            while (count-- > 0) {
-                IAEItemStack stack = patternState.getOutputs()
-                    .poll();
-                IAEItemStack remaining = storage.injectItems(stack, Actionable.MODULATE, source);
-                if (remaining != null) patternState.getOutputs()
-                    .add(remaining);
-            }
+            tasks.sendPending(stack -> storage.injectItems(stack, Actionable.MODULATE, source));
         } catch (GridAccessException ignored) {
             // Keep queued products until the network returns.
         }
@@ -458,13 +364,7 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
 
     @Override
     public void stopMachine(@NotNull ShutDownReason reason) {
-        if (patternState.getCachedOutputItems() != null) {
-            for (IAEItemStack stack : patternState.getCachedOutputItems()) {
-                if (stack != null) patternState.getOutputs()
-                    .add(stack);
-            }
-        }
-        patternState.setCachedOutputItems(new IAEItemStack[0]);
+        tasks.requeueBatch();
         usedParallel = 0;
         super.stopMachine(reason);
         markDirty();
@@ -549,7 +449,7 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     public void onChangeInventory(IInventory inv, int slot, InvOperation operation, ItemStack removedStack,
         ItemStack newStack) {
         inventory.markDirty();
-        if (patternState.onPatternInventoryChanged(this, removedStack, newStack)) {
+        if (patternState.onPatternInventoryChanged(getBaseMetaTileEntity().getWorld(), removedStack, newStack)) {
             needsPatternSync = true;
         }
     }
@@ -557,7 +457,7 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     @Override
     public boolean pushPattern(ICraftingPatternDetails patternDetails, InventoryCrafting table) {
         if (isBusy()) return false;
-        boolean accepted = patternState.pushPattern(patternDetails, table);
+        boolean accepted = tasks.pushPattern(patternDetails, table, AssemblerMatrix::resolveContainerItem);
         if (accepted) {
             markDirty();
             scheduleRecipeCheck(RecipeCheckReason.IMMEDIATE);
@@ -930,7 +830,7 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     public void setPatternMultiply(int patternMultiply) {
         patternState.setPatternMultiply(patternMultiply);
         if (getBaseMetaTileEntity() != null && getBaseMetaTileEntity().isServerSide()) {
-            upPatterns();
+            rebuildPatterns();
             markDirty();
         }
     }
@@ -940,15 +840,11 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     }
 
     public List<IAEItemStack> getCachedPatternOutputsForGui() {
-        IAEItemStack[] cachedOutputItems = patternState.getCachedOutputItems();
-        if (cachedOutputItems == null || cachedOutputItems.length == 0) {
-            return Collections.emptyList();
-        }
-        return ObjectArrayList.wrap(cachedOutputItems);
+        return tasks.batchView();
     }
 
     public void setCachedPatternOutputsFromGui(List<IAEItemStack> cachedOutputItems) {
-        patternState.setCachedOutputItems(cachedOutputItems.toArray(new IAEItemStack[0]));
+        tasks.mirrorBatch(cachedOutputItems);
     }
 
     public String getGuiCustomName() {
@@ -991,52 +887,12 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
         saveInvData(aNBT, false);
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void saveInvData(NBTTagCompound aNBT, boolean external) {
         NBTTagCompound storeRoot = new NBTTagCompound();
-
-        NBTTagList cachedList = new NBTTagList();
-        if (patternState.getCachedOutputItems() != null) {
-            for (IAEItemStack item : patternState.getCachedOutputItems()) {
-                if (item != null) {
-                    NBTTagCompound tag = new NBTTagCompound();
-                    item.writeToNBT(tag);
-                    cachedList.appendTag(tag);
-                }
-            }
-        }
-        storeRoot.setTag("CACHED_OUTPUT_ITEMS", cachedList);
-
-        NBTTagList outputList = new NBTTagList();
-        if (!patternState.getOutputs()
-            .isEmpty()) {
-            for (IAEItemStack stack : patternState.getOutputs()) {
-                if (stack != null) {
-                    NBTTagCompound tag = new NBTTagCompound();
-                    stack.writeToNBT(tag);
-                    outputList.appendTag(tag);
-                }
-            }
-        }
-        storeRoot.setTag("OUTPUT_ITEMS", outputList);
-
-        NBTTagList inputList = new NBTTagList();
-        if (!patternState.getInputs()
-            .isEmpty()) {
-            for (IAEItemStack stack : patternState.getInputs()) {
-                if (stack != null) {
-                    NBTTagCompound tag = new NBTTagCompound();
-                    stack.writeToNBT(tag);
-                    inputList.appendTag(tag);
-                }
-            }
-        }
-        storeRoot.setTag("INPUT_ITEMS", inputList);
-
+        tasks.writeToNBT(storeRoot);
         NBTTagCompound invTag = new NBTTagCompound();
         inventory.saveNBTData(invTag);
         storeRoot.setTag("INVENTORY", invTag);
-
         aNBT.setTag("CrafterInv", storeRoot);
     }
 
@@ -1044,7 +900,7 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     public void loadNBTData(NBTTagCompound aNBT) {
         super.loadNBTData(aNBT);
         needsPatternSync = true;
-        patternState.clearRuntimeData();
+        tasks.clear();
         setPatternMultiply(aNBT.getInteger("patternMultiply"));
         usedParallel = aNBT.getLong("usedParallel");
         wirelessMode = false;
@@ -1052,40 +908,9 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
         recipesDone = aNBT.getLong("recipesDone");
         if (aNBT.hasKey("customName")) customName = aNBT.getString("customName");
 
-        NBTTagCompound storeRoot = null;
-
-        if (storeRoot == null && aNBT.hasKey("CrafterInv")) {
-            storeRoot = aNBT.getCompoundTag("CrafterInv");
-        }
-
-        if (storeRoot != null) {
-            NBTTagList cachedList = storeRoot.getTagList("CACHED_OUTPUT_ITEMS", 10);
-            if (cachedList != null && cachedList.tagCount() > 0) {
-                IAEItemStack[] cachedOutputItems = new IAEItemStack[cachedList.tagCount()];
-                for (int i = 0; i < cachedList.tagCount(); i++) {
-                    cachedOutputItems[i] = AEItemStack.loadItemStackFromNBT(cachedList.getCompoundTagAt(i));
-                }
-                patternState.setCachedOutputItems(cachedOutputItems);
-            }
-
-            NBTTagList outputList = storeRoot.getTagList("OUTPUT_ITEMS", 10);
-            if (outputList != null && outputList.tagCount() > 0) {
-                for (int i = 0; i < outputList.tagCount(); i++) {
-                    IAEItemStack aeStack = AEItemStack.loadItemStackFromNBT(outputList.getCompoundTagAt(i));
-                    if (aeStack != null) patternState.getOutputs()
-                        .add(aeStack);
-                }
-            }
-
-            NBTTagList inputList = storeRoot.getTagList("INPUT_ITEMS", 10);
-            if (inputList != null && inputList.tagCount() > 0) {
-                for (int i = 0; i < inputList.tagCount(); i++) {
-                    IAEItemStack aeStack = AEItemStack.loadItemStackFromNBT(inputList.getCompoundTagAt(i));
-                    if (aeStack != null) patternState.getInputs()
-                        .add(aeStack);
-                }
-            }
-
+        if (aNBT.hasKey("CrafterInv")) {
+            NBTTagCompound storeRoot = aNBT.getCompoundTag("CrafterInv");
+            tasks.readFromNBT(storeRoot);
             if (storeRoot.hasKey("INVENTORY")) {
                 inventory.loadNBTData(storeRoot.getCompoundTag("INVENTORY"));
             }

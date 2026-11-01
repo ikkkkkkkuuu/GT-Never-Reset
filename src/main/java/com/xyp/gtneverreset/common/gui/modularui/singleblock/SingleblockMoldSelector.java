@@ -14,8 +14,8 @@ import com.cleanroommc.modularui.value.sync.IntSyncValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.layout.Grid;
-import com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineMolds;
 import com.xyp.gtneverreset.common.me.MoldDataManager;
+import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineMolds;
 
 import gregtech.api.metatileentity.implementations.MTEBasicMachine;
 import gregtech.api.modularui2.GTGuiTextures;

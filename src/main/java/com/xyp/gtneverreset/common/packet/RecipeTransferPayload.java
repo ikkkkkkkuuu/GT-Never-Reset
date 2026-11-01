@@ -5,6 +5,8 @@ import java.io.IOException;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
+import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
+
 import appeng.api.storage.data.IAEStack;
 import appeng.container.sync.StreamCodec;
 import appeng.container.sync.StreamCodecs;
@@ -19,7 +21,7 @@ import lombok.Getter;
  */
 public final class RecipeTransferPayload {
 
-    public static final int SLOT_COUNT = 256;
+    public static final int SLOT_COUNT = DualTerminalGuiObject.PATTERN_SLOT_COUNT;
     public static final StreamCodec<RecipeTransferPayload> CODEC = StreamCodecs.of(
         "com.xyp.gtneverreset.common.packet.terminal.RecipeTransferPayload",
         RecipeTransferPayload::write,

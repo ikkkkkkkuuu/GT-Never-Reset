@@ -1,11 +1,10 @@
 package com.xyp.gtneverreset.loader;
 
 import com.xyp.gtneverreset.common.recipe.CraftingTableRecipes;
+import com.xyp.gtneverreset.common.recipe.FurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.AssemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.BenderRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.ExtruderRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.FurnaceRecipes;
-import com.xyp.gtneverreset.common.recipe.gregtech.MixerRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernNonCellRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.OreProcessingRecipes;
@@ -16,11 +15,6 @@ import gregtech.api.GregTechAPI;
 import gregtech.api.enums.Mods;
 
 public final class RecipeLoader implements IContentLoader {
-
-    @Override
-    public String name() {
-        return "recipe";
-    }
 
     @Override
     public void preInit(FMLPreInitializationEvent event) {
@@ -46,7 +40,6 @@ public final class RecipeLoader implements IContentLoader {
         BenderRecipes.register();
         FurnaceRecipes.register();
         OreProcessingRecipes.register();
-        MixerRecipes.register();
     }
 
     public static void registerLateRecipes() {

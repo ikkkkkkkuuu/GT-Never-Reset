@@ -77,11 +77,6 @@ public final class ItemLoader {
     public static final class Card implements IContentLoader {
 
         @Override
-        public String name() {
-            return "item";
-        }
-
-        @Override
         public void preInit(cpw.mods.fml.common.event.FMLPreInitializationEvent event) {
             ItemLoader.registerItems();
         }

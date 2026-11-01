@@ -9,8 +9,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.xyp.gtneverreset.api.mixinHelper.QuantumComputerCpuStatus;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingCpuCluster;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
-import com.xyp.gtneverreset.utils.ECraftingCPUCluster;
 
 import appeng.api.networking.crafting.ICraftingCPU;
 import appeng.container.implementations.CraftingCPUStatus;
@@ -23,7 +23,7 @@ public class MixinCraftingCPUStatus implements QuantumComputerCpuStatus {
 
     @Inject(method = "<init>(Lappeng/api/networking/crafting/ICraftingCPU;I)V", at = @At("RETURN"), require = 1)
     private void injectInit(final ICraftingCPU cluster, final int serial, final CallbackInfo ci) {
-        if (!(cluster instanceof ECraftingCPUCluster eCluster)) {
+        if (!(cluster instanceof QuantumCraftingCpuCluster eCluster)) {
             return;
         }
 

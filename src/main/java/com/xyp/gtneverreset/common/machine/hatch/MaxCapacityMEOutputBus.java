@@ -185,7 +185,7 @@ public class MaxCapacityMEOutputBus extends MTEHatchOutputBusME {
     }
 
     private void forceMaxCapacity() {
-        MaxCapacityMEOutputCapacity.forceMaxCapacity(getProvider());
+        MEOutputCapacityOverride.forceMaxCapacity(getProvider());
     }
 
     private static String[] getLocalizedDescription() {

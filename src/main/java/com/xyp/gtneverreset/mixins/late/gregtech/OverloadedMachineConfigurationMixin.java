@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration;
-import com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineMolds;
+import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineMolds;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEBasicMachine;
@@ -64,6 +64,11 @@ public abstract class OverloadedMachineConfigurationMixin implements OverloadedM
     @Override
     public void gtnr$setProvider(int x, int y, int z) {
         gtnr$provider = new int[] { x, y, z };
+    }
+
+    @Override
+    public boolean gtnr$isProvider(int x, int y, int z) {
+        return gtnr$provider != null && gtnr$provider[0] == x && gtnr$provider[1] == y && gtnr$provider[2] == z;
     }
 
     @Inject(method = "saveNBTData", at = @At("TAIL"))

@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.radialmenu.Profile;
-import com.xyp.gtneverreset.client.radialmenu.Settings;
+import com.xyp.gtneverreset.client.radialmenu.RadialMenuSettings;
 import com.xyp.gtneverreset.client.radialmenu.action.ToolBeltMenu;
 
 import cpw.mods.fml.relauncher.Side;
@@ -13,7 +13,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class ProfileManager {
 
-    private static Settings settings = new Settings();
+    private static RadialMenuSettings settings = new RadialMenuSettings();
 
     private static Profile active;
 

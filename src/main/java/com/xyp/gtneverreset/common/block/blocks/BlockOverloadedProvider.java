@@ -1,10 +1,13 @@
 package com.xyp.gtneverreset.common.block.blocks;
 
+import java.util.Random;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
@@ -44,7 +47,14 @@ public final class BlockOverloadedProvider extends Block {
         if (!world.isRemote && placer instanceof EntityPlayer player
             && world.getTileEntity(x, y, z) instanceof TileEntityOverloadedProvider tile) {
             tile.setOwnerName(player.getCommandSenderName());
+            tile.restoreRecovery(stack);
         }
+    }
+
+    @Override
+    public Item getItemDropped(int metadata, Random random, int fortune) {
+        // The tile drops the provider together with its persistent recovery payload.
+        return null;
     }
 
     @Override

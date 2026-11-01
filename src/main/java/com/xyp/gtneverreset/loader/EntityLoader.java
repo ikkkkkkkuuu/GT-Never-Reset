@@ -8,11 +8,6 @@ import cpw.mods.fml.common.registry.EntityRegistry;
 public final class EntityLoader implements IContentLoader {
 
     @Override
-    public String name() {
-        return "entity";
-    }
-
-    @Override
     public void preInit(cpw.mods.fml.common.event.FMLPreInitializationEvent event) {
         registerEntities();
     }

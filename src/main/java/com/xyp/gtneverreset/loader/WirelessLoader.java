@@ -14,11 +14,6 @@ import cpw.mods.fml.common.event.FMLServerStartingEvent;
 public final class WirelessLoader implements IContentLoader {
 
     @Override
-    public String name() {
-        return "wireless";
-    }
-
-    @Override
     public void init() {
         var eventBus = FMLCommonHandler.instance()
             .bus();

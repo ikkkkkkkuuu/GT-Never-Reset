@@ -29,6 +29,8 @@ import appeng.util.item.AEItemStack;
 
 public final class DualTerminalGuiObject extends WirelessPatternTerminalGuiObject implements IInterfaceTerminal {
 
+    public static final int PATTERN_SLOT_COUNT = 256;
+
     // AE2 uses mode 2 for its paged processing terminal. GTNL resizes and truncates that mode's inventories;
     // this terminal owns two independent 256-slot grids but retains AE2's non-crafting "pattern_ex" storage.
     private static final int QUICK_TERMINAL_MODE = 3;

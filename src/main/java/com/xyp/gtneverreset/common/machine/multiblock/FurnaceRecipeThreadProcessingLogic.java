@@ -6,7 +6,7 @@ import java.util.stream.Stream;
 
 import net.minecraft.item.ItemStack;
 
-import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
 
 import gregtech.api.recipe.RecipeMap;
 import gregtech.api.recipe.RecipeMaps;

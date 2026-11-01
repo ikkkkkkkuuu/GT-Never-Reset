@@ -23,10 +23,10 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.api.mixinHelper.LargeInventoryCrafting;
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
-import com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineBuffer;
-import com.xyp.gtneverreset.common.block.blocks.tile.OverloadedMachineInput;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
+import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineBuffer;
+import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineInput;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import appeng.api.AEApi;
@@ -170,6 +170,7 @@ public final class OverloadedGtCraftingChecks {
                 verifyBatchDistribution();
                 verifyFluidCommit(world);
                 verifyPreviousFluidReturn(world);
+                verifyRecoveryAndByproducts(world);
                 require(
                     provider.getProxy()
                         .isActive(),
@@ -440,6 +441,76 @@ public final class OverloadedGtCraftingChecks {
         table.setInventorySlotContents(0, AEItemStack.create(new ItemStack(Blocks.cobblestone, items)));
         ((LargeInventoryCrafting) table).setAssemblerSize(crafts);
         return table;
+    }
+
+    private void verifyRecoveryAndByproducts(World world) throws Exception {
+        BaseMetaTileEntity target = benders[0];
+        MTEBasicMachine machine = (MTEBasicMachine) target.getMetaTileEntity();
+        var configuration = (com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration) machine;
+        require(!configuration.gtnr$hasPending(), "recovery fixture starts without another delivery");
+        NBTTagCompound lane = new PackagedTarget(
+            world.provider.dimensionId,
+            target.xCoord,
+            target.yCoord,
+            target.zCoord,
+            ForgeDirection.UP.ordinal()).write();
+        OverloadedMachineBuffer buffer = new OverloadedMachineBuffer();
+        buffer.replace(List.of(new ItemStack(Items.iron_ingot, 1000000)), List.of(), ForgeDirection.UP);
+        buffer.writeToNBT(lane);
+        NBTTagList targets = new NBTTagList();
+        targets.appendTag(lane);
+        NBTTagCompound saved = new NBTTagCompound();
+        saved.setTag("Targets", targets);
+        TileEntityOverloadedProvider restored = new TileEntityOverloadedProvider();
+        restored.readFromNBT(saved);
+        restored.setWorldObj(world);
+        var service = TileEntityOverloadedProvider.class
+            .getDeclaredMethod("service", TileEntityOverloadedProvider.Lane.class);
+        service.setAccessible(true);
+        int outputSlot = machine.getOutputSlot();
+        ItemStack previous = machine.getStackInSlot(outputSlot);
+        try {
+            target.setInventorySlotContents(outputSlot, new ItemStack(Items.apple, 3));
+            service.invoke(
+                restored,
+                restored.connections()
+                    .get(0));
+            require(
+                restored.connections()
+                    .get(0)
+                    .pendingKinds() == 0,
+                "replacement machine releases stranded buffer");
+            require(machine.getStackInSlot(outputSlot) == null, "unadvertised item byproduct is collected");
+            require(
+                restored.getStackInSlot(TileEntityOverloadedProvider.PATTERNS).stackSize == 3,
+                "offline byproduct is retained exactly once");
+            ItemStack drop = restored.takeDrops()
+                .stream()
+                .filter(
+                    stack -> stack.hasTagCompound() && stack.getTagCompound()
+                        .hasKey("OverloadedRecovery"))
+                .findFirst()
+                .orElseThrow();
+            require(drop.stackSize == 1, "large recovery uses a single legal provider stack");
+            ItemStack reloadedDrop = ItemStack.loadItemStackFromNBT(drop.writeToNBT(new NBTTagCompound()));
+            TileEntityOverloadedProvider placed = new TileEntityOverloadedProvider();
+            placed.setWorldObj(world);
+            placed.restoreRecovery(reloadedDrop);
+            NBTTagCompound persisted = new NBTTagCompound();
+            placed.writeToNBT(persisted);
+            require(
+                persisted.getTagList("RecoveredItems", 10)
+                    .getCompoundTagAt(0)
+                    .getInteger("Amount") == 1000000,
+                "breaking, item persistence and placement preserve the complete recovery quantity");
+            require(
+                restored.unlink(
+                    restored.connections()
+                        .get(0).target),
+                "recovered lane can unlink");
+        } finally {
+            target.setInventorySlotContents(outputSlot, previous);
+        }
     }
 
     private void verifyPreviousFluidReturn(World world) throws Exception {

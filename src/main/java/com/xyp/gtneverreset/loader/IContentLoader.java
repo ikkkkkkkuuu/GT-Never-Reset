@@ -9,8 +9,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 public interface IContentLoader {
 
-    String name();
-
     default void preInit(FMLPreInitializationEvent event) {}
 
     default void init() {}

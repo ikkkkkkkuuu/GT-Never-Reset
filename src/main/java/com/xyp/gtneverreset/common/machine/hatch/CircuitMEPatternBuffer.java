@@ -1,7 +1,7 @@
 package com.xyp.gtneverreset.common.machine.hatch;
 
-import static com.xyp.gtneverreset.common.machine.hatch.WildcardPatternSlotSuper.KEY_ACTIVE_PATTERN;
-import static com.xyp.gtneverreset.common.machine.hatch.WildcardPatternSlotSuper.KEY_ACTIVE_PATTERN_ID;
+import static com.xyp.gtneverreset.common.me.wildcard.WildcardPatternSlotState.KEY_ACTIVE_PATTERN;
+import static com.xyp.gtneverreset.common.me.wildcard.WildcardPatternSlotState.KEY_ACTIVE_PATTERN_ID;
 
 import java.util.ArrayList;
 import java.util.Collections;

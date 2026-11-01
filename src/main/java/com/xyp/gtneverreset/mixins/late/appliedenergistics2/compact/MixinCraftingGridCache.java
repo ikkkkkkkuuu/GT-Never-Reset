@@ -18,10 +18,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingCpuCluster;
 import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingJob;
 import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingMode;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
-import com.xyp.gtneverreset.utils.ECraftingCPUCluster;
 
 import appeng.api.config.CraftingMode;
 import appeng.api.networking.IGrid;
@@ -37,7 +37,6 @@ import appeng.crafting.CraftingLink;
 import appeng.me.cache.CraftingGridCache;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 
-/** Adapted AE crafting component; see reference/UPSTREAM_PORT_NOTES.md for provenance. */
 @Mixin(value = CraftingGridCache.class, remap = false)
 public abstract class MixinCraftingGridCache {
 
@@ -77,7 +76,7 @@ public abstract class MixinCraftingGridCache {
     private ICraftingLink gtnr$registerNextVirtualCPU(CraftingCPUCluster cpu, IGrid grid, ICraftingJob job,
         BaseActionSource source, ICraftingRequester requester, Operation<ICraftingLink> original) {
         ICraftingLink link = original.call(cpu, grid, job, source, requester);
-        if (link != null && cpu instanceof ECraftingCPUCluster virtualCpu) {
+        if (link != null && cpu instanceof QuantumCraftingCpuCluster virtualCpu) {
             QuantumComputer owner = virtualCpu.getVirtualCPUOwner();
             if (owner != null && owner.virtualCPU != null) craftingCPUClusters.add(owner.virtualCPU);
         }
@@ -94,7 +93,7 @@ public abstract class MixinCraftingGridCache {
         original.call(candidates, comparator);
         for (int index = 0; index < candidates.size(); index++) {
             CraftingCPUCluster candidate = candidates.get(index);
-            if (candidate instanceof ECraftingCPUCluster virtualCpu) {
+            if (candidate instanceof QuantumCraftingCpuCluster virtualCpu) {
                 QuantumComputer owner = virtualCpu.getVirtualCPUOwner();
                 if (owner != null && owner.isVirtualCPU(candidate)) {
                     candidates.remove(index);

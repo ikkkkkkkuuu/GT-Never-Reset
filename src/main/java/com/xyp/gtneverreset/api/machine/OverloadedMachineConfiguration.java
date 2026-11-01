@@ -15,4 +15,6 @@ public interface OverloadedMachineConfiguration {
     boolean gtnr$hasPending();
 
     void gtnr$setProvider(int x, int y, int z);
+
+    boolean gtnr$isProvider(int x, int y, int z);
 }

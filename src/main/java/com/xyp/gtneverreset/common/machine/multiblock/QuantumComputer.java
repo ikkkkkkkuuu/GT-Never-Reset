@@ -19,9 +19,9 @@ import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.gtnewhorizon.structurelib.structure.StructureUtility;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingCpuCluster;
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.QuantumComputerGui;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
-import com.xyp.gtneverreset.utils.ECraftingCPUCluster;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
@@ -69,7 +69,7 @@ import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
  * are reclaimed only after both item and native fluid inventories are empty. The AE grid remains responsible
  * for channels, while this controller and its dispatches consume no energy.
  *
- * @see ECraftingCPUCluster
+ * @see QuantumCraftingCpuCluster
  */
 @IMetaTileEntity.SkipGenerateDescription
 @IMetaTileEntity.SkipGenerateName
@@ -83,8 +83,8 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
     public int maximumParallel = Integer.MAX_VALUE;
     public boolean enabledSingularityCore = true;
     public String customName = "";
-    public ECraftingCPUCluster virtualCPU = null;
-    public final List<ECraftingCPUCluster> cpus = new ReferenceArrayList<>();
+    public QuantumCraftingCpuCluster virtualCPU = null;
+    public final List<QuantumCraftingCpuCluster> cpus = new ReferenceArrayList<>();
     private AENetworkProxy gridProxy;
 
     public long usedStorage = 0;
@@ -212,7 +212,7 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
         }
 
         WorldCoord pos = getWorldCoord();
-        virtualCPU = new ECraftingCPUCluster(pos, pos);
+        virtualCPU = new QuantumCraftingCpuCluster(pos, pos);
         virtualCPU.setVirtualCPUOwner(this);
         virtualCPU.setAvailableStorage(availableBytes);
         virtualCPU.setAccelerators(maximumParallel);
@@ -249,7 +249,7 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
         cpus.clear();
     }
 
-    public void onCPUDestroyed(final ECraftingCPUCluster cluster) {
+    public void onCPUDestroyed(final QuantumCraftingCpuCluster cluster) {
         cpus.remove(cluster);
         updateCPUNames();
         createVirtualCPU();
@@ -517,7 +517,7 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
             NBTTagCompound clusterTag = clustersTag.getCompoundTagAt(i);
 
             WorldCoord coord = getWorldCoord();
-            ECraftingCPUCluster cluster = new ECraftingCPUCluster(coord, coord);
+            QuantumCraftingCpuCluster cluster = new QuantumCraftingCpuCluster(coord, coord);
             cluster.setVirtualCPUOwner(this);
             cluster.setAvailableStorage(clusterTag.getLong("availableStorage"));
             cluster.readFromNBT(clusterTag);

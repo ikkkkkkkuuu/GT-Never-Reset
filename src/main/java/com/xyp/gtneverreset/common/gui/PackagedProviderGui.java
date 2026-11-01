@@ -39,11 +39,6 @@ import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.implementations.ICraftingPatternItem;
 
-/**
- * Layout adapted from AE2LTPP PackagedPatternProviderScreen/menu/style and AE2 UpgradesPanel.
- * Original authors and exact revisions are recorded in META-INF/ae2lt-port and reference/UPSTREAM_PORT_NOTES.md.
- * Original atlas pixels are retained with extra width for the pattern scrollbar.
- */
 public final class PackagedProviderGui {
 
     private static final UITexture FRAME_LEFT = texture("ex_pattern_provider", 256, 256, 0, 0, 169, 245);

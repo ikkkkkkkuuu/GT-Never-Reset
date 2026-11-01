@@ -101,11 +101,6 @@ public final class ClientLoader {
     public static final class Card implements IContentLoader {
 
         @Override
-        public String name() {
-            return "client";
-        }
-
-        @Override
         @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
         public void clientPreInit(File directory) {
             ClientLoader.preInit(directory);

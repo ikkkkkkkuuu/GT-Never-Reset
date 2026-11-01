@@ -19,7 +19,7 @@ import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.GTNRMultiBlockBase;
-import com.xyp.gtneverreset.utils.machine.RecipeThreadTask;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadTask;
 
 import gregtech.api.metatileentity.implementations.MTEExtendedPowerMultiBlockBase;
 import gregtech.api.modularui2.GTGuiTextures;

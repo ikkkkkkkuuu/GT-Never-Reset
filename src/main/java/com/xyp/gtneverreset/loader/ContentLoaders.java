@@ -97,7 +97,10 @@ public final class ContentLoaders {
             try {
                 action.accept(loader);
             } catch (RuntimeException failure) {
-                throw new IllegalStateException("content loader " + loader.name() + " failed in " + phase, failure);
+                throw new IllegalStateException(
+                    "content loader " + loader.getClass()
+                        .getName() + " failed in " + phase,
+                    failure);
             }
         }
     }

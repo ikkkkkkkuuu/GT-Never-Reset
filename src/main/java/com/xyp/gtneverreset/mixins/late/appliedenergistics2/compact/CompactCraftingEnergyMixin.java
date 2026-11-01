@@ -6,8 +6,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingCpuCluster;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
-import com.xyp.gtneverreset.utils.ECraftingCPUCluster;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
@@ -32,7 +32,7 @@ public abstract class CompactCraftingEnergyMixin {
         require = 2)
     private double gtnr$freeDispatch(IEnergyGrid grid, double amount, Actionable action, PowerMultiplier multiplier,
         Operation<Double> original, @Local(name = "medium") ICraftingMedium medium) {
-        return (Object) this instanceof ECraftingCPUCluster || medium instanceof AssemblerMatrix ? amount
+        return (Object) this instanceof QuantumCraftingCpuCluster || medium instanceof AssemblerMatrix ? amount
             : original.call(grid, amount, action, multiplier);
     }
 }

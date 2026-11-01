@@ -61,6 +61,7 @@ import com.xyp.gtneverreset.common.me.ChatComponentInterfaceNameSuffix;
 import com.xyp.gtneverreset.common.me.MoldDataManager;
 import com.xyp.gtneverreset.common.me.PatternMEOutput;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
+import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternSlotSuper;
 
 import appeng.api.AEApi;
 import appeng.api.implementations.ICraftingPatternItem;

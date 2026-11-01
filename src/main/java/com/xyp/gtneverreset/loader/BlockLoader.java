@@ -85,11 +85,6 @@ public final class BlockLoader {
     public static final class Card implements IContentLoader {
 
         @Override
-        public String name() {
-            return "block";
-        }
-
-        @Override
         public void preInit(cpw.mods.fml.common.event.FMLPreInitializationEvent event) {
             BlockLoader.registerBlocks();
         }

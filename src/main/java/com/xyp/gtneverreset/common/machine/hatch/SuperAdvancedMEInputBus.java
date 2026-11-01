@@ -1,5 +1,3 @@
-// Item transaction and GUI integration adapted from GT5-Unofficial 5.09.54.183 (LGPL-3.0).
-// See META-INF/super-storage-input-port/NOTICE.md.
 package com.xyp.gtneverreset.common.machine.hatch;
 
 import java.util.Arrays;

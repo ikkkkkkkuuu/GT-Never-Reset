@@ -12,11 +12,6 @@ import cpw.mods.fml.common.network.NetworkRegistry;
 public final class GuiLoader implements IContentLoader {
 
     @Override
-    public String name() {
-        return "gui";
-    }
-
-    @Override
     public void preInit(FMLPreInitializationEvent event) {
         NetworkRegistry.INSTANCE.registerGuiHandler(GTNeverReset.INSTANCE, new WirelessTerminalGuiHandler());
     }

@@ -1,4 +1,3 @@
-// Adapted from GT5-Unofficial 5.09.54.183, LGPL-3.0. See META-INF/super-storage-input-port/.
 package com.xyp.gtneverreset.common.gui.modularui.hatch;
 
 import static com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputBus.SLOT_COUNT;

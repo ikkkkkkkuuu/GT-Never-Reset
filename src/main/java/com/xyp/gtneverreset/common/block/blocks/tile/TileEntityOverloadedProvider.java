@@ -38,6 +38,10 @@ import com.xyp.gtneverreset.api.packaged.PackagedTarget;
 import com.xyp.gtneverreset.common.gui.OverloadedProviderGui;
 import com.xyp.gtneverreset.common.machine.basicMachine.ModernFluidMachine;
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
+import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineBuffer;
+import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineInput;
+import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineRecipeMatcher;
+import com.xyp.gtneverreset.common.me.overloaded.OverloadedProviderInventory;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternCache;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -77,7 +81,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     public static final int MAX_TARGETS = 1024;
     public static final int RANGE = 128;
     private static final int LEGACY_PATTERNS = 36;
-    private static final int WORK_PER_TICK = 8;
+    private static final int SERVICE_INTERVAL = 5;
     private final ItemStack[] inventory = new ItemStack[PATTERNS + 9];
     private final List<Lane> lanes = new ArrayList<>();
     private final List<PackagedTarget> clientTargets = new ArrayList<>();
@@ -85,6 +89,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     private final Set<ICraftingPatternDetails> patterns = new LinkedHashSet<>();
     private final Map<Integer, WildcardPatternCache<List<ProviderPattern>>> patternCaches = new HashMap<>();
     private final List<FluidStack> returnedFluids = new ArrayList<>();
+    private final List<ItemStack> recoveredItems = new ArrayList<>();
     private boolean patternsDirty = true;
     private boolean autoReturn = true;
     private boolean roundRobin = true;
@@ -164,6 +169,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
         if (!isServerSide() || !getProxy().isActive()) return;
         for (Lane lane : lanes) if (lane.target.equals(target)) {
             service(lane);
+            flushReturn();
             break;
         }
     }
@@ -356,12 +362,16 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
                 patternsDirty = false;
             } catch (GridAccessException ignored) {}
         }
-        if (!getProxy().isActive() || worldObj.getTotalWorldTime() % 5 != 0) return;
+        if (!getProxy().isActive()) return;
         flushReturn();
-        for (int i = 0; i < Math.min(WORK_PER_TICK, lanes.size()); i++) {
+        for (int i = 0; i < serviceBudget(lanes.size()); i++) {
             service(lanes.get(Math.floorMod(workCursor++, lanes.size())));
+            flushReturn();
         }
-        flushReturn();
+    }
+
+    static int serviceBudget(int connections) {
+        return (connections + SERVICE_INTERVAL - 1) / SERVICE_INTERVAL;
     }
 
     @Override
@@ -387,7 +397,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
                     for (RecipeMap<?> map : recipeMaps) {
                         if (pattern.runtimeMaps.computeIfAbsent(
                             map,
-                            key -> !OverloadedMachineInput.patternConfigurations(key, pattern.runtime)
+                            key -> !OverloadedMachineRecipeMatcher.patternConfigurations(key, pattern.runtime)
                                 .isEmpty())) {
                             details = pattern.runtime;
                             break;
@@ -562,6 +572,19 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     }
 
     private void service(Lane lane) {
+        if (!lane.machineBuffer.isEmpty() && worldObj.getChunkProvider()
+            .chunkExists(lane.target.x >> 4, lane.target.z >> 4)) {
+            TileEntity resolved = lane.target.resolve(worldObj);
+            if (!(resolved instanceof BaseMetaTileEntity gt
+                && gt.getMetaTileEntity() instanceof OverloadedMachineConfiguration configuration
+                && configuration.gtnr$hasPending()
+                && configuration.gtnr$isProvider(xCoord, yCoord, zCoord))) {
+                recoveredItems.addAll(lane.machineBuffer.getItems());
+                returnedFluids.addAll(lane.machineBuffer.getFluids());
+                lane.machineBuffer.replace(Collections.emptyList(), Collections.emptyList(), ForgeDirection.UNKNOWN);
+                markDirty();
+            }
+        }
         if (!(lane.target.resolve(worldObj) instanceof IInventory target)) return;
         if (!lane.machineBuffer.isEmpty() && target instanceof BaseMetaTileEntity gt
             && gt.getMetaTileEntity() instanceof MTEBasicMachine machine
@@ -620,13 +643,18 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
         if (returnSlot == inventory.length) return;
         for (int slot = 0; slot < target.getSizeInventory(); slot++) {
             ItemStack stack = target.getStackInSlot(slot);
-            if (stack == null || !isOutput(lane, stack) || !OverloadedProviderInventory.canExtract(target, slot, stack))
-                continue;
+            boolean outputSlot = target instanceof BaseMetaTileEntity gt
+                && gt.getMetaTileEntity() instanceof MTEBasicMachine machine
+                    ? slot >= machine.getOutputSlot() && slot < machine.getOutputSlot() + machine.mOutputItems.length
+                    : isOutput(lane, stack);
+            if (stack == null || !outputSlot || !OverloadedProviderInventory.canExtract(target, slot, stack)) continue;
             inventory[returnSlot] = target.decrStackSize(slot, Math.min(stack.stackSize, stack.getMaxStackSize()));
             target.markDirty();
             markDirty();
-            flushReturn();
-            break;
+            do {
+                returnSlot++;
+            } while (returnSlot < inventory.length && inventory[returnSlot] != null);
+            if (returnSlot == inventory.length) break;
         }
     }
 
@@ -643,7 +671,21 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
 
     private void flushReturn() {
         try {
-            for (var iterator = returnedFluids.listIterator(); iterator.hasNext();) {
+            int recoveryBudget = 9;
+            for (var iterator = recoveredItems.listIterator(); iterator.hasNext() && recoveryBudget-- > 0;) {
+                ItemStack stack = iterator.next();
+                var remainder = Platform.poweredInsert(
+                    getProxy().getEnergy(),
+                    getProxy().getStorage()
+                        .getItemInventory(),
+                    AEItemStack.create(stack),
+                    new MachineSource(this));
+                if (remainder == null) iterator.remove();
+                else iterator.set(remainder.getItemStack());
+                if (remainder == null || remainder.getStackSize() != stack.stackSize) markDirty();
+            }
+            int fluidBudget = 9;
+            for (var iterator = returnedFluids.listIterator(); iterator.hasNext() && fluidBudget-- > 0;) {
                 FluidStack fluid = iterator.next();
                 var remainder = Platform.poweredInsert(
                     getProxy().getEnergy(),
@@ -653,10 +695,11 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
                     new MachineSource(this));
                 if (remainder == null) iterator.remove();
                 else iterator.set(remainder.getFluidStack());
-                markDirty();
+                if (remainder == null || remainder.getStackSize() != fluid.amount) markDirty();
             }
             for (int slot = PATTERNS; slot < inventory.length; slot++) {
                 if (inventory[slot] == null) continue;
+                int previousAmount = inventory[slot].stackSize;
                 var remainder = Platform.poweredInsert(
                     getProxy().getEnergy(),
                     getProxy().getStorage()
@@ -664,7 +707,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
                     AEItemStack.create(inventory[slot]),
                     new MachineSource(this));
                 inventory[slot] = remainder == null ? null : remainder.getItemStack();
-                markDirty();
+                if (remainder == null || remainder.getStackSize() != previousAmount) markDirty();
             }
         } catch (GridAccessException ignored) {}
     }
@@ -676,22 +719,39 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
             inventory[i] = null;
         }
         for (Lane lane : lanes) {
-            drops.addAll(lane.pending);
+            recoveredItems.addAll(lane.pending);
             lane.pending.clear();
             boolean hadPending = !lane.machineBuffer.isEmpty();
-            drops.addAll(lane.machineBuffer.getItems());
-            for (net.minecraftforge.fluids.FluidStack fluid : lane.machineBuffer.getFluids())
-                drops.add(com.glodblock.github.common.item.ItemFluidPacket.newStack(fluid));
+            recoveredItems.addAll(lane.machineBuffer.getItems());
+            returnedFluids.addAll(lane.machineBuffer.getFluids());
             lane.machineBuffer
                 .replace(java.util.Collections.emptyList(), java.util.Collections.emptyList(), ForgeDirection.UNKNOWN);
             if (hadPending && lane.target.resolve(worldObj) instanceof BaseMetaTileEntity gt
-                && gt.getMetaTileEntity() instanceof OverloadedMachineConfiguration configuration)
-                configuration.gtnr$setPending(false);
+                && gt.getMetaTileEntity() instanceof OverloadedMachineConfiguration configuration
+                && configuration.gtnr$isProvider(xCoord, yCoord, zCoord)) configuration.gtnr$setPending(false);
         }
-        for (FluidStack fluid : returnedFluids)
-            drops.add(com.glodblock.github.common.item.ItemFluidPacket.newStack(fluid));
+        ItemStack provider = getVisualRepresentation();
+        if (!recoveredItems.isEmpty() || !returnedFluids.isEmpty()) {
+            NBTTagCompound recovery = new NBTTagCompound();
+            recovery.setTag("Items", writeStacks(recoveredItems));
+            recovery.setTag("Fluids", writeFluids(returnedFluids));
+            NBTTagCompound itemTag = new NBTTagCompound();
+            itemTag.setTag("OverloadedRecovery", recovery);
+            provider.setTagCompound(itemTag);
+        }
+        drops.add(provider);
+        recoveredItems.clear();
         returnedFluids.clear();
         return drops;
+    }
+
+    public void restoreRecovery(ItemStack stack) {
+        if (!isServerSide() || !stack.hasTagCompound()) return;
+        NBTTagCompound recovery = stack.getTagCompound()
+            .getCompoundTag("OverloadedRecovery");
+        readStacks(recovery.getTagList("Items", 10), recoveredItems);
+        readFluids(recovery.getTagList("Fluids", 10), returnedFluids);
+        markDirty();
     }
 
     @Override
@@ -726,6 +786,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
         tag.setTag("Inventory", stacks);
         tag.setInteger("PatternSlots", PATTERNS);
         tag.setTag("ReturnedFluids", writeFluids(returnedFluids));
+        tag.setTag("RecoveredItems", writeStacks(recoveredItems));
         NBTTagList targets = new NBTTagList();
         for (Lane lane : lanes) {
             NBTTagCompound entry = lane.target.write();
@@ -749,6 +810,8 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
         patterns.clear();
         customName = tag.getString("CustomName");
         readFluids(tag.getTagList("ReturnedFluids", 10), returnedFluids);
+        recoveredItems.clear();
+        readStacks(tag.getTagList("RecoveredItems", 10), recoveredItems);
         java.util.Arrays.fill(inventory, null);
         NBTTagList stacks = tag.getTagList("Inventory", 10);
         int savedPatternSlots = tag.hasKey("PatternSlots") ? tag.getInteger("PatternSlots") : LEGACY_PATTERNS;

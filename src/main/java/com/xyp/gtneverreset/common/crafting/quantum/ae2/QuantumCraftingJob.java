@@ -19,7 +19,6 @@ import com.xyp.gtneverreset.common.crafting.quantum.api.stacks.KeyCounter;
 import com.xyp.gtneverreset.common.crafting.quantum.crafting.CraftingCalculation;
 import com.xyp.gtneverreset.common.crafting.quantum.crafting.CraftingCalculationFailure;
 import com.xyp.gtneverreset.common.crafting.quantum.crafting.CraftingPlan;
-import com.xyp.gtneverreset.utils.ECraftingCPUCluster;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.CraftingMode;
@@ -228,7 +227,8 @@ public final class QuantumCraftingJob<StackType extends IAEStack<StackType>>
     }
 
     public static boolean isQuantumCPU(ICraftingCPU cluster) {
-        return cluster instanceof ECraftingCPUCluster quantumCluster && quantumCluster.getVirtualCPUOwner() != null;
+        return cluster instanceof QuantumCraftingCpuCluster quantumCluster
+            && quantumCluster.getVirtualCPUOwner() != null;
     }
 
     @Override
@@ -264,7 +264,7 @@ public final class QuantumCraftingJob<StackType extends IAEStack<StackType>>
                 cluster.addEmitable(((StackKey) entry.getKey()).toStack(entry.getLongValue()));
             }
         }
-        if (cluster instanceof ECraftingCPUCluster quantumCluster && result.variantBudgets() != null) {
+        if (cluster instanceof QuantumCraftingCpuCluster quantumCluster && result.variantBudgets() != null) {
             for (Map.Entry<IPatternDetails, Map<AEKey, KeyCounter>> pattern : result.variantBudgets()
                 .entrySet()) {
                 for (Map.Entry<AEKey, KeyCounter> input : pattern.getValue()

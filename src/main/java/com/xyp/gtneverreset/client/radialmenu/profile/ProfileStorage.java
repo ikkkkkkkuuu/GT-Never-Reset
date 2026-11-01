@@ -16,7 +16,7 @@ import java.util.List;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.radialmenu.ConfigCodec;
 import com.xyp.gtneverreset.client.radialmenu.Profile;
-import com.xyp.gtneverreset.client.radialmenu.Settings;
+import com.xyp.gtneverreset.client.radialmenu.RadialMenuSettings;
 import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.relauncher.Side;
@@ -267,10 +267,10 @@ public final class ProfileStorage {
         return sanitize(a).equalsIgnoreCase(sanitize(b));
     }
 
-    public static Settings loadSettings() {
+    public static RadialMenuSettings loadSettings() {
         File file = new File(rootDir, SETTINGS_FILE);
         if (!file.isFile()) {
-            return new Settings();
+            return new RadialMenuSettings();
         }
         Reader reader = null;
         try {
@@ -278,13 +278,13 @@ public final class ProfileStorage {
             return ConfigCodec.readSettings(reader);
         } catch (Exception e) {
             GTNeverReset.LOG.error("Failed to read settings, falling back to defaults", e);
-            return new Settings();
+            return new RadialMenuSettings();
         } finally {
             close(reader);
         }
     }
 
-    public static void saveSettings(Settings settings) {
+    public static void saveSettings(RadialMenuSettings settings) {
         File target = new File(rootDir, SETTINGS_FILE);
         File temp = new File(rootDir, SETTINGS_FILE + ".tmp");
         Writer writer = null;

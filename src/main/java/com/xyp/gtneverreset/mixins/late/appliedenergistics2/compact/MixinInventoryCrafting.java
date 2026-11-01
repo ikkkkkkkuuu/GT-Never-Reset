@@ -8,7 +8,6 @@ import com.xyp.gtneverreset.api.mixinHelper.LargeInventoryCrafting;
 
 import appeng.util.inv.MEInventoryCrafting;
 
-/** Adapted AE crafting component; see reference/UPSTREAM_PORT_NOTES.md for provenance. */
 @Mixin(value = MEInventoryCrafting.class, remap = false)
 public class MixinInventoryCrafting implements LargeInventoryCrafting {
 

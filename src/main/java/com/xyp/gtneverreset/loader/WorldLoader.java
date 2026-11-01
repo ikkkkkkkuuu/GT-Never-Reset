@@ -11,11 +11,6 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 public final class WorldLoader implements IContentLoader {
 
     @Override
-    public String name() {
-        return "world";
-    }
-
-    @Override
     public void preInit(FMLPreInitializationEvent event) {
         FMLCommonHandler.instance()
             .bus()

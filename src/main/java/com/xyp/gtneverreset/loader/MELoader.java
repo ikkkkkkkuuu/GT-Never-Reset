@@ -13,11 +13,6 @@ import appeng.api.AEApi;
 public final class MELoader implements IContentLoader {
 
     @Override
-    public String name() {
-        return "me";
-    }
-
-    @Override
     public void postInit() {
         var interfaceTerminal = AEApi.instance()
             .registries()

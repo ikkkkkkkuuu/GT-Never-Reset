@@ -444,7 +444,7 @@ tasks.register('checkRecipeThreadInputPreflightContracts', JavaExec) {
     description = 'Checks ME energy rounding and real shortfalls for recipe input preflight.'
     dependsOn tasks.named('testClasses')
     classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.utils.machine.RecipeThreadInputPreflightContracts'
+    mainClass = 'com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadInputPreflightContracts'
 }
 
 tasks.named('check') { dependsOn 'checkRecipeThreadInputPreflightContracts' }
@@ -465,9 +465,15 @@ tasks.named('test', Test).configure {
 }
 
 tasks.withType(Jar).matching { it.name in ['jar', 'shadowJar'] }.configureEach {
+    // CI uploads build/libs/*.jar; keep pre-shadow and pre-downgrade inputs out of releases.
+    destinationDirectory.set(layout.buildDirectory.dir('intermediates/jars'))
     from('licenses/me-data-access') { into 'META-INF/licenses/me-data-access' }
     from('licenses/overloaded-provider') { into 'META-INF/licenses/overloaded-provider' }
     from('licenses/overloaded-singleblock') { into 'META-INF/licenses/overloaded-singleblock' }
+}
+
+tasks.named('reobfJar', org.gradle.jvm.tasks.Jar) {
+    destinationDirectory.set(layout.buildDirectory.dir('libs'))
 }
 
 // Configure the library after the root translation helpers have been defined.
@@ -495,3 +501,21 @@ tasks.named("processResources") {
 tasks.named("sourcesJar", Jar) {
     from("licenses/ports") { into "META-INF" }
 }
+
+tasks.register('checkAssemblerMatrixTaskContracts', JavaExec) {
+    group = 'verification'
+    dependsOn tasks.testClasses
+    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'com.xyp.gtneverreset.common.crafting.batch.AssemblerMatrixTaskContracts'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+}
+tasks.named('check') { dependsOn 'checkAssemblerMatrixTaskContracts' }
+
+tasks.register('checkWildcardPatternStateContracts', JavaExec) {
+    group = 'verification'
+    dependsOn tasks.testClasses
+    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
+    mainClass = 'com.xyp.gtneverreset.common.me.wildcard.WildcardPatternStateContracts'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+}
+tasks.named('check') { dependsOn 'checkWildcardPatternStateContracts' }

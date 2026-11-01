@@ -1,0 +1,81 @@
+Source notice consolidation — 2026-11-01
+
+Existing source and asset manifests under licenses/ports remain the historical
+port records. Their original paths and hashes describe the imported snapshot.
+The notices below were moved from Java sources; attribution is retained here.
+The old reference/UPSTREAM_PORT_NOTES.md link is obsolete. Refer instead to
+compact-ae-port/SOURCE_MANIFEST.json, ae2lt-port/SOURCE_MANIFEST.json,
+ae2lt-port/ASSET_MANIFEST.json and super-storage-input-port/NOTICE.md.
+
+src/main/java/com/xyp/gtneverreset/common/gui/modularui/hatch/SuperAdvancedMEInputBusGui.java
+// Adapted from GT5-Unofficial 5.09.54.183, LGPL-3.0. See META-INF/super-storage-input-port/.
+
+src/main/java/com/xyp/gtneverreset/common/gui/modularui/hatch/SuperAdvancedMEInputHatchGui.java
+// Adapted from GT5-Unofficial 5.09.54.183, LGPL-3.0. See META-INF/super-storage-input-port/.
+
+src/main/java/com/xyp/gtneverreset/common/gui/PackagedProviderGui.java
+/**
+ * Layout adapted from AE2LTPP PackagedPatternProviderScreen/menu/style and AE2 UpgradesPanel.
+ * Original authors and exact revisions are recorded in META-INF/ae2lt-port and reference/UPSTREAM_PORT_NOTES.md.
+ * Original atlas pixels are retained with extra width for the pattern scrollbar.
+ */
+
+src/main/java/com/xyp/gtneverreset/common/machine/hatch/SuperAdvancedMEInputBus.java
+// See META-INF/super-storage-input-port/NOTICE.md.
+// Item transaction and GUI integration adapted from GT5-Unofficial 5.09.54.183 (LGPL-3.0).
+
+src/main/java/com/xyp/gtneverreset/common/machine/hatch/SuperAdvancedMEInputHatch.java
+// See META-INF/super-storage-input-port/NOTICE.md.
+// Fluid transaction and GUI integration adapted from GT5-Unofficial 5.09.54.183 (LGPL-3.0).
+
+src/main/java/com/xyp/gtneverreset/common/me/AssemblerMatrixPatternState.java
+/** Adapted AE crafting component; see reference/UPSTREAM_PORT_NOTES.md for provenance. */
+
+src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/compact/AccessorSessionCraftCount.java
+/**
+ * Adapts one private AE diagnostics count segment to the planner's bulk-consumption contract without reflection.
+ *
+ * <p>
+ * Adapted AE crafting component; see reference/UPSTREAM_PORT_NOTES.md for provenance.
+ */
+
+src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/compact/AccessorTaskProgress.java
+/** Adapted AE crafting component; see reference/UPSTREAM_PORT_NOTES.md for provenance. */
+
+src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/compact/MixinCraftingCPUCluster.java
+/** Adapted AE crafting component; see reference/UPSTREAM_PORT_NOTES.md for provenance. */
+
+src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/compact/MixinCraftingGridCache.java
+/** Adapted AE crafting component; see reference/UPSTREAM_PORT_NOTES.md for provenance. */
+
+src/main/java/com/xyp/gtneverreset/mixins/late/appliedenergistics2/compact/MixinInventoryCrafting.java
+/** Adapted AE crafting component; see reference/UPSTREAM_PORT_NOTES.md for provenance. */
+
+Current class relocations:
+utils/DireCraftingPatternDetails.java -> common/me/DireCraftingPatternDetails.java
+utils/ECraftingCPUCluster.java -> common/crafting/quantum/ae2/QuantumCraftingCpuCluster.java
+utils/crafting/VariantBudgets.java -> common/crafting/quantum/ae2/VariantBudgets.java
+common/machine/multiblock/AssemblerMatrixPatternState.java -> common/me/AssemblerMatrixPatternState.java
+common/machine/multiblock/AssemblerMatrixPatternInventory.java -> common/me/AssemblerMatrixPatternInventory.java
+common/recipe/gregtech/FurnaceRecipes.java -> common/recipe/FurnaceRecipes.java
+
+Further responsibility-based relocations:
+common/machine/hatch/WildcardPatternSlotGT.java -> common/me/wildcard/WildcardPatternSlotGT.java
+common/machine/hatch/WildcardPatternSlotSuper.java -> common/me/wildcard/WildcardPatternSlotSuper.java
+common/machine/hatch/WildcardHatchPatternState.java -> common/me/wildcard/WildcardHatchPatternState.java
+common/block/blocks/tile/OverloadedMachineInput.java -> common/me/overloaded/OverloadedMachineInput.java
+common/block/blocks/tile/OverloadedMachineBuffer.java -> common/me/overloaded/OverloadedMachineBuffer.java
+common/block/blocks/tile/OverloadedMachineMolds.java -> common/me/overloaded/OverloadedMachineMolds.java
+common/block/blocks/tile/OverloadedProviderInventory.java -> common/me/overloaded/OverloadedProviderInventory.java
+utils/machine/RecipeThreadProcessingLogic.java -> common/machine/multiMachineBase/processing/RecipeThreadProcessingLogic.java
+utils/machine/RecipeThreadTask.java -> common/machine/multiMachineBase/processing/RecipeThreadTask.java
+utils/machine/RecipeThreadOutputs.java -> common/machine/multiMachineBase/processing/RecipeThreadOutputs.java
+utils/machine/RecipeThreadInputPreflight.java -> common/machine/multiMachineBase/processing/RecipeThreadInputPreflight.java
+common/machine/hatch/MaxCapacityMEOutputCapacity.java -> common/machine/hatch/MEOutputCapacityOverride.java
+client/radialmenu/Settings.java -> client/radialmenu/RadialMenuSettings.java
+
+Wildcard slot state shared by both hatch adapters: common/me/wildcard/WildcardPatternSlotState.java
+Overloaded recipe matching extracted to: common/me/overloaded/OverloadedMachineRecipeMatcher.java
+Wireless card panel extracted to: client/wireless/WirelessCardPanel.java
+LargeFurnaceStructure folded into common/machine/multiblock/LargeFurnace.java
+VaultStackSnapshots folded into common/machine/multiblock/SingularityDataHub.java

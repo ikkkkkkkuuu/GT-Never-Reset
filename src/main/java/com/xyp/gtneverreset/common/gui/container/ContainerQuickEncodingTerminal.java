@@ -3,7 +3,6 @@ package com.xyp.gtneverreset.common.gui.container;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -25,10 +24,11 @@ import com.xyp.gtneverreset.common.packet.RecipeIngredientReplacement;
 import com.xyp.gtneverreset.common.packet.RecipeTransferPayload;
 import com.xyp.gtneverreset.common.packet.StorageFluidRequest;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
+import com.xyp.gtneverreset.common.terminal.TerminalFluidTransactions;
+import com.xyp.gtneverreset.common.terminal.TerminalPatternState;
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
 
-import appeng.api.config.Actionable;
 import appeng.api.config.PinsRows;
 import appeng.api.config.Settings;
 import appeng.api.config.YesNo;
@@ -40,7 +40,6 @@ import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.networking.events.MENetworkCraftingPatternChange;
 import appeng.api.parts.IInterfaceTerminal;
 import appeng.api.parts.IPatternTerminalEx;
-import appeng.api.storage.IMEMonitor;
 import appeng.api.storage.ITerminalHost;
 import appeng.api.storage.StorageName;
 import appeng.api.storage.data.IAEFluidStack;
@@ -68,10 +67,8 @@ import appeng.helpers.InventoryAction;
 import appeng.helpers.MonitorableAction;
 import appeng.tile.inventory.AppEngInternalInventory;
 import appeng.tile.inventory.IAEStackInventory;
-import appeng.util.InventoryAdaptor;
 import appeng.util.Platform;
 import appeng.util.item.AEItemStack;
-import it.unimi.dsi.fastutil.objects.ObjectLongPair;
 
 /**
  * One server container that keeps AE2's storage/pattern terminal active while delegating
@@ -121,25 +118,13 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
     public final ActionHandler<StorageFluidRequest> craftFluidAction;
     public final ActionHandler<Void> quickEncodeAction;
     public final ActionHandler<Boolean> quickEncodeAndMoveToInventoryAction;
-    private final IAEStack<?>[] craftingInputSnapshot = new IAEStack<?>[RecipeTransferPayload.SLOT_COUNT];
-    private final IAEStack<?>[] craftingOutputSnapshot = new IAEStack<?>[RecipeTransferPayload.SLOT_COUNT];
-    private final IAEStack<?>[] processingInputSnapshot = new IAEStack<?>[RecipeTransferPayload.SLOT_COUNT];
-    private final IAEStack<?>[] processingOutputSnapshot = new IAEStack<?>[RecipeTransferPayload.SLOT_COUNT];
-    private boolean craftingSnapshotValid;
-    private boolean processingSnapshotValid;
+    private final TerminalPatternState patternState;
     private boolean appliedCraftingMode;
     private boolean appliedCraftingModeInitialized;
     private PinsRows nativeCraftingPinRows = PinsRows.DISABLED;
     private PinsRows nativePlayerPinRows = PinsRows.DISABLED;
     private boolean nativePinRowsCaptured;
     private boolean encodingWithLogicalInventorySize;
-    /**
-     * The two snapshots are representations of one recipe, never independent
-     * recipes. The flag is valid only while the active representation still
-     * matches its snapshot. Editing either view invalidates the relationship;
-     * the next mode switch then regenerates the target view from the active one.
-     */
-    private boolean patternSnapshotsLinked;
 
     public ContainerQuickEncodingTerminal(InventoryPlayer inventoryPlayer, ITerminalHost host) {
         super(inventoryPlayer, host, true);
@@ -153,7 +138,8 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
         expandCraftingMatrix();
         blankPatternSlot = findPatternSlot(SlotRestrictedInput.PlacableItemType.BLANK_PATTERN);
         encodedPatternSlot = findPatternSlot(SlotRestrictedInput.PlacableItemType.ENCODED_PATTERN);
-        loadPatternSnapshots();
+        patternState = new TerminalPatternState(getDualTerminal(), inputsSync::get, outputsSync::get);
+        patternState.loadPatternSnapshots(isCraftingMode());
         appliedCraftingMode = isCraftingMode();
         appliedCraftingModeInitialized = true;
 
@@ -271,7 +257,7 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
 
     @Override
     public int getPatternInputsHeigh() {
-        return RecipeTransferPayload.SLOT_COUNT / 4;
+        return DualTerminalGuiObject.PATTERN_SLOT_COUNT / 4;
     }
 
     @Override
@@ -286,7 +272,7 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
 
     @Override
     public int getPatternOutputsHeigh() {
-        return RecipeTransferPayload.SLOT_COUNT / 4;
+        return DualTerminalGuiObject.PATTERN_SLOT_COUNT / 4;
     }
 
     @Override
@@ -369,7 +355,7 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
             invertedSync.setLocalValue(payload.isInverted());
         }
         activePageSync.setLocalValue(0);
-        for (int slot = 0; slot < RecipeTransferPayload.SLOT_COUNT; slot++) {
+        for (int slot = 0; slot < DualTerminalGuiObject.PATTERN_SLOT_COUNT; slot++) {
             updateVirtualSlot(StorageName.CRAFTING_INPUT, slot, payload.getInput(slot));
             updateVirtualSlot(StorageName.CRAFTING_OUTPUT, slot, payload.getOutput(slot));
         }
@@ -421,7 +407,7 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
         // server callback. isCraftingMode() therefore already reports the new
         // value here and cannot be used to discover the mode being left.
         boolean wasCrafting = appliedCraftingModeInitialized ? appliedCraftingMode : isCraftingMode();
-        if (craftingInputSnapshot == null || wasCrafting == craftingMode || !Platform.isServer()) {
+        if (patternState == null || wasCrafting == craftingMode || !Platform.isServer()) {
             super.setCraftingMode(craftingMode);
             appliedCraftingMode = craftingMode;
             appliedCraftingModeInitialized = true;
@@ -429,26 +415,14 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
         }
 
         IAEStack<?> craftingResult = wasCrafting ? getCraftingResult() : null;
-        boolean canRestoreLinkedView = patternSnapshotsLinked && activePatternMatches(wasCrafting);
-        rememberActivePattern(wasCrafting);
+        boolean canRestoreLinkedView = patternState.rememberBeforeSwitch(wasCrafting);
         super.setCraftingMode(craftingMode);
-        if (craftingMode) {
-            if (!canRestoreLinkedView || !craftingSnapshotValid) seedCraftingFromProcessing();
-            restorePattern(craftingInputSnapshot, craftingOutputSnapshot);
-            // AE2 copied the old processing inventory into its crafting matrix
-            // before the snapshot was restored. A second native update rebuilds
-            // the matrix and its temporary crafting-result slot from the
-            // restored 3x3 recipe. The snapshot itself remains untouched, so
-            // processing quantities can still be restored exactly later.
-            super.setCraftingMode(true);
-        } else {
-            if (!canRestoreLinkedView || !processingSnapshotValid) {
-                seedProcessingFromCrafting(craftingResult);
-            }
-            restorePattern(processingInputSnapshot, processingOutputSnapshot);
-        }
-        patternSnapshotsLinked = true;
-        persistPatternSnapshots();
+        patternState.restoreMode(craftingMode, craftingResult, canRestoreLinkedView);
+        inputsSync.markDirty();
+        outputsSync.markDirty();
+        // Rebuild AE2's crafting result after restoring its 3x3 input inventory.
+        if (craftingMode) super.setCraftingMode(true);
+        patternState.linkAndPersist();
         appliedCraftingMode = craftingMode;
         appliedCraftingModeInitialized = true;
     }
@@ -458,9 +432,7 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
         if (Platform.isServer()) {
             rememberArcaneLayout();
             boolean activeMode = appliedCraftingModeInitialized ? appliedCraftingMode : isCraftingMode();
-            patternSnapshotsLinked &= activePatternMatches(activeMode);
-            rememberActivePattern(activeMode);
-            getDualTerminal().setPatternSnapshotsLinked(patternSnapshotsLinked);
+            patternState.saveActive(activeMode);
             restoreNativePinRows();
         }
         interfaceDelegate.onContainerClosed(player);
@@ -584,153 +556,22 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
     private void fillOneFluidUnit(StorageFluidRequest request) {
         IAEStack<?> requested = request == null ? null : request.getFluid();
         if (!(requested instanceof IAEFluidStack fluid)) return;
-        IMEMonitor<IAEItemStack> itemMonitor = getItemMonitor();
-        IMEMonitor<IAEFluidStack> fluidMonitor = getDualTerminal().getFluidInventory();
-        if (itemMonitor == null || fluidMonitor == null || getPowerSource() == null) return;
-
-        EmptyFluidContainer empty = findEmptyFluidContainer(itemMonitor, fluidMonitor, fluid);
-        if (empty == null) return;
-
-        IAEFluidStack full = fluid.copy();
-        full.setStackSize(empty.capacity);
-        ObjectLongPair<ItemStack> preview = fluid.getStackType()
-            .fillContainer(empty.item.copy(), full);
-        if (!isCompletelyFilled(preview, empty.capacity)) return;
-        int count = request.isFullStack() ? Math.min(
-            64,
-            Math.min(
-                empty.item.getMaxStackSize(),
-                preview.left()
-                    .getMaxStackSize()))
-            : 1;
-        for (int index = 0; index < count; index++) {
-            if (!fillFluidContainer(itemMonitor, fluidMonitor, fluid, empty)) break;
-        }
-        detectAndSendChanges();
-    }
-
-    /**
-     * Fills one container of the type selected at the start of the server-side batch. Each iteration checks available
-     * fluid, empty containers and player inventory space before extraction, restoring extracted resources on failure.
-     *
-     * @param itemMonitor  network supplying the empty container
-     * @param fluidMonitor network supplying the fluid
-     * @param fluid        selected fluid type
-     * @param empty        fixed container type and capacity for this batch
-     * @return true if one filled container was delivered; false to stop the batch
-     */
-    private boolean fillFluidContainer(IMEMonitor<IAEItemStack> itemMonitor, IMEMonitor<IAEFluidStack> fluidMonitor,
-        IAEFluidStack fluid, EmptyFluidContainer empty) {
-        IAEFluidStack fluidRequest = fluid.copy();
-        fluidRequest.setStackSize(empty.capacity);
-        IAEFluidStack availableFluid = fluidMonitor.extractItems(fluidRequest, Actionable.SIMULATE, getActionSource());
-        if (availableFluid == null || availableFluid.getStackSize() < empty.capacity) return false;
-
-        IAEItemStack emptyRequest = empty.stack.copy();
-        emptyRequest.setStackSize(1);
-        IAEItemStack availableEmpty = itemMonitor.extractItems(emptyRequest, Actionable.SIMULATE, getActionSource());
-        if (availableEmpty == null || availableEmpty.getStackSize() < 1) return false;
-
-        ObjectLongPair<ItemStack> preview = fluid.getStackType()
-            .fillContainer(empty.item.copy(), fluidRequest);
-        if (!isCompletelyFilled(preview, empty.capacity) || !canAcceptFilledContainer(preview.left())) return false;
-
-        IAEItemStack extractedEmpty = Platform
-            .poweredExtraction(getPowerSource(), itemMonitor, emptyRequest, getActionSource());
-        if (extractedEmpty == null || extractedEmpty.getStackSize() < 1) return false;
-
-        IAEFluidStack extractedFluid = Platform
-            .poweredExtraction(getPowerSource(), fluidMonitor, fluidRequest, getActionSource());
-        if (extractedFluid == null || extractedFluid.getStackSize() < empty.capacity) {
-            restoreItem(itemMonitor, extractedEmpty);
-            restoreFluid(fluidMonitor, extractedFluid);
-            return false;
-        }
-
-        ItemStack extractedItem = extractedEmpty.getItemStack();
-        extractedItem.stackSize = 1;
-        ObjectLongPair<ItemStack> filled = fluid.getStackType()
-            .fillContainer(extractedItem, extractedFluid);
-        if (!isCompletelyFilled(filled, empty.capacity)) {
-            restoreItem(itemMonitor, extractedEmpty);
-            restoreFluid(fluidMonitor, extractedFluid);
-            return false;
-        }
-
-        giveFilledContainer(filled.left());
-        return true;
+        if (fluidTransactions().fill(fluid, request.isFullStack())) detectAndSendChanges();
     }
 
     private void storeOneFluidUnit(StorageFluidRequest request) {
         IAEStack<?> requested = request == null ? null : request.getFluid();
         if (!(requested instanceof IAEFluidStack fluid)) return;
-        IMEMonitor<IAEItemStack> itemMonitor = getItemMonitor();
-        IMEMonitor<IAEFluidStack> fluidMonitor = getDualTerminal().getFluidInventory();
-        if (itemMonitor == null || fluidMonitor == null || getPowerSource() == null) return;
-
-        FilledFluidContainer filled = findFilledFluidContainer(fluid);
-        if (filled == null) return;
-
-        ItemStack source = getPlayerInv().mainInventory[filled.inventorySlot];
-        int count = request.isFullStack() ? Math.min(64, Math.min(source.stackSize, source.getMaxStackSize())) : 1;
-        for (int index = 0; index < count; index++) {
-            if (!storeFluidContainer(itemMonitor, fluidMonitor, filled)) break;
-        }
-        detectAndSendChanges();
+        if (fluidTransactions().store(fluid, request.isFullStack())) detectAndSendChanges();
     }
 
-    /**
-     * Drains one container from the inventory slot selected at the start of the server-side batch. The empty container
-     * and fluid both enter the network; rejected insertions are rolled back before the source stack is consumed.
-     *
-     * @param itemMonitor  network receiving the empty container
-     * @param fluidMonitor network receiving the fluid
-     * @param filled       selected inventory slot, container identity and contents
-     * @return true if one container was consumed; false to stop the batch
-     */
-    private boolean storeFluidContainer(IMEMonitor<IAEItemStack> itemMonitor, IMEMonitor<IAEFluidStack> fluidMonitor,
-        FilledFluidContainer filled) {
-        ItemStack current = getPlayerInv().mainInventory[filled.inventorySlot];
-        if (current == null || current.stackSize <= 0 || !Platform.isSameItemPrecise(current, filled.source))
-            return false;
-        IAEItemStack emptyRequest = AEItemStack.create(filled.empty.copy());
-        IAEFluidStack fluidRequest = filled.fluid.copy();
-        if (emptyRequest == null
-            || !canInsertAll(itemMonitor.injectItems(emptyRequest.copy(), Actionable.SIMULATE, getActionSource()))
-            || !canInsertAll(
-                Platform.poweredInsert(
-                    getPowerSource(),
-                    fluidMonitor,
-                    fluidRequest.copy(),
-                    getActionSource(),
-                    Actionable.SIMULATE))) {
-            return false;
-        }
-
-        IAEItemStack emptyLeftover = itemMonitor
-            .injectItems(emptyRequest.copy(), Actionable.MODULATE, getActionSource());
-        if (!canInsertAll(emptyLeftover)) {
-            rollbackInserted(itemMonitor, emptyRequest, emptyLeftover);
-            return false;
-        }
-
-        IAEFluidStack fluidLeftover = Platform
-            .poweredInsert(getPowerSource(), fluidMonitor, fluidRequest.copy(), getActionSource(), Actionable.MODULATE);
-        if (!canInsertAll(fluidLeftover)) {
-            rollbackInserted(itemMonitor, emptyRequest, null);
-            rollbackInserted(fluidMonitor, fluidRequest, fluidLeftover);
-            return false;
-        }
-
-        ItemStack source = getPlayerInv().mainInventory[filled.inventorySlot];
-        if (source == null || !Platform.isSameItemPrecise(source, filled.source)) {
-            rollbackInserted(itemMonitor, emptyRequest, null);
-            rollbackInserted(fluidMonitor, fluidRequest, null);
-            return false;
-        }
-        if (--source.stackSize <= 0) getPlayerInv().mainInventory[filled.inventorySlot] = null;
-        getPlayerInv().markDirty();
-        return true;
+    private TerminalFluidTransactions fluidTransactions() {
+        return new TerminalFluidTransactions(
+            getPlayerInv(),
+            getItemMonitor(),
+            getDualTerminal().getFluidInventory(),
+            getPowerSource(),
+            getActionSource());
     }
 
     private void openFluidCraftAmount(StorageFluidRequest request) {
@@ -782,87 +623,6 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
         return false;
     }
 
-    private FilledFluidContainer findFilledFluidContainer(IAEFluidStack target) {
-        IAEStackType<IAEFluidStack> type = target.getStackType();
-        for (int slot = 0; slot < getPlayerInv().mainInventory.length; slot++) {
-            ItemStack stored = getPlayerInv().mainInventory[slot];
-            if (stored == null || stored.stackSize <= 0 || !type.isContainerItemForType(stored)) continue;
-            ItemStack single = stored.copy();
-            single.stackSize = 1;
-            IAEFluidStack contained = type.getStackFromContainerItem(single);
-            if (contained == null || contained.getStackSize() <= 0 || !contained.isSameType(target)) continue;
-            ObjectLongPair<ItemStack> drained = type.drainStackFromContainer(single.copy(), contained.copy());
-            if (drained.left() == null || drained.rightLong() != contained.getStackSize()) continue;
-            IAEFluidStack drainedFluid = contained.copy();
-            drainedFluid.setStackSize(drained.rightLong());
-            return new FilledFluidContainer(slot, single, drained.left(), drainedFluid);
-        }
-        return null;
-    }
-
-    private static boolean canInsertAll(IAEStack<?> leftover) {
-        return leftover == null || leftover.getStackSize() <= 0;
-    }
-
-    private <T extends IAEStack<T>> void rollbackInserted(IMEMonitor<T> monitor, T requested, T leftover) {
-        long leftoverAmount = leftover == null ? 0 : leftover.getStackSize();
-        long insertedAmount = requested.getStackSize() - leftoverAmount;
-        if (insertedAmount <= 0) return;
-        T rollback = requested.copy();
-        rollback.setStackSize(insertedAmount);
-        monitor.extractItems(rollback, Actionable.MODULATE, getActionSource());
-    }
-
-    private EmptyFluidContainer findEmptyFluidContainer(IMEMonitor<IAEItemStack> itemMonitor,
-        IMEMonitor<IAEFluidStack> fluidMonitor, IAEFluidStack fluid) {
-        IAEStackType<IAEFluidStack> type = fluid.getStackType();
-        for (IAEItemStack stored : itemMonitor.getStorageList()) {
-            if (stored == null || stored.getStackSize() <= 0) continue;
-            ItemStack item = stored.getItemStack();
-            if (item == null) continue;
-            item.stackSize = 1;
-            if (!type.isContainerItemForType(item) || type.getStackFromContainerItem(item) != null) continue;
-            long capacity = type.getContainerItemCapacity(item, fluid);
-            if (capacity <= 0) continue;
-            IAEFluidStack full = fluid.copy();
-            full.setStackSize(capacity);
-            ObjectLongPair<ItemStack> filled = type.fillContainer(item.copy(), full);
-            if (!isCompletelyFilled(filled, capacity)) continue;
-            IAEFluidStack available = fluidMonitor.extractItems(full, Actionable.SIMULATE, getActionSource());
-            if (available != null && available.getStackSize() >= capacity) {
-                return new EmptyFluidContainer(stored.copy(), item, capacity);
-            }
-        }
-        return null;
-    }
-
-    private static boolean isCompletelyFilled(ObjectLongPair<ItemStack> result, long capacity) {
-        return result != null && result.left() != null && result.rightLong() == capacity;
-    }
-
-    private boolean canAcceptFilledContainer(ItemStack filled) {
-        if (filled == null) return false;
-        InventoryAdaptor inventory = InventoryAdaptor.getAdaptor(getPlayerInv().player, ForgeDirection.UNKNOWN);
-        return inventory.simulateAdd(filled.copy()) == null;
-    }
-
-    private void giveFilledContainer(ItemStack filled) {
-        InventoryAdaptor.getAdaptor(getPlayerInv().player, ForgeDirection.UNKNOWN)
-            .addItems(filled);
-    }
-
-    private void restoreItem(IMEMonitor<IAEItemStack> monitor, IAEItemStack stack) {
-        if (stack == null || stack.getStackSize() <= 0) return;
-        IAEItemStack leftover = monitor.injectItems(stack, Actionable.MODULATE, getActionSource());
-        if (leftover != null) Platform.handleLeftover(getPlayerInv().player, leftover);
-    }
-
-    private void restoreFluid(IMEMonitor<IAEFluidStack> monitor, IAEFluidStack stack) {
-        if (stack == null || stack.getStackSize() <= 0) return;
-        IAEFluidStack leftover = monitor.injectItems(stack, Actionable.MODULATE, getActionSource());
-        if (leftover != null) Platform.handleLeftover(getPlayerInv().player, leftover);
-    }
-
     private void applyInverted(boolean inverted) {
         getExtendedPatternTerminal().setInverted(inverted);
         invertedSync.set(inverted);
@@ -905,9 +665,9 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
             ordered.addAll(items);
             ordered.addAll(fluids);
         }
-        restoreInventory(inputInventory, ordered.toArray(new IAEStack<?>[0]));
+        TerminalPatternState.restoreInventory(inputInventory, ordered.toArray(new IAEStack<?>[0]));
         inputInventory.markDirty();
-        rememberActivePattern(false);
+        patternState.rememberActivePattern(false);
         saveChanges();
     }
 
@@ -922,9 +682,9 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
             // list, so compact it when that view becomes active. Updating the
             // linked processing snapshot keeps the exact crafting layout in
             // its own representation for a later switch back.
-            compactInventory(inputsSync.get());
-            compactInventory(outputsSync.get());
-            rememberActivePattern(false);
+            TerminalPatternState.compactInventory(inputsSync.get());
+            TerminalPatternState.compactInventory(outputsSync.get());
+            patternState.rememberActivePattern(false);
         }
     }
 
@@ -952,94 +712,6 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
         return craftingRows & 0xFFFF | (playerRows & 0xFFFF) << 16;
     }
 
-    private void loadPatternSnapshots() {
-        DualTerminalGuiObject terminal = getDualTerminal();
-        craftingSnapshotValid = terminal.hasPatternSnapshot(true);
-        processingSnapshotValid = terminal.hasPatternSnapshot(false);
-        patternSnapshotsLinked = terminal.arePatternSnapshotsLinked();
-        copyArray(terminal.getPatternSnapshotInputs(true, craftingInputSnapshot.length), craftingInputSnapshot);
-        copyArray(terminal.getPatternSnapshotOutputs(true, craftingOutputSnapshot.length), craftingOutputSnapshot);
-        copyArray(terminal.getPatternSnapshotInputs(false, processingInputSnapshot.length), processingInputSnapshot);
-        copyArray(terminal.getPatternSnapshotOutputs(false, processingOutputSnapshot.length), processingOutputSnapshot);
-
-        if (isCraftingMode()) {
-            patternSnapshotsLinked &= activePatternMatches(true);
-            copyInventory(inputsSync.get(), craftingInputSnapshot);
-            // Crafting uses AE2's separate computed cOut slot. Anything left in
-            // the shared processing-output inventory is stale and must not
-            // become part of the crafting snapshot.
-            clearArray(craftingOutputSnapshot);
-            craftingSnapshotValid = true;
-            migrateLegacyProcessingFluids();
-        } else {
-            patternSnapshotsLinked &= activePatternMatches(false);
-            copyInventory(inputsSync.get(), processingInputSnapshot);
-            copyInventory(outputsSync.get(), processingOutputSnapshot);
-            processingSnapshotValid = true;
-        }
-        terminal.setPatternSnapshotsLinked(patternSnapshotsLinked);
-    }
-
-    private void migrateLegacyProcessingFluids() {
-        if (processingSnapshotValid) return;
-        IAEStack<?>[] legacyFluids = getDualTerminal().getProcessingFluidInputs(processingInputSnapshot.length);
-        if (!containsStack(legacyFluids)) return;
-
-        copyInventory(inputsSync.get(), processingInputSnapshot);
-        copyInventory(outputsSync.get(), processingOutputSnapshot);
-        for (int slot = 0; slot < legacyFluids.length; slot++) {
-            if (legacyFluids[slot] != null) processingInputSnapshot[slot] = legacyFluids[slot].copy();
-        }
-        processingSnapshotValid = true;
-        persistPatternSnapshot(false);
-    }
-
-    private void rememberActivePattern(boolean crafting) {
-        IAEStack<?>[] inputs = crafting ? craftingInputSnapshot : processingInputSnapshot;
-        IAEStack<?>[] outputs = crafting ? craftingOutputSnapshot : processingOutputSnapshot;
-        copyInventory(inputsSync.get(), inputs);
-        if (crafting) {
-            clearArray(outputs);
-        } else {
-            copyInventory(outputsSync.get(), outputs);
-        }
-        if (crafting) {
-            craftingSnapshotValid = true;
-        } else {
-            processingSnapshotValid = true;
-        }
-        persistPatternSnapshot(crafting);
-    }
-
-    private void seedCraftingFromProcessing() {
-        clearArray(craftingInputSnapshot);
-        clearArray(craftingOutputSnapshot);
-        int target = 0;
-        for (IAEStack<?> stack : processingInputSnapshot) {
-            if (!(stack instanceof IAEItemStack) || target >= 9) continue;
-            craftingInputSnapshot[target++] = stack.copy();
-        }
-        craftingSnapshotValid = true;
-        persistPatternSnapshot(true);
-    }
-
-    private void seedProcessingFromCrafting(IAEStack<?> craftingResult) {
-        getDualTerminal().setArcaneLayout(null);
-        clearArray(processingInputSnapshot);
-        clearArray(processingOutputSnapshot);
-        boolean compact = getDualTerminal().getProcessingGridSize() == 4;
-        int packedSlot = 0;
-        for (int sourceSlot = 0; sourceSlot < 9; sourceSlot++) {
-            IAEStack<?> stack = craftingInputSnapshot[sourceSlot];
-            if (stack == null) continue;
-            int targetSlot = compact ? packedSlot++ : sourceSlot;
-            processingInputSnapshot[targetSlot] = stack.copy();
-        }
-        if (craftingResult != null) processingOutputSnapshot[0] = craftingResult.copy();
-        processingSnapshotValid = true;
-        persistPatternSnapshot(false);
-    }
-
     private IAEStack<?> getCraftingResult() {
         for (Object value : inventorySlots) {
             if (!(value instanceof SlotPatternTerm slot)) continue;
@@ -1047,110 +719,6 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
             return result == null ? null : AEItemStack.create(result.copy());
         }
         return null;
-    }
-
-    private void restorePattern(IAEStack<?>[] inputSnapshot, IAEStack<?>[] outputSnapshot) {
-        restoreInventory(inputsSync.get(), inputSnapshot);
-        restoreInventory(outputsSync.get(), outputSnapshot);
-        inputsSync.markDirty();
-        outputsSync.markDirty();
-    }
-
-    private void persistPatternSnapshot(boolean crafting) {
-        getDualTerminal().setPatternSnapshot(
-            crafting,
-            crafting ? craftingInputSnapshot : processingInputSnapshot,
-            crafting ? craftingOutputSnapshot : processingOutputSnapshot);
-    }
-
-    private void persistPatternSnapshots() {
-        persistPatternSnapshot(true);
-        persistPatternSnapshot(false);
-        getDualTerminal().setPatternSnapshotsLinked(patternSnapshotsLinked);
-    }
-
-    private boolean activePatternMatches(boolean crafting) {
-        if (crafting) {
-            return craftingSnapshotValid && craftingInventoryMatches(inputsSync.get(), craftingInputSnapshot);
-        }
-        return processingSnapshotValid && inventoryMatches(inputsSync.get(), processingInputSnapshot)
-            && inventoryMatches(outputsSync.get(), processingOutputSnapshot);
-    }
-
-    private static boolean craftingInventoryMatches(IAEStackInventory inventory, IAEStack<?>[] snapshot) {
-        int size = Math.max(inventory.getSizeInventory(), snapshot.length);
-        for (int slot = 0; slot < size; slot++) {
-            IAEStack<?> active = slot < inventory.getSizeInventory() ? inventory.getAEStackInSlot(slot) : null;
-            IAEStack<?> saved = slot < snapshot.length ? snapshot[slot] : null;
-            if (active == null || saved == null) {
-                if (active != saved) return false;
-            } else if (!(active instanceof IAEItemStack activeItem) || !(saved instanceof IAEItemStack savedItem)
-                || !activeItem.isSameType(savedItem)) {
-                    return false;
-                }
-        }
-        return true;
-    }
-
-    private static boolean inventoryMatches(IAEStackInventory inventory, IAEStack<?>[] snapshot) {
-        int size = Math.max(inventory.getSizeInventory(), snapshot.length);
-        for (int slot = 0; slot < size; slot++) {
-            IAEStack<?> active = slot < inventory.getSizeInventory() ? inventory.getAEStackInSlot(slot) : null;
-            IAEStack<?> saved = slot < snapshot.length ? snapshot[slot] : null;
-            if (active == null || saved == null) {
-                if (active != saved) return false;
-            } else if (!active.toNBTGeneric()
-                .equals(saved.toNBTGeneric())) {
-                    return false;
-                }
-        }
-        return true;
-    }
-
-    private static void copyInventory(IAEStackInventory source, IAEStack<?>[] destination) {
-        clearArray(destination);
-        int size = Math.min(source.getSizeInventory(), destination.length);
-        for (int slot = 0; slot < size; slot++) {
-            IAEStack<?> stack = source.getAEStackInSlot(slot);
-            destination[slot] = stack == null ? null : stack.copy();
-        }
-    }
-
-    private static void restoreInventory(IAEStackInventory destination, IAEStack<?>[] source) {
-        for (int slot = 0; slot < destination.getSizeInventory(); slot++) {
-            IAEStack<?> stack = slot < source.length ? source[slot] : null;
-            destination.putAEStackInSlot(slot, stack == null ? null : stack.copy());
-        }
-    }
-
-    private static void compactInventory(IAEStackInventory inventory) {
-        IAEStack<?>[] compacted = new IAEStack<?>[inventory.getSizeInventory()];
-        int target = 0;
-        for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
-            IAEStack<?> stack = inventory.getAEStackInSlot(slot);
-            if (stack != null) compacted[target++] = stack.copy();
-        }
-        restoreInventory(inventory, compacted);
-        inventory.markDirty();
-    }
-
-    private static void copyArray(IAEStack<?>[] source, IAEStack<?>[] destination) {
-        clearArray(destination);
-        int size = Math.min(source.length, destination.length);
-        for (int slot = 0; slot < size; slot++) {
-            destination[slot] = source[slot] == null ? null : source[slot].copy();
-        }
-    }
-
-    private static void clearArray(IAEStack<?>[] stacks) {
-        Arrays.fill(stacks, null);
-    }
-
-    private static boolean containsStack(IAEStack<?>[] stacks) {
-        for (IAEStack<?> stack : stacks) {
-            if (stack != null) return true;
-        }
-        return false;
     }
 
     private void applyRecipeTransfer(RecipeTransferPayload payload) {
@@ -1162,17 +730,16 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
         getExtendedPatternTerminal().setActivePage(0);
         activePageSync.set(0);
 
-        for (int slot = 0; slot < RecipeTransferPayload.SLOT_COUNT; slot++) {
+        for (int slot = 0; slot < DualTerminalGuiObject.PATTERN_SLOT_COUNT; slot++) {
             updateVirtualSlot(StorageName.CRAFTING_INPUT, slot, payload.getInput(slot));
             updateVirtualSlot(StorageName.CRAFTING_OUTPUT, slot, payload.getOutput(slot));
         }
         getDualTerminal().setArcaneLayout(payload.getArcaneLayout());
         getDualTerminal().setArcaneWorkbenchView(true);
-        rememberActivePattern(payload.isCrafting());
+        patternState.rememberActivePattern(payload.isCrafting());
         // A NEI transfer establishes a new authoritative recipe. The other
         // representation is regenerated from it on the next mode switch.
-        patternSnapshotsLinked = false;
-        getDualTerminal().setPatternSnapshotsLinked(false);
+        patternState.invalidateLink();
         saveChanges();
         if (payload.shouldEncode()) quickEncode();
     }
@@ -1181,9 +748,8 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
         boolean crafting = appliedCraftingModeInitialized ? appliedCraftingMode : isCraftingMode();
         if (!applyRecipeIngredientToInputs(replacement, crafting)) return;
         if (!crafting) getDualTerminal().replaceArcaneIngredient(replacement.getFrom(), replacement.getTo());
-        rememberActivePattern(crafting);
-        patternSnapshotsLinked = false;
-        getDualTerminal().setPatternSnapshotsLinked(false);
+        patternState.rememberActivePattern(crafting);
+        patternState.invalidateLink();
         saveChanges();
     }
 
@@ -1368,7 +934,7 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
         if (!isCraftingMode() && getDualTerminal().getArcaneLayout()
             .tagCount() == 9) {
             NBTTagList layout = new NBTTagList();
-            for (int i = 0; i < RecipeTransferPayload.SLOT_COUNT; i++) {
+            for (int i = 0; i < DualTerminalGuiObject.PATTERN_SLOT_COUNT; i++) {
                 IAEStack<?> stack = inputsSync.get()
                     .getAEStackInSlot(i);
                 if (stack != null && (i >= 9 || !(stack instanceof IAEItemStack) || stack.getStackSize() != 1))
@@ -1389,7 +955,7 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
             encodeWithInventorySizes(9, -1);
             return;
         }
-        encodeWithInventorySizes(processingInputSize(), RecipeTransferPayload.SLOT_COUNT);
+        encodeWithInventorySizes(processingInputSize(), DualTerminalGuiObject.PATTERN_SLOT_COUNT);
     }
 
     /** Keeps occupied high slots and interior gaps, but avoids serializing hundreds of empty trailing NBT tags. */
@@ -1594,34 +1160,6 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
             NATIVE_ENCODE.invoke(this);
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Unable to invoke AE2 pattern encoder", exception);
-        }
-    }
-
-    private static final class EmptyFluidContainer {
-
-        private final IAEItemStack stack;
-        private final ItemStack item;
-        private final long capacity;
-
-        private EmptyFluidContainer(IAEItemStack stack, ItemStack item, long capacity) {
-            this.stack = stack;
-            this.item = item;
-            this.capacity = capacity;
-        }
-    }
-
-    private static final class FilledFluidContainer {
-
-        private final int inventorySlot;
-        private final ItemStack source;
-        private final ItemStack empty;
-        private final IAEFluidStack fluid;
-
-        private FilledFluidContainer(int inventorySlot, ItemStack source, ItemStack empty, IAEFluidStack fluid) {
-            this.inventorySlot = inventorySlot;
-            this.source = source;
-            this.empty = empty;
-            this.fluid = fluid;
         }
     }
 

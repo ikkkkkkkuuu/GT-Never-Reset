@@ -10,7 +10,7 @@ import net.minecraft.item.ItemStack;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import com.xyp.gtneverreset.utils.machine.RecipeThreadProcessingLogic;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
 
 import gregtech.api.recipe.check.CheckRecipeResult;
 import gregtech.api.recipe.check.CheckRecipeResultRegistry;

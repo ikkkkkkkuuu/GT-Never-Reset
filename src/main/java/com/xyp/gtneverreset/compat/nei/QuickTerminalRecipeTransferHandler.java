@@ -17,6 +17,7 @@ import com.glodblock.github.common.item.ItemFluidPacket;
 import com.glodblock.github.util.Util;
 import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
 import com.xyp.gtneverreset.common.packet.RecipeTransferPayload;
+import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
 import com.xyp.gtneverreset.compat.nei.TerminalRecipeIngredients.Ingredient;
 import com.xyp.gtneverreset.config.ClientConfig;
 
@@ -83,11 +84,11 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
                 }
                 transferInputs = TerminalRecipeIngredients.clearNull(transferInputs);
                 transferOutputs = TerminalRecipeIngredients.clearNull(transferOutputs);
-                if (transferInputs.size() > RecipeTransferPayload.SLOT_COUNT) {
+                if (transferInputs.size() > DualTerminalGuiObject.PATTERN_SLOT_COUNT) {
                     terminal.showProcessingLimit(true);
                     return;
                 }
-                if (transferOutputs.size() > RecipeTransferPayload.SLOT_COUNT) {
+                if (transferOutputs.size() > DualTerminalGuiObject.PATTERN_SLOT_COUNT) {
                     terminal.showProcessingLimit(false);
                     return;
                 }
@@ -95,12 +96,12 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
             IAEStack<?>[] inputs = crafting ? collectCraftingInputs(recipe, recipeIndex)
                 : collectStacks(transferInputs);
             if (arcaneLayout != null) {
-                inputs = new IAEStack<?>[RecipeTransferPayload.SLOT_COUNT];
+                inputs = new IAEStack<?>[DualTerminalGuiObject.PATTERN_SLOT_COUNT];
                 for (int i = 0; i < 9; i++) {
                     inputs[i] = AEItemStack.create(ItemStack.loadItemStackFromNBT(arcaneLayout.getCompoundTagAt(i)));
                 }
             }
-            IAEStack<?>[] outputs = crafting ? new IAEStack<?>[RecipeTransferPayload.SLOT_COUNT]
+            IAEStack<?>[] outputs = crafting ? new IAEStack<?>[DualTerminalGuiObject.PATTERN_SLOT_COUNT]
                 : collectStacks(transferOutputs);
             boolean hasInterchangeableInputs = hasInterchangeableInputs(recipe, recipeIndex, crafting);
             boolean encode = (shift || isAltDown()) && !hasInterchangeableInputs;
@@ -161,7 +162,7 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
     }
 
     private static IAEStack<?>[] collectCraftingInputs(IRecipeHandler recipe, int recipeIndex) {
-        IAEStack<?>[] result = new IAEStack<?>[RecipeTransferPayload.SLOT_COUNT];
+        IAEStack<?>[] result = new IAEStack<?>[DualTerminalGuiObject.PATTERN_SLOT_COUNT];
         int fallbackSlot = 0;
         for (PositionedStack positioned : safeList(recipe.getIngredientStacks(recipeIndex))) {
             if (positioned == null) continue;
@@ -177,7 +178,7 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
     }
 
     private static IAEStack<?>[] collectStacks(List<Ingredient<?>> ordered) {
-        IAEStack<?>[] result = new IAEStack<?>[RecipeTransferPayload.SLOT_COUNT];
+        IAEStack<?>[] result = new IAEStack<?>[DualTerminalGuiObject.PATTERN_SLOT_COUNT];
         if (ordered == null) return result;
         int fallbackSlot = 0;
         for (Ingredient<?> order : ordered) {

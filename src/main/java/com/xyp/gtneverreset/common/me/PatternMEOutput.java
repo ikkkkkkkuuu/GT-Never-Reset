@@ -13,7 +13,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.fluids.FluidStack;
 
-import com.xyp.gtneverreset.common.machine.hatch.MaxCapacityMEOutputCapacity;
+import com.xyp.gtneverreset.common.machine.hatch.MEOutputCapacityOverride;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 
 import appeng.api.networking.security.BaseActionSource;
@@ -240,7 +240,7 @@ public final class PatternMEOutput {
         Provider(Environment<T> environment) {
             super(environment);
             this.environment = environment;
-            MaxCapacityMEOutputCapacity.forceMaxCapacity(this);
+            MEOutputCapacityOverride.forceMaxCapacity(this);
         }
 
         @Override
@@ -265,7 +265,7 @@ public final class PatternMEOutput {
                 T stack = environment.loadStackFromNBT(list.getCompoundTagAt(i));
                 if (stack != null && stack.getStackSize() > 0) addToCache(stack);
             }
-            MaxCapacityMEOutputCapacity.forceMaxCapacity(this);
+            MEOutputCapacityOverride.forceMaxCapacity(this);
         }
     }
 

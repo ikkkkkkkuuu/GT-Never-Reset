@@ -46,7 +46,6 @@ import com.xyp.gtneverreset.api.IItemVault;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.SingularityDataHubGui;
 import com.xyp.gtneverreset.common.machine.hatch.VaultPortHatch;
-import com.xyp.gtneverreset.common.machine.storage.VaultStackSnapshots;
 import com.xyp.gtneverreset.common.machine.storage.VaultStorageUsage;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
 import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
@@ -95,11 +94,23 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     public static BigInteger maxFluidCapacity = BigInteger.valueOf(MAX_STORAGE_BYTES)
         .multiply(BigInteger.valueOf(FLUID_MB_PER_BYTE));
     private static final String STRUCTURE_PIECE_MAIN = "main";
-    private static final String[][] shape = MultiblockStructureLoader.load("singularity_data_hub");
+    private static final String[][] STRUCTURE_SHAPE = MultiblockStructureLoader.load("singularity_data_hub");
     private static final int HORIZONTAL_OFFSET = 1;
     private static final int VERTICAL_OFFSET = 1;
     private static final int DEPTH_OFFSET = 0;
     public static NumberFormat nf = NumberFormat.getNumberInstance();
+
+    /**
+     * Rebuilds AE's mutable item definition instead of sharing it through {@link IAEItemStack#copy()}.
+     * Crafting flags do not describe stored inventory and are intentionally omitted.
+     *
+     * @param stack stored item identity and quantity
+     * @return independent item definition with the original long quantity
+     */
+    private static IAEItemStack snapshotStoredItem(IAEItemStack stack) {
+        return AEItemStack.create(stack.getItemStack())
+            .setStackSize(stack.getStackSize());
+    }
 
     public boolean wirelessMode = false;
     public boolean locked = true;
@@ -172,7 +183,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     public IStructureDefinition<SingularityDataHub> getStructureDefinition() {
         if (structureDefinition != null) return structureDefinition;
         structureDefinition = StructureDefinition.<SingularityDataHub>builder()
-            .addShape(STRUCTURE_PIECE_MAIN, transpose(shape))
+            .addShape(STRUCTURE_PIECE_MAIN, transpose(STRUCTURE_SHAPE))
             .addElement(
                 'A',
                 ofChain(
@@ -401,9 +412,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
         if (accepted <= 0) return doVoidExcess ? aItem.getStackSize() : 0;
         if (doInput) {
             if (aeItem == null) {
-                storedItems.addStorage(
-                    VaultStackSnapshots.item(aItem)
-                        .setStackSize(accepted));
+                storedItems.addStorage(snapshotStoredItem(aItem).setStackSize(accepted));
             } else {
                 aeItem.setStackSize(size + accepted);
             }
@@ -527,7 +536,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     @Override
     public IAEItemStack getStoredItem(@Nullable ItemStack aItem) {
         IAEItemStack stored = findStoredItem(aItem);
-        return stored == null ? null : VaultStackSnapshots.item(stored);
+        return stored == null ? null : snapshotStoredItem(stored);
     }
 
     private IAEItemStack findStoredItem(@Nullable ItemStack aItem) {
@@ -594,7 +603,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
 
     @Override
     public void copyItemsTo(IItemList<IAEItemStack> out) {
-        for (IAEItemStack item : storedItems) out.addStorage(VaultStackSnapshots.item(item));
+        for (IAEItemStack item : storedItems) out.addStorage(snapshotStoredItem(item));
     }
 
     @Override
