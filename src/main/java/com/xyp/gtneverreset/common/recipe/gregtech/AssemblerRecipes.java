@@ -338,15 +338,16 @@ public final class AssemblerRecipes {
     private static void registerLargeBeeBreederRecipes() {
         GTRecipeBuilder.builder()
             .itemInputs(
-                ModsItemlist.ForestryRoyalJelly.get(64),
-                ModsItemlist.Alveary.get(32),
-                ItemList.Machine_IndustrialApiary.get(32),
-                new Object[] { OrePrefixes.circuit.get(Materials.UHV), 16 },
+                ItemList.Hull_LV.get(1),
+                ItemList.Electric_Motor_LV.get(2),
+                ItemList.Electric_Piston_LV.get(2),
+                new Object[] { OrePrefixes.circuit.get(Materials.LV), 2 },
+                Materials.Steel.getPlates(4),
                 GTUtility.getIntegratedCircuit(17))
-            .fluidInputs(Materials.SolderingAlloy.getMolten(576000))
+            .fluidInputs(Materials.Tin.getMolten(144))
             .itemOutputs(GTNRItemList.LargeBeeBreeder.get(1))
-            .duration(36000 * SECONDS)
-            .eut(TierEU.RECIPE_UHV)
+            .duration(20 * SECONDS)
+            .eut(TierEU.RECIPE_LV)
             .addTo(assemblerRecipes);
     }
 

@@ -4,11 +4,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.xyp.gtneverreset.common.crafting.quantum.api.crafting.IPatternDetails;
 import com.xyp.gtneverreset.common.crafting.quantum.api.stacks.AEKey;
 import com.xyp.gtneverreset.common.crafting.quantum.api.stacks.GenericStack;
+import com.xyp.gtneverreset.common.crafting.quantum.api.stacks.KeyAmounts;
 import com.xyp.gtneverreset.common.crafting.quantum.crafting.CraftingCalculation;
 import com.xyp.gtnrlib.utils.LongMath;
 
@@ -29,7 +28,7 @@ public class GraphBuilder {
     private final Map<AEKey, IPatternDetails> choices;
 
     public GraphBuilder(CraftingCalculation calc) {
-        this(calc, ImmutableMap.of());
+        this(calc, Map.of());
     }
 
     // Builds the graph with the given pattern of each key instead of the one of highest priority
@@ -39,8 +38,10 @@ public class GraphBuilder {
         this.choices = choices;
     }
 
-    // For each key reachable from the output, the pattern needing the least of the scarce keys per item it makes. On
-    // a tie, the one of highest priority.
+    /**
+     * For each key reachable from the output, the pattern needing the least of the scarce keys per item it makes. On a
+     * tie, the one of highest priority. Patterns with dynamic inputs are validated by a fresh legacy attempt.
+     */
     public Map<AEKey, IPatternDetails> choosePatterns(AEKey output, Object2DoubleMap<AEKey> scarcity)
         throws InterruptedException {
         var chosen = new Object2ObjectOpenHashMap<AEKey, IPatternDetails>();
@@ -66,7 +67,7 @@ public class GraphBuilder {
         IPatternDetails bestPattern = primary;
         double best = Double.POSITIVE_INFINITY;
         for (var pattern : patterns) {
-            if (pattern != primary && (!makesFirst(what, pattern) || !isNativePattern(pattern))) continue;
+            if (pattern != primary && !makesFirst(what, pattern)) continue;
             long made = madeAmount(what, pattern);
             if (made <= 0) continue;
             double cost = 0;
@@ -99,7 +100,7 @@ public class GraphBuilder {
         var graph = new CraftingGraph();
         var requestStack = new ObjectOpenHashSet<AEKey>();
 
-        var rootNode = buildNodeRecursive(output, graph, requestStack, true);
+        var rootNode = buildNodeRecursive(output, graph, requestStack, true, false);
         if (rootNode == null) throw new IllegalStateException("Graph root was not created");
         graph.setRootNode(rootNode);
         rootNode.setDemandAmount(requestedAmount);
@@ -116,8 +117,8 @@ public class GraphBuilder {
         return graph;
     }
 
-    private CraftingGraphNode buildNodeRecursive(AEKey what, CraftingGraph graph, Set<AEKey> requestStack, boolean root)
-        throws InterruptedException {
+    private CraftingGraphNode buildNodeRecursive(AEKey what, CraftingGraph graph, Set<AEKey> requestStack, boolean root,
+        boolean substitutable) throws InterruptedException {
         long emitStart = this.trackPerformance ? System.nanoTime() : 0;
         boolean canEmit = calc.canEmitFor(what);
         if (this.trackPerformance) {
@@ -129,7 +130,7 @@ public class GraphBuilder {
             if (existing != null) {
                 return existing;
             }
-            var emitter = new CraftingGraphNode(what, null, ImmutableList.of(new GenericStack(what, 1)), 1);
+            var emitter = new CraftingGraphNode(what, null, List.of(new GenericStack(what, 1)), 1);
             graph.putNode(nodeKey, emitter);
             this.nodeCount++;
             return emitter;
@@ -141,14 +142,14 @@ public class GraphBuilder {
             this.patternLookupNanos += System.nanoTime() - patternStart;
         }
         if (patterns.isEmpty()) {
-            var substitute = root ? null : calc.getFuzzyCraftable(what);
+            var substitute = substitutable ? calc.getFuzzyCraftable(what) : null;
             if (substitute != null) {
                 graph.requireLegacyFallback();
                 collectSubstituteClosure(substitute, graph);
             }
             if (root) {
                 var nodeKey = new CraftingGraph.NodeKey(what, null);
-                var leaf = new CraftingGraphNode(what, null, ImmutableList.of(), 1, false, true);
+                var leaf = new CraftingGraphNode(what, null, List.of(), 1, false, true);
                 graph.putNode(nodeKey, leaf);
                 this.nodeCount++;
                 return leaf;
@@ -159,6 +160,17 @@ public class GraphBuilder {
         String localReason = null;
         if (patterns.size() != 1 && countMadeFirst(what, patterns) > 1) {
             graph.markAlternatives();
+            // A native node commits to one producer. Recursive alternatives may have to share the request
+            // when each has a different finite fuel supply; choosing either one alone invents a shortage.
+            localUnit = patterns.stream()
+                .anyMatch(
+                    pattern -> java.util.Arrays.stream(pattern.getInputs())
+                        .anyMatch(
+                            input -> java.util.Arrays.stream(input.possibleInputs())
+                                .anyMatch(
+                                    stack -> stack.what()
+                                        .equals(what))));
+            if (localUnit) localReason = "recursive-alternatives";
         }
 
         var primaryPattern = this.choices.getOrDefault(what, patterns.get(0));
@@ -201,7 +213,7 @@ public class GraphBuilder {
         calc.handlePausing();
 
         var graphInputs = new Object2LongLinkedOpenHashMap<AEKey>();
-        var patternsToScan = localUnit ? patterns : ImmutableList.of(primaryPattern);
+        var patternsToScan = localUnit ? patterns : List.of(primaryPattern);
         for (var pattern : patternsToScan) {
             var patternInputs = new Object2LongLinkedOpenHashMap<AEKey>();
             for (var inputEntry : pattern.getInputs()) {
@@ -209,17 +221,18 @@ public class GraphBuilder {
                 if (possibleInputs.length == 0 || inputEntry.getMultiplier() <= 0) continue;
                 // Fuzzy variants are only consumed by ingredient substitution, an assembler-pattern feature, so gate
                 // on the pattern type instead of inferring it from the input list.
-                boolean substitutable = pattern.canSubstitute();
+                boolean inputSubstitutable = pattern.canSubstitute();
                 int possibleInputIndex = 0;
                 while (possibleInputIndex < possibleInputs.length) {
                     var possible = possibleInputs[possibleInputIndex++];
                     if (possible.amount() > 0 && (!possible.what()
                         .equals(what) || !localUnit)) {
-                        long amount = LongMath.saturatedMultiply(possible.amount(), inputEntry.getMultiplier());
+                        long amount = KeyAmounts
+                            .multiply(possible.what(), possible.amount(), inputEntry.getMultiplier());
                         patternInputs.put(
                             possible.what(),
-                            LongMath.saturatedAdd(patternInputs.getLong(possible.what()), amount));
-                        if (substitutable) {
+                            KeyAmounts.add(possible.what(), patternInputs.getLong(possible.what()), amount));
+                        if (inputSubstitutable) {
                             graph.addFuzzyKey(possible.what());
                         }
                     }
@@ -236,7 +249,7 @@ public class GraphBuilder {
             var inputKey = graphInput.getKey();
             long inputAmount = graphInput.getLongValue();
 
-            var childNode = buildNodeRecursive(inputKey, graph, requestStack, false);
+            var childNode = buildNodeRecursive(inputKey, graph, requestStack, false, primaryPattern.canSubstitute());
 
             var edge = new CraftingGraphEdge(inputKey, inputAmount, childNode);
             node.addInput(edge);

@@ -86,7 +86,7 @@ public final class OverloadedProviderContracts {
     private static void checkOverflowPersistence(Item item) {
         OverloadedMachineBuffer buffer = new OverloadedMachineBuffer();
         ItemStack pending = new ItemStack(item, 1000000);
-        buffer.replace(List.of(pending), null, ForgeDirection.UP);
+        buffer.replace(List.of(pending), List.of(), ForgeDirection.UP);
         pending.stackSize = 1;
         NBTTagCompound saved = new NBTTagCompound();
         buffer.writeToNBT(saved);

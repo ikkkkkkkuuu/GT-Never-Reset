@@ -655,9 +655,10 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
             lane.pending.clear();
             boolean hadPending = !lane.machineBuffer.isEmpty();
             drops.addAll(lane.machineBuffer.getItems());
-            if (lane.machineBuffer.getFluid() != null)
-                drops.add(com.glodblock.github.common.item.ItemFluidPacket.newStack(lane.machineBuffer.getFluid()));
-            lane.machineBuffer.replace(java.util.Collections.emptyList(), null, ForgeDirection.UNKNOWN);
+            for (net.minecraftforge.fluids.FluidStack fluid : lane.machineBuffer.getFluids())
+                drops.add(com.glodblock.github.common.item.ItemFluidPacket.newStack(fluid));
+            lane.machineBuffer
+                .replace(java.util.Collections.emptyList(), java.util.Collections.emptyList(), ForgeDirection.UNKNOWN);
             if (hadPending && lane.target.resolve(worldObj) instanceof BaseMetaTileEntity gt
                 && gt.getMetaTileEntity() instanceof OverloadedMachineConfiguration configuration)
                 configuration.gtnr$setPending(false);
@@ -903,7 +904,9 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
 
         public int pendingKinds() {
             return pending.size() + machineBuffer.getItems()
-                .size() + (machineBuffer.getFluid() == null ? 0 : 1);
+                .size()
+                + machineBuffer.getFluids()
+                    .size();
         }
     }
 }

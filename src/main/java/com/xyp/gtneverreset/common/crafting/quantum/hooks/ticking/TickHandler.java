@@ -24,6 +24,10 @@ public final class TickHandler {
         return this.sessionEpoch;
     }
 
+    public boolean isCurrentSession(long sessionEpoch) {
+        return this.accepting && sessionEpoch == this.sessionEpoch;
+    }
+
     public boolean registerCraftingSimulation(World world, CraftingCalculation calculation, long sessionEpoch) {
         if (!this.accepting || sessionEpoch != this.sessionEpoch) {
             calculation.cancel();

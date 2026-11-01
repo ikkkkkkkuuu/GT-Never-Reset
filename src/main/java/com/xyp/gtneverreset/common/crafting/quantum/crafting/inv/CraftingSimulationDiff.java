@@ -10,7 +10,7 @@ import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 /**
  * Frozen, single-use changes produced by an isolated crafting simulation.
  */
-public final class CraftingSimulationDiff {
+public class CraftingSimulationDiff {
 
     final KeyCounter requiredExtract;
     final KeyCounter inventoryDelta;
@@ -22,6 +22,7 @@ public final class CraftingSimulationDiff {
 
     CraftingSimulationDiff(KeyCounter requiredExtract, KeyCounter inventoryDelta, KeyCounter emittedItems,
         KeyCounter pseudoItems, Object2LongMap<IPatternDetails> crafts, double bytes) {
+        // freezeDiff transfers its freshly computed delta; the other counters still belong to the live child.
         this(
             copy(requiredExtract),
             inventoryDelta,
@@ -32,7 +33,6 @@ public final class CraftingSimulationDiff {
             true);
     }
 
-    // Without copies, for a diff applied right away
     private CraftingSimulationDiff(KeyCounter requiredExtract, KeyCounter inventoryDelta, KeyCounter emittedItems,
         KeyCounter pseudoItems, Object2LongMap<IPatternDetails> crafts, double bytes, boolean ignored) {
         this.requiredExtract = requiredExtract;
@@ -62,16 +62,19 @@ public final class CraftingSimulationDiff {
         if (!canApplyTo(parent)) {
             throw new IllegalStateException("Crafting simulation diff cannot be applied to parent");
         }
-        // No rollback copy: past the check above, only an internal error aborting the calculation can fail here
+        // No copy of the parent to roll back: once the check above passed, applying can only fail on an internal
+        // error, which aborts the whole calculation, and the copy made every applied diff cost as much as the entire
+        // simulation state.
         parent.applyDiff(this);
         this.applied = true;
     }
 
     public boolean canApplyTo(CraftingSimulationState parent) {
-        var test = new ChildCraftingSimulationState(parent);
+        // Each delta entry is a distinct exact key; testing one cannot consume another entry's inventory.
+        // A child inventory here copied whole fuzzy groups solely to check amounts that the parent already knows.
         for (var entry : inventoryDelta) {
-            if (entry.getLongValue() < 0
-                && test.extract(entry.getKey(), -entry.getLongValue(), Actionable.MODULATE) != -entry.getLongValue()) {
+            if (entry.getLongValue() < 0 && parent.extract(entry.getKey(), -entry.getLongValue(), Actionable.SIMULATE)
+                != -entry.getLongValue()) {
                 return false;
             }
         }
@@ -82,8 +85,23 @@ public final class CraftingSimulationDiff {
         return this.bytes;
     }
 
+    /**
+     * A memoized snapshot remains frozen; each application receives its own single-use diff.
+     */
+    public CraftingSimulationDiff copy() {
+        // The constructor froze these counters and application only reads them. Only the applied flag is per-use.
+        return new CraftingSimulationDiff(
+            requiredExtract,
+            inventoryDelta,
+            emittedItems,
+            pseudoItems,
+            crafts,
+            bytes,
+            true);
+    }
+
     private static KeyCounter copy(KeyCounter source) {
-        var result = new KeyCounter();
+        var result = KeyCounter.checked();
         result.addAll(source);
         return result;
     }

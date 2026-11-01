@@ -4,7 +4,13 @@ public enum PlayerMessages {
 
     CraftingNoPlan,
     CraftingNoNetOutput,
-    CraftingTooLong;
+    CraftingTooLong,
+    CraftingMissingIngredient,
+    CraftingAmountOverflow,
+    CraftingPlanUnbalanced,
+    CraftingReplayLimit,
+    CraftingRecipeStalled,
+    CraftingShortageResolutionLimit;
 
     public String getTranslationKey() {
         switch (this) {
@@ -18,6 +24,36 @@ public enum PlayerMessages {
                 // # Calculation timed out. Request fewer items or raise the server calculation limit.
                 // # zh_CN 合成计算超时，请减少请求数量或调高服务器计算时限。
                 return "gtnr.quantum_crafting.message.CraftingTooLong";
+            case CraftingMissingIngredient:
+                // #tr gtnr.quantum_crafting.message.CraftingMissingIngredient
+                // # An ingredient of the quantum crafting plan could not be crafted or found.
+                // # zh_CN 量子合成计划中有原料既无法合成也无法找到。
+                return "gtnr.quantum_crafting.message.CraftingMissingIngredient";
+            case CraftingAmountOverflow:
+                // #tr gtnr.quantum_crafting.message.CraftingAmountOverflow
+                // # Item count exceeds 9,223,372,036,854,775,807. Request a smaller amount.
+                // # zh_CN 量子合成计划所需某物品的数量超出了可计数的上限（9,223,372,036,854,775,807）。请减少请求数量。
+                return "gtnr.quantum_crafting.message.CraftingAmountOverflow";
+            case CraftingPlanUnbalanced:
+                // #tr gtnr.quantum_crafting.message.CraftingPlanUnbalanced
+                // # The quantum crafting plan does not balance: its patterns cannot make what they consume.
+                // # zh_CN 量子合成计划无法平衡：样板产出不足以抵消其消耗。
+                return "gtnr.quantum_crafting.message.CraftingPlanUnbalanced";
+            case CraftingReplayLimit:
+                // #tr gtnr.quantum_crafting.message.CraftingReplayLimit
+                // # Checking the quantum crafting plan took too many crafting passes. Request a smaller amount.
+                // # zh_CN 校验量子合成计划所需的合成轮数过多。请减少请求数量。
+                return "gtnr.quantum_crafting.message.CraftingReplayLimit";
+            case CraftingRecipeStalled:
+                // #tr gtnr.quantum_crafting.message.CraftingRecipeStalled
+                // # The quantum crafting plan would leave a crafting step waiting for inputs that never arrive.
+                // # zh_CN 量子合成计划会让某个合成步骤一直等待永远不会到达的原料。
+                return "gtnr.quantum_crafting.message.CraftingRecipeStalled";
+            case CraftingShortageResolutionLimit:
+                // #tr gtnr.quantum_crafting.message.CraftingShortageResolutionLimit
+                // # Could not resolve missing crafting ingredients. Request a smaller amount.
+                // # zh_CN 量子合成计算无法确定计划缺少的物品。请减少请求数量。
+                return "gtnr.quantum_crafting.message.CraftingShortageResolutionLimit";
             default:
                 // #tr gtnr.quantum_crafting.message.CraftingNoPlan
                 // # Quantum crafting could not produce a plan.

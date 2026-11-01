@@ -4,11 +4,12 @@ import org.jetbrains.annotations.Nullable;
 
 import com.xyp.gtneverreset.common.crafting.quantum.api.stacks.AEKey;
 
-public final class CraftingGraphEdge {
+public class CraftingGraphEdge {
 
     private final AEKey inputKey;
     private final long amountPerCraft;
     private final @Nullable CraftingGraphNode producer;
+    private int ordinal = -1;
     private boolean cycleCut;
     private long seedDemand;
     private long seedRequired;
@@ -32,6 +33,14 @@ public final class CraftingGraphEdge {
 
     public @Nullable CraftingGraphNode producer() {
         return producer;
+    }
+
+    int ordinal() {
+        return ordinal;
+    }
+
+    void assignOrdinal(int ordinal) {
+        this.ordinal = ordinal;
     }
 
     public boolean cycleCut() {

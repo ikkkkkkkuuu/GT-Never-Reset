@@ -16,6 +16,9 @@ public interface ICraftingInventory {
      */
     void insert(AEKey what, long amount, Actionable mode);
 
+    /**
+     * Extract items.
+     */
     long extract(AEKey what, long amount, Actionable mode);
 
     /**

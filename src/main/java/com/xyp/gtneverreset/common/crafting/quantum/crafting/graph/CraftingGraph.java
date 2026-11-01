@@ -46,8 +46,8 @@ public class CraftingGraph {
 
         @Override
         public boolean equals(Object o) {
-            if (!(o instanceof NodeKey key)) return false;
-            return what.equals(key.what()) && Objects.equals(pattern, key.pattern());
+            if (!(o instanceof NodeKey(AEKey what1, IPatternDetails pattern1))) return false;
+            return what.equals(what1) && Objects.equals(pattern, pattern1);
         }
     }
 

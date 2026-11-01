@@ -1,9 +1,11 @@
 package com.xyp.gtneverreset.common.crafting.quantum.crafting.graph;
 
+import java.util.Objects;
+
 import com.xyp.gtneverreset.common.crafting.quantum.api.stacks.GenericStack;
+import com.xyp.gtneverreset.common.crafting.quantum.api.stacks.KeyAmounts;
 import com.xyp.gtneverreset.common.crafting.quantum.crafting.CraftingCalculation;
 import com.xyp.gtneverreset.common.crafting.quantum.crafting.inv.CraftingSimulationState;
-import com.xyp.gtnrlib.utils.LongMath;
 
 import appeng.api.config.Actionable;
 
@@ -43,7 +45,7 @@ public class GraphExecutor {
         }
     }
 
-    private void applyNode(CraftingGraphNode node, CraftingSimulationState inv) {
+    private void applyNode(CraftingGraphNode node, CraftingSimulationState inv) throws InterruptedException {
         long times = node.getCraftTimes();
         var pattern = node.getPattern();
 
@@ -52,59 +54,81 @@ public class GraphExecutor {
             return;
         }
 
+        var sccPlan = graph.getTopology()
+            .isCyclic(node)
+                ? graph.getSccPlan(
+                    graph.getTopology()
+                        .getComponentId(node))
+                : null;
+        boolean ring = sccPlan != null && sccPlan.ring();
+        CraftingGraphEdge cycleCut = null;
         for (var edge : node.getInputs()) {
+            if (cycleCut == null && edge.cycleCut()) cycleCut = edge;
             long needed = edge.cycleCut() ? edge.seedDemand()
-                : LongMath.saturatedMultiply(edge.amountPerCraft(), times);
+                : KeyAmounts.multiply(edge.inputKey(), edge.amountPerCraft(), times);
             if (!edge.cycleCut()) {
                 inv.addStackBytes(edge.inputKey(), edge.amountPerCraft(), times);
             }
             if (edge.cycleCut() && needed == 0) {
                 continue;
             }
+            long stockedSeed = edge.cycleCut() ? inv.extract(edge.inputKey(), needed, Actionable.SIMULATE) : 0;
+            if (edge.cycleCut() && !ring && stockedSeed < needed) {
+                calc.craftGraphSeed(edge.inputKey(), needed - stockedSeed, pattern, inv);
+            }
             long got = inv.extract(edge.inputKey(), needed, Actionable.MODULATE);
             long shortfall = needed - got;
             if (edge.cycleCut()) {
                 inv.addStackBytes(edge.inputKey(), got, 1);
                 edge.recordSeedResult(got, shortfall);
-                calc.recordGraphRecursiveSeed(
-                    node.getWhat(),
-                    edge.inputKey(),
-                    needed,
-                    got,
-                    shortfall,
-                    edge.reserveDemand());
+                if (ring) {
+                    // A ring plans its reserve itself. A seed it lacks is a recursive missing seed, which keeps it
+                    // missing although the ring crafts more of it.
+                    if (shortfall > 0) {
+                        calc.recordGraphRecursiveSeed(node.getWhat(), edge.inputKey(), needed, got, shortfall, 0);
+                    }
+                } else {
+                    calc.recordGraphRecursiveSeed(
+                        node.getWhat(),
+                        edge.inputKey(),
+                        needed,
+                        got,
+                        shortfall,
+                        edge.reserveDemand());
+                }
             } else if (shortfall > 0) {
                 calc.addMissing(edge.inputKey(), shortfall);
             }
         }
 
-        CraftingGraphEdge cycleCut = null;
-        for (var edge : node.getInputs()) {
-            if (edge.cycleCut()) {
-                cycleCut = edge;
-                break;
-            }
-        }
         for (GenericStack output : node.getOutputs()) {
-            long outputAmount = LongMath.saturatedMultiply(output.amount(), times);
-            if (cycleCut != null && output.what()
+            long outputAmount = KeyAmounts.multiply(output.what(), output.amount(), times);
+            if (ring && output.what()
                 .equals(node.getWhat())) {
-                int componentId = graph.getTopology()
-                    .getComponentId(node);
-                var sccPlan = graph.getSccPlan(componentId);
-                if (sccPlan != null) {
-                    // Replace the planned seed portion with the amount actually allocated. Missing seeds must not
-                    // become synthetic output; the remaining planned amount is the real net gain of crafted batches.
-                    long planned = sccPlan.plannedOutput(node);
-                    long netGain = Math.max(0, planned - cycleCut.seedRequired());
-                    outputAmount = LongMath.saturatedAdd(cycleCut.seedAllocated(), netGain);
+                // A node of the ring applied before this one already took its share by a cut input
+                outputAmount = Math.max(
+                    0,
+                    outputAmount - Objects.requireNonNull(sccPlan)
+                        .takenByCycle(node));
+            } else if (cycleCut != null && output.what()
+                .equals(node.getWhat())) {
+                    if (sccPlan != null) {
+                        // Missing seed is already recorded separately. As with other missing inputs, downstream
+                        // accounting assumes it will be supplied; otherwise the same shortage is charged twice.
+                        outputAmount = sccPlan.plannedOutput(node);
+                    }
                 }
-            }
             inv.insert(output.what(), outputAmount, Actionable.MODULATE);
         }
 
         inv.addCrafting(pattern, times);
         inv.addBytes(times);
+
+        if ((ring || cycleCut != null) && node == graph.getRootNode()) {
+            // The ring takes back what was crafted of the requested item beyond the request; the CPU keeps it
+            long crafted = KeyAmounts.multiply(node.getWhat(), node.getOutputPerCraft(), times);
+            calc.addGraphIntermediateFinalOutput(Math.max(0, crafted - node.getDemandAmount()));
+        }
     }
 
     private static boolean hasCycleSeed(CraftingGraphNode node) {

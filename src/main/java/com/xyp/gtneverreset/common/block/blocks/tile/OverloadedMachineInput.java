@@ -23,6 +23,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.api.mixinHelper.LargeInventoryCrafting;
+import com.xyp.gtneverreset.common.machine.basicMachine.ModernFluidMachine;
 import com.xyp.gtneverreset.common.me.CircuitPatternMolds;
 import com.xyp.gtneverreset.common.me.CircuitPatternQuantities;
 import com.xyp.gtneverreset.common.me.CircuitRecipeInputs;
@@ -151,14 +152,15 @@ public final class OverloadedMachineInput {
                 add(buffered, new Ingredient(existing, false), existing.stackSize);
             }
         }
-        FluidStack oldFluid = machine.getFillableStack();
-        if (oldFluid != null && oldFluid.amount > 0) {
-            add(buffered, new Ingredient(oldFluid, false), oldFluid.amount);
+        FluidStack[] oldFluids = copyInputFluids(machine);
+        for (FluidStack oldFluid : oldFluids) {
+            if (oldFluid != null && oldFluid.amount > 0)
+                add(buffered, new Ingredient(oldFluid, false), oldFluid.amount);
         }
 
         Map<Ingredient, Long> actual = new HashMap<>();
         List<ItemStack> items = new ArrayList<>();
-        FluidStack fluid = null;
+        List<FluidStack> fluids = new ArrayList<>();
         for (int slot = 0; slot < aeTable.getSizeInventory(); slot++) {
             IAEStack<?> stack = aeTable.getAEStackInSlot(slot);
             if (stack == null) continue;
@@ -174,12 +176,7 @@ public final class OverloadedMachineInput {
                 FluidStack copy = liquid.getFluidStack()
                     .copy();
                 copy.amount = (int) amount;
-                if (fluid == null) fluid = copy;
-                else {
-                    if (!fluid.isFluidEqual(copy) || (long) fluid.amount + copy.amount > Integer.MAX_VALUE)
-                        return false;
-                    fluid.amount += copy.amount;
-                }
+                fluids.add(copy);
             } else return false;
         }
         Match selected = null;
@@ -219,16 +216,40 @@ public final class OverloadedMachineInput {
         ItemStack[] staged = machine.mInventory;
         ItemStack[] committed;
         List<ItemStack> pendingItems = new ArrayList<>();
-        FluidStack insertedFluid = null;
+        List<FluidStack> insertedFluids = new ArrayList<>();
+        List<FluidStack> pendingFluids = new ArrayList<>();
         ItemStack originalMold = OverloadedMachineMolds.get(machine);
         staged[machine.getCircuitSlot()] = selected.circuit == null ? null : selected.circuit.copy();
         OverloadedMachineMolds.set(machine, selected.mold);
         try {
-            if (fluid != null) {
+            // Stage sequential fills so different fluids cannot claim the same empty tank.
+            // The finally block restores all tanks before this preparation returns.
+            for (FluidStack fluid : fluids) {
                 int accepted = tile.fill(side, fluid, false);
                 if (accepted <= 0 || accepted > fluid.amount) return false;
-                insertedFluid = fluid.copy();
-                insertedFluid.amount = accepted;
+                if (accepted > 0) {
+                    FluidStack inserted = fluid.copy();
+                    inserted.amount = accepted;
+                    insertedFluids.add(inserted);
+                    if (machine instanceof ModernFluidMachine modern) {
+                        if (modern.fill(inserted, true) != accepted) return false;
+                    } else {
+                        FluidStack existing = machine.getFillableStack();
+                        if (existing == null || existing.amount <= 0) machine.setFillableStack(inserted.copy());
+                        else {
+                            if (!existing.isFluidEqual(inserted)
+                                || (long) existing.amount + accepted > Integer.MAX_VALUE) return false;
+                            FluidStack combined = existing.copy();
+                            combined.amount += accepted;
+                            machine.setFillableStack(combined);
+                        }
+                    }
+                }
+                if (accepted < fluid.amount) {
+                    FluidStack pending = fluid.copy();
+                    pending.amount -= accepted;
+                    pendingFluids.add(pending);
+                }
             }
             for (ItemStack item : items) {
                 int remaining = item.stackSize;
@@ -255,15 +276,6 @@ public final class OverloadedMachineInput {
                     pendingItems.add(pending);
                 }
             }
-            FluidStack combinedFluid = oldFluid == null ? null : oldFluid.copy();
-            if (insertedFluid != null) {
-                if (combinedFluid == null || combinedFluid.amount <= 0) combinedFluid = insertedFluid.copy();
-                else {
-                    if (!combinedFluid.isFluidEqual(insertedFluid)
-                        || (long) combinedFluid.amount + insertedFluid.amount > Integer.MAX_VALUE) return false;
-                    combinedFluid.amount += insertedFluid.amount;
-                }
-            }
             ItemStack[] recipeInputs = new ItemStack[machine.mInputSlotCount + 1];
             System.arraycopy(staged, first, recipeInputs, 0, machine.mInputSlotCount);
             recipeInputs[machine.mInputSlotCount] = staged[machine.getCircuitSlot()];
@@ -272,7 +284,7 @@ public final class OverloadedMachineInput {
             GTRecipe runnable = machine.getRecipeMap()
                 .findRecipeQuery()
                 .items(OverloadedMachineMolds.append(recipeInputs, selected.mold))
-                .fluids(combinedFluid)
+                .fluids(copyInputFluids(machine))
                 .specialSlot(machine.getStackInSlot(machine.getSpecialSlotIndex()))
                 .voltage(GTValues.V[machine.mTier])
                 .find();
@@ -289,11 +301,7 @@ public final class OverloadedMachineInput {
         } finally {
             System.arraycopy(original, 0, machine.mInventory, 0, original.length);
             OverloadedMachineMolds.set(machine, originalMold);
-        }
-        FluidStack pendingFluid = null;
-        if (fluid != null && insertedFluid != null && fluid.amount > insertedFluid.amount) {
-            pendingFluid = fluid.copy();
-            pendingFluid.amount -= insertedFluid.amount;
+            restoreInputFluids(machine, oldFluids);
         }
         prepared.add(
             new PreparedInput(
@@ -301,10 +309,10 @@ public final class OverloadedMachineInput {
                 selected,
                 original,
                 committed,
-                oldFluid,
-                insertedFluid,
+                oldFluids,
+                insertedFluids,
                 pendingItems,
-                pendingFluid,
+                pendingFluids,
                 side,
                 overflow));
         return true;
@@ -343,12 +351,13 @@ public final class OverloadedMachineInput {
         if (overflow.isEmpty() || overflow.getSide() == ForgeDirection.UNKNOWN) return;
         ForgeDirection side = overflow.getSide();
         boolean changed = false;
-        FluidStack remainingFluid = overflow.getFluid();
-        if (remainingFluid != null) {
+        for (Iterator<FluidStack> iterator = overflow.getFluids()
+            .iterator(); iterator.hasNext();) {
+            FluidStack remainingFluid = iterator.next();
             int moved = tile.fill(side, remainingFluid, true);
             if (moved > 0) {
                 remainingFluid.amount -= moved;
-                if (remainingFluid.amount <= 0) overflow.setFluid(null);
+                if (remainingFluid.amount <= 0) iterator.remove();
                 changed = true;
             }
         }
@@ -651,6 +660,17 @@ public final class OverloadedMachineInput {
         return sameCircuit && compatibleBuffer && (!running || sameDelivery);
     }
 
+    private static FluidStack[] copyInputFluids(MTEBasicMachine machine) {
+        if (machine instanceof ModernFluidMachine modern) return modern.copyInputFluids();
+        FluidStack fluid = machine.getFillableStack();
+        return new FluidStack[] { fluid == null ? null : fluid.copy() };
+    }
+
+    private static void restoreInputFluids(MTEBasicMachine machine, FluidStack[] fluids) {
+        if (machine instanceof ModernFluidMachine modern) modern.restoreInputFluids(fluids);
+        else machine.setFillableStack(fluids[0] == null ? null : fluids[0].copy());
+    }
+
     public static final class PreparedInput {
 
         private final BaseMetaTileEntity tile;
@@ -658,37 +678,40 @@ public final class OverloadedMachineInput {
         private final Match selected;
         private final ItemStack[] original;
         private final ItemStack[] committed;
-        private final FluidStack oldFluid;
-        private final FluidStack insertedFluid;
+        private final FluidStack[] oldFluids;
+        private final List<FluidStack> insertedFluids;
         private final List<ItemStack> pendingItems;
-        private final FluidStack pendingFluid;
+        private final List<FluidStack> pendingFluids;
         private final ForgeDirection side;
         private final OverloadedMachineBuffer overflow;
 
         private PreparedInput(BaseMetaTileEntity tile, Match selected, ItemStack[] original, ItemStack[] committed,
-            FluidStack oldFluid, FluidStack insertedFluid, List<ItemStack> pendingItems, FluidStack pendingFluid,
-            ForgeDirection side, OverloadedMachineBuffer overflow) {
+            FluidStack[] oldFluids, List<FluidStack> insertedFluids, List<ItemStack> pendingItems,
+            List<FluidStack> pendingFluids, ForgeDirection side, OverloadedMachineBuffer overflow) {
             this.tile = tile;
             this.machine = (MTEBasicMachine) tile.getMetaTileEntity();
             this.selected = selected;
             this.original = original;
             this.committed = committed;
-            this.oldFluid = oldFluid == null ? null : oldFluid.copy();
-            this.insertedFluid = insertedFluid;
+            this.oldFluids = oldFluids;
+            this.insertedFluids = insertedFluids;
             this.pendingItems = pendingItems;
-            this.pendingFluid = pendingFluid;
+            this.pendingFluids = pendingFluids;
             this.side = side;
             this.overflow = overflow;
         }
 
         private boolean fill() {
-            if (insertedFluid == null) return true;
+            if (insertedFluids.isEmpty()) return true;
             ItemStack oldCircuit = machine.mInventory[machine.getCircuitSlot()];
             ItemStack oldMold = OverloadedMachineMolds.get(machine);
             machine.mInventory[machine.getCircuitSlot()] = committed[machine.getCircuitSlot()];
             OverloadedMachineMolds.set(machine, selected.mold);
             try {
-                return tile.fill(side, insertedFluid, true) == insertedFluid.amount;
+                for (FluidStack fluid : insertedFluids) {
+                    if (tile.fill(side, fluid, true) != fluid.amount) return false;
+                }
+                return true;
             } finally {
                 machine.mInventory[machine.getCircuitSlot()] = oldCircuit;
                 OverloadedMachineMolds.set(machine, oldMold);
@@ -696,7 +719,7 @@ public final class OverloadedMachineInput {
         }
 
         private void restoreFluid() {
-            if (insertedFluid != null) machine.setFillableStack(oldFluid == null ? null : oldFluid.copy());
+            restoreInputFluids(machine, oldFluids);
         }
 
         private void commit() {
@@ -708,7 +731,7 @@ public final class OverloadedMachineInput {
             for (int slot = first; slot < first + machine.mInputSlotCount; slot++) {
                 tile.setInventorySlotContents(slot, committed[slot]);
             }
-            overflow.replace(pendingItems, pendingFluid, side);
+            overflow.replace(pendingItems, pendingFluids, side);
             ((com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration) machine)
                 .gtnr$setPending(!overflow.isEmpty());
             LAST_DELIVERIES.put(machine, selected);

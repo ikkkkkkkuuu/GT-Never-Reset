@@ -131,6 +131,15 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
         return inputTanks;
     }
 
+    public FluidStack[] copyInputFluids() {
+        return copyFluids(inputStacks());
+    }
+
+    public void restoreInputFluids(FluidStack[] snapshot) {
+        if (snapshot.length != inputTanks.length) throw new IllegalArgumentException("input tank count changed");
+        for (int i = 0; i < snapshot.length; i++) setInput(i, snapshot[i] == null ? null : snapshot[i].copy());
+    }
+
     public FluidStackTank[] getOutputTanks() {
         return outputTanks;
     }

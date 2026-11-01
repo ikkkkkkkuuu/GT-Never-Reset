@@ -19,33 +19,30 @@ public final class OverloadedMachineBuffer {
     private static final String KEY_QUANTITY = "Quantity";
 
     private final List<ItemStack> items = new ArrayList<>();
-    private FluidStack fluid;
+    private final List<FluidStack> fluids = new ArrayList<>();
     private ForgeDirection side = ForgeDirection.UNKNOWN;
 
     public boolean isEmpty() {
-        return items.isEmpty() && fluid == null;
+        return items.isEmpty() && fluids.isEmpty();
     }
 
     public List<ItemStack> getItems() {
         return items;
     }
 
-    public FluidStack getFluid() {
-        return fluid;
-    }
-
-    public void setFluid(FluidStack fluid) {
-        this.fluid = fluid;
+    public List<FluidStack> getFluids() {
+        return fluids;
     }
 
     public ForgeDirection getSide() {
         return side;
     }
 
-    public void replace(List<ItemStack> pendingItems, FluidStack pendingFluid, ForgeDirection inputSide) {
+    public void replace(List<ItemStack> pendingItems, List<FluidStack> pendingFluids, ForgeDirection inputSide) {
         items.clear();
         for (ItemStack item : pendingItems) if (item != null && item.stackSize > 0) items.add(item.copy());
-        fluid = pendingFluid == null || pendingFluid.amount <= 0 ? null : pendingFluid.copy();
+        fluids.clear();
+        for (FluidStack fluid : pendingFluids) if (fluid != null && fluid.amount > 0) fluids.add(fluid.copy());
         side = isEmpty() ? ForgeDirection.UNKNOWN : inputSide;
     }
 
@@ -69,14 +66,16 @@ public final class OverloadedMachineBuffer {
             list.appendTag(entry);
         }
         saved.setTag(KEY_ITEMS, list);
-        if (fluid != null) saved.setTag(KEY_FLUID, fluid.writeToNBT(new NBTTagCompound()));
+        NBTTagList fluidList = new NBTTagList();
+        for (FluidStack fluid : fluids) fluidList.appendTag(fluid.writeToNBT(new NBTTagCompound()));
+        saved.setTag("Fluids", fluidList);
         saved.setInteger(KEY_SIDE, side.ordinal());
         target.setTag("OverloadedInputBuffer", saved);
     }
 
     public void readFromNBT(NBTTagCompound source) {
         items.clear();
-        fluid = null;
+        fluids.clear();
         side = ForgeDirection.UNKNOWN;
         if (!source.hasKey("OverloadedInputBuffer", Constants.NBT.TAG_COMPOUND)) return;
         NBTTagCompound saved = source.getCompoundTag("OverloadedInputBuffer");
@@ -90,9 +89,16 @@ public final class OverloadedMachineBuffer {
                 items.add(item);
             }
         }
-        if (saved.hasKey(KEY_FLUID, Constants.NBT.TAG_COMPOUND))
-            fluid = FluidStack.loadFluidStackFromNBT(saved.getCompoundTag(KEY_FLUID));
-        if (fluid != null && fluid.amount <= 0) fluid = null;
+        if (saved.hasKey("Fluids", Constants.NBT.TAG_LIST)) {
+            NBTTagList fluidList = saved.getTagList("Fluids", Constants.NBT.TAG_COMPOUND);
+            for (int i = 0; i < fluidList.tagCount(); i++) {
+                FluidStack fluid = FluidStack.loadFluidStackFromNBT(fluidList.getCompoundTagAt(i));
+                if (fluid != null && fluid.amount > 0) fluids.add(fluid);
+            }
+        } else if (saved.hasKey(KEY_FLUID, Constants.NBT.TAG_COMPOUND)) {
+            FluidStack fluid = FluidStack.loadFluidStackFromNBT(saved.getCompoundTag(KEY_FLUID));
+            if (fluid != null && fluid.amount > 0) fluids.add(fluid);
+        }
         int ordinal = saved.getInteger(KEY_SIDE);
         if (ordinal >= 0 && ordinal < ForgeDirection.VALID_DIRECTIONS.length)
             side = ForgeDirection.VALID_DIRECTIONS[ordinal];

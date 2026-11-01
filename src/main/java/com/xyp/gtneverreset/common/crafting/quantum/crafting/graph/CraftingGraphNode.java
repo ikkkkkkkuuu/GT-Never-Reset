@@ -4,11 +4,10 @@ import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 
-import com.google.common.collect.ImmutableList;
 import com.xyp.gtneverreset.common.crafting.quantum.api.crafting.IPatternDetails;
 import com.xyp.gtneverreset.common.crafting.quantum.api.stacks.AEKey;
 import com.xyp.gtneverreset.common.crafting.quantum.api.stacks.GenericStack;
-import com.xyp.gtnrlib.utils.LongMath;
+import com.xyp.gtneverreset.common.crafting.quantum.api.stacks.KeyAmounts;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
@@ -49,7 +48,7 @@ public class CraftingGraphNode {
         this(
             what,
             pattern,
-            pattern == null ? ImmutableList.of() : ImmutableList.of(pattern),
+            pattern == null ? List.of() : List.of(pattern),
             outputs,
             outputPerCraft,
             localUnit,
@@ -74,8 +73,8 @@ public class CraftingGraphNode {
         @Nullable String localReason) {
         this.what = what;
         this.pattern = pattern;
-        this.outputs = ImmutableList.copyOf(outputs);
-        this.patternCandidates = ImmutableList.copyOf(patternCandidates);
+        this.outputs = List.copyOf(outputs);
+        this.patternCandidates = List.copyOf(patternCandidates);
         this.outputPerCraft = outputPerCraft;
         if (externalLeaf) {
             if (pattern != null || localUnit) {
@@ -170,7 +169,7 @@ public class CraftingGraphNode {
     }
 
     public void addDemandAmount(long amount) {
-        this.demandAmount = LongMath.saturatedAdd(this.demandAmount, amount);
+        this.demandAmount = KeyAmounts.add(this.what, this.demandAmount, amount);
     }
 
     public long getCraftTimes() {

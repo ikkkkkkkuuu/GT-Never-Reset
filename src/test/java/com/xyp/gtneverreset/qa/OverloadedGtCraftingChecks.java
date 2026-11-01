@@ -2,6 +2,7 @@ package com.xyp.gtneverreset.qa;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -56,6 +57,48 @@ import gregtech.api.recipe.RecipeMaps;
 @Mod(modid = "overloadedgtqa", name = "Overloaded GT crafting QA", version = "1", dependencies = "after:gtneverreset")
 public final class OverloadedGtCraftingChecks {
 
+    private static void checkFluidOverflowPersistence() {
+        FluidStack water = new FluidStack(FluidRegistry.WATER, 1000000);
+        FluidStack lava = new FluidStack(FluidRegistry.LAVA, 2000000);
+        OverloadedMachineBuffer buffer = new OverloadedMachineBuffer();
+        buffer.replace(List.of(), List.of(water, lava), ForgeDirection.NORTH);
+        water.amount = 1;
+        NBTTagCompound saved = new NBTTagCompound();
+        buffer.writeToNBT(saved);
+        OverloadedMachineBuffer restored = new OverloadedMachineBuffer();
+        restored.readFromNBT(saved);
+        require(
+            restored.getFluids()
+                .size() == 2,
+            "all fluid types survive reload");
+        require(
+            restored.getFluids()
+                .get(0).amount == 1000000
+                && restored.getFluids()
+                    .get(1).amount == 2000000,
+            "large fluid amounts are copied and persisted");
+        require(restored.getSide() == ForgeDirection.NORTH, "multi-fluid refill side survives reload");
+        NBTTagCompound legacy = new NBTTagCompound();
+        legacy.setTag("Fluid", lava.writeToNBT(new NBTTagCompound()));
+        legacy.setInteger("Side", ForgeDirection.UP.ordinal());
+        saved.setTag("OverloadedInputBuffer", legacy);
+        restored.readFromNBT(saved);
+        require(
+            restored.getFluids()
+                .size() == 1
+                && restored.getFluids()
+                    .get(0).amount == 2000000,
+            "legacy single-fluid buffers remain readable");
+        restored.getFluids()
+            .clear();
+        restored.clearIfEmpty();
+        restored.writeToNBT(saved);
+        require(
+            restored.isEmpty() && restored.getSide() == ForgeDirection.UNKNOWN
+                && !saved.hasKey("OverloadedInputBuffer"),
+            "drained buffers clear persistent state");
+    }
+
     private boolean started, finished, sawProcessing;
     private int ticks, stage;
     private volatile int screenshot;
@@ -69,6 +112,7 @@ public final class OverloadedGtCraftingChecks {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
+        checkFluidOverflowPersistence();
         cpw.mods.fml.common.registry.GameRegistry.registerTileEntity(FailingFluidTile.class, "gtnrFluidCommitQa");
         FMLCommonHandler.instance()
             .bus()
