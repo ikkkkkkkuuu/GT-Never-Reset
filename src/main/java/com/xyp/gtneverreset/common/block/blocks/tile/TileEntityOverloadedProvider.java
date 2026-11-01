@@ -473,8 +473,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
                 ((OverloadedMachineConfiguration) gt.getMetaTileEntity()).gtnr$setProvider(xCoord, yCoord, zCoord);
             } else {
                 if (!ordinaryItems || inputs.isEmpty()
-                    || !OverloadedProviderInventory.insert(target, lane.target.face, inputs, true)) continue;
-                lane.pending.addAll(inputs);
+                    || !OverloadedProviderInventory.insert(target, lane.target.face, inputs, false)) continue;
             }
             recordOutputs(lane, details);
             dispatchCursor = roundRobin ? index + 1 : index;
