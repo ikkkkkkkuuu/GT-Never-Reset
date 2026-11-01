@@ -62,4 +62,10 @@ Minecraft 1.7.10 的通用支持库，Mod ID 为 `gtnrlib`，Java 包为 `com.xy
 
 本次拆分的来源记录在仓库根目录 `licenses/gtnrlib/`，构建时随 JAR 分发。
 
+指令树和聊天补全由 GTNRLib 自行初始化，使用方无需在入口中调用。服务端在玩家登录时同步其有权限使用的命令，客户端自动接入原版聊天框，并合并 Forge 客户端命令；打开聊天框时通过原版补全刷新可用命令名称。已有详细语法保留，其他命令委托原版服务端补全。具体命令的注册、执行和权限仍由原模组负责。
+
+解析器位于 `command/brigadier`、`command/commodore`，指令树及编解码位于 `command/tree`，提示界面位于 `client/gui/command`，连接状态位于 `client/command`；库的 `network/GTNRLibNetwork` 和客户端 early Mixin 负责接入。同步包使用库自己的 `gtnrlib` 频道；普通输入框和带库文字特效的输入保留原有渲染。内置原版、Baubles 和 Thaumcraft 语法文件位于 `assets/gtnrlib/commandtree`，来源和 MIT 许可位于 `licenses/gtnrlib/commandtree`。
+
+指令树的解析、权限、别名和包边界测试已接入 `:gtnrlib:checkLibraryContracts`。Windows 下可运行 `./gradlew.bat -I gtnrlib/scripts/command-tree-qa.init.gradle :gtnrlib:runClient25 --no-configuration-cache`：自动创建独立测试世界，在透明、点击穿透、静音且不显示任务栏按钮的后台客户端中验证权限变化、聊天刷新、补全和文字特效，保存游戏内截图后退出。结果位于 `gtnrlib/build/command-tree-qa/results`；测试夹具不进入发行包。
+
 样板通配符界面复用库的 `ScrollingDropdown`、`ItemStackSlot` 和 `ModernGuiSkin`：下拉框保留静默赋值、浮层关闭与长文字滚动；物品槽支持只读预览、动态物品提示和保留 NBT 的单个物品副本回调；皮肤由调用方提供资源命名空间和目录。原有现代皮肤贴图仍在宿主，布局、材料／流体转换、样板预览、NEI 配方导入和服务端保存也留在宿主。`GhostItemSlot` 的无 NBT 物品标识语义和 `CycleDropdown` 的滚轮切换语义保持不变。

@@ -1,0 +1,26 @@
+package com.xyp.gtnrlib.command.brigadier.exceptions;
+
+import com.xyp.gtnrlib.command.brigadier.ImmutableStringReader;
+import com.xyp.gtnrlib.command.brigadier.Message;
+
+public class DynamicNCommandExceptionType implements CommandExceptionType {
+
+    private final DynamicNCommandExceptionType.Function function;
+
+    public DynamicNCommandExceptionType(DynamicNCommandExceptionType.Function function) {
+        this.function = function;
+    }
+
+    public CommandSyntaxException create(Object a, Object... args) {
+        return new CommandSyntaxException(this, this.function.apply(args));
+    }
+
+    public CommandSyntaxException createWithContext(ImmutableStringReader reader, Object... args) {
+        return new CommandSyntaxException(this, this.function.apply(args), reader.getString(), reader.getCursor());
+    }
+
+    public interface Function {
+
+        Message apply(Object[] var1);
+    }
+}

@@ -8,6 +8,8 @@ import org.apache.logging.log4j.Logger;
 import com.xyp.gtnrlib.client.GTNRLibClient;
 import com.xyp.gtnrlib.command.CommandItemInfo;
 import com.xyp.gtnrlib.command.CommandSuicide;
+import com.xyp.gtnrlib.command.tree.CommandTreeService;
+import com.xyp.gtnrlib.network.GTNRLibNetwork;
 import com.xyp.gtnrlib.world.WorldListener;
 
 import cpw.mods.fml.common.Mod;
@@ -29,6 +31,8 @@ public class GTNRLib {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
+        GTNRLibNetwork.register();
+        CommandTreeService.init();
         if (event.getSide()
             .isClient()) GTNRLibClient.preInit();
     }

@@ -1,0 +1,146 @@
+package com.xyp.gtnrlib.command.brigadier.context;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.xyp.gtnrlib.command.brigadier.Command;
+import com.xyp.gtnrlib.command.brigadier.CommandDispatcher;
+import com.xyp.gtnrlib.command.brigadier.RedirectModifier;
+import com.xyp.gtnrlib.command.brigadier.tree.CommandNode;
+
+import lombok.Getter;
+
+public class CommandContextBuilder<S> {
+
+    @Getter
+    private final Map<String, ParsedArgument<S, ?>> arguments = new LinkedHashMap<>();
+    @Getter
+    private final CommandNode<S> rootNode;
+    @Getter
+    private final List<ParsedCommandNode<S>> nodes = new ArrayList<>();
+    @Getter
+    private final CommandDispatcher<S> dispatcher;
+    @Getter
+    private S source;
+    @Getter
+    private Command<S> command;
+    @Getter
+    private CommandContextBuilder<S> child;
+    @Getter
+    private StringRange range;
+    private RedirectModifier<S> modifier = null;
+    private boolean forks;
+
+    public CommandContextBuilder(CommandDispatcher<S> dispatcher, S source, CommandNode<S> rootNode, int start) {
+        this.rootNode = rootNode;
+        this.dispatcher = dispatcher;
+        this.source = source;
+        this.range = StringRange.at(start);
+    }
+
+    public CommandContextBuilder<S> withSource(S source) {
+        this.source = source;
+        return this;
+    }
+
+    public CommandContextBuilder<S> withArgument(String name, ParsedArgument<S, ?> argument) {
+        this.arguments.put(name, argument);
+        return this;
+    }
+
+    public CommandContextBuilder<S> withCommand(Command<S> command) {
+        this.command = command;
+        return this;
+    }
+
+    public CommandContextBuilder<S> withNode(CommandNode<S> node, StringRange range) {
+        this.nodes.add(new ParsedCommandNode<>(node, range));
+        this.range = StringRange.encompassing(this.range, range);
+        this.modifier = node.getRedirectModifier();
+        this.forks = node.isFork();
+        return this;
+    }
+
+    public CommandContextBuilder<S> copy() {
+        CommandContextBuilder<S> copy = new CommandContextBuilder<>(
+            this.dispatcher,
+            this.source,
+            this.rootNode,
+            this.range.getStart());
+        copy.command = this.command;
+        copy.arguments.putAll(this.arguments);
+        copy.nodes.addAll(this.nodes);
+        copy.child = this.child;
+        copy.range = this.range;
+        copy.forks = this.forks;
+        return copy;
+    }
+
+    public CommandContextBuilder<S> withChild(CommandContextBuilder<S> child) {
+        this.child = child;
+        return this;
+    }
+
+    public CommandContextBuilder<S> getLastChild() {
+        CommandContextBuilder<S> result = this;
+
+        while (result.getChild() != null) {
+            result = result.getChild();
+        }
+
+        return result;
+    }
+
+    public CommandContext<S> build(String input) {
+        return new CommandContext<>(
+            this.source,
+            input,
+            this.arguments,
+            this.command,
+            this.rootNode,
+            this.nodes,
+            this.range,
+            this.child == null ? null : this.child.build(input),
+            this.modifier,
+            this.forks);
+    }
+
+    public SuggestionContext<S> findSuggestionContext(int cursor) {
+        if (this.range.getStart() <= cursor) {
+            if (this.range.getEnd() < cursor) {
+                if (this.child != null) {
+                    return this.child.findSuggestionContext(cursor);
+                } else if (!this.nodes.isEmpty()) {
+                    ParsedCommandNode<S> last = this.nodes.get(this.nodes.size() - 1);
+                    return new SuggestionContext<>(
+                        last.getNode(),
+                        last.getRange()
+                            .getEnd() + 1);
+                } else {
+                    return new SuggestionContext<>(this.rootNode, this.range.getStart());
+                }
+            } else {
+                CommandNode<S> prev = this.rootNode;
+
+                for (ParsedCommandNode<S> node : this.nodes) {
+                    StringRange nodeRange = node.getRange();
+                    if (nodeRange.getStart() <= cursor && cursor <= nodeRange.getEnd()) {
+                        return new SuggestionContext<>(prev, nodeRange.getStart());
+                    }
+
+                    prev = node.getNode();
+                }
+
+                if (prev == null) {
+                    throw new IllegalStateException("Can't find node before cursor");
+                } else {
+                    return new SuggestionContext<>(prev, this.range.getStart());
+                }
+            }
+        } else {
+            throw new IllegalStateException("Can't find node before cursor");
+        }
+    }
+}

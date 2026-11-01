@@ -14,6 +14,10 @@ public enum GTNRLibMixins implements IMixins {
     KEY_INPUT(new MixinBuilder("Key binding input access").addClientMixins("input.KeyBindingAccessor")
         .setPhase(Phase.EARLY)),
 
+    COMMAND_TREE(new MixinBuilder("Chat command suggestions")
+        .addClientMixins("command.GuiChatMixin", "command.GuiTextFieldMixin", "command.NetHandlerPlayClientMixin")
+        .setPhase(Phase.EARLY)),
+
     TEXT_EFFECTS_COMMON(new MixinBuilder("Text effect formatting codes")
         .addClientMixins("texteffect.MixinEnumChatFormattingTextEffects")
         .setPhase(Phase.EARLY)),

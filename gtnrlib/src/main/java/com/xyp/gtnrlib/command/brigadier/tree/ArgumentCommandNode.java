@@ -1,0 +1,123 @@
+package com.xyp.gtnrlib.command.brigadier.tree;
+
+import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Predicate;
+
+import com.xyp.gtnrlib.command.brigadier.Command;
+import com.xyp.gtnrlib.command.brigadier.RedirectModifier;
+import com.xyp.gtnrlib.command.brigadier.StringReader;
+import com.xyp.gtnrlib.command.brigadier.arguments.ArgumentType;
+import com.xyp.gtnrlib.command.brigadier.builder.RequiredArgumentBuilder;
+import com.xyp.gtnrlib.command.brigadier.context.CommandContext;
+import com.xyp.gtnrlib.command.brigadier.context.CommandContextBuilder;
+import com.xyp.gtnrlib.command.brigadier.context.ParsedArgument;
+import com.xyp.gtnrlib.command.brigadier.exceptions.CommandSyntaxException;
+import com.xyp.gtnrlib.command.brigadier.suggestion.SuggestionProvider;
+import com.xyp.gtnrlib.command.brigadier.suggestion.Suggestions;
+import com.xyp.gtnrlib.command.brigadier.suggestion.SuggestionsBuilder;
+
+import lombok.Getter;
+
+public class ArgumentCommandNode<S, T> extends CommandNode<S> {
+
+    private final String name;
+    @Getter
+    private final ArgumentType<T> type;
+    @Getter
+    private final SuggestionProvider<S> customSuggestions;
+
+    public ArgumentCommandNode(String name, ArgumentType<T> type, Command<S> command, Predicate<S> requirement,
+        CommandNode<S> redirect, RedirectModifier<S> modifier, boolean forks, SuggestionProvider<S> customSuggestions) {
+        super(command, requirement, redirect, modifier, forks);
+        this.name = name;
+        this.type = type;
+        this.customSuggestions = customSuggestions;
+    }
+
+    @Override
+    public String getName() {
+        return this.name;
+    }
+
+    @Override
+    public String getUsageText() {
+        return "<" + this.name + ">";
+    }
+
+    @Override
+    public void parse(StringReader reader, CommandContextBuilder<S> contextBuilder) throws CommandSyntaxException {
+        int start = reader.getCursor();
+        T result = this.type.parse(reader);
+        ParsedArgument<S, T> parsed = new ParsedArgument<>(start, reader.getCursor(), result);
+        contextBuilder.withArgument(this.name, parsed);
+        contextBuilder.withNode(this, parsed.getRange());
+    }
+
+    @Override
+    public CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder)
+        throws CommandSyntaxException {
+        return this.customSuggestions == null ? this.type.listSuggestions(context, builder)
+            : this.customSuggestions.getSuggestions(context, builder);
+    }
+
+    public RequiredArgumentBuilder<S, T> createBuilder() {
+        RequiredArgumentBuilder<S, T> builder = RequiredArgumentBuilder.argument(this.name, this.type);
+        builder.requires(this.getRequirement());
+        builder.forward(this.getRedirect(), this.getRedirectModifier(), this.isFork());
+        builder.suggests(this.customSuggestions);
+        if (this.getCommand() != null) {
+            builder.executes(this.getCommand());
+        }
+
+        return builder;
+    }
+
+    @Override
+    public boolean isValidInput(String input) {
+        try {
+            StringReader reader = new StringReader(input);
+            this.type.parse(reader);
+            return !reader.canRead() || reader.peek() == ' ';
+        } catch (CommandSyntaxException var3) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (!(o instanceof ArgumentCommandNode)) {
+            return false;
+        } else {
+            ArgumentCommandNode that = (ArgumentCommandNode) o;
+            if (!this.name.equals(that.name)) {
+                return false;
+            } else {
+                return !this.type.equals(that.type) ? false : super.equals(o);
+            }
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        int result = this.name.hashCode();
+        return 31 * result + this.type.hashCode();
+    }
+
+    @Override
+    protected String getSortedKey() {
+        return this.name;
+    }
+
+    @Override
+    public Collection<String> getExamples() {
+        return this.type.getExamples();
+    }
+
+    @Override
+    public String toString() {
+        return "<argument " + this.name + ":" + this.type + ">";
+    }
+}

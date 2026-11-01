@@ -3,6 +3,7 @@ package com.xyp.gtnrlib;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import com.xyp.gtnrlib.command.tree.CommandTreeContracts;
 import com.xyp.gtnrlib.text.EffectTextParser;
 import com.xyp.gtnrlib.text.TextEffectFormat;
 import com.xyp.gtnrlib.text.TextEffects;
@@ -12,6 +13,7 @@ public final class LibraryContracts {
     public static void main(String[] args) throws Exception {
         absent("com.xyp.gtneverreset.GTNeverReset");
         absent("gregtech.api.GregTechAPI");
+        CommandTreeContracts.verify();
         LocalSupportContracts.verify();
         SharedImplementationContracts.verify();
         SharedGuiContracts.verify();

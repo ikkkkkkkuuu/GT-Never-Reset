@@ -1,0 +1,63 @@
+package com.xyp.gtnrlib.command.tree;
+
+import java.util.Map;
+
+import com.xyp.gtnrlib.command.brigadier.builder.ArgumentBuilder;
+import com.xyp.gtnrlib.command.brigadier.builder.RequiredArgumentBuilder;
+import com.xyp.gtnrlib.command.brigadier.tree.CommandNode;
+
+public class CommandTreeConverter {
+
+    private final Map<CommandNode<CommandSource>, CommandNode<ISuggestionProvider>> nodeMapping;
+    private final CommandSource source;
+
+    public CommandTreeConverter(Map<CommandNode<CommandSource>, CommandNode<ISuggestionProvider>> nodeMapping,
+        CommandSource source) {
+        this.nodeMapping = nodeMapping;
+        this.source = source;
+    }
+
+    public void convertChildren(CommandNode<CommandSource> serverNode, CommandNode<ISuggestionProvider> clientNode) {
+        for (CommandNode<CommandSource> child : serverNode.getChildren()) {
+            if (child.canUse(this.source)) {
+                CommandNode<ISuggestionProvider> convertedChild = this.convertNode(child);
+                this.nodeMapping.put(child, convertedChild);
+                clientNode.addChild(convertedChild);
+                this.convertChildren(child, convertedChild);
+            }
+        }
+    }
+
+    private CommandNode<ISuggestionProvider> convertNode(CommandNode<CommandSource> serverNode) {
+        @SuppressWarnings("unchecked")
+        ArgumentBuilder<ISuggestionProvider, ?> builder = (ArgumentBuilder<ISuggestionProvider, ?>) (ArgumentBuilder) serverNode
+            .createBuilder();
+        return this.configureBuilder(builder)
+            .build();
+    }
+
+    private ArgumentBuilder<ISuggestionProvider, ?> configureBuilder(ArgumentBuilder<ISuggestionProvider, ?> builder) {
+        builder.requires(client -> true);
+        if (builder.getCommand() != null) {
+            builder.executes(context -> 0);
+        }
+
+        if (builder instanceof RequiredArgumentBuilder) {
+            this.configureArgumentBuilder((RequiredArgumentBuilder<ISuggestionProvider, ?>) builder);
+        }
+
+        if (builder.getRedirect() != null) {
+            builder.redirect(this.nodeMapping.get(builder.getRedirect()));
+        }
+
+        return builder;
+    }
+
+    private void configureArgumentBuilder(RequiredArgumentBuilder<ISuggestionProvider, ?> builder) {
+        if (builder.getSuggestionsProvider() != null) {
+            builder.suggests(SuggestionProviders.safelySwap(builder.getSuggestionsProvider()));
+        } else {
+            builder.suggests(SuggestionProviders.ASK_SERVER);
+        }
+    }
+}
