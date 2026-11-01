@@ -820,6 +820,7 @@ gtnr.tooltip.performance.per_tier=Per %s tier: %s
 gtnr.tooltip.performance.switch=%s: %s
 gtnr.tooltip.performance.perfect_from=Perfect overclocking at %s or higher
 gtnr.tooltip.performance.bonus.parallel=Parallels %s
+gtnr.tooltip.performance.bonus.threads=Concurrent recipe threads %s
 gtnr.tooltip.performance.bonus.speed=Speed multiplier %s
 gtnr.tooltip.performance.bonus.duration=Recipe time multiplier %s
 gtnr.tooltip.performance.bonus.energy=Energy multiplier %s

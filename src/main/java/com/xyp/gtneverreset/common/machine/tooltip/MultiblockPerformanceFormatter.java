@@ -90,10 +90,9 @@ final class MultiblockPerformanceFormatter {
     }
 
     private static String effect(TierBonus bonus) {
+        boolean count = bonus.stat() == BonusStat.PARALLEL || bonus.stat() == BonusStat.THREADS;
         String change = bonus.multiplicative() ? "×" + number(bonus.value())
-            : (bonus.value() > 0 ? "+" : "")
-                + number(bonus.stat() == BonusStat.PARALLEL ? bonus.value() : bonus.value() * 100)
-                + (bonus.stat() == BonusStat.PARALLEL ? "" : "%");
+            : (bonus.value() > 0 ? "+" : "") + number(count ? bonus.value() : bonus.value() * 100) + (count ? "" : "%");
         String value = EnumChatFormatting.AQUA + change + EnumChatFormatting.GRAY;
         return switch (bonus.stat()) {
             case PARALLEL -> {
@@ -101,6 +100,12 @@ final class MultiblockPerformanceFormatter {
                 // # Parallels %s
                 // # zh_CN 并行数 %s
                 yield StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.bonus.parallel", value);
+            }
+            case THREADS -> {
+                // #tr gtnr.tooltip.performance.bonus.threads
+                // # Concurrent recipe threads %s
+                // # zh_CN 跨配方线程数 %s
+                yield StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.bonus.threads", value);
             }
             case SPEED -> {
                 // #tr gtnr.tooltip.performance.bonus.speed

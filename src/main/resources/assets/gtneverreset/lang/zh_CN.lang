@@ -820,6 +820,7 @@ gtnr.tooltip.performance.per_tier=每%s等级：%s
 gtnr.tooltip.performance.switch=%s：%s
 gtnr.tooltip.performance.perfect_from=达到%s或更高时启用无损超频
 gtnr.tooltip.performance.bonus.parallel=并行数 %s
+gtnr.tooltip.performance.bonus.threads=跨配方线程数 %s
 gtnr.tooltip.performance.bonus.speed=速度系数 %s
 gtnr.tooltip.performance.bonus.duration=配方时间系数 %s
 gtnr.tooltip.performance.bonus.energy=耗电系数 %s

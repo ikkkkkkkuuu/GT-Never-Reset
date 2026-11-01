@@ -71,6 +71,7 @@ public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder
             // # Concurrent recipe threads: {\\AQUA}%s{\\RESET}
             // # zh_CN 跨配方线程数：{\\AQUA}%s{\\RESET}
             addInfo(StatCollector.translateToLocalFormatted("gtnr.multiblock.threads.capacity", recipeThreads));
+            for (String line : MultiblockPerformanceFormatter.bonuses(performance, BonusStat.THREADS)) addInfo(line);
         }
         if (stats != null) {
             if (Double.isFinite(stats.speed())) {

@@ -20,7 +20,12 @@ public interface MultiblockTooltipSource {
     int HEAT_OVERCLOCK_THRESHOLD = 1800;
 
     /** Speed is a multiplier; NaN omits a stat that does not describe this machine's process. */
-    record TooltipStats(int parallels, double speed, double energyUsage, boolean perfectOverclock) {}
+    record TooltipStats(int parallels, double speed, double energyUsage, boolean perfectOverclock, int recipeThreads) {
+
+        public TooltipStats(int parallels, double speed, double energyUsage, boolean perfectOverclock) {
+            this(parallels, speed, energyUsage, perfectOverclock, 0);
+        }
+    }
 
     default TooltipStats getTooltipStats() {
         return null;

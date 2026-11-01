@@ -55,6 +55,10 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
         return GTUtility.getCasingTextureIndex(GregTechAPI.sBlockCasings2, CASING_META);
     }
 
+    private static int scaleForTier(int base, int tier) {
+        return (int) Math.min(Integer.MAX_VALUE, (long) base << Math.min(30, Math.max(0, tier - 1)));
+    }
+
     private int casingCount;
 
     public LargeOreProcessor(int id, String name, String regionalName) {
@@ -150,12 +154,12 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
 
     @Override
     public int getMaxRecipeThreads() {
-        return RECIPE_THREADS;
+        return scaleForTier(RECIPE_THREADS, GTUtility.getTier(getMaxInputVoltage()));
     }
 
     @Override
     protected int getBaseParallelRecipes() {
-        return BASE_PARALLELS;
+        return scaleForTier(BASE_PARALLELS, GTUtility.getTier(getMaxInputVoltage()));
     }
 
     @Override

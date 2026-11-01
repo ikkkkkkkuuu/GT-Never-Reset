@@ -17,8 +17,10 @@ import com.gtnewhorizons.angelica.client.font.BatchingFontRenderer;
 import com.gtnewhorizons.angelica.config.FontConfig;
 import com.gtnewhorizons.angelica.glsm.GLSMPrograms;
 import com.gtnewhorizons.angelica.glsm.GLSMQueries;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.xyp.gtnrlib.client.text.DeferredTextEffects;
 import com.xyp.gtnrlib.client.text.EffectTextRenderer;
+import com.xyp.gtnrlib.client.text.compat.AngelicaTextAdapter;
 import com.xyp.gtnrlib.client.text.compat.FontBatchBridge;
 
 /** Flushes the current batch before temporary render-target changes. */
@@ -95,6 +97,16 @@ public abstract class MixinFontBatchTextEffects implements FontBatchBridge {
     @Inject(method = "shouldDrawThroughPipeline", at = @At("HEAD"), cancellable = true)
     private void gtnr$localMaskTarget(CallbackInfoReturnable<Boolean> cir) {
         if (EffectTextRenderer.isCapturing()) cir.setReturnValue(false);
+    }
+
+    @ModifyExpressionValue(
+        method = "pushTexRect",
+        at = @At(value = "FIELD", target = "Lcom/gtnewhorizons/angelica/config/FontConfig;fontAAMode:I"),
+        remap = false,
+        require = 2)
+    private int gtnr$matchMaskGlyphBounds(int mode) {
+        // The mask shader samples without AA, so expanded UVs would expose neighboring atlas glyphs.
+        return EffectTextRenderer.isCapturing() && !AngelicaTextAdapter.usesCustomFont(underlying) ? 0 : mode;
     }
 
     @ModifyArg(

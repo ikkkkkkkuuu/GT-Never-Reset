@@ -19,6 +19,7 @@ public record PerformanceSummary(TooltipStats stats, List<TierBonus> tierBonuses
 
     public enum BonusStat {
         PARALLEL,
+        THREADS,
         SPEED,
         DURATION,
         ENERGY

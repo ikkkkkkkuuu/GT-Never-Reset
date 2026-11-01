@@ -91,6 +91,7 @@ public final class MultiblockPerformanceReader {
     private static void addTierBonuses(List<TierBonus> bonuses, TieredPart part, TooltipStats[] probes) {
         if (probes.length < 2) return;
         addBonus(bonuses, part, BonusStat.PARALLEL, values(probes, TooltipStats::parallels), true);
+        addBonus(bonuses, part, BonusStat.THREADS, values(probes, TooltipStats::recipeThreads), true);
         double[] speeds = values(probes, TooltipStats::speed);
         Double speedStep = steadyStep(speeds, false);
         if (speedStep != null) {

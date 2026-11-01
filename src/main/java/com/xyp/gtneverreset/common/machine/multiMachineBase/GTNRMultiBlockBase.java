@@ -462,7 +462,8 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             getBaseParallelRecipes(),
             getBaseSpeedMultiplier(),
             getBaseEUtMultiplier(),
-            hasPerfectOverclock());
+            hasPerfectOverclock(),
+            getTotalRecipeThreads());
     }
 
     @Override
