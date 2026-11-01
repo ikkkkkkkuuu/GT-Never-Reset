@@ -254,7 +254,14 @@ public final class AdvancedIOGui {
             toolbarButton(
                 sync,
                 "exportOnlyButton",
-                () -> texture("advanced_states", 256, 256, exportOnly.getBoolValue() ? 48 : 64, 0, 16, 16),
+                () -> texture(
+                    "advanced_states",
+                    256,
+                    256,
+                    exportOnly.getBoolValue() ? 48 : 80,
+                    exportOnly.getBoolValue() ? 16 : 0,
+                    16,
+                    16),
                 () -> IKey.lang("gui.advancedio.export_only")
                     .get() + ": "
                     + yesNo(exportOnly.getBoolValue()),

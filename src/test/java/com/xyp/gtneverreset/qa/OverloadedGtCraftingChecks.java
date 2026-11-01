@@ -169,6 +169,7 @@ public final class OverloadedGtCraftingChecks {
             if (stage == 0) {
                 verifyBatchDistribution();
                 verifyFluidCommit(world);
+                verifyPreviousFluidReturn(world);
                 require(
                     provider.getProxy()
                         .isActive(),
@@ -439,6 +440,62 @@ public final class OverloadedGtCraftingChecks {
         table.setInventorySlotContents(0, AEItemStack.create(new ItemStack(Blocks.cobblestone, items)));
         ((LargeInventoryCrafting) table).setAssemblerSize(crafts);
         return table;
+    }
+
+    private void verifyPreviousFluidReturn(World world) throws Exception {
+        BaseMetaTileEntity target = fluidTargets[0];
+        MTEBasicMachine machine = (MTEBasicMachine) target.getMetaTileEntity();
+        FluidStack oldInput = machine.getFillableStack();
+        FluidStack oldOutput = machine.getDrainableStack();
+        try {
+            machine.setFillableStack(new FluidStack(FluidRegistry.LAVA, 100));
+            machine.setDrainableStack(new FluidStack(FluidRegistry.WATER, 288));
+            NBTTagCompound saved = new NBTTagCompound();
+            NBTTagCompound lane = new PackagedTarget(
+                world.provider.dimensionId,
+                target.xCoord,
+                target.yCoord,
+                target.zCoord,
+                ForgeDirection.UP.ordinal()).write();
+            NBTTagList hints = new NBTTagList();
+            hints.appendTag(new FluidStack(FluidRegistry.LAVA, 100).writeToNBT(new NBTTagCompound()));
+            lane.setTag("FluidOutputs", hints);
+            NBTTagList targets = new NBTTagList();
+            targets.appendTag(lane);
+            saved.setTag("Targets", targets);
+            TileEntityOverloadedProvider restored = new TileEntityOverloadedProvider();
+            restored.readFromNBT(saved);
+            restored.setWorldObj(world);
+            var service = TileEntityOverloadedProvider.class
+                .getDeclaredMethod("service", TileEntityOverloadedProvider.Lane.class);
+            service.setAccessible(true);
+            service.invoke(
+                restored,
+                restored.connections()
+                    .get(0));
+            require(
+                machine.getDrainableStack() == null || machine.getDrainableStack().amount == 0,
+                "previous fluid output is collected after next recipe replaces hints");
+            require(
+                machine.getFillableStack()
+                    .isFluidEqual(new FluidStack(FluidRegistry.LAVA, 100)) && machine.getFillableStack().amount == 100,
+                "next recipe input is not drained");
+            service.invoke(
+                restored,
+                restored.connections()
+                    .get(0));
+            NBTTagCompound result = new NBTTagCompound();
+            restored.writeToNBT(result);
+            NBTTagList returned = result.getTagList("ReturnedFluids", 10);
+            require(returned.tagCount() == 1, "offline return buffers previous product exactly once");
+            FluidStack fluid = FluidStack.loadFluidStackFromNBT(returned.getCompoundTagAt(0));
+            require(
+                fluid != null && fluid.isFluidEqual(new FluidStack(FluidRegistry.WATER, 288)) && fluid.amount == 288,
+                "previous product quantity survives save with changed recipe hints");
+        } finally {
+            machine.setFillableStack(oldInput);
+            machine.setDrainableStack(oldOutput);
+        }
     }
 
     private void verifyFluidCommit(World world) {

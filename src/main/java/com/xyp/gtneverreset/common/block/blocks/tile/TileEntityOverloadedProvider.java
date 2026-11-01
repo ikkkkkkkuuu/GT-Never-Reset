@@ -587,8 +587,11 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
                 }
             } else {
                 FluidStack fluid = machine.getDrainableStack();
-                if (fluid != null && lane.fluidOutputs.stream()
-                    .anyMatch(output -> output.isFluidEqual(fluid))) outputs.add(fluid.copy());
+                // A new delivery can replace the pattern hints before the previous product is collected.
+                if (fluid != null && fluid.amount > 0
+                    && (machine.isDrainableStackSeparate() || lane.fluidOutputs.stream()
+                        .anyMatch(output -> output.isFluidEqual(fluid))))
+                    outputs.add(fluid.copy());
             }
             for (FluidStack fluid : outputs) {
                 if (returnedFluids.size() >= 9) break;
