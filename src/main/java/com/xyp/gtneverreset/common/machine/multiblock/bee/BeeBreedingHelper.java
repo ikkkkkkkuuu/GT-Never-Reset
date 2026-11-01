@@ -26,7 +26,6 @@ import forestry.api.genetics.IAllele;
 import forestry.api.genetics.IAlleleFloat;
 import forestry.api.genetics.IAlleleInteger;
 import forestry.api.genetics.IMutationCondition;
-import forestry.apiculture.genetics.alleles.AlleleEffect;
 import forestry.core.genetics.alleles.AlleleHelper;
 import forestry.core.genetics.alleles.EnumAllele;
 import forestry.core.genetics.mutations.Mutation;
@@ -41,6 +40,8 @@ public final class BeeBreedingHelper {
     private static Map<String, IAlleleBeeSpecies> uidSpeciesCache = null;
 
     private static Map<String, List<MutationData>> mutationsByUidCache = null;
+
+    private BeeBreedingHelper() {}
 
     public static IBeeRoot getBeeRoot() {
         return BeeManager.beeRoot;
@@ -284,36 +285,17 @@ public final class BeeBreedingHelper {
         return cached != null ? new ArrayList<>(cached) : new ArrayList<>();
     }
 
+    public static List<IAlleleBeeSpecies> getRegisteredSpecies() {
+        ensureCaches();
+        return uidSpeciesCache == null ? Collections.emptyList() : new ArrayList<>(uidSpeciesCache.values());
+    }
+
     public static List<MutationData> getAllMutations() {
         ensureCaches();
         List<MutationData> mutations = new ArrayList<>();
         if (mutationsByUidCache != null) mutationsByUidCache.values()
             .forEach(mutations::addAll);
         return mutations;
-    }
-
-    private static IAllele findHighestValueAllele(EnumBeeChromosome chromosome) {
-        if (AlleleManager.alleleRegistry == null) return null;
-        Collection<IAllele> alleles = AlleleManager.alleleRegistry.getRegisteredAlleles(chromosome);
-        if (alleles == null || alleles.isEmpty()) return null;
-
-        IAllele best = null;
-        double bestValue = Double.NEGATIVE_INFINITY;
-        for (IAllele allele : alleles) {
-            double value;
-            if (allele instanceof IAlleleFloat) {
-                value = ((IAlleleFloat) allele).getValue();
-            } else if (allele instanceof IAlleleInteger) {
-                value = ((IAlleleInteger) allele).getValue();
-            } else {
-                continue;
-            }
-            if (value > bestValue) {
-                bestValue = value;
-                best = allele;
-            }
-        }
-        return best;
     }
 
     public static BreedingStep findRegisteredStep(String parent1, String parent2, String result, double chance) {
@@ -389,7 +371,10 @@ public final class BeeBreedingHelper {
             for (IAllele[] template : templates.values()) {
                 if (template != null && template.length > 0 && template[0] instanceof IAlleleBeeSpecies) {
                     IAlleleBeeSpecies s = (IAlleleBeeSpecies) template[0];
-                    speciesMap.putIfAbsent(s.getUID(), s);
+                    if (AlleleManager.alleleRegistry == null
+                        || !AlleleManager.alleleRegistry.isBlacklisted(s.getUID())) {
+                        speciesMap.putIfAbsent(s.getUID(), s);
+                    }
                 }
             }
         }
@@ -398,24 +383,44 @@ public final class BeeBreedingHelper {
             IAllele[] resultTemplate = mutation.getTemplate();
             if (resultTemplate.length == 0 || !(resultTemplate[0] instanceof IAlleleBeeSpecies)) continue;
             IAlleleBeeSpecies resultSpecies = (IAlleleBeeSpecies) resultTemplate[0];
-            speciesMap.putIfAbsent(resultSpecies.getUID(), resultSpecies);
+            if (!speciesMap.containsKey(resultSpecies.getUID())) continue;
 
             IAllele parent1Allele = mutation.getAllele0();
             IAllele parent2Allele = mutation.getAllele1();
             String p1 = parent1Allele != null ? parent1Allele.getUID() : "";
             String p2 = parent2Allele != null ? parent2Allele.getUID() : "";
+            if (!speciesMap.containsKey(p1) || !speciesMap.containsKey(p2)) continue;
+            List<FoundationRequirement> requirements = readFoundations(mutation);
             mutationsMap.computeIfAbsent(resultSpecies.getUID(), k -> new ArrayList<>())
-                .add(
-                    new MutationData(
-                        p1,
-                        p2,
-                        resultSpecies.getUID(),
-                        mutation.getBaseChance(),
-                        readFoundations(mutation)));
+                .add(new MutationData(p1, p2, resultSpecies.getUID(), mutation.getBaseChance(), requirements));
         }
 
         uidSpeciesCache = speciesMap;
         mutationsByUidCache = mutationsMap;
+    }
+
+    private static IAllele findHighestValueAllele(EnumBeeChromosome chromosome) {
+        if (AlleleManager.alleleRegistry == null) return null;
+        Collection<IAllele> alleles = AlleleManager.alleleRegistry.getRegisteredAlleles(chromosome);
+        if (alleles == null || alleles.isEmpty()) return null;
+
+        IAllele best = null;
+        double bestValue = Double.NEGATIVE_INFINITY;
+        for (IAllele allele : alleles) {
+            double value;
+            if (allele instanceof IAlleleFloat) {
+                value = ((IAlleleFloat) allele).getValue();
+            } else if (allele instanceof IAlleleInteger) {
+                value = ((IAlleleInteger) allele).getValue();
+            } else {
+                continue;
+            }
+            if (value > bestValue) {
+                bestValue = value;
+                best = allele;
+            }
+        }
+        return best;
     }
 
     private static void applyMaxGenome(IAllele[] template) {
@@ -443,9 +448,6 @@ public final class BeeBreedingHelper {
         helper.set(template, EnumBeeChromosome.FERTILITY, EnumAllele.Fertility.LOW);
         helper.set(template, EnumBeeChromosome.FLOWER_PROVIDER, EnumAllele.Flowers.VANILLA);
         helper.set(template, EnumBeeChromosome.TERRITORY, EnumAllele.Territory.AVERAGE);
-        if (AlleleEffect.effectNone != null) {
-            helper.set(template, EnumBeeChromosome.EFFECT, AlleleEffect.effectNone);
-        }
     }
 
     public static final class FoundationRequirement {

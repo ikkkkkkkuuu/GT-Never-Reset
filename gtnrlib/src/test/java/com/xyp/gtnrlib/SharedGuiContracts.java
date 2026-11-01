@@ -10,12 +10,28 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
+import com.xyp.gtnrlib.gui.widget.BranchProgressWidget;
 import com.xyp.gtnrlib.gui.widget.ItemStackSlot;
 import com.xyp.gtnrlib.gui.widget.ScrollingDropdown;
 
 final class SharedGuiContracts {
 
     static void verify() {
+        AtomicReference<Double> progress = new AtomicReference<>(0D);
+        BranchProgressWidget connection = new BranchProgressWidget().layout(54, 0, 24, 100, 0, 54, 108)
+            .value(progress::get)
+            .completed(() -> progress.get() == 1D);
+        connection.getArea()
+            .setSize(126, 100);
+        check(connection.getFillTop() == 100, "Empty connection remains entirely unfilled");
+        progress.set(0.5D);
+        check(connection.getFillTop() == 50 && !connection.isComplete(), "One fill boundary covers every branch");
+        progress.set(1D);
+        check(connection.getFillTop() == 0 && connection.isComplete(), "Completion belongs to the entire connection");
+        progress.set(Double.NaN);
+        check(connection.getFillTop() == 100, "Invalid progress cannot corrupt clipping state");
+        progress.set(2D);
+        check(connection.getFillTop() == 0, "Progress cannot extend outside the connection bounds");
         AtomicInteger changes = new AtomicInteger();
         List<String> options = new ArrayList<>(Arrays.asList("first", "second"));
         ScrollingDropdown selector = new ScrollingDropdown("test", null, options)

@@ -14,6 +14,12 @@ import ic2.api.item.IC2Items;
 
 public enum ModsItemlist {
 
+    VillageNamesYellowConcrete("VillageNames", "concrete", 4),
+    ExtraUtilitiesLightBlueLapisCaelestis(Mods.ExtraUtilities.ID, "greenscreen", 3),
+    ChiselBrownWoolenClay(Mods.Chisel.ID, "woolen_clay", 12),
+    ChiselOrangeWoolenClay(Mods.Chisel.ID, "woolen_clay", 1),
+    ChiselBrownHempcrete(Mods.Chisel.ID, "hempcrete", 12),
+
     // 量子桥接卡
     QuantumBridgeCard(Mods.AE2FluidCraft.ID, "quantum_bridge_card", true),
 

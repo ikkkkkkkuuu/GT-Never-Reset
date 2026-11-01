@@ -10,7 +10,8 @@ public enum GTNRMachineID {
     AssemblerMatrix(29403),
     SingularityDataHub(29404),
     LargeBeeBreeder(29405),
-    // 预留：29406–29499（94 个）。
+    LargeCropBreeder(29406),
+    // 预留：29407–29499（93 个）。
     // endregion
 
     // region 舱室

@@ -8,6 +8,7 @@ import net.minecraft.util.StatCollector;
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeBeeBreeder;
+import com.xyp.gtneverreset.common.machine.multiblock.LargeCropBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeOreProcessor;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
@@ -71,8 +72,19 @@ public final class MultiblockLoader {
                 "gtneverreset.singularity_data_hub",
                 StatCollector.translateToLocal("gtnr.machine.singularity_data_hub.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.SingularityDataHub.get(1), AnimatedText.GT_NEVER_RESET);
+        if (ModList.CropsNH.isModLoaded()) {
+            // #tr gtnr.machine.large_crop_breeder.name
+            // # Large Crop Breeder
+            // # zh_CN 大型作物杂交机
+            GTNRItemList.LargeCropBreeder.set(
+                new LargeCropBreeder(
+                    GTNRMachineID.LargeCropBreeder.id,
+                    "gtneverreset.large_crop_breeder",
+                    StatCollector.translateToLocal("gtnr.machine.large_crop_breeder.name")));
+            AnimatedTooltipHandler.addItemTooltip(GTNRItemList.LargeCropBreeder.get(1), AnimatedText.GT_NEVER_RESET);
+        }
         if (ModList.Forestry.isModLoaded()) {
-            ItemStack beeCasing = ModsItemlist.ChiselYellowHempcrete.get(1);
+            ItemStack beeCasing = ModsItemlist.VillageNamesYellowConcrete.get(1);
             GTUtility.addTexturePage((byte) (LargeBeeBreeder.CASING_TEXTURE_ID >> 7));
             Textures.BlockIcons.setCasingTextureForId(
                 LargeBeeBreeder.CASING_TEXTURE_ID,

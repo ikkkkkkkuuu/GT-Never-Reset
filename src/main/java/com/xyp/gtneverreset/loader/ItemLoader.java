@@ -65,6 +65,9 @@ public final class ItemLoader {
 
     public static void registerItems() {
         new VeinMiningPickaxe();
+        if (ModList.DraconicEvolution.isModLoaded() && ModList.EnderIO.isModLoaded()) {
+            com.xyp.gtneverreset.compat.draconicevolution.InsectStaffCompat.register();
+        }
         if (ModList.BloodMagic.isModLoaded()) BloodMagicCompat.registerPackagedCores();
 
         PackagedCoreRegistry.register("assembly_line", new AssemblyLineAdapter(false));

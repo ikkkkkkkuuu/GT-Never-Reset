@@ -17,6 +17,8 @@ public final class BeeBreedingPlanner {
 
     private static final double MIN_CHANCE_FOR_COST = 0.01D;
 
+    private BeeBreedingPlanner() {}
+
     public static List<String> findReachableSpecies(Set<String> unlockedSpecies) {
         if (unlockedSpecies == null || unlockedSpecies.isEmpty()) return Collections.emptyList();
         Set<String> reachable = new HashSet<>(unlockedSpecies);
@@ -200,12 +202,17 @@ public final class BeeBreedingPlanner {
                     .next();
         }
 
-        public BeeBreedingHelper.BreedingStep getNextReadyStep(Set<String> unlockedSpecies) {
+        public List<BeeBreedingHelper.BreedingStep> getReadySteps(Set<String> unlockedSpecies, int limit) {
+            if (limit <= 0) return Collections.emptyList();
+            List<BeeBreedingHelper.BreedingStep> ready = new ArrayList<>();
             for (BeeBreedingHelper.BreedingStep step : steps) {
                 if (unlockedSpecies.contains(step.result)) continue;
-                if (unlockedSpecies.contains(step.parent1) && unlockedSpecies.contains(step.parent2)) return step;
+                if (unlockedSpecies.contains(step.parent1) && unlockedSpecies.contains(step.parent2)) {
+                    ready.add(step);
+                    if (ready.size() >= limit) break;
+                }
             }
-            return null;
+            return ready;
         }
     }
 }

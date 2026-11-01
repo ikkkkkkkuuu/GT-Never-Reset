@@ -19,7 +19,7 @@ import cpw.mods.fml.common.event.FMLServerStoppingEvent;
     modid = GTNeverReset.MODID,
     version = Tags.VERSION,
     name = GTNeverReset.NAME,
-    dependencies = "required-after:gtnrlib;required-after:" + ModList.ModIds.GREGTECH
+    dependencies = "required-after:gtnrlib@[0.1.12,);required-after:" + ModList.ModIds.GREGTECH
         + ";required-after:"
         + ModList.ModIds.GTNH_LIB
         + ";required-after:"
@@ -28,6 +28,7 @@ import cpw.mods.fml.common.event.FMLServerStoppingEvent;
         + ModList.ModIds.AE2_FLUID_CRAFT
         + ";required-after:"
         + ModList.ModIds.BAUBLES
+        + ";after:DraconicEvolution;after:EnderIO"
         + ";",
     acceptedMinecraftVersions = "[1.7.10]",
     guiFactory = "com.xyp.gtneverreset.config.ConfigGuiFactory")

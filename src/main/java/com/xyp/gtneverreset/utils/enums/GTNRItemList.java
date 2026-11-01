@@ -14,6 +14,7 @@ import gregtech.api.util.GTUtility;
 public enum GTNRItemList implements IItemContainer {
 
     VeinMiningPickaxe,
+    InsectStaff,
 
     // region 物品
     ItemWirelessConnector,
@@ -52,6 +53,7 @@ public enum GTNRItemList implements IItemContainer {
     AssemblerMatrix,
     SingularityDataHub,
     LargeBeeBreeder,
+    LargeCropBreeder,
     // endregion
 
     // region 舱室

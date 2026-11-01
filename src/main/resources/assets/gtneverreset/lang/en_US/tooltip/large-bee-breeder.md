@@ -1,15 +1,16 @@
-Automatically breeds bees to meet your bee needs
-Input princesses or drones to record their species in the machine's archive
-The GUI shows which bees can be bred from your archive and lets you select a target
-Base success chance follows Forestry mutation chances
-A Stainless Steel Gear in the controller adds 2% to success chance
-Mutation foundations must be present in input buses; they are not consumed and are checked every 10 seconds.
-Missing foundations pause breeding; keep the machine enabled and it resumes after they are supplied.
+{gold:Automatically breeds bees to meet your bee needs}
+Select a breeding target in the controller; the machine automatically breeds recorded species to unlock it.
+The default success chance is the species' base mutation chance.
+Insert a princess or drone to record its species directly.
+Place the required bee foundation blocks in an {white:input bus}; they are {green:not consumed}
+Bee species have seven tiers from HV to UHV; the GUI shows the required voltage
 
-Follows the planned route, breeding one ready step at a time
-Each LV breeding attempt takes {var:attemptSeconds} seconds and uses {var:baseEu} EU/t
-Each voltage tier halves the duration and doubles energy use, down to a minimum of 1 tick
-Supports speed, power and overclock modules, but no parallel modules; changes apply to the next attempt
-Overclock modules replace the default time and power ratios
-Each input princess produces one target princess and one target drone upon completion
-Offspring are purebred and receive the machine's fully enhanced genes
+Each cycle takes {white:{var:attemptSeconds} seconds} by default
+Each parallel consumes {white:{var:baseEu} EU/t}
+Each higher voltage tier {gold:doubles the parallel limit} and applies a lossy overclock.
+Each parallel consumes 2 royal jelly for one extra lossy overclock.
+Starting from {yellow:HV} glass, each higher glass tier {red:doubles} EU/t and adds {gold:+{var:glassChance}%} success chance
+Consumes any one princess to produce a princess and a drone of the target species
+Offspring are purebred and receive fully enhanced genes while retaining the target species' original special effect.
+Supports speed, power, overclock and parallel modules; changes apply to the next cycle.
+Parallel parameters multiply voltage-based parallel capacity; overclock parameters also apply to the extra royal jelly overclock.

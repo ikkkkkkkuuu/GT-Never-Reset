@@ -59,6 +59,7 @@ public final class AssemblerRecipes {
         registerModuleHatchRecipes();
         registerLargeFurnaceRecipes();
         if (ModList.Forestry.isModLoaded()) registerLargeBeeBreederRecipes();
+        if (ModList.CropsNH.isModLoaded()) registerLargeCropBreederRecipes();
         registerFluxConnectorRecipes();
         registerEndCrystalResonatorRecipes();
         registerSingularityDataHubRecipes();
@@ -356,6 +357,22 @@ public final class AssemblerRecipes {
                 GTUtility.getIntegratedCircuit(17))
             .fluidInputs(Materials.Tin.getMolten(144))
             .itemOutputs(GTNRItemList.LargeBeeBreeder.get(1))
+            .duration(20 * SECONDS)
+            .eut(TierEU.RECIPE_LV)
+            .addTo(assemblerRecipes);
+    }
+
+    private static void registerLargeCropBreederRecipes() {
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                ItemList.Hull_LV.get(1),
+                ItemList.Electric_Motor_LV.get(2),
+                ItemList.Electric_Pump_LV.get(2),
+                new Object[] { OrePrefixes.circuit.get(Materials.LV), 2 },
+                Materials.Steel.getPlates(4),
+                GTUtility.getIntegratedCircuit(18))
+            .fluidInputs(Materials.Tin.getMolten(144))
+            .itemOutputs(GTNRItemList.LargeCropBreeder.get(1))
             .duration(20 * SECONDS)
             .eut(TierEU.RECIPE_LV)
             .addTo(assemblerRecipes);

@@ -33,6 +33,7 @@
 - 配方类按实际写入的配方池归并，例如装配机配方统一放在 `AssemblerRecipes`、工作台配方统一放在 `CraftingTableRecipes`；不得按产物所属功能或移植项目拆成 `ModuleHatchRecipes`、`PackagedRecipes` 等注册类。不同配方池通常分别组织；共用同一转换流程的 Modern 无单元配方集中在 `ModernNonCellRecipes`，分别写入对应配方池，不为每个池建立仅转发调用的类。跨配方池共享转换算法放在 `utils.recipes`；专属后端随所属配方池，机器专属处理逻辑随机器，样板与 AE 业务归 `common.me`。配方池稳定定义 `GTNRRecipeMaps` 放在 `common.recipe`，不放 loader。
 - 配方子包按目标配方池归属划分：写入 GT 原有配方池的配方放在 `common.recipe.gregtech`，本模组自定义配方池的配方注册类放在 `common.recipe.gtneverreset`；同一功能同时涉及两类配方时拆开放置，不能仅因使用 GT API 或 GT 机器就全部归入 `gregtech`。
 - 对照新版 GTNL：GT 多方块、仓室、小机器 GUI 分别归 `common.gui.modularui.multiblock`、`hatch`、`singleblock`。普通方块、物品、覆盖板及 AE 部件 GUI 放在 `common.gui`，复杂领域可细分；共享纹理按使用范围就近放置。使用 ModularUI2 本身不是归入 `modularui` 的依据。
+- 开发 MUI2 GUI 前参考 `docs/mui2-gui-guide.md`，按需求选用布局、列表、分页、菜单、富文本、图表、同步和自定义绘制能力；区分文档中的运行验证、源码支持和已知限制，依赖升级后重新验证。不为展示控件而增加无关交互。
 - 参考 GTNL 的局部内部类型做法：只服务一个 GUI 的槽位适配器、控件、同步处理器、预览/选择面板及视图状态，优先写在所属 GUI 中；简短且单次调用的注册包装直接并回调用处，重复布局提取所属 GUI 的私有方法。同一流程的方法及相关内部类型放在一起，不为类别统一拆出 `handler`、`widget`、`sync`、`model` 目录。
 - 跨 GUI 复用或确有独立职责的复杂控件、同步实现才保留独立文件，按实际职责和 GTNL 的对应位置安排；不为减少文件数合并无关 GUI 或业务逻辑。Forge `IGuiHandler` 路由类与普通 GUI 入口同放 `common.gui`；跨 GUI、网络和会话共用的 GUI 类型枚举归 `utils.enums`。
 - 客户端 GUI 同样按实际使用范围收拢：专用按钮、面板、弹窗、视图状态及界面契约优先放回所属客户端主 GUI，相关生命周期和辅助方法就近排列；独立复杂视图模型按领域保留，被客户端 mixin 引用本身不等于通用库职责。确实被不同界面使用的屏幕基类、按钮和纹理处理保留独立；不要为了合并文件把客户端实现移入公共端，或去掉原有 `@SideOnly(Side.CLIENT)` 隔离。物品专用提示文字及其小型辅助方法归所属物品的客户端提示入口。

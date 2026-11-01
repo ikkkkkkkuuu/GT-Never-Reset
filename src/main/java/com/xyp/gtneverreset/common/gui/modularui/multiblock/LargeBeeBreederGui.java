@@ -123,8 +123,8 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
     private StringSyncValue target;
     private BooleanSyncValue valid;
     private IntSyncValue pending;
+    private IntSyncValue parallel;
     private IntSyncValue bonus;
-    private IntSyncValue duration;
     private IntSyncValue voltageTier;
     private LongSyncValue energy;
     private StringSyncValue missing;
@@ -150,8 +150,8 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
             value -> targetDraft = value.length() > 256 ? value.substring(0, 256) : value).allowC2S();
         valid = new BooleanSyncValue(multiblock::isTargetInputValid);
         pending = new IntSyncValue(multiblock::getPendingPrincessOutputs);
+        parallel = new IntSyncValue(multiblock::getMaxParallelBreedingSteps);
         bonus = new IntSyncValue(multiblock::getMutationChanceBonus);
-        duration = new IntSyncValue(multiblock::getBreedingDurationTicks);
         voltageTier = new IntSyncValue(multiblock::getBreedingVoltageTier);
         energy = new LongSyncValue(multiblock::getEuPerBreedingAttempt);
         missing = new StringSyncValue(() -> multiblock.isAllTasksBlocked() ? multiblock.getMissingDroneSpecies() : "");
@@ -159,8 +159,8 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
         sync.syncValue("beeDraft", draft);
         sync.syncValue("beeValid", valid);
         sync.syncValue("beePending", pending);
+        sync.syncValue("beeParallel", parallel);
         sync.syncValue("beeBonus", bonus);
-        sync.syncValue("beeDuration", duration);
         sync.syncValue("beeVoltageTier", voltageTier);
         sync.syncValue("beeEnergy", energy);
         sync.syncValue("beeMissing", missing);
@@ -279,6 +279,7 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
             tag.setString("parent2", step.parent2);
             tag.setString("result", step.result);
             tag.setDouble("chance", Math.min(100.0D, step.chance + multiblock.getMutationChanceBonus()));
+            tag.setInteger("requiredVoltageTier", LargeBeeBreeder.getSpeciesVoltageTier(step.result));
             NBTTagList foundations = new NBTTagList();
             for (FoundationRequirement requirement : step.foundations) {
                 NBTTagCompound foundation = requirement.toNBT();
@@ -306,35 +307,43 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
         Flow tabs = Flow.row()
             .size(PAGE_WIDTH, 18)
             .marginBottom(4);
+        // @formatter:off
+        // #tr gtnr.bee_breeder.tab_run
+        // # Run
+        // # zh_CN 运行
+        // #tr gtnr.bee_breeder.run
+        // # Operation
+        // # zh_CN 运行
+        // @formatter:on
         tabs.child(
-            // #tr gtnr.bee_breeder.tab_run
-            // # Run
-            // # zh_CN 运行
-            // #tr gtnr.bee_breeder.run
-            // # Operation
-            // # zh_CN 运行
             tab(0, "gtnr.bee_breeder.tab_run", "gtnr.bee_breeder.run", GTGuiTextures.OVERLAY_BUTTON_POWER_SWITCH_ON));
+        // @formatter:off
         // #tr gtnr.bee_breeder.tab_archive
         // # Archive
         // # zh_CN 档案
         // #tr gtnr.bee_breeder.archive
         // # Species Archive
         // # zh_CN 物种档案
+        // @formatter:on
         tabs.child(tab(1, "gtnr.bee_breeder.tab_archive", "gtnr.bee_breeder.archive", new ItemDrawable(Items.book)));
+        // @formatter:off
+        // #tr gtnr.bee_breeder.tab_reachable
+        // # Bees
+        // # zh_CN 可育
+        // #tr gtnr.bee_breeder.reachable
+        // # Breedable Bees
+        // # zh_CN 可杂交到蜂
+        // @formatter:on
         tabs.child(
-            // #tr gtnr.bee_breeder.tab_reachable
-            // # Bees
-            // # zh_CN 可育
-            // #tr gtnr.bee_breeder.reachable
-            // # Breedable Bees
-            // # zh_CN 可杂交到蜂
             tab(2, "gtnr.bee_breeder.tab_reachable", "gtnr.bee_breeder.reachable", new ItemDrawable(Items.wheat)));
+        // @formatter:off
         // #tr gtnr.bee_breeder.tab_route
         // # Tree
         // # zh_CN 路线
         // #tr gtnr.bee_breeder.route
         // # Breeding Route
         // # zh_CN 杂交路线
+        // @formatter:on
         tabs.child(tab(3, "gtnr.bee_breeder.tab_route", "gtnr.bee_breeder.route", new ItemDrawable(Items.map)));
         Flow inventory = Flow.column()
             .pos(0, PAGE_HEIGHT + 6)
@@ -344,20 +353,24 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
             .pos(0, 0)
             .size(PAGE_WIDTH, PAGE_BODY_HEIGHT)
             .addPage(operationPage(panel, sync))
-            // #tr gtnr.bee_breeder.search
-            // # Search name or UID; select a species to fill the target
-            // # zh_CN 搜索名称或 UID；点击蜂种可填入目标
-            // #tr gtnr.bee_breeder.no_matches
-            // # No matching archived species
-            // # zh_CN 没有符合条件的已解锁蜂种
+            // @formatter:off
+// #tr gtnr.bee_breeder.search
+// # Search name or UID; select a species to fill the target
+// # zh_CN 搜索名称或 UID；点击蜂种可填入目标
+// #tr gtnr.bee_breeder.no_matches
+// # No matching archived species
+// # zh_CN 没有符合条件的已解锁蜂种
+// @formatter:on
             .addPage(speciesPage(archiveView, "gtnr.bee_breeder.search", "gtnr.bee_breeder.no_matches"))
+            // @formatter:off
+// #tr gtnr.bee_breeder.reachable_hint
+// # Search name / UID: reachable but unarchived (all breeding steps)
+// # zh_CN 搜索名称 / UID：根据档案可经多步杂交获得、尚未存档的蜂种
+// #tr gtnr.bee_breeder.no_reachable_matches
+// # No matching unarchived species are reachable from the current archive
+// # zh_CN 当前档案没有符合条件的可杂交未存档蜂种
+// @formatter:on
             .addPage(
-                // #tr gtnr.bee_breeder.reachable_hint
-                // # Search name / UID: reachable but unarchived (all breeding steps)
-                // # zh_CN 搜索名称 / UID：根据档案可经多步杂交获得、尚未存档的蜂种
-                // #tr gtnr.bee_breeder.no_reachable_matches
-                // # No matching unarchived species are reachable from the current archive
-                // # zh_CN 当前档案没有符合条件的可杂交未存档蜂种
                 speciesPage(reachableView, "gtnr.bee_breeder.reachable_hint", "gtnr.bee_breeder.no_reachable_matches"))
             .addPage(routePage())
             .onPageChange(index -> inventory.setEnabled(index != 3));
@@ -396,96 +409,113 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
                 .pos(0, 0)
                 .size(PAGE_WIDTH - 48, 18)
                 .tooltipBuilder(
-                    // #tr gtnr.bee_breeder.target_hint
-                    // # Enter a species name / UID, or drop a bee from NEI
-                    // # zh_CN 输入蜂种名称 / UID，或从 NEI 拖入蜜蜂
+
+                // @formatter:off
+// #tr gtnr.bee_breeder.target_hint
+// # Enter a species name / UID, or drop a bee from NEI
+// # zh_CN 输入蜂种名称 / UID，或从 NEI 拖入蜜蜂
+// @formatter:on
                     t -> t.addLine(IKey.lang("gtnr.bee_breeder.target_hint"))
-                        // #tr gtnr.bee_breeder.draft_hint
-                        // # Press Apply to confirm. Apply an empty field to clear the target.
-                        // # zh_CN 点击应用确认；留空后应用可清除目标。
+
+                    // @formatter:off
+// #tr gtnr.bee_breeder.draft_hint
+// # Press Apply to confirm. Apply an empty field to clear the target.
+// # zh_CN 点击应用确认；留空后应用可清除目标。
+// @formatter:on
                         .addLine(IKey.lang("gtnr.bee_breeder.draft_hint"))));
         page.child(
             new ButtonWidget<>().pos(PAGE_WIDTH - 44, 0)
                 .size(44, 18)
                 .background(GTGuiTextures.BUTTON_STANDARD)
                 .hoverBackground(GTGuiTextures.BUTTON_STANDARD_PRESSED)
-                // #tr gtnr.bee_breeder.apply
-                // # Apply
-                // # zh_CN 应用
+
+                // @formatter:off
+// #tr gtnr.bee_breeder.apply
+// # Apply
+// # zh_CN 应用
+// @formatter:on
                 .overlay(IKey.lang("gtnr.bee_breeder.apply"))
                 .syncHandler("beeApply")
                 .tooltipAutoUpdate(true)
-                .tooltipBuilder(
-                    t -> t.addLine(
-                        IKey.lang(
-                            valid.getBoolValue() ? "gtnr.bee_breeder.draft_hint"
-                                // #tr gtnr.bee_breeder.invalid_target
-                                // # Unknown species. The current target has not changed.
-                                // # zh_CN 未找到该蜂种，当前目标保持不变。
-                                : "gtnr.bee_breeder.invalid_target"))));
+                .tooltipBuilder(t -> t.addLine(IKey.lang(valid.getBoolValue() ? "gtnr.bee_breeder.draft_hint"
+
+                // @formatter:off
+// #tr gtnr.bee_breeder.invalid_target
+// # Unknown species. The current target has not changed.
+// # zh_CN 未找到该蜂种，当前目标保持不变。
+// @formatter:on
+                    : "gtnr.bee_breeder.invalid_target"))));
         page.child(
             fittedText(this::previewChance, 0, 22, 114, 0.85F).tooltipAutoUpdate(true)
                 .tooltipBuilder(
-                    // #tr gtnr.bee_breeder.current_target
-                    // # Target: %s
-                    // # zh_CN 当前目标：%s
+
+                // @formatter:off
+// #tr gtnr.bee_breeder.current_target
+// # Target: %s
+// # zh_CN 当前目标：%s
+// @formatter:on
                     t -> t.addLine(tr("gtnr.bee_breeder.current_target", speciesOrEmpty(target.getStringValue())))));
-        page.child(
-            fittedText(
-                // #tr gtnr.bee_breeder.total_progress
-                // # Total progress: %s%%
-                // # zh_CN 总进度：%s%%
-                () -> tr("gtnr.bee_breeder.total_progress", Math.round(routeProgress() * 100)),
-                124,
-                22,
-                PAGE_WIDTH - 124,
-                0.85F).tooltipAutoUpdate(true)
-                    .tooltipBuilder(t -> t.addLine(routeProgressText())
-                    // @formatter:off
-                            // #tr gtnr.bee_breeder.route_session
-                            // # Completed / planned breeding steps tracked while this GUI is open. Reopening starts from the remaining route.
-                            // # zh_CN 本次打开 GUI 后记录的已完成 / 规划杂交步骤；重新打开时从剩余路线开始统计。
-                            // @formatter:on
-                        .addLine(IKey.lang("gtnr.bee_breeder.route_session"))));
+        page.child(fittedText(
+
+        // @formatter:off
+            // #tr gtnr.bee_breeder.total_progress
+            // # Total progress: %s%%
+            // # zh_CN 总进度：%s%%
+            // @formatter:on
+            () -> tr("gtnr.bee_breeder.total_progress", Math.round(routeProgress() * 100)),
+            124,
+            22,
+            PAGE_WIDTH - 124,
+            0.85F).tooltipAutoUpdate(true)
+                .tooltipBuilder(t -> t.addLine(routeProgressText())
+
+                // @formatter:off
+// #tr gtnr.bee_breeder.route_session
+// # Completed / planned breeding steps tracked while this GUI is open. Reopening starts from the remaining route.
+// # zh_CN 本次打开 GUI 后记录的已完成 / 规划杂交步骤；重新打开时从剩余路线开始统计。
+// @formatter:on
+                    .addLine(IKey.lang("gtnr.bee_breeder.route_session"))));
         page.child(beeSlot(() -> previewSpecies("parent1"), 20, 38));
         page.child(text(() -> "+", 44, 41, 10));
         page.child(beeSlot(() -> previewSpecies("parent2"), 60, 38));
         page.child(
             breedingArrow(this::previewStep, this::previewProgress, 104, 38).tooltipAutoUpdate(true)
                 .tooltipBuilder(t -> {
-                    t.addLine(
-                        tr(
-                            // #tr gtnr.bee_breeder.attempt_time
-                            // # Current attempt: %.1f / %.1f s
-                            // # zh_CN 本次尝试：%.1f / %.1f 秒
-                            "gtnr.bee_breeder.attempt_time",
-                            progressTime.getIntValue() / 20D,
-                            maxProgressTime.getIntValue() / 20D));
+                    t.addLine(tr(
+
+                // @formatter:off
+// #tr gtnr.bee_breeder.attempt_time
+// # Current attempt: %.1f / %.1f s
+// # zh_CN 本次尝试：%.1f / %.1f 秒
+// @formatter:on
+                        "gtnr.bee_breeder.attempt_time",
+                        progressTime.getIntValue() / 20D,
+                        maxProgressTime.getIntValue() / 20D));
+
+                // @formatter:off
+// #tr gtnr.bee_breeder.energy
+// # Per attempt: %s EU/t | Chance bonus: +%s%%
+// # zh_CN 每次尝试：%s EU/t | 成功率加成：+%s%%
+// @formatter:on
                     t.addLine(tr("gtnr.bee_breeder.energy", energy.getLongValue(), bonus.getIntValue()));
                 }));
         page.child(beeSlot(() -> previewSpecies("result"), 156, 38));
         page.child(fittedText(() -> speciesOrEmpty(previewSpecies("result")), 180, 41, 52, 0.75F));
-        page.child(
-            fittedText(
-                // #tr gtnr.bee_breeder.overview
-                // # Waiting %s | Archive %s
-                // # zh_CN 待输出 %s | 档案 %s
-                () -> tr("gtnr.bee_breeder.overview", pending.getIntValue(), archive.size()),
-                0,
-                58,
-                PAGE_WIDTH,
-                0.8F).tooltipAutoUpdate(true)
-                    .tooltipBuilder(
-                        t -> t.addLine(routeProgressText())
-                            .addLine(tr("gtnr.bee_breeder.energy", energy.getLongValue(), bonus.getIntValue()))
-                            .addLine(
-                                tr(
-                                    // #tr gtnr.bee_breeder.cycle_settings
-                                    // # Voltage: %s | Next attempt: %.2f s
-                                    // # zh_CN 电压：%s | 下次尝试：%.2f 秒
-                                    "gtnr.bee_breeder.cycle_settings",
-                                    GTValues.VN[voltageTier.getIntValue()],
-                                    duration.getIntValue() / 20D))));
+        page.child(fittedText(
+
+        // @formatter:off
+            // #tr gtnr.bee_breeder.overview
+            // # Waiting %s | Archive %s | Parallel %s
+            // # zh_CN 待输出 %s | 档案 %s | 并行 %s
+            // @formatter:on
+            () -> tr("gtnr.bee_breeder.overview", pending.getIntValue(), archive.size(), parallel.getIntValue()),
+            0,
+            58,
+            PAGE_WIDTH,
+            0.8F).tooltipAutoUpdate(true)
+                .tooltipBuilder(
+                    t -> t.addLine(routeProgressText())
+                        .addLine(tr("gtnr.bee_breeder.energy", energy.getLongValue(), bonus.getIntValue()))));
         page.child(createTerminalRow(panel, sync).pos(0, 72));
         return page;
     }
@@ -547,9 +577,12 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
                     .setEnabledIf(
                         widget -> !view.uid(slot)
                             .isEmpty())
-                    // #tr gtnr.bee_breeder.select_species
-                    // # Click to fill the target, then press Apply to confirm.
-                    // # zh_CN 点击填入目标，再点击应用确认。
+
+                    // @formatter:off
+// #tr gtnr.bee_breeder.select_species
+// # Click to fill the target, then press Apply to confirm.
+// # zh_CN 点击填入目标，再点击应用确认。
+// @formatter:on
                     .tooltipBuilder(t -> t.addLine(IKey.lang("gtnr.bee_breeder.select_species")))
                     .onMousePressed(button -> {
                         if (button == 0) {
@@ -590,20 +623,18 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
                     if (button == 0) view.page = Math.min(view.pageCount() - 1, view.page + 1);
                     return true;
                 }));
-        page.child(
-            text(
-                () -> tr(
-                    // #tr gtnr.bee_breeder.archive_count
-                    // # %s species | Page %s/%s
-                    // # zh_CN %s 个蜂种 | 第 %s/%s 页
-                    "gtnr.bee_breeder.archive_count",
-                    view.filtered()
-                        .size(),
-                    view.page + 1,
-                    view.pageCount()),
-                24,
-                98,
-                PAGE_WIDTH - 48).alignment(Alignment.CENTER));
+        page.child(text(() -> tr(
+
+        // @formatter:off
+            // #tr gtnr.bee_breeder.archive_count
+            // # %s species | Page %s/%s
+            // # zh_CN %s 个蜂种 | 第 %s/%s 页
+            // @formatter:on
+            "gtnr.bee_breeder.archive_count",
+            view.filtered()
+                .size(),
+            view.page + 1,
+            view.pageCount()), 24, 98, PAGE_WIDTH - 48).alignment(Alignment.CENTER));
         return page;
     }
 
@@ -623,20 +654,25 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
         page.child(progressArrow(this::routeProgress, 0, 0));
         page.child(
             fittedText(this::routeProgressText, 24, 3, PAGE_WIDTH - 48, 0.8F).tooltipAutoUpdate(true)
-                .tooltipBuilder(
-                    t -> t.addLine(IKey.lang("gtnr.bee_breeder.route_session"))
-                        // #tr gtnr.bee_breeder.route_hint
-                        // # Scroll or drag to pan; Ctrl + scroll to zoom; middle click to reset the view.
-                        // # zh_CN 滚动或拖动查看亲本谱系，Ctrl + 滚轮缩放，中键重置视图。
-                        .addLine(IKey.lang("gtnr.bee_breeder.route_hint"))));
+                .tooltipBuilder(t -> t.addLine(IKey.lang("gtnr.bee_breeder.route_session"))
+
+                // @formatter:off
+// #tr gtnr.bee_breeder.route_hint
+// # Scroll or drag to pan; Ctrl + scroll to zoom; middle-click to restore 100% and focus the target. Green arrows mark completed mutations; filling arrows show active attempts.
+// # zh_CN 滚动或拖动查看亲本谱系，Ctrl + 滚轮缩放，中键恢复 100% 并定位目标蜂种。绿色箭头表示繁育成功，填充中的箭头表示正在繁育。
+// @formatter:on
+                    .addLine(IKey.lang("gtnr.bee_breeder.route_hint"))));
         page.child(
             new ButtonWidget<>().pos(PAGE_WIDTH - 18, 0)
                 .size(18)
                 .background(GTGuiTextures.BUTTON_STANDARD)
                 .overlay(new ItemDrawable(Items.compass).asIcon())
-                // #tr gtnr.bee_breeder.focus_target
-                // # Scroll to the target bee
-                // # zh_CN 滚动到目标蜂种
+
+                // @formatter:off
+// #tr gtnr.bee_breeder.focus_target
+// # Scroll to the target bee
+// # zh_CN 滚动到目标蜂种
+// @formatter:on
                 .tooltipBuilder(t -> t.addLine(IKey.lang("gtnr.bee_breeder.focus_target")))
                 .onMousePressed(button -> {
                     if (button == 0) routeWidget.focusTarget();
@@ -644,9 +680,12 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
                 }));
         page.child(viewport);
         page.child(
+
+        // @formatter:off
             // #tr gtnr.bee_breeder.no_steps
             // # No pending route. Select a target; archived targets need no further breeding.
             // # zh_CN 暂无待杂交步骤。请选择目标；已解锁目标无需再次杂交。
+            // @formatter:on
             IKey.lang("gtnr.bee_breeder.no_steps")
                 .asWidget()
                 .pos(12, 34)
@@ -681,14 +720,20 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
     private String routeProgressText() {
         if (!target.getStringValue()
             .isEmpty() && archivedSpecies.contains(target.getStringValue())) {
+
+            // @formatter:off
             // #tr gtnr.bee_breeder.unlocked
             // # Unlocked
             // # zh_CN 已解锁
+            // @formatter:on
             return tr("gtnr.bee_breeder.unlocked");
         }
+
+        // @formatter:off
         // #tr gtnr.bee_breeder.route_meter
         // # Route %s/%s
         // # zh_CN 路线 %s/%s
+        // @formatter:on
         return tr("gtnr.bee_breeder.route_meter", completedRouteSteps(), steps.size());
     }
 
@@ -701,16 +746,22 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
     private String missingText() {
         String uid = missing.getStringValue();
         return uid.isEmpty() ? ""
+
+        // @formatter:off
             // #tr gtnr.bee_breeder.missing
             // # Missing parent: %s
             // # zh_CN 缺少亲本：%s
+            // @formatter:on
             : EnumChatFormatting.RED + tr("gtnr.bee_breeder.missing", BeeBreedingHelper.getSpeciesDisplayName(uid));
     }
 
     private static String speciesOrEmpty(String uid) {
+
+        // @formatter:off
         // #tr gtnr.bee_breeder.unset
         // # Not selected
         // # zh_CN 未选择
+        // @formatter:on
         return uid.isEmpty() ? tr("gtnr.bee_breeder.unset") : BeeBreedingHelper.getSpeciesDisplayName(uid);
     }
 
@@ -768,9 +819,11 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
 
     private NBTTagCompound previewStep() {
         if (!activeSteps.isEmpty()) return activeSteps.get(0);
+        // @formatter:off
         // #tr gtnr.bee_breeder.ready
         // # Ready
         // # zh_CN 可杂交
+        // @formatter:on
         for (NBTTagCompound step : steps) if (routeState(step).equals("gtnr.bee_breeder.ready")) return step;
         for (NBTTagCompound step : steps) if (!archivedSpecies.contains(step.getString("result"))) return step;
         for (NBTTagCompound step : steps) if (step.getString("result")
@@ -789,14 +842,20 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
     }
 
     private String previewChance() {
+
+        // @formatter:off
         // #tr gtnr.bee_breeder.invalid_short
         // # Unknown bee species
         // # zh_CN 未找到该蜂种
+        // @formatter:on
         if (!valid.getBoolValue()) return EnumChatFormatting.DARK_RED + tr("gtnr.bee_breeder.invalid_short");
         NBTTagCompound step = previewStep();
+
+        // @formatter:off
         // #tr gtnr.bee_breeder.chance
         // # Mutation chance: %.1f%%
         // # zh_CN 杂交成功率：%.1f%%
+        // @formatter:on
         if (step != null) return tr("gtnr.bee_breeder.chance", step.getDouble("chance"));
         return tr(
             archivedSpecies.contains(target.getStringValue()) ? "gtnr.bee_breeder.unlocked" : "gtnr.bee_breeder.unset");
@@ -815,15 +874,25 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
     private String routeState(NBTTagCompound step) {
         String result = step.getString("result");
         if (archivedSpecies.contains(result)) return "gtnr.bee_breeder.unlocked";
+        // @formatter:off
+        // #tr gtnr.bee_breeder.low_voltage
+        // # Insufficient voltage
+        // # zh_CN 当前电压不足
+        // @formatter:on
+        if (voltageTier.getIntValue() < step.getInteger("requiredVoltageTier")) return "gtnr.bee_breeder.low_voltage";
+        // @formatter:off
         // #tr gtnr.bee_breeder.active
         // # Breeding
         // # zh_CN 正在杂交
+        // @formatter:on
         if (machineActive.getBoolValue() && activeSpecies.contains(result)) return "gtnr.bee_breeder.active";
         if (archivedSpecies.contains(step.getString("parent1")) && archivedSpecies.contains(step.getString("parent2")))
             return "gtnr.bee_breeder.ready";
+        // @formatter:off
         // #tr gtnr.bee_breeder.waiting
         // # Waiting for parents
         // # zh_CN 等待亲本
+        // @formatter:on
         return "gtnr.bee_breeder.waiting";
     }
 
@@ -883,9 +952,12 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
         ItemStack present = tag.hasKey("present") ? ItemStack.loadItemStackFromNBT(tag.getCompoundTag("present"))
             : null;
         String name = present == null ? foundationDisplay(tag).name() : present.getDisplayName();
+
+        // @formatter:off
         // #tr gtnr.bee_breeder.required_foundation
         // # Required foundation: %s
         // # zh_CN 所需基石：%s
+        // @formatter:on
         return tr("gtnr.bee_breeder.required_foundation", name)
             + (present == null ? "" : " " + EnumChatFormatting.GREEN + "✔" + EnumChatFormatting.RESET);
     }
@@ -940,9 +1012,12 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
 
         private String name() {
             ItemStack stack = get();
+
+            // @formatter:off
             // #tr gtnr.bee_breeder.foundation_unavailable
-            // # Foundation unavailable
-            // # zh_CN 基石不可用
+            // # No registered foundation item
+            // # zh_CN 没有已注册的基石物品
+            // @formatter:on
             return stack == null ? tr("gtnr.bee_breeder.foundation_unavailable") : stack.getDisplayName();
         }
     }
@@ -992,10 +1067,24 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
             removeAll();
             for (RouteLink link : layout.links) addRouteLink(this, link);
             for (RouteNode node : layout.nodes.values()) {
+                int requiredTier = node.step == null ? LargeBeeBreeder.getSpeciesVoltageTier(node.uid)
+                    : node.step.getInteger("requiredVoltageTier");
                 child(beeSlot(() -> node.uid, node.x, node.y).tooltipBuilder(t -> {
+
+                    // @formatter:off
+                    // #tr gtnr.bee_breeder.required_voltage
+                    // # Required voltage: %s
+                    // # zh_CN 需要电压：%s
+                    // @formatter:on
+                    t.addLine(tr("gtnr.bee_breeder.required_voltage", GTValues.VN[requiredTier]));
+                    if (voltageTier.getIntValue() < requiredTier) {
+
+                        t.addLine(EnumChatFormatting.RED + tr("gtnr.bee_breeder.low_voltage"));
+                    }
                     if (node.step == null) return;
-                    t.addLine(IKey.lang(routeState(node.step)))
-                        .addLine(tr("gtnr.bee_breeder.chance", currentStep(node.step).getDouble("chance")));
+                    String state = routeState(node.step);
+                    if (!state.equals("gtnr.bee_breeder.low_voltage")) t.addLine(IKey.lang(state));
+                    t.addLine(tr("gtnr.bee_breeder.chance", currentStep(node.step).getDouble("chance")));
                     NBTTagList foundations = node.step.getTagList("foundations", 10);
                     for (int i = 0; i < foundations.tagCount(); i++) {
                         t.addLine(foundationTooltipLine(foundations.getCompoundTagAt(i)));

@@ -1,0 +1,106 @@
+ENV MUI2=2.3.94-1.7.10, Java=21.0.11, display=1100x740, language=zh_CN
+CHECK native test GUI configuration enabled
+CHECK diamond air-use event opens MUI2
+CHECK diamond entry is the upstream TestGuis
+CHECK 00-diamond-menu has a laid-out panel
+CHECK screenshot saved: 00-diamond-menu
+RENDER 00-diamond-menu, widgets=23, panel=170x200, elapsedMs=682
+CHECK buildAspectRatioUI has a laid-out panel
+CHECK screenshot saved: buildAspectRatioUI
+RENDER buildAspectRatioUI, widgets=5, panel=280x100, elapsedMs=567
+CHECK buildCollapseDisabledChildrenUI has a laid-out panel
+CHECK screenshot saved: buildCollapseDisabledChildrenUI
+RENDER buildCollapseDisabledChildrenUI, widgets=14, panel=100x150, elapsedMs=581
+CHECK buildColorTheoryUI has a laid-out panel
+CHECK screenshot saved: buildColorTheoryUI
+RENDER buildColorTheoryUI, widgets=13, panel=300x107, elapsedMs=564
+CHECK buildContextMenu has a laid-out panel
+CHECK screenshot saved: buildContextMenu
+CHECK context menu opens through its click handler
+CHECK screenshot saved: buildContextMenu-opened
+RENDER buildContextMenu, widgets=6, panel=150x150, elapsedMs=600
+CHECK buildGraphUI has a laid-out panel
+CHECK screenshot saved: buildGraphUI
+RENDER buildGraphUI, widgets=1, panel=200x160, elapsedMs=566
+CHECK buildMachineLikeUI has a laid-out panel
+CHECK screenshot saved: buildMachineLikeUI
+RENDER buildMachineLikeUI, widgets=31, panel=122x94, elapsedMs=811
+CHECK buildPendulumAnimationUI has a laid-out panel
+CHECK screenshot saved: buildPendulumAnimationUI
+CHECK screenshot saved: buildPendulumAnimationUI-after
+RENDER buildPendulumAnimationUI, widgets=3, panel=150x150, elapsedMs=605
+CHECK buildPostTheLogAnimationUI has a laid-out panel
+CHECK screenshot saved: buildPostTheLogAnimationUI
+CHECK screenshot saved: buildPostTheLogAnimationUI-after
+RENDER buildPostTheLogAnimationUI, widgets=7, panel=110x46, elapsedMs=611
+CHECK buildRichTextUI has a laid-out panel
+CHECK screenshot saved: buildRichTextUI
+RENDER buildRichTextUI, widgets=2, panel=176x166, elapsedMs=576
+CHECK buildSearchTest has a laid-out panel
+CHECK screenshot saved: buildSearchTest
+CHECK search filters 5730 rows to 25
+CHECK screenshot saved: buildSearchTest-filtered
+RENDER buildSearchTest, widgets=17194, panel=130x200, elapsedMs=3393
+EXAMPLE_FAILURE buildSpriteAndEntityUI: java.lang.NullPointerException: Cannot invoke "cpw.mods.fml.common.registry.EntityRegistry$EntityRegistration.getEntityClass()" because "entry" is null
+CHECK buildTextFieldUI has a laid-out panel
+CHECK screenshot saved: buildTextFieldUI
+CHECK Chinese text commits to local value
+CHECK numeric input clamps to configured range
+CHECK screenshot saved: buildTextFieldUI-after
+RENDER buildTextFieldUI, widgets=8, panel=120x105, elapsedMs=640
+CHECK buildToggleGridListUI has a laid-out panel
+CHECK screenshot saved: buildToggleGridListUI
+CHECK toggle event changes bound local value
+RENDER buildToggleGridListUI, widgets=70, panel=66x100, elapsedMs=642
+CHECK buildViewportTransformUI has a laid-out panel
+CHECK screenshot saved: buildViewportTransformUI
+RENDER buildViewportTransformUI, widgets=2, panel=100x100, elapsedMs=573
+CHECK buildWorldSchemaUI has a laid-out panel
+CHECK screenshot saved: buildWorldSchemaUI
+RENDER buildWorldSchemaUI, widgets=3, panel=170x170, elapsedMs=606
+CHECK buildWrappedFlowUI has a laid-out panel
+CHECK screenshot saved: buildWrappedFlowUI
+RENDER buildWrappedFlowUI, widgets=7, panel=150x150, elapsedMs=562
+CHECK sortable-list has a laid-out panel
+CHECK screenshot saved: sortable-list
+CHECK sortable list move API changes row order
+RENDER sortable-list, widgets=83, panel=176x166, elapsedMs=601
+CHECK dashboard-scale-1 has a laid-out panel
+CHECK screenshot saved: dashboard-scale-1
+CHECK dashboard-scale-1 fits scaled viewport
+CHECK slider accepts and displays 75 within bounds
+CHECK 80-row dashboard scroll offset advances
+CHECK screenshot saved: dashboard-scale-1-after
+RENDER dashboard-scale-1, widgets=94, panel=1012x651, elapsedMs=608
+CHECK dashboard-scale-2 has a laid-out panel
+CHECK screenshot saved: dashboard-scale-2
+CHECK dashboard-scale-2 fits scaled viewport
+CHECK slider accepts and displays 75 within bounds
+CHECK 80-row dashboard scroll offset advances
+CHECK screenshot saved: dashboard-scale-2-after
+RENDER dashboard-scale-2, widgets=94, panel=506x325, elapsedMs=582
+CHECK dashboard-scale-3 has a laid-out panel
+CHECK screenshot saved: dashboard-scale-3
+CHECK dashboard-scale-3 fits scaled viewport
+CHECK slider accepts and displays 75 within bounds
+CHECK 80-row dashboard scroll offset advances
+CHECK screenshot saved: dashboard-scale-3-after
+RENDER dashboard-scale-3, widgets=94, panel=337x217, elapsedMs=595
+CHECK entity-direct-cow has a laid-out panel
+CHECK screenshot saved: entity-direct-cow
+RENDER entity-direct-cow, widgets=3, panel=180x200, elapsedMs=574
+CHECK upstream TestTile cycle_state is S2C-only by default
+TEST_ADAPTATION enable allowC2S on the test tile cycle_state on both sides for round-trip probe
+CHECK synced-tile has a laid-out panel
+CHECK screenshot saved: synced-tile
+CHECK client test tile also defaults to S2C-only
+CHECK screenshot saved: synced-tile-before
+CHECK client toggle packet changed server tile cycleState to 1
+CHECK server change synchronizes to client toggle group
+CHECK screenshot saved: synced-tile-after
+CHECK native tile second tab activates
+CHECK synced-tile has a laid-out panel
+CHECK screenshot saved: synced-tile
+CHECK screenshot saved: synced-tile-second-tab
+SUMMARY upstream example construction failures=1
+PASS (probe completed; inspect EXAMPLE_FAILURE findings)

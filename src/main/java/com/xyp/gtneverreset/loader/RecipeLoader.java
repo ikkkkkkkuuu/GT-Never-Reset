@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.loader;
 
+import com.xyp.gtneverreset.common.machine.multiblock.bee.BeeBreedingTiers;
 import com.xyp.gtneverreset.common.recipe.CraftingTableRecipes;
 import com.xyp.gtneverreset.common.recipe.FurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.AssemblerRecipes;
@@ -32,6 +33,7 @@ public final class RecipeLoader implements IContentLoader {
     @Override
     public void loadComplete() {
         registerLateRecipes();
+        if (Mods.Forestry.isModLoaded()) BeeBreedingTiers.initialize();
     }
 
     public static void registerRecipes() {
