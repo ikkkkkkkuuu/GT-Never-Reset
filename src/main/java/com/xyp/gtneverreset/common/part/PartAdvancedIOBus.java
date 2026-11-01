@@ -50,6 +50,7 @@ public final class PartAdvancedIOBus extends PartExportBus {
     private final IAEStackInventory stockConfig = new IAEStackInventory(this, CONFIG_SLOTS, StorageName.CONFIG);
     private IAEStack<?> pending;
     private boolean regulate = true;
+    private boolean exportOnly;
     private boolean transferring;
     private int cursor;
 
@@ -104,6 +105,15 @@ public final class PartAdvancedIOBus extends PartExportBus {
 
     public void setRegulate(boolean value) {
         regulate = value;
+        changed();
+    }
+
+    public boolean exportOnly() {
+        return exportOnly;
+    }
+
+    public void setExportOnly(boolean value) {
+        exportOnly = value;
         changed();
     }
 
@@ -173,6 +183,7 @@ public final class PartAdvancedIOBus extends PartExportBus {
                     cursor = (slot + 1) % availableSlots();
                 }
             }
+            if (exportOnly) return worked ? TickRateModulation.FASTER : TickRateModulation.SLOWER;
             remaining = calculateAmountToSend();
             for (var stack : target.stock()) {
                 if (remaining <= 0 || pending != null) break;
@@ -289,6 +300,7 @@ public final class PartAdvancedIOBus extends PartExportBus {
         stockConfig.readFromNBT(tag, "advancedStock");
         normalizeFilters();
         regulate = !tag.hasKey("regulateStock") || tag.getBoolean("regulateStock");
+        exportOnly = tag.getBoolean("exportOnly");
         pending = tag.hasKey("advancedEscrow") ? Platform.readStackNBT(tag.getCompoundTag("advancedEscrow"), false)
             : null;
         cursor = Math.max(0, tag.getInteger("stockCursor")) % CONFIG_SLOTS;
@@ -300,6 +312,7 @@ public final class PartAdvancedIOBus extends PartExportBus {
     public NBTTagCompound downloadSettings(@Nonnull SettingsFrom from) {
         NBTTagCompound tag = super.downloadSettings(from);
         tag.setBoolean("regulateStock", regulate);
+        tag.setBoolean("exportOnly", exportOnly);
         return tag;
     }
 
@@ -309,6 +322,7 @@ public final class PartAdvancedIOBus extends PartExportBus {
         super.uploadSettings(from, tag);
         normalizeFilters();
         regulate = !tag.hasKey("regulateStock") || tag.getBoolean("regulateStock");
+        exportOnly = tag.getBoolean("exportOnly");
         changed();
     }
 
@@ -335,6 +349,7 @@ public final class PartAdvancedIOBus extends PartExportBus {
         super.writeToNBT(tag);
         stockConfig.writeToNBT(tag, "advancedStock");
         tag.setBoolean("regulateStock", regulate);
+        tag.setBoolean("exportOnly", exportOnly);
         tag.setInteger("stockCursor", cursor);
         if (pending != null) {
             NBTTagCompound escrow = new NBTTagCompound();

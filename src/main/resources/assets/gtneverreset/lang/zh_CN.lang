@@ -338,6 +338,7 @@ gtnr.quantum_crafting.message.CraftingShortageResolutionLimit=量子合成计算
 gtnr.quantum_crafting.message.CraftingNoPlan=量子合成计算未能生成计划。
 gui.advancedio.amount_hint=中键样本，设置目标库存。
 gui.advancedio.regulate=将超出目标的库存送回 ME
+gui.advancedio.export_only=仅向机器输入（不回收产物或超额库存）
 gui.advancedio.set_amount=设置数量
 gui.advancedio.set=设置
 gui.advancedio.back=返回

@@ -80,6 +80,7 @@ public final class AdvancedIOGui {
     static ModularPanel build(PartAdvancedIOBus part, PanelSyncManager sync) {
         var enabled = new IntSyncValue(part::availableSlots);
         var regulate = new BooleanSyncValue(part::regulate);
+        var exportOnly = new BooleanSyncValue(part::exportOnly);
         var hasRedstone = new BooleanSyncValue(() -> part.getInstalledUpgrades(Upgrades.REDSTONE) > 0);
         var redstone = new IntSyncValue(
             () -> part.getRSMode()
@@ -89,6 +90,7 @@ public final class AdvancedIOGui {
                 .getSetting(Settings.SCHEDULING_MODE)).ordinal());
         sync.syncValue("enabled", enabled);
         sync.syncValue("regulate", regulate);
+        sync.syncValue("exportOnly", exportOnly);
         sync.syncValue("hasRedstone", hasRedstone);
         sync.syncValue("redstone", redstone);
         sync.syncValue("scheduling", scheduling);
@@ -186,11 +188,11 @@ public final class AdvancedIOGui {
                     .pos(7 + column * 18, 168 + row * 18 + (i < 9 ? 4 : 0)));
         }
         IDrawable toolbar = (context, x, y, w, h, theme) -> sprite("vertical_buttons_bg", 21, 26, 0, 2, 0, 4)
-            .draw(context, x, y, 21, hasRedstone.getBoolValue() ? 72 : 50, theme);
+            .draw(context, x, y, 21, hasRedstone.getBoolValue() ? 94 : 72, theme);
         panel.child(
             new Widget<>().background(toolbar)
                 .pos(-19, 0)
-                .size(21, 73)
+                .size(21, 95)
                 .excludeAreaInRecipeViewer());
         panel.child(
             toolbarButton(
@@ -245,6 +247,19 @@ public final class AdvancedIOGui {
                     + yesNo(regulate.getBoolValue()),
                 mouse -> part.setRegulate(!part.regulate())).left(-16)
                     .top(() -> hasRedstone.getBoolValue() ? 47 : 25, Unit.Measure.PIXEL));
+        // #tr gui.advancedio.export_only
+        // # Only supply the machine (no product or excess stock recovery)
+        // # zh_CN 仅向机器输入（不回收产物或超额库存）
+        panel.child(
+            toolbarButton(
+                sync,
+                "exportOnlyButton",
+                () -> texture("advanced_states", 256, 256, exportOnly.getBoolValue() ? 48 : 64, 0, 16, 16),
+                () -> IKey.lang("gui.advancedio.export_only")
+                    .get() + ": "
+                    + yesNo(exportOnly.getBoolValue()),
+                mouse -> part.setExportOnly(!part.exportOnly())).left(-16)
+                    .top(() -> hasRedstone.getBoolValue() ? 69 : 47, Unit.Measure.PIXEL));
         return panel;
     }
 
