@@ -30,11 +30,19 @@ import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.api.util.GTModHandler;
+import tectech.thing.CustomItemList;
 import thaumcraft.common.config.ConfigBlocks;
 
 public final class CraftingTableRecipes {
 
     public static void register() {
+        GTModHandler.addCraftingRecipe(
+            CustomItemList.hatch_CreativeMaintenance.get(1),
+            GTModHandler.RecipeBits.MIRRORED | GTModHandler.RecipeBits.KEEPNBT
+                | GTModHandler.RecipeBits.BUFFERED
+                | GTModHandler.RecipeBits.DISMANTLEABLE,
+            new Object[] { "ABA", "CDC", "ABA", 'A', OrePrefixes.circuit.get(Materials.LV), 'B',
+                ItemList.Hatch_Maintenance.get(1), 'C', ItemList.Robot_Arm_LV.get(1), 'D', ItemList.Hull_LV.get(1) });
         GameRegistry.addRecipe(
             new ItemStack(ItemLoader.permanentMagnetRing),
             " I ",

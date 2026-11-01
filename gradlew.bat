@@ -20,6 +20,12 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
+@rem Keep Java's Unix-domain socket files outside redirected Windows TEMP directories.
+@rem setlocal limits this setting to Gradle and its child JVMs.
+set "GRADLE_SOCKET_TMP=%USERPROFILE%\.gradle\socket-tmp"
+if not exist "%GRADLE_SOCKET_TMP%" mkdir "%GRADLE_SOCKET_TMP%"
+set JAVA_TOOL_OPTIONS=%JAVA_TOOL_OPTIONS% "-Djdk.net.unixdomain.tmpdir=%GRADLE_SOCKET_TMP%"
+
 @rem Find java.exe
 if defined JAVA_HOME goto findJavaFromJavaHome
 

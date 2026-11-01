@@ -32,6 +32,16 @@ public final class AssemblerRecipes {
     public static void register() {
         GTRecipeBuilder.builder()
             .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.wireFine, Materials.Copper, 32),
+                ItemList.GalliumArsenideCrystal.get(1))
+            .circuit(4)
+            .fluidInputs(Materials.Glass.getMolten(2304))
+            .itemOutputs(ItemList.Circuit_Parts_Diode.get(16))
+            .duration(240 * SECONDS)
+            .eut(RECIPE_LV)
+            .addTo(assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
                 ItemList.Hatch_DataAccess_EV.get(1),
                 ModsItemlist.MEInterface.get(1),
                 ItemList.Hull_IV.get(1),
