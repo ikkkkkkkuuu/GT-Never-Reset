@@ -9,12 +9,25 @@ import com.xyp.gtneverreset.common.recipe.gregtech.MixerRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernNonCellRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.OreProcessingRecipes;
+import com.xyp.gtneverreset.compat.etfuturum.EtFuturumCompat;
+
+import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import gregtech.api.GregTechAPI;
+import gregtech.api.enums.Mods;
 
 public final class RecipeLoader implements IContentLoader {
 
     @Override
     public String name() {
         return "recipe";
+    }
+
+    @Override
+    public void preInit(FMLPreInitializationEvent event) {
+        if (Mods.EtFuturumRequiem.isModLoaded()) {
+            // All mods finish preInit before this hook runs, ahead of GT's machine recipes.
+            GregTechAPI.sBeforeGTLoad.add(EtFuturumCompat::registerBlastFurnaceOre);
+        }
     }
 
     @Override
