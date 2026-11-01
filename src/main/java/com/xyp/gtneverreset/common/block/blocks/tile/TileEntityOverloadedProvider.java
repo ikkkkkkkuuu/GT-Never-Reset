@@ -593,7 +593,17 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
             for (FluidStack fluid : outputs) {
                 if (returnedFluids.size() >= 9) break;
                 for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
-                    FluidStack extracted = gt.drain(side, fluid, true);
+                    FluidStack extracted;
+                    if (machine instanceof ModernFluidMachine) {
+                        extracted = gt.drain(side, fluid, true);
+                    } else {
+                        // Native GT typed drains may validate the input tank instead of the output tank.
+                        if (!machine.isLiquidOutput(side) || !gt.getCoverAtSide(side)
+                            .letsFluidOut(fluid.getFluid())) continue;
+                        FluidStack offered = gt.drain(side, fluid.amount, false);
+                        if (offered == null || offered.amount <= 0 || !offered.isFluidEqual(fluid)) continue;
+                        extracted = gt.drain(side, Math.min(fluid.amount, offered.amount), true);
+                    }
                     if (extracted != null && extracted.amount > 0) {
                         returnedFluids.add(extracted);
                         markDirty();
