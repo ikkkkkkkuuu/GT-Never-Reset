@@ -36,6 +36,7 @@ import com.xyp.gtneverreset.api.mixinHelper.ITerminalVisibilityToggle;
 import com.xyp.gtneverreset.api.mixinHelper.LargeInventoryCrafting;
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
 import com.xyp.gtneverreset.common.gui.OverloadedProviderGui;
+import com.xyp.gtneverreset.common.machine.basicMachine.ModernFluidMachine;
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternCache;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
@@ -577,9 +578,20 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
         if (!autoReturn) return;
         if (returnedFluids.size() < 9 && target instanceof BaseMetaTileEntity gt
             && gt.getMetaTileEntity() instanceof MTEBasicMachine machine) {
-            FluidStack fluid = machine.getDrainableStack();
-            if (fluid != null && lane.fluidOutputs.stream()
-                .anyMatch(output -> output.isFluidEqual(fluid))) {
+            List<FluidStack> outputs = new ArrayList<>();
+            if (machine instanceof ModernFluidMachine modern) {
+                // These tanks contain only products, including byproducts omitted from the AE pattern.
+                for (var tank : modern.getOutputTanks()) {
+                    FluidStack fluid = tank.getFluid();
+                    if (fluid != null && fluid.amount > 0) outputs.add(fluid.copy());
+                }
+            } else {
+                FluidStack fluid = machine.getDrainableStack();
+                if (fluid != null && lane.fluidOutputs.stream()
+                    .anyMatch(output -> output.isFluidEqual(fluid))) outputs.add(fluid.copy());
+            }
+            for (FluidStack fluid : outputs) {
+                if (returnedFluids.size() >= 9) break;
                 for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
                     FluidStack extracted = gt.drain(side, fluid, true);
                     if (extracted != null && extracted.amount > 0) {
