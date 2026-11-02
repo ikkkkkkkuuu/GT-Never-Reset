@@ -2,6 +2,7 @@ package com.xyp.gtneverreset.common.item.items;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -232,10 +233,7 @@ public class VeinMiningPickaxe extends ItemPickaxe {
         if (event.isCanceled() || world.isRemote || !(player instanceof EntityPlayerMP playerMP)) return;
         ItemStack heldItem = playerMP.getCurrentEquippedItem();
         if (heldItem == null || !(heldItem.getItem() instanceof VeinMiningPickaxe)) return;
-        if (isOre(world, event.x, event.y, event.z, event.block)) {
-            pendingBackfill.computeIfAbsent(world, ignored -> new HashSet<>())
-                .add(new BackfillPosition(event.x, event.y, event.z));
-        }
+        queueOreBackfill(world, event.x, event.y, event.z);
         if (playerMP.isSneaking()) {
             ItemStack stack = heldItem;
             int range = Math.min(3, Math.max(0, VeinMinerPickaxeConfig.maxRange));
@@ -259,7 +257,6 @@ public class VeinMiningPickaxe extends ItemPickaxe {
             int meta = world.getBlockMetadata(event.x, event.y, event.z);
 
             if (block != null && range >= 0 && !activePlayers.contains(playerMP.getUniqueID())) {
-                if (!activePlayers.add(playerMP.getUniqueID())) return;
                 clearConnectedBlocks(
                     playerMP,
                     stack,
@@ -306,8 +303,36 @@ public class VeinMiningPickaxe extends ItemPickaxe {
         return false;
     }
 
+    public boolean isHarvesting(EntityPlayer player) {
+        return activePlayers.contains(player.getUniqueID());
+    }
+
+    public void queueOreBackfill(World world, int x, int y, int z) {
+        if (!world.isRemote && isOre(world, x, y, z, world.getBlock(x, y, z))) {
+            pendingBackfill.computeIfAbsent(world, ignored -> new HashSet<>())
+                .add(new BackfillPosition(x, y, z));
+        }
+    }
+
     public void clearConnectedBlocks(EntityPlayerMP player, ItemStack stack, int x, int y, int z, Block targetBlock,
         int targetMeta, int maxGap, int amount, boolean preciseMode) {
+        clearConnectedBlocks(
+            player,
+            stack,
+            x,
+            y,
+            z,
+            targetBlock,
+            targetMeta,
+            maxGap,
+            amount,
+            preciseMode,
+            Collections.emptyMap());
+    }
+
+    public void clearConnectedBlocks(EntityPlayerMP player, ItemStack stack, int x, int y, int z, Block targetBlock,
+        int targetMeta, int maxGap, int amount, boolean preciseMode, Map<Block, Integer> voidedBlocks) {
+        if (!activePlayers.add(player.getUniqueID())) return;
         if (player.getFoodStats()
             .getFoodLevel() <= 0
             && player.getFoodStats()
@@ -323,7 +348,7 @@ public class VeinMiningPickaxe extends ItemPickaxe {
             bestGap.defaultReturnValue(Integer.MAX_VALUE);
             int cleared = 0;
             int blocksSinceHunger = 0;
-            int toolMaxDamage = getMaxDamage(stack);
+            int toolMaxDamage = stack.getMaxDamage();
             long toolDamage = MetaGeneratedTool.getToolDamage(stack);
             boolean silkTouch = EnchantmentHelper.getSilkTouchModifier(player);
             int fortune = EnchantmentHelper.getFortuneModifier(player);
@@ -364,6 +389,8 @@ public class VeinMiningPickaxe extends ItemPickaxe {
                 }
 
                 if (matches) {
+                    boolean voidDrops = Integer.valueOf(world.getBlockMetadata(px, py, pz))
+                        .equals(voidedBlocks.get(block));
                     List<ItemStack> drops = removeBlockAndGetDrops(
                         player,
                         stack,
@@ -374,7 +401,7 @@ public class VeinMiningPickaxe extends ItemPickaxe {
                         block,
                         silkTouch,
                         fortune);
-                    if (!player.capabilities.isCreativeMode) {
+                    if (!player.capabilities.isCreativeMode && !voidDrops) {
                         for (ItemStack drop : drops) {
                             if (drop != null) merged.addTo(new ItemStackWrapper(drop), drop.stackSize);
                         }
@@ -473,13 +500,7 @@ public class VeinMiningPickaxe extends ItemPickaxe {
 
     @SubscribeEvent
     public void onHarvestDrops(BlockEvent.HarvestDropsEvent event) {
-        if (event.harvester == null || event.harvester.getCurrentEquippedItem() == null) return;
-        ItemStack heldItem = event.harvester.getCurrentEquippedItem();
-        if (!(heldItem.getItem() instanceof VeinMiningPickaxe veinMiningPickaxe)) return;
-        EntityPlayer harvester = event.harvester;
-        if (harvester instanceof EntityPlayerMP && veinMiningPickaxe.activePlayers.contains(harvester.getUniqueID())) {
-            event.drops.clear();
-        }
+        if (event.harvester != null && isHarvesting(event.harvester)) event.drops.clear();
     }
 
     private static long positionKey(int x, int y, int z) {

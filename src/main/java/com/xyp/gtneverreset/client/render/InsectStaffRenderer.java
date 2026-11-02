@@ -57,14 +57,7 @@ public final class InsectStaffRenderer implements IItemRenderer, IResourceManage
             for (int y = 0; y < image.getHeight(); y++) {
                 for (int x = 0; x < image.getWidth(); x++) {
                     int pixel = image.getRGB(x, y);
-                    float[] hsv = Color.RGBtoHSB(pixel >> 16 & 255, pixel >> 8 & 255, pixel & 255, null);
-                    float brightness = hsv[2] * 0.70F;
-                    float hue = hsv[0] < 0.2F ? 0.32F : 0.38F;
-                    if (hsv[0] >= 0.2F) brightness *= 0.58F;
-                    image.setRGB(
-                        x,
-                        y,
-                        (pixel & 0xFF000000) | (Color.HSBtoRGB(hue, Math.max(0.45F, hsv[1]), brightness) & 0xFFFFFF));
+                    image.setRGB(x, y, (pixel & 0xFF000000) | chitinColor(pixel & 0xFFFFFF));
                 }
             }
             texture = Minecraft.getMinecraft()
@@ -100,23 +93,24 @@ public final class InsectStaffRenderer implements IItemRenderer, IResourceManage
                 .bindTexture(texture);
             model.renderAll();
             GL11.glDisable(GL11.GL_TEXTURE_2D);
-            GL11.glColor4f(0.06F, 0.19F, 0.10F, 1);
             for (int i = 0; i < 5; i++) {
-                GL11.glPushMatrix();
-                GL11.glTranslated(0, 0.22, -0.72 + i * 0.36);
-
-                plate(0.24, 0.26, 0.10);
-                GL11.glPopMatrix();
+                double z = -0.65 + i * 0.30;
+                shell(0, 0.22, z, 0.18, 0.245, 0.18, 0x78658d);
+                shell(0, 0.22, z - 0.016, 0.15, 0.258, 0.15, 0x302739);
             }
             GL11.glDisable(GL11.GL_LIGHTING);
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
-            GL11.glColor4f(0.35F, 1F, 0.06F, 1);
+            shell(0, 0.24, -1.57, 0.14, 0.265, 0.19, 0xc7a1ff);
+            shell(0, 0.24, -1.57, 0.065, 0.285, 0.12, 0xeee0ff);
             for (int side : new int[] { -1, 1 }) {
-                GL11.glPushMatrix();
-                GL11.glTranslated(side * 0.11, 0.47, -1.57);
-
-                plate(0.07, 0.025, 0.11);
-                GL11.glPopMatrix();
+                for (double face : new double[] { 0.265, 0.172 }) {
+                    vein(side * 0.40, -1.72, side * 0.62, -1.80, face, 0.013);
+                    vein(side * 0.62, -1.80, side * 0.88, -1.62, face, 0.010);
+                    vein(side * 0.88, -1.62, side * 1.18, -1.30, face, 0.007);
+                }
+            }
+            for (int i = 0; i < 3; i++) {
+                shell(0, 0.22, 1.0 + i * 0.16, 0.035, 0.32, 0.060, 0xb88aec);
             }
         } finally {
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, lightX, lightY);
@@ -125,39 +119,77 @@ public final class InsectStaffRenderer implements IItemRenderer, IResourceManage
         }
     }
 
-    private static void plate(double x, double y, double z) {
+    private static int chitinColor(int rgb) {
+        switch (rgb) {
+            case 0xFF6600:
+                return 0x393044;
+            case 0xCC6600:
+                return 0x241d30;
+            case 0x440000:
+                return 0x7954a0;
+            case 0x000000:
+                return 0x17131f;
+            case 0x111111:
+                return 0x272032;
+            case 0x222222:
+                return 0x40334f;
+            case 0x663300:
+                return 0x534164;
+            case 0xD7DD89:
+                return 0xa69ab9;
+            case 0xFFD449:
+                return 0xe3c9ff;
+            case 0xFFCC33:
+                return 0xbc8ded;
+            case 0xFF9900:
+                return 0x675079;
+            case 0xCC9933:
+                return 0xa180c2;
+            case 0x663366:
+                return 0x9470bd;
+            default:
+                float[] hsv = Color.RGBtoHSB(rgb >> 16 & 255, rgb >> 8 & 255, rgb & 255, null);
+                return Color.HSBtoRGB(0.75F, 0.30F + hsv[1] * 0.25F, 0.12F + hsv[2] * 0.55F) & 0xFFFFFF;
+        }
+    }
+
+    private static void shell(double x, double y, double z, double width, double height, double length, int color) {
+        GL11.glPushMatrix();
+        GL11.glTranslated(x, y, z);
+        Tessellator t = Tessellator.instance;
+        t.startDrawing(GL11.GL_TRIANGLES);
+        for (int face : new int[] { -1, 1 }) {
+            for (int i = 0; i < 8; i++) {
+                double a = i * Math.PI / 4;
+                double b = (i + 1) * Math.PI / 4;
+                float shade = 0.72F + 0.28F * (float) ((Math.cos(a - 0.8) + 1) / 2);
+                t.setColorOpaque_F(
+                    (color >> 16 & 255) / 255F * shade,
+                    (color >> 8 & 255) / 255F * shade,
+                    (color & 255) / 255F * shade);
+                t.setNormal(0, face, 0);
+                t.addVertex(0, face * height, 0);
+                t.addVertex(Math.cos(a) * width, face * height * 0.72, -face * Math.sin(a) * length);
+                t.addVertex(Math.cos(b) * width, face * height * 0.72, -face * Math.sin(b) * length);
+            }
+        }
+        t.draw();
+        GL11.glPopMatrix();
+    }
+
+    private static void vein(double x1, double z1, double x2, double z2, double y, double width) {
+        double length = Math.hypot(x2 - x1, z2 - z1);
+        double dx = (z2 - z1) / length * width;
+        double dz = -(x2 - x1) / length * width;
+        GL11.glDisable(GL11.GL_CULL_FACE);
         Tessellator t = Tessellator.instance;
         t.startDrawingQuads();
+        t.setColorOpaque(183, 140, 232);
         t.setNormal(0, 1, 0);
-        t.addVertex(-x, y, -z);
-        t.addVertex(-x, y, z);
-        t.addVertex(x, y, z);
-        t.addVertex(x, y, -z);
-        t.setNormal(0, -1, 0);
-        t.addVertex(-x, -y, z);
-        t.addVertex(-x, -y, -z);
-        t.addVertex(x, -y, -z);
-        t.addVertex(x, -y, z);
-        t.setNormal(1, 0, 0);
-        t.addVertex(x, -y, -z);
-        t.addVertex(x, y, -z);
-        t.addVertex(x, y, z);
-        t.addVertex(x, -y, z);
-        t.setNormal(-1, 0, 0);
-        t.addVertex(-x, -y, z);
-        t.addVertex(-x, y, z);
-        t.addVertex(-x, y, -z);
-        t.addVertex(-x, -y, -z);
-        t.setNormal(0, 0, 1);
-        t.addVertex(x, -y, z);
-        t.addVertex(x, y, z);
-        t.addVertex(-x, y, z);
-        t.addVertex(-x, -y, z);
-        t.setNormal(0, 0, -1);
-        t.addVertex(-x, -y, -z);
-        t.addVertex(-x, y, -z);
-        t.addVertex(x, y, -z);
-        t.addVertex(x, -y, -z);
+        t.addVertex(x1 - dx, y, z1 - dz);
+        t.addVertex(x2 - dx, y, z2 - dz);
+        t.addVertex(x2 + dx, y, z2 + dz);
+        t.addVertex(x1 + dx, y, z1 + dz);
         t.draw();
     }
 }

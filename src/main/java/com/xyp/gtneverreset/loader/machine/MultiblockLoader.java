@@ -15,7 +15,6 @@ import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
-import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtneverreset.utils.text.AnimatedText;
 import com.xyp.gtnrlib.mod.ModList;
 
@@ -84,7 +83,8 @@ public final class MultiblockLoader {
             AnimatedTooltipHandler.addItemTooltip(GTNRItemList.LargeCropBreeder.get(1), AnimatedText.GT_NEVER_RESET);
         }
         if (ModList.Forestry.isModLoaded()) {
-            ItemStack beeCasing = ModsItemlist.VillageNamesYellowConcrete.get(1);
+            ItemStack beeCasing = LargeBeeBreeder.getCasingMaterial()
+                .get(1);
             GTUtility.addTexturePage((byte) (LargeBeeBreeder.CASING_TEXTURE_ID >> 7));
             Textures.BlockIcons.setCasingTextureForId(
                 LargeBeeBreeder.CASING_TEXTURE_ID,

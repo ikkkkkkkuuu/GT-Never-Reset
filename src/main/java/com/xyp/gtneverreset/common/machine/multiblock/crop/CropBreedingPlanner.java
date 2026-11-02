@@ -103,7 +103,7 @@ public final class CropBreedingPlanner {
             if (!added) return null;
         }
         for (ICropMutation step : result.steps.values())
-            result.cost += Math.max(1, step.getBreedingMachineRecipeDuration());
+            result.cost += CropBreedingRecipeRules.baseDuration(step.getOutput());
         return result;
     }
 

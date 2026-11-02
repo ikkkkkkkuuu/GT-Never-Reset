@@ -121,6 +121,11 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         return BeeBreedingTiers.getVoltageTier(species);
     }
 
+    public static ModsItemlist getCasingMaterial() {
+        return ModsItemlist.VillageNamesYellowConcrete.getBlock() != null ? ModsItemlist.VillageNamesYellowConcrete
+            : ModsItemlist.EtFuturumRequiemYellowConcrete;
+    }
+
     @Getter
     private String targetBeeSpecies = "";
     @Getter
@@ -222,9 +227,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
                             .casingIndex(getCasingTextureID())
                             .hint(1)
                             .buildAndChain(),
-                        onElementPass(
-                            x -> ++x.mCountCasing,
-                            ofStructureBlock(ModsItemlist.VillageNamesYellowConcrete))))
+                        onElementPass(x -> ++x.mCountCasing, ofStructureBlock(getCasingMaterial()))))
                 .build();
         }
         return structureDefinition;

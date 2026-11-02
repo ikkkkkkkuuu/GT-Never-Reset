@@ -5,7 +5,6 @@ import net.minecraftforge.common.MinecraftForge;
 
 import com.xyp.gtneverreset.client.render.InsectStaffRenderer;
 import com.xyp.gtneverreset.common.item.items.InsectStaff;
-import com.xyp.gtneverreset.common.mining.InsectStaffMining;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -17,11 +16,11 @@ public final class InsectStaffCompat {
     private InsectStaffCompat() {}
 
     public static void register() {
-        new InsectStaff();
-        MinecraftForge.EVENT_BUS.register(InsectStaffMining.INSTANCE);
+        InsectStaff staff = new InsectStaff();
+        MinecraftForge.EVENT_BUS.register(staff);
         FMLCommonHandler.instance()
             .bus()
-            .register(InsectStaffMining.INSTANCE);
+            .register(staff);
     }
 
     @SideOnly(Side.CLIENT)

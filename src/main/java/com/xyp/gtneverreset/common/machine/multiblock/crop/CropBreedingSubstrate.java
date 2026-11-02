@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 
 import com.gtnewhorizon.cropsnh.api.ICropCard;
@@ -40,6 +42,17 @@ public final class CropBreedingSubstrate {
         return extraSoil != null ? extraSoil.getItemsForNEI()
             : plantingSoil.getNEIItemList()
                 .collect(Collectors.toList());
+    }
+
+    public boolean isAutomaticallySatisfied() {
+        for (ItemStack stack : alternatives()) {
+            if (!matches(stack)) continue;
+            Block block = CropsNHUtils.getBlockFromItem(stack);
+            if (block == null || block == Blocks.air) continue;
+            String name = Block.blockRegistry.getNameForObject(block);
+            if (name != null && name.startsWith("minecraft:")) return true;
+        }
+        return false;
     }
 
     private static List<CropBreedingSubstrate> from(ICropCard crop, Iterable<?> requirements) {

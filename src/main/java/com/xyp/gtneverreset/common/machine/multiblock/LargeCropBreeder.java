@@ -27,21 +27,20 @@ import net.minecraftforge.fluids.FluidStack;
 import com.gtnewhorizon.cropsnh.api.ICropCard;
 import com.gtnewhorizon.cropsnh.api.ICropMutation;
 import com.gtnewhorizon.cropsnh.api.IMachineBreedingRequirement;
-import com.gtnewhorizon.cropsnh.api.ISeedStats;
-import com.gtnewhorizon.cropsnh.farming.SeedStats;
 import com.gtnewhorizon.cropsnh.farming.registries.CropRegistry;
 import com.gtnewhorizon.cropsnh.farming.requirements.SubSoilRequirement;
 import com.gtnewhorizon.cropsnh.init.CropsNHBlockTextures;
 import com.gtnewhorizon.cropsnh.init.CropsNHFluids;
-import com.gtnewhorizon.cropsnh.tileentity.singleblock.MTECropBreeder;
 import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.LargeCropBreederGui;
+import com.xyp.gtneverreset.common.machine.multiblock.crop.ArchivedSeedStats;
 import com.xyp.gtneverreset.common.machine.multiblock.crop.CropBreedingChance;
 import com.xyp.gtneverreset.common.machine.multiblock.crop.CropBreedingPlanner;
+import com.xyp.gtneverreset.common.machine.multiblock.crop.CropBreedingRecipeRules;
 import com.xyp.gtneverreset.common.machine.multiblock.crop.CropBreedingSubstrate;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
 import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
@@ -49,7 +48,9 @@ import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
 import gregtech.api.GregTechAPI;
 import gregtech.api.enums.HatchElement;
+import gregtech.api.enums.Materials;
 import gregtech.api.enums.Textures;
+import gregtech.api.enums.VoltageIndex;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
@@ -62,6 +63,7 @@ import gregtech.api.render.TextureFactory;
 import gregtech.api.structure.error.ErrorType;
 import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrors;
+import gregtech.api.util.GTUtility;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.api.util.VoidProtectionHelper;
 import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
@@ -74,12 +76,19 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     private static final int CASING_TEXTURE = 16;
     private static final int OFFSET_X = 2, OFFSET_Y = 3, OFFSET_Z = 0;
     private static final int MIN_CASINGS = 24;
+    private static final int FERTILIZER_PER_PARALLEL = 56000;
+    private static final int BASE_EUT = 512;
+    private static final int WASH_UU_PER_TICK = 128;
+    private static final int WASH_TICKS = 160;
 
-    private final Map<String, SeedStats> archive = new LinkedHashMap<>();
+    private final Map<String, ArchivedSeedStats> archive = new LinkedHashMap<>();
     private String targetCrop = "";
     private ItemStack activeSeed;
     private String activeCrop = "";
     private int activeChance;
+    private int activeParallel;
+    private boolean washingMode;
+    private int activeWashStat;
 
     private IStructureDefinition<LargeCropBreeder> definition;
     private int casingCount;
@@ -173,8 +182,10 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     public CheckRecipeResult checkProcessing() {
         activeSeed = null;
         activeCrop = "";
+        activeWashStat = 0;
         collectSamples();
         if (targetCrop.isEmpty()) return CheckRecipeResultRegistry.NO_RECIPE;
+        if (washingMode) return startWashing();
         List<ICropMutation> route = getPlan().steps;
         if (route.isEmpty()) {
             // #tr GT5U.gui.text.recipe_result.gtnr_crop_no_route
@@ -183,14 +194,17 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
             return SimpleCheckRecipeResult.ofFailure("gtnr_crop_no_route");
         }
         ICropMutation mutation = route.get(0);
-        long eut = Math.max(1, mutation.getBreedingMachineRecipeEUt());
-        if (eut > getMaxInputVoltage() || eut > getMaxInputEu())
-            return CheckRecipeResultRegistry.insufficientPower(eut);
+        long recipeVoltage = CropBreedingRecipeRules.requiredVoltage(mutation.getOutput());
+        if (recipeVoltage > getMaxInputVoltage() || BASE_EUT > getMaxInputEu())
+            return CheckRecipeResultRegistry.insufficientPower(recipeVoltage);
         ArrayList<ICropCard> parents = new ArrayList<>(mutation.getParents());
         for (ICropCard parent : parents) {
             if (!archive.containsKey(parent.getId())) return CheckRecipeResultRegistry.NO_RECIPE;
         }
-        SeedStats stats = inheritedStats(parents);
+        ArchivedSeedStats stats = archive.get(
+            mutation.getOutput()
+                .getId());
+        stats = stats == null ? ArchivedSeedStats.initial() : stats;
         ItemStack output = mutation.getOutput()
             .getSeedItem(stats);
         if (output == null) return CheckRecipeResultRegistry.NO_RECIPE;
@@ -205,14 +219,7 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
             // # zh_CN 缺少杂交催化剂或基土，或不满足机器杂交条件。
             return SimpleCheckRecipeResult.ofFailure("gtnr_crop_requirements");
         }
-        int fertilizerAmount = MTECropBreeder.getFluidAmount(
-            mutation.getOutput()
-                .getTier(),
-            stats.getGrowth(),
-            stats.getGain(),
-            stats.getResistance(),
-            1F);
-        FluidStack fertilizer = new FluidStack(CropsNHFluids.enrichedFertilizer, fertilizerAmount);
+        FluidStack fertilizer = new FluidStack(CropsNHFluids.enrichedFertilizer, FERTILIZER_PER_PARALLEL);
         if (!depleteInput(fertilizer, true)) {
             // #tr GT5U.gui.text.recipe_result.gtnr_crop_fertilizer
             // # Not enough enriched fertilizer.
@@ -220,8 +227,29 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
             return SimpleCheckRecipeResult.ofFailure("gtnr_crop_fertilizer");
         }
 
-        int duration = Math.max(1, mutation.getBreedingMachineRecipeDuration());
-        while (duration > 1 && eut <= getMaxInputVoltage() / 4 && eut <= getMaxInputEu() / 4) {
+        int parallels = 1;
+        ItemStack[] remaining = new ItemStack[catalysts.length];
+        for (int i = 0; i < catalysts.length; i++) {
+            remaining[i] = catalysts[i] == null ? null : catalysts[i].copy();
+            if (remaining[i] != null) remaining[i].stackSize -= consume[i];
+        }
+        while (parallels < getMaxParallelRecipes() && (long) BASE_EUT * (parallels + 1) <= getMaxInputEu()) {
+            fertilizer.amount = FERTILIZER_PER_PARALLEL * (parallels + 1);
+            output.stackSize = parallels + 1;
+            if (!depleteInput(fertilizer, true) || !hasOutputSpace(output)) break;
+            int[] additional = breedingConsumption(mutation, parents, remaining);
+            if (!validConsumption(additional, remaining)) break;
+            for (int i = 0; i < consume.length; i++) {
+                consume[i] += additional[i];
+                if (remaining[i] != null) remaining[i].stackSize -= additional[i];
+            }
+            parallels++;
+        }
+        fertilizer.amount = FERTILIZER_PER_PARALLEL * parallels;
+        int duration = CropBreedingRecipeRules.baseDuration(mutation.getOutput());
+        long eut = BASE_EUT;
+        while (duration > 1 && recipeVoltage <= getMaxInputVoltage() / 4 && eut * parallels <= getMaxInputEu() / 4) {
+            recipeVoltage *= 4;
             eut *= 4;
             duration = Math.max(1, duration / 2);
         }
@@ -230,13 +258,18 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
         updateSlots();
         activeCrop = mutation.getOutput()
             .getId();
+        activeParallel = parallels;
         activeChance = CropBreedingChance.percent(mutation.getOutput());
-        activeSeed = getBaseMetaTileEntity().getRandomNumber(100) < activeChance ? output.copy() : null;
-        mOutputItems = activeSeed == null ? new ItemStack[0] : new ItemStack[] { output };
+        int successes = 0;
+        for (int i = 0; i < parallels; i++)
+            if (getBaseMetaTileEntity().getRandomNumber(100) < activeChance) successes++;
+        output.stackSize = successes;
+        activeSeed = successes > 0 ? output.copy() : null;
+        mOutputItems = seedOutputs(activeSeed);
         mMaxProgresstime = duration;
         mEfficiency = 10000;
         mEfficiencyIncrease = 10000;
-        lEUt = -eut;
+        lEUt = -eut * parallels;
         markChanged(false);
         return CheckRecipeResultRegistry.SUCCESSFUL;
     }
@@ -244,6 +277,7 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     private int[] breedingConsumption(ICropMutation mutation, ArrayList<ICropCard> parents, ItemStack[] catalysts) {
         int[] reserved = new int[catalysts.length];
         for (CropBreedingSubstrate substrate : CropBreedingSubstrate.forMutation(mutation)) {
+            if (substrate.isAutomaticallySatisfied()) continue;
             int slot = 0;
             while (slot < catalysts.length && !substrate.matches(catalysts[slot])) slot++;
             if (slot == catalysts.length) return null;
@@ -260,19 +294,44 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
         return consumed;
     }
 
-    private SeedStats inheritedStats(List<ICropCard> parents) {
-        int growth = 0, gain = 0, resistance = 0;
-        for (ICropCard parent : parents) {
-            ISeedStats stats = archive.get(parent.getId());
-            growth += stats.getGrowth();
-            gain += stats.getGain();
-            resistance += stats.getResistance();
-        }
-        return new SeedStats(
-            (byte) (growth / parents.size()),
-            (byte) (gain / parents.size()),
-            (byte) (resistance / parents.size()),
-            true);
+    private int chooseWashStat(ArchivedSeedStats stats) {
+        int[] available = new int[3];
+        int count = 0;
+        if (stats.getGrowth() < 31) available[count++] = 1;
+        if (stats.getGain() < 31) available[count++] = 2;
+        if (stats.getResistance() < 31) available[count++] = 3;
+        return count == 0 ? 0 : available[getBaseMetaTileEntity().getRandomNumber(count)];
+    }
+
+    private CheckRecipeResult startWashing() {
+        ArchivedSeedStats stats = archive.get(targetCrop);
+        // #tr GT5U.gui.text.recipe_result.gtnr_crop_wash_unarchived
+        // # Select an archived crop to improve.
+        // # zh_CN 请先选中已入档的作物。
+        if (stats == null) return SimpleCheckRecipeResult.ofFailure("gtnr_crop_wash_unarchived");
+        int stat = chooseWashStat(stats);
+        // #tr GT5U.gui.text.recipe_result.gtnr_crop_wash_max
+        // # All three seed stats are at their maximum.
+        // # zh_CN 这粒种子的三项属性均已满。
+        if (stat == 0) return SimpleCheckRecipeResult.ofFailure("gtnr_crop_wash_max");
+        if (getMaxInputVoltage() < BASE_EUT || getMaxInputEu() < BASE_EUT)
+            return CheckRecipeResultRegistry.insufficientPower(BASE_EUT);
+        FluidStack uu = Materials.UUMatter.getFluid(WASH_UU_PER_TICK);
+        // #tr GT5U.gui.text.recipe_result.gtnr_crop_wash_uu
+        // # Not enough UU-Matter to improve the seed.
+        // # zh_CN 洗种所需的 UU 物质不足。
+        if (!depleteInput(uu, true)) return SimpleCheckRecipeResult.ofFailure("gtnr_crop_wash_uu");
+        activeWashStat = stat;
+        activeCrop = targetCrop;
+        activeParallel = 1;
+        activeChance = 100;
+        mOutputItems = new ItemStack[0];
+        mMaxProgresstime = WASH_TICKS;
+        mEfficiency = 10000;
+        mEfficiencyIncrease = 10000;
+        lEUt = -BASE_EUT;
+        markChanged(false);
+        return CheckRecipeResultRegistry.SUCCESSFUL;
     }
 
     public ItemStack findSubstrate(CropBreedingSubstrate requirement) {
@@ -302,12 +361,36 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
         }
         if (checkRecipeResult == CheckRecipeResultRegistry.ITEM_OUTPUT_FULL)
             checkRecipeResult = CheckRecipeResultRegistry.SUCCESSFUL;
-        return super.onRunningTick(stack);
+        if (activeWashStat == 0) return super.onRunningTick(stack);
+        FluidStack uu = Materials.UUMatter.getFluid(WASH_UU_PER_TICK);
+        if (!depleteInput(uu, true)) {
+            checkRecipeResult = SimpleCheckRecipeResult.ofFailure("gtnr_crop_wash_uu");
+            return false;
+        }
+        if (!super.onRunningTick(stack)) return false;
+        if (!depleteInput(uu)) {
+            checkRecipeResult = SimpleCheckRecipeResult.ofFailure("gtnr_crop_wash_uu");
+            return false;
+        }
+        checkRecipeResult = CheckRecipeResultRegistry.SUCCESSFUL;
+        return true;
+    }
+
+    private static ItemStack[] seedOutputs(ItemStack seed) {
+        if (seed == null) return new ItemStack[0];
+        List<ItemStack> result = new ArrayList<>();
+        for (int remaining = seed.stackSize; remaining > 0;) {
+            ItemStack stack = seed.copy();
+            stack.stackSize = Math.min(remaining, stack.getMaxStackSize());
+            result.add(stack);
+            remaining -= stack.stackSize;
+        }
+        return result.toArray(new ItemStack[0]);
     }
 
     private boolean hasOutputSpace(ItemStack output) {
         return !new VoidProtectionHelper().setMachine(this, true, false)
-            .setItemOutputs(new ItemStack[] { output })
+            .setItemOutputs(seedOutputs(output))
             .setMaxParallel(1)
             .build()
             .isItemFull();
@@ -315,11 +398,21 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
 
     @Override
     protected void outputAfterRecipe() {
-        if (activeSeed != null) {
+        if (activeWashStat != 0) {
+            ArchivedSeedStats previous = archive.get(activeCrop);
+            if (previous != null) archive.put(
+                activeCrop,
+                new ArchivedSeedStats(
+                    (byte) (previous.getGrowth() + (activeWashStat == 1 ? 1 : 0)),
+                    (byte) (previous.getGain() + (activeWashStat == 2 ? 1 : 0)),
+                    (byte) (previous.getResistance() + (activeWashStat == 3 ? 1 : 0)),
+                    true));
+        } else if (activeSeed != null) {
             ICropCard crop = CropRegistry.instance.get(activeSeed, false);
-            if (crop != null) archive.putIfAbsent(crop.getId(), SeedStats.getStatsFromStack(activeSeed));
+            if (crop != null) archive.putIfAbsent(crop.getId(), ArchivedSeedStats.fromTag(activeSeed.getTagCompound()));
         }
         super.outputAfterRecipe();
+        activeWashStat = 0;
         activeSeed = null;
         activeCrop = "";
         markChanged(true);
@@ -331,9 +424,10 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
             if (stack == null || stack.stackSize <= 0) continue;
             ICropCard crop = CropRegistry.instance.get(stack, false);
             if (crop == null || archive.containsKey(crop.getId())) continue;
-            SeedStats stats = SeedStats.getStatsFromStack(stack);
-            if (stats == null || !stats.isAnalyzed()) continue;
-            archive.put(crop.getId(), stats.copy());
+            if (stack.getTagCompound() == null) continue;
+            ArchivedSeedStats stats = ArchivedSeedStats.fromTag(stack.getTagCompound());
+            if (!stats.isAnalyzed()) continue;
+            archive.put(crop.getId(), stats);
             stack.stackSize--;
             changed = true;
         }
@@ -381,6 +475,21 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     }
 
     @Override
+    public Map<String, Object> getTooltipVars() {
+        return Map.of(
+            "baseEu",
+            BASE_EUT,
+            "fertilizer",
+            FERTILIZER_PER_PARALLEL,
+            "washUU",
+            WASH_UU_PER_TICK,
+            "washSeconds",
+            WASH_TICKS / 20,
+            "firstSeconds",
+            CropBreedingRecipeRules.baseDuration(1) / 20);
+    }
+
+    @Override
     protected MTEMultiBlockBaseGui<LargeCropBreeder> getGui() {
         return new LargeCropBreederGui(this);
     }
@@ -415,7 +524,7 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
 
     public ItemStack getArchivedSeed(String id) {
         ICropCard crop = CropRegistry.instance.get(id);
-        SeedStats stats = archive.get(id);
+        ArchivedSeedStats stats = archive.get(id);
         return crop == null || stats == null ? null : crop.getSeedItem(stats);
     }
 
@@ -433,6 +542,8 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
         writeArchive(tag);
         tag.setString("cropActive", activeCrop);
         tag.setInteger("cropActiveChance", activeChance);
+        tag.setInteger("cropActiveParallel", activeParallel);
+        tag.setInteger("cropActiveWashStat", activeWashStat);
         if (activeSeed != null) tag.setTag("cropActiveSeed", activeSeed.writeToNBT(new NBTTagCompound()));
         else tag.removeTag("cropActiveSeed");
     }
@@ -441,14 +552,18 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     public void loadNBTData(NBTTagCompound tag) {
         super.loadNBTData(tag);
         targetCrop = tag.getString("cropTarget");
+        washingMode = tag.getBoolean("cropWashingMode");
         archive.clear();
         NBTTagList samples = tag.getTagList("cropArchive", 10);
         for (int i = 0; i < samples.tagCount(); i++) {
             NBTTagCompound sample = samples.getCompoundTagAt(i);
             String id = sample.getString("id");
-            if (CropRegistry.instance.get(id) != null) archive.put(id, SeedStats.readFromNBT(sample));
+            if (CropRegistry.instance.get(id) != null) archive.put(id, ArchivedSeedStats.fromTag(sample));
         }
         activeCrop = tag.getString("cropActive");
+        activeParallel = Math.max(1, tag.getInteger("cropActiveParallel"));
+        activeWashStat = tag.getInteger("cropActiveWashStat");
+        if (activeWashStat < 1 || activeWashStat > 3) activeWashStat = 0;
         activeChance = tag.hasKey("cropActiveChance") ? tag.getInteger("cropActiveChance")
             : CropBreedingChance.percent(CropRegistry.instance.get(activeCrop));
         activeSeed = tag.hasKey("cropActiveSeed") ? ItemStack.loadItemStackFromNBT(tag.getCompoundTag("cropActiveSeed"))
@@ -465,6 +580,7 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
 
     private void writeArchive(NBTTagCompound tag) {
         tag.setString("cropTarget", targetCrop);
+        tag.setBoolean("cropWashingMode", washingMode);
         NBTTagList samples = new NBTTagList();
         archive.forEach((id, stats) -> {
             NBTTagCompound sample = stats.writeToNBT(new NBTTagCompound());
@@ -481,7 +597,7 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
 
     @Override
     public int getMaxParallelRecipes() {
-        return 1;
+        return 1 << Math.max(0, Math.min(14, (GTUtility.getTier(getMaxInputVoltage()) - VoltageIndex.HV) / 2));
     }
 
     @Override
@@ -516,6 +632,23 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
             : CropBreedingChance.percent(
                 steps.get(0)
                     .getOutput());
+    }
+
+    public int getCurrentParallel() {
+        return mMaxProgresstime > 0 ? activeParallel : washingMode ? 1 : getMaxParallelRecipes();
+    }
+
+    public boolean isWashingMode() {
+        return washingMode;
+    }
+
+    public boolean showsWashingOperation() {
+        return mMaxProgresstime > 0 ? activeWashStat != 0 : washingMode;
+    }
+
+    public void toggleWashingMode() {
+        washingMode = !washingMode;
+        markChanged(false);
     }
 
     private void markChanged(boolean replan) {

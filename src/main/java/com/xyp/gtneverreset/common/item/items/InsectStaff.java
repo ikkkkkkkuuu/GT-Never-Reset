@@ -1,17 +1,22 @@
 package com.xyp.gtneverreset.common.item.items;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.WeakHashMap;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.texture.IIconRegister;
+import net.minecraft.client.settings.GameSettings;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
+import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.entity.boss.EntityDragonPart;
 import net.minecraft.entity.monster.EntitySpider;
 import net.minecraft.entity.player.EntityPlayer;
@@ -26,11 +31,12 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.client.IItemRenderer;
+import net.minecraftforge.event.world.BlockEvent;
 
 import com.brandon3055.draconicevolution.common.ModItems;
 import com.brandon3055.draconicevolution.common.entity.EntityDragonProjectile;
 import com.brandon3055.draconicevolution.common.items.tools.DraconicDistructionStaff;
-import com.brandon3055.draconicevolution.common.items.weapons.IEnergyContainerWeaponItem;
+import com.brandon3055.draconicevolution.common.items.tools.baseclasses.MiningTool;
 import com.brandon3055.draconicevolution.common.lib.References;
 import com.brandon3055.draconicevolution.common.utils.IConfigurableItem.ProfileHelper;
 import com.brandon3055.draconicevolution.common.utils.IHudDisplayItem;
@@ -43,25 +49,30 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
+import com.xyp.gtneverreset.client.InsectStaffInputHandler;
 import com.xyp.gtneverreset.common.gui.InsectStaffConfig;
 import com.xyp.gtneverreset.common.gui.InsectStaffGui;
-import com.xyp.gtneverreset.common.mining.InsectStaffMining;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
+import cpw.mods.fml.common.eventhandler.EventPriority;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import crazypants.enderio.EnderIO;
 import crazypants.enderio.api.teleport.IItemOfTravel;
 
-public final class InsectStaff extends Item implements IItemOfTravel, IGuiHolder<PlayerInventoryGuiData>,
-    IUpgradableItem, IEnergyContainerWeaponItem, IHudDisplayItem {
+public final class InsectStaff extends Item
+    implements IItemOfTravel, IGuiHolder<PlayerInventoryGuiData>, IUpgradableItem, IHudDisplayItem {
 
-    public final int energyPerOperation;
+    private static final UUID SPRINT_SPEED_ID = UUID.fromString("58f0b874-b18f-409c-a4a2-f7ed8b58ba75");
+    private final MiningTool areaMining = new FreeMiningTool();
+    private final Map<EntityPlayer, FlightSpeed> flightSpeeds = new WeakHashMap<>();
 
     public InsectStaff() {
-        energyPerOperation = original().energyPerOperation;
         setUnlocalizedName("gtneverreset.insect_staff");
         setMaxStackSize(1);
         setHarvestLevel("pickaxe", 10);
@@ -135,6 +146,47 @@ public final class InsectStaff extends Item implements IItemOfTravel, IGuiHolder
         if (!world.isRemote) initializeSettings(stack);
     }
 
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void restoreFlightSpeed(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.START || !event.player.worldObj.isRemote) return;
+        FlightSpeed previous = flightSpeeds.remove(event.player);
+        // Restore before armor recalculates its speed, preserving any intervening external change.
+        if (previous != null && Float.compare(event.player.capabilities.getFlySpeed(), previous.applied) == 0) {
+            event.player.capabilities.setFlySpeed(previous.base);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void applyHeldSpeed(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) return;
+        EntityPlayer player = event.player;
+        ItemStack held = player.getHeldItem();
+        boolean active = player.isEntityAlive() && held != null && held.getItem() == this;
+        double sprint = active && player.isSprinting() && !player.capabilities.isFlying
+            ? InsectStaffConfig.speedMultiplier(held, InsectStaffConfig.SPRINT_SPEED) - 1D
+            : 0D;
+        var attribute = player.getEntityAttribute(SharedMonsterAttributes.movementSpeed);
+        AttributeModifier modifier = attribute.getModifier(SPRINT_SPEED_ID);
+        if (modifier != null && modifier.getAmount() != sprint) {
+            attribute.removeModifier(modifier);
+            modifier = null;
+        }
+        if (sprint > 0 && modifier == null) {
+            attribute.applyModifier(
+                new AttributeModifier(SPRINT_SPEED_ID, "Insect staff sprint", sprint, 2).setSaved(false));
+        }
+        // Like DE armor, apply flight speed on the movement client; keep ability packets at the base speed.
+        if (player.worldObj.isRemote && active && player.capabilities.isFlying) {
+            float multiplier = InsectStaffConfig.speedMultiplier(held, InsectStaffConfig.FLIGHT_SPEED);
+            if (multiplier > 1F) {
+                float base = player.capabilities.getFlySpeed();
+                float applied = base * multiplier;
+                flightSpeeds.put(player, new FlightSpeed(base, applied));
+                player.capabilities.setFlySpeed(applied);
+            }
+        }
+    }
+
     public float getAttackDamage(ItemStack stack) {
         return ModItems.CHAOTIC.getDamageVsEntity() + getBaseUpgradePoints(EnumUpgrade.ATTACK_DAMAGE.index) * 5F
             + EnchantmentHelper.getEnchantmentLevel(Enchantment.sharpness.effectId, stack) * 4F;
@@ -158,7 +210,6 @@ public final class InsectStaff extends Item implements IItemOfTravel, IGuiHolder
                     target.posZ + range)
                 .expand(1, 1, 1);
             for (Object candidate : player.worldObj.getEntitiesWithinAABBExcludingEntity(player, area)) {
-                if (getEnergyStored(stack) < getEnergyPerAttack()) break;
                 if (candidate != target
                     && (candidate instanceof EntityLivingBase || candidate instanceof EntityDragonProjectile)) {
                     attack(stack, player, (Entity) candidate, false);
@@ -180,15 +231,9 @@ public final class InsectStaff extends Item implements IItemOfTravel, IGuiHolder
             && part.entityDragonObj instanceof EntityLivingBase dragon) {
                 damage += dragon.getHealth() * 0.3F;
             }
-        int cost = (int) damage * getEnergyPerAttack();
-        if (cost > getEnergyStored(stack)) {
-            cost = getEnergyStored(stack);
-            damage = cost / getEnergyPerAttack();
-        }
         target.attackEntityFrom(DamageSource.causePlayerDamage(player), healthBonus ? Math.max(1, damage) : damage);
         int fire = EnchantmentHelper.getEnchantmentLevel(Enchantment.fireAspect.effectId, stack);
         if (fire > 0) target.setFire(fire * 15);
-        if (!healthBonus || !player.capabilities.isCreativeMode) extractEnergy(stack, cost, false);
         if (target instanceof EntityLivingBase living) {
             double dx = player.posX - living.posX;
             double dz = player.posZ - living.posZ;
@@ -233,7 +278,9 @@ public final class InsectStaff extends Item implements IItemOfTravel, IGuiHolder
 
     @Override
     public List<EnumUpgrade> getUpgrades(ItemStack stack) {
-        return original().getUpgrades(stack);
+        List<EnumUpgrade> upgrades = original().getUpgrades(stack);
+        upgrades.remove(EnumUpgrade.RF_CAPACITY);
+        return upgrades;
     }
 
     @Override
@@ -241,43 +288,25 @@ public final class InsectStaff extends Item implements IItemOfTravel, IGuiHolder
         return getDisplayData(stack);
     }
 
-    public int getCapacity(ItemStack stack) {
-        return original().getCapacity(stack);
-    }
-
+    // Ender IO's travel interface also requires RF methods; this item has no RF storage or transfer.
     @Override
     public int getMaxEnergyStored(ItemStack stack) {
-        return getCapacity(stack);
+        return 0;
     }
 
     @Override
     public int getEnergyStored(ItemStack stack) {
-        return original().getEnergyStored(stack);
+        return 0;
     }
 
     @Override
     public int receiveEnergy(ItemStack stack, int amount, boolean simulate) {
-        return original().receiveEnergy(stack, amount, simulate);
+        return 0;
     }
 
     @Override
     public int extractEnergy(ItemStack stack, int amount, boolean simulate) {
-        return original().extractEnergy(stack, amount, simulate);
-    }
-
-    @Override
-    public int getEnergyPerAttack() {
-        return original().getEnergyPerAttack();
-    }
-
-    @Override
-    public boolean showDurabilityBar(ItemStack stack) {
-        return original().showDurabilityBar(stack);
-    }
-
-    @Override
-    public double getDurabilityForDisplay(ItemStack stack) {
-        return original().getDurabilityForDisplay(stack);
+        return 0;
     }
 
     @Override
@@ -302,7 +331,7 @@ public final class InsectStaff extends Item implements IItemOfTravel, IGuiHolder
 
     @Override
     public float getDigSpeed(ItemStack stack, Block block, int meta) {
-        return original().getDigSpeed(stack, block, meta);
+        return areaMining.getDigSpeed(stack, block, meta);
     }
 
     @Override
@@ -326,39 +355,69 @@ public final class InsectStaff extends Item implements IItemOfTravel, IGuiHolder
     @Override
     public List<String> getDisplayData(ItemStack stack) {
         List<String> lines = new ArrayList<>();
+        // #tr tooltip.gtneverreset.insect_staff.damage
+        // # Attack damage: %s
+        // # zh_CN 攻击伤害：%s
         lines.add(
-            StatCollector.translateToLocal(
-                "info.de.charge.txt") + ": " + getEnergyStored(stack) + " / " + getCapacity(stack) + " RF");
+            EnumChatFormatting.BLUE + StatCollector.translateToLocalFormatted(
+                "tooltip.gtneverreset.insect_staff.damage",
+                NumberFormatUtil.formatNumber(getAttackDamage(stack))));
+        // #tr tooltip.gtneverreset.insect_staff.health_damage
+        // # Adds 30% of the target's current health as damage
+        // # zh_CN 附加目标当前生命值 30% 的伤害
         lines.add(
-            EnumChatFormatting.BLUE + "+"
-                + getAttackDamage(stack)
-                + " "
-                + StatCollector.translateToLocal("info.de.attackDamage.txt"));
-        lines.add(EnumChatFormatting.BLUE + "+30% " + StatCollector.translateToLocal("info.de.bonusHealthDamage.txt"));
+            EnumChatFormatting.BLUE
+                + StatCollector.translateToLocal("tooltip.gtneverreset.insect_staff.health_damage"));
         return lines;
     }
 
     @Override
     public boolean onBlockStartBreak(ItemStack stack, int x, int y, int z, EntityPlayer player) {
         initializeSettings(stack);
-        if (InsectStaffMining.INSTANCE.isHarvesting(player)) return false;
+        VeinMiningPickaxe pickaxe = veinMiningPickaxe();
+        if (pickaxe.isHarvesting(player)) return false;
         if (player.isSneaking() && InsectStaffConfig.veinEnabled(stack)) {
             if (player instanceof EntityPlayerMP serverPlayer) {
-                InsectStaffMining.INSTANCE.start(serverPlayer, stack, x, y, z);
+                World world = player.worldObj;
+                pickaxe.clearConnectedBlocks(
+                    serverPlayer,
+                    stack,
+                    x,
+                    y,
+                    z,
+                    world.getBlock(x, y, z),
+                    world.getBlockMetadata(x, y, z),
+                    InsectStaffConfig.range(stack),
+                    InsectStaffConfig.amount(stack),
+                    ProfileHelper.getBoolean(stack, InsectStaffConfig.PRECISE, false),
+                    ProfileHelper.getBoolean(stack, References.OBLITERATE, false) ? getObliterationList(stack)
+                        : Collections.emptyMap());
             }
             return true;
         }
-        return original().onBlockStartBreak(stack, x, y, z, player);
+        return areaMining.onBlockStartBreak(stack, x, y, z, player);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (event.isCanceled() || event.world.isRemote) return;
+        ItemStack stack = event.getPlayer()
+            .getHeldItem();
+        if (stack != null && stack.getItem() == this
+            && InsectStaffConfig.veinEnabled(stack)
+            && ProfileHelper.getBoolean(stack, InsectStaffConfig.BACKFILL, true)) {
+            veinMiningPickaxe().queueOreBackfill(event.world, event.x, event.y, event.z);
+        }
+    }
+
+    private static VeinMiningPickaxe veinMiningPickaxe() {
+        return (VeinMiningPickaxe) GTNRItemList.VeinMiningPickaxe.getItem();
     }
 
     @Override
     public boolean onBlockDestroyed(ItemStack stack, World world, Block block, int x, int y, int z,
         EntityLivingBase entity) {
-        if (entity instanceof EntityPlayer player && InsectStaffMining.INSTANCE.isHarvesting(player)) {
-            if (!player.capabilities.isCreativeMode) extractEnergy(stack, energyPerOperation, false);
-            return true;
-        }
-        return original().onBlockDestroyed(stack, world, block, x, y, z, entity);
+        return true;
     }
 
     @Override
@@ -393,23 +452,100 @@ public final class InsectStaff extends Item implements IItemOfTravel, IGuiHolder
     public void getSubItems(Item item, CreativeTabs tab, List list) {
         ItemStack stack = new ItemStack(this);
         initializeSettings(stack);
-        stack.getTagCompound()
-            .setInteger("Energy", getCapacity(stack));
         list.add(stack);
-        ItemStack empty = stack.copy();
-        empty.getTagCompound()
-            .setInteger("Energy", 0);
-        list.add(empty);
     }
 
     @Override
     @SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, EntityPlayer player, List list, boolean advanced) {
         list.addAll(getDisplayData(stack));
-        // #tr tooltip.gtneverreset.insect_staff.controls
-        // # Bind Configure Insect Staff in Controls / GT-Never-Reset. Sneak + mine: vein mining. Right click: advanced
-        // teleport.
-        // # zh_CN 控制设置 → GT-Never-Reset → 配置虫之权杖；潜行挖掘：连锁；右键：高级传送。
-        list.add(StatCollector.translateToLocal("tooltip.gtneverreset.insect_staff.controls"));
+        int key = InsectStaffInputHandler.CONFIGURE.getKeyCode();
+        if (key == 0) {
+            // #tr tooltip.gtneverreset.insect_staff.unbound
+            // # Bind Configure Insect Staff in Controls
+            // # zh_CN 请在控制设置中绑定「配置虫之权杖」
+            list.add(
+                EnumChatFormatting.GRAY + StatCollector.translateToLocal("tooltip.gtneverreset.insect_staff.unbound"));
+        } else {
+            // #tr tooltip.gtneverreset.insect_staff.configure
+            // # Press %s to configure
+            // # zh_CN 按 %s 打开配置
+            list.add(
+                EnumChatFormatting.GRAY + StatCollector.translateToLocalFormatted(
+                    "tooltip.gtneverreset.insect_staff.configure",
+                    GameSettings.getKeyDisplayString(key)));
+        }
+        // #tr tooltip.gtneverreset.insect_staff.mining
+        // # Sneak while mining to mine a vein
+        // # zh_CN 按住潜行键挖掘，可连锁开采矿脉
+        list.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("tooltip.gtneverreset.insect_staff.mining"));
+        // #tr tooltip.gtneverreset.insect_staff.teleport
+        // # Right-click to use advanced teleport
+        // # zh_CN 右键使用高级传送
+        list.add(
+            EnumChatFormatting.GRAY + StatCollector.translateToLocal("tooltip.gtneverreset.insect_staff.teleport"));
     }
+
+    private static final class FlightSpeed {
+
+        private final float base;
+        private final float applied;
+
+        private FlightSpeed(float base, float applied) {
+            this.base = base;
+            this.applied = applied;
+        }
+    }
+
+    private static final class FreeMiningTool extends MiningTool {
+
+        private FreeMiningTool() {
+            super(ModItems.CHAOTIC);
+            setHarvestLevel("pickaxe", 10);
+            setHarvestLevel("shovel", 10);
+            setHarvestLevel("axe", 10);
+            energyPerOperation = 0;
+        }
+
+        @Override
+        public int getEnergyStored(ItemStack stack) {
+            return 0;
+        }
+
+        @Override
+        public int extractEnergy(ItemStack stack, int amount, boolean simulate) {
+            return 0;
+        }
+
+        @Override
+        public float getEfficiency(ItemStack stack) {
+            return original().getEfficiency(stack);
+        }
+
+        @Override
+        public float func_150893_a(ItemStack stack, Block block) {
+            return getEfficiency(stack);
+        }
+
+        @Override
+        public int getUpgradeCap(ItemStack stack) {
+            return 0;
+        }
+
+        @Override
+        public int getMaxTier(ItemStack stack) {
+            return original().getMaxTier(stack);
+        }
+
+        @Override
+        public int getMaxUpgradePoints(int index) {
+            return original().getMaxUpgradePoints(index);
+        }
+
+        @Override
+        public int getBaseUpgradePoints(int index) {
+            return original().getMaxUpgradePoints(index);
+        }
+    }
+
 }

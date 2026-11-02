@@ -49,7 +49,7 @@ dependencies {
     compileOnly(elytraModpackVersion.gtnhdev("Angelica") as String) { transitive = false }
     runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Angelica") as String)
     compileOnly(elytraModpackVersion.gtnhdev("ThaumicEnergistics") as String) { transitive = false }
-    compileOnly(elytraModpackVersion.gtnhdev("MatterManipulator") as String) { transitive = false }
+    devOnlyNonPublishable(elytraModpackVersion.gtnhdev("MatterManipulator") as String) { transitive = false }
     testCompileOnly(elytraModpackVersion.gtnhdev("MatterManipulator") as String) { transitive = false }
 
     implementation(elytraModpackVersion.gtnhdev("AE2FluidCraft-Rework") as String) {
@@ -68,6 +68,11 @@ dependencies {
     implementation("org.ow2.asm:asm-commons:9.8")
 
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("ForestryMC") as String)
+    // Structure materials used by the bee breeder in development clients and servers.
+    runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Chisel") as String) { transitive = false }
+    runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("VillageNames") as String) { transitive = false }
+    runtimeOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:${elytraModpackVersion.getModVersions()['Et-Futurum-Requiem']}") { transitive = false }
+    runtimeOnlyNonPublishable(rfg.deobf("curse.maven:extra-utilities-225561:2264383")) { transitive = false }
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("BetterQuesting") as String) { transitive = false }
     // CropsNH's dev runtime resolves this optional API before its mod-loaded guard.
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("BetterBuildersWands") as String)

@@ -36,6 +36,7 @@ import com.gtnewhorizon.cropsnh.init.CropsNHFluids;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeCropBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.crop.CropBreedingChance;
 import com.xyp.gtneverreset.common.machine.multiblock.crop.CropBreedingPlanner;
+import com.xyp.gtneverreset.common.machine.multiblock.crop.CropBreedingRecipeRules;
 import com.xyp.gtneverreset.common.machine.multiblock.crop.CropBreedingSubstrate;
 import com.xyp.gtneverreset.config.CropBreederConfig;
 import com.xyp.gtneverreset.config.CropsNHConfig;
@@ -60,11 +61,13 @@ public final class CropBreederChecks {
     private static final boolean EXPANDED_ROUTE_PREVIEW = Boolean.getBoolean("gtnr.cropBreeder.expandedPreview");
     private static final boolean PROGRESS_PREVIEW = Boolean.getBoolean("gtnr.cropBreeder.progressPreview");
     private static final boolean LONG_ROUTE_PREVIEW = Boolean.getBoolean("gtnr.cropBreeder.longPreview");
+    private static final boolean NEI_PREVIEW = Boolean.getBoolean("gtnr.cropBreeder.neiPreview");
     private static final boolean ROUTE_PREVIEW = MIXED_ROUTE_PREVIEW || EXPANDED_ROUTE_PREVIEW
         || PROGRESS_PREVIEW
         || LONG_ROUTE_PREVIEW
         || Boolean.getBoolean("gtnr.cropBreeder.preview");
     private int previewParentCount = 3;
+    private int modePreviewPhase;
     private boolean syntheticLongRoute;
     private final Set<String> displayedPlantingSoils = new HashSet<>();
 
@@ -79,6 +82,10 @@ public final class CropBreederChecks {
     private MTEHatchInputBus input;
     private MTEHatchInput fluid;
     private ICropMutation mutation;
+    private NeiOverlayProbe neiOverlayProbe;
+    private String previousNeiSearch;
+    private boolean previousNeiInventorySearch;
+    private int neiRouteNodeCount;
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
@@ -139,8 +146,8 @@ public final class CropBreederChecks {
                     if (CropRegistry.instance.get(stack, false) != mutation.getOutput()) continue;
                     SeedStats stats = SeedStats.getStatsFromStack(stack);
                     require(
-                        stats.getGrowth() == 12 && stats.getGain() == 15 && stats.getResistance() == 18,
-                        "native processing outputs inherited 12/15/18 stats");
+                        stats.getGrowth() == 1 && stats.getGain() == 1 && stats.getResistance() == 1,
+                        "offspring of 12/15/18 parents have 1/1/1 stats");
                     found = true;
                 }
                 require(found, "successful mutation physically outputs a seed and unlocks archive");
@@ -151,7 +158,7 @@ public final class CropBreederChecks {
                     ItemStack stack = input.getStackInSlot(i);
                     if (plantingSoil.matches(stack)) remainingPlantingSoil += stack.stackSize;
                 }
-                require(remainingPlantingSoil == 1, "planting soil remains in the input bus after successful breeding");
+                require(remainingPlantingSoil == 0, "successful breeding never needed a vanilla planting-soil input");
                 NBTTagCompound saved = new NBTTagCompound();
                 machine.saveNBTData(saved);
                 BaseMetaTileEntity restoredTile = place(
@@ -186,6 +193,8 @@ public final class CropBreederChecks {
                     "invalid target is rejected");
                 machine.setTargetCrop(before);
                 catalystChecks();
+                runtimeChecks();
+                washingChecks();
                 machine.stopMachine(gregtech.api.util.shutdown.ShutDownReasonRegistry.NONE);
                 ICropMutation fourParents = MutationRegistry.instance.getDeterministicMutations()
                     .stream()
@@ -261,7 +270,12 @@ public final class CropBreederChecks {
             .stream()
             .filter(
                 m -> m.getParentCount() == 2 && m.getRequirements()
-                    .isEmpty() && m.getBreedingMachineRecipeEUt() <= 128)
+                    .isEmpty()
+                    && m.getBreedingMachineRecipeEUt() <= 128
+                    && CropBreedingRecipeRules.breedingGrade(m.getOutput()) == 1
+                    && CropBreedingSubstrate.forMutation(m)
+                        .stream()
+                        .allMatch(CropBreedingSubstrate::isAutomaticallySatisfied))
             .findFirst()
             .orElseThrow(() -> new AssertionError("no simple native crop mutation"));
         int slot = 0;
@@ -273,16 +287,6 @@ public final class CropBreederChecks {
         machine.setTargetCrop(
             mutation.getOutput()
                 .getId());
-        CropBreedingSubstrate plantingSoil = CropBreedingSubstrate.forMutation(mutation)
-            .get(0);
-        ItemStack plantingItem = plantingSoil.alternatives()
-            .stream()
-            .filter(plantingSoil::matches)
-            .findFirst()
-            .orElseThrow()
-            .copy();
-        plantingItem.stackSize = 1;
-        input.setInventorySlotContents(8, plantingItem);
         require(
             !machine.checkProcessing()
                 .wasSuccessful(),
@@ -296,13 +300,13 @@ public final class CropBreederChecks {
         String cropId = mutation.getOutput()
             .getId();
         CropBreederConfig.cropOverrides = new String[] { cropId + "=37" };
-        require(machine.getSuccessChance() == 37, "UHV preserves per-crop chance");
+        require(machine.getSuccessChance() == 37, "first attempt uses the configured per-crop chance");
+        require(machine.getMaxParallelRecipes() == 8, "UHV allows eight parallels");
         energy = place(world, 2, 10, 0, ItemList.Hatch_Energy_HV.get(1));
         require(machine.checkStructure(true, controller), "HV energy hatch forms");
-        require(machine.getSuccessChance() == 37, "changing voltage does not change chance");
-        energy = place(world, 2, 10, 0, ItemList.Hatch_Energy_UHV.get(1));
-        require(machine.checkStructure(true, controller), "UHV energy hatch restored");
-        fluid.fill(new FluidStack(CropsNHFluids.enrichedFertilizer, 64000), true);
+        require(machine.getSuccessChance() == 37, "changing voltage does not change per-crop chance");
+        require(machine.getMaxParallelRecipes() == 1, "HV allows one parallel");
+        fluid.fill(new FluidStack(CropsNHFluids.enrichedFertilizer, Integer.MAX_VALUE), true);
         for (int i = 0; i < output.getSizeInventory(); i++)
             output.setInventorySlotContents(i, new ItemStack(Items.stick, 64));
         int before = fluid.getFluidAmount();
@@ -322,7 +326,7 @@ public final class CropBreederChecks {
         require(
             !failed.hasKey("cropActiveSeed") && machine.mOutputItems.length == 0,
             "zero-percent attempt produces no seed");
-        require(fluid.getFluidAmount() < before, "failed attempt consumes fertilizer");
+        require(before - fluid.getFluidAmount() == 56000, "failed attempt consumes exactly 56000 L fertilizer");
         CropBreederConfig.cropOverrides = new String[] { cropId + "=100" };
         machine.loadNBTData(failed);
         require(machine.getSuccessChance() == 0, "running chance and failed roll survive reload without rerolling");
@@ -350,7 +354,154 @@ public final class CropBreederChecks {
             "running mutation survives NBT reload");
     }
 
+    private void runtimeChecks() throws Exception {
+        NBTTagCompound saved = new NBTTagCompound();
+        machine.saveNBTData(saved);
+        String[] overrides = CropBreederConfig.cropOverrides;
+        try {
+            machine.stopMachine(gregtech.api.util.shutdown.ShutDownReasonRegistry.NONE);
+            machine.setTargetCrop(
+                mutation.getOutput()
+                    .getId());
+            CropBreederConfig.cropOverrides = new String[] { mutation.getOutput()
+                .getId() + "=100" };
+            for (int i = 0; i < output.getSizeInventory(); i++) output.setInventorySlotContents(i, null);
+            fluid.fill(new FluidStack(CropsNHFluids.enrichedFertilizer, Integer.MAX_VALUE), true);
+            energy = place(controller.getWorld(), 2, 10, 0, ItemList.Hatch_Energy_IV.get(1));
+            require(machine.checkStructure(true, controller), "IV energy hatch forms for parallel testing");
+            energy.setStoredEU(energy.getEUCapacity());
+            int fertilizerBefore = fluid.getFluidAmount();
+            boolean previousMaxStats = CropsNHConfig.enableMaxStats;
+            CropsNHConfig.enableMaxStats = true;
+            try {
+                require(
+                    machine.checkProcessing()
+                        .wasSuccessful(),
+                    "two parallel attempts start");
+            } finally {
+                CropsNHConfig.enableMaxStats = previousMaxStats;
+            }
+            require(
+                machine.getCurrentParallel() == 2 && fertilizerBefore - fluid.getFluidAmount() == 112000,
+                "IV runs two parallels and consumes 112000 L fertilizer");
+            require(
+                java.util.Arrays.stream(machine.mOutputItems)
+                    .mapToInt(s -> s.stackSize)
+                    .sum() == 2,
+                "two guaranteed independent successes produce two seeds");
+            SeedStats outputStats = SeedStats.getStatsFromStack(machine.mOutputItems[0]);
+            require(
+                outputStats.getGrowth() == 1 && outputStats.getGain() == 1 && outputStats.getResistance() == 1,
+                "parallel output preserves the archived stats");
+            require(
+                machine.getEUtForDamageCalc() == -16384,
+                "IV applies two standard overclocks to 512 EU/t for each of two parallels");
+            require(machine.mMaxProgresstime == 40, "parallel processing retains standard overclock duration");
+            require(machine.onRunningTick(null), "parallel processing advances with fertilizer and power alone");
+        } finally {
+            energy = place(controller.getWorld(), 2, 10, 0, ItemList.Hatch_Energy_HV.get(1));
+            machine.checkStructure(true, controller);
+            machine.loadNBTData(saved);
+            CropBreederConfig.cropOverrides = overrides;
+        }
+    }
+
+    private void washingChecks() throws Exception {
+        String crop = mutation.getOutput()
+            .getId();
+        NBTTagCompound saved = new NBTTagCompound();
+        machine.saveNBTData(saved);
+        String[] overrides = CropBreederConfig.cropOverrides;
+        boolean previousMax = CropsNHConfig.enableMaxStats;
+        try {
+            CropsNHConfig.enableMaxStats = true;
+            require(
+                new SeedStats((byte) 1, (byte) 1, (byte) 1, true).getGrowth() == 31,
+                "ordinary seeds still follow the global max stats setting");
+            energy.setStoredEU(energy.getEUCapacity());
+            controller.disableWorking();
+            machine.stopMachine(gregtech.api.util.shutdown.ShutDownReasonRegistry.NONE);
+            machine.setTargetCrop(crop);
+            machine.toggleWashingMode();
+            require(
+                !machine.checkProcessing()
+                    .wasSuccessful(),
+                "washing needs UU even with fertilizer available");
+            fluid.drain(Integer.MAX_VALUE, true);
+            fluid.fill(gregtech.api.enums.Materials.UUMatter.getFluid(128), true);
+            require(
+                machine.checkProcessing()
+                    .wasSuccessful() && fluid.getFluidAmount() == 128,
+                "washing starts without charging UU up front");
+            require(
+                machine.mOutputItems.length == 0 && machine.mMaxProgresstime == 160,
+                "washing improves the archive without producing a physical seed");
+            NBTTagCompound pending = new NBTTagCompound();
+            var run = gregtech.api.metatileentity.implementations.MTEMultiBlockBase.class.getDeclaredMethod(
+                "runMachine",
+                gregtech.api.interfaces.tileentity.IGregTechTileEntity.class,
+                long.class);
+            run.setAccessible(true);
+            run.invoke(machine, controller, 1L);
+            require(fluid.getFluidAmount() == 0 && machine.mProgresstime == 1, "first working tick consumes 128 L");
+            fluid.fill(gregtech.api.enums.Materials.UUMatter.getFluid(127), true);
+            long power = energy.getStoredEU();
+            run.invoke(machine, controller, 2L);
+            require(
+                fluid.getFluidAmount() == 127 && machine.mProgresstime == 1 && energy.getStoredEU() == power,
+                "a short UU supply pauses progress without consuming UU or power");
+            machine.saveNBTData(pending);
+            machine.loadNBTData(pending);
+            require(
+                machine.isWashingMode() && machine.showsWashingOperation(),
+                "washing mode and paid cycle survive reload");
+            machine.toggleWashingMode();
+            machine.setTargetCrop("");
+            SeedStats before = SeedStats.getStatsFromStack(machine.getArchivedSeed(crop));
+            require(
+                before.getGrowth() == 1 && before.getGain() == 1 && before.getResistance() == 1,
+                "archived seed reads as 1/1/1 after reload with global max stats enabled");
+            fluid.fill(gregtech.api.enums.Materials.UUMatter.getFluid(159 * 128 - 127), true);
+            for (long i = 0; i < 158; i++) {
+                energy.setStoredEU(energy.getEUCapacity());
+                run.invoke(machine, controller, i + 3);
+                require(energy.getEUCapacity() - energy.getStoredEU() == 512, "paid wash tick consumes 512 EU");
+            }
+            require(
+                machine.mProgresstime == 159
+                    && before.equals(SeedStats.getStatsFromStack(machine.getArchivedSeed(crop))),
+                "the archived stats stay the same until the last working tick");
+            run.invoke(machine, controller, 161L);
+            require(
+                fluid.getFluidAmount() == 0 && machine.mMaxProgresstime == 0,
+                "one finished wash costs exactly 20480 L");
+            SeedStats after = SeedStats.getStatsFromStack(machine.getArchivedSeed(crop));
+            require(
+                after.getGrowth() >= before.getGrowth() && after.getGain() >= before.getGain()
+                    && after.getResistance() >= before.getResistance()
+                    && after.getGrowth() + after.getGain() + after.getResistance()
+                        == before.getGrowth() + before.getGain() + before.getResistance() + 1,
+                "a completed wash increases just one stat of the original target");
+            machine.setTargetCrop(crop);
+            CropBreederConfig.cropOverrides = new String[] { crop + "=100" };
+            fluid.fill(new FluidStack(CropsNHFluids.enrichedFertilizer, Integer.MAX_VALUE), true);
+            require(
+                machine.checkProcessing()
+                    .wasSuccessful() && after.equals(SeedStats.getStatsFromStack(machine.mOutputItems[0])),
+                "later output uses the improved archive stats");
+        } finally {
+            CropsNHConfig.enableMaxStats = previousMax;
+            machine.loadNBTData(saved);
+            CropBreederConfig.cropOverrides = overrides;
+            fluid.drain(Integer.MAX_VALUE, true);
+            fluid.fill(new FluidStack(CropsNHFluids.enrichedFertilizer, Integer.MAX_VALUE), true);
+        }
+    }
+
     private void catalystChecks() {
+        energy = place(controller.getWorld(), 2, 10, 0, ItemList.Hatch_Energy_EV.get(1));
+        require(machine.checkStructure(true, controller), "EV permits grade two substrate recipes");
+        fluid.fill(new FluidStack(CropsNHFluids.enrichedFertilizer, Integer.MAX_VALUE), true);
         CropBreederConfig.cropOverrides = new String[0];
         ICropMutation recipe = MutationRegistry.instance.getDeterministicMutations()
             .stream()
@@ -361,7 +512,10 @@ public final class CropBreederChecks {
                     && m.getRequirements()
                         .get(0) instanceof com.gtnewhorizon.cropsnh.farming.requirements.SubSoilRequirement
                     && !m.getBreedingMachineCatalystsForNEI(true)
-                        .isEmpty())
+                        .isEmpty()
+                    && CropBreedingSubstrate.forMutation(m)
+                        .stream()
+                        .noneMatch(CropBreedingSubstrate::isAutomaticallySatisfied))
             .findFirst()
             .orElseThrow(() -> new AssertionError("no substrate mutation"));
         for (int i = 0; i < input.getSizeInventory(); i++) input.setInventorySlotContents(i, null);
@@ -418,7 +572,44 @@ public final class CropBreederChecks {
         require(succeeded.hasKey("cropActiveSeed"), "successful substrate mutation still preserves substrate");
         CropBreederConfig.cropOverrides = new String[0];
         mixedCatalystChecks(recipe, catalyst);
+        vanillaExtraSubstrateChecks(recipe, catalyst);
         fallbackSubstrateChecks();
+    }
+
+    private void vanillaExtraSubstrateChecks(ICropMutation requiredRecipe, ItemStack requiredSubstrate) {
+        var vanilla = MutationRegistry.instance.getDeterministicMutations()
+            .stream()
+            .filter(
+                m -> m.getRequirements()
+                    .size() == 1
+                    && m.getRequirements()
+                        .get(0) instanceof com.gtnewhorizon.cropsnh.farming.requirements.SubSoilRequirement
+                    && CropBreedingSubstrate.forMutation(m)
+                        .get(0)
+                        .isAutomaticallySatisfied())
+            .findFirst()
+            .orElseThrow();
+        ArrayList<ICropCard> parents = new ArrayList<>(requiredRecipe.getParents());
+        CropMutation mixed = new CropMutation(requiredRecipe.getOutput(), parents.get(0), parents.get(1));
+        mixed.requirements.clear();
+        mixed.requirements.addAll(vanilla.getRequirements());
+        try {
+            var check = LargeCropBreeder.class
+                .getDeclaredMethod("breedingConsumption", ICropMutation.class, ArrayList.class, ItemStack[].class);
+            check.setAccessible(true);
+            int[] consumption = (int[]) check.invoke(machine, mixed, parents, new ItemStack[0]);
+            require(consumption != null && consumption.length == 0, "vanilla extra substrate requires no input item");
+            mixed.requirements.addAll(requiredRecipe.getRequirements());
+            require(
+                check.invoke(machine, mixed, parents, new ItemStack[0]) == null,
+                "automatic vanilla group does not waive a separate modded substrate group");
+            consumption = (int[]) check.invoke(machine, mixed, parents, new ItemStack[] { requiredSubstrate });
+            require(
+                consumption != null && consumption[0] == 0,
+                "mixed substrate groups need only the reusable modded substrate");
+        } catch (ReflectiveOperationException failure) {
+            throw new AssertionError("vanilla extra substrate check failed", failure);
+        }
     }
 
     private void fallbackSubstrateChecks() {
@@ -433,6 +624,7 @@ public final class CropBreederChecks {
         CropBreedingSubstrate soil = CropBreedingSubstrate.forMutation(evilOre)
             .get(0);
         ItemStack netherrack = new ItemStack(Blocks.netherrack);
+        require(soil.isAutomaticallySatisfied(), "vanilla planting soil is automatically satisfied");
         require(
             soil.matches(netherrack) && !soil.matches(new ItemStack(Blocks.stone)),
             "EvilOre accepts its planting soil and rejects unrelated blocks");
@@ -446,12 +638,15 @@ public final class CropBreederChecks {
                 .getDeclaredMethod("breedingConsumption", ICropMutation.class, ArrayList.class, ItemStack[].class);
             check.setAccessible(true);
             ArrayList<ICropCard> parents = new ArrayList<>(evilOre.getParents());
+            int[] emptyConsumption = (int[]) check.invoke(machine, evilOre, parents, new ItemStack[0]);
             require(
-                check.invoke(machine, evilOre, parents, new ItemStack[0]) == null,
-                "missing planting soil prevents breeding");
+                emptyConsumption != null && emptyConsumption.length == 0,
+                "missing vanilla planting soil does not prevent breeding");
+            int[] unrelatedConsumption = (int[]) check
+                .invoke(machine, evilOre, parents, new ItemStack[] { new ItemStack(Blocks.stone) });
             require(
-                check.invoke(machine, evilOre, parents, new ItemStack[] { new ItemStack(Blocks.stone) }) == null,
-                "wrong planting soil prevents breeding");
+                unrelatedConsumption != null && unrelatedConsumption[0] == 0,
+                "automatic planting soil neither requires nor consumes an unrelated input");
             for (int attempt = 0; attempt < 2; attempt++) {
                 int[] consumption = (int[]) check.invoke(machine, evilOre, parents, new ItemStack[] { netherrack });
                 require(
@@ -465,8 +660,9 @@ public final class CropBreederChecks {
             require(
                 spruce.alternatives()
                     .size() > 1 && spruce.matches(new ItemStack(Blocks.dirt))
-                    && spruce.matches(new ItemStack(Blocks.grass)),
-                "all registered planting-soil alternatives can satisfy a fallback requirement");
+                    && spruce.matches(new ItemStack(Blocks.grass))
+                    && spruce.isAutomaticallySatisfied(),
+                "automatic planting soil preserves all registered display alternatives");
         } catch (ReflectiveOperationException failure) {
             throw new AssertionError("planting-soil fallback check failed", failure);
         }
@@ -486,29 +682,54 @@ public final class CropBreederChecks {
             var check = LargeCropBreeder.class
                 .getDeclaredMethod("breedingConsumption", ICropMutation.class, ArrayList.class, ItemStack[].class);
             check.setAccessible(true);
+            boolean automatic = CropBreedingSubstrate.forMutation(recipe)
+                .stream()
+                .allMatch(CropBreedingSubstrate::isAutomaticallySatisfied);
             ItemStack inputStack = substrate.copy();
-            inputStack.stackSize = 2;
+            inputStack.stackSize = automatic ? 1 : 2;
             require(
                 check.invoke(machine, mixed, parents, new ItemStack[] { inputStack }) == null,
-                "consumable catalyst cannot consume the reserved substrate");
-            inputStack.stackSize = 3;
+                "consumable catalyst still requires its full amount plus any reserved modded substrate");
+            inputStack.stackSize = automatic ? 2 : 3;
             int[] consumption = (int[]) check.invoke(machine, mixed, parents, new ItemStack[] { inputStack });
             require(
                 consumption != null && consumption[0] == 2,
-                "mixed requirement consumes two catalysts while retaining one substrate");
+                "mixed requirement consumes two catalysts and reserves only non-automatic substrate");
         } catch (ReflectiveOperationException failure) {
             throw new AssertionError("mixed catalyst check failed", failure);
         }
     }
 
     private static void chanceChecks() {
-        int[] defaults = { 100, 80, 60, 40, 20, 10 };
+        ICropCard firstGrade = CropRegistry.instance.get("cropsnh:bonsaiSpruce");
+        ICropCard secondGrade = CropRegistry.instance.get("cropsnh:evilOre");
+        require(
+            CropBreedingRecipeRules.breedingGrade(firstGrade) == 1
+                && CropBreedingRecipeRules.requiredVoltage(firstGrade) == 512
+                && CropBreedingRecipeRules.baseDuration(firstGrade) == 160,
+            "grade one requires HV and eight seconds before overclocking");
+        require(
+            CropBreedingRecipeRules.breedingGrade(secondGrade) == 2
+                && CropBreedingRecipeRules.requiredVoltage(secondGrade) == 2048
+                && CropBreedingRecipeRules.baseDuration(secondGrade) == 320,
+            "grade two requires EV and sixteen seconds before overclocking");
+        int highestGrade = CropRegistry.instance.getAllInRegistrationOrder()
+            .stream()
+            .mapToInt(CropBreedingRecipeRules::breedingGrade)
+            .max()
+            .orElseThrow();
+        require(highestGrade == 5, "registered CropsNH crops currently reach breeding grade five");
+        int[] defaults = { 100, 80, 60, 40, 20 };
         CropBreederConfig.tierChances = defaults.clone();
         CropBreederConfig.cropOverrides = new String[0];
         for (ICropCard crop : CropRegistry.instance.getAllInRegistrationOrder()) {
-            int band = Math.min(5, Math.max(0, crop.getTier() - 1) / 3);
-            require(CropBreedingChance.percent(crop) == defaults[band], "native crop tier maps to default chance band");
+            int band = Math.min(4, CropBreedingRecipeRules.breedingGrade(crop) - 1);
+            require(CropBreedingChance.percent(crop) == defaults[band], "breeding grade maps to matching probability");
         }
+        ICropCard iridine = CropRegistry.instance.get("cropsnh:iridine");
+        require(
+            CropBreedingRecipeRules.breedingGrade(iridine) == 5 && CropBreedingChance.percent(iridine) == 20,
+            "Iridine breeding grade five uses twenty percent despite native crop tier twelve");
         ICropCard crop = CropRegistry.instance.getAllInRegistrationOrder()
             .get(0);
         String id = crop.getId();
@@ -519,7 +740,7 @@ public final class CropBreederChecks {
         CropBreederConfig.cropOverrides = new String[0];
         CropBreederConfig.tierChances = new int[0];
         require(
-            CropBreedingChance.percent(crop) == defaults[Math.min(5, Math.max(0, crop.getTier() - 1) / 3)],
+            CropBreedingChance.percent(crop) == defaults[Math.min(4, CropBreedingRecipeRules.breedingGrade(crop) - 1)],
             "empty tier configuration falls back to defaults");
         CropBreederConfig.tierChances = defaults;
     }
@@ -634,7 +855,6 @@ public final class CropBreederChecks {
         saved.setString("cropActive", "");
         saved.removeTag("cropActiveSeed");
         machine.loadNBTData(saved);
-        if (LONG_ROUTE_PREVIEW) input.setInventorySlotContents(8, new ItemStack(Blocks.netherrack));
         List<String> substrateReport = new ArrayList<>();
         for (ICropMutation step : machine.getPlan().steps) {
             int substrateCount = 0;
@@ -694,13 +914,51 @@ public final class CropBreederChecks {
         try {
             Minecraft mc = Minecraft.getMinecraft();
             if (!(mc.currentScreen instanceof GuiContainerWrapper wrapper)) return;
+            if (page == 0) {
+                if (modePreviewPhase < 2) {
+                    var button = (com.cleanroommc.modularui.widgets.ButtonWidget<?>) findNamedWidget(
+                        wrapper.getScreen()
+                            .getMainPanel(),
+                        "crop_mode_switch");
+                    require(button != null && button.isEnabled(), "operating page exposes the machine mode button");
+                    if (machine.isWashingMode() != (modePreviewPhase == 1)) return;
+                    ScreenShotHelper.saveScreenshot(
+                        new File("."),
+                        modePreviewPhase == 0 ? "crop-breeding-mode.png" : "crop-washing-mode.png",
+                        mc.displayWidth,
+                        mc.displayHeight,
+                        mc.getFramebuffer());
+                    button.onMousePressed(0);
+                    modePreviewPhase++;
+                    frames = 0;
+                    return;
+                }
+                if (machine.isWashingMode()) return;
+                var tooltip = new com.cleanroommc.modularui.screen.RichTooltip()
+                    .addFromItem(GTNRItemList.LargeCropBreeder.get(1));
+                List<String> lines = ((com.cleanroommc.modularui.drawable.text.RichText) tooltip.getRichText())
+                    .getAsStrings();
+                Files.write(new File("crop-machine-tooltip.txt").toPath(), lines, StandardCharsets.UTF_8);
+                tooltip.pos(20, 20)
+                    .draw(
+                        wrapper.getScreen()
+                            .getMainPanel()
+                            .getContext());
+                ScreenShotHelper.saveScreenshot(
+                    new File("."),
+                    "crop-machine-tooltip.png",
+                    mc.displayWidth,
+                    mc.displayHeight,
+                    mc.getFramebuffer());
+            }
             if (page == 3) {
                 IWidget graph = findGraph(
                     wrapper.getScreen()
                         .getMainPanel());
                 require(graph != null, "route tab exposes a draggable lineage graph");
                 if (PROGRESS_PREVIEW && previewProgressGraph(graph, mc)) return;
-                if (LONG_ROUTE_PREVIEW && previewLongGraph(graph, mc)) return;
+                if (NEI_PREVIEW && previewNeiSearch(graph, mc)) return;
+                if (LONG_ROUTE_PREVIEW && !NEI_PREVIEW && previewLongGraph(graph, mc)) return;
                 if (ROUTE_PREVIEW && !PROGRESS_PREVIEW && !LONG_ROUTE_PREVIEW && previewGraph(graph, mc)) return;
                 if (!ROUTE_PREVIEW && graphPhase == 0) {
                     graphChecks(graph);
@@ -775,6 +1033,15 @@ public final class CropBreederChecks {
         for (IWidget child : widget.getChildren()) collectTabs(child, tabs);
     }
 
+    private static IWidget findNamedWidget(IWidget widget, String name) {
+        if (name.equals(widget.getName())) return widget;
+        for (IWidget child : widget.getChildren()) {
+            var button = findNamedWidget(child, name);
+            if (button != null) return button;
+        }
+        return null;
+    }
+
     private void voltageTooltipChecks(IWidget graph, Minecraft mc) throws Exception {
         Object gui = field(graph, "this$0");
         List<?> nodes = new ArrayList<>(((java.util.Map<?, ?>) field(field(graph, "layout"), "nodes")).values());
@@ -802,11 +1069,11 @@ public final class CropBreederChecks {
                     .equals(nativeLines),
                 "complete original seed tooltip precedes machine-specific information");
             NBTTagCompound step = (NBTTagCompound) field(nodes.get(i), "step");
-            int tier = step == null ? CropRegistry.instance.get(id)
-                .getMachineBreedingRecipeTier() : gregtech.api.util.GTUtility.getTier(step.getInteger("eu"));
+            int tier = step == null ? CropBreedingRecipeRules.requiredVoltageTier(CropRegistry.instance.get(id))
+                : gregtech.api.util.GTUtility.getTier(step.getLong("eu"));
             String expected = net.minecraft.util.StatCollector.translateToLocalFormatted(
                 "gtnr.crop_breeder.required_voltage",
-                gregtech.api.enums.GTValues.VN[Math.max(1, tier)]);
+                gregtech.api.enums.GTValues.VN[Math.max(gregtech.api.enums.VoltageIndex.HV, tier)]);
             require(
                 actual.indexOf(expected) >= nativeLines.size(),
                 "breeding voltage tier is appended after original tooltip");
@@ -837,15 +1104,21 @@ public final class CropBreederChecks {
                         new Class<?>[] { NBTTagCompound.class },
                         fallback);
                     require(
-                        shown != null && shown.getItem() == net.minecraft.item.Item.getItemFromBlock(Blocks.netherrack),
-                        "EvilOre route icon shows the detected netherrack planting soil");
+                        shown != null && CropBreedingSubstrate.forCrop(CropRegistry.instance.get(id))
+                            .get(0)
+                            .matches(shown),
+                        "EvilOre route icon retains its planting-soil alternatives without any input");
+                    require(
+                        fallback.getBoolean("automatic")
+                            && ((java.util.Map<?, ?>) field(gui, "presentSubstrates")).isEmpty(),
+                        "vanilla planting soil is exempt while the input bus is empty");
                     require(
                         (boolean) invoke(
                             gui,
                             "hasSubstrateCheckmark",
                             new Class<?>[] { NBTTagCompound.class },
                             fallback),
-                        "detected planting soil receives the same green check as extra substrate");
+                        "automatic planting soil receives a green check without any input");
                 }
                 for (int j = 0; j < requirements.tagCount(); j++) {
                     NBTTagCompound requirement = requirements.getCompoundTagAt(j);
@@ -859,21 +1132,37 @@ public final class CropBreederChecks {
                     var present = (java.util.Map<?, ?>) field(gui, "presentSubstrates");
                     ItemStack supplied = (ItemStack) present.get(requirement.getString("key"));
                     boolean archived = ((List<?>) field(gui, "archive")).contains(id);
+                    boolean automatic = requirement.getBoolean("automatic");
                     require(
                         (boolean) invoke(
                             gui,
                             "hasSubstrateCheckmark",
                             new Class<?>[] { NBTTagCompound.class },
-                            requirement) == (archived || supplied != null),
-                        "substrate icon checkmark follows archive or actual input detection");
+                            requirement) == (automatic || archived || supplied != null),
+                        "substrate icon checkmark follows automatic exemption, archive or actual input detection");
+                    if (automatic) {
+                        require(
+                            requirement.getTagList("options", 10)
+                                .tagCount() > 0,
+                            "automatic substrates retain their display alternatives");
+                        require(
+                            ((String) invoke(
+                                gui,
+                                "requirementLabel",
+                                new Class<?>[] { NBTTagCompound.class },
+                                requirement)).equals(
+                                    net.minecraft.util.StatCollector
+                                        .translateToLocal("gtnr.crop_breeder.soil_automatic")),
+                            "automatic substrate tooltip explains that no input is needed");
+                    }
                     if (supplied != null) require(
                         extra.stream()
                             .anyMatch(line -> line.contains(supplied.getDisplayName()) && line.contains("✔")),
                         "supplied substrate displays its actual name with a green check");
-                    else if (archived) require(
+                    else if (automatic || archived) require(
                         extra.stream()
                             .anyMatch(line -> line.startsWith(prefix) && line.contains("✔")),
-                        "archived parents keep their substrate checkmark after input removal");
+                        "automatic or archived substrates keep their checkmark without an input item");
                     else require(
                         extra.stream()
                             .noneMatch(line -> line.startsWith(prefix) && line.contains("✔")),
@@ -961,6 +1250,144 @@ public final class CropBreederChecks {
         return true;
     }
 
+    private boolean previewNeiSearch(IWidget graph, Minecraft mc) throws Exception {
+        var nodes = (java.util.Map<?, ?>) field(field(graph, "layout"), "nodes");
+        String seedQuery = net.minecraft.util.EnumChatFormatting.getTextWithoutFormattingCodes(
+            CropRegistry.instance.get("cropsnh:evilOre")
+                .getSeedItem(SeedStats.DEFAULT_ANALYZED)
+                .getDisplayName());
+        if (graphPhase == 0) {
+            previousNeiSearch = codechicken.nei.LayoutManager.searchField.text();
+            previousNeiInventorySearch = codechicken.nei.SearchField.searchInventories();
+            neiOverlayProbe = new NeiOverlayProbe();
+            codechicken.nei.guihook.GuiContainerManager.addDrawHandler(neiOverlayProbe);
+            neiRouteNodeCount = nodes.size();
+            Object layout = field(graph, "layout");
+            float fit = Math.min(220F / (int) field(layout, "width"), 200F / (int) field(layout, "height"));
+            invoke(graph, "setZoom", new Class<?>[] { float.class, float.class, float.class }, fit, 110F, 0F);
+            codechicken.nei.NEIClientConfig.world.nbt.setBoolean("searchinventories", true);
+            codechicken.nei.LayoutManager.searchField.setText(seedQuery);
+        } else if (graphPhase == 1 || graphPhase == 3 || graphPhase >= 4) {
+            require(nodes.size() == neiRouteNodeCount, "NEI filtering preserves every crop node and branch");
+            if (graphPhase == 1 || graphPhase == 3) require(
+                neiOverlayProbe.matchedSeeds > 0 && neiOverlayProbe.dimmedSeeds > 0,
+                "native NEI overlay filters matching and nonmatching seeds at full and enlarged zoom");
+            if (graphPhase == 4) require(
+                neiOverlayProbe.matchedSoils > 0 && neiOverlayProbe.dimmedSoils > 0,
+                "native NEI overlay filters substrate icons using the current soil name query");
+            if (graphPhase == 5) require(
+                neiOverlayProbe.matchedSeeds > 0 && neiOverlayProbe.matchedSoils > 0
+                    && neiOverlayProbe.dimmedSeeds == 0
+                    && neiOverlayProbe.dimmedSoils == 0,
+                "clearing NEI search restores all seed and substrate icons: seeds=" + neiOverlayProbe.matchedSeeds
+                    + "/"
+                    + neiOverlayProbe.dimmedSeeds
+                    + ", soils="
+                    + neiOverlayProbe.matchedSoils
+                    + "/"
+                    + neiOverlayProbe.dimmedSoils
+                    + ", query="
+                    + codechicken.nei.LayoutManager.searchField.text()
+                    + ", hideUntilSearching="
+                    + codechicken.nei.NEIClientConfig.hideItemsUntilSearching());
+            if (graphPhase == 6) require(
+                neiOverlayProbe.matchedSeeds == 0 && neiOverlayProbe.dimmedSeeds == 0
+                    && neiOverlayProbe.matchedSoils == 0
+                    && neiOverlayProbe.dimmedSoils == 0,
+                "disabling NEI inventory search stops filtering even with a nonempty query");
+            String shot = graphPhase == 1 ? "seed-full"
+                : graphPhase == 3 ? "seed-zoom"
+                    : graphPhase == 4 ? "soil-zoom" : graphPhase == 5 ? "cleared" : "disabled";
+            ScreenShotHelper.saveScreenshot(
+                new File("."),
+                "crop-nei-" + shot + ".png",
+                mc.displayWidth,
+                mc.displayHeight,
+                mc.getFramebuffer());
+            if (graphPhase == 1)
+                invoke(graph, "setZoom", new Class<?>[] { float.class, float.class, float.class }, 0.8F, 110F, 0F);
+            else if (graphPhase == 3)
+                codechicken.nei.LayoutManager.searchField.setText(new ItemStack(Blocks.netherrack).getDisplayName());
+            else if (graphPhase == 4) codechicken.nei.LayoutManager.searchField.setText("");
+            else if (graphPhase == 5) {
+                codechicken.nei.LayoutManager.searchField.setText(seedQuery);
+                codechicken.nei.NEIClientConfig.world.nbt.setBoolean("searchinventories", false);
+            } else if (graphPhase == 6) {
+                restoreNeiSearch();
+                return false;
+            }
+        } else if (graphPhase == 2) {
+            for (Object node : nodes.values()) {
+                if (!field(node, "uid").equals("cropsnh:evilOre")) continue;
+                var viewport = (com.cleanroommc.modularui.widget.ScrollWidget<?>) field(graph, "viewport");
+                var vertical = (com.cleanroommc.modularui.widget.scroll.VerticalScrollData) field(graph, "vertical");
+                var horizontal = (com.cleanroommc.modularui.widget.scroll.HorizontalScrollData) field(
+                    graph,
+                    "horizontal");
+                float zoom = (float) field(graph, "zoom");
+                vertical.scrollTo(viewport.getScrollArea(), Math.round(((int) field(node, "y") - 10) * zoom));
+                horizontal.scrollTo(
+                    viewport.getScrollArea(),
+                    Math.round(
+                        (float) invoke(graph, "contentOffsetX", new Class<?>[0]) + ((int) field(node, "x") + 9) * zoom)
+                        - horizontal.getFullVisibleSize(viewport.getScrollArea()) / 2);
+                break;
+            }
+        }
+        graphPhase++;
+        neiOverlayProbe.reset();
+        frames = 0;
+        return true;
+    }
+
+    private void restoreNeiSearch() {
+        if (neiOverlayProbe == null) return;
+        codechicken.nei.guihook.GuiContainerManager.drawHandlers.remove(neiOverlayProbe);
+        neiOverlayProbe = null;
+        codechicken.nei.NEIClientConfig.world.nbt.setBoolean("searchinventories", previousNeiInventorySearch);
+        codechicken.nei.LayoutManager.searchField.setText(previousNeiSearch);
+    }
+
+    private static final class NeiOverlayProbe implements codechicken.nei.guihook.IContainerDrawHandler {
+
+        private int matchedSeeds, dimmedSeeds, matchedSoils, dimmedSoils;
+
+        @Override
+        public void onPreDraw(net.minecraft.client.gui.inventory.GuiContainer gui) {
+            reset();
+        }
+
+        private void reset() {
+            matchedSeeds = dimmedSeeds = matchedSoils = dimmedSoils = 0;
+        }
+
+        @Override
+        public void renderSlotOverlay(net.minecraft.client.gui.inventory.GuiContainer gui,
+            net.minecraft.inventory.Slot slot) {
+            if (!codechicken.nei.SearchField.searchInventories() || slot.inventory.getSizeInventory() != 1
+                || slot.getStack() == null) return;
+            boolean matches = codechicken.nei.LayoutManager.searchField.getFilter()
+                .matches(slot.getStack());
+            if (CropRegistry.instance.get(slot.getStack(), false) != null) {
+                if (matches) matchedSeeds++;
+                else dimmedSeeds++;
+            } else if (slot.xDisplayPosition == 0 && slot.yDisplayPosition == 0) {
+                if (matches) matchedSoils++;
+                else dimmedSoils++;
+            }
+        }
+
+        @Override
+        public void renderObjects(net.minecraft.client.gui.inventory.GuiContainer gui, int x, int y) {}
+
+        @Override
+        public void postRenderObjects(net.minecraft.client.gui.inventory.GuiContainer gui, int x, int y) {}
+
+        @Override
+        public void renderSlotUnderlay(net.minecraft.client.gui.inventory.GuiContainer gui,
+            net.minecraft.inventory.Slot slot) {}
+    }
+
     private boolean previewLongGraph(IWidget graph, Minecraft mc) throws Exception {
         if (!syntheticLongRoute) {
             Object gui = field(graph, "this$0");
@@ -1028,7 +1455,7 @@ public final class CropBreederChecks {
                 displayedPlantingSoils.size() > 1,
                 "planting-soil icon actually cycles between alternatives during the preview");
             String view = graphPhase == 2 ? "top"
-                : graphPhase == 3 ? "bottom" : graphPhase == 5 ? "three-parent" : "aligned-bars";
+                : graphPhase == 3 ? "bottom" : graphPhase == 5 ? "three-parent" : "without-chance-labels";
             ScreenShotHelper.saveScreenshot(
                 new File("."),
                 "crop-long-route-" + view + ".png",
@@ -1065,7 +1492,10 @@ public final class CropBreederChecks {
                 if (graphPhase == 4) {
                     if (parents.size() != 3) continue;
                 } else {
-                    if (!field(node, "uid").equals("cropsnh:diareed")) continue;
+                    if (parents.size() != 2) continue;
+                    boolean hasStartingParent = false;
+                    for (Object parent : parents) hasStartingParent |= field(parent, "step") == null;
+                    if (!hasStartingParent) continue;
                 }
                 var viewport = (com.cleanroommc.modularui.widget.ScrollWidget<?>) field(graph, "viewport");
                 var vertical = (com.cleanroommc.modularui.widget.scroll.VerticalScrollData) field(graph, "vertical");
@@ -1348,6 +1778,7 @@ public final class CropBreederChecks {
 
     private void finish(Throwable failure) {
         if (finished) return;
+        restoreNeiSearch();
         finished = true;
         if (failure != null) failure.printStackTrace();
         try {

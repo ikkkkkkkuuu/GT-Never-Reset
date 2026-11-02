@@ -5,7 +5,7 @@ import com.xyp.gtneverreset.config.CropBreederConfig;
 
 public final class CropBreedingChance {
 
-    private static final int[] DEFAULT_TIER_CHANCES = { 100, 80, 60, 40, 20, 10 };
+    private static final int[] DEFAULT_TIER_CHANCES = { 100, 80, 60, 40, 20 };
 
     private CropBreedingChance() {}
 
@@ -13,7 +13,9 @@ public final class CropBreedingChance {
         if (crop == null) return 0;
         int[] chances = CropBreederConfig.tierChances;
         if (chances == null || chances.length == 0) chances = DEFAULT_TIER_CHANCES;
-        int band = Math.min(chances.length - 1, Math.max(0, crop.getTier() - 1) / 3);
+        int band = Math.min(
+            Math.min(chances.length, DEFAULT_TIER_CHANCES.length) - 1,
+            CropBreedingRecipeRules.breedingGrade(crop) - 1);
         int chance = Math.max(0, Math.min(100, chances[band]));
         if (CropBreederConfig.cropOverrides == null) return chance;
         for (String entry : CropBreederConfig.cropOverrides) {

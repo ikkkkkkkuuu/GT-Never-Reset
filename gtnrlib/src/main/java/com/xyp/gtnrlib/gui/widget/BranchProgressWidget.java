@@ -21,7 +21,9 @@ import cpw.mods.fml.relauncher.SideOnly;
 public final class BranchProgressWidget extends Widget<BranchProgressWidget> {
 
     private static final int TEXTURE_HEIGHT = 18;
-    private static final int JOINT_OVERLAP = 2;
+    private static final int LINE_LEADING_EXTENT = 2;
+    private static final int EMPTY_LINE_TRAILING_EXTENT = 1;
+    private static final int FILLED_LINE_TRAILING_EXTENT = 2;
     private DoubleSupplier value = () -> 0;
     private BooleanSupplier completed = () -> false;
     private UITexture emptyLine, fullLine, completedLine, emptyArrow, fullArrow, completedArrow;
@@ -115,9 +117,9 @@ public final class BranchProgressWidget extends Widget<BranchProgressWidget> {
             drawTexture(context, theme, arrow, targetX, bottom, bottom, -90);
             return;
         }
-        int left = sourceXs[0] - JOINT_OVERLAP;
-        int right = sourceXs[sourceXs.length - 1] + JOINT_OVERLAP;
-        // Extend over the outside half of both vertical strokes so the corner has no uncovered pixel.
+        int left = sourceXs[0] - LINE_LEADING_EXTENT;
+        int right = sourceXs[sourceXs.length - 1] + (filled ? FILLED_LINE_TRAILING_EXTENT : EMPTY_LINE_TRAILING_EXTENT);
+        // Match the rotated shaft's visible bounds: three pixels empty, four pixels filled.
         drawTexture(context, theme, line, left, junctionY, right - left, 0);
         // Draw both incoming and outgoing strokes over the bar, opening its border at every junction.
         for (int x : sourceXs) drawTexture(context, theme, line, x, bottom, bottom - junctionY, -90);

@@ -27,6 +27,7 @@ gradle.projectsEvaluated {
         systemProperty 'gtnr.cropBreeder.expandedPreview', root.findProperty('cropExpandedRoutePreview') ?: 'false'
         systemProperty 'gtnr.cropBreeder.progressPreview', root.findProperty('cropProgressPreview') ?: 'false'
         systemProperty 'gtnr.cropBreeder.longPreview', root.findProperty('cropLongRoutePreview') ?: 'false'
+        systemProperty 'gtnr.cropBreeder.neiPreview', root.findProperty('cropNeiPreview') ?: 'false'
         systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
         systemProperty 'sun.net.client.defaultReadTimeout', '15000'
         args '--width', '1100', '--height', '740'

@@ -35,6 +35,14 @@ public final class InsectStaffConfig {
     // # Advanced teleport staff
     // # zh_CN 高级传送权杖
     public static final String TELEPORT = "GTNRTeleport";
+    // #tr button.de.GTNRSprintSpeed.name
+    // # Held sprint speed multiplier
+    // # zh_CN 手持奔跑速度倍率
+    public static final String SPRINT_SPEED = "GTNRSprintSpeed";
+    // #tr button.de.GTNRFlightSpeed.name
+    // # Held flight speed multiplier
+    // # zh_CN 手持飞行速度倍率
+    public static final String FLIGHT_SPEED = "GTNRFlightSpeed";
 
     private InsectStaffConfig() {}
 
@@ -51,7 +59,18 @@ public final class InsectStaffConfig {
         fields.add(new ItemConfigField(References.BOOLEAN_ID, slot, PRECISE).readFromItem(stack, false));
         fields.add(new ItemConfigField(References.BOOLEAN_ID, slot, BACKFILL).readFromItem(stack, true));
         fields.add(new ItemConfigField(References.BOOLEAN_ID, slot, TELEPORT).readFromItem(stack, true));
+        for (String key : new String[] { SPRINT_SPEED, FLIGHT_SPEED }) {
+            fields.add(
+                new ItemConfigField(References.FLOAT_ID, speedMultiplier(stack, key), slot, key)
+                    .setMinMaxAndIncromente(1F, 10F, 0.1F)
+                    .setModifier("MULTIPLIER"));
+        }
         return fields;
+    }
+
+    public static float speedMultiplier(ItemStack stack, String key) {
+        float value = ProfileHelper.getFloat(stack, key, 2F);
+        return Float.isFinite(value) ? Math.max(1F, Math.min(10F, value)) : 2F;
     }
 
     public static boolean veinEnabled(ItemStack stack) {

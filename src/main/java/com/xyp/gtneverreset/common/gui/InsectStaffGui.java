@@ -19,15 +19,21 @@ import com.brandon3055.draconicevolution.common.utils.DataUtils;
 import com.brandon3055.draconicevolution.common.utils.IConfigurableItem.ProfileHelper;
 import com.brandon3055.draconicevolution.common.utils.ItemConfigField;
 import com.brandon3055.draconicevolution.common.utils.ItemNBTHelper;
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.factory.PlayerInventoryGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
+import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.utils.item.InvWrapper;
 import com.cleanroommc.modularui.value.sync.DoubleSyncValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
+import com.cleanroommc.modularui.widgets.ItemDisplayWidget;
+import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.SlotGroupWidget;
 import com.cleanroommc.modularui.widgets.slot.ItemSlot;
 import com.cleanroommc.modularui.widgets.slot.ModularSlot;
@@ -36,61 +42,104 @@ import com.xyp.gtneverreset.common.item.items.InsectStaff;
 
 public final class InsectStaffGui {
 
+    private static final int INPUT_PAGE_WIDTH = 232;
+    private static final ResourceLocation TOOL_TEXTURE = new ResourceLocation(
+        "draconicevolution",
+        "textures/gui/ToolConfig.png");
+    private static final ResourceLocation FIELD_TEXTURE = new ResourceLocation(
+        "draconicevolution",
+        "textures/gui/Widgets.png");
+    private static final ResourceLocation VANILLA_BUTTON_TEXTURE = new ResourceLocation("textures/gui/widgets.png");
     private static final UITexture BACKGROUND = UITexture.builder()
-        .location(new ResourceLocation("draconicevolution", "textures/gui/ToolConfig.png"))
+        .location(TOOL_TEXTURE)
         .imageSize(256, 256)
         .subAreaXYWH(0, 0, 198, 89)
         .adaptable(4)
         .build();
-    private static final UITexture BUTTON = buttonTexture(0);
-    private static final UITexture HOVER = buttonTexture(20);
+    private static final UITexture SLOT = texture(
+        new ResourceLocation("brandonscore", "textures/gui/Widgets.png"),
+        119,
+        1,
+        18,
+        18);
+    private static final UITexture ITEM_FRAME = texture(
+        new ResourceLocation("brandonscore", "textures/gui/Widgets.png"),
+        118,
+        0,
+        20,
+        20);
+    private static final UITexture ENCHANTMENT = UITexture.builder()
+        .location(TOOL_TEXTURE)
+        .imageSize(256, 256)
+        .subAreaXYWH(0, 89, 16, 14)
+        .nonOpaque()
+        .build();
 
     private InsectStaffGui() {}
-
-    private static UITexture buttonTexture(int y) {
-        return UITexture.builder()
-            .location(new ResourceLocation("draconicevolution", "textures/gui/Widgets.png"))
-            .imageSize(256, 256)
-            .subAreaXYWH(18, y, 100, 20)
-            .adaptable(1)
-            .build();
-    }
 
     public static ModularPanel build(PlayerInventoryGuiData data, PanelSyncManager sync, UISettings settings) {
         Session session = new Session(data);
         settings.canInteractWith(player -> session.valid());
+        settings.getRecipeViewerSettings()
+            .disable();
         sync.bindPlayerInventory(
             data.getPlayer(),
             (inventory, index) -> new ModularSlot(inventory, index)
                 .accessibility(index != data.getSlotIndex(), index != data.getSlotIndex()));
-        var panel = ModularPanel.defaultPanel("insect_staff", 350, 201)
-            .background(BACKGROUND)
-            .disableHoverBackground();
-        panel.child(button(325, 5, 18, IKey.str("x")).onMousePressed(mouse -> {
-            panel.closeIfOpen();
-            return true;
-        }));
-        panel.child(
-            IKey.lang("item.gtneverreset.insect_staff.name")
-                .color(0xff303030)
-                .shadow(false)
-                .asWidget()
-                .pos(7, 7));
         List<ItemConfigField> fields = session.staff.getFields(session.stack, data.getSlotIndex());
-        for (int i = 0; i < fields.size(); i++) addField(panel, sync, session, fields.get(i), 21 + i * 13);
-        var filters = sync.syncedPanel("obliteration", true, (manager, handler) -> filterPanel(session, manager));
-        panel.child(
-            button(7, 181, 161, IKey.lang("info.de.toolInventoryOblit.txt")).name("obliteration_filter")
+        int listHeight = Math.max(89, 10 + fields.size() * 12);
+        var panel = ModularPanel.defaultPanel("insect_staff", INPUT_PAGE_WIDTH, listHeight)
+            .background(IDrawable.EMPTY)
+            .disableHoverBackground();
+        var pages = new PagedWidget<>().size(INPUT_PAGE_WIDTH, listHeight)
+            .name("configuration_pages");
+        var list = new ParentWidget<>().size(198, listHeight)
+            .align(Alignment.Center)
+            .background(BACKGROUND)
+            .name("configuration_list");
+        pages.addPage(list);
+        panel.child(pages);
+        list.child(
+            ITEM_FRAME.asWidget()
+                .pos(3, 5)
+                .size(20));
+        list.child(
+            new ItemDisplayWidget().item(session.stack)
+                .pos(4, 6)
+                .size(18)
+                .background(IDrawable.EMPTY)
+                .disableHoverBackground());
+        list.child(
+            button(3, 26, 20, 12, IKey.str("<="), true).name("close_configuration")
+                .addTooltipLine(IKey.lang("gui.back"))
                 .onMousePressed(mouse -> {
                     if (mouse != 0) return false;
+                    panel.closeIfOpen();
+                    return true;
+                }));
+        var filters = sync
+            .syncedPanel("obliteration", true, (manager, handler) -> filterPanel(session, manager).onCloseAction(() -> {
+                pages.setEnabled(true);
+                settings.getRecipeViewerSettings()
+                    .disable();
+            }));
+        list.child(
+            button(3, 39, 20, 12, IKey.str("Inv"), true).name("obliteration_filter")
+                .addTooltipLine(IKey.lang("gui.de.itemInventory.txt"))
+                .onMousePressed(mouse -> {
+                    if (mouse != 0) return false;
+                    pages.setEnabled(false);
+                    settings.getRecipeViewerSettings()
+                        .enable();
                     filters.openPanel();
                     return true;
                 }));
+        for (int i = 0; i < fields.size(); i++) addField(list, pages, sync, session, fields.get(i), 5 + i * 12);
         return panel;
     }
 
-    private static void addField(ModularPanel panel, PanelSyncManager sync, Session session, ItemConfigField field,
-        int y) {
+    private static void addField(ParentWidget<?> list, PagedWidget<?> pages, PanelSyncManager sync, Session session,
+        ItemConfigField field, int y) {
         DoubleSyncValue value = new DoubleSyncValue(
             () -> session.field(field.name)
                 .castToDouble(),
@@ -98,93 +147,232 @@ public final class InsectStaffGui {
 
             @Override
             public String getStringValue() {
+                if (field.datatype == References.FLOAT_ID) return Float.toString(getFloatValue());
                 return field.datatype == References.INT_ID ? Integer.toString((int) getDoubleValue())
                     : super.getStringValue();
             }
         }.allowC2S();
         sync.syncValue(field.name, value);
-        panel.child(
+        int editorPage = pages.getPages()
+            .size();
+        var entry = new ButtonWidget<>().pos(24, y)
+            .size(150, 12)
+            .name(field.name)
+            .background(fieldButtonTexture(false))
+            .hoverBackground(fieldButtonTexture(true))
+            .child(
+                IKey.lang("button.de." + field.name + ".name")
+                    .asWidget()
+                    .color(0xffffffff)
+                    .shadow(true)
+                    .alignment(Alignment.TopLeft)
+                    .pos(2, 2)
+                    .size(146, 8))
+            .tooltipDynamic(tooltip -> tooltip.addLine(IKey.str(formatted(field, value))))
+            .onMousePressed(mouse -> {
+                if (mouse != 0) return false;
+                if (field.datatype == References.BOOLEAN_ID) value.setDoubleValue(value.getDoubleValue() == 0 ? 1 : 0);
+                else pages.setPage(editorPage);
+                return true;
+            });
+        entry.tooltip()
+            .setAutoUpdate(true);
+        list.child(entry);
+        if (field.datatype == References.BOOLEAN_ID) return;
+
+        boolean speedMultiplier = "MULTIPLIER".equals(field.modifier);
+        boolean directInput = speedMultiplier || field.name.equals(InsectStaffConfig.RANGE)
+            || field.name.equals(InsectStaffConfig.AMOUNT);
+        int editorWidth = directInput ? INPUT_PAGE_WIDTH : 198;
+        var editor = new ParentWidget<>().size(editorWidth, 89)
+            .align(Alignment.Center)
+            .background(BACKGROUND)
+            .name(field.name + "_editor");
+        pages.addPage(editor);
+        editor.child(
+            button(3, 3, 20, 12, IKey.str("<="), true).name(field.name + "_back")
+                .addTooltipLine(IKey.lang("gui.back"))
+                .onMousePressed(mouse -> {
+                    if (mouse != 0) return false;
+                    pages.setPage(0);
+                    return true;
+                }));
+        editor.child(
             IKey.lang("button.de." + field.name + ".name")
-                .color(0xff303030)
-                .shadow(false)
-                .scale(0.85F)
                 .asWidget()
-                .pos(7, y + 2)
-                .size(130, 10));
-        if (field.datatype == References.BOOLEAN_ID) {
-            panel.child(
-                button(
-                    140,
-                    y,
-                    203,
-                    IKey.dynamic(
-                        () -> StatCollector
-                            .translateToLocal(value.getDoubleValue() == 0 ? "gui.de.off.txt" : "gui.de.on.txt")))
-                                .name(field.name)
-                                .onMousePressed(mouse -> {
-                                    if (mouse != 0) return false;
-                                    value.setDoubleValue(value.getDoubleValue() == 0 ? 1 : 0);
-                                    return true;
-                                }));
-            return;
+                .color(0xff000000)
+                .shadow(false)
+                .alignment(Alignment.TopCenter)
+                .pos(4, 22)
+                .size(editorWidth - 9, 8));
+        if (directInput) {
+            // #tr gui.gtneverreset.insect_staff.enter_value
+            // # Click to enter a number; press Enter to apply
+            // # zh_CN 点击数字输入，按回车确认
+            TextFieldWidget input = new TextFieldWidget().pos(84, 35)
+                .size(64, 18)
+                .padding(4, 0)
+                .background(GuiTextures.DISPLAY_SMALL)
+                .disableHoverBackground()
+                .setTextColor(0xffffffff)
+                .setTextAlignment(Alignment.Center)
+                .syncHandler(field.name)
+                .name(field.name + "_input")
+                .addTooltipLine(IKey.lang("gui.gtneverreset.insect_staff.enter_value"));
+            if (speedMultiplier) {
+                input.numbersDouble(field::castMinToDouble, field::castMaxToDouble);
+                // #tr gui.gtneverreset.insect_staff.speed_multiplier
+                // # Multiplies your current speed while holding the staff; 1 disables the boost
+                // # zh_CN 设为 1 时保持原速
+                input.addTooltipLine(IKey.lang("gui.gtneverreset.insect_staff.speed_multiplier"));
+            } else {
+                input.numbersLong((long) field.castMinToDouble(), (long) field.castMaxToDouble())
+                    .formatAsInteger(false);
+            }
+            editor.child(input);
+        } else {
+            editor.child(
+                IKey.dynamic(() -> formatted(field, value))
+                    .asWidget()
+                    .color(0xffffffff)
+                    .shadow(true)
+                    .alignment(Alignment.TopCenter)
+                    .pos(80, 40)
+                    .size(37, 8)
+                    .name(field.name + "_value"));
+        }
+        if (field.modifier == null || field.modifier.equals("AOE") || speedMultiplier) {
+            IKey maximum = IKey.dynamic(
+                () -> StatCollector.translateToLocal("gui.de.max.txt") + " "
+                    + field.getMaxFormattedValue()
+                    + (speedMultiplier ? "×" : ""));
+            if (directInput) {
+                // #tr gui.gtneverreset.insect_staff.set_maximum
+                // # Click to set the maximum
+                // # zh_CN 点击设为最大值
+                editor.child(
+                    new ButtonWidget<>().pos(4, 58)
+                        .size(editorWidth - 8, 12)
+                        .name(field.name + "_maximum")
+                        .background(IDrawable.EMPTY)
+                        .disableHoverBackground()
+                        .child(
+                            maximum.asWidget()
+                                .color(0xffffffff)
+                                .shadow(true)
+                                .alignment(Alignment.TopCenter)
+                                .pos(0, 2)
+                                .size(editorWidth - 9, 8))
+                        .addTooltipLine(IKey.lang("gui.gtneverreset.insect_staff.set_maximum"))
+                        .onMousePressed(mouse -> {
+                            if (mouse != 0) return false;
+                            value.setDoubleValue(field.castMaxToDouble());
+                            return true;
+                        }));
+            } else {
+                editor.child(
+                    maximum.asWidget()
+                        .color(0xffffffff)
+                        .shadow(true)
+                        .alignment(Alignment.TopCenter)
+                        .pos(4, 54)
+                        .size(189, 8));
+            }
         }
         int[] increments = { -100, -10, -1, 1, 10, 100 };
         String[] labels = { "---", "--", "-", "+", "++", "+++" };
         for (int i = 0; i < increments.length; i++) {
             int amount = increments[i];
-            int x = i < 3 ? 140 + i * 21 : 282 + (i - 3) * 21;
-            panel.child(
-                button(x, y, 19, IKey.str(labels[i])).name(field.name + "_" + amount)
+            int x = i < 3 ? 4 + i * 26 : editorWidth - 80 + (i - 3) * 26;
+            editor.child(
+                button(x, 37, 24, 14, IKey.str(labels[i]), false).name(field.name + "_" + amount)
                     .onMousePressed(mouse -> {
                         if (mouse != 0) return false;
                         double next = value.getDoubleValue() + ((Number) field.incroment).doubleValue() * amount;
+                        if (field.datatype == References.FLOAT_ID) next = Math.round(next * 100) / 100D;
                         value
                             .setDoubleValue(Math.max(field.castMinToDouble(), Math.min(field.castMaxToDouble(), next)));
                         return true;
                     }));
         }
-        if (field.name.equals(InsectStaffConfig.AMOUNT) || field.name.equals(InsectStaffConfig.RANGE)) {
-            panel.child(
-                new TextFieldWidget().pos(204, y)
-                    .size(76, 12)
-                    .numbersLong((long) field.castMinToDouble(), (long) field.castMaxToDouble())
-                    .syncHandler(field.name)
-                    .name(field.name + "_input"));
-            return;
-        }
-        panel.child(IKey.dynamic(() -> {
-            ItemConfigField display = new ItemConfigField(field.datatype, 0, field.name).setModifier(field.modifier);
-            if (field.datatype == References.FLOAT_ID) display.value = (float) value.getDoubleValue();
-            else display.value = (int) value.getDoubleValue();
-            return display.getFormattedValue();
-        })
-            .color(0xff303030)
-            .shadow(false)
-            .asWidget()
-            .pos(204, y + 2)
-            .size(76, 10));
     }
 
-    private static ButtonWidget<?> button(int x, int y, int width, IKey label) {
-        return new ButtonWidget<>().pos(x, y)
-            .size(width, 12)
-            .background(BUTTON)
-            .hoverBackground(HOVER)
-            .overlay(
-                label.color(0xffffffff)
-                    .shadow(false));
+    private static String formatted(ItemConfigField field, DoubleSyncValue value) {
+        if ("MULTIPLIER".equals(field.modifier)) return Float.toString((float) value.getDoubleValue()) + "×";
+        ItemConfigField display = new ItemConfigField(field.datatype, 0, field.name).setModifier(field.modifier);
+        if (field.datatype == References.BOOLEAN_ID) display.value = value.getDoubleValue() != 0;
+        else if (field.datatype == References.FLOAT_ID) display.value = (float) value.getDoubleValue();
+        else display.value = (int) value.getDoubleValue();
+        return display.getFormattedValue();
+    }
+
+    private static UITexture texture(ResourceLocation location, int x, int y, int width, int height) {
+        return new UITexture(location, x / 256F, y / 256F, (x + width) / 256F, (y + height) / 256F, null);
+    }
+
+    private static IDrawable fieldButtonTexture(boolean hover) {
+        int v = hover ? 20 : 0;
+        UITexture left = texture(FIELD_TEXTURE, 18, v, 100, 12);
+        UITexture right = texture(FIELD_TEXTURE, 19, v, 99, 12);
+        UITexture leftBottom = texture(FIELD_TEXTURE, 18, v + 19, 100, 1);
+        UITexture rightBottom = texture(FIELD_TEXTURE, 19, v + 19, 99, 1);
+        return (context, x, y, width, height, theme) -> {
+            left.draw(context, x, y, 100, 12, theme);
+            leftBottom.draw(context, x, y + 11, 100, 1, theme);
+            right.draw(context, x + 50, y, 99, 12, theme);
+            rightBottom.draw(context, x + 50, y + 11, 99, 1, theme);
+        };
+    }
+
+    private static IDrawable buttonTexture(int width, int height, boolean hover) {
+        int v = hover ? 86 : 66;
+        int half = width / 2;
+        UITexture left = texture(VANILLA_BUTTON_TEXTURE, 0, v, half, height);
+        UITexture right = texture(VANILLA_BUTTON_TEXTURE, 200 - half, v, half, height);
+        UITexture leftBottom = texture(VANILLA_BUTTON_TEXTURE, 0, v + 23 - height, half, height - 3);
+        UITexture rightBottom = texture(VANILLA_BUTTON_TEXTURE, 200 - half, v + 23 - height, half, height - 3);
+        return (context, x, y, w, h, theme) -> {
+            left.draw(context, x, y, half, height, theme);
+            right.draw(context, x + half, y, half, height, theme);
+            leftBottom.draw(context, x, y + 3, half, height - 3, theme);
+            rightBottom.draw(context, x + half, y + 3, half, height - 3, theme);
+        };
+    }
+
+    private static ButtonWidget<?> button(int x, int y, int width, int height, IKey label, boolean shadow) {
+        ButtonWidget<?> button = new ButtonWidget<>().pos(x, y)
+            .size(width, height)
+            .background(buttonTexture(width, height, false))
+            .hoverBackground(buttonTexture(width, height, true));
+        button.child(
+            label.asWidget()
+                .color(() -> shadow ? button.isHovering() ? 0xffffffA0 : 0xffe0e0e0 : 0xff000000)
+                .shadow(shadow)
+                .alignment(Alignment.TopCenter)
+                .pos(0, (height - 8) / 2)
+                .size(width - 1, 8));
+        return button;
     }
 
     private static ModularPanel filterPanel(Session session, PanelSyncManager sync) {
-        ModularPanel panel = ModularPanel.defaultPanel("insect_staff_filter", 200, 135)
+        ModularPanel panel = ModularPanel.defaultPanel("insect_staff_filter", 198, 130)
             .background(BACKGROUND);
         panel.child(
             IKey.lang("info.de.toolInventoryOblit.txt")
-                .color(0xff303030)
-                .shadow(false)
-                .scale(0.8F)
                 .asWidget()
-                .pos(7, 7));
+                .color(0xff555555)
+                .shadow(false)
+                .alignment(Alignment.TopLeft)
+                .size(164, 8)
+                .pos(5, 5));
+        panel.child(
+            button(172, 3, 18, 12, IKey.str("<="), true).name("filter_back")
+                .addTooltipLine(IKey.lang("gui.back"))
+                .onMousePressed(mouse -> {
+                    if (mouse != 0) return false;
+                    panel.closeIfOpen();
+                    return true;
+                }));
         var inventory = new ToolInventory(session);
         var wrapper = new InvWrapper(inventory);
         sync.registerSlotGroup("tool_inventory", 14, false);
@@ -198,7 +386,8 @@ public final class InsectStaffGui {
                                 (stack, amountOnly, client, init) -> { if (!client && !init) inventory.markDirty(); })
                             .slotGroup("tool_inventory"))
                     .name("filter_" + i)
-                    .pos(7 + i * 18, 21));
+                    .background(SLOT)
+                    .pos(7 + i * 18, 18));
         }
         for (int i = 0; i < 5; i++) {
             panel.child(
@@ -208,11 +397,17 @@ public final class InsectStaffGui {
                             (stack, amountOnly, client, init) -> { if (!client && !init) inventory.markDirty(); })
                         .slotGroup("tool_inventory"))
                     .name("enchantment_" + i)
-                    .pos(176, 21 + i * 21));
+                    .background(
+                        SLOT,
+                        ENCHANTMENT.asIcon()
+                            .size(16, 14))
+                    .pos(172, 18 + i * 21));
         }
         panel.child(
-            SlotGroupWidget.playerInventory(true)
-                .pos(7, 47));
+            SlotGroupWidget
+                .playerInventory(
+                    (index, slot) -> slot.background(index == session.data.getSlotIndex() ? IDrawable.EMPTY : SLOT))
+                .pos(7, 44));
         return panel;
     }
 

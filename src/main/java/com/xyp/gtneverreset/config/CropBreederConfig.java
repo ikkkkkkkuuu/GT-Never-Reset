@@ -15,14 +15,14 @@ import com.gtnewhorizon.gtnhlib.config.Config;
     categoryCulling = false)
 public class CropBreederConfig {
 
-    @Config.Comment("Success percentages for crop tiers 1-3, 4-6, 7-9, etc. The last entry covers higher tiers. Independent of voltage. Restart required.")
-    @Config.DefaultIntList({ 100, 80, 60, 40, 20, 10 })
+    @Config.Comment("Success percentages for breeding grades 1, 2, 3, 4 and 5. Legacy entries beyond the fifth are ignored. Independent of machine voltage. Restart required.")
+    @Config.DefaultIntList({ 100, 80, 60, 40, 20 })
     @Config.RangeInt(min = 0, max = 100)
     // #tr gtneverreset.gui.config.crop_breeder.tier_chances
-    // # Success chances by crop tier band (%%)
-    // # zh_CN 作物等级分档成功率（%%）
+    // # Default success chances by breeding grade (%%)
+    // # zh_CN 繁育等级默认成功率（%%）
     @Config.LangKey("gtneverreset.gui.config.crop_breeder.tier_chances")
-    public static int[] tierChances = { 100, 80, 60, 40, 20, 10 };
+    public static int[] tierChances = { 100, 80, 60, 40, 20 };
 
     @Config.Comment("Per-crop success chance overrides: crop_id=integer_percent (0-100). Use exact CropsNH registry IDs. Last valid entry wins; invalid entries are ignored. Restart required.")
     @Config.DefaultStringList({})

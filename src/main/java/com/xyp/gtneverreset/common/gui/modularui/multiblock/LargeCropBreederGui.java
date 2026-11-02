@@ -14,7 +14,10 @@ import java.util.Set;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
+import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.init.Items;
+import net.minecraft.inventory.InventoryBasic;
+import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -22,7 +25,9 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
 
 import org.jetbrains.annotations.NotNull;
+import org.lwjgl.opengl.GL11;
 
+import com.cleanroommc.modularui.ModularUI;
 import com.cleanroommc.modularui.animation.Animator;
 import com.cleanroommc.modularui.api.UpOrDown;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
@@ -39,6 +44,7 @@ import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerGhostIngre
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
 import com.cleanroommc.modularui.theme.WidgetTheme;
+import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.utils.Interpolation;
 import com.cleanroommc.modularui.value.DoubleValue;
 import com.cleanroommc.modularui.value.ObjectValue;
@@ -70,10 +76,12 @@ import com.gtnewhorizon.cropsnh.farming.registries.CropRegistry;
 import com.gtnewhorizon.cropsnh.farming.requirements.SubSoilRequirement;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeCropBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.crop.CropBreedingChance;
+import com.xyp.gtneverreset.common.machine.multiblock.crop.CropBreedingRecipeRules;
 import com.xyp.gtneverreset.common.machine.multiblock.crop.CropBreedingSubstrate;
 import com.xyp.gtnrlib.gui.widget.BranchProgressWidget;
 
 import codechicken.nei.PositionedStack;
+import codechicken.nei.guihook.GuiContainerManager;
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -99,6 +107,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     private final Map<String, ItemStack> icons = new HashMap<>();
     private final Map<String, Integer> cropChances = new HashMap<>();
     private final Map<String, Integer> cropVoltageTiers = new HashMap<>();
+    private final Map<String, Integer> cropBreedingGrades = new HashMap<>();
     private final Map<NBTTagCompound, CatalystDisplay> catalystDisplays = new IdentityHashMap<>();
     private final Map<String, CropBreedingSubstrate> soilRequirements = new LinkedHashMap<>();
     private final Map<String, ItemStack> presentSubstrates = new HashMap<>();
@@ -113,7 +122,10 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     private String draftText;
     private StringSyncValue draft, target, active;
     private BooleanSyncValue valid;
+    private BooleanSyncValue washingMode;
+    private BooleanSyncValue washingOperation;
     private IntSyncValue progress, duration, chance;
+    private IntSyncValue parallel;
     private List<NBTTagCompound> chanceSnapshot;
     private BreedingRouteWidget routeWidget;
     private int snapshotRevision = Integer.MIN_VALUE;
@@ -137,7 +149,17 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         target = new StringSyncValue(multiblock::getTargetCrop);
         active = new StringSyncValue(multiblock::getActiveCrop);
         valid = new BooleanSyncValue(multiblock::isTargetValid);
+        washingMode = new BooleanSyncValue(multiblock::isWashingMode);
+        sync.syncValue("cropWashingMode", washingMode);
+        washingOperation = new BooleanSyncValue(multiblock::showsWashingOperation);
+        sync.syncValue("cropWashingOperation", washingOperation);
+        sync.syncValue(
+            "cropSwitchMode",
+            new InteractionSyncHandler().setOnMousePressed(
+                mouse -> { if (!mouse.isClient() && mouse.mouseButton == 0) multiblock.toggleWashingMode(); }));
         chance = new IntSyncValue(multiblock::getSuccessChance);
+        parallel = new IntSyncValue(multiblock::getCurrentParallel);
+        sync.syncValue("cropParallel", parallel);
         sync.syncValue("cropDraft", draft);
         sync.syncValue("cropTarget", target);
         sync.syncValue("cropActive", active);
@@ -146,9 +168,11 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         sync.syncValue("cropChances", new GenericListSyncHandler<>(this::chanceSnapshot, value -> {
             cropChances.clear();
             cropVoltageTiers.clear();
+            cropBreedingGrades.clear();
             for (NBTTagCompound tag : value) {
                 cropChances.put(tag.getString("id"), tag.getInteger("chance"));
                 cropVoltageTiers.put(tag.getString("id"), tag.getInteger("voltageTier"));
+                cropBreedingGrades.put(tag.getString("id"), tag.getInteger("breedingGrade"));
             }
         },
             ByteBufUtils::readTag,
@@ -244,9 +268,8 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
             NBTTagCompound tag = new NBTTagCompound();
             tag.setString("id", crop.getId());
             tag.setInteger("chance", CropBreedingChance.percent(crop));
-            tag.setInteger(
-                "voltageTier",
-                Math.max(VoltageIndex.LV, Math.min(VoltageIndex.UMV, crop.getMachineBreedingRecipeTier())));
+            tag.setInteger("voltageTier", CropBreedingRecipeRules.requiredVoltageTier(crop));
+            tag.setInteger("breedingGrade", CropBreedingRecipeRules.breedingGrade(crop));
             chanceSnapshot.add(tag);
         }
         return chanceSnapshot;
@@ -289,8 +312,8 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                 });
                 tag.setTag("parentRequirements" + parent++, substrates);
             }
-            tag.setInteger("eu", mutation.getBreedingMachineRecipeEUt());
-            tag.setInteger("ticks", mutation.getBreedingMachineRecipeDuration());
+            tag.setLong("eu", CropBreedingRecipeRules.requiredVoltage(mutation.getOutput()));
+            tag.setInteger("ticks", CropBreedingRecipeRules.baseDuration(mutation.getOutput()));
             NBTTagList requirements = new NBTTagList();
             for (CropBreedingSubstrate soil : CropBreedingSubstrate.forMutation(mutation))
                 addRequirement(requirements, tag.getString("result"), "mutation", soil.alternatives(), soil);
@@ -322,6 +345,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         requirement.setString("key", key);
         requirement.setString("crop", crop);
         requirement.setBoolean("soil", soil != null);
+        requirement.setBoolean("automatic", soil != null && soil.isAutomaticallySatisfied());
         if (soil != null) soilRequirements.put(key, soil);
         requirement.setTag("options", options);
         requirements.appendTag(requirement);
@@ -367,20 +391,51 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
             .pos(0, 154)
             .size(WIDTH, 76)
             .child(createInventoryRow(panel, sync));
+        ButtonWidget<?> modeButton = modeButton();
         PagedWidget<?> content = new PagedWidget<>().controller(pages)
             .size(WIDTH, BODY_HEIGHT)
             .addPage(operationPage(panel, sync))
             .addPage(speciesPage(archiveView))
             .addPage(speciesPage(reachableView))
             .addPage(routePage())
-            .onPageChange(index -> inventory.setEnabled(index != 3));
+            .onPageChange(index -> {
+                inventory.setEnabled(index != 3);
+                modeButton.setEnabled(index == 0);
+            });
         return Flow.column()
             .padding(6)
             .child(tabs)
             .child(
                 new ParentWidget<>().size(WIDTH, BODY_HEIGHT)
                     .child(content)
-                    .child(inventory));
+                    .child(inventory)
+                    .child(modeButton));
+    }
+
+    private ButtonWidget<?> modeButton() {
+        IDrawable breedingIcon = new ItemDrawable(Items.wheat_seeds);
+        IDrawable washingIcon = new ItemDrawable(Items.water_bucket);
+        return new ButtonWidget<>().name("crop_mode_switch")
+            .pos(WIDTH - 20, 154)
+            .size(18, 18)
+            .background(GTGuiTextures.BUTTON_STANDARD)
+            .overlay(
+                (context, x, y, width, height, theme) -> (washingMode.getBoolValue() ? washingIcon : breedingIcon)
+                    .draw(context, x + 2, y + 2, width - 4, height - 4, theme))
+            .tooltipAutoUpdate(true)
+            .tooltipBuilder(t -> {
+                // #tr gtnr.crop_breeder.mode_breeding
+                // # Breeding mode. Click to switch to seed improvement.
+                // # zh_CN 繁育模式，点击切换为洗种
+                // #tr gtnr.crop_breeder.mode_washing
+                // # Seed improvement mode. Click to switch to breeding.
+                // # zh_CN 洗种模式，点击切换为繁育
+                t.addLine(
+                    tr(
+                        washingMode.getBoolValue() ? "gtnr.crop_breeder.mode_washing"
+                            : "gtnr.crop_breeder.mode_breeding"));
+            })
+            .syncHandler("cropSwitchMode");
     }
 
     private PageButton tab(int index, String key, String tooltipKey, IDrawable icon) {
@@ -434,7 +489,32 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
             // # zh_CN 目标：%s
             return tr("gtnr.crop_breeder.target", name(target.getStringValue()));
         }, 0, 22, WIDTH));
-        addStep(page, () -> route.isEmpty() ? new NBTTagCompound() : route.get(0), 38);
+        ParentWidget<?> breeding = new ParentWidget<>().pos(0, 38)
+            .size(WIDTH, 20)
+            .setEnabledIf(widget -> !washingOperation.getBoolValue());
+        addStep(breeding, () -> route.isEmpty() ? new NBTTagCompound() : route.get(0), 0);
+        page.child(breeding);
+        ParentWidget<?> washing = new ParentWidget<>().pos(0, 38)
+            .size(WIDTH, 20)
+            .setEnabledIf(widget -> washingOperation.getBoolValue());
+        Supplier<String> washingCrop = () -> duration.getIntValue() > 0 ? active.getStringValue()
+            : target.getStringValue();
+        washing.child(cropSlot(washingCrop, 0, 0));
+        washing.child(label(() -> {
+            ItemStack seed = icons.get(washingCrop.get());
+            if (seed == null || !archive.contains(washingCrop.get())) {
+                // #tr gtnr.crop_breeder.wash_select
+                // # Select an archived crop to improve
+                // # zh_CN 请选择已入档的作物洗种
+                return tr("gtnr.crop_breeder.wash_select");
+            }
+            SeedStats stats = SeedStats.getStatsFromStack(seed);
+            // #tr gtnr.crop_breeder.wash_stats
+            // # Archived stats: %s / %s / %s
+            // # zh_CN 档案属性：%s / %s / %s
+            return tr("gtnr.crop_breeder.wash_stats", stats.getGrowth(), stats.getGain(), stats.getResistance());
+        }, 24, 5, WIDTH - 24));
+        page.child(washing);
         page.child(
             label(
                 () -> tr(
@@ -447,9 +527,12 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                     route.size()),
                 0,
                 60,
-                WIDTH));
-        page.child(new CatalystRow(() -> route.isEmpty() ? new NBTTagCompound() : route.get(0)).pos(0, 78));
-        page.child(createTerminalRow(panel, sync).pos(0, 100));
+                WIDTH).setEnabledIf(widget -> !washingOperation.getBoolValue()));
+        // #tr gtnr.crop_breeder.parallel
+        // # Parallel %s
+        // # zh_CN 并行 %s
+        page.child(label(() -> tr("gtnr.crop_breeder.parallel", parallel.getIntValue()), 0, 69, WIDTH));
+        page.child(createTerminalRow(panel, sync).pos(0, 78));
         return page;
     }
 
@@ -460,7 +543,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
 
     @Override
     protected int getTerminalRowHeight() {
-        return 38;
+        return 60;
     }
 
     @Override
@@ -470,7 +553,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
 
     @Override
     protected int getTerminalWidgetHeight() {
-        return 38;
+        return 60;
     }
 
     @Override
@@ -598,7 +681,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     }
 
     private double routeProgress(String id) {
-        if (duration.getIntValue() > 0 && id.equals(active.getStringValue()))
+        if (duration.getIntValue() > 0 && id.equals(activeBreedingCrop()))
             return Math.min(1D, progress.getIntValue() / (double) duration.getIntValue());
         return archive.contains(id) ? 1D : 0D;
     }
@@ -611,7 +694,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
             .textures(ROUTE_LINE_EMPTY, ROUTE_LINE_FULL, ROUTE_ARROW_EMPTY, ROUTE_ARROW_FULL)
             .completedTextures(ROUTE_LINE_COMPLETE, ROUTE_ARROW_COMPLETE)
             .value(() -> routeProgress(node.uid))
-            .completed(() -> archive.contains(node.uid) && !node.uid.equals(active.getStringValue()))
+            .completed(() -> archive.contains(node.uid) && !node.uid.equals(activeBreedingCrop()))
             .tooltipAutoUpdate(true)
             .tooltipBuilder(
                 tooltip -> tooltip.addLine(name(node.uid))
@@ -631,7 +714,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         page.child(new ProgressWidget().value(new DoubleValue.Dynamic(() -> {
             if (duration.getIntValue() <= 0 || !step.get()
                 .getString("result")
-                .equals(active.getStringValue())) return 0D;
+                .equals(activeBreedingCrop())) return 0D;
             return Math.min(1D, progress.getIntValue() / (double) duration.getIntValue());
         }, null))
             .texture(GTGuiTextures.PROGRESSBAR_ARROW_STANDARD, 20)
@@ -646,7 +729,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                 y,
                 () -> GTUtility.getTier(
                     step.get()
-                        .getInteger("eu"))).tooltipBuilder(t -> {
+                        .getLong("eu"))).tooltipBuilder(t -> {
                             NBTTagList requirements = step.get()
                                 .getTagList("requirements", 10);
                             for (int i = 0; i < requirements.tagCount(); i++) {
@@ -672,6 +755,10 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                 ItemStack stack = icon(id.get());
                 if (stack == null) return;
                 t.addFromItem(stack);
+                // #tr gtnr.crop_breeder.breeding_grade
+                // # Breeding grade: %s
+                // # zh_CN 繁育等级：%s 级
+                t.addLine(tr("gtnr.crop_breeder.breeding_grade", cropBreedingGrades.getOrDefault(id.get(), 1)));
                 // #tr gtnr.crop_breeder.required_voltage
                 // # Required breeding voltage: %s
                 // # zh_CN 所需繁育电压：%s
@@ -679,7 +766,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                     tr(
                         "gtnr.crop_breeder.required_voltage",
                         GTValues.VN[Math
-                            .max(VoltageIndex.LV, Math.min(GTValues.VN.length - 1, requiredTier.getAsInt()))]));
+                            .max(VoltageIndex.HV, Math.min(GTValues.VN.length - 1, requiredTier.getAsInt()))]));
                 if (!cropChances.containsKey(id.get())) return;
                 // #tr gtnr.crop_breeder.crop_chance
                 // # Breeding success chance: %s%%
@@ -688,19 +775,29 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
             });
     }
 
+    private String activeBreedingCrop() {
+        return washingOperation.getBoolValue() ? "" : active.getStringValue();
+    }
+
     private int effectiveChance(String id) {
-        if (duration.getIntValue() > 0 && id.equals(active.getStringValue())) return chance.getIntValue();
+        if (duration.getIntValue() > 0 && id.equals(activeBreedingCrop())) return chance.getIntValue();
         return cropChances.getOrDefault(id, 0);
     }
 
-    private static String requirementLabel(boolean soil) {
+    private static String requirementLabel(NBTTagCompound requirement) {
+        // #tr gtnr.crop_breeder.soil_automatic
+        // # Vanilla substrate alternative: automatically satisfied; no item needed
+        // # zh_CN 有原版基土可选：自动满足，无需放入
+        if (requirement.getBoolean("automatic")) return tr("gtnr.crop_breeder.soil_automatic");
         // #tr gtnr.crop_breeder.soil_requirement
         // # Substrate: checked in input bus, not consumed
         // # zh_CN 基土：放入输入总线，仅检测、不消耗
         // #tr gtnr.crop_breeder.catalyst_requirement
         // # Catalyst: consumed each attempt
         // # zh_CN 催化剂：每次尝试消耗
-        return tr(soil ? "gtnr.crop_breeder.soil_requirement" : "gtnr.crop_breeder.catalyst_requirement");
+        return tr(
+            requirement.getBoolean("soil") ? "gtnr.crop_breeder.soil_requirement"
+                : "gtnr.crop_breeder.catalyst_requirement");
     }
 
     private CatalystDisplay catalystDisplay(NBTTagCompound requirement) {
@@ -708,8 +805,9 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     }
 
     private boolean hasSubstrateCheckmark(NBTTagCompound requirement) {
-        return requirement.getBoolean("soil") && (archive.contains(requirement.getString("crop"))
-            || presentSubstrates.containsKey(requirement.getString("key")));
+        return requirement.getBoolean("soil")
+            && (requirement.getBoolean("automatic") || archive.contains(requirement.getString("crop"))
+                || presentSubstrates.containsKey(requirement.getString("key")));
     }
 
     private ItemStack requirementItem(NBTTagCompound requirement) {
@@ -740,7 +838,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
 
     private ItemDisplayWidget catalystIcon(NBTTagCompound requirement) {
         CatalystDisplay display = catalystDisplay(requirement);
-        return new ItemDisplayWidget()
+        return new SearchableItemDisplayWidget()
             .item(new ObjectValue.Dynamic<>(ItemStack.class, () -> requirementItem(requirement), value -> {}))
             .size(16)
             .disableThemeBackground(true)
@@ -753,7 +851,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
             .tooltipBuilder(t -> {
                 ItemStack stack = requirementItem(requirement);
                 if (stack != null) t.addFromItem(stack);
-                t.addLine(requirementLabel(requirement.getBoolean("soil")));
+                t.addLine(requirementLabel(requirement));
                 if (requirement.getBoolean("soil")) {
                     // #tr gtnr.crop_breeder.substrate_archived
                     // # Crop archived
@@ -766,7 +864,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                     // #tr gtnr.crop_breeder.substrate_missing
                     // # Substrate not detected in input bus
                     // # zh_CN 输入总线未检测到基土
-                    t.addLine(
+                    if (!requirement.getBoolean("automatic")) t.addLine(
                         tr(
                             presentSubstrates.containsKey(requirement.getString("key"))
                                 ? "gtnr.crop_breeder.substrate_detected"
@@ -775,7 +873,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                 // #tr gtnr.crop_breeder.alternatives
                 // # Any one of %s alternatives; required count: %s
                 // # zh_CN 以下 %s 种任选一种；所需数量：%s
-                t.addLine(
+                if (!requirement.getBoolean("automatic")) t.addLine(
                     tr(
                         "gtnr.crop_breeder.alternatives",
                         display.alternatives.length,
@@ -783,50 +881,28 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
             });
     }
 
-    private final class CatalystRow extends ParentWidget<CatalystRow> {
+    private static final class SearchableItemDisplayWidget extends ItemDisplayWidget {
 
-        private final Supplier<NBTTagCompound> step;
-        private NBTTagCompound previous;
-
-        private CatalystRow(Supplier<NBTTagCompound> step) {
-            this.step = step;
-            size(WIDTH, 16);
-        }
+        private final Slot neiSlot = new Slot(new InventoryBasic("", false, 1), 0, 0, 0);
 
         @Override
-        public void onUpdate() {
-            super.onUpdate();
-            NBTTagCompound current = step.get();
-            if (previous == current || previous != null && previous.hasNoTags() && current.hasNoTags()) return;
-            previous = current;
-            removeAll();
-            if (current.getString("result")
-                .isEmpty()) return;
-            NBTTagList requirements = current.getTagList("requirements", 10);
-            if (requirements.tagCount() == 0) {
-                // #tr gtnr.crop_breeder.no_catalysts
-                // # No substrate / catalysts required
-                // # zh_CN 无基土 / 催化剂要求
-                child(label(() -> tr("gtnr.crop_breeder.no_catalysts"), 0, 1, WIDTH));
-            } else {
-                // #tr gtnr.crop_breeder.requirements_short
-                // # Required:
-                // # zh_CN 基土/催化剂：
-                boolean onlySoil = true;
-                for (int i = 0; i < requirements.tagCount(); i++) onlySoil &= requirements.getCompoundTagAt(i)
-                    .getBoolean("soil");
-                // #tr gtnr.crop_breeder.soil_short
-                // # Substrate (kept):
-                // # zh_CN 基土（不消耗）：
-                String labelKey = onlySoil ? "gtnr.crop_breeder.soil_short" : "gtnr.crop_breeder.requirements_short";
-                child(label(() -> tr(labelKey), 0, 1, 80));
-                for (int i = 0; i < Math.min(6, requirements.tagCount()); i++) {
-                    NBTTagCompound requirement = requirements.getCompoundTagAt(i);
-                    child(catalystIcon(requirement).pos(84 + i * 20, 0));
-                }
-                if (requirements.tagCount() > 6) child(label(() -> "+" + (requirements.tagCount() - 6), 205, 1, 27));
+        @SideOnly(Side.CLIENT)
+        public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
+            super.draw(context, widgetTheme);
+            if (!ModularUI.Mods.NEI.isLoaded()) return;
+            GuiContainerManager manager = GuiContainerManager.getManager();
+            var screen = getScreen().getScreenWrapper()
+                .getGuiScreen();
+            if (manager == null || !(screen instanceof GuiContainer container) || manager.window != container) return;
+            neiSlot.putStack(getStackForRecipeViewer());
+            GL11.glPushMatrix();
+            try {
+                GL11.glTranslatef(1, 1, 0);
+                GL11.glScalef((getArea().width - 2) / 16F, (getArea().height - 2) / 16F, 1);
+                manager.renderSlotOverlay(neiSlot);
+            } finally {
+                GL11.glPopMatrix();
             }
-            scheduleResize();
         }
     }
 
@@ -853,7 +929,8 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     private ItemStack icon(String id) {
         return icons.computeIfAbsent(id, key -> {
             ICropCard crop = CropRegistry.instance.get(key);
-            return crop == null ? null : crop.getSeedItem(SeedStats.DEFAULT_ANALYZED);
+            return crop == null ? null
+                : crop.getSeedItem(com.xyp.gtneverreset.common.machine.multiblock.crop.ArchivedSeedStats.initial());
         });
     }
 
@@ -949,26 +1026,15 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                         node.x,
                         node.y,
                         () -> node.step == null ? cropVoltageTiers.getOrDefault(node.uid, VoltageIndex.LV)
-                            : GTUtility.getTier(node.step.getInteger("eu"))).tooltipBuilder(t -> {
+                            : GTUtility.getTier(node.step.getLong("eu"))).tooltipBuilder(t -> {
                                 NBTTagList requirements = node.requirements;
                                 for (int i = 0; i < requirements.tagCount(); i++) {
                                     t.addLine(requirementTooltipLine(requirements.getCompoundTagAt(i)));
                                 }
                             }));
-                if (node.step != null) child(
-                    new Widget<>().pos(node.x - 12, node.y + 18)
-                        .size(42, 12)
-                        .overlay((context, left, top, width, height, theme) -> {
-                            String text = effectiveChance(node.uid) + "%";
-                            float textWidth = context.getFontRenderer()
-                                .getStringWidth(text) * 0.8F;
-                            GuiDraw.drawText(text, left + (width - textWidth) / 2F, top + 2, 0.8F, 0xFF202020, false);
-                        }));
                 NBTTagList requirements = node.requirements;
                 for (int i = 0; i < requirements.tagCount(); i++) {
-                    child(
-                        catalystIcon(requirements.getCompoundTagAt(i))
-                            .pos(node.x + 1, node.y + (node.step == null ? 18 : 32) + i * 16));
+                    child(catalystIcon(requirements.getCompoundTagAt(i)).pos(node.x + 1, node.y + 18 + i * 16));
                 }
             }
             updateCanvasSize();
@@ -1248,7 +1314,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         }
 
         private int height() {
-            return 18 + (step == null ? 0 : 14) + requirements.tagCount() * 16;
+            return 18 + requirements.tagCount() * 16;
         }
 
         private int junctionY() {
