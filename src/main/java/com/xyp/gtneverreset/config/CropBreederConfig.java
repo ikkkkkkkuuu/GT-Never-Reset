@@ -20,7 +20,7 @@ public class CropBreederConfig {
     @Config.RangeInt(min = 0, max = 100)
     // #tr gtneverreset.gui.config.crop_breeder.tier_chances
     // # Default success chances by breeding grade (%%)
-    // # zh_CN 繁育等级默认成功率（%%）
+    // # zh_CN 杂交等级默认成功率（%%）
     @Config.LangKey("gtneverreset.gui.config.crop_breeder.tier_chances")
     public static int[] tierChances = { 100, 80, 60, 40, 20 };
 

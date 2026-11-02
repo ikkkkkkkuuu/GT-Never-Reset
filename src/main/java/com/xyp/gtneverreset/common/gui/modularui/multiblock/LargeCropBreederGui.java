@@ -426,10 +426,10 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
             .tooltipBuilder(t -> {
                 // #tr gtnr.crop_breeder.mode_breeding
                 // # Breeding mode. Click to switch to seed improvement.
-                // # zh_CN 繁育模式，点击切换为洗种
+                // # zh_CN 杂交模式，点击切换为洗种
                 // #tr gtnr.crop_breeder.mode_washing
                 // # Seed improvement mode. Click to switch to breeding.
-                // # zh_CN 洗种模式，点击切换为繁育
+                // # zh_CN 洗种模式，点击切换为杂交模式
                 t.addLine(
                     tr(
                         washingMode.getBoolValue() ? "gtnr.crop_breeder.mode_washing"
@@ -757,11 +757,11 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                 t.addFromItem(stack);
                 // #tr gtnr.crop_breeder.breeding_grade
                 // # Breeding grade: %s
-                // # zh_CN 繁育等级：%s 级
+                // # zh_CN 杂交等级：%s 级
                 t.addLine(tr("gtnr.crop_breeder.breeding_grade", cropBreedingGrades.getOrDefault(id.get(), 1)));
                 // #tr gtnr.crop_breeder.required_voltage
                 // # Required breeding voltage: %s
-                // # zh_CN 所需繁育电压：%s
+                // # zh_CN 所需杂交电压：%s
                 t.addLine(
                     tr(
                         "gtnr.crop_breeder.required_voltage",

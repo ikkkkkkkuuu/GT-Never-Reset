@@ -5,6 +5,7 @@ import com.xyp.gtneverreset.common.recipe.CraftingTableRecipes;
 import com.xyp.gtneverreset.common.recipe.FurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.AssemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.BenderRecipes;
+import com.xyp.gtneverreset.common.recipe.gregtech.BlastFurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.ExtruderRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernNonCellRecipes;
@@ -40,6 +41,7 @@ public final class RecipeLoader implements IContentLoader {
         CraftingTableRecipes.register();
         AssemblerRecipes.register();
         BenderRecipes.register();
+        BlastFurnaceRecipes.register();
         FurnaceRecipes.register();
         OreProcessingRecipes.register();
     }
