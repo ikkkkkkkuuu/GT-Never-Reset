@@ -22,6 +22,9 @@ public final class LateMixinsLoader implements ILateMixinLoader {
     @Override
     public List<String> getMixins(Set<String> loadedMods) {
         List<String> mixins = new ArrayList<>();
+        if (loadedMods.contains("Avaritia")) {
+            mixins.add("avaritia.InfinityChestFlightMixin");
+        }
         if (loadedMods.contains(ModList.ModIds.DRACONIC_EVOLUTION) && loadedMods.contains(ModList.ModIds.ENDER_IO)) {
             mixins.add("enderio.InsectStaffTravelMixin");
             mixins.add("enderio.InsectStaffLongTravelMixin");

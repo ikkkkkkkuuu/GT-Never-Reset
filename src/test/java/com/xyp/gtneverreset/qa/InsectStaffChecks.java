@@ -53,7 +53,7 @@ import crazypants.enderio.teleport.packet.PacketTravelEvent;
 public final class InsectStaffChecks {
 
     private final List<String> report = new ArrayList<>();
-    private volatile int phase;
+    private volatile int phase = -3;
     private volatile boolean finished;
     private boolean launched;
     private int clientTicks;
@@ -62,6 +62,19 @@ public final class InsectStaffChecks {
     private int screenStage;
     private ItemStack staffStack;
     private boolean protect;
+    private int armorTicks;
+    private float flightBeforeMovement;
+
+    @SubscribeEvent(priority = cpw.mods.fml.common.eventhandler.EventPriority.LOWEST)
+    public void observeArmorMovement(TickEvent.PlayerTickEvent event) {
+        if (phase == -2 && event.phase == TickEvent.Phase.START
+            && event.player.worldObj.isRemote
+            && event.player == Minecraft.getMinecraft().thePlayer
+            && event.player.inventory.armorInventory[2] != null) {
+            armorTicks++;
+            flightBeforeMovement = event.player.capabilities.getFlySpeed();
+        }
+    }
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
@@ -83,7 +96,30 @@ public final class InsectStaffChecks {
         if (server == null || server.getConfigurationManager().playerEntityList.isEmpty()) return;
         EntityPlayerMP player = (EntityPlayerMP) server.getConfigurationManager().playerEntityList.get(0);
         try {
-            if (phase < 3) player.setSneaking(true);
+            if (phase == -3) {
+                player.setGameType(WorldSettings.GameType.SURVIVAL);
+                ItemStack legs = new ItemStack(ModItems.draconicLeggs);
+                ItemStack chest = new ItemStack(ModItems.draconicChest);
+                ProfileHelper.setFloat(legs, "ArmorSpeedMult", 8F);
+                ProfileHelper.setBoolean(legs, "ArmorSprintOnly", true);
+                ProfileHelper.setFloat(chest, "ArmorFlightSpeedMult", 6F);
+                ProfileHelper.setBoolean(chest, "ArmorInertiaCancellation", true);
+                ProfileHelper.setFloat(chest, "VerticalAcceleration", 3F);
+                player.inventory.armorInventory[1] = legs;
+                player.inventory.armorInventory[2] = chest;
+                phase = -2;
+                return;
+            }
+            if (phase == -2) {
+                player.inventory.setInventorySlotContents(player.inventory.currentItem, null);
+                return;
+            }
+            if (phase == -1) {
+                player.inventory.armorInventory[1] = null;
+                player.inventory.armorInventory[2] = null;
+                phase = 0;
+            }
+            if (phase >= 0 && phase < 3) player.setSneaking(true);
             if (phase == 0) {
                 staffStack = GTNRItemList.InsectStaff.get(1);
                 InsectStaff staff = (InsectStaff) staffStack.getItem();
@@ -291,7 +327,32 @@ public final class InsectStaffChecks {
             }
             if (mc.thePlayer == null || mc.theWorld == null) return;
             if (++clientTicks > 2400) throw new AssertionError("timeout phase=" + phase);
-            if (phase < 3) mc.thePlayer.setSneaking(true);
+            if (phase == -2 && armorTicks >= 40) {
+                require(mc.thePlayer.getHeldItem() == null, "empty hand before any staff was created");
+                var movement = mc.thePlayer
+                    .getEntityAttribute(net.minecraft.entity.SharedMonsterAttributes.movementSpeed);
+                double ratio = movement.getAttributeValue() / movement.getBaseValue();
+                float flight = mc.thePlayer.capabilities.getFlySpeed();
+                require(Math.abs(ratio - 2.6D) < 0.001D, "empty hand with DE sprint-only +800% leggings: " + ratio);
+                require(
+                    mc.thePlayer.capabilities.allowFlying && Math.abs(flightBeforeMovement - 0.35F) < 0.0001F
+                        && Math.abs(flight - 0.35F) < 0.0001F,
+                    "empty hand with DE +600% chest flight speed before movement and at frame end: "
+                        + flightBeforeMovement
+                        + ", "
+                        + flight);
+                mc.thePlayer.setSprinting(true);
+                FMLCommonHandler.instance()
+                    .bus()
+                    .post(new TickEvent.PlayerTickEvent(TickEvent.Phase.START, mc.thePlayer));
+                double sprintRatio = movement.getAttributeValue() / movement.getBaseValue();
+                require(
+                    Math.abs(sprintRatio - 9D * 1.3D) < 0.001D,
+                    "empty hand with DE +800% while sprinting: " + sprintRatio);
+                mc.thePlayer.setSprinting(false);
+                phase = -1;
+            }
+            if (phase >= 0 && phase < 3) mc.thePlayer.setSneaking(true);
             if (phase == 3 && mc.thePlayer.getHeldItem() != null
                 && mc.thePlayer.getHeldItem()
                     .getItem() instanceof InsectStaff

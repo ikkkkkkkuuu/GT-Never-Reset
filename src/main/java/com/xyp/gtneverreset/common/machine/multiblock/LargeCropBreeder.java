@@ -216,7 +216,7 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
         if (!validConsumption(consume, catalysts)) {
             // #tr GT5U.gui.text.recipe_result.gtnr_crop_requirements
             // # Missing breeding catalysts / substrate, or machine breeding conditions not met.
-            // # zh_CN 缺少杂交催化剂或基土，或不满足机器杂交条件。
+            // # zh_CN 缺少杂交催化剂或底土，或不满足机器杂交条件。
             return SimpleCheckRecipeResult.ofFailure("gtnr_crop_requirements");
         }
         FluidStack fertilizer = new FluidStack(CropsNHFluids.enrichedFertilizer, FERTILIZER_PER_PARALLEL);

@@ -787,11 +787,11 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     private static String requirementLabel(NBTTagCompound requirement) {
         // #tr gtnr.crop_breeder.soil_automatic
         // # Vanilla substrate alternative: automatically satisfied; no item needed
-        // # zh_CN 有原版基土可选：自动满足，无需放入
+        // # zh_CN 有原版底土可选：自动满足，无需放入
         if (requirement.getBoolean("automatic")) return tr("gtnr.crop_breeder.soil_automatic");
         // #tr gtnr.crop_breeder.soil_requirement
         // # Substrate: checked in input bus, not consumed
-        // # zh_CN 基土：放入输入总线，仅检测、不消耗
+        // # zh_CN 底土：放入输入总线，仅检测、不消耗
         // #tr gtnr.crop_breeder.catalyst_requirement
         // # Catalyst: consumed each attempt
         // # zh_CN 催化剂：每次尝试消耗
@@ -825,7 +825,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         if (soil) {
             // #tr gtnr.crop_breeder.required_soil
             // # Required substrate: %s
-            // # zh_CN 所需基土：%s
+            // # zh_CN 所需底土：%s
             return tr("gtnr.crop_breeder.required_soil", name)
                 + (hasSubstrateCheckmark(requirement) ? " " + EnumChatFormatting.GREEN + "✔" + EnumChatFormatting.RESET
                     : "");
@@ -860,10 +860,10 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                         t.addLine(EnumChatFormatting.GREEN + tr("gtnr.crop_breeder.substrate_archived"));
                     // #tr gtnr.crop_breeder.substrate_detected
                     // # Substrate detected in input bus
-                    // # zh_CN 输入总线已检测到基土
+                    // # zh_CN 输入总线已检测到底土
                     // #tr gtnr.crop_breeder.substrate_missing
                     // # Substrate not detected in input bus
-                    // # zh_CN 输入总线未检测到基土
+                    // # zh_CN 输入总线未检测到底土
                     if (!requirement.getBoolean("automatic")) t.addLine(
                         tr(
                             presentSubstrates.containsKey(requirement.getString("key"))
