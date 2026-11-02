@@ -6,14 +6,14 @@
 
 | GTNH 版本 | 模组版本 | 现状 | 下载 |
 | --- | --- | --- | --- |
-| `2.9.0`（当前开发基准） | `0.1.15` | 已发布 | [下载](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.15) |
+| `2.9.0`（当前开发基准） | `0.1.16` | 已发布 | [下载](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.16) |
 | `2.9.0-RC-2` | `0.1.10` | 已发布 | [![Download Releases](https://img.shields.io/badge/Download-Releases-blue)](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.10) |
 
-可在 [0.1.15 发行页](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.15) 下载正式模组文件 `gtneverreset-0.1.15.jar`。构建状态与日志可在 [Actions](https://github.com/ikkkkkkkuuu/GT-Never-Reset/actions) 查看。
+可在 [0.1.16 发行页](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.16) 下载正式模组文件 `gtneverreset-0.1.16.jar`。构建状态与日志可在 [Actions](https://github.com/ikkkkkkkuuu/GT-Never-Reset/actions) 查看。
 
 开发环境使用 Minecraft `1.7.10`、Forge `10.13.4.1614`，主模组与 GTNRLib 共用 GTNH [`2.9.0` 正式版依赖清单](https://github.com/GTNewHorizons/DreamAssemblerXXL/blob/master/releases/manifests/2.9.0.json)，由 `gradle.properties` 中的 `elytra.manifest.version` 统一选择；其他 GTNH 版本的兼容性尚待验证。
 
-从 0.1.8 起，已将文字特效、共享 GUI 与轮盘基础、世界监听及通用工具拆为独立的 [GTNRLib](gtnrlib/README.md)。安装本版本时，需要同时安装同次构建的 `gtneverreset-*.jar` 与 `gtnrlib-0.1.13.jar`。`build/libs` 会收集两个模组的产物，`-dev`、`-sources` 和 `-predowngrade` 文件不用于正式安装。
+从 0.1.8 起，已将文字特效、共享 GUI 与轮盘基础、世界监听及通用工具拆为独立的 [GTNRLib](gtnrlib/README.md)。安装本版本时，需要同时安装同次构建的 `gtneverreset-*.jar` 与 `gtnrlib-0.1.14.jar`。`build/libs` 会收集两个模组的产物，`-dev`、`-sources` 和 `-predowngrade` 文件不用于正式安装。
 
 ## 🧩 功能介绍
 
@@ -64,11 +64,11 @@
 - **调度与控制**：支持顺序、轮询和随机调度；安装红石卡后可设置有信号或无信号时运行。
 - **连接规则**：传输遵循机器连接面的物品与流体访问限制。
 
-将总线安装在朝向目标机器的 ME 线缆面上，接通网络后右键打开界面。放入物品或流体样本进行标记，再中键点击样本设置目标数量；左侧按钮可切换调度方式与超量回收。
+将总线安装在朝向目标机器的 ME 线缆面上，接通网络后右键打开界面。放入物品或流体样本进行标记，再中键点击样本设置目标数量；右侧「工作模式」可切换调度方式、超量回收和仅输入模式。
 
 ![ME 高级 IO 总线主界面](docs/images/advanced-io-bus.png)
 
-主界面：配置物品与流体样本，右侧安装升级卡，左侧调整工作方式。
+主界面默认使用 AE2 浅色主题。右侧上方安装升级卡，下方调整工作模式；可在客户端「界面主题」中为总线选择 AE2 深色或 ModularUI 默认主题。
 
 ![ME 高级 IO 总线目标库存设置](docs/images/advanced-io-bus-amount.png)
 

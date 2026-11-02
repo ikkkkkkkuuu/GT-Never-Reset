@@ -89,7 +89,7 @@ public final class WirelessPowerCardGui {
         private final PlayerInventoryGuiData data;
         private final WirelessPowerCardContainer container;
         private int page, ticks, visibleRows = MIN_ROWS;
-        private boolean sources, mergeTypes;
+        private boolean sources;
         private Integer dimension;
         private PowerState state = PowerState.ALL;
         private final Set<Integer> expandedTypes = new HashSet<>();
@@ -206,6 +206,7 @@ public final class WirelessPowerCardGui {
             });
             next.setTag("dimensions", options);
             if (dimension != null) next.setInteger("dimension", dimension);
+            boolean mergeTypes = WirelessPowerCard.mergeTypes(container.card());
             next.setBoolean("mergeTypes", mergeTypes);
             next.setInteger("state", state.ordinal());
             next.setInteger("deviceCount", devices.size());
@@ -408,12 +409,12 @@ public final class WirelessPowerCardGui {
                         page = 0;
                     }
                     case MERGE_TYPES -> {
-                        mergeTypes = !mergeTypes;
+                        WirelessPowerCard.toggleGrouping(card, data.getPlayer());
                         expandedTypes.clear();
                         page = 0;
                     }
                     case EXPAND_TYPE -> {
-                        if (!mergeTypes) return;
+                        if (!WirelessPowerCard.mergeTypes(card)) return;
                         var rows = display.getTagList("rows", 10);
                         for (int i = 0; i < rows.tagCount(); i++) {
                             var row = rows.getCompoundTagAt(i);

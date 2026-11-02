@@ -41,6 +41,8 @@ import gregtech.common.misc.spaceprojects.SpaceProjectManager;
 
 public final class WirelessPowerCard extends Item implements IBaubleExpanded, IGuiHolder<PlayerInventoryGuiData> {
 
+    private static final String MERGE_TYPES_KEY = "powerMergeTypes";
+
     public WirelessPowerCard() {
         // #tr item.gtneverreset.wireless_power_card.name
         // # Wireless Power Card
@@ -153,6 +155,16 @@ public final class WirelessPowerCard extends Item implements IBaubleExpanded, IG
     public static void toggleAutomatic(ItemStack card, EntityPlayer player) {
         ItemStackNBT.get(card)
             .setBoolean("disableAutoPower", automatic(card));
+        WirelessCardInventory.sync(player, card);
+    }
+
+    public static boolean mergeTypes(ItemStack card) {
+        NBTTagCompound tag = card.getTagCompound();
+        return tag != null && tag.getBoolean(MERGE_TYPES_KEY);
+    }
+
+    public static void toggleGrouping(ItemStack card, EntityPlayer player) {
+        ItemStackNBT.invertBoolean(card, MERGE_TYPES_KEY);
         WirelessCardInventory.sync(player, card);
     }
 

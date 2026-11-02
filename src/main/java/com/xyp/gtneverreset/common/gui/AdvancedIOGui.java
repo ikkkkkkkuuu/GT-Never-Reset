@@ -24,6 +24,7 @@ import org.lwjgl.opengl.GL11;
 import com.cleanroommc.modularui.api.IGuiHolder;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.factory.AbstractUIFactory;
 import com.cleanroommc.modularui.factory.GuiManager;
@@ -39,7 +40,6 @@ import com.cleanroommc.modularui.value.sync.IntSyncValue;
 import com.cleanroommc.modularui.value.sync.InteractionSyncHandler;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.value.sync.PhantomItemSlotSH;
-import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widget.sizer.Unit;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.slot.ItemSlot;
@@ -50,6 +50,8 @@ import com.glodblock.github.common.item.ItemFluidPacket;
 import com.glodblock.github.util.Util;
 import com.xyp.gtneverreset.common.part.PartAdvancedIOBus;
 import com.xyp.gtneverreset.compat.ae2fc.FluidDropCompat;
+import com.xyp.gtneverreset.config.ScreenThemeConfig;
+import com.xyp.gtnrlib.gui.theme.ButtonPurpose;
 import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.config.RedstoneMode;
@@ -68,14 +70,18 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.util.GTUtility;
 
-/**
- * AdvancedAE's stock-bus screen and AE2AddonLib's amount screen on the 1.7.10 sync backend.
- * Atlas crops, slot origins, external upgrade panel and toolbar positions retain the pinned upstream layout.
- * Amount changes are buffered until confirmation; opening either screen preserves server permission checks.
- */
+/** Mixed item and fluid stock filters and their server-backed amount editor. */
 public final class AdvancedIOGui {
 
     public static final Factory FACTORY = new Factory();
+
+    private static final UITexture REDSTONE_HIGH = icon("states", 1, 0), REDSTONE_LOW = icon("states", 0, 0),
+        REDSTONE_IGNORE = icon("states", 3, 0), BACK = icon("states", 6, 1);
+    private static final UITexture[] SCHEDULING = { icon("states", 0, 15), icon("states", 1, 15),
+        icon("states", 2, 15) };
+    private static final UITexture REGULATE_ON = icon("advanced_states", 2, 2),
+        REGULATE_OFF = icon("advanced_states", 3, 2), EXPORT_ON = icon("advanced_states", 3, 1),
+        EXPORT_OFF = icon("advanced_states", 5, 0);
 
     static ModularPanel build(PartAdvancedIOBus part, PanelSyncManager sync) {
         var enabled = new IntSyncValue(part::availableSlots);
@@ -95,13 +101,9 @@ public final class AdvancedIOGui {
         sync.syncValue("redstone", redstone);
         sync.syncValue("scheduling", scheduling);
         var samples = new SampleItemHandler(part);
-        var panel = ModularPanel.defaultPanel("advanced_io", 176, 253)
-            .background(texture("storagebus", 256, 256, 0, 0, 176, 253))
-            .disableHoverBackground();
-        hasRedstone.setChangeListener(panel::scheduleResize);
+        var panel = ModularPanel.defaultPanel("advanced_io", 224, 244);
         panel.child(
             IKey.lang("item.advanced_io_bus.name")
-                .color(0xff404040)
                 .asWidget()
                 .pos(8, 6));
         // #tr gui.advancedio.amount_hint
@@ -109,10 +111,9 @@ public final class AdvancedIOGui {
         // # zh_CN 中键样本，设置目标库存。
         panel.child(
             IKey.lang("gui.advancedio.amount_hint")
-                .color(0xff404040)
-                .scale(0.6f)
+                .scale(0.8f)
                 .asWidget()
-                .pos(10, 17));
+                .pos(7, 17));
         for (int i = 0; i < PartAdvancedIOBus.CONFIG_SLOTS; i++) {
             final int index = i;
             var amount = new IntSyncValue(
@@ -126,20 +127,18 @@ public final class AdvancedIOGui {
             sync.syncValue("fluid_" + i, fluid);
             var handler = new SampleSyncHandler(new ModularSlot(samples, i).singletonSlotGroup(), part, index);
             sync.syncValue("sample", i, handler);
+            int xSlot = 7 + i % 9 * 18;
+            int ySlot = 27 + i / 9 * 18;
             if (i >= 18) {
-                IDrawable slotBackground = (context, x, y, w, h, theme) -> {
-                    GL11.glColor4f(1, 1, 1, index < enabled.getIntValue() ? 1 : 0.2f);
-                    texture("states", 256, 256, 192, 192, 18, 18).draw((float) x, y, w, h);
-                    GL11.glColor4f(1, 1, 1, 1);
-                };
                 panel.child(
-                    slotBackground.asWidget()
-                        .pos(7 + i % 9 * 18, 28 + i / 9 * 18)
-                        .size(18));
+                    new Rectangle().color(0x30000000)
+                        .asWidget()
+                        .pos(xSlot + 1, ySlot + 1)
+                        .size(16)
+                        .setEnabledIf(widget -> index >= enabled.getIntValue()));
             }
             panel.child(
                 new PhantomItemSlot().syncHandler(handler)
-                    .background(IDrawable.EMPTY)
                     .overlay((context, x, y, w, h, theme) -> {
                         if (amount.getIntValue() <= 0) return;
                         String text = shortAmount(amount.getIntValue());
@@ -157,26 +156,30 @@ public final class AdvancedIOGui {
                         t -> t.addLine(IKey.dynamic(() -> amount.getIntValue() + (fluid.getBoolValue() ? " L" : "")))
                             .addLine(IKey.lang("gui.advancedio.amount_hint")))
                     .setEnabledIf(widget -> index < enabled.getIntValue())
-                    .pos(7 + i % 9 * 18, 28 + i / 9 * 18));
+                    .pos(xSlot, ySlot));
         }
-        // UpgradesPanel's atlas has a horizontal offset: slot x is panel x, y has five pixels of padding.
+        // #tr gui.advancedio.upgrades
+        // # Upgrades
+        // # zh_CN 升级卡
+        panel.child(
+            IKey.lang("gui.advancedio.upgrades")
+                .asWidget()
+                .pos(176, 16));
         var upgrades = new InvWrapper(part.getInventoryByName("upgrades"));
-        for (int i = 0; i < 8; i++) {
-            int srcY = i == 0 ? 0 : 5;
-            int height = i == 0 ? 23 : i == 7 ? 25 : 18;
-            panel.child(
-                texture("extra_panels", 128, 128, 0, srcY, 28, height).asWidget()
-                    .pos(172, i == 0 ? 0 : 5 + i * 18)
-                    .size(28, height)
-                    .excludeAreaInRecipeViewer());
+        for (int i = 0; i < upgrades.getSlots(); i++) {
             panel.child(
                 new ItemSlot().slot(new ModularSlot(upgrades, i).singletonSlotGroup())
-                    .background(IDrawable.EMPTY)
-                    .pos(172, 5 + i * 18));
+                    .pos(176 + i % 2 * 18, 27 + i / 2 * 18));
         }
+        // #tr gui.advancedio.controls
+        // # Modes
+        // # zh_CN 工作模式
+        panel.child(
+            IKey.lang("gui.advancedio.controls")
+                .asWidget()
+                .pos(176, 106));
         panel.child(
             IKey.lang("container.inventory")
-                .color(0xff404040)
                 .asWidget()
                 .pos(8, 158));
         for (int i = 0; i < 36; i++) {
@@ -184,29 +187,14 @@ public final class AdvancedIOGui {
             int row = i < 9 ? 3 : (i - 9) / 9;
             panel.child(
                 new ItemSlot().syncHandler("player", i)
-                    .background(IDrawable.EMPTY)
-                    .pos(7 + column * 18, 168 + row * 18 + (i < 9 ? 4 : 0)));
+                    .pos(7 + column * 18, 167 + row * 18 + (i < 9 ? 2 : 0)));
         }
-        IDrawable toolbar = (context, x, y, w, h, theme) -> sprite("vertical_buttons_bg", 21, 26, 0, 2, 0, 4)
-            .draw(context, x, y, 21, hasRedstone.getBoolValue() ? 94 : 72, theme);
-        panel.child(
-            new Widget<>().background(toolbar)
-                .pos(-19, 0)
-                .size(21, 95)
-                .excludeAreaInRecipeViewer());
         panel.child(
             toolbarButton(
                 sync,
                 "redstoneButton",
-                () -> texture(
-                    "states",
-                    256,
-                    256,
-                    redstone.getIntValue() == RedstoneMode.HIGH_SIGNAL.ordinal() ? 16
-                        : redstone.getIntValue() == RedstoneMode.LOW_SIGNAL.ordinal() ? 0 : 48,
-                    0,
-                    16,
-                    16),
+                () -> redstone.getIntValue() == RedstoneMode.HIGH_SIGNAL.ordinal() ? REDSTONE_HIGH
+                    : redstone.getIntValue() == RedstoneMode.LOW_SIGNAL.ordinal() ? REDSTONE_LOW : REDSTONE_IGNORE,
                 () -> redstoneLabel(redstone.getIntValue()),
                 mouse -> {
                     if (part.getInstalledUpgrades(Upgrades.REDSTONE) == 0) return;
@@ -216,13 +204,13 @@ public final class AdvancedIOGui {
                     part.getConfigManager()
                         .putSetting(Settings.REDSTONE_CONTROLLED, modes[(old + (mouse.mouseButton == 1 ? 2 : 1)) % 3]);
                     part.changed();
-                }).pos(-16, 3)
+                }).pos(196, 139)
                     .setEnabledIf(w -> hasRedstone.getBoolValue()));
         panel.child(
             toolbarButton(
                 sync,
                 "schedulingButton",
-                () -> texture("states", 256, 256, scheduling.getIntValue() * 16, 240, 16, 16),
+                () -> SCHEDULING[scheduling.getIntValue()],
                 () -> schedulingLabel(scheduling.getIntValue()),
                 mouse -> {
                     int old = ((SchedulingMode) part.getConfigManager()
@@ -232,8 +220,7 @@ public final class AdvancedIOGui {
                             Settings.SCHEDULING_MODE,
                             SchedulingMode.values()[(old + (mouse.mouseButton == 1 ? 2 : 1)) % 3]);
                     part.changed();
-                }).left(-16)
-                    .top(() -> hasRedstone.getBoolValue() ? 25 : 3, Unit.Measure.PIXEL));
+                }).pos(176, 117));
         // #tr gui.advancedio.regulate
         // # Return stock above the target to ME
         // # zh_CN 将超出目标的库存送回 ME
@@ -241,12 +228,11 @@ public final class AdvancedIOGui {
             toolbarButton(
                 sync,
                 "regulateButton",
-                () -> texture("advanced_states", 256, 256, regulate.getBoolValue() ? 32 : 48, 32, 16, 16),
+                () -> regulate.getBoolValue() ? REGULATE_ON : REGULATE_OFF,
                 () -> IKey.lang("gui.advancedio.regulate")
                     .get() + ": "
                     + yesNo(regulate.getBoolValue()),
-                mouse -> part.setRegulate(!part.regulate())).left(-16)
-                    .top(() -> hasRedstone.getBoolValue() ? 47 : 25, Unit.Measure.PIXEL));
+                mouse -> part.setRegulate(!part.regulate())).pos(196, 117));
         // #tr gui.advancedio.export_only
         // # Only supply the machine (no product or excess stock recovery)
         // # zh_CN 仅向机器输入（不回收产物或超额库存）
@@ -254,19 +240,11 @@ public final class AdvancedIOGui {
             toolbarButton(
                 sync,
                 "exportOnlyButton",
-                () -> texture(
-                    "advanced_states",
-                    256,
-                    256,
-                    exportOnly.getBoolValue() ? 48 : 80,
-                    exportOnly.getBoolValue() ? 16 : 0,
-                    16,
-                    16),
+                () -> exportOnly.getBoolValue() ? EXPORT_ON : EXPORT_OFF,
                 () -> IKey.lang("gui.advancedio.export_only")
                     .get() + ": "
                     + yesNo(exportOnly.getBoolValue()),
-                mouse -> part.setExportOnly(!part.exportOnly())).left(-16)
-                    .top(() -> hasRedstone.getBoolValue() ? 69 : 47, Unit.Measure.PIXEL));
+                mouse -> part.setExportOnly(!part.exportOnly())).pos(176, 139));
         return panel;
     }
 
@@ -296,16 +274,13 @@ public final class AdvancedIOGui {
             }
         }.allowC2S();
         sync.syncValue("displayQuantity", displayQuantity);
-        var panel = ModularPanel.defaultPanel("advanced_io_amount", 176, 107)
-            .background(texture("craft_amt", 256, 256, 0, 0, 176, 107))
-            .disableHoverBackground();
+        var panel = ModularPanel.defaultPanel("advanced_io_amount", 176, 107);
         fluidAmount.setChangeListener(panel::scheduleResize);
         // #tr gui.advancedio.set_amount
         // # Set Amount
         // # zh_CN 设置数量
         panel.child(
             IKey.lang("gui.advancedio.set_amount")
-                .color(0xff404040)
                 .asWidget()
                 .pos(8, 6));
         var samples = new SampleItemHandler(part);
@@ -314,7 +289,6 @@ public final class AdvancedIOGui {
                 new ModularSlot(samples, index).singletonSlotGroup()
                     .canPut(false)
                     .canTake(false))
-                .background(IDrawable.EMPTY)
                 .pos(22, 52));
         var confirm = new InteractionSyncHandler().setOnMousePressed(mouse -> {
             if (mouse.isClient()) return;
@@ -348,14 +322,11 @@ public final class AdvancedIOGui {
             .numbersDouble(() -> 0, () -> Integer.MAX_VALUE - 1.0)
             .autoUpdateOnChange(true)
             .setFocusOnGuiOpen(true)
-            .background(IDrawable.EMPTY)
-            .setTextColor(0xff404040)
-            .pos(48, 55)
-            .height(12)
-            .width(() -> fluidAmount.getBoolValue() ? 57 : 66, Unit.Measure.PIXEL));
+            .pos(43, 53)
+            .height(16)
+            .width(() -> fluidAmount.getBoolValue() ? 62 : 73, Unit.Measure.PIXEL));
         panel.child(
             IKey.dynamic(() -> fluidAmount.getBoolValue() ? "L" : "")
-                .color(0xff404040)
                 .asWidget()
                 .pos(108, 57));
         int[] xs = { 20, 48, 82, 120 };
@@ -395,37 +366,27 @@ public final class AdvancedIOGui {
         var back = new InteractionSyncHandler()
             .setOnMousePressed(mouse -> { if (!mouse.isClient()) AdvancedIOGui.FACTORY.open(sync.getPlayer(), part); });
         sync.syncValue("back", back);
-        IDrawable backTexture = (context, x, y, w, h, theme) -> {
-            texture("states", 256, 256, 160, 192, 20, 20).draw(context, x, y, 20, 20, theme);
-            texture("states", 256, 256, 96, 16, 16, 16).draw(context, x + 2, y + 1, 16, 16, theme);
-        };
         panel.child(
-            new ButtonWidget<>().background(backTexture)
-                .hoverBackground(backTexture)
+            ButtonPurpose.ICON.apply(new ButtonWidget<>())
+                .overlay(
+                    BACK.asIcon()
+                        .size(16))
                 .syncHandler(back)
                 // #tr gui.advancedio.back
                 // # Back
                 // # zh_CN 返回
                 .tooltip(t -> t.addLine(IKey.lang("gui.advancedio.back")))
-                .pos(152, -5)
+                .pos(150, 5)
                 .size(20));
         return panel;
     }
 
-    private static UITexture texture(String name, int w, int h, int x, int y, int width, int height) {
+    private static UITexture icon(String name, int column, int row) {
         return UITexture.builder()
             .location(ModList.ModIds.GT_NEVER_RESET, "gui/advancedio/" + name)
-            .imageSize(w, h)
-            .subAreaXYWH(x, y, width, height)
+            .imageSize(256, 256)
+            .subAreaXYWH(column * 16, row * 16, 16, 16)
             .nonOpaque()
-            .build();
-    }
-
-    private static UITexture sprite(String name, int width, int height, int left, int top, int right, int bottom) {
-        return UITexture.builder()
-            .location(ModList.ModIds.GT_NEVER_RESET, "gui/advancedio/" + name)
-            .imageSize(width, height)
-            .adaptable(left, top, right, bottom)
             .build();
     }
 
@@ -435,16 +396,7 @@ public final class AdvancedIOGui {
     }
 
     private static ButtonWidget<?> textButton(Supplier<String> label) {
-        return new ButtonWidget<>().background(sprite("button", 200, 20, 3, 3, 3, 3))
-            .hoverBackground(sprite("button_highlighted", 200, 20, 3, 3, 3, 3))
-            .overlay(
-                IKey.dynamic(label)
-                    .color(0xfff2f2f2)
-                    .shadow(false))
-            .hoverOverlay(
-                IKey.dynamic(label)
-                    .color(0xff517497)
-                    .shadow(false));
+        return new ButtonWidget<>().overlay(IKey.dynamic(label));
     }
 
     /** Slot labels abbreviate item counts or GTNH liters with compact magnitudes. */
@@ -471,18 +423,10 @@ public final class AdvancedIOGui {
                 if (!mouse.isClient() && (mouse.mouseButton == 0 || mouse.mouseButton == 1)) action.accept(mouse);
             });
         sync.syncValue(name, handler);
-        IDrawable normal = (context, x, y, w, h, theme) -> {
-            texture("states", 256, 256, 176, 128, 18, 20).draw(context, x, y, 18, 20, theme);
-            icon.get()
-                .draw(context, x + 1, y + 1, 16, 16, theme);
-        };
-        IDrawable hover = (context, x, y, w, h, theme) -> {
-            texture("states", 256, 256, 212, 128, 18, 20).draw(context, x, y + 1, 18, 20, theme);
-            icon.get()
-                .draw(context, x + 1, y + 2, 16, 16, theme);
-        };
-        return new ButtonWidget<>().background(normal)
-            .hoverBackground(hover)
+        return ButtonPurpose.ICON.apply(new ButtonWidget<>())
+            .overlay(
+                (context, x, y, w, h, theme) -> icon.get()
+                    .draw(context, x + 1, y + 2, 16, 16, theme))
             .syncHandler(handler)
             .tooltip(t -> t.addLine(IKey.dynamic(tooltip)))
             .size(18, 20)
@@ -683,8 +627,11 @@ public final class AdvancedIOGui {
         @Override
         public @Nonnull IGuiHolder<Data> getGuiHolder(Data data) {
             if (data.part == null) throw new IllegalStateException("Advanced IO bus no longer exists");
-            return (guiData, sync, settings) -> data.amountSlot < 0 ? AdvancedIOGui.build(data.part, sync)
-                : AdvancedIOGui.amountPanel(data.part, sync, data.amountSlot);
+            return (guiData, sync, settings) -> {
+                if (guiData.isClient()) settings.useTheme(ScreenThemeConfig.advancedIOBus.themeId);
+                return data.amountSlot < 0 ? AdvancedIOGui.build(data.part, sync)
+                    : AdvancedIOGui.amountPanel(data.part, sync, data.amountSlot);
+            };
         }
 
         @Override
