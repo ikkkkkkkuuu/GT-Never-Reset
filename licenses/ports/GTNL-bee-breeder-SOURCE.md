@@ -6,3 +6,6 @@ License: GTNL-LICENSE.txt.
 
 Structure orientation and controller offsets updated from GTNL commit a82b454.
 https://github.com/GTNotLeisure/GT-Not-Leisure/commit/a82b454
+
+Updated MBS1 layout, controller offsets and casing materials from GTNL PR #668 at b6d67377cd2b56ae44766016e13781e65f72e907.
+https://github.com/GTNotLeisure/GT-Not-Leisure/pull/668

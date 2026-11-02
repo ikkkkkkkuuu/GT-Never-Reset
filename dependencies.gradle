@@ -70,7 +70,6 @@ dependencies {
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("ForestryMC") as String)
     // Structure materials used by the bee breeder in development clients and servers.
     runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Chisel") as String) { transitive = false }
-    runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("VillageNames") as String) { transitive = false }
     runtimeOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:${elytraModpackVersion.getModVersions()['Et-Futurum-Requiem']}") { transitive = false }
     runtimeOnlyNonPublishable(rfg.deobf("curse.maven:extra-utilities-225561:2264383")) { transitive = false }
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("BetterQuesting") as String) { transitive = false }

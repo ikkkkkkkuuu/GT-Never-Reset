@@ -106,9 +106,9 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     private static final byte OPERATION_OUTPUT = 2;
 
     private static final String STRUCTURE_PIECE_MAIN = "main";
-    private static final int HORIZONTAL_OFFSET = 5;
-    private static final int VERTICAL_OFFSET = 3;
-    private static final int DEPTH_OFFSET = 9;
+    private static final int HORIZONTAL_OFFSET = 9;
+    private static final int VERTICAL_OFFSET = 9;
+    private static final int DEPTH_OFFSET = 3;
 
     private static final String[][] SHAPE = MultiblockStructureLoader.load("large_bee_breeder");
 
@@ -122,8 +122,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     }
 
     public static ModsItemlist getCasingMaterial() {
-        return ModsItemlist.VillageNamesYellowConcrete.getBlock() != null ? ModsItemlist.VillageNamesYellowConcrete
-            : ModsItemlist.EtFuturumRequiemYellowConcrete;
+        return ModsItemlist.EtFuturumRequiemYellowConcrete;
     }
 
     @Getter
@@ -214,10 +213,8 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
                 .addElement('E', ofStructureBlock(ModsItemlist.ChiselOrangeWoolenClay))
                 .addElement('F', ofStructureBlock(ModsItemlist.ChiselBrownWoolenClay))
                 .addElement('G', ofStructureBlock(ModsItemlist.EtFuturumRequiemOrangeConcrete))
-                .addElement('H', ofStructureBlock(ModsItemlist.EtFuturumRequiemBrownConcrete))
-                .addElement('I', ofStructureBlock(ModsItemlist.ExtraUtilitiesLightBlueLapisCaelestis))
                 .addElement(
-                    'J',
+                    'H',
                     ofChain(
                         StructureTooltipHooks.describeAsHatch(
                             ofHatchAdder(LargeBeeBreeder::addParameterModuleToMachineList, CASING_TEXTURE_ID, 1),
@@ -228,6 +225,8 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
                             .hint(1)
                             .buildAndChain(),
                         onElementPass(x -> ++x.mCountCasing, ofStructureBlock(getCasingMaterial()))))
+                .addElement('I', ofStructureBlock(ModsItemlist.EtFuturumRequiemBrownConcrete))
+                .addElement('J', ofStructureBlock(ModsItemlist.ExtraUtilitiesLightBlueLapisCaelestis))
                 .build();
         }
         return structureDefinition;
