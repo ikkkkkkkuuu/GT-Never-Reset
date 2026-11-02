@@ -1,0 +1,36 @@
+AE2 dark GUI theme textures from Modernity-GTNH-Dark-UI
+
+Local assets:
+  assets/gtnrlib/textures/gui/skin/ae2_dark/slot_item.png
+  assets/gtnrlib/textures/gui/skin/ae2_dark/slot_fluid.png
+  assets/gtnrlib/textures/gui/skin/ae2_dark/icons.png
+  assets/gtnrlib/textures/gui/skin/ae2_dark/legacy_states.png
+  assets/gtnrlib/textures/gui/skin/ae2_dark/legacy_terminal.png
+Original assets:
+  assets/modularui2/textures/gui/slot/item.png
+  assets/modularui2/textures/gui/slot/fluid.png
+  assets/modularui2/textures/gui/icons.png
+  assets/appliedenergistics2/textures/guis/states.png (legacy_states.png)
+  assets/appliedenergistics2/textures/guis/terminal.png (legacy_terminal.png)
+Source project: Modernity-GTNH-Dark-UI
+Project: https://github.com/ModernityGTNH/Modernity-GTNH-Dark-UI
+Source revision: 44e2e50a97443a064efe3794b2e0f1a8ebf9fcea
+Source assets:
+  https://github.com/ModernityGTNH/Modernity-GTNH-Dark-UI/tree/44e2e50a97443a064efe3794b2e0f1a8ebf9fcea/assets/modularui2/textures/gui
+  https://github.com/ModernityGTNH/Modernity-GTNH-Dark-UI/tree/44e2e50a97443a064efe3794b2e0f1a8ebf9fcea/assets/appliedenergistics2/textures/guis
+Credit: Modernity-GTNH-Dark-UI contributors.
+
+The PNGs above are copied unchanged; only the resource paths and filenames are
+adapted. The other files in skin/ae2_dark are the AE2 files from skin/ae2_light,
+recoloured with the colour pairs between Modernity-GTNH-UI and
+Modernity-GTNH-Dark-UI (each light colour mapped to the dark colour the dark
+pack uses for it in the same place).
+No endorsement by the original authors is implied.
+
+These assets are licensed separately from this project's source code. The
+upstream LICENSE.txt is the Creative Commons Attribution-NonCommercial-ShareAlike
+4.0 International License (CC BY-NC-SA 4.0). Attribution and noncommercial use
+are required; adaptations must follow the license's ShareAlike conditions.
+License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+Legal code: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+Upstream license: https://github.com/ModernityGTNH/Modernity-GTNH-Dark-UI/blob/44e2e50a97443a064efe3794b2e0f1a8ebf9fcea/LICENSE.txt

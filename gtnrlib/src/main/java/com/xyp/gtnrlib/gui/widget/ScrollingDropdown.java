@@ -13,8 +13,6 @@ import net.minecraft.client.Minecraft;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
-import com.cleanroommc.modularui.drawable.DynamicDrawable;
-import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.drawable.text.TextRenderer;
 import com.cleanroommc.modularui.screen.viewport.GuiContext;
 import com.cleanroommc.modularui.theme.WidgetTheme;
@@ -24,31 +22,34 @@ import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.menu.AbstractMenuButton;
 import com.cleanroommc.modularui.widgets.menu.Menu;
+import com.xyp.gtnrlib.gui.theme.AE2Theme;
 
 /** A floating string selector with silent programmatic updates and scrolling single-line captions. */
 public class ScrollingDropdown extends AbstractMenuButton<ScrollingDropdown> {
 
     /** MUI caches panel handlers by name for the screen lifetime, including removed filter rows. */
     private static final AtomicLong NEXT_MENU_ID = new AtomicLong();
-    private static final IDrawable SELECTED = new Rectangle().color(0xFFFFFFFF)
-        .hollow(1);
     private final List<String> candidates = new ArrayList<>();
     private String value = "";
     private Consumer<String> onChanged = ignored -> {};
     private int maxCount = 5;
 
-    public ScrollingDropdown(String name, IDrawable button, List<String> candidates) {
+    public ScrollingDropdown(String name, List<String> candidates) {
         super(name + "_menu_" + NEXT_MENU_ID.getAndIncrement());
         name(name);
         openOnHover = false;
         size(80, 15);
         padding(0);
-        background(button);
-        disableHoverBackground();
-        overlay(new ScrollingTextDrawable(() -> value, 0xFF444444, false));
+        overlay(new ScrollingTextDrawable(() -> value));
         tooltip().setAutoUpdate(true)
             .tooltipBuilder(tooltip -> { if (!value.isEmpty()) tooltip.addLine(IKey.str(value)); });
         setCandidates(candidates);
+    }
+
+    public ScrollingDropdown(String name, IDrawable button, List<String> candidates) {
+        this(name, candidates);
+        background(button);
+        disableHoverBackground();
     }
 
     /** Replaces options and invalidates the popup; never selects or writes a model value implicitly. */
@@ -120,15 +121,13 @@ public class ScrollingDropdown extends AbstractMenuButton<ScrollingDropdown> {
     protected Menu<?> createMenu() {
         ListWidget<IWidget, ?> list = new ListWidget<>().widthRel(1f)
             .maxSize(maxCount * 15)
-            .scrollDirection(new VerticalScrollData(false, 4).texture(new Rectangle().color(0xFFFFFFFF)));
+            .scrollDirection(new VerticalScrollData(false, 4));
         for (String candidate : candidates) {
             list.child(
                 new ButtonWidget<>().widthRel(1f)
                     .height(15)
                     .padding(0)
-                    .background(new DynamicDrawable(() -> candidate.equals(value) ? SELECTED : null))
-                    .disableHoverBackground()
-                    .overlay(new ScrollingTextDrawable(() -> candidate, 0xFFFFFFFF, true))
+                    .overlay(new ScrollingTextDrawable(() -> candidate.equals(value) ? "> " + candidate : candidate))
                     .tooltipBuilder(tooltip -> tooltip.addLine(IKey.str(candidate)))
                     .onMousePressed(mouse -> {
                         if (mouse != 0) return false;
@@ -144,11 +143,23 @@ public class ScrollingDropdown extends AbstractMenuButton<ScrollingDropdown> {
                         return true;
                     }));
         }
-        return new Menu<>().widthRel(1f)
+        return new DropdownMenu().widthRel(1f)
             .coverChildrenHeight()
             .padding(0)
-            .background(new Rectangle().color(0xAA000000))
             .child(list);
+    }
+
+    private final class DropdownMenu extends Menu<DropdownMenu> {
+
+        @Override
+        public void onInit() {
+            super.onInit();
+            AE2Theme.Variant variant = AE2Theme.variant(
+                ScrollingDropdown.this.getPanel()
+                    .getTheme()
+                    .getId());
+            if (variant != null) getPanel().themeOverride(variant.menuId);
+        }
     }
 
     /**
@@ -163,16 +174,16 @@ public class ScrollingDropdown extends AbstractMenuButton<ScrollingDropdown> {
         private String previous;
         private long started;
 
-        private ScrollingTextDrawable(Supplier<String> text, int color, boolean shadow) {
+        private ScrollingTextDrawable(Supplier<String> text) {
             this.text = Objects.requireNonNull(text);
-            renderer.setColor(color);
-            renderer.setShadow(shadow);
             renderer.setHardWrapOnBorder(false);
         }
 
         @Override
         public void draw(GuiContext context, int x, int y, int width, int height, WidgetTheme theme) {
             if (width <= 4 || height <= 0) return;
+            renderer.setColor(theme.getTextColor());
+            renderer.setShadow(theme.getTextShadow());
             String supplied = text.get();
             String value = supplied == null ? ""
                 : supplied.replace('\n', ' ')

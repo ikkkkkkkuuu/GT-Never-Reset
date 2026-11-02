@@ -1,0 +1,33 @@
+AE2 GUI theme textures from Modernity-GTNH-UI
+
+Local assets:
+  assets/gtnrlib/textures/gui/skin/ae2_light/slot_item.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/slot_fluid.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/icons.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/legacy_states.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/legacy_terminal.png
+Original assets:
+  assets/modularui2/textures/gui/slot/item.png
+  assets/modularui2/textures/gui/slot/fluid.png
+  assets/modularui2/textures/gui/icons.png
+  assets/appliedenergistics2/textures/guis/states.png (legacy_states.png)
+  assets/appliedenergistics2/textures/guis/terminal.png (legacy_terminal.png)
+Source project: Modernity-GTNH-UI
+Project: https://github.com/ModernityGTNH/Modernity-GTNH-UI
+Source revision: 7693280fa60aea237a58b2da46a718d017c68151
+Source assets:
+  https://github.com/ModernityGTNH/Modernity-GTNH-UI/tree/7693280fa60aea237a58b2da46a718d017c68151/assets/modularui2/textures/gui
+  https://github.com/ModernityGTNH/Modernity-GTNH-UI/tree/7693280fa60aea237a58b2da46a718d017c68151/assets/appliedenergistics2/textures/guis
+Credit: Modernity-GTNH-UI contributors.
+
+The PNGs are copied unchanged; only the resource paths and filenames are
+adapted. No endorsement by the original authors is implied.
+
+These assets are licensed separately from this project's source code. The
+upstream LICENSE.txt is the Creative Commons Attribution-NonCommercial-ShareAlike
+4.0 International License (CC BY-NC-SA 4.0); the upstream README badge names
+CC BY-NC-SA 3.0. Attribution and noncommercial use are required; adaptations
+must follow the license's ShareAlike conditions.
+License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+Legal code: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+Upstream license: https://github.com/ModernityGTNH/Modernity-GTNH-UI/blob/7693280fa60aea237a58b2da46a718d017c68151/LICENSE.txt

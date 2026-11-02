@@ -99,7 +99,6 @@ public class Layout {
             .height(style.rowHeight)
             .child(
                 label(title, style).color(color)
-                    .shadow(true)
                     .left(inset)
                     .top((style.rowHeight - TITLE_HEIGHT) / 2)
                     .width(this::available, Unit.Measure.PIXEL)
@@ -168,7 +167,6 @@ public class Layout {
             .size(width, height)
             .child(
                 label(title, style).color(titleColor)
-                    .shadow(true)
                     .pos(inset, inset)
                     .size(width - inset * 2, TITLE_HEIGHT));
     }

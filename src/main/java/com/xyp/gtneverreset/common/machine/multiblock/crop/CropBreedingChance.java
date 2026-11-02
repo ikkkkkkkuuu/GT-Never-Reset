@@ -9,6 +9,10 @@ public final class CropBreedingChance {
 
     private CropBreedingChance() {}
 
+    public static int warmedPercent(int base, int minutes) {
+        return Math.min(base, Math.max(0, base - 40) + Math.min(20, Math.max(0, minutes)) * 2);
+    }
+
     public static int percent(ICropCard crop) {
         if (crop == null) return 0;
         int[] chances = CropBreederConfig.tierChances;

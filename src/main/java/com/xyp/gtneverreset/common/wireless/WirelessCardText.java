@@ -55,8 +55,8 @@ public final class WirelessCardText {
             // # zh_CN 共用：%s
             case "shared" -> "gtneverreset.wireless.gui.shared";
             // #tr gtneverreset.wireless.gui.budget_compact
-            // # Source channels: %s / %s
-            // # zh_CN 源网络频道：%s / %s
+            // # Controller channels: %s / %s
+            // # zh_CN 控制器频道：%s / %s
             case "budget_compact" -> "gtneverreset.wireless.gui.budget_compact";
             // #tr gtneverreset.wireless.gui.online_metric
             // # Online %s/%s
@@ -75,8 +75,8 @@ public final class WirelessCardText {
             // # zh_CN 缺少 %s
             case "missing_compact" -> "gtneverreset.wireless.gui.missing_compact";
             // #tr gtneverreset.wireless.gui.entrances_compact
-            // # In %s
-            // # zh_CN 入口 %s
+            // # Links %s
+            // # zh_CN 接入点 %s
             case "entrances_compact" -> "gtneverreset.wireless.gui.entrances_compact";
             // #tr gtneverreset.wireless.gui.short_state.active
             // # Linked
@@ -147,24 +147,24 @@ public final class WirelessCardText {
             // # zh_CN 名称 / 坐标
             case "search_placeholder" -> "gtneverreset.wireless.gui.search_placeholder";
             // #tr gtneverreset.wireless.gui.filter.0
-            // # All states
-            // # zh_CN 全部状态
+            // # All
+            // # zh_CN 全部
             case "filter.0" -> "gtneverreset.wireless.gui.filter.0";
             // #tr gtneverreset.wireless.gui.filter.1
             // # Paused
-            // # zh_CN 已暂停
+            // # zh_CN 暂停
             case "filter.1" -> "gtneverreset.wireless.gui.filter.1";
             // #tr gtneverreset.wireless.gui.filter.2
             // # Conflict
-            // # zh_CN 频率冲突
+            // # zh_CN 冲突
             case "filter.2" -> "gtneverreset.wireless.gui.filter.2";
             // #tr gtneverreset.wireless.gui.filter.3
-            // # Connected
+            // # Linked
             // # zh_CN 已连接
             case "filter.3" -> "gtneverreset.wireless.gui.filter.3";
             // #tr gtneverreset.wireless.gui.filter.4
             // # Waiting
-            // # zh_CN 等待恢复
+            // # zh_CN 等待
             case "filter.4" -> "gtneverreset.wireless.gui.filter.4";
             // #tr gtneverreset.wireless.gui.filter_invalid
             // # Invalid filter: enter an integer dimension ID or leave it blank.
@@ -287,8 +287,8 @@ public final class WirelessCardText {
             // # zh_CN 刷新
             case "refresh" -> "gtneverreset.wireless.gui.refresh";
             // #tr gtneverreset.wireless.gui.source
-            // # Source: %s
-            // # zh_CN 发射源：%s
+            // # Controller: %s
+            // # zh_CN 控制器：%s
             case "source" -> "gtneverreset.wireless.gui.source";
             // #tr gtneverreset.wireless.gui.unbound
             // # Frequency card is unbound
@@ -311,16 +311,16 @@ public final class WirelessCardText {
             // # zh_CN 没有已加载的簇；未加载区块的记录仍保留
             case "empty" -> "gtneverreset.wireless.gui.empty";
             // #tr gtneverreset.wireless.gui.loaded
-            // # Loaded: %s
-            // # zh_CN 已加载簇：%s
+            // # Loaded groups: %s
+            // # zh_CN 已加载 %s 组
             case "loaded" -> "gtneverreset.wireless.gui.loaded";
             // #tr gtneverreset.wireless.gui.initializing
             // # Identifying multiblocks... The list will appear when their startup checks finish.
             // # zh_CN 正在识别多方块… 启动检查完成后将显示列表。
             case "initializing" -> "gtneverreset.wireless.gui.initializing";
             // #tr gtneverreset.wireless.gui.entrances
-            // # Entrances %s
-            // # zh_CN 入口 %s
+            // # Links %s
+            // # zh_CN 接入点 %s
             case "entrances" -> "gtneverreset.wireless.gui.entrances";
             // #tr gtneverreset.wireless.gui.usage
             // # Entrance channels: %s
@@ -346,6 +346,34 @@ public final class WirelessCardText {
             // # Physical cluster changed. Retry after refreshing.
             // # zh_CN 物理簇已变化，请在刷新后重新操作。
             case "stale" -> "gtneverreset.wireless.gui.stale";
+            // #tr gtneverreset.wireless.gui.filter.5
+            // # No channel
+            // # zh_CN 缺频道
+            case "filter.5" -> "gtneverreset.wireless.gui.filter.5";
+            // #tr gtneverreset.wireless.gui.chip_all_tip
+            // # Show every device group
+            // # zh_CN 显示全部设备组
+            case "chip_all_tip" -> "gtneverreset.wireless.gui.chip_all_tip";
+            // #tr gtneverreset.wireless.gui.chip_tip
+            // # Show only "%s" device groups
+            // # zh_CN 只看“%s”的设备组
+            case "chip_tip" -> "gtneverreset.wireless.gui.chip_tip";
+            // #tr gtneverreset.wireless.gui.chip_count
+            // # %s groups
+            // # zh_CN %s 组
+            case "chip_count" -> "gtneverreset.wireless.gui.chip_count";
+            // #tr gtneverreset.wireless.gui.dimension_all
+            // # All dimensions
+            // # zh_CN 所有维度
+            case "dimension_all" -> "gtneverreset.wireless.gui.dimension_all";
+            // #tr gtneverreset.wireless.gui.dimension_option
+            // # %s D%s · %s
+            // # zh_CN %s D%s · %s
+            case "dimension_option" -> "gtneverreset.wireless.gui.dimension_option";
+            // #tr gtneverreset.wireless.gui.merge_types
+            // # Merge types
+            // # zh_CN 合并同类
+            case "merge_types" -> "gtneverreset.wireless.gui.merge_types";
             default -> "gtneverreset.wireless.gui." + suffix;
         };
         return StatCollector.translateToLocalFormatted(key, args);

@@ -444,7 +444,7 @@ public class WheelWidget extends Widget<WheelWidget> implements Interactable {
         String title = entry.label();
         int alpha = Math.round(p * 0xFF);
         if (title.isEmpty() || alpha < 4) return;
-        int shadowAlpha = Math.round(p * TEXT_SHADOW_ALPHA);
+        int shadowAlpha = style.textShadow ? Math.round(p * TEXT_SHADOW_ALPHA) : 0;
         float preferred = style.titleScale * detailScale, boxWidth = 2 * innerRadius * TITLE_WIDTH,
             boxHeight = 2 * innerRadius * TITLE_HEIGHT;
         FontRenderer font = Minecraft.getMinecraft().fontRenderer;

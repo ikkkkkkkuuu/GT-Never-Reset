@@ -125,7 +125,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     private BooleanSyncValue washingMode;
     private BooleanSyncValue washingOperation;
     private IntSyncValue progress, duration, chance;
-    private IntSyncValue parallel;
+    private IntSyncValue parallel, breedingMinutes;
     private List<NBTTagCompound> chanceSnapshot;
     private BreedingRouteWidget routeWidget;
     private int snapshotRevision = Integer.MIN_VALUE;
@@ -158,6 +158,8 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
             new InteractionSyncHandler().setOnMousePressed(
                 mouse -> { if (!mouse.isClient() && mouse.mouseButton == 0) multiblock.toggleWashingMode(); }));
         chance = new IntSyncValue(multiblock::getSuccessChance);
+        breedingMinutes = new IntSyncValue(multiblock::getBreedingMinutes);
+        sync.syncValue("cropBreedingMinutes", breedingMinutes);
         parallel = new IntSyncValue(multiblock::getCurrentParallel);
         sync.syncValue("cropParallel", parallel);
         sync.syncValue("cropDraft", draft);
@@ -594,18 +596,13 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                         return true;
                     }));
         }
+        // #tr gtnr.crop_breeder.empty
+        // # No matching crops
+        // # zh_CN 没有符合条件的作物
         page.child(
-            label(
-                () -> view.filtered()
-                    .isEmpty()
-                        // #tr gtnr.crop_breeder.empty
-                        // # No matching crops
-                        // # zh_CN 没有符合条件的作物
-                        ? tr("gtnr.crop_breeder.empty")
-                        : "",
-                6,
-                47,
-                WIDTH - 12));
+            label(() -> tr("gtnr.crop_breeder.empty"), 6, 47, WIDTH - 12).setEnabledIf(
+                widget -> view.filtered()
+                    .isEmpty()));
         page.child(button("<", 0, 96, () -> view.page = Math.max(0, view.page - 1)));
         page.child(button(">", WIDTH - 18, 96, () -> view.page = Math.min(view.pageCount() - 1, view.page + 1)));
         page.child(
@@ -781,7 +778,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
 
     private int effectiveChance(String id) {
         if (duration.getIntValue() > 0 && id.equals(activeBreedingCrop())) return chance.getIntValue();
-        return cropChances.getOrDefault(id, 0);
+        return CropBreedingChance.warmedPercent(cropChances.getOrDefault(id, 0), breedingMinutes.getIntValue());
     }
 
     private static String requirementLabel(NBTTagCompound requirement) {

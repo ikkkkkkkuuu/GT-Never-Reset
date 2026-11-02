@@ -19,6 +19,7 @@ public class WheelStyle {
     public final int frostedTint;
     public final int lineColor;
     public final int textColor;
+    public final boolean textShadow;
     public final float titleScale;
     public final WheelHighlight highlight;
     public final int highlightColor;
@@ -38,6 +39,7 @@ public class WheelStyle {
         frostedTint = builder.frostedTint;
         lineColor = builder.lineColor;
         textColor = builder.textColor;
+        textShadow = builder.textShadow;
         titleScale = builder.titleScale;
         highlight = builder.highlight;
         highlightColor = builder.highlightColor;
@@ -57,6 +59,7 @@ public class WheelStyle {
             .frosted(frosted, frostedTint)
             .lineColor(lineColor)
             .textColor(textColor)
+            .textShadow(textShadow)
             .titleScale(titleScale)
             .highlight(highlight, highlightColor)
             .deadZone(deadZone);
@@ -77,6 +80,7 @@ public class WheelStyle {
         private int frostedTint = 0x66FFFFFF;
         private int lineColor = 0xFFFFFFFF;
         private int textColor = 0xFDFDFD;
+        private boolean textShadow = true;
         private float titleScale = 1.4F;
         private WheelHighlight highlight = WheelHighlight.ANNULAR_SECTOR;
         private int highlightColor = 0xFFFABC02;
@@ -129,6 +133,11 @@ public class WheelStyle {
 
         public Builder textColor(int textColor) {
             this.textColor = textColor;
+            return this;
+        }
+
+        public Builder textShadow(boolean textShadow) {
+            this.textShadow = textShadow;
             return this;
         }
 

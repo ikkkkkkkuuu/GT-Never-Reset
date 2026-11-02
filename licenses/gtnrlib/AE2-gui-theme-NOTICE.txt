@@ -1,0 +1,49 @@
+AE2 GUI theme textures
+
+Local assets:
+  assets/gtnrlib/textures/gui/skin/ae2_light/panel.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/button.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/button_highlighted.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/button_disabled.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/scroller.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/text_field.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/checkbox.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/states.png
+  assets/gtnrlib/textures/gui/skin/ae2_light/inset.png
+  assets/gtnrlib/textures/gui/skin/ae2_dark/ (the same nine files, recoloured)
+Original assets:
+  assets/ae2/textures/guis/background.png
+  assets/ae2/textures/gui/sprites/button.png
+  assets/ae2/textures/gui/sprites/button_highlighted.png
+  assets/ae2/textures/gui/sprites/button_disabled.png
+  assets/ae2/textures/gui/sprites/small_scroller.png
+  assets/ae2/textures/guis/text_field.png
+  assets/ae2/textures/guis/checkbox.png
+  assets/ae2/textures/guis/states.png
+  assets/ae2/textures/guis/networkstatus.png (inset.png only)
+Source project: Applied Energistics 2
+Project: https://github.com/AppliedEnergistics/Applied-Energistics-2
+Source revision: b124d1f695def88bd757a6a4bf9e145aaafe9ea7
+Source assets:
+  https://github.com/AppliedEnergistics/Applied-Energistics-2/tree/b124d1f695def88bd757a6a4bf9e145aaafe9ea7/src/main/resources/assets/ae2/textures
+Credit: (c) 2020 Ridanisaurus Rid, (c) 2013 - 2020 AlgorithmX2 et al.
+
+All files except inset.png are copied unchanged; only the resource paths and
+filenames are adapted for Minecraft 1.7.10. inset.png is an 8x9 crop of the
+list well in networkstatus.png (columns 8-11 and 166-169, rows 38-42 and
+114-117) so it can be drawn as a nine-slice.
+The files in skin/ae2_dark are adaptations: every pixel of the light file is
+recoloured with the light-to-dark colour pairs that Modernity-GTNH-Dark-UI uses
+for the same AE2 palette (see Modernity-GTNH-Dark-UI-gui-theme-NOTICE.txt).
+slider_track.png, slider_fill.png, slider_tag.png and divider.png in both skin
+folders are not AE2 files; they are small sprites drawn for GTNLLib in the AE2
+palette.
+No endorsement by the original authors is implied.
+
+These assets are licensed separately from this project's source code under the
+Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License
+(CC BY-NC-SA 3.0). Attribution and noncommercial use are required; adaptations
+must follow the license's ShareAlike conditions.
+License: https://creativecommons.org/licenses/by-nc-sa/3.0/
+Legal code: https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode
+Upstream license: https://github.com/AppliedEnergistics/Applied-Energistics-2/blob/b124d1f695def88bd757a6a4bf9e145aaafe9ea7/README.md#license

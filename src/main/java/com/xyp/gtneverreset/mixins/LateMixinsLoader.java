@@ -57,6 +57,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("gregtech.WirelessPowerReceiverMixin");
             if (loadedMods.contains(ModList.ModIds.MATTER_MANIPULATOR)) {
                 mixins.add("matterManipulator.MixinPendingBlockWirelessPower");
+                mixins.add("matterManipulator.MixinPendingBuildWirelessPower");
                 mixins.add("matterManipulator.MixinPendingMoveWirelessPower");
             }
             mixins.add("gregtech.AssemblyLineDataAccessMixin");

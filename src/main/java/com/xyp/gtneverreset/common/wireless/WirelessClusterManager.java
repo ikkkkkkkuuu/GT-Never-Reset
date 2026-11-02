@@ -493,6 +493,10 @@ public class WirelessClusterManager {
             .contains(canonical(source)) ? cluster : null;
     }
 
+    public static Address deviceAddress(IGridNode node) {
+        return TOPOLOGY.nodeAddress(node);
+    }
+
     public static List<Address> highlight(IWirelessLinkView view) {
         return (view instanceof EntranceView ? Stream.of(view.target())
             : view.members()

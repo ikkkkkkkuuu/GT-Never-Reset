@@ -1,12 +1,19 @@
-首次杂交得到的品种以 1/1/1 入档，再次产种时沿用档案属性
-洗种模式每 tick 消耗 {white:{var:washUU} L UU 物质}，功耗 {white:{var:baseEu} EU/t}
-每 {white:{var:washSeconds} 秒}尝试将一项未满 31 的属性提高 1 点
-所需底土放入{white:输入总线}，{green:不会消耗}；原版底土无需放入
+{gold:自动化育种的一把好手！}
+放入一颗已分析的种子，机器会消耗它，将品种和属性记入亲本档案
+选好目标后，机器会用已入档的亲本逐步杂交，持续产出目标种子
+每次杂交成功都会输出一颗种子。新品种以 1/1/1 入档，再次产种时沿用档案属性
+若可选底土中有原版方块，该项要求自动满足。其余底土放入{white:输入总线}即可，{green:不会消耗}
 
-杂交等级为 1–5 级，对应电压为 {yellow:HV} / {dark_gray:EV} / {blue:IV} / {light_purple:LuV} / {aqua:ZPM}，GUI 中可查看
-1 级每轮 {white:{var:firstSeconds} 秒}，每升一级耗时翻倍；超过所需电压后执行有损超频
-默认 1 并行，从 {yellow:HV} 起每升{gold:两级电压}，并行上限翻倍
-每并行基础耗电 {white:{var:baseEu} EU/t}，每轮消耗 {white:{var:fertilizer} L 富集肥料}
+杂交分为 5 级，对应电压为 {yellow:HV} / {dark_gray:EV} / {blue:IV} / {light_purple:LuV} / {aqua:ZPM}，种子提示中可查看所需电压
+1 级杂交耗时 {white:{var:firstSeconds} 秒}，每升一级耗时翻倍。超过所需电压后执行有损超频
+从 {yellow:HV} 的 1 并行起，供电电压每升{gold:两级}，并行上限翻倍
+每并行基础耗电 {white:{var:baseEu} EU/t}，开工时消耗 {white:{var:fertilizer} L 富集肥料}和配方所需的催化剂
+杂交时整机每 tick 消耗 {white:{var:washUU} L UU 物质}。供应不足时暂停，补足后继续
+1–5 级默认成功率依次为 100% / 80% / 60% / 40% / 20%。每个并行独立判定，失败也会消耗肥料和催化剂
+冷启动时成功率比默认值低 {red:40 个百分点}，最低为 0%
+每累计杂交运行 1 分钟，成功率恢复 {green:2 个百分点}，最多恢复到默认值
+连续 10 分钟没有杂交进度，成功率回到冷启动值
 
-1–5 级默认成功率为 100% / 80% / 60% / 40% / 20%，各并行独立判定
-杂交失败也会消耗肥料和催化剂；底土始终保留
+在运行页右下角切换洗种模式，选中要提升属性的已入档品种
+洗种功耗 {white:{var:baseEu} EU/t}，每 tick 消耗 {white:{var:washUU} L UU 物质}。UU 不足时暂停，补足后继续
+每运行 {white:{var:washSeconds} 秒}，随机将一项未满 31 的属性提高 1 点并存入档案。三项全满后停止洗种

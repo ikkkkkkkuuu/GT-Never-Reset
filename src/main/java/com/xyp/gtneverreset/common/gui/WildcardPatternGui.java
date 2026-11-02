@@ -17,12 +17,13 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.cleanroommc.modularui.api.IThemeApi;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.drawable.DynamicDrawable;
+import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.drawable.ItemDrawable;
-import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.factory.PlayerInventoryGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
@@ -43,6 +44,7 @@ import com.cleanroommc.modularui.widgets.ScrollingTextWidget;
 import com.cleanroommc.modularui.widgets.SlotGroupWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
+import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 import com.xyp.gtneverreset.common.me.wildcard.model.IWildcardFilterComponent;
 import com.xyp.gtneverreset.common.me.wildcard.model.IWildcardIOComponent;
@@ -58,12 +60,14 @@ import com.xyp.gtneverreset.common.me.wildcard.model.io.FluidIOComponent;
 import com.xyp.gtneverreset.common.me.wildcard.model.io.PrefixIOComponent;
 import com.xyp.gtneverreset.common.me.wildcard.model.io.SimpleIOComponent;
 import com.xyp.gtneverreset.compat.ae2fc.FluidDropCompat;
+import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtnrlib.gui.theme.ModernGuiSkin;
+import com.xyp.gtnrlib.gui.theme.ButtonPurpose;
 import com.xyp.gtnrlib.gui.widget.ItemStackSlot;
 import com.xyp.gtnrlib.gui.widget.ScrollingDropdown;
-import com.xyp.gtnrlib.mod.ModList;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.enums.FluidState;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
@@ -74,18 +78,19 @@ public class WildcardPatternGui {
 
     private static final int MAX_IO_COMPONENTS = 6;
     private static final int MAX_FILTER_COMPONENTS = 64;
-    private static final int PANEL_W = 192;
-    private static final int PANEL_H = 292;
+    private static final int PANEL_W = 196;
+    private static final int TAB_WIDTH = 24;
+    private static final int PREVIEW_HEIGHT = 80;
+    private static final int EDITOR_HEIGHT = 128;
+    private static final int PANEL_H = 238;
 
-    private static final ModernGuiSkin THEME = new ModernGuiSkin(ModList.ModIds.GT_NEVER_RESET, "gui/ldlib/modern/");
-
-    private static final IDrawable REFERENCE_PURPLE = THEME.button.withColorOverride(0xFF9933FF);
-
-    private static final IDrawable REFERENCE_CYAN = THEME.button.withColorOverride(0xFF337777);
-
-    private static final IDrawable REFERENCE_CLOSE = UITexture.builder()
-        .location(ModList.ModIds.GT_NEVER_RESET, "gui/ldlib/modern/close")
+    private static final UITexture ROW_TEXTURE = UITexture.builder()
+        .location(GTNeverReset.MODID, "gui/ldlib/modern/button")
+        .imageSize(200, 20)
+        .adaptable(3)
         .build();
+    private static final IDrawable FIXED_ROW = ROW_TEXTURE.withColorOverride(0xFF337777);
+    private static final IDrawable PREFIX_ROW = ROW_TEXTURE.withColorOverride(0xFF9933FF);
 
     private final int slotIndex;
 
@@ -107,6 +112,7 @@ public class WildcardPatternGui {
     }
 
     public ModularPanel buildUI(PlayerInventoryGuiData data, PanelSyncManager syncManager, UISettings settings) {
+        if (data.isClient()) settings.useTheme(ScreenThemeConfig.wildcardPattern.themeId);
         this.backingStack = data.getUsedItemStack();
         loadFromStack();
 
@@ -119,68 +125,57 @@ public class WildcardPatternGui {
 
         Flow tabs = Flow.column()
             .pos(0, 24)
-            .size(24, 180)
-            .child(tabButton(controller, 0, new ItemDrawable(iconStack())))
-            .child(
-                tabButton(
-                    controller,
-                    1,
-                    IKey.str("IN")
-                        .color(0xFFFFFFFF)
-                        .shadow(true)))
-            .child(
-                tabButton(
-                    controller,
-                    2,
-                    IKey.str("OUT")
-                        .color(0xFFFFFFFF)
-                        .shadow(true)))
-            .child(tabButton(controller, 3, new ItemDrawable(dustOf(Materials.Aluminium))));
+            .coverChildren()
+            // #tr gui.wildcardpattern.preview
+            // # Preview
+            // # zh_CN 预览
+            .child(tabButton(0, new ItemDrawable(iconStack()), "gui.wildcardpattern.preview"))
+            // #tr gui.wildcardpattern.inputs
+            // # Inputs
+            // # zh_CN 输入
+            .child(tabButton(1, IKey.str("IN"), "gui.wildcardpattern.inputs"))
+            // #tr gui.wildcardpattern.outputs
+            // # Outputs
+            // # zh_CN 输出
+            .child(tabButton(2, IKey.str("OUT"), "gui.wildcardpattern.outputs"))
+            // #tr gui.wildcardpattern.filters
+            // # Filters
+            // # zh_CN 筛选
+            .child(tabButton(3, new ItemDrawable(dustOf(Materials.Aluminium)), "gui.wildcardpattern.filters"));
         PagedWidget<?> pages = new PagedWidget<>().controller(controller)
-            .pos(27, 23)
-            .size(158, 180)
+            .pos(7, 23)
+            .size(158, PREVIEW_HEIGHT)
             .addPage(buildPreviewPage())
             .addPage(buildIOPage(true))
             .addPage(buildIOPage(false))
             .addPage(buildFilterPage());
-        IDrawable shell = (context, x, y, w, h, style) -> {
-            THEME.panel.draw(context, x + 20, y + 16, 172, h - 16, style);
-            THEME.panel.draw(context, x + 28, y + 3, 18, 15, style);
-            THEME.panel.draw(context, x + 46, y, 138, 18, style);
-        };
-        SlotGroupWidget inventory = SlotGroupWidget.playerInventory((index, slot) -> {
-            slot.background(THEME.slot);
+        SlotGroupWidget inventory = SlotGroupWidget.playerInventory(6, true, (index, slot) -> {
             if (index == slotIndex) slot.setEnabled(false);
             return slot;
-        })
-            .pos(25, 110);
-        ModularPanel panel = ModularPanel.defaultPanel("wildcard_pattern", PANEL_W, PANEL_H - 100)
-            .background(shell)
-            .disableHoverBackground()
+        });
+        ParentWidget<?> body = new ParentWidget<>().pos(TAB_WIDTH, 0)
+            .width(PANEL_W - TAB_WIDTH)
+            .heightRel(1f)
+            .widgetTheme(IThemeApi.PANEL)
             .child(
-                THEME.button()
-                    .pos(28, 5)
-                    .size(18, 12)
-                    .background((IDrawable) null)
+                new ButtonWidget<>().pos(5, 3)
+                    .size(17)
                     .overlay(
-                        IKey.str("<")
-                            .color(0xFF000000))
+                        new ItemDrawable(iconStack()).asIcon()
+                            .size(12))
+                    .tooltipBuilder(tooltip -> tooltip.addLine(IKey.lang("gui.wildcardpattern.preview")))
                     .onMousePressed(mouse -> {
                         controller.setPage(0);
                         return true;
                     }))
-            .child(
-                new ItemDrawable(iconStack()).asWidget()
-                    .pos(49, 3)
-                    .size(12))
             .child(
                 // #tr gui.wildcardpattern.reference_title
                 // # Wildcard Pattern Configuration
                 // # zh_CN 通配符样板配置
                 IKey.lang("gui.wildcardpattern.reference_title")
                     .asWidget()
-                    .pos(64, 4)
-                    .size(117, 10)
+                    .pos(25, 5)
+                    .size(142, 12)
                     .tooltipBuilder(
                         tooltip -> tooltip.addLine(
                             // #tr gui.wildcardpattern.nei_hint
@@ -188,13 +183,26 @@ public class WildcardPatternGui {
                             // # zh_CN 点击 NEI 配方的＋导入，调整后保存
                             IKey.lang("gui.wildcardpattern.nei_hint"))))
             .child(pages)
-            .child(tabs)
             .child(inventory);
+        ModularPanel panel = new ModularPanel("wildcard_pattern") {
+
+            @Override
+            @SideOnly(Side.CLIENT)
+            public void postResize() {
+                super.postResize();
+                // NEI reads the container bounds when placing its search bar and category selector.
+                getScreen().getScreenWrapper()
+                    .updateGuiArea(getArea());
+            }
+        }.size(PANEL_W, PANEL_H - EDITOR_HEIGHT + PREVIEW_HEIGHT)
+            .disableThemeBackground(true)
+            .disableHoverBackground()
+            .child(body)
+            .child(tabs);
         pages.onPageChange(page -> {
-            int offset = page == 0 ? 100 : 0;
-            panel.height(PANEL_H - offset);
-            pages.height(180 - offset);
-            inventory.top(210 - offset);
+            int height = page == 0 ? PREVIEW_HEIGHT : EDITOR_HEIGHT;
+            panel.height(PANEL_H - EDITOR_HEIGHT + height);
+            pages.height(height);
             panel.scheduleResize();
         });
         return panel;
@@ -218,15 +226,13 @@ public class WildcardPatternGui {
         return true;
     }
 
-    private PageButton tabButton(PagedWidget.Controller controller, int index, IDrawable icon) {
-        IDrawable padded = (context, x, y, w, h, style) -> {
-            if (icon instanceof IKey) icon.draw(context, x + 2, y + 4, w - 4, h - 8, style);
-            else icon.draw(context, x + 3, y + 4, w - 7, h - 8, style);
-        };
-        return new PageButton(index, controller).size(24, 26)
-            .background(false, THEME.tab, padded)
-            .background(true, THEME.selectedTab, padded)
-            .marginBottom(2);
+    private PageButton tabButton(int index, IDrawable icon, String key) {
+        return new PageButton(index, controller).size(TAB_WIDTH, 26)
+            .marginBottom(2)
+            .overlay(
+                icon.asIcon()
+                    .size(icon instanceof IKey ? 22 : 16, 16))
+            .tooltipBuilder(tooltip -> tooltip.addLine(IKey.lang(key)));
     }
 
     private ItemStack iconStack() {
@@ -264,29 +270,31 @@ public class WildcardPatternGui {
     private IWidget buildIOPage(boolean input) {
         List<IWildcardIOComponent> list = input ? inputs : outputs;
         ListWidget<IWidget, ?> cards = new ListWidget<>().pos(0, 3)
-            .size(156, 150);
+            .size(158, EDITOR_HEIGHT - 26);
         if (input) inputCards = cards;
         else outputCards = cards;
         rebuildIOCards(cards, list);
-        return new ParentWidget<>().size(158, 180)
+        return new ParentWidget<>().size(158, EDITOR_HEIGHT)
             .child(cards)
             .child(
                 // #tr gui.wildcardpattern.single
                 // # Single
                 // # zh_CN 单一
-                addButton("gui.wildcardpattern.single", () -> addIO(cards, list, SimpleIOComponent.empty()))
-                    .pos(2, 155))
+                addButton("gui.wildcardpattern.single", () -> addIO(cards, list, SimpleIOComponent.empty())).width(34)
+                    .pos(0, EDITOR_HEIGHT - 20))
             .child(
                 // #tr gui.wildcardpattern.tag
                 // # Tag
                 // # zh_CN 标签
-                addButton("gui.wildcardpattern.tag", () -> addIO(cards, list, PrefixIOComponent.empty())).pos(37, 155))
+                addButton("gui.wildcardpattern.tag", () -> addIO(cards, list, PrefixIOComponent.empty())).width(45)
+                    .pos(37, EDITOR_HEIGHT - 20))
             .child(
                 // #tr gui.wildcardpattern.fluid
                 // # Fluid
                 // # zh_CN 流体
-                addButton("gui.wildcardpattern.fluid", () -> addIO(cards, list, FluidIOComponent.empty())).pos(72, 155))
-            .child(saveButton().pos(126, 155));
+                addButton("gui.wildcardpattern.fluid", () -> addIO(cards, list, FluidIOComponent.empty()))
+                    .pos(84, EDITOR_HEIGHT - 20))
+            .child(saveButton().pos(126, EDITOR_HEIGHT - 20));
     }
 
     private void addIO(ListWidget<IWidget, ?> cards, List<IWildcardIOComponent> list, IWildcardIOComponent component) {
@@ -305,18 +313,17 @@ public class WildcardPatternGui {
 
     private IWidget ioCard(ListWidget<IWidget, ?> cards, List<IWildcardIOComponent> list, int index) {
         IWildcardIOComponent component = list.get(index);
-        ParentWidget<?> row = new ParentWidget<>().size(156, 25)
-            .background(component instanceof PrefixIOComponent ? REFERENCE_PURPLE : REFERENCE_CYAN);
-        if (component instanceof PrefixIOComponent) row.child(prefixEditor((PrefixIOComponent) component));
-        else if (component instanceof SimpleIOComponent) row.child(simpleEditor((SimpleIOComponent) component));
-        else if (component instanceof FluidIOComponent) row.child(fluidEditor((FluidIOComponent) component).pos(22, 4));
+        ParentWidget<?> row = new ParentWidget<>().size(152, 25)
+            .background(component instanceof PrefixIOComponent ? PREFIX_ROW : FIXED_ROW);
+        if (component instanceof PrefixIOComponent prefix) row.child(prefixEditor(prefix));
+        else if (component instanceof SimpleIOComponent simple) row.child(simpleEditor(simple));
+        else if (component instanceof FluidIOComponent fluid) row.child(fluidEditor(fluid).pos(22, 4));
         row.child(deleteButton(() -> {
             if (index >= 0 && index < list.size()) {
                 list.remove(index);
                 rebuildIOCards(cards, list);
             }
-        }).marginLeft(0)
-            .pos(138, 5));
+        }).pos(136, 5));
         return row;
     }
 
@@ -326,10 +333,8 @@ public class WildcardPatternGui {
             WildcardMaterials.PrefixMaterial pm = WildcardMaterials.parseItem(stack);
             if (pm.prefix != null) component.setPrefix(pm.prefix);
         });
-        TextFieldWidget name = THEME.textField()
-            .pos(25, 5)
+        TextFieldWidget name = new TextFieldWidget().pos(25, 5)
             .size(43, 15)
-            .background((IDrawable) null)
             .value(new StringValue.Dynamic(component::getRawText, component::setRawText))
             .setPattern(Pattern.compile("[a-zA-Z0-9]*"));
         return ioEditor(
@@ -362,8 +367,7 @@ public class WildcardPatternGui {
                     .pos(70, 7)
                     .size(8, 10))
             .child(
-                new TextFieldWidget().setTextColor(0xFFFFFFFF)
-                    .pos(80, 5)
+                new TextFieldWidget().pos(80, 5)
                     .size(50, 15)
                     .value(new LongValue.Dynamic(amount, setAmount))
                     .numbersLong(1, Integer.MAX_VALUE));
@@ -386,8 +390,7 @@ public class WildcardPatternGui {
 
     /** 流体组件编辑：状态循环按钮 + 数量文本框。 */
     private Flow fluidEditor(FluidIOComponent component) {
-        ButtonWidget<?> stateButton = THEME.button()
-            .size(58, 16)
+        ButtonWidget<?> stateButton = new ButtonWidget<>().size(58, 16)
             .marginLeft(2)
             .overlay(
                 IKey.dynamic(
@@ -398,10 +401,8 @@ public class WildcardPatternGui {
                 component.setState(nextFluidState(component.getState()));
                 return true;
             });
-        TextFieldWidget amountField = THEME.textField()
-            .size(40, 16)
+        TextFieldWidget amountField = new TextFieldWidget().size(40, 16)
             .marginLeft(3)
-            .setTextColor(0xFFFFFFFF)
             .value(new LongValue.Dynamic(() -> component.getAmount(), component::setAmount))
             .numbersLong(1, Integer.MAX_VALUE);
         return Flow.row()
@@ -425,32 +426,33 @@ public class WildcardPatternGui {
 
     private IWidget buildFilterPage() {
         ListWidget<IWidget, ?> cards = new ListWidget<>().pos(0, 3)
-            .size(156, 150)
-            .scrollDirection(new VerticalScrollData(false, 4).texture(new Rectangle().color(0xFFAAAAAA)));
+            .size(158, EDITOR_HEIGHT - 26)
+            .scrollDirection(new VerticalScrollData(false, 4));
         filterCards = cards;
         rebuildFilterCards(cards);
-        return new ParentWidget<>().size(158, 180)
+        return new ParentWidget<>().size(158, EDITOR_HEIGHT)
             .child(cards)
             .child(
                 // #tr gui.wildcardpattern.filter_name
                 // # Name
                 // # zh_CN 名称
                 addButton("gui.wildcardpattern.filter_name", () -> addFilter(cards, StringFilterComponent.empty()))
-                    .pos(2, 155))
+                    .pos(2, EDITOR_HEIGHT - 20))
             .child(
                 // #tr gui.wildcardpattern.filter_property
                 // # Property
                 // # zh_CN 属性
                 addButton(
                     "gui.wildcardpattern.filter_property",
-                    () -> addFilter(cards, PropertyFilterComponent.empty())).pos(37, 155))
+                    () -> addFilter(cards, PropertyFilterComponent.empty())).width(45)
+                        .pos(37, EDITOR_HEIGHT - 20))
             .child(
                 // #tr gui.wildcardpattern.filter_subtag
                 // # Flag
                 // # zh_CN 标记
                 addButton("gui.wildcardpattern.filter_subtag", () -> addFilter(cards, SubTagFilterComponent.empty()))
-                    .pos(72, 155))
-            .child(saveButton().pos(126, 155));
+                    .pos(84, EDITOR_HEIGHT - 20))
+            .child(saveButton().pos(126, EDITOR_HEIGHT - 20));
     }
 
     private void addFilter(ListWidget<IWidget, ?> cards, IWildcardFilterComponent component) {
@@ -469,46 +471,41 @@ public class WildcardPatternGui {
 
     private IWidget filterCard(ListWidget<IWidget, ?> cards, int index) {
         IWildcardFilterComponent component = filters.get(index);
-        ParentWidget<?> row = new ParentWidget<>().size(152, 25)
-            .background(filterBackground(component));
-        if (component instanceof StringFilterComponent)
-            row.child(stringFilterEditor((StringFilterComponent) component));
-        else if (component instanceof PropertyFilterComponent)
-            row.child(propertyEditor((PropertyFilterComponent) component));
-        else if (component instanceof SubTagFilterComponent) row.child(subTagEditor((SubTagFilterComponent) component));
+        ParentWidget<?> row = new ParentWidget<>().size(152, 25);
+        if (component instanceof PropertyFilterComponent property) {
+            row.background(filterBackground(component, 0xFFFFFF33, 0xFFFF8800))
+                .child(propertyEditor(property));
+        } else if (component instanceof SubTagFilterComponent flag) {
+            row.background(filterBackground(component, 0xFFFF33FF, 0xFF9933FF))
+                .child(subTagEditor(flag));
+        } else {
+            row.background(filterBackground(component, 0xFF44AAFF, 0xFF4852FF));
+            if (component instanceof StringFilterComponent name) row.child(stringFilterEditor(name));
+            else row.child(
+                new ScrollingTextWidget(IKey.dynamic(component::describe)).pos(3, 6)
+                    .size(108, 13));
+        }
         row.child(
-            whitelistButton(component).pos(120, 5)
+            whitelistButton(component).pos(118, 5)
                 .size(14));
         row.child(deleteButton(() -> {
             if (index >= 0 && index < filters.size()) {
                 filters.remove(index);
                 rebuildFilterCards(cards);
             }
-        }).marginLeft(0)
-            .pos(138, 5));
+        }).pos(136, 5));
         return row;
     }
 
-    /** Source filter palette: type chooses the color pair, W/B selects its light or dark member. */
-    private static IDrawable filterBackground(IWildcardFilterComponent component) {
-        int whitelistColor = 0xFF44AAFF, blacklistColor = 0xFF4852FF;
-        if (component instanceof PropertyFilterComponent) {
-            whitelistColor = 0xFFFFFF33;
-            blacklistColor = 0xFFFF8800;
-        } else if (component instanceof SubTagFilterComponent) {
-            whitelistColor = 0xFFFF33FF;
-            blacklistColor = 0xFF9933FF;
-        }
-        IDrawable whitelist = THEME.button.withColorOverride(whitelistColor);
-        IDrawable blacklist = THEME.button.withColorOverride(blacklistColor);
-        return new DynamicDrawable(() -> component.isWhitelist() ? whitelist : blacklist);
+    private static IDrawable filterBackground(IWildcardFilterComponent component, int whitelist, int blacklist) {
+        IDrawable allowed = ROW_TEXTURE.withColorOverride(whitelist);
+        IDrawable denied = ROW_TEXTURE.withColorOverride(blacklist);
+        return new DynamicDrawable(() -> component.isWhitelist() ? allowed : denied);
     }
 
     private IWidget stringFilterEditor(StringFilterComponent component) {
-        return THEME.textField()
-            .pos(3, 5)
-            .size(110, 15)
-            .setTextColor(0xFFFFFFFF)
+        return new TextFieldWidget().pos(3, 5)
+            .size(106, 15)
             .value(new StringValue.Dynamic(component::getPattern, component::setPattern));
     }
 
@@ -516,7 +513,6 @@ public class WildcardPatternGui {
     private IWidget propertyEditor(PropertyFilterComponent component) {
         ScrollingDropdown selector = new ScrollingDropdown(
             "wildcard_property_" + filters.indexOf(component),
-            THEME.button,
             propertyNames(component.getExample()))
                 .setValue(
                     component.getProperty() == null ? ""
@@ -534,9 +530,7 @@ public class WildcardPatternGui {
                 selector.setValue(names.get(0));
                 component.setProperty(WildcardMaterials.findProperty(names.get(0)));
             });
-        return new ParentWidget<>().size(115, 25)
-            .child(drop.pos(3, 3))
-            .child(selector.pos(25, 5));
+        return filterSelector(drop, selector);
     }
 
     private static List<String> propertyNames(Materials material) {
@@ -565,7 +559,6 @@ public class WildcardPatternGui {
     private IWidget subTagEditor(SubTagFilterComponent component) {
         ScrollingDropdown selector = new ScrollingDropdown(
             "wildcard_subtag_" + filters.indexOf(component),
-            THEME.button,
             subTagNames(component.getExample()))
                 .setValue(component.getSubTag() == null ? "" : component.getSubTag().mName)
                 .setOnChanged(name -> component.setSubTag(WildcardMaterials.findSubTag(name)));
@@ -580,9 +573,16 @@ public class WildcardPatternGui {
                 selector.setValue(names.get(0));
                 component.setSubTag(WildcardMaterials.findSubTag(names.get(0)));
             });
-        return new ParentWidget<>().size(115, 25)
+        return filterSelector(drop, selector);
+    }
+
+    private IWidget filterSelector(DropWidget drop, ScrollingDropdown selector) {
+        return new ParentWidget<>().size(110, 25)
             .child(drop.pos(3, 3))
-            .child(selector.pos(25, 5));
+            .child(
+                selector.setMaxCount(4)
+                    .pos(25, 5)
+                    .width(80));
     }
 
     private static List<String> subTagNames(Materials material) {
@@ -602,9 +602,18 @@ public class WildcardPatternGui {
     }
 
     private ButtonWidget<?> whitelistButton(IWildcardFilterComponent component) {
-        return THEME.button()
-            .size(16)
-            .overlay(IKey.dynamic(() -> component.isWhitelist() ? "W" : "B"))
+        // #tr gui.wildcardpattern.whitelist
+        // # Whitelist
+        // # zh_CN 白名单
+        IKey whitelist = IKey.lang("gui.wildcardpattern.whitelist");
+        // #tr gui.wildcardpattern.blacklist
+        // # Blacklist
+        // # zh_CN 黑名单
+        IKey blacklist = IKey.lang("gui.wildcardpattern.blacklist");
+        return new ButtonWidget<>().overlay(IKey.dynamic(() -> component.isWhitelist() ? "W" : "B"))
+            .tooltipBuilder(
+                tooltip -> tooltip.setAutoUpdate(true)
+                    .addLine(component.isWhitelist() ? whitelist : blacklist))
             .onMousePressed(button -> {
                 component.setWhitelist(!component.isWhitelist());
                 return true;
@@ -612,13 +621,8 @@ public class WildcardPatternGui {
     }
 
     private ButtonWidget<?> addButton(String langKey, Runnable action) {
-        return THEME.button()
-            .size(30, 20)
-            .marginRight(2)
-            .overlay(
-                IKey.lang(langKey)
-                    .color(0xFFFFFFFF)
-                    .shadow(true))
+        return new ButtonWidget<>().size(30, 20)
+            .overlay(IKey.lang(langKey))
             .onMousePressed(button -> {
                 action.run();
                 return true;
@@ -626,10 +630,8 @@ public class WildcardPatternGui {
     }
 
     private ButtonWidget<?> deleteButton(Runnable action) {
-        return THEME.button()
-            .size(14)
-            .marginLeft(3)
-            .overlay(REFERENCE_CLOSE)
+        return new ButtonWidget<>().size(14)
+            .overlay(GuiTextures.CLOSE)
             .onMousePressed(button -> {
                 action.run();
                 return true;
@@ -637,15 +639,12 @@ public class WildcardPatternGui {
     }
 
     private ButtonWidget<?> saveButton() {
-        return THEME.button()
+        return ButtonPurpose.PRIMARY.apply(new ButtonWidget<>())
             .size(30, 20)
             // #tr gui.wildcardpattern.save
             // # Save
             // # zh_CN 保存
-            .overlay(
-                IKey.lang("gui.wildcardpattern.save")
-                    .color(0xFFFFFFFF)
-                    .shadow(true))
+            .overlay(IKey.lang("gui.wildcardpattern.save"))
             .onMousePressed(button -> {
                 pushConfig();
                 return true;
@@ -735,7 +734,7 @@ public class WildcardPatternGui {
     public static final class DropWidget extends ItemStackSlot {
 
         private DropWidget(Supplier<ItemStack> getter, Consumer<ItemStack> onDrop) {
-            super(() -> WildcardMaterials.toDisplayStack(getter == null ? null : getter.get()), THEME.slot);
+            super(() -> WildcardMaterials.toDisplayStack(getter == null ? null : getter.get()));
             onDrop(onDrop);
         }
     }
@@ -753,7 +752,7 @@ public class WildcardPatternGui {
         private int ticks, index;
 
         private PreviewPage(Consumer<String> excludeMaterial) {
-            size(158, 80);
+            size(158, PREVIEW_HEIGHT);
             child(
                 // #tr gui.wildcardpattern.available_count
                 // # Available patterns: %s
@@ -765,13 +764,9 @@ public class WildcardPatternGui {
                     .pos(2, 2)
                     .size(136, 15));
             child(
-                THEME.button()
-                    .pos(140, 2)
+                new ButtonWidget<>().pos(140, 2)
                     .size(14)
-                    .overlay(
-                        UITexture.builder()
-                            .location(ModList.ModIds.GT_NEVER_RESET, "gui/ldlib/modern/close")
-                            .build())
+                    .overlay(GuiTextures.CLOSE)
                     .onUpdateListener(button -> button.setEnabled(currentMaterialName() != null))
                     .tooltipBuilder(
                         tooltip -> tooltip.addLine(
@@ -788,20 +783,14 @@ public class WildcardPatternGui {
             for (int i = 0; i < 6; i++) {
                 final int slot = i;
                 child(
-                    new ItemStackSlot(() -> WildcardMaterials.toDisplayStack(stack(true, slot)), THEME.slot)
-                        .itemTooltip()
+                    new ItemStackSlot(() -> WildcardMaterials.toDisplayStack(stack(true, slot))).itemTooltip()
                         .pos(10 + i % 3 * 18, 18 + i / 3 * 18));
                 child(
-                    new ItemStackSlot(() -> WildcardMaterials.toDisplayStack(stack(false, slot)), THEME.slot)
-                        .itemTooltip()
+                    new ItemStackSlot(() -> WildcardMaterials.toDisplayStack(stack(false, slot))).itemTooltip()
                         .pos(94 + i % 3 * 18, 18 + i / 3 * 18));
             }
             child(
-                UITexture.builder()
-                    .location(ModList.ModIds.GT_NEVER_RESET, "gui/ldlib/modern/progress_bar_arrow")
-                    .imageSize(20, 40)
-                    .subAreaXYWH(0, 0, 20, 20)
-                    .build()
+                IKey.str(">")
                     .asWidget()
                     .pos(74, 32)
                     .size(15, 10));
@@ -814,8 +803,7 @@ public class WildcardPatternGui {
                     .pos(2, 61)
                     .size(28, 12));
             child(
-                THEME.textField()
-                    .pos(32, 59)
+                new TextFieldWidget().pos(32, 59)
                     .size(124, 16)
                     .autoUpdateOnChange(true)
                     .value(new StringValue.Dynamic(() -> search, text -> {

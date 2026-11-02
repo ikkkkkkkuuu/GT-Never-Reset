@@ -32,8 +32,20 @@ public final class WirelessPowerTransfer {
     }
 
     public static boolean connect(BaseMetaTileEntity tile, EntityPlayer player, UUID source) {
+        return tile.isUseableByPlayer(player) && bind(tile, player, source);
+    }
+
+    public static boolean connectPlaced(BaseMetaTileEntity tile, EntityPlayer player, UUID source) {
+        // MM places beyond GUI interaction range. Check the newly placed receiver's access rules directly.
+        return tile.getTimer() > 1 && tile.canAccessData()
+            && tile.playerOwnsThis(player, false)
+            && tile.getMetaTileEntity()
+                .isAccessAllowed(player)
+            && bind(tile, player, source);
+    }
+
+    private static boolean bind(BaseMetaTileEntity tile, EntityPlayer player, UUID source) {
         if (player.worldObj.isRemote || !supports(tile)
-            || !tile.isUseableByPlayer(player)
             || !player.canPlayerEdit(tile.xCoord, tile.yCoord, tile.zCoord, 1, player.getCurrentEquippedItem())
             || !WirelessPowerSavedData.sourceExists(source)) return false;
         WirelessPowerSavedData data = WirelessPowerSavedData.get();

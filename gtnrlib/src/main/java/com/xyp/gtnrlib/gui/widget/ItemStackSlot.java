@@ -8,6 +8,7 @@ import net.minecraft.item.ItemStack;
 
 import org.jetbrains.annotations.NotNull;
 
+import com.cleanroommc.modularui.api.IThemeApi;
 import com.cleanroommc.modularui.api.MCHelper;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.widget.Interactable;
@@ -28,6 +29,12 @@ public class ItemStackSlot extends Widget<ItemStackSlot>
     private final Supplier<ItemStack> getter;
     private Consumer<ItemStack> onDrop;
     private boolean itemTooltip;
+
+    public ItemStackSlot(Supplier<ItemStack> getter) {
+        this.getter = getter;
+        size(18);
+        widgetTheme(IThemeApi.ITEM_SLOT);
+    }
 
     public ItemStackSlot(Supplier<ItemStack> getter, IDrawable background) {
         this.getter = getter;

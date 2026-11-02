@@ -173,11 +173,20 @@ public class WirelessOperations {
     }
 
     public static Result teleport(EntityPlayerMP player, WirelessFrequency source, IWirelessLinkView view) {
-        if (!WirelessClusterManager.isCurrentLink(source, view)) return Result.STALE;
+        return teleport(player, source, view, null);
+    }
+
+    public static Result teleport(EntityPlayerMP player, WirelessFrequency source, IWirelessLinkView view,
+        IGridNode device) {
+        if (!WirelessClusterManager.isCurrentLink(source, view) || device != null && !view.members()
+            .contains(device)) return Result.STALE;
         IGridNode controller = WirelessFrequencies.controllerNode(source);
         if (controller == null) return Result.UNAVAILABLE;
-        if (!canBuild(controller, player) || !canBuild(view.node(), player)) return Result.DENIED;
-        return WirelessCardTeleport.teleport(player, view.target()) ? Result.APPLIED : Result.UNCHANGED;
+        if (!canBuild(controller, player) || !canBuild(device == null ? view.node() : device, player))
+            return Result.DENIED;
+        var address = device == null ? view.target() : WirelessClusterManager.deviceAddress(device);
+        if (address == null) return Result.STALE;
+        return WirelessCardTeleport.teleport(player, address) ? Result.APPLIED : Result.UNCHANGED;
     }
 
     static void clear() {

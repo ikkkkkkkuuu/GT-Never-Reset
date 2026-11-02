@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.qa;
 
+import java.io.File;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +11,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
@@ -26,9 +28,11 @@ import com.recursive_pineapple.matter_manipulator.common.items.manipulator.ItemM
 import com.recursive_pineapple.matter_manipulator.common.items.manipulator.Location;
 import com.recursive_pineapple.matter_manipulator.common.items.manipulator.MMState;
 import com.recursive_pineapple.matter_manipulator.common.items.manipulator.Transform;
+import com.xyp.gtneverreset.common.item.items.WirelessPowerCard;
 import com.xyp.gtneverreset.common.wireless.IWirelessPowerReceiver;
 import com.xyp.gtneverreset.common.wireless.WirelessPowerSavedData;
 import com.xyp.gtneverreset.common.wireless.WirelessPowerTransfer;
+import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
@@ -225,6 +229,33 @@ public final class WirelessPowerManipulatorChecks {
                         && WirelessNetworkManager.getUserEU(otherSource)
                             .compareTo(BigInteger.valueOf(1000000)) < 0,
                     "receivers debit their selected real wireless accounts");
+                place(player, 12, meta -> meta instanceof MTEHatchEnergy hatch && hatch.mTier == 1);
+                place(player, 14, meta -> meta instanceof MTEHatchEnergy hatch && hatch.mTier == 1);
+                place(player, 16, meta -> meta instanceof MTEHatchEnergy hatch && hatch.mTier == 2);
+            }
+            if (ticks == 125) {
+                data.connect(tile(world, 12), player.getUniqueID(), source);
+                data.connect(tile(world, 14), player.getUniqueID(), source);
+                var card = GTNRItemList.WirelessPowerCard.get(1);
+                player.inventory.mainInventory[1] = card;
+                WirelessPowerCard.selectSource(card, player, otherSource);
+                replaceHatch(player, 12);
+            }
+            if (ticks == 160) {
+                require(
+                    data.connectionAt(tile(world, 12)) != null
+                        && data.connectionAt(tile(world, 12)).source.equals(otherSource),
+                    "MM replacement selected the carried card network");
+                require(
+                    tile(world, 12).getStoredEU() > 0,
+                    "MM replacement MV hatch receives EU from carried card at range");
+                WirelessPowerCard.toggleAutomatic(player.inventory.mainInventory[1], player);
+                replaceHatch(player, 14);
+            }
+            if (ticks == 195) {
+                require(
+                    id(tile(world, 14)) == null && tile(world, 14).getStoredEU() == 0,
+                    "MM replacement with auto-connect off leaves the MV hatch disconnected");
                 finish("PASS");
             }
             if (ticks > 200) throw new AssertionError("MM QA timed out");
@@ -232,6 +263,17 @@ public final class WirelessPowerManipulatorChecks {
             failure.printStackTrace();
             finish("FAIL");
         }
+    }
+
+    private static void replaceHatch(EntityPlayerMP player, int x) {
+        World world = player.worldObj;
+        var spec = BlockSpec.fromBlock(null, world, 16, 10, 0);
+        var block = new PendingBlock(world.provider.dimensionId, x, 10, 0, spec);
+        MMState state = state(player);
+        state.config.placeMode = MMState.PlaceMode.EXCHANGING;
+        new PendingBuild(player, state, ManipulatorTier.Tier3, List.of(block))
+            .tryPlaceBlocks(player.getHeldItem(), player);
+        require(tile(world, x).getMetaTileID() == tile(world, 16).getMetaTileID(), "MM exchanged LV hatch for MV");
     }
 
     private static void build(EntityPlayerMP player, List<PendingBlock> blocks) {
@@ -290,9 +332,16 @@ public final class WirelessPowerManipulatorChecks {
         finished = true;
         System.out.println("WIRELESS_POWER_MM_QA: " + result);
         Minecraft.getMinecraft()
-            .func_152344_a(
-                () -> Minecraft.getMinecraft()
-                    .shutdown());
+            .func_152344_a(() -> {
+                Minecraft mc = Minecraft.getMinecraft();
+                ScreenShotHelper.saveScreenshot(
+                    new File("."),
+                    "mm-exchange.png",
+                    mc.displayWidth,
+                    mc.displayHeight,
+                    mc.getFramebuffer());
+                mc.shutdown();
+            });
     }
 
     private static void require(boolean condition, String message) {

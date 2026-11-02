@@ -5,6 +5,7 @@ import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessC
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.DELETE_SOURCE;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.HIGHLIGHT;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.OPEN_DETAILS;
+import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.OPEN_ENTRANCES;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.REFRESH;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.RENAME;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.RENAME_SOURCE;
@@ -61,6 +62,7 @@ import com.xyp.gtneverreset.common.wireless.WirelessCardBinding;
 import com.xyp.gtneverreset.common.wireless.WirelessCardInventory;
 import com.xyp.gtneverreset.common.wireless.WirelessCardVisualisation;
 import com.xyp.gtneverreset.common.wireless.WirelessChannelManager;
+import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Address;
 import com.xyp.gtneverreset.common.wireless.WirelessClusterManager;
 import com.xyp.gtneverreset.common.wireless.WirelessFrequencies;
 import com.xyp.gtneverreset.common.wireless.WirelessInterfaceView;
@@ -70,6 +72,7 @@ import com.xyp.gtneverreset.common.wireless.WirelessNetworkStatistics;
 import com.xyp.gtneverreset.common.wireless.WirelessOperations;
 
 import appeng.api.AEApi;
+import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -121,6 +124,8 @@ public final class WirelessFrequencyCardGui {
         public static final int SELECT_SOURCE = 63;
         public static final int RENAME_SOURCE = 70;
         public static final int DELETE_SOURCE = 80;
+        public static final int OPEN_ENTRANCES = 90;
+        public static final int SET_VISUALISATION = 100;
         private static final int ROW_STRIDE = 10;
 
         public static int type(int id) {
@@ -133,7 +138,7 @@ public final class WirelessFrequencyCardGui {
 
         public static boolean isRowAction(int id) {
             return id >= TOGGLE_PAUSE && id < TELEPORT + ROW_STRIDE
-                || id >= RENAME_SOURCE && id < DELETE_SOURCE + ROW_STRIDE;
+                || id >= RENAME_SOURCE && id < OPEN_ENTRANCES + ROW_STRIDE;
         }
     }
 
@@ -158,18 +163,22 @@ public final class WirelessFrequencyCardGui {
                 return;
             }
             if (isRowAction(action) && action != OPEN_DETAILS
+                && action != OPEN_ENTRANCES
                 && action != TOGGLE_PAUSE
                 && action != TELEPORT
                 && action != HIGHLIGHT
                 && action != RENAME_SOURCE
                 && action != DELETE_SOURCE) return;
             if (!acceptRequest(player.worldObj.getTotalWorldTime())) return;
-            if (action == OPEN_DETAILS) session.update(false);
+            if (action == OPEN_DETAILS || action == OPEN_ENTRANCES) session.update(false);
             if (session.revision != revision) {
                 session.update(true);
                 return;
             }
             var row = session.snapshot == null ? null : session.snapshot.target(targetId);
+            IGridNode device = session.snapshot == null ? null : session.snapshot.devices.get(targetId);
+            if (device != null && (action == TELEPORT || action == HIGHLIGHT))
+                row = session.snapshot.target(session.snapshot.payload.getLong("detailId"));
             if (isRowAction(action) && action != RENAME_SOURCE && action != DELETE_SOURCE || action == RENAME) {
                 if (binding == null || row == null) {
                     message("stale");
@@ -195,6 +204,9 @@ public final class WirelessFrequencyCardGui {
                     }
                     session.selectSource((int) targetId - 1);
                 }
+            } else if (action == WirelessCardActions.SET_VISUALISATION) {
+                if (targetId < 0 || targetId >= WirelessCardVisualisation.MODE_COUNT) return;
+                WirelessCardVisualisation.set(card, player, (int) targetId);
             } else if (action == CYCLE_VISUALISATION) {
                 WirelessCardVisualisation.cycle(card, player);
             } else if (action == RENAME) {
@@ -213,7 +225,7 @@ public final class WirelessFrequencyCardGui {
                 }
             } else if (action == TELEPORT && player instanceof EntityPlayerMP serverPlayer) {
                 try {
-                    switch (WirelessOperations.teleport(serverPlayer, binding.frequency(), row)) {
+                    switch (WirelessOperations.teleport(serverPlayer, binding.frequency(), row, device)) {
                         case STALE -> message("stale");
                         case UNAVAILABLE -> message("teleport_unavailable");
                         case DENIED -> message("denied");
@@ -227,7 +239,9 @@ public final class WirelessFrequencyCardGui {
                 }
             } else if (action == HIGHLIGHT) {
                 try {
-                    if (!WirelessClusterManager.isCurrentLink(binding.frequency(), row)) {
+                    if (!WirelessClusterManager.isCurrentLink(binding.frequency(), row)
+                        || device != null && !row.members()
+                            .contains(device)) {
                         message("stale");
                         session.update(true);
                         return;
@@ -236,22 +250,22 @@ public final class WirelessFrequencyCardGui {
                     message("stale");
                     return;
                 }
-                if (row.target()
-                    .dimension() != player.dimension) {
-                    message(
-                        "highlight_dimension",
-                        row.target()
-                            .dimension());
+                Address address = device == null ? row.target() : WirelessClusterManager.deviceAddress(device);
+                if (address == null) {
+                    message("stale");
+                } else if (address.dimension() != player.dimension) {
+                    message("highlight_dimension", address.dimension());
                 } else {
                     session.pendingHighlight = new NBTTagList();
-                    var targets = WirelessClusterManager.highlight(row)
-                        .stream()
-                        .filter(target -> target.dimension() == player.dimension)
-                        .sorted(
-                            Comparator
-                                .comparingDouble(target -> player.getDistanceSq(target.x(), target.y(), target.z())))
-                        .limit(512)
-                        .collect(Collectors.toList());
+                    var targets = device != null ? Collections.singletonList(address)
+                        : WirelessClusterManager.highlight(row)
+                            .stream()
+                            .filter(target -> target.dimension() == player.dimension)
+                            .sorted(
+                                Comparator.comparingDouble(
+                                    target -> player.getDistanceSq(target.x(), target.y(), target.z())))
+                            .limit(512)
+                            .collect(Collectors.toList());
                     for (var target : targets) {
                         NBTTagCompound pos = new NBTTagCompound();
                         pos.setInteger("dimension", target.dimension());
@@ -267,9 +281,11 @@ public final class WirelessFrequencyCardGui {
             } else if (action == TOGGLE_GROUPING && session.view.detailNode() == null) {
                 WirelessCardBinding.toggleGrouping(card);
                 WirelessCardInventory.sync(player, card);
-            } else if (action == OPEN_DETAILS) {
-                if (session.view.detailNode() == null && row instanceof IWirelessLinkView.ClusterView)
+            } else if (action == OPEN_DETAILS || action == OPEN_ENTRANCES) {
+                if (session.view.detailNode() == null && row instanceof IWirelessLinkView.ClusterView) {
                     session.view.setDetailNode(row.node());
+                    session.view.detailDevices = action == OPEN_DETAILS;
+                }
             } else if (action == TOGGLE_PAUSE) {
                 try {
                     WirelessOperations.setPaused(player, binding.frequency(), row);
@@ -295,7 +311,10 @@ public final class WirelessFrequencyCardGui {
 
     public static class WirelessCardViewState {
 
+        private static final List<String> DEVICE_STATES = Arrays.asList("missing", "offline", "online");
         private IGridNode detailNode;
+        private boolean detailDevices;
+        private Map<IGridNode, Long> deviceIds = new HashMap<>();
         private final WirelessMachineGroups.Startup startup = new WirelessMachineGroups.Startup();
         private Map<Target, Long> targetIds = new HashMap<>();
         private long nextTargetId, nameRevision;
@@ -329,7 +348,8 @@ public final class WirelessFrequencyCardGui {
             RenameState nextRenameState = focus == null ? null : new RenameState(focus.members(), focus.deviceNames());
             if (!Objects.equals(renameState, nextRenameState)) nameRevision++;
             renameState = nextRenameState;
-            List<Row> rows = initializing ? Collections.emptyList()
+            boolean showDevices = detailDevices && focus != null;
+            List<Row> rows = initializing || showDevices ? Collections.emptyList()
                 : focus == null ? WirelessMachineGroups.group(all, interfaces)
                     : WirelessClusterManager.entranceLinks(binding.frequency(), focus.cluster())
                         .stream()
@@ -338,15 +358,12 @@ public final class WirelessFrequencyCardGui {
             NBTTagCompound data = new NBTTagCompound();
             NBTTagCompound dimensions = new NBTTagCompound();
             data.setBoolean("detail", focus != null);
+            data.setBoolean("devicePage", showDevices);
             data.setBoolean("initializing", initializing);
             data.setBoolean("collapseTypes", WirelessCardBinding.collapseTypes(card.getTagCompound()));
             data.setString("name", focus == null ? "" : focus.name());
             data.setLong("nameRevision", nameRevision);
-            data.setString(
-                "detailTarget",
-                focus == null ? ""
-                    : focus.target()
-                        .toString());
+            data.setString("detailTarget", focus == null ? "" : focus.target() + (showDevices ? "/devices" : ""));
             data.setBoolean(
                 "multipleNames",
                 focus != null && focus.names()
@@ -429,10 +446,15 @@ public final class WirelessFrequencyCardGui {
             NBTTagList entries = new NBTTagList();
             for (Row row : rows)
                 entries.appendTag(writeRow(row, interfaces, dimensions, nextIds, targets, focus != null));
+            Map<IGridNode, Long> nextDeviceIds = new HashMap<>();
+            Map<Long, IGridNode> devices = new HashMap<>();
+            if (showDevices) for (Listed device : devices(focus))
+                entries.appendTag(writeDevice(focus, device, dimensions, nextDeviceIds, devices));
+            deviceIds = nextDeviceIds;
             targetIds = nextIds;
             data.setTag("rows", entries);
             data.setTag("dimensions", dimensions);
-            return new Snapshot(data, targets);
+            return new Snapshot(data, targets, devices);
         }
 
         private long identify(IWirelessLinkView link, Map<Target, Long> nextIds, Map<Long, IWirelessLinkView> targets) {
@@ -443,6 +465,55 @@ public final class WirelessFrequencyCardGui {
             });
             targets.put(id, link);
             return id;
+        }
+
+        private static List<Listed> devices(IWirelessLinkView link) {
+            boolean channels = WirelessChannelManager.channelsEnabled();
+            List<Listed> devices = new ArrayList<>();
+            for (IGridNode node : link.members()) {
+                if (!node.hasFlag(GridFlags.REQUIRE_CHANNEL)) continue;
+                Address address = WirelessClusterManager.deviceAddress(node);
+                if (address == null) continue;
+                String state = channels && !node.meetsChannelRequirements() ? "missing"
+                    : node.isActive() ? "online" : "offline";
+                devices.add(new Listed(node, address, state));
+            }
+            devices.sort(
+                Comparator.comparingInt((Listed device) -> DEVICE_STATES.indexOf(device.state()))
+                    .thenComparing(Listed::address, Address.POSITION_ORDER));
+            return devices;
+        }
+
+        private NBTTagCompound writeDevice(IWirelessLinkView link, Listed device, NBTTagCompound dimensions,
+            Map<IGridNode, Long> nextIds, Map<Long, IGridNode> targets) {
+            IGridNode node = device.node();
+            Address address = device.address();
+            long id = nextIds.computeIfAbsent(
+                node,
+                (IGridNode ignored) -> deviceIds.containsKey(node) ? deviceIds.get(node) : ++nextTargetId);
+            targets.put(id, node);
+            NBTTagCompound entry = new NBTTagCompound();
+            writeDimensionName(dimensions, address.dimension());
+            entry.setBoolean("device", true);
+            entry.setLong("targetId", id);
+            entry.setString("key", "device:" + id);
+            entry.setInteger("dimension", address.dimension());
+            entry.setString("position", coordinates(address));
+            entry.setString(
+                "name",
+                link.deviceNames()
+                    .getOrDefault(node, ""));
+            entry.setString("deviceState", device.state());
+            writeIcon(
+                entry,
+                "icon",
+                node.getGridBlock()
+                    .getMachineRepresentation());
+            entry.setString(
+                "side",
+                address.side()
+                    .name());
+            return entry;
         }
 
         private NBTTagCompound writeRow(Row row, WirelessInterfaceView interfaces, NBTTagCompound dimensions,
@@ -594,6 +665,9 @@ public final class WirelessFrequencyCardGui {
         }
 
         @Desugar
+        private record Listed(IGridNode node, Address address, String state) {}
+
+        @Desugar
         private record Target(IGridNode node, Set<IGridNode> members, boolean entrance) {}
 
         @Desugar
@@ -604,7 +678,11 @@ public final class WirelessFrequencyCardGui {
             private final NBTTagCompound payload;
             private final Map<Long, IWirelessLinkView> targets;
 
-            private Snapshot(NBTTagCompound payload, Map<Long, IWirelessLinkView> targets) {
+            private final Map<Long, IGridNode> devices;
+
+            private Snapshot(NBTTagCompound payload, Map<Long, IWirelessLinkView> targets,
+                Map<Long, IGridNode> devices) {
+                this.devices = devices;
                 this.payload = (NBTTagCompound) payload.copy();
                 this.targets = Collections.unmodifiableMap(new HashMap<>(targets));
             }

@@ -35,6 +35,7 @@ public final class ConfigRegistry {
         CATEGORIES.put(RecipeSpeedConfig.class, false);
         CATEGORIES.put(PackagedProviderConfig.class, false);
         CATEGORIES.put(WirelessMonitorConfig.class, true);
+        CATEGORIES.put(ScreenThemeConfig.class, true);
     }
 
     public static Class<?>[] common() {

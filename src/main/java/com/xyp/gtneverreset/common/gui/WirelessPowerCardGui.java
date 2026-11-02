@@ -2,11 +2,14 @@ package com.xyp.gtneverreset.common.gui;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -46,7 +49,16 @@ public final class WirelessPowerCardGui {
 
     public static final int MIN_ROWS = 5, MAX_ROWS = 9;
     public static final int SOURCES = 1, DEVICES = 2, PREVIOUS = 3, NEXT = 4, AUTO = 5, SELECT = 6, PAUSE = 7,
-        REMOVE = 8, REFRESH = 9, RESIZE = 10, FILTER = 11, TELEPORT = 12, HIGHLIGHT = 13, OPEN = 14, CLOSE = 15;
+        REMOVE = 8, REFRESH = 9, RESIZE = 10, FILTER = 11, TELEPORT = 12, HIGHLIGHT = 13, OPEN = 14, CLOSE = 15,
+        STATE = 16, DIMENSION = 17, MERGE_TYPES = 18, EXPAND_TYPE = 19;
+
+    public enum PowerState {
+        ALL,
+        CONNECTED,
+        OFFLINE,
+        NO_POWER,
+        PAUSED
+    }
 
     private WirelessPowerCardGui() {}
 
@@ -77,7 +89,10 @@ public final class WirelessPowerCardGui {
         private final PlayerInventoryGuiData data;
         private final WirelessPowerCardContainer container;
         private int page, ticks, visibleRows = MIN_ROWS;
-        private boolean sources;
+        private boolean sources, mergeTypes;
+        private Integer dimension;
+        private PowerState state = PowerState.ALL;
+        private final Set<Integer> expandedTypes = new HashSet<>();
         private String filter = "";
         private String detail = "";
         private int overviewPage;
@@ -144,9 +159,7 @@ public final class WirelessPowerCardGui {
                 }
             }
             next.setBoolean("detail", !detail.isEmpty());
-            if (detail.isEmpty()) devices = devices.stream()
-                .filter(row -> row.matches(filter, saved))
-                .toList();
+            if (!sources && detail.isEmpty()) devices = overview(devices, saved, next);
             int count = visibleRows;
             int total = sources ? networks.size() : devices.size();
             int pages = Math.max(1, (total + count - 1) / count);
@@ -177,6 +190,65 @@ public final class WirelessPowerCardGui {
             next.setTag("rows", rows);
             display = next;
             syncToClient(0, buffer -> buffer.writeNBTTagCompoundToBuffer(next));
+        }
+
+        private List<DeviceRow> overview(List<DeviceRow> devices, WirelessPowerSavedData saved, NBTTagCompound next) {
+            Map<Integer, Integer> dimensions = new TreeMap<>();
+            for (DeviceRow row : devices) dimensions.merge(row.dimension(), 1, Integer::sum);
+            NBTTagList options = new NBTTagList();
+            if (dimension != null) dimensions.putIfAbsent(dimension, 0);
+            dimensions.forEach((id, count) -> {
+                NBTTagCompound option = new NBTTagCompound();
+                option.setInteger("dimension", id);
+                option.setInteger("count", count);
+                option.setString("name", dimensionName(id));
+                options.appendTag(option);
+            });
+            next.setTag("dimensions", options);
+            if (dimension != null) next.setInteger("dimension", dimension);
+            next.setBoolean("mergeTypes", mergeTypes);
+            next.setInteger("state", state.ordinal());
+            next.setInteger("deviceCount", devices.size());
+
+            int[] counts = new int[PowerState.values().length];
+            List<DeviceRow> matches = new ArrayList<>();
+            String query = filter.toLowerCase(Locale.ROOT);
+            for (DeviceRow row : devices) {
+                if (dimension != null && row.dimension() != dimension || !query.isEmpty() && !row.matches(query, saved))
+                    continue;
+                PowerState status = row.status();
+                counts[PowerState.ALL.ordinal()]++;
+                counts[status.ordinal()]++;
+                if (state == PowerState.ALL || state == status) matches.add(row);
+            }
+            next.setIntArray("stateCounts", counts);
+            if (!mergeTypes) return matches;
+
+            Map<Integer, List<DeviceRow>> types = new LinkedHashMap<>();
+            for (DeviceRow row : matches) types.computeIfAbsent(row.metaId(), ignored -> new ArrayList<>())
+                .add(row);
+            List<DeviceRow> shown = new ArrayList<>();
+            for (List<DeviceRow> type : types.values()) {
+                DeviceRow first = type.get(0);
+                if (type.size() == 1) {
+                    shown.add(first);
+                    continue;
+                }
+                DeviceRow folder = new DeviceRow(first.members.get(0), first.controller);
+                folder.typeCount = type.size();
+                folder.expanded = expandedTypes.contains(first.metaId());
+                shown.add(folder);
+                if (folder.expanded) {
+                    for (DeviceRow row : type) row.indented = true;
+                    shown.addAll(type);
+                }
+            }
+            return shown;
+        }
+
+        private static String dimensionName(int id) {
+            var world = DimensionManager.getWorld(id);
+            return world == null ? "" : Objects.toString(DimensionDef.getDimensionName(world), "");
         }
 
         private List<DeviceRow> deviceRows(WirelessPowerSavedData saved) {
@@ -219,14 +291,17 @@ public final class WirelessPowerCardGui {
 
         @Override
         public void readOnServer(int action, PacketBuffer buffer) throws IOException {
-            if (action < SOURCES || action > CLOSE) return;
+            if (action < SOURCES || action > EXPAND_TYPE) return;
             String target = buffer.readStringFromBuffer(64);
             ServerThreadUtil.addScheduledTask(() -> {
                 if (!isValid() || !hasCard() || data.getPlayer().openContainer != container) return;
                 ItemStack card = container.card();
                 long now = data.getPlayer().worldObj.getTotalWorldTime();
-                if (lastAction == now && action != RESIZE && action != FILTER) return;
-                lastAction = now;
+                if (action != RESIZE && action != FILTER && action < STATE) {
+                    if (lastAction == now) return;
+                    lastAction = now;
+                }
+                if (action >= STATE && (sources || !detail.isEmpty())) return;
                 WirelessPowerSavedData saved = WirelessPowerSavedData.get();
                 if (saved == null) return;
                 UUID id = null;
@@ -316,6 +391,39 @@ public final class WirelessPowerCardGui {
                         }
                         return;
                     }
+                    case STATE -> {
+                        try {
+                            state = PowerState.valueOf(target);
+                        } catch (IllegalArgumentException invalid) {
+                            return;
+                        }
+                        page = 0;
+                    }
+                    case DIMENSION -> {
+                        try {
+                            dimension = target.isEmpty() ? null : Integer.valueOf(target);
+                        } catch (NumberFormatException invalid) {
+                            return;
+                        }
+                        page = 0;
+                    }
+                    case MERGE_TYPES -> {
+                        mergeTypes = !mergeTypes;
+                        expandedTypes.clear();
+                        page = 0;
+                    }
+                    case EXPAND_TYPE -> {
+                        if (!mergeTypes) return;
+                        var rows = display.getTagList("rows", 10);
+                        for (int i = 0; i < rows.tagCount(); i++) {
+                            var row = rows.getCompoundTagAt(i);
+                            if (row.getInteger("typeCount") <= 1 || !row.getString("id")
+                                .equals(target)) continue;
+                            int type = row.getInteger("metaId");
+                            if (!expandedTypes.remove(type)) expandedTypes.add(type);
+                            break;
+                        }
+                    }
                     case REFRESH -> {}
                     case RESIZE -> {
                         try {
@@ -353,6 +461,12 @@ public final class WirelessPowerCardGui {
             private final BaseMetaTileEntity controller;
             private final List<Connection> members = new ArrayList<>();
 
+            private int typeCount;
+            private boolean expanded, indented;
+            private PowerState status;
+            private int online;
+            private boolean paused, ready;
+
             private DeviceRow(Connection connection) {
                 this(connection, null);
             }
@@ -374,49 +488,77 @@ public final class WirelessPowerCardGui {
                         + controller.getMetaTileID();
             }
 
-            private boolean matches(String filter, WirelessPowerSavedData saved) {
-                String query = filter.toLowerCase(Locale.ROOT);
-                if (controller != null && controller.getMetaTileEntity()
-                    .getLocalName()
-                    .toLowerCase(Locale.ROOT)
-                    .contains(query)) return true;
+            private int metaId() {
+                return controller == null ? members.get(0).metaId : controller.getMetaTileID();
+            }
+
+            private int dimension() {
+                return members.get(0).dimension;
+            }
+
+            private PowerState status() {
+                if (status == null) {
+                    online = 0;
+                    paused = true;
+                    ready = true;
+                    for (Connection member : members) {
+                        if (member.loadedTile() != null) online++;
+                        paused &= member.paused();
+                        ready &= WirelessNetworkManager.getUserEU(member.source)
+                            .signum() > 0;
+                    }
+                    status = paused ? PowerState.PAUSED
+                        : online == 0 ? PowerState.OFFLINE : !ready ? PowerState.NO_POWER : PowerState.CONNECTED;
+                }
+                return status;
+            }
+
+            private boolean matches(String query, WirelessPowerSavedData saved) {
+                if (controller != null && (controller.getMetaTileEntity()
+                    .getLocalName() + " "
+                    + searchPosition(dimension(), controller.xCoord, controller.yCoord, controller.zCoord))
+                        .toLowerCase(Locale.ROOT)
+                        .contains(query))
+                    return true;
                 return members.stream()
                     .anyMatch(
                         connection -> (connection.name + " "
                             + saved.name(connection.source)
                             + " "
-                            + connection.dimension
-                            + " "
-                            + connection.x
-                            + ", "
-                            + connection.y
-                            + ", "
-                            + connection.z).toLowerCase(Locale.ROOT)
+                            + searchPosition(connection.dimension, connection.x, connection.y, connection.z))
+                                .toLowerCase(Locale.ROOT)
                                 .contains(query));
+            }
+
+            private static String searchPosition(int dimension, int x, int y, int z) {
+                return "D" + dimension + " " + x + ", " + y + ", " + z;
             }
 
             private NBTTagCompound write(WirelessPowerSavedData saved) {
                 Connection first = members.get(0);
+                if (typeCount > 1) {
+                    NBTTagCompound folder = new NBTTagCompound();
+                    folder.setString("id", "type:" + metaId());
+                    folder.setInteger("metaId", metaId());
+                    folder.setString(
+                        "name",
+                        controller == null ? first.name
+                            : controller.getMetaTileEntity()
+                                .getLocalName());
+                    folder.setInteger("typeCount", typeCount);
+                    folder.setBoolean("expanded", expanded);
+                    return folder;
+                }
                 NBTTagCompound row = first.write();
+                row.setBoolean("indented", indented);
                 row.setString("id", key());
                 row.setBoolean("group", controller != null);
                 row.setInteger("members", members.size());
-                row.setInteger(
-                    "online",
-                    (int) members.stream()
-                        .filter(member -> member.loadedTile() != null)
-                        .count());
-                row.setBoolean("loaded", row.getInteger("online") > 0);
-                row.setBoolean(
-                    "paused",
-                    members.stream()
-                        .allMatch(Connection::paused));
-                row.setBoolean(
-                    "ready",
-                    members.stream()
-                        .allMatch(
-                            member -> WirelessNetworkManager.getUserEU(member.source)
-                                .signum() > 0));
+                row.setInteger("state", status().ordinal());
+                row.setInteger("online", online);
+                row.setBoolean("loaded", online > 0);
+                row.setBoolean("paused", paused);
+                row.setBoolean("ready", ready);
                 row.setDouble(
                     "transfer",
                     members.stream()
@@ -436,10 +578,7 @@ public final class WirelessPowerCardGui {
                     row.setInteger("y", controller.yCoord);
                     row.setInteger("z", controller.zCoord);
                 }
-                var world = DimensionManager.getWorld(first.dimension);
-                row.setString(
-                    "dimensionName",
-                    world == null ? "" : Objects.toString(DimensionDef.getDimensionName(world), ""));
+                row.setString("dimensionName", dimensionName(first.dimension));
                 return row;
             }
         }

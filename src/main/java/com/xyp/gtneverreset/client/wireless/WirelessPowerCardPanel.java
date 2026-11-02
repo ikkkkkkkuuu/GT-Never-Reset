@@ -5,7 +5,9 @@ import static net.minecraft.client.gui.Gui.drawRect;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -31,11 +33,8 @@ import org.lwjgl.opengl.GL11;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
-import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.layout.IViewportStack;
 import com.cleanroommc.modularui.drawable.GuiDraw;
-import com.cleanroommc.modularui.drawable.Rectangle;
-import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
@@ -50,11 +49,14 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.wireless.WirelessCardGui.Layout;
-import com.xyp.gtneverreset.common.gui.WirelessCardGuiTextures;
 import com.xyp.gtneverreset.common.gui.WirelessPowerCardGui.Session;
 import com.xyp.gtneverreset.common.item.items.WirelessPowerCard;
+import com.xyp.gtneverreset.config.ScreenThemeConfig;
+import com.xyp.gtnrlib.gui.theme.AE2Theme;
+import com.xyp.gtnrlib.gui.theme.AE2Theme.Colors;
+import com.xyp.gtnrlib.gui.theme.AE2Theme.Icon;
+import com.xyp.gtnrlib.gui.widget.CycleDropdown;
 
-import appeng.client.gui.ScreenColor;
 import appeng.core.localization.ColorUtils;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -65,6 +67,14 @@ import gtneioreplugin.util.DimensionHelper;
 public final class WirelessPowerCardPanel extends ModularPanel {
 
     private static final int ROW_TOP = 82, ROW_HEIGHT = 24;
+    private static final String NAME = "wireless_power_card", DIMENSION_MENU = NAME + "_dimension";
+    private static final PowerState[] STATES = PowerState.values();
+    private final List<ButtonWidget<?>> chips = new ArrayList<>();
+    private final CycleDropdown<String> dimension;
+    private final ToggleButton merge;
+    private NBTTagCompound lastFilterView;
+    private final String themeId = ScreenThemeConfig.wirelessPowerCard.themeId;
+    private final AE2Theme.Variant variant = AE2Theme.variant(themeId);
     private final Session session;
     private final boolean details;
     private final IPanelHandler detailsPanel;
@@ -89,13 +99,12 @@ public final class WirelessPowerCardPanel extends ModularPanel {
     }
 
     private WirelessPowerCardPanel(Session session, boolean details) {
-        super(details ? "wireless_power_details" : "wireless_power_card");
+        super(details ? "wireless_power_details" : NAME);
         this.session = session;
         this.details = details;
         detailsPanel = details ? null
             : IPanelHandler.simple(this, (parent, player) -> new WirelessPowerCardPanel(session, true), true);
         if (details) child(ButtonWidget.panelCloseButton());
-        background(WirelessCardGuiTextures.BACKGROUND);
         previous = button(
             () -> "<",
             PREVIOUS,
@@ -117,7 +126,11 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         // #tr power.gui.refresh
         // # Refresh
         // # zh_CN 刷新
-        refresh = button(() -> tr("power.gui.refresh"), REFRESH, () -> "", () -> true);
+        refresh = iconButton(
+            Icon.REFRESH,
+            () -> tr("power.gui.refresh"),
+            () -> session.request(REFRESH, ""),
+            () -> true);
         sourceLink = new CardButton().background(IDrawable.EMPTY)
             .hoverBackground(IDrawable.EMPTY)
             .onMousePressed(mouse -> {
@@ -141,15 +154,9 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             public boolean canBeSeen(IViewportStack stack) {
                 return isEnabled() && super.canBeSeen(stack);
             }
-        }.background(
-            new Rectangle().color(0xff000000),
-            new Rectangle().color(0xffa0a0a0)
-                .hollow(1))
-            .setMaxLength(64)
-            .setTextColor(ColorUtils.searchboxText.getColor())
+        }.setMaxLength(64)
             .padding(2, 0)
             .hintText(tr("power.gui.search"))
-            .hintColor(ColorUtils.craftingTreeRequest.getColor())
             .autoUpdateOnChange(true)
             .value(new StringValue.Dynamic(() -> searchText, text -> {
                 if (searchText.equals(text)) return;
@@ -158,6 +165,43 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             }));
         search.setEnabledIf(widget -> !details && !sources());
         child(search);
+        if (!details) {
+            for (PowerState state : STATES) {
+                ButtonWidget<?> chip = WirelessCardFilters.chip(
+                    () -> stateLabel(state),
+                    () -> stateCount(state),
+                    () -> stateColor(state, variant == null ? null : variant.colors),
+                    () -> state == PowerState.ALL || activeState() == state || stateCount(state) > 0,
+                    () -> activeState() == state,
+                    () -> {
+                        session.request(STATE, state.name());
+                        return true;
+                    });
+                chip.tooltipBuilder(tooltip -> {
+                    tooltip.addLine(
+                        state == PowerState.ALL ? tr("gtneverreset.wireless.gui.chip_all_tip")
+                            : tr("gtneverreset.wireless.gui.chip_tip", stateLabel(state)));
+                    tooltip.addLine(tr("power.gui.devices", stateCount(state)));
+                })
+                    .tooltipAutoUpdate(true);
+                chips.add(chip);
+                child(chip);
+            }
+            dimension = WirelessCardFilters
+                .choice(
+                    DIMENSION_MENU,
+                    String.class,
+                    () -> dimensionLabel(selectedDimension(), false),
+                    id -> dimensionLabel(id, true),
+                    variant)
+                .maxVerticalMenuSize(120);
+            dimension.value(new StringValue.Dynamic(this::selectedDimension, id -> session.request(DIMENSION, id)));
+            child(dimension);
+            merge = toggle(() -> view().getBoolean("mergeTypes"), MERGE_TYPES, () -> "");
+        } else {
+            dimension = null;
+            merge = null;
+        }
         for (int i = 0; i < MAX_ROWS; i++) {
             final int index = i;
             // #tr power.gui.select
@@ -188,29 +232,33 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             // #tr power.gui.remove
             // # Unlink
             // # zh_CN 解绑
-            remove[i] = button(() -> tr("power.gui.remove"), REMOVE, () -> row(index).getString("id"), () -> true);
+            remove[i] = iconButton(
+                Icon.REMOVE,
+                () -> tr("power.gui.remove"),
+                () -> session.request(REMOVE, row(index).getString("id")),
+                () -> true);
             remove[i].setEnabledIf(widget -> device(index));
             // #tr power.gui.teleport
             // # Teleport
             // # zh_CN 传送
-            teleport[i] = button(
+            teleport[i] = iconButton(
+                Icon.MOVE_TO,
                 () -> tr("power.gui.teleport"),
-                TELEPORT,
-                () -> row(index).getString("id"),
+                () -> session.request(TELEPORT, row(index).getString("id")),
                 () -> row(index).getBoolean("loaded"));
             teleport[i].setEnabledIf(widget -> device(index));
             // #tr power.gui.copy
             // # Copy
             // # zh_CN 复制
-            copy[i] = button(() -> tr("power.gui.copy"), () -> copyPosition(index), () -> true);
-            copy[i].setEnabledIf(widget -> !sources() && hasRow(index));
+            copy[i] = iconButton(Icon.COPY, () -> tr("power.gui.copy"), () -> copyPosition(index), () -> true);
+            copy[i].setEnabledIf(widget -> !sources() && hasRow(index) && row(index).getInteger("typeCount") == 0);
             // #tr power.gui.highlight
             // # Highlight
             // # zh_CN 高亮
-            highlight[i] = button(
+            highlight[i] = iconButton(
+                Icon.VISIBLE,
                 () -> tr("power.gui.highlight"),
-                HIGHLIGHT,
-                () -> row(index).getString("id"),
+                () -> session.request(HIGHLIGHT, row(index).getString("id")),
                 () -> row(index).getBoolean("loaded"));
             highlight[i].setEnabledIf(widget -> device(index));
             power[i] = toggle(() -> !row(index).getBoolean("paused"), PAUSE, () -> row(index).getString("id"));
@@ -218,13 +266,20 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             deviceRows[i] = new CardButton().background(IDrawable.EMPTY)
                 .hoverBackground(IDrawable.EMPTY)
                 .onMousePressed(mouse -> {
-                    if (mouse == 0 && row(index).getBoolean("group")) session.request(OPEN, row(index).getString("id"));
+                    var row = row(index);
+                    if (mouse == 0 && row.getInteger("typeCount") > 1)
+                        session.request(EXPAND_TYPE, row.getString("id"));
+                    else if (mouse == 0 && row.getBoolean("group")) session.request(OPEN, row.getString("id"));
                     return true;
                 })
                 .setEnabledIf(widget -> !sources() && hasRow(index));
             deviceRows[i].tooltipBuilder(tooltip -> {
                 NBTTagCompound row = row(index);
                 tooltip.addLine(deviceName(row));
+                if (row.getInteger("typeCount") > 1) {
+                    tooltip.addLine(tr("power.gui.devices", row.getInteger("typeCount")));
+                    return;
+                }
                 tooltip.addLine(position(row, true));
                 tooltip.addLine(row.getString("sourceName"));
                 if (row.hasKey("recipeEUt")) {
@@ -251,6 +306,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
     }
 
     public ModularScreen screen() {
+        AE2Theme.useMenuTheme(themeId, GTNeverReset.MODID, NAME, DIMENSION_MENU);
         return new ModularScreen(GTNeverReset.MODID, this) {
 
             @Override
@@ -275,7 +331,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
                 }
                 return super.onMousePressed(button);
             }
-        };
+        }.useTheme(themeId);
     }
 
     private void resizeLayout(int width, int height) {
@@ -290,32 +346,44 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             .size(18, 20);
         back.pos(layout.footerInfoX(), ySize - 27)
             .size(36, 20);
-        refresh.pos(xSize - 76, ySize - 27)
-            .size(64, 20);
+        refresh.pos(xSize - 30, ySize - 27)
+            .size(20, 20);
         sourceLink.pos(8, 23)
             .size(xSize - 16, 12);
-        automatic.pos(xSize - 28, 10)
-            .size(16, 16);
-        search.pos(10, 62)
-            .size(xSize - 20, 12);
+        int autoWidth = Math.max(
+            AE2Theme.switchWidth(tr(WirelessPowerCard.autoOnKey())),
+            AE2Theme.switchWidth(tr(WirelessPowerCard.autoOffKey())));
+        automatic.pos(xSize - 10 - autoWidth, 9)
+            .size(autoWidth, AE2Theme.SWITCH_HEIGHT);
+        if (!details) {
+            int mergeWidth = AE2Theme.switchWidth(tr("gtneverreset.wireless.gui.merge_types"));
+            int searchWidth = xSize - 28 - 100 - mergeWidth;
+            search.pos(10, 65)
+                .size(searchWidth, 12);
+            dimension.pos(14 + searchWidth, 64)
+                .size(100, 14);
+            merge.pos(xSize - 10 - mergeWidth, 65)
+                .size(mergeWidth, AE2Theme.SWITCH_HEIGHT);
+            layoutChips();
+        }
         for (int i = 0; i < MAX_ROWS; i++) {
             int y = rowTop() + i * ROW_HEIGHT;
             select[i].pos(xSize - 76, y + 2)
                 .size(64, 20);
             sourceRows[i].pos(10, y)
                 .size(xSize - 94, ROW_HEIGHT);
-            teleport[i].pos(xSize - 164, y + 2)
-                .size(30, 20);
-            copy[i].pos(xSize - 130, y + 2)
-                .size(30, 20);
-            highlight[i].pos(xSize - 96, y + 2)
-                .size(30, 20);
-            remove[i].pos(xSize - 62, y + 2)
-                .size(30, 20);
+            teleport[i].pos(xSize - 100, y + 4)
+                .size(16, 16);
+            copy[i].pos(xSize - 82, y + 4)
+                .size(16, 16);
+            highlight[i].pos(xSize - 64, y + 4)
+                .size(16, 16);
+            remove[i].pos(xSize - 46, y + 4)
+                .size(16, 16);
             power[i].pos(xSize - 28, y + 4)
                 .size(16, 16);
             deviceRows[i].pos(10, y)
-                .size(xSize - 220, ROW_HEIGHT);
+                .size(stateX() - 10, ROW_HEIGHT);
         }
     }
 
@@ -326,6 +394,27 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             if (session.display()
                 .getBoolean("detail")) detailsPanel.openPanel();
             else detailsPanel.closePanel();
+        }
+        if (!details) {
+            boolean showFilters = !sources() && !session.display()
+                .getBoolean("detail");
+            for (ButtonWidget<?> chip : chips) chip.setEnabled(showFilters);
+            dimension.setEnabled(showFilters);
+            merge.setEnabled(showFilters);
+            if (!showFilters && dimension.isOpen()) dimension.closeMenu(false);
+            if (showFilters && lastFilterView != view()) {
+                lastFilterView = view();
+                List<String> choices = new ArrayList<>();
+                choices.add("");
+                var options = view().getTagList("dimensions", 10);
+                for (int i = 0; i < options.tagCount(); i++) choices.add(
+                    Integer.toString(
+                        options.getCompoundTagAt(i)
+                            .getInteger("dimension")));
+                dimension.choices(choices);
+                layoutChips();
+                scheduleResize();
+            }
         }
         if (!details && session.isValid() && requestedRows != visibleRows) {
             requestedRows = visibleRows;
@@ -358,6 +447,10 @@ public final class WirelessPowerCardPanel extends ModularPanel {
 
     @Override
     public boolean onKeyPressed(char character, int key) {
+        if (!details && key == Keyboard.KEY_ESCAPE && dimension.isOpen()) {
+            dimension.closeMenu(false);
+            return true;
+        }
         if (details && key == Keyboard.KEY_ESCAPE) {
             closeIfOpen();
             return true;
@@ -367,6 +460,10 @@ public final class WirelessPowerCardPanel extends ModularPanel {
 
     private int rowTop() {
         return details ? 60 : ROW_TOP;
+    }
+
+    private int stateX() {
+        return xSize - 174;
     }
 
     private NBTTagCompound view() {
@@ -382,7 +479,15 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             GL11.glDisable(GL11.GL_LIGHTING);
             GL11.glDisable(GL11.GL_DEPTH_TEST);
             Platform.setupDrawFont();
-            int text = ColorUtils.guiTextColorGray.getColor();
+            if (variant != null) {
+                GL11.glColor4f(1, 1, 1, 1);
+                variant.inset.draw(
+                    8,
+                    rowTop() - AE2Theme.INSET_TOP,
+                    xSize - 16,
+                    visibleRows * ROW_HEIGHT + AE2Theme.INSET_TOP + AE2Theme.INSET_EDGE);
+            }
+            int text = variant == null ? ColorUtils.guiTextColorGray.getColor() : variant.colors.text();
             if (details) {
                 NBTTagCompound controller = view().getCompoundTag("controller");
                 text(deviceName(controller), 10, 11, xSize - 40, text);
@@ -410,26 +515,38 @@ public final class WirelessPowerCardPanel extends ModularPanel {
                 // # zh_CN 自动连接使用当前选中的源；已有连接保持不变。
                 text(tr("power.gui.sources_auto_hint"), 10, 47, xSize - 20, text);
             } else {
-                text(tr("item.gtneverreset.wireless_power_card.name"), 10, 11, xSize - 140, text);
-                String auto = tr(
-                    view().getBoolean("auto") ? WirelessPowerCard.autoOnKey() : WirelessPowerCard.autoOffKey());
-                text(auto, xSize - 32 - font.getStringWidth(auto), 14, 94, text);
+                text(
+                    tr("item.gtneverreset.wireless_power_card.name"),
+                    10,
+                    11,
+                    xSize - automatic.getArea().width - 24,
+                    text);
                 // #tr power.gui.selected
                 // # Power source: %s
                 // # zh_CN 供电源：%s
-                text("> " + tr("power.gui.selected", view().getString("sourceName")), 10, 25, xSize - 20, text);
+                String balance = compact(view().getString("balance")) + " EU";
+                int balanceWidth = font.getStringWidth(balance);
                 text(
-                    compact(view().getString("balance")) + " EU",
+                    "> " + tr("power.gui.selected", view().getString("sourceName")),
                     10,
-                    36,
-                    xSize - 20,
-                    ColorUtils.craftConfirmPercent50.getColor());
+                    25,
+                    xSize - 30 - balanceWidth,
+                    text);
+                text(
+                    balance,
+                    xSize - 10 - balanceWidth,
+                    25,
+                    balanceWidth,
+                    variant == null ? ColorUtils.craftConfirmPercent50.getColor() : variant.colors.good());
                 // #tr power.gui.devices
                 // # Connected devices: %s
                 // # zh_CN 已接入设备：%s
-                text(tr("power.gui.devices", view().getInteger("total")), 10, 47, xSize - 20, text);
+                text(tr("power.gui.devices", view().getInteger("deviceCount")), 10, 36, xSize - 20, text);
             }
-            for (int i = 0; i < visibleRows && hasRow(i); i++) drawRow(i, text);
+            int mouseX = context.getAbsMouseX() - getArea().x;
+            int mouseY = context.getAbsMouseY() - getArea().y - rowTop();
+            int hovered = isBelowMouse() && mouseX >= 9 && mouseX < xSize - 9 && mouseY >= 0 ? mouseY / ROW_HEIGHT : -1;
+            for (int i = 0; i < visibleRows && hasRow(i); i++) drawRow(i, i == hovered || sources() && selected(i));
             if (view().getInteger("total") == 0) {
                 // #tr power.gui.empty
                 // # No matching devices. Carry this card when placing GT receivers, or right-click existing ones.
@@ -447,50 +564,121 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         }
     }
 
-    private void drawRow(int index, int textColor) {
+    private void drawRow(int index, boolean highlighted) {
         NBTTagCompound row = row(index);
         int y = rowTop() + index * ROW_HEIGHT;
+        Colors colors = variant == null ? null : (highlighted ? AE2Theme.Variant.LIGHT : variant).colors;
+        int textColor = colors == null ? ColorUtils.guiTextColorGray.getColor() : colors.text();
+        int secondary = colors == null ? textColor : colors.secondary();
+        if (highlighted) {
+            drawRect(9, y, xSize - 9, y + ROW_HEIGHT - 1, variant == null ? 0x60ffffff : AE2Theme.HIGHLIGHT);
+            drawRect(
+                9,
+                y + ROW_HEIGHT - 2,
+                xSize - 9,
+                y + ROW_HEIGHT - 1,
+                variant == null ? 0x40000000 : AE2Theme.HIGHLIGHT_SHADOW);
+        }
         drawRect(
-            8,
+            9,
             y + ROW_HEIGHT - 1,
-            xSize - 8,
+            xSize - 9,
             y + ROW_HEIGHT,
-            ColorUtils.craftingDiagnosticTerminalLine.getColor());
+            variant == null ? ColorUtils.craftingDiagnosticTerminalLine.getColor() : variant.colors.line());
         if (sources()) {
             portraits.computeIfAbsent(row.getString("id"), key -> new Portrait(key, row.getString("name")))
                 .draw(12, y + 4, 16, 16);
             Platform.setupDrawFont();
             text(row.getString("name"), 34, y + 2, xSize - 126, textColor);
-            text(compact(row.getString("balance")) + " EU", 34, y + 13, xSize - 126, textColor);
+            text(compact(row.getString("balance")) + " EU", 34, y + 13, xSize - 126, secondary);
         } else {
             ItemStack icon = icon(row);
-            if (icon != null) GuiDraw.drawItem(icon, 12, y + 4, 16, 16, getContext().getCurrentDrawingZ());
+            int indent = row.getBoolean("indented") ? 8 : 0;
+            if (icon != null) GuiDraw.drawItem(icon, 12 + indent, y + 4, 16, 16, getContext().getCurrentDrawingZ());
             Platform.setupDrawFont();
+            if (row.getInteger("typeCount") > 1) {
+                text(
+                    (row.getBoolean("expanded") ? "− " : "> ") + deviceName(row)
+                        + " ["
+                        + row.getInteger("typeCount")
+                        + "]",
+                    34,
+                    y + 8,
+                    xSize - 48,
+                    textColor);
+                return;
+            }
             String name = (row.getBoolean("group") ? "> " : "") + deviceName(row)
                 + (row.getBoolean("group") ? " [" + row.getInteger("members") + "]" : "");
-            text(name, 34, y + 2, xSize - 244, ColorUtils.guiTextColorBlack.getColor());
-            text(position(row, true), 34, y + 13, xSize - 244, textColor);
-            // #tr power.gui.paused
-            // # Paused
-            // # zh_CN 已暂停
-            // #tr power.gui.offline
-            // # Chunk unloaded
-            // # zh_CN 区块未加载
+            text(name, 34 + indent, y + 2, stateX() - 38 - indent, textColor);
+            text(position(row, true), 34 + indent, y + 13, stateX() - 38 - indent, secondary);
+            PowerState state = STATES[row.getInteger("state")];
+            int color = stateColor(state, colors);
+            text(stateLabel(state), stateX(), y + 8, 70, color);
+            drawRect(stateX(), y + 19, stateX() + 36, y + 21, color | 0xff000000);
+        }
+    }
+
+    private PowerState activeState() {
+        return STATES[view().getInteger("state")];
+    }
+
+    private int stateCount(PowerState state) {
+        int[] counts = view().getIntArray("stateCounts");
+        return counts.length > state.ordinal() ? counts[state.ordinal()] : 0;
+    }
+
+    private void layoutChips() {
+        WirelessCardFilters.layoutChips(chips, xSize, i -> stateLabel(STATES[i]), i -> stateCount(STATES[i]));
+    }
+
+    private static String stateLabel(PowerState state) {
+        return switch (state) {
+            case ALL -> tr("gtneverreset.wireless.gui.filter.0");
             // #tr power.gui.connected
             // # Connected
             // # zh_CN 已连接
+            case CONNECTED -> tr("power.gui.connected");
+            // #tr power.gui.offline
+            // # Chunk unloaded
+            // # zh_CN 区块未加载
+            case OFFLINE -> tr("power.gui.offline");
             // #tr power.gui.no_power
             // # No power
             // # zh_CN 电量不足
-            String status = row.getBoolean("paused") ? tr("power.gui.paused")
-                : !row.getBoolean("loaded") ? tr("power.gui.offline")
-                    : !row.getBoolean("ready") ? tr("power.gui.no_power") : tr("power.gui.connected");
-            int color = !row.getBoolean("paused") && row.getBoolean("loaded") && row.getBoolean("ready")
-                ? ColorUtils.craftConfirmPercent50.getColor()
-                : textColor;
-            text(status, xSize - 206, y + 8, 40, color);
-            drawRect(xSize - 206, y + 19, xSize - 170, y + 21, color | 0xff000000);
+            case NO_POWER -> tr("power.gui.no_power");
+            // #tr power.gui.paused
+            // # Paused
+            // # zh_CN 已暂停
+            case PAUSED -> tr("power.gui.paused");
+        };
+    }
+
+    private static int stateColor(PowerState state, Colors colors) {
+        return switch (state) {
+            case ALL -> colors == null ? ColorUtils.guiTextColorGray.getColor() : colors.text();
+            case CONNECTED -> colors == null ? ColorUtils.craftConfirmPercent50.getColor() : colors.good();
+            case OFFLINE -> colors == null ? ColorUtils.craftConfirmPercent25.getColor() : colors.warning();
+            case NO_POWER, PAUSED -> colors == null ? ColorUtils.reshuffleStatusFailed.getColor() : colors.bad();
+        };
+    }
+
+    private String selectedDimension() {
+        return view().hasKey("dimension") ? Integer.toString(view().getInteger("dimension")) : "";
+    }
+
+    private String dimensionLabel(String id, boolean withCount) {
+        if (id.isEmpty()) return tr("gtneverreset.wireless.gui.dimension_all");
+        var options = view().getTagList("dimensions", 10);
+        for (int i = 0; i < options.tagCount(); i++) {
+            var option = options.getCompoundTagAt(i);
+            int dim = option.getInteger("dimension");
+            if (!id.equals(Integer.toString(dim))) continue;
+            String name = localizedDimension(option.getString("name"), dim);
+            return withCount ? tr("gtneverreset.wireless.gui.dimension_option", name, dim, option.getInteger("count"))
+                : name.isEmpty() ? "D" + id : name;
         }
+        return "D" + id;
     }
 
     private ItemStack icon(NBTTagCompound row) {
@@ -510,11 +698,14 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         String position = "D" + row.getInteger(
             "dimension") + "  " + row.getInteger("x") + ", " + row.getInteger("y") + ", " + row.getInteger("z");
         if (!localized) return position;
-        String name = row.getString("dimensionName");
-        if (name.equals("Personal World " + row.getInteger("dimension")) || name.equals("personalworld"))
-            name = tr("gtneverreset.wireless.gui.personal_world");
-        else if (!name.isEmpty()) name = DimensionHelper.getDimLocalizedName(name);
+        String name = localizedDimension(row.getString("dimensionName"), row.getInteger("dimension"));
         return name.isEmpty() ? position : name + " " + position;
+    }
+
+    private static String localizedDimension(String name, int id) {
+        if (name.equals("Personal World " + id) || name.equals("personalworld"))
+            return tr("gtneverreset.wireless.gui.personal_world");
+        return name.isEmpty() ? "" : DimensionHelper.getDimLocalizedName(name);
     }
 
     private void copyPosition(int index) {
@@ -531,25 +722,31 @@ public final class WirelessPowerCardPanel extends ModularPanel {
 
     private ButtonWidget<?> button(Supplier<String> label, int action, Supplier<String> target,
         BooleanSupplier available) {
-        return button(label, () -> session.request(action, target.get()), available);
+        CardButton button = actionButton(() -> session.request(action, target.get()), available);
+        IDrawable look = AE2Theme.button(button, available, () -> false);
+        button.background(look)
+            .hoverBackground(look)
+            .overlay(AE2Theme.label(button, label, available, () -> false));
+        return button;
     }
 
-    private ButtonWidget<?> button(Supplier<String> label, Runnable action, BooleanSupplier available) {
-        ButtonWidget<?> button = new CardButton();
-        IDrawable background = (context, x, y, width, height,
-            theme) -> tinted(
-                WirelessCardGuiTextures.BUTTONS[!available.getAsBoolean() ? 0 : button.isHovering() ? 2 : 1])
-                    .draw(context, x, y, width, height, theme);
-        button.background(background)
-            .hoverBackground(background)
+    private CardButton iconButton(Icon icon, Supplier<String> label, Runnable action, BooleanSupplier available) {
+        CardButton button = actionButton(action, available);
+        button.background(IDrawable.EMPTY)
+            .hoverBackground(IDrawable.EMPTY)
             .overlay(
-                IKey.dynamic(() -> font.trimStringToWidth(label.get(), Math.max(0, button.getArea().width - 4)))
-                    .color(() -> !available.getAsBoolean() ? 0xffa0a0a0 : button.isHovering() ? 0xffffffa0 : 0xffe0e0e0)
-                    .shadow(true))
-            .onMousePressed(mouse -> {
-                if (mouse == 0 && available.getAsBoolean()) action.run();
-                return true;
-            });
+                icon == Icon.REFRESH ? AE2Theme.tabButton(button, () -> icon, available)
+                    : AE2Theme.iconButton(button, () -> icon, available))
+            .tooltipBuilder(tooltip -> tooltip.addLine(label.get()))
+            .tooltipAutoUpdate(true);
+        return button;
+    }
+
+    private CardButton actionButton(Runnable action, BooleanSupplier available) {
+        CardButton button = new CardButton().onMousePressed(mouse -> {
+            if (mouse == 0 && available.getAsBoolean()) action.run();
+            return true;
+        });
         child(button);
         return button;
     }
@@ -566,29 +763,32 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             public @NotNull Result onMousePressed(int button) {
                 return button == 0 ? super.onMousePressed(button) : Result.ACCEPT;
             }
-        }.value(new BoolValue.Dynamic(on, ignored -> session.request(action, target.get())))
-            .background(false, tinted(WirelessCardGuiTextures.TOGGLE_BACKGROUND))
-            .background(true, tinted(WirelessCardGuiTextures.TOGGLE_BACKGROUND))
-            .hoverBackground(false, tinted(WirelessCardGuiTextures.TOGGLE_BACKGROUND))
-            .hoverBackground(true, tinted(WirelessCardGuiTextures.TOGGLE_BACKGROUND))
-            .overlay(false, WirelessCardGuiTextures.TOGGLE_OFF)
-            .overlay(true, WirelessCardGuiTextures.TOGGLE_ON);
+        };
+        IDrawable look = action != PAUSE ? AE2Theme.toggleSwitch(
+            button,
+            on,
+            () -> action == MERGE_TYPES ? tr("gtneverreset.wireless.gui.merge_types")
+                : tr(on.getAsBoolean() ? WirelessPowerCard.autoOnKey() : WirelessPowerCard.autoOffKey()),
+            () -> true) : AE2Theme.iconButton(button, () -> on.getAsBoolean() ? Icon.PAUSE : Icon.PLAY, () -> true);
+        button.value(new BoolValue.Dynamic(on, ignored -> session.request(action, target.get())))
+            .background(false, IDrawable.EMPTY)
+            .background(true, IDrawable.EMPTY)
+            .hoverBackground(false, IDrawable.EMPTY)
+            .hoverBackground(true, IDrawable.EMPTY)
+            .overlay(false, look)
+            .overlay(true, look);
+        if (action == PAUSE) button.tooltipBuilder(tooltip -> {
+            // #tr power.gui.pause
+            // # Pause power supply
+            // # zh_CN 暂停供电
+            // #tr power.gui.resume
+            // # Resume power supply
+            // # zh_CN 恢复供电
+            tooltip.addLine(tr(on.getAsBoolean() ? "power.gui.pause" : "power.gui.resume"));
+        })
+            .tooltipAutoUpdate(true);
         child(button);
         return button;
-    }
-
-    private static IDrawable tinted(UITexture texture) {
-        return (context, x, y, width, height, theme) -> {
-            GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-            try {
-                GL11.glDisable(GL11.GL_LIGHTING);
-                GL11.glDisable(GL11.GL_DEPTH_TEST);
-                ScreenColor.setGuiColor();
-                texture.draw(x, y, width, height);
-            } finally {
-                GL11.glPopAttrib();
-            }
-        };
     }
 
     private NBTTagCompound row(int index) {
@@ -605,7 +805,9 @@ public final class WirelessPowerCardPanel extends ModularPanel {
     }
 
     private boolean device(int index) {
-        return !sources() && hasRow(index) && !row(index).getBoolean("group");
+        return !sources() && hasRow(index)
+            && !row(index).getBoolean("group")
+            && row(index).getInteger("typeCount") == 0;
     }
 
     private boolean selected(int index) {

@@ -67,6 +67,7 @@ public final class CropBreederChecks {
         || LONG_ROUTE_PREVIEW
         || Boolean.getBoolean("gtnr.cropBreeder.preview");
     private int previewParentCount = 3;
+    private static final boolean HOVER_PREVIEW = Boolean.getBoolean("gtnr.cropBreeder.hoverPreview");
     private int modePreviewPhase;
     private boolean syntheticLongRoute;
     private final Set<String> displayedPlantingSoils = new HashSet<>();
@@ -80,7 +81,7 @@ public final class CropBreederChecks {
     private BaseMetaTileEntity controller, energy;
     private MTEHatchOutputBus output;
     private MTEHatchInputBus input;
-    private MTEHatchInput fluid;
+    private MTEHatchInput fluid, uu;
     private ICropMutation mutation;
     private NeiOverlayProbe neiOverlayProbe;
     private String previousNeiSearch;
@@ -262,6 +263,7 @@ public final class CropBreederChecks {
         input = (MTEHatchInputBus) place(world, -2, 10, 0, ItemList.Hatch_Input_Bus_HV.get(1)).getMetaTileEntity();
         output = (MTEHatchOutputBus) place(world, -1, 10, 0, ItemList.Hatch_Output_Bus_HV.get(1)).getMetaTileEntity();
         fluid = (MTEHatchInput) place(world, 1, 10, 0, ItemList.Hatch_Input_IV.get(1)).getMetaTileEntity();
+        uu = (MTEHatchInput) place(world, -2, 10, 2, ItemList.Hatch_Input_IV.get(1)).getMetaTileEntity();
         energy = place(world, 2, 10, 0, ItemList.Hatch_Energy_UHV.get(1));
         place(world, -2, 10, 1, ItemList.Hatch_Maintenance.get(1));
         machine.mWrench = machine.mScrewdriver = machine.mSoftMallet = machine.mHardHammer = machine.mSolderingTool = machine.mCrowbar = true;
@@ -300,11 +302,11 @@ public final class CropBreederChecks {
         String cropId = mutation.getOutput()
             .getId();
         CropBreederConfig.cropOverrides = new String[] { cropId + "=37" };
-        require(machine.getSuccessChance() == 37, "first attempt uses the configured per-crop chance");
+        require(machine.getSuccessChance() == 0, "a 37 percent crop starts at zero");
         require(machine.getMaxParallelRecipes() == 8, "UHV allows eight parallels");
         energy = place(world, 2, 10, 0, ItemList.Hatch_Energy_HV.get(1));
         require(machine.checkStructure(true, controller), "HV energy hatch forms");
-        require(machine.getSuccessChance() == 37, "changing voltage does not change per-crop chance");
+        require(machine.getSuccessChance() == 0, "voltage does not change cold chance");
         require(machine.getMaxParallelRecipes() == 1, "HV allows one parallel");
         fluid.fill(new FluidStack(CropsNHFluids.enrichedFertilizer, Integer.MAX_VALUE), true);
         for (int i = 0; i < output.getSizeInventory(); i++)
@@ -316,6 +318,11 @@ public final class CropBreederChecks {
             "full output blocks processing");
         require(fluid.getFluidAmount() == before, "blocked output does not consume fertilizer");
         for (int i = 0; i < output.getSizeInventory(); i++) output.setInventorySlotContents(i, null);
+        require(
+            !machine.checkProcessing()
+                .wasSuccessful() && fluid.getFluidAmount() == before,
+            "breeding without UU cannot start or spend fertilizer");
+        uu.fill(gregtech.api.enums.Materials.UUMatter.getFluid(Integer.MAX_VALUE), true);
         CropBreederConfig.cropOverrides = new String[] { cropId + "=0" };
         require(
             machine.checkProcessing()
@@ -328,6 +335,7 @@ public final class CropBreederChecks {
             "zero-percent attempt produces no seed");
         require(before - fluid.getFluidAmount() == 56000, "failed attempt consumes exactly 56000 L fertilizer");
         CropBreederConfig.cropOverrides = new String[] { cropId + "=100" };
+        failed.setInteger("cropOperatingTicks", 24000);
         machine.loadNBTData(failed);
         require(machine.getSuccessChance() == 0, "running chance and failed roll survive reload without rerolling");
         require(
@@ -397,7 +405,28 @@ public final class CropBreederChecks {
                 machine.getEUtForDamageCalc() == -16384,
                 "IV applies two standard overclocks to 512 EU/t for each of two parallels");
             require(machine.mMaxProgresstime == 40, "parallel processing retains standard overclock duration");
-            require(machine.onRunningTick(null), "parallel processing advances with fertilizer and power alone");
+            NBTTagCompound almostWarm = new NBTTagCompound();
+            machine.saveNBTData(almostWarm);
+            almostWarm.setInteger("cropOperatingTicks", 1199);
+            machine.loadNBTData(almostWarm);
+            uu.drain(Integer.MAX_VALUE, true);
+            uu.fill(gregtech.api.enums.Materials.UUMatter.getFluid(127), true);
+            long powerBefore = energy.getStoredEU();
+            require(
+                !machine.onRunningTick(null) && uu.getFluidAmount() == 127
+                    && energy.getStoredEU() == powerBefore
+                    && machine.getBreedingMinutes() == 0,
+                "UU shortage pauses breeding without consuming power or warming");
+            uu.fill(gregtech.api.enums.Materials.UUMatter.getFluid(1), true);
+            require(
+                machine.onRunningTick(null) && uu.getFluidAmount() == 0 && machine.getBreedingMinutes() == 1,
+                "two parallels together consume 128 L and complete a warmup minute");
+            long now = controller.getWorld()
+                .getTotalWorldTime();
+            invoke(machine, "resetIfIdle", new Class<?>[] { long.class }, now + 11999);
+            require(machine.getBreedingMinutes() == 1, "warmup retained before ten idle minutes");
+            invoke(machine, "resetIfIdle", new Class<?>[] { long.class }, now + 12000);
+            require(machine.getBreedingMinutes() == 0, "ten idle minutes reset warmup");
         } finally {
             energy = place(controller.getWorld(), 2, 10, 0, ItemList.Hatch_Energy_HV.get(1));
             machine.checkStructure(true, controller);
@@ -485,6 +514,7 @@ public final class CropBreederChecks {
             machine.setTargetCrop(crop);
             CropBreederConfig.cropOverrides = new String[] { crop + "=100" };
             fluid.fill(new FluidStack(CropsNHFluids.enrichedFertilizer, Integer.MAX_VALUE), true);
+            uu.fill(gregtech.api.enums.Materials.UUMatter.getFluid(Integer.MAX_VALUE), true);
             require(
                 machine.checkProcessing()
                     .wasSuccessful() && after.equals(SeedStats.getStatsFromStack(machine.mOutputItems[0])),
@@ -701,6 +731,11 @@ public final class CropBreederChecks {
     }
 
     private static void chanceChecks() {
+        require(
+            CropBreedingChance.warmedPercent(80, 0) == 40 && CropBreedingChance.warmedPercent(80, 1) == 42
+                && CropBreedingChance.warmedPercent(80, 20) == 80
+                && CropBreedingChance.warmedPercent(20, 10) == 20,
+            "warmup starts at the clamped cold chance and adds two points per minute");
         ICropCard firstGrade = CropRegistry.instance.get("cropsnh:bonsaiSpruce");
         ICropCard secondGrade = CropRegistry.instance.get("cropsnh:evilOre");
         require(
@@ -842,6 +877,12 @@ public final class CropBreederChecks {
                 if (!results.contains(parent.getId())) parents.add(parent.getId());
         }
         net.minecraft.nbt.NBTTagList samples = new net.minecraft.nbt.NBTTagList();
+        if (HOVER_PREVIEW) {
+            for (ICropCard crop : CropRegistry.instance.getAllInRegistrationOrder()) {
+                if (parents.size() >= 16) break;
+                if (!results.contains(crop.getId())) parents.add(crop.getId());
+            }
+        }
         for (String id : parents) {
             NBTTagCompound sample = SeedStats.DEFAULT_ANALYZED.writeToNBT(new NBTTagCompound());
             sample.setString("id", id);
@@ -951,6 +992,16 @@ public final class CropBreederChecks {
                     mc.displayHeight,
                     mc.getFramebuffer());
             }
+            if (HOVER_PREVIEW && (page == 1 || page == 2)) {
+                checkSecondRowHover(
+                    wrapper.getScreen()
+                        .getMainPanel(),
+                    mc);
+                if (page == 2) {
+                    finish(null);
+                    return;
+                }
+            }
             if (page == 3) {
                 IWidget graph = findGraph(
                     wrapper.getScreen()
@@ -1031,6 +1082,53 @@ public final class CropBreederChecks {
     private static void collectTabs(IWidget widget, List<PageButton> tabs) {
         if (widget instanceof PageButton button) tabs.add(button);
         for (IWidget child : widget.getChildren()) collectTabs(child, tabs);
+    }
+
+    private void checkSecondRowHover(com.cleanroommc.modularui.screen.ModularPanel panel, Minecraft mc)
+        throws Exception {
+        var context = panel.getContext();
+        var hitTest = com.cleanroommc.modularui.screen.ModularPanel.class.getDeclaredMethod("findHoveredWidgets");
+        hitTest.setAccessible(true);
+        int oldX = context.getAbsMouseX(), oldY = context.getAbsMouseY();
+        try {
+            List<IWidget> widgets = new ArrayList<>();
+            widgets.add(panel);
+            for (int i = 0; i < widgets.size(); i++) {
+                IWidget widget = widgets.get(i);
+                if (!widget.isEnabled()) continue;
+                widgets.addAll(widget.getChildren());
+                if (!(widget instanceof gregtech.common.modularui2.widget.SlotLikeButtonWidget slot)) continue;
+                var area = slot.getArea();
+                if (area.rx != 7 + 4 * 22 || area.ry != 24 + 22) continue;
+                context.updateState(area.x + 9, area.y + 16, 0);
+                hitTest.invoke(panel);
+                if (panel.getTopHovering() != slot) continue;
+                for (int y = 0; y < area.height; y++) {
+                    context.updateState(area.x + 9, area.y + y, 0);
+                    hitTest.invoke(panel);
+                    require(
+                        panel.getTopHovering() == slot,
+                        "seed slot receives hover at row two, column five, offset " + y);
+                }
+                context.updateState(area.x + 9, area.y + 3, 0);
+                hitTest.invoke(panel);
+                var tooltip = slot.getTooltip();
+                tooltip.buildTooltip();
+                tooltip.pos(context.getAbsMouseX(), context.getAbsMouseY())
+                    .draw(context);
+                ScreenShotHelper.saveScreenshot(
+                    new File("."),
+                    "crop-hover-row2-page-" + page + ".png",
+                    mc.displayWidth,
+                    mc.displayHeight,
+                    mc.getFramebuffer());
+                return;
+            }
+            throw new AssertionError("no visible seed at row two column five on page " + page);
+        } finally {
+            context.updateState(oldX, oldY, 0);
+            hitTest.invoke(panel);
+        }
     }
 
     private static IWidget findNamedWidget(IWidget widget, String name) {

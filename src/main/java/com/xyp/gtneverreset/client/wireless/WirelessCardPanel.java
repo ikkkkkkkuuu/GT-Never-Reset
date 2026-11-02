@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.client.wireless;
 
+import static codechicken.nei.NEIClientUtils.cropText;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.BACK;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.COPY_POSITION;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.CYCLE_VISUALISATION;
@@ -7,6 +8,7 @@ import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessC
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.HIGHLIGHT;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.NEXT_PAGE;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.OPEN_DETAILS;
+import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.OPEN_ENTRANCES;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.PREVIOUS_PAGE;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.REFRESH;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.RENAME_SOURCE;
@@ -34,7 +36,6 @@ import org.lwjgl.opengl.GL11;
 
 import com.cleanroommc.modularui.core.mixins.early.minecraft.GuiScreenAccessor;
 import com.cleanroommc.modularui.drawable.GuiDraw;
-import com.cleanroommc.modularui.drawable.Rectangle;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
 import com.cleanroommc.modularui.theme.WidgetThemeEntry;
@@ -43,9 +44,10 @@ import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.xyp.gtneverreset.client.wireless.WirelessCardGui.Layout;
 import com.xyp.gtneverreset.client.wireless.WirelessCardGui.WirelessCardButton;
-import com.xyp.gtneverreset.common.gui.WirelessCardGuiTextures;
 import com.xyp.gtneverreset.common.gui.container.WirelessCardContainer;
 import com.xyp.gtneverreset.common.wireless.WirelessCardText;
+import com.xyp.gtneverreset.config.ScreenThemeConfig;
+import com.xyp.gtnrlib.gui.theme.AE2Theme;
 
 import appeng.core.localization.ColorUtils;
 import cpw.mods.fml.relauncher.Side;
@@ -55,6 +57,9 @@ import cpw.mods.fml.relauncher.SideOnly;
 abstract class WirelessCardPanel extends ModularPanel {
 
     public static final int ROW_HEIGHT = 24, CONTENT_X = 34;
+    final String themeId = ScreenThemeConfig.wirelessCard.themeId;
+    final AE2Theme.Variant variant = AE2Theme.variant(themeId);
+    private boolean highlighted;
     public final Minecraft mc = Minecraft.getMinecraft();
     public final FontRenderer fontRendererObj = mc.fontRenderer;
     public final WirelessCardContainer container;
@@ -65,9 +70,8 @@ abstract class WirelessCardPanel extends ModularPanel {
     WirelessCardPanel(String name, WirelessCardContainer container) {
         super(name);
         this.container = container;
-        background(WirelessCardGuiTextures.BACKGROUND);
         for (int id : new int[] { PREVIOUS_PAGE, NEXT_PAGE, REFRESH, BACK }) addButton(id);
-        addRowButtons(TOGGLE_PAUSE, COPY_POSITION, HIGHLIGHT, TELEPORT);
+
     }
 
     abstract boolean isDetailView();
@@ -83,10 +87,6 @@ abstract class WirelessCardPanel extends ModularPanel {
     abstract void drawHeader(NBTTagCompound data, int color);
 
     abstract void confirm();
-
-    boolean isGroupView() {
-        return false;
-    }
 
     boolean editingText() {
         return false;
@@ -133,6 +133,8 @@ abstract class WirelessCardPanel extends ModularPanel {
             if (isRowAction(id)) {
                 int y = rowTop() + rowIndex(id) * ROW_HEIGHT;
                 switch (type(id)) {
+                    case OPEN_ENTRANCES -> button.pos(xSize - 106, y + 4)
+                        .size(16, 16);
                     case TOGGLE_PAUSE -> button.pos(xSize - 28, y + 4)
                         .size(16, 16);
                     case OPEN_DETAILS -> button.pos(10, y)
@@ -141,20 +143,20 @@ abstract class WirelessCardPanel extends ModularPanel {
                         .size(60, 20);
                     case DELETE_SOURCE -> button.pos(xSize - 52, y + 2)
                         .size(40, 20);
-                    case COPY_POSITION -> button.pos(xSize - 96, y + 2)
-                        .size(30, 20);
-                    case HIGHLIGHT -> button.pos(xSize - 62, y + 2)
-                        .size(30, 20);
-                    case TELEPORT -> button.pos(xSize - 130, y + 2)
-                        .size(30, 20);
+                    case COPY_POSITION -> button.pos(xSize - 52, y + 4)
+                        .size(16, 16);
+                    case HIGHLIGHT -> button.pos(xSize - 70, y + 4)
+                        .size(16, 16);
+                    case TELEPORT -> button.pos(xSize - 88, y + 4)
+                        .size(16, 16);
                 }
             } else switch (id) {
                 case PREVIOUS_PAGE -> button.pos(10, ySize - 27)
                     .size(18, 20);
                 case NEXT_PAGE -> button.pos(76, ySize - 27)
                     .size(18, 20);
-                case REFRESH -> button.pos(xSize - 76, ySize - 27)
-                    .size(64, 20);
+                case REFRESH -> button.pos(xSize - 30, ySize - 27)
+                    .size(20, 20);
                 case BACK -> button.pos(layout.footerInfoX(), ySize - 27)
                     .size(36, 20);
                 default -> layoutButton(control, layout);
@@ -191,7 +193,7 @@ abstract class WirelessCardPanel extends ModularPanel {
 
     public void sendAction(int id) {
         if (container.clientView()
-            .navigate(id, isGroupView())) return;
+            .navigate(id)) return;
         long target = isRowAction(id) ? view().getTagList("rows", 10)
             .getCompoundTagAt(rowIndex(id))
             .getLong("targetId") : 0;
@@ -211,25 +213,20 @@ abstract class WirelessCardPanel extends ModularPanel {
     }
 
     public TextFieldWidget textField(int max) {
-        return new TextFieldWidget().background(
-            new Rectangle().color(0xff000000),
-            new Rectangle().color(0xffa0a0a0)
-                .hollow(1))
-            .setTooltipOverride(true)
+        return new TextFieldWidget().setTooltipOverride(true)
             .value(new StringValue(""))
             .setMaxLength(max)
-            .setTextColor(ColorUtils.searchboxText.getColor())
             .padding(2, 0);
     }
 
     int contentWidth() {
-        return xSize - 212;
+        return rowStateX() - CONTENT_X - 4;
     }
 
     void drawRowMetrics(NBTTagCompound data, NBTTagCompound row, int y) {
-        drawMetrics(row, CONTENT_X, y + 13, contentWidth(), true);
-        int missingColor = row.getBoolean("stable") && row.getInteger("missing") > 0 ? badColor()
-            : ColorUtils.craftingTreeTask.getColor();
+        int indent = row.getInteger("depth") * 8;
+        drawMetrics(row, CONTENT_X + indent, y + 13, contentWidth() - indent, true);
+        int missingColor = row.getBoolean("stable") && row.getInteger("missing") > 0 ? badColor() : secondary();
         ratioBar(
             rowStateX(),
             y + 19,
@@ -247,26 +244,38 @@ abstract class WirelessCardPanel extends ModularPanel {
         return row.getInteger("usedChannels") < 0 ? tr("usage_waiting") : tr("usage", row.getInteger("usedChannels"));
     }
 
-    static int goodColor() {
-        return ColorUtils.craftConfirmPercent50.getColor();
+    private AE2Theme.Colors colors() {
+        return (highlighted ? AE2Theme.Variant.LIGHT : variant).colors;
     }
 
-    static int badColor() {
-        return ColorUtils.reshuffleStatusFailed.getColor();
+    int foreground() {
+        return variant == null ? ColorUtils.guiTextColorGray.getColor() : colors().text();
     }
 
-    static int waitingColor() {
-        return ColorUtils.craftConfirmPercent25.getColor();
+    int secondary() {
+        return variant == null ? ColorUtils.craftingTreeTask.getColor() : colors().secondary();
     }
 
-    static int stateColor(NBTTagCompound row) {
+    int goodColor() {
+        return variant == null ? ColorUtils.craftConfirmPercent50.getColor() : colors().good();
+    }
+
+    int badColor() {
+        return variant == null ? ColorUtils.reshuffleStatusFailed.getColor() : colors().bad();
+    }
+
+    int waitingColor() {
+        return variant == null ? ColorUtils.craftConfirmPercent25.getColor() : colors().warning();
+    }
+
+    int stateColor(NBTTagCompound row) {
         if (row.getBoolean("paused") || row.getBoolean("conflicted")) return badColor();
         if (row.getBoolean("stable") && row.getInteger("missing") > 0) return badColor();
         if (!row.getBoolean("stable") || !row.getString("state")
             .equals("active")) return waitingColor();
         // A live entrance is not proof of power or active devices.
         return row.getInteger("devices") > 0 && row.getInteger("online") == row.getInteger("devices") ? goodColor()
-            : ColorUtils.guiTextColorGray.getColor();
+            : foreground();
     }
 
     static String budgetText(NBTTagCompound data) {
@@ -296,7 +305,7 @@ abstract class WirelessCardPanel extends ModularPanel {
             compact ? data.getInteger("entrances")
                 : data.getInteger("entrances") + " / " + data.getInteger("entranceLimit"));
         int metricsEnd = compact ? end : Math.max(x, end - fontRendererObj.getStringWidth(entrances));
-        int textColor = ColorUtils.guiTextColorGray.getColor();
+        int textColor = foreground();
         int online = data.getInteger("online"), devices = data.getInteger("devices");
         int onlineColor = data.getBoolean("paused") ? badColor()
             : !data.getBoolean("stable") ? waitingColor() : online == devices && devices > 0 ? goodColor() : textColor;
@@ -365,72 +374,146 @@ abstract class WirelessCardPanel extends ModularPanel {
     }
 
     public int rowStateX() {
-        return xSize - 172;
+        return xSize - 148;
     }
 
     void drawRowTitle(NBTTagCompound data, NBTTagCompound row, ItemStack icon, int y) {
-        String name = (row.getBoolean("group") ? "> " : "") + rowName(row, icon);
+        int textX = CONTENT_X + row.getInteger("depth") * 8;
+        String name = (row.getBoolean("group") ? (row.getBoolean("expanded") ? "⌄ " : "> ") : "") + rowName(row, icon);
         String position = row.getString("positionLabel");
         String count = row.getBoolean("category") ? " [" + row.getInteger("items") + "]"
             : row.getBoolean("group") ? " [" + row.getInteger("clusters") + "]" : "";
-        int width = contentWidth() - fontRendererObj.getStringWidth(count);
-        int nameColor = ColorUtils.guiTextColorBlack.getColor();
+        int width = contentWidth() - (textX - CONTENT_X) - fontRendererObj.getStringWidth(count);
+        int nameColor = foreground();
         if (data.getBoolean("detail") || name.isEmpty()) {
-            fontRendererObj.drawString(fontRendererObj.trimStringToWidth(position, width), CONTENT_X, y, nameColor);
+            fontRendererObj.drawString(fontRendererObj.trimStringToWidth(position, width), textX, y, nameColor);
             return;
         }
-        int nameReserve = Math.min(24, fontRendererObj.getStringWidth(name));
-        String suffix = " ("
-            + fontRendererObj
-                .trimStringToWidth(position, Math.max(0, width - nameReserve - fontRendererObj.getStringWidth(" ()")))
-            + ")";
-        String title = fontRendererObj
-            .trimStringToWidth(name, Math.max(0, width - fontRendererObj.getStringWidth(suffix)));
-        fontRendererObj.drawString(title, CONTENT_X, y, nameColor);
+        // Keep the device identifiable first; the row tooltip retains the full name and coordinates.
+        String title = cropText(fontRendererObj, name, width);
+        int positionWidth = width - fontRendererObj.getStringWidth(title) - fontRendererObj.getStringWidth(" ()");
+        String suffix = !position.isEmpty() && positionWidth >= fontRendererObj.getStringWidth("...")
+            ? " (" + cropText(fontRendererObj, position, positionWidth) + ")"
+            : "";
+        fontRendererObj.drawString(title, textX, y, nameColor);
+        int nextX = textX + fontRendererObj.getStringWidth(title);
+        if (!count.isEmpty()) {
+            fontRendererObj.drawString(count, nextX, y, stateColor(row));
+            nextX += fontRendererObj.getStringWidth(count);
+        }
+        fontRendererObj.drawString(suffix, nextX, y, secondary());
+    }
+
+    private void drawDeviceRow(NBTTagCompound row, ItemStack icon, int y) {
+        String state = row.getString("deviceState");
+        // #tr gtneverreset.wireless.gui.device_state.online
+        // # Online
+        // # zh_CN 在线
+        // #tr gtneverreset.wireless.gui.device_state.offline
+        // # Offline
+        // # zh_CN 离线
+        // #tr gtneverreset.wireless.gui.device_state.missing
+        // # Missing channel
+        // # zh_CN 缺少频道
+        String status = tr("device_state." + state);
+        int right = xSize - 130 - 4;
+        int statusX = right - fontRendererObj.getStringWidth(status);
+        int color = "online".equals(state) ? goodColor() : "missing".equals(state) ? badColor() : waitingColor();
         fontRendererObj.drawString(
-            suffix,
-            CONTENT_X + fontRendererObj.getStringWidth(title),
-            y,
-            ColorUtils.craftingTreeTask.getColor());
-        if (!count.isEmpty()) fontRendererObj.drawString(
-            count,
-            CONTENT_X + fontRendererObj.getStringWidth(title) + fontRendererObj.getStringWidth(suffix),
-            y,
-            stateColor(row));
+            fontRendererObj.trimStringToWidth(rowName(row, icon), right - CONTENT_X),
+            CONTENT_X,
+            y + 2,
+            foreground());
+        fontRendererObj.drawString(
+            fontRendererObj.trimStringToWidth(row.getString("positionLabel"), Math.max(0, statusX - CONTENT_X - 4)),
+            CONTENT_X,
+            y + 13,
+            secondary());
+        fontRendererObj.drawString(status, statusX, y + 13, color);
     }
 
     @Override
     public void draw(ModularGuiContext context, WidgetThemeEntry<?> theme) {
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
         try {
-            int count = Math.min(
-                visibleRows,
-                view().getTagList("rows", 10)
-                    .tagCount());
-            for (int row = 0; row < count; row++) {
-                int y = rowTop() + ROW_HEIGHT - 1 + row * ROW_HEIGHT;
-                drawRect(8, y, xSize - 8, y + 1, ColorUtils.craftingDiagnosticTerminalLine.getColor());
+            if (variant != null) {
+                GL11.glColor4f(1, 1, 1, 1);
+                variant.inset.draw(
+                    8,
+                    rowTop() - AE2Theme.INSET_TOP,
+                    xSize - 16,
+                    visibleRows * ROW_HEIGHT + AE2Theme.INSET_TOP + AE2Theme.INSET_EDGE);
             }
-            drawForeground();
+            int mouseX = context.getAbsMouseX() - getArea().x, mouseY = context.getAbsMouseY() - getArea().y - rowTop();
+            int hovered = isBelowMouse() && mouseX >= 9 && mouseX < xSize - 9 && mouseY >= 0 ? mouseY / ROW_HEIGHT : -1;
+            drawForeground(hovered);
         } finally {
+            highlighted = false;
             GL11.glPopAttrib();
         }
     }
 
-    private void drawForeground() {
+    private void drawForeground(int hovered) {
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         Platform.setupDrawFont();
         NBTTagCompound data = view();
-        int textColor = ColorUtils.guiTextColorGray.getColor();
+        int textColor = foreground();
         drawHeader(data, textColor);
-        if (!data.getBoolean("sourcesPage")) drawMetrics(data, 10, 47, xSize - 20, false);
+        if (!data.getBoolean("sourcesPage")) drawMetrics(data, 10, isDetailView() ? 47 : 37, xSize - 20, false);
         NBTTagList rows = data.getTagList("rows", 10);
         for (int index = 0; index < Math.min(visibleRows, rows.tagCount()); index++) {
             NBTTagCompound row = rows.getCompoundTagAt(index);
             int y = rowTop() + index * ROW_HEIGHT;
             ItemStack icon = ItemStack.loadItemStackFromNBT(row.getCompoundTag("icon"));
-            if (icon != null) drawDeviceIcon(icon, 12, y + 4);
+            highlighted = index == hovered || row.getBoolean("expanded");
+            if (highlighted) {
+                drawRect(9, y, xSize - 9, y + ROW_HEIGHT - 1, variant == null ? 0x60ffffff : AE2Theme.HIGHLIGHT);
+                drawRect(9, y, xSize - 9, y + 1, variant == null ? 0x80ffffff : 0xffdaffff);
+                drawRect(
+                    9,
+                    y + ROW_HEIGHT - 2,
+                    xSize - 9,
+                    y + ROW_HEIGHT - 1,
+                    variant == null ? 0x40000000 : AE2Theme.HIGHLIGHT_SHADOW);
+            }
+            drawRect(
+                9,
+                y + ROW_HEIGHT - 1,
+                xSize - 9,
+                y + ROW_HEIGHT,
+                variant == null ? ColorUtils.craftingDiagnosticTerminalLine.getColor() : variant.colors.line());
+            textColor = foreground();
+            int depth = row.getInteger("depth");
+            int iconX = 12 + 8 * depth;
+            if (icon != null) drawDeviceIcon(icon, iconX, y + 4);
+            if (depth > 0) {
+                int lineX = 9 + 8 * (depth - 1);
+                int lineColor = textColor | 0xff000000;
+                drawRect(
+                    lineX,
+                    y,
+                    lineX + 1,
+                    y + (row.getBoolean("treeLast") ? ROW_HEIGHT / 2 : ROW_HEIGHT),
+                    lineColor);
+                drawRect(lineX, y + ROW_HEIGHT / 2, lineX + 5, y + ROW_HEIGHT / 2 + 1, lineColor);
+                if ((row.getInteger("treeLines") & 1) != 0) drawRect(9, y, 10, y + ROW_HEIGHT, lineColor);
+            }
+            if (row.getBoolean("group")) {
+                int color = secondary() | 0xff000000;
+                for (int step = 0; step < 4; step++) {
+                    if (row.getBoolean("expanded"))
+                        drawRect(xSize - 25 + step, y + 10 + step, xSize - 18 - step, y + 11 + step, color);
+                    else {
+                        drawRect(xSize - 24 + step, y + 8 + step, xSize - 22 + step, y + 9 + step, color);
+                        drawRect(xSize - 24 + step, y + 15 - step, xSize - 22 + step, y + 16 - step, color);
+                    }
+                }
+            }
+            if (row.getBoolean("device")) {
+                drawDeviceRow(row, icon, y);
+                continue;
+            }
             if (data.getBoolean("sourcesPage")) {
                 String name = row.getString("name");
                 String position = row.getString("positionLabel");
@@ -459,6 +542,8 @@ abstract class WirelessCardPanel extends ModularPanel {
                 stateColor(row));
             drawRowMetrics(data, row, y);
         }
+        highlighted = false;
+        textColor = foreground();
         if (rows.tagCount() == 0) drawEmptyMessage(data, textColor);
         String page = fontRendererObj
             .trimStringToWidth((data.getInteger("page") + 1) + "/" + Math.max(1, data.getInteger("pages")), 40);

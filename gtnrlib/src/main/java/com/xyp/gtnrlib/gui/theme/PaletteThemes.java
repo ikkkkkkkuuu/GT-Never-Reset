@@ -101,8 +101,12 @@ public class PaletteThemes {
 
     private static ThemeBuilder<?> decorated(String id, Definition definition, ThemePalette palette) {
         ThemeBuilder<?> theme = build(id, definition.parent(), palette, definition.style(), definition.skin());
-        for (BiConsumer<ThemeBuilder<?>, ThemePalette> extension : EXTENSIONS) extension.accept(theme, palette);
+        decorate(theme, palette);
         return theme;
+    }
+
+    public static void decorate(ThemeBuilder<?> theme, ThemePalette palette) {
+        for (BiConsumer<ThemeBuilder<?>, ThemePalette> extension : EXTENSIONS) extension.accept(theme, palette);
     }
 
     public static LivePalette live(Supplier<String> theme, BooleanSupplier following) {

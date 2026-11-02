@@ -60,7 +60,15 @@ public final class WirelessPowerEvents {
         if (snapshot.getReplacedBlock() == snapshot.getCurrentBlock()
             && snapshot.meta == snapshot.world.getBlockMetadata(snapshot.x, snapshot.y, snapshot.z)) return;
         TileEntity tile = event.world.getTileEntity(snapshot.x, snapshot.y, snapshot.z);
-        if (tile instanceof BaseMetaTileEntity base) pending.add(new Pending(event, base, card, source, ticks + 4));
+        if (tile instanceof BaseMetaTileEntity base)
+            pending.add(new Pending(event.player, event, base, card, source, ticks + 4));
+    }
+
+    public void placedByManipulator(EntityPlayer player, TileEntity tile) {
+        if (!(tile instanceof BaseMetaTileEntity base) || player instanceof FakePlayer) return;
+        ItemStack card = automaticCard(player);
+        if (card != null)
+            pending.add(new Pending(player, null, base, card, WirelessPowerCard.source(card, player, true), ticks + 4));
     }
 
     public static ItemStack automaticCard(EntityPlayer player) {
@@ -87,9 +95,9 @@ public final class WirelessPowerEvents {
             Pending entry = iterator.next();
             if (ticks < entry.ready) continue;
             iterator.remove();
-            EntityPlayer player = entry.event.player;
+            EntityPlayer player = entry.player;
             BaseMetaTileEntity tile = entry.tile;
-            if (entry.event.isCanceled() || player.isDead
+            if ((entry.event != null && entry.event.isCanceled()) || player.isDead
                 || tile.isInvalid()
                 || player.worldObj != tile.getWorld()
                 || !tile.getWorld()
@@ -101,19 +109,23 @@ public final class WirelessPowerEvents {
                     .contains(entry.card)
                 || !WirelessPowerCard.automatic(entry.card)
                 || !entry.source.equals(WirelessPowerCard.source(entry.card, player, false))) continue;
-            WirelessPowerTransfer.connect(tile, player, entry.source);
+            if (entry.event == null) WirelessPowerTransfer.connectPlaced(tile, player, entry.source);
+            else WirelessPowerTransfer.connect(tile, player, entry.source);
         }
     }
 
     private static final class Pending {
 
+        private final EntityPlayer player;
         private final BlockEvent.PlaceEvent event;
         private final BaseMetaTileEntity tile;
         private final ItemStack card;
         private final UUID source;
         private final long ready;
 
-        private Pending(BlockEvent.PlaceEvent event, BaseMetaTileEntity tile, ItemStack card, UUID source, long ready) {
+        private Pending(EntityPlayer player, BlockEvent.PlaceEvent event, BaseMetaTileEntity tile, ItemStack card,
+            UUID source, long ready) {
+            this.player = player;
             this.event = event;
             this.tile = tile;
             this.card = card;

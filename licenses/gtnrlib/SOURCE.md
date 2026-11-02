@@ -101,3 +101,9 @@ Moved LuaSyntax lexical analysis into text/syntax, with caller-supplied immutabl
 API vocabularies. The host keeps its script vocabulary and runtime. These changes
 retain the existing code ownership and licensing terms. See the radial-menu port
 source notice for its original source and attribution.
+
+## AE2 screen themes
+
+Ported the reusable light and dark AE2 themes from GTNLLib PR 2 at babc4ac208aa51b19d176444a19de4b4aad004d8.
+https://github.com/GTNotLeisure/GTNLLib/pull/2
+Adapted namespaces, resource paths and registration to the GTNRLib client lifecycle. See GPL-3.0.txt for the code and the AE2 and Modernity notices in this directory for the assets.

@@ -14,6 +14,7 @@ import com.xyp.gtnrlib.client.text.EffectTextRenderer;
 import com.xyp.gtnrlib.client.text.effect.BuiltinTextEffects;
 import com.xyp.gtnrlib.client.text.preview.TextEffectPreviewCommand;
 import com.xyp.gtnrlib.config.GTNRLibConfig;
+import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.PaletteThemes;
 
 import cpw.mods.fml.relauncher.Side;
@@ -29,6 +30,8 @@ public class GTNRLibClient {
         HudOverlay.register();
         MinecraftForge.EVENT_BUS.register(new ShaderEffect.Reloader());
         MinecraftForge.EVENT_BUS.register(new PaletteThemes.Reloader());
+        AE2Theme.register();
+        MinecraftForge.EVENT_BUS.register(new AE2Theme.Reloader());
         BuiltinTextEffects.register();
         ((IReloadableResourceManager) Minecraft.getMinecraft()
             .getResourceManager()).registerReloadListener(EffectTextRenderer.INSTANCE);
