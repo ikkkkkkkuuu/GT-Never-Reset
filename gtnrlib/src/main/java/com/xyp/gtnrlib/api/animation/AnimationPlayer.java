@@ -114,6 +114,13 @@ public final class AnimationPlayer {
             return position;
         }
 
+        /** Seek without replaying skipped markers. A looping target wraps, other targets clamp. */
+        public void seek(double seconds) {
+            AnimationClip.validTime(seconds);
+            position = clip.end() == End.LOOP ? seconds % clip.duration() : Math.min(seconds, clip.duration());
+            started = true;
+        }
+
         public void speed(double value) {
             AnimationClip.validTime(value);
             speed = value;

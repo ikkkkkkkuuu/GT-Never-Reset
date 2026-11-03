@@ -91,6 +91,25 @@ final class AnimationContracts {
         AnimationLibrary library = new AnimationLibrary();
         library.registerProvider("test:base", out -> out.register("test:spin", clip));
         check(library.reload(events::add));
+        var states = new com.xyp.gtnrlib.api.animation.AnimationStates<Boolean>(
+            player,
+            4,
+            List.of(new com.xyp.gtnrlib.api.animation.AnimationStates.State<>("test:spin", Boolean::booleanValue, .1)),
+            library::find);
+        states.update(true);
+        check("test:spin".equals(states.state()));
+        states.update(false);
+        check(states.state() == null);
+        library.registerProvider(
+            "test:native",
+            out -> com.xyp.gtnrlib.animation.resource.NativeAnimationResource.load(
+                new java.io.StringReader(
+                    "{\"version\":1,\"clips\":{\"test:door\":{\"duration\":1,\"tracks\":[{\"bone\":\"arm\",\"property\":\"rotation\",\"keys\":[{\"time\":0,\"value\":[0,0,42]}]}]}}}"),
+                out));
+        check(
+            library.reload(events::add) && library.find("test:door")
+                .sample(arm, 0)
+                .z() == 42);
         var previous = library.snapshot();
         library.registerProvider("test:bad", out -> { throw new IllegalStateException("broken pack"); });
         check(!library.reload(events::add) && library.snapshot() == previous && library.find("test:spin") == clip);
