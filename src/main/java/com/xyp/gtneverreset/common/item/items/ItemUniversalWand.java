@@ -130,6 +130,7 @@ public final class ItemUniversalWand extends Item
     }
 
     private static final int SETTINGS_SCHEMA = 1;
+    private static final int HARVEST_LEVEL = Integer.MAX_VALUE;
     private static final double ATTACK_DAMAGE = 114514D;
     private static final UUID ATTACK_MODIFIER_ID = UUID.fromString("a84cf497-f821-4f11-85e8-baa799190f31");
     private static final String ATTACK_MODIFIER_NAME = "TenkeiTech Universal Wand damage";
@@ -157,6 +158,8 @@ public final class ItemUniversalWand extends Item
         setCreativeTab(CreativeTabs.tabTools);
         setMaxStackSize(1);
         setMaxDamage(0);
+        setHarvestLevel("pickaxe", HARVEST_LEVEL);
+        setHarvestLevel("axe", HARVEST_LEVEL);
     }
 
     @Override
@@ -440,7 +443,7 @@ public final class ItemUniversalWand extends Item
 
     @Override
     public int getHarvestLevel(ItemStack stack, String toolClass) {
-        return isProtectionMode(stack) ? 0 : Integer.MAX_VALUE;
+        return isProtectionMode(stack) ? 0 : HARVEST_LEVEL;
     }
 
     @Override
