@@ -3,13 +3,19 @@ package com.xyp.gtneverreset.utils.recipes;
 import static gregtech.api.util.GTRecipeConstants.SKIP_CELL_RECIPE_GENERATION;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 import com.xyp.gtneverreset.GTNeverReset;
 
 import gregtech.api.enums.GTValues;
@@ -26,6 +32,8 @@ public final class FluidContainerRecipeConverter {
     public static void convertRecipes(RecipeMap<?> source, RecipeMap<?> target, int itemInputs, int itemOutputs,
         int fluidInputs, int fluidOutputs) {
         int converted = 0;
+        int duplicates = 0;
+        Set<RecipeKey> seen = new HashSet<>();
         for (GTRecipe recipe : source.getAllRecipes()) {
             if (!recipe.mEnabled || recipe.mFakeRecipe
                 || recipe.getMetadataOrDefault(SKIP_CELL_RECIPE_GENERATION, false)
@@ -37,14 +45,22 @@ public final class FluidContainerRecipeConverter {
                 || outputs.items.size() > itemOutputs
                 || inputs.fluids.size() > fluidInputs
                 || outputs.fluids.size() > fluidOutputs) continue;
-            GTRecipe adapted = buildConvertedRecipe(recipe, inputs, outputs);
+            GTRecipe_WithAlt adapted = buildConvertedRecipe(recipe, inputs, outputs);
             if (adapted != null) {
+                if (!seen.add(RecipeKey.of(adapted))) {
+                    duplicates++;
+                    continue;
+                }
                 adapted.setRecipeCategory(target.getDefaultRecipeCategory());
                 target.add(adapted);
                 converted++;
             }
         }
-        GTNeverReset.LOG.info("loaded {} direct-fluid recipes for {}", converted, target.unlocalizedName);
+        GTNeverReset.LOG.info(
+            "loaded {} direct-fluid recipes for {} (skipped {} duplicates)",
+            converted,
+            target.unlocalizedName,
+            duplicates);
     }
 
     private static ConvertedSide convertSide(GTRecipe recipe, boolean input) {
@@ -112,7 +128,8 @@ public final class FluidContainerRecipeConverter {
         return side;
     }
 
-    private static GTRecipe buildConvertedRecipe(GTRecipe original, ConvertedSide inputs, ConvertedSide outputs) {
+    private static GTRecipe_WithAlt buildConvertedRecipe(GTRecipe original, ConvertedSide inputs,
+        ConvertedSide outputs) {
         // GTRecipe.copy() drops metadata in this GT5U version, so rebuild through the public builder.
         GTRecipeBuilder builder = GTValues.RA.stdBuilder()
             .itemInputsUnified(inputs.items.toArray(new ItemStack[0]))
@@ -216,6 +233,74 @@ public final class FluidContainerRecipeConverter {
             if (fluids[index] != null) copy[index] = fluids[index].copy();
         }
         return copy;
+    }
+
+    private record RecipeKey(Multiset<InputKey> inputs, List<OutputKey> outputs, int duration, int eut,
+        int specialValue, Object specialItems, Set<Map.Entry<RecipeMetadataKey<?>, Object>> metadata,
+        boolean nbtSensitive, boolean hidden, boolean canBeBuffered, boolean needsEmptyOutput, List<String> neiDesc) {
+
+        private static RecipeKey of(GTRecipe_WithAlt recipe) {
+            // Converted cells can change the order of otherwise identical fluid inputs.
+            Multiset<InputKey> inputs = HashMultiset.create();
+            for (int i = 0; i < recipe.mInputs.length; i++) {
+                StackKey primary = StackKey.of(recipe.mInputs[i]);
+                Set<StackKey> choices = new HashSet<>();
+                if (recipe.mOreDictAlt[i] != null) {
+                    for (ItemStack alt : recipe.mOreDictAlt[i]) {
+                        if (alt != null) choices.add(StackKey.of(alt));
+                    }
+                }
+                choices.remove(primary);
+                inputs.add(new InputKey(primary, choices, recipe.getInputChance(i), recipe.mOreDictIds[i]));
+            }
+            for (int i = 0; i < recipe.mFluidInputs.length; i++) {
+                StackKey primary = StackKey.of(recipe.mFluidInputs[i]);
+                Set<StackKey> choices = new HashSet<>();
+                if (recipe.mAltFluidInputs[i] != null) {
+                    for (FluidStack alt : recipe.mAltFluidInputs[i]) {
+                        if (alt != null) choices.add(StackKey.of(alt));
+                    }
+                }
+                choices.remove(primary);
+                inputs.add(new InputKey(primary, choices, recipe.getFluidInputChance(i), -1));
+            }
+            List<OutputKey> outputs = new ArrayList<>();
+            for (int i = 0; i < recipe.mOutputs.length; i++) {
+                outputs.add(new OutputKey(StackKey.of(recipe.mOutputs[i]), recipe.getOutputChance(i)));
+            }
+            for (int i = 0; i < recipe.mFluidOutputs.length; i++) {
+                outputs.add(new OutputKey(StackKey.of(recipe.mFluidOutputs[i]), recipe.getFluidOutputChance(i)));
+            }
+            return new RecipeKey(
+                inputs,
+                outputs,
+                recipe.mDuration,
+                recipe.mEUt,
+                recipe.mSpecialValue,
+                recipe.mSpecialItems,
+                recipe.getMetadataStorage()
+                    .getEntries(),
+                recipe.isNBTSensitive,
+                recipe.mHidden,
+                recipe.mCanBeBuffered,
+                recipe.mNeedsEmptyOutput,
+                recipe.getNeiDesc() == null ? null : Arrays.asList(recipe.getNeiDesc()));
+        }
+    }
+
+    private record InputKey(StackKey stack, Set<StackKey> alternatives, int chance, int oreDictId) {}
+
+    private record OutputKey(StackKey stack, int chance) {}
+
+    private record StackKey(Object type, int damage, int amount, NBTTagCompound tag) {
+
+        private static StackKey of(ItemStack stack) {
+            return new StackKey(stack.getItem(), stack.getItemDamage(), stack.stackSize, stack.getTagCompound());
+        }
+
+        private static StackKey of(FluidStack stack) {
+            return new StackKey(stack.getFluid(), 0, stack.amount, stack.tag);
+        }
     }
 
     private static final class ConvertedSide {
