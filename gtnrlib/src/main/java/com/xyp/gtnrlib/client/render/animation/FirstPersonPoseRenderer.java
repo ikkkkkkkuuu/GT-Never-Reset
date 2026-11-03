@@ -57,6 +57,12 @@ public final class FirstPersonPoseRenderer {
                 GL11.glPopMatrix();
             }
         }
+        Vec rotation = ANIMATIONS.emptyHandRotation(partial);
+        if (rotation != null) {
+            GL11.glRotated(rotation.z(), 0, 0, 1);
+            GL11.glRotated(rotation.y(), 0, 1, 0);
+            GL11.glRotated(rotation.x(), 1, 0, 0);
+        }
         // The original renderFirstPersonArm call still draws the primary empty hand, with the player's skin.
         GL11.glTranslated(-.10, .31, -.18);
         GL11.glRotatef(65 + VANILLA_HAND_YAW, 0, 1, 0);

@@ -39,12 +39,27 @@ final class FirstPersonHandMotion {
 
     Vec sample(float partial, double age) {
         // Use the player's clock so rendering an extra pass cannot advance the breathing cycle.
-        double phase = previousStride + (stride - previousStride) * partial;
-        double weight = previousGait + (gait - previousGait) * partial;
+        double phase = strideAt(partial), weight = gaitAt(partial);
         return new Vec(
             side.sample(partial) + .012 * weight * Math.sin(phase),
             lift.sample(partial) + .007 * Math.sin(age * .10) + .009 * weight * Math.cos(2 * phase),
             depth.sample(partial));
+    }
+
+    Vec emptyRotation(float partial, double age) {
+        double breath = age * .06, phase = strideAt(partial), weight = gaitAt(partial);
+        return new Vec(
+            1.1 * Math.cos(breath) + 1.5 * weight * Math.sin(phase),
+            .5 * Math.sin(breath) - .5 * weight * Math.cos(phase),
+            1.8 * Math.sin(breath / 3) + weight * Math.cos(phase));
+    }
+
+    private double strideAt(float partial) {
+        return previousStride + (stride - previousStride) * partial;
+    }
+
+    private double gaitAt(float partial) {
+        return previousGait + (gait - previousGait) * partial;
     }
 
     void clear() {

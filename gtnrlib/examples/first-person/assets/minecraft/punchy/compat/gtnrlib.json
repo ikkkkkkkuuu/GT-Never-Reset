@@ -117,6 +117,9 @@
     }
   },
   "emptyHand": {
+    "armTransforms": {
+      "right": { "rotY": -65, "scale": 1 }
+    },
     "customAnimation": [
       {
         "type": "idle",

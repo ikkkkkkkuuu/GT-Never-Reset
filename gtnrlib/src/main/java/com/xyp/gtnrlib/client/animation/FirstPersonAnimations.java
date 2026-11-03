@@ -55,6 +55,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     private static final Marker REPLACE_SWING = new Marker(0, "gtnrlib:replace_swing");
     private static final Marker HAND_MOTION = new Marker(0, "gtnrlib:hand_motion");
     private static final Marker CHAIN_PLACEMENT = new Marker(0, "gtnrlib:chain_placement");
+    private static final Marker EMPTY_PUNCH = new Marker(0, "gtnrlib:empty_punch");
     private static final double HANDOFF_SECONDS = .075, TANGENT_STEP = .001;
     private final FirstPersonHandMotion handMotion = new FirstPersonHandMotion();
     private final List<Consumer<Marker>> listeners = new ArrayList<>();
@@ -68,10 +69,10 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     private Motion baseMotion, actionMotion;
     private PendingAction pending;
     private PunchyPack.Pose rightItem, rightArm, leftArm;
-    private AnimationPlayer.Playback base, action, placementHandoff;
+    private AnimationPlayer.Playback base, action, actionHandoff;
     private String activeAction = "";
-    private boolean mining, replacesSwing, usesHandMotion;
-    private boolean inClientTick, advancedOnPlacement;
+    private boolean mining, replacesSwing, usesHandMotion, playingEmptyPunch;
+    private boolean inClientTick, advancedOnInput;
     private double sway, previousSway, pitch, previousPitch;
 
     /** Implemented by the 1.7.10 renderer while its outgoing stack lowers on a slot change. */
@@ -153,7 +154,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     public void tick(TickEvent.ClientTickEvent event) {
         inClientTick = event.phase == TickEvent.Phase.START;
         if (inClientTick) {
-            advancedOnPlacement = false;
+            advancedOnInput = false;
             return;
         }
         if (!enabled()) return;
@@ -168,7 +169,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         if (pending != null && (pending.slot != mc.thePlayer.inventory.currentItem || pending.stack != held))
             pending = null;
         if (isLowering(mc)) {
-            player.advance(advancedOnPlacement ? 0 : .05);
+            player.advance(advancedOnInput ? 0 : .05);
             advanceMovement(mc);
             return;
         }
@@ -178,7 +179,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         boolean hitting = mc.currentScreen == null && mc.gameSettings.keyBindAttack.getIsKeyPressed()
             && mc.objectMouseOver != null
             && mc.objectMouseOver.typeOfHit == MovingObjectType.BLOCK;
-        player.advance(advancedOnPlacement ? 0 : .05);
+        player.advance(advancedOnInput ? 0 : .05);
         if (replacesSwing && (action == null || !action.active())) {
             // Vanilla interpolates the final tick from the previous progress through 1, even after the swing stops.
             var local = mc.thePlayer;
@@ -186,7 +187,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
                 || local.isSwingInProgress && local.swingProgress < local.prevSwingProgress) replacesSwing = false;
         }
         if (hitting && (!mining || action == null || !action.active())) trigger("mining");
-        else if (!hitting && mining && activeAction.equals("mining")) {
+        else if (!hitting && mining && activeAction.equals("mining") && !playingEmptyPunch) {
             if (action != null) action.stop(.08);
             activeAction = "";
         }
@@ -247,20 +248,25 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         boolean ownsSwing = motion.clip()
             .markers()
             .contains(REPLACE_SWING);
-        if (inClientTick && !advancedOnPlacement && ownsSwing && name.equals("useitem")) {
-            // Right-click runs before tick END. Finish the preceding interval before creating the new layer
+        boolean emptyPunch = ownsSwing && held == null
+            && (name.equals("attack") || name.equals("mining"))
+            && motion.clip()
+                .markers()
+                .contains(EMPTY_PUNCH);
+        boolean placement = name.equals("useitem");
+        if (inClientTick && !advancedOnInput && ownsSwing && (placement || emptyPunch)) {
+            // Mouse input runs before tick END. Finish the preceding interval before creating the new layer
             // so the first rendered frame starts at zero, including when it interrupts an unfinished return.
-            advancedOnPlacement = true;
+            advancedOnInput = true;
             player.advance(.05);
         }
         boolean replacingActiveSwing = replacesSwing && action != null && action.active();
         boolean chain = replacingActiveSwing && ownsSwing
-            && name.equals("useitem")
-            && name.equals(activeAction)
             && motion.equals(actionMotion)
-            && motion.clip()
-                .markers()
-                .contains(CHAIN_PLACEMENT);
+            && ((emptyPunch && playingEmptyPunch) || (placement && name.equals(activeAction)
+                && motion.clip()
+                    .markers()
+                    .contains(CHAIN_PLACEMENT)));
         Map<Channel, Tangent> departure = chain ? new LinkedHashMap<>() : Map.of();
         if (chain) {
             for (Channel channel : motion.clip()
@@ -269,21 +275,22 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
                 departure.put(channel, new Tangent(player.sample(channel, 0), player.sample(channel, TANGENT_STEP)));
             }
         }
-        if (placementHandoff != null) {
-            placementHandoff.stop(0);
-            placementHandoff = null;
+        if (actionHandoff != null) {
+            actionHandoff.stop(0);
+            actionHandoff = null;
         }
         if (action != null) action.stop(chain ? 0 : replacingActiveSwing ? .10 : .05);
         activeAction = name;
         actionMotion = motion;
         replacesSwing = ownsSwing;
+        playingEmptyPunch = emptyPunch;
         action = play(motion, chain ? 0 : replacingActiveSwing && replacesSwing ? .10 : .025, 1);
         if (replacesSwing) action.fadeOutAtEnd(
             Math.min(
                 .08,
                 motion.clip()
                     .duration() * .25));
-        if (chain) joinPlacement(
+        if (chain) joinAction(
             departure,
             Math.min(
                 HANDOFF_SECONDS,
@@ -293,7 +300,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     }
 
     /** A short cubic matches the current grip and its velocity to the incoming stroke at the join time. */
-    private void joinPlacement(Map<Channel, Tangent> departure, double seconds) {
+    private void joinAction(Map<Channel, Tangent> departure, double seconds) {
         Map<Channel, List<Key>> tracks = new LinkedHashMap<>();
         double step = Math.min(TANGENT_STEP, seconds);
         departure.forEach((channel, samples) -> {
@@ -310,9 +317,9 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
             };
             tracks.put(channel, List.of(new Key(0, path, path, Curve.LINEAR)));
         });
-        placementHandoff = player.play(new AnimationClip(seconds, End.ONCE, tracks, List.of()), 0, 2);
+        actionHandoff = player.play(new AnimationClip(seconds, End.ONCE, tracks, List.of()), 0, 2);
         // Predictions beyond the sub-tick join must sample the live layer immediately.
-        placementHandoff.fadeOutAtEnd(step);
+        actionHandoff.fadeOutAtEnd(step);
     }
 
     private AnimationPlayer.Playback play(Motion motion, double fade, int priority) {
@@ -383,6 +390,12 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
             : null;
     }
 
+    public Vec emptyHandRotation(float partial) {
+        return usesHandMotion && item == null
+            ? handMotion.emptyRotation(partial, Minecraft.getMinecraft().thePlayer.ticksExisted + partial)
+            : null;
+    }
+
     public PunchyPack.Pose tunedArm(boolean left) {
         return left ? leftArm : rightArm;
     }
@@ -448,8 +461,9 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         action = null;
         base = null;
         baseMotion = null;
-        placementHandoff = null;
+        actionHandoff = null;
         usesHandMotion = false;
+        playingEmptyPunch = false;
         actionMotion = null;
         replacesSwing = false;
         mining = false;

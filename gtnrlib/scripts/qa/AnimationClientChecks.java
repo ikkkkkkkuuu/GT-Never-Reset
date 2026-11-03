@@ -365,7 +365,7 @@ public final class AnimationClientChecks {
         target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.END));
     }
 
-    // In the cobblestone test the skin supplies all colored texels. Its upper edge follows the visible wrist.
+    // In the empty-hand and cobblestone draws the skin supplies all colored texels. Track its upper edge.
     private static int wristX(int[] pixels, int width) {
         long sum = 0;
         int count = 0, bottom = pixels.length;
@@ -408,12 +408,7 @@ public final class AnimationClientChecks {
         var ingot = new ItemStack(Items.iron_ingot);
         equip(mc, null);
         tickPlayer();
-        int[] relaxed = draw(mc, "empty-relaxed");
-        target.trigger("attack");
-        advanceHands(mc, 2);
-        require(!Arrays.equals(relaxed, draw(mc, "empty-punch")), "empty punch extends from its idle pose");
-        advanceHands(mc, 6);
-        require(Arrays.equals(relaxed, draw(mc, "empty-return")), "empty punch returns to its idle pose");
+        checkEmptyHand(mc);
         var local = mc.thePlayer;
         local.inventory.mainInventory[local.inventory.currentItem] = ingot;
         advanceHands(mc, 1);
@@ -496,6 +491,101 @@ public final class AnimationClientChecks {
         tickPlayer();
     }
 
+    private void checkEmptyHand(Minecraft mc) throws Exception {
+        int width = mc.displayWidth, h = mc.displayHeight;
+        int[] rest = draw(mc, "empty-relaxed");
+        int restX = wristX(rest, width);
+        var local = mc.thePlayer;
+        local.ticksExisted += 30;
+        try {
+            int[] breath = draw(mc, "empty-breathing");
+            require(
+                !Arrays.equals(rest, breath) && Math.abs(restX - wristX(breath, width)) < .06 * h
+                    && Arrays.equals(breath, draw(mc, "empty-breathing-extra-pass")),
+                "idle breathing is small and frame-stable");
+        } finally {
+            local.ticksExisted -= 30;
+        }
+        var previousHit = mc.objectMouseOver;
+        var click = Minecraft.class.getDeclaredMethod("func_147116_af");
+        click.setAccessible(true);
+        int x = (int) local.posX, y = (int) local.posY + 4, z = (int) local.posZ;
+        var center = net.minecraft.util.Vec3.createVectorHelper(x + .5, y + .5, z + .5);
+        var miss = new net.minecraft.util.MovingObjectPosition(x, y, z, -1, center, false);
+        var markers = new ArrayList<String>();
+        Consumer<Marker> listener = marker -> {
+            if ("gtnrlib:empty_punch".equals(marker.name())) markers.add(marker.name());
+        };
+        target.addListener(listener);
+        mc.theWorld.setBlock(x, y, z, Blocks.log);
+        try {
+            mc.objectMouseOver = new net.minecraft.util.MovingObjectPosition(x, y, z, 1, center);
+            leftClickDuringTick(mc, click);
+            require(markers.size() == 1 && local.isSwingInProgress, "tap on a real block starts one empty punch");
+            mc.objectMouseOver = miss;
+            leftClickDuringTick(mc, click);
+            int[] contact = draw(mc, "empty-punch");
+            int inside = wristX(contact, width);
+            advanceHands(mc, 2);
+            int outside = wristX(draw(mc, "empty-follow-through"), width);
+            require(
+                markers.size() == 1 && inside >= 0 && restX - inside > .22 * h && outside > restX + .04 * h,
+                "released punch travels inward and returns on the outside: " + restX
+                    + " -> "
+                    + inside
+                    + " -> "
+                    + outside);
+            advanceHands(mc, 4);
+            require(Arrays.equals(rest, draw(mc, "empty-return")), "released block tap settles at the empty grip");
+
+            leftClickDuringTick(mc, click);
+            advanceHands(mc, 3);
+            int outgoing = wristX(draw(mc, "empty-before-repeat", 1), width);
+            leftClickDuringTick(mc, click);
+            int incoming = wristX(draw(mc, "empty-repeat-start", 0), width);
+            require(
+                markers.size() == 3 && outgoing >= 0 && Math.abs(incoming - outgoing) <= 2,
+                "accepted air clicks join at the outgoing wrist: " + outgoing + " -> " + incoming);
+            advanceHands(mc, 1);
+            require(Arrays.equals(contact, draw(mc, "empty-repeat-contact")), "repeat reaches the same inward strike");
+            advanceHands(mc, 7);
+            require(
+                Arrays.equals(rest, draw(mc, "empty-repeat-return")),
+                "repeated air punches settle at the empty grip");
+        } finally {
+            target.removeListener(listener);
+            mc.theWorld.setBlockToAir(x, y, z);
+            mc.objectMouseOver = previousHit;
+        }
+
+        double prevZ = local.prevPosZ;
+        boolean grounded = local.onGround, bobbing = mc.gameSettings.viewBobbing;
+        var atRest = target.emptyHandRotation(1);
+        try {
+            local.onGround = mc.gameSettings.viewBobbing = true;
+            local.prevPosZ = local.posZ - .18;
+            advanceHands(mc, 6);
+            var walking = target.emptyHandRotation(1);
+            require(
+                !walking.equals(atRest) && walking.equals(target.emptyHandRotation(1)),
+                "distance advances empty-hand gait once per tick");
+            mc.gameSettings.viewBobbing = false;
+            advanceHands(mc, 10);
+            require(atRest.equals(target.emptyHandRotation(1)), "empty-hand gait settles with view bobbing disabled");
+        } finally {
+            local.prevPosZ = prevZ;
+            local.onGround = grounded;
+            mc.gameSettings.viewBobbing = bobbing;
+            advanceHands(mc, 24);
+        }
+    }
+
+    private void leftClickDuringTick(Minecraft mc, java.lang.reflect.Method click) throws Exception {
+        target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.START));
+        click.invoke(mc);
+        finishHandTick(mc);
+    }
+
     private void checkArmVisibility(Minecraft mc, ItemStack sword) throws Exception {
         var textures = mc.getTextureManager();
         var skin = mc.thePlayer.getLocationSkin();
@@ -545,7 +635,7 @@ public final class AnimationClientChecks {
     }
 
     private void checkArmSpan(Minecraft mc, int[] pixels, int[] withoutLeft, boolean left, String pose) {
-        long sleeveX = 0, wristX = 0;
+        long sleeveX = 0, wristX = 0, sleeveY = 0, wristY = 0;
         int sleeve = 0, wrist = 0;
         for (int i = 0; i < pixels.length; i++) {
             int rgb = pixels[i];
@@ -553,19 +643,28 @@ public final class AnimationClientChecks {
             int r = rgb >> 16 & 255, g = rgb >> 8 & 255, b = rgb & 255;
             if (g > 40 && g > 2 * r && g > 2 * b) {
                 sleeveX += i % mc.displayWidth;
+                sleeveY += i / mc.displayWidth;
                 sleeve++;
             } else if (r > 40 && b > 40 && r > 2 * g && b > 2 * g) {
                 wristX += i % mc.displayWidth;
+                wristY += i / mc.displayWidth;
                 wrist++;
             }
         }
         int area = pixels.length / 600;
         double span = (sleeveX / (double) sleeve - wristX / (double) wrist) * (left ? -1 : 1);
+        double drop = sleeveY / (double) sleeve - wristY / (double) wrist;
+        boolean separated = !left && pose.equals("empty")
+            ? span > mc.displayHeight * .05 && drop > mc.displayHeight * .08
+                && Math.hypot(span, drop) >= mc.displayHeight * .14
+            : span >= mc.displayHeight * .14;
         require(
-            sleeve >= area && wrist >= area && span >= mc.displayHeight * .14,
+            sleeve >= area && wrist >= area && separated,
             pose + (left ? " left" : " right")
-                + " sleeve and wrist visible, horizontal span "
+                + " sleeve and wrist visible, separation "
                 + Math.round(span)
+                + " x "
+                + Math.round(drop)
                 + "px");
     }
 
