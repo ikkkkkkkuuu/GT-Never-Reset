@@ -58,6 +58,10 @@ public final class UniversalWandSearch {
         return matcher.matches(x, y, z);
     }
 
+    void harvestAll(Matcher harvest) {
+        while (!finished) advance(Integer.MAX_VALUE, (x, y, z) -> { if (!harvest.matches(x, y, z)) finished = true; });
+    }
+
     public int advance(int budget, Result result) {
         int scanned = 0;
         while (!finished && scanned < budget) {

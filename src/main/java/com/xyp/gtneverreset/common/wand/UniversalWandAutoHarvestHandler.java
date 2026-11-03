@@ -55,8 +55,9 @@ public final class UniversalWandAutoHarvestHandler {
             && !ItemUniversalWand.isProtectionMode(player.getHeldItem());
     }
 
-    static void tick(int searchRemaining, int harvestRemaining, Map<UUID, Integer> searched,
-        Map<UUID, Integer> attempted) {
+    static void tick() {
+        int searchRemaining = UniversalWandConfig.universalWandGlobalSearchPositionsPerTick;
+        int harvestRemaining = UniversalWandConfig.universalWandGlobalBlocksPerTick;
         MinecraftServer server = MinecraftServer.getServer();
         if (server == null || server.getConfigurationManager() == null) return;
         List<EntityPlayerMP> players = new ArrayList<>();
@@ -79,12 +80,8 @@ public final class UniversalWandAutoHarvestHandler {
                 SCANS.put(id, scan);
             }
             long now = scan.world.getTotalWorldTime();
-            int searchBudget = Math.min(
-                searchRemaining,
-                Math.max(0, UniversalWandConfig.universalWandSearchPositionsPerTick - searched.getOrDefault(id, 0)));
-            int harvestBudget = Math.min(
-                harvestRemaining,
-                Math.max(0, UniversalWandConfig.universalWandBlocksPerTick - attempted.getOrDefault(id, 0)));
+            int searchBudget = Math.min(searchRemaining, UniversalWandConfig.universalWandSearchPositionsPerTick);
+            int harvestBudget = Math.min(harvestRemaining, UniversalWandConfig.universalWandBlocksPerTick);
             ItemStack wand = player.getHeldItem();
             try {
                 if (now >= scan.nextCheck && searchBudget > 0) {

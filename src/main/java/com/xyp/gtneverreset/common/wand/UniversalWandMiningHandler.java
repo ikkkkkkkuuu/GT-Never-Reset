@@ -1,9 +1,6 @@
 package com.xyp.gtneverreset.common.wand;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,8 +40,6 @@ import gregtech.common.blocks.GTBlockOre;
 public final class UniversalWandMiningHandler {
 
     public static final int PREVIEW_MAX_BLOCKS = 65536;
-    private static final int QUEUED_POSITIONS_LIMIT = 4096;
-    private static int nextPlayer;
 
     public static UniversalWandSearch createPreviewSearch(World world, MovingObjectPosition hit, ItemStack stack) {
         if (world == null || hit == null
@@ -87,7 +82,6 @@ public final class UniversalWandMiningHandler {
     private static final long KEY_GRACE_NANOS = 750_000_000L;
     private static final Map<UUID, MiningTask> TASKS = new ConcurrentHashMap<>();
     private static final Map<UUID, ChainRequest> START_REQUESTS = new ConcurrentHashMap<>();
-    private static final Map<UUID, BreakProfile> LAST_BREAKS = new ConcurrentHashMap<>();
     private static final String PENDING_DROPS = "gtneverresetUniversalWandPendingDrops";
     private static final ThreadLocal<HarvestScope> HARVEST = new ThreadLocal<>();
     private static final ThreadLocal<LivingDropScope> LIVING_DROPS = new ThreadLocal<>();
@@ -208,14 +202,11 @@ public final class UniversalWandMiningHandler {
                 dropToPlayer ? (int) Math.floor(player.posX) : x,
                 dropToPlayer ? (int) Math.floor(player.posY) : y,
                 dropToPlayer ? (int) Math.floor(player.posZ) : z);
-            if (blockHarvest && !harvested && !ACTIVE.get()) {
-                BreakProfile profile = LAST_BREAKS.get(player.getUniqueID());
-                if (profile != null && profile.world == world && profile.x == x && profile.y == y && profile.z == z)
-                    LAST_BREAKS.remove(player.getUniqueID(), profile);
+            if (blockHarvest && !ACTIVE.get()) {
                 MiningTask task = TASKS.get(player.getUniqueID());
                 if (task != null && task.player == player && task.world == world && isOrigin(task)) {
-                    if (task.originCounted) task.brokenCount--;
-                    finishTask(task, true, true);
+                    if (harvested) mineChain(task);
+                    else finishTask(task, false, true);
                 }
             }
         }
@@ -257,8 +248,7 @@ public final class UniversalWandMiningHandler {
     private static final class MiningTask {
 
         final EntityPlayerMP player;
-        ItemStack stack;
-        final ArrayDeque<int[]> positions = new ArrayDeque<>();
+        final ItemStack stack;
         final UniversalWandSearch search;
         final World world;
         final boolean dropToPlayer;
@@ -267,11 +257,10 @@ public final class UniversalWandMiningHandler {
         final int originX;
         final int originY;
         final int originZ;
-        boolean originCounted;
         int brokenCount;
 
-        MiningTask(EntityPlayerMP player, ItemStack stack, UniversalWandSearch search, int initialBrokenCount,
-            int originX, int originY, int originZ) {
+        MiningTask(EntityPlayerMP player, ItemStack stack, UniversalWandSearch search, int originX, int originY,
+            int originZ) {
             this.player = player;
             this.stack = stack;
             this.search = search;
@@ -281,8 +270,6 @@ public final class UniversalWandMiningHandler {
             this.originX = originX;
             this.originY = originY;
             this.originZ = originZ;
-            this.originCounted = initialBrokenCount > 0;
-            this.brokenCount = initialBrokenCount;
         }
     }
 
@@ -300,34 +287,6 @@ public final class UniversalWandMiningHandler {
             this.x = x;
             this.y = y;
             this.z = z;
-        }
-    }
-
-    private static final class BreakProfile {
-
-        final int x;
-        final int y;
-        final int z;
-        final Block target;
-        final World world;
-        final int metadata;
-        final boolean gtOreTarget;
-        final boolean targetSmall;
-        final ItemStack stack;
-        final long createdAt;
-
-        BreakProfile(int x, int y, int z, Block target, World world, int metadata, boolean gtOreTarget,
-            boolean targetSmall, ItemStack stack) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            this.target = target;
-            this.world = world;
-            this.metadata = metadata;
-            this.gtOreTarget = gtOreTarget;
-            this.targetSmall = targetSmall;
-            this.stack = stack;
-            this.createdAt = System.nanoTime();
         }
     }
 
@@ -360,7 +319,6 @@ public final class UniversalWandMiningHandler {
             KEY_HELD.clear();
             KEY_LAST_HELD.clear();
             START_REQUESTS.clear();
-            LAST_BREAKS.clear();
         }
         for (Map.Entry<UUID, ChainRequest> entry : START_REQUESTS.entrySet()) {
             ChainRequest request = entry.getValue();
@@ -375,106 +333,40 @@ public final class UniversalWandMiningHandler {
                     && !ItemUniversalWand.isProtectionMode(held)
                     && player.canPlayerEdit(request.x, request.y, request.z, 1, held)
                     && isReachable(player, request.x, request.y, request.z)) {
-                    BreakProfile profile = LAST_BREAKS.get(entry.getKey());
-                    boolean profileMatches = profile != null && profile.world == player.worldObj
-                        && profile.stack == held
-                        && profile.x == request.x
-                        && profile.y == request.y
-                        && profile.z == request.z
-                        && System.nanoTime() - profile.createdAt < KEY_GRACE_NANOS * 4L;
-                    if (profileMatches && player.worldObj.isAirBlock(request.x, request.y, request.z)) {
-                        enqueueChain(
-                            player,
-                            request.x,
-                            request.y,
-                            request.z,
-                            held,
-                            profile.target,
-                            profile.metadata,
-                            profile.gtOreTarget,
-                            profile.targetSmall,
-                            1);
-                    } else if (player.worldObj.blockExists(request.x, request.y, request.z)
-                        && !player.worldObj.isAirBlock(request.x, request.y, request.z)
-                        && UniversalWandActions.isTarget(player, request.x, request.y, request.z)) {
-                            enqueueChain(player, request.x, request.y, request.z, held, 0);
-                        }
+                    if (!request.world.isAirBlock(request.x, request.y, request.z)
+                        && UniversalWandActions.isTarget(player, request.x, request.y, request.z)
+                        && request.world.getBlock(request.x, request.y, request.z)
+                            .getBlockHardness(request.world, request.x, request.y, request.z) >= 0
+                        && !MinecraftServer.getServer()
+                            .isBlockProtected((WorldServer) request.world, request.x, request.y, request.z, player)) {
+                        player.theItemInWorldManager.tryHarvestBlock(request.x, request.y, request.z);
+                    }
                 }
             }
             START_REQUESTS.remove(entry.getKey(), request);
         }
-        List<MiningTask> tasks = new ArrayList<>(TASKS.values());
-        if (!tasks.isEmpty()) Collections.rotate(tasks, -(Math.floorMod(nextPlayer++, tasks.size())));
-        int searchRemaining = UniversalWandConfig.universalWandGlobalSearchPositionsPerTick;
-        int harvestRemaining = UniversalWandConfig.universalWandGlobalBlocksPerTick;
-        Map<UUID, Integer> searched = new HashMap<>();
-        Map<UUID, Integer> attempted = new HashMap<>();
-        for (MiningTask task : tasks) {
-            EntityPlayerMP player = task.player;
-            ItemStack heldStack = player.getHeldItem();
-            if (!KEY_HELD.contains(player.getUniqueID())) {
-                finishTask(task, true, true);
-                continue;
-            }
-            if (player.isDead || player.worldObj == null
-                || heldStack == null
-                || heldStack != task.stack
-                || ItemUniversalWand.isProtectionMode(heldStack)
-                || player.worldObj != task.world) {
-                finishTask(task, !player.isDead, true);
-                continue;
-            }
-            ACTIVE.set(true);
-            try {
-                int blocksPerTick = Math.min(UniversalWandConfig.universalWandBlocksPerTick, harvestRemaining);
-                int processed = 0;
-                if (!task.originCounted) {
-                    if (blocksPerTick == 0) continue;
-                    processed++;
-                    harvestRemaining--;
-                    attempted.merge(player.getUniqueID(), 1, Integer::sum);
-                    if (!harvestPosition(task, task.originX, task.originY, task.originZ)) {
-                        finishTask(task, true, true);
-                        continue;
-                    }
-                    task.originCounted = true;
-                    task.brokenCount++;
-                }
-                int budget = Math.min(
-                    searchRemaining,
-                    Math.min(
-                        UniversalWandConfig.universalWandSearchPositionsPerTick,
-                        QUEUED_POSITIONS_LIMIT - task.positions.size()));
-                int scanned = task.search.advance(budget, (x, y, z) -> task.positions.addLast(new int[] { x, y, z }));
-                searchRemaining -= scanned;
-                searched.put(player.getUniqueID(), scanned);
-                while (processed < blocksPerTick && !task.positions.isEmpty()) {
-                    if (player.isDead || player.worldObj != task.world
-                        || player.getHeldItem() != task.stack
-                        || ItemUniversalWand.isProtectionMode(task.stack)
-                        || !KEY_HELD.contains(player.getUniqueID())) {
-                        finishTask(task, !player.isDead, true);
-                        break;
-                    }
-                    processed++;
-                    harvestRemaining--;
-                    attempted.merge(player.getUniqueID(), 1, Integer::sum);
-                    int[] pos = task.positions.removeFirst();
-                    if (harvestPosition(task, pos[0], pos[1], pos[2])) {
-                        task.brokenCount++;
-                    }
-                }
-            } catch (RuntimeException failure) {
-                finishTask(task, true, true);
-                GTNeverReset.LOG.error("Universal Wand chain stopped after a harvest failure", failure);
-            } finally {
-                ACTIVE.set(false);
-            }
-            if (task.positions.isEmpty() && task.search.isFinished()) {
-                finishTask(task, true, true);
-            }
+        UniversalWandAutoHarvestHandler.tick();
+    }
+
+    private static void mineChain(MiningTask task) {
+        task.brokenCount = 1;
+        ACTIVE.set(true);
+        try {
+            task.search.harvestAll((x, y, z) -> {
+                EntityPlayerMP player = task.player;
+                if (player.isDead || player.worldObj != task.world
+                    || player.getHeldItem() != task.stack
+                    || ItemUniversalWand.isProtectionMode(task.stack)
+                    || TASKS.get(player.getUniqueID()) != task) return false;
+                if (harvestPosition(task, x, y, z)) task.brokenCount++;
+                return true;
+            });
+        } catch (RuntimeException failure) {
+            GTNeverReset.LOG.error("universal wand chain stopped after a harvest failure", failure);
+        } finally {
+            ACTIVE.remove();
+            finishTask(task, !task.player.isDead, true);
         }
-        UniversalWandAutoHarvestHandler.tick(searchRemaining, harvestRemaining, searched, attempted);
     }
 
     private static boolean harvestPosition(MiningTask task, int x, int y, int z) {
@@ -526,18 +418,6 @@ public final class UniversalWandMiningHandler {
         EntityPlayerMP player = (EntityPlayerMP) event.getPlayer();
         UniversalWandActions.applyKeyRequest(player);
         World world = player.worldObj;
-        Block target = world.getBlock(event.x, event.y, event.z);
-        int metadata = world.getBlockMetadata(event.x, event.y, event.z);
-        boolean gtOreTarget = isGtOre(world, event.x, event.y, event.z);
-        boolean targetSmall = isGtSmallOre(world, event.x, event.y, event.z);
-        MiningTask task = TASKS.get(player.getUniqueID());
-        if (task != null && !task.originCounted
-            && task.originX == event.x
-            && task.originY == event.y
-            && task.originZ == event.z) {
-            task.originCounted = true;
-            task.brokenCount++;
-        }
         ItemStack stack = player.getHeldItem();
         Long lastHeld = KEY_LAST_HELD.get(player.getUniqueID());
         boolean chainEligible = stack != null && stack.getItem() instanceof ItemUniversalWand
@@ -545,16 +425,27 @@ public final class UniversalWandMiningHandler {
             && KEY_HELD.contains(player.getUniqueID())
             && lastHeld != null
             && System.nanoTime() - lastHeld <= KEY_GRACE_NANOS;
-        if (chainEligible) {
-            LAST_BREAKS.put(
-                player.getUniqueID(),
-                new BreakProfile(event.x, event.y, event.z, target, world, metadata, gtOreTarget, targetSmall, stack));
-        } else {
-            LAST_BREAKS.remove(player.getUniqueID());
-        }
-        if (!chainEligible || ItemUniversalWand.isProtectionMode(stack)
-            || target.getBlockHardness(world, event.x, event.y, event.z) < 0) return;
-        enqueueChain(player, event.x, event.y, event.z, stack, target, metadata, gtOreTarget, targetSmall, 1);
+        HarvestScope scope = HARVEST.get();
+        if (!chainEligible || scope == null
+            || !scope.blockHarvest
+            || scope.player != player
+            || scope.x != event.x
+            || scope.y != event.y
+            || scope.z != event.z
+            || ItemUniversalWand.isProtectionMode(stack)
+            || event.block.getBlockHardness(world, event.x, event.y, event.z) < 0) return;
+        UniversalWandSearch search = createSearch(
+            world,
+            event.x,
+            event.y,
+            event.z,
+            stack,
+            event.block,
+            world.getBlockMetadata(event.x, event.y, event.z),
+            isGtOre(world, event.x, event.y, event.z),
+            isGtSmallOre(world, event.x, event.y, event.z),
+            ItemUniversalWand.getMaxMiningCount(stack));
+        TASKS.putIfAbsent(player.getUniqueID(), new MiningTask(player, stack, search, event.x, event.y, event.z));
     }
 
     @SubscribeEvent
@@ -767,10 +658,8 @@ public final class UniversalWandMiningHandler {
         KEY_HELD.clear();
         KEY_LAST_HELD.clear();
         START_REQUESTS.clear();
-        LAST_BREAKS.clear();
         UniversalWandActions.clearAll();
         UniversalWandAutoHarvestHandler.clearAll();
-        nextPlayer = 0;
     }
 
     @SubscribeEvent
@@ -793,7 +682,6 @@ public final class UniversalWandMiningHandler {
         KEY_HELD.remove(id);
         KEY_LAST_HELD.remove(id);
         START_REQUESTS.remove(id);
-        LAST_BREAKS.remove(id);
         UniversalWandActions.clear(id);
         UniversalWandAutoHarvestHandler.clear(id);
     }
@@ -804,42 +692,6 @@ public final class UniversalWandMiningHandler {
         double dz = player.posZ - (z + 0.5D);
         double reach = player.theItemInWorldManager.getBlockReachDistance() + 1D;
         return dx * dx + dy * dy + dz * dz <= reach * reach;
-    }
-
-    private static void enqueueChain(EntityPlayerMP player, int sx, int sy, int sz, ItemStack stack,
-        int initialBrokenCount) {
-        World world = player.worldObj;
-        enqueueChain(
-            player,
-            sx,
-            sy,
-            sz,
-            stack,
-            world.getBlock(sx, sy, sz),
-            world.getBlockMetadata(sx, sy, sz),
-            isGtOre(world, sx, sy, sz),
-            isGtSmallOre(world, sx, sy, sz),
-            initialBrokenCount);
-    }
-
-    private static void enqueueChain(EntityPlayerMP player, int sx, int sy, int sz, ItemStack stack, Block target,
-        int metadata, boolean gtOreTarget, boolean targetSmall, int initialBrokenCount) {
-        if (TASKS.containsKey(player.getUniqueID())) return;
-        World world = player.worldObj;
-        int maxBlocks = ItemUniversalWand.getMaxMiningCount(stack);
-        UniversalWandSearch search = createSearch(
-            world,
-            sx,
-            sy,
-            sz,
-            stack,
-            target,
-            metadata,
-            gtOreTarget,
-            targetSmall,
-            maxBlocks);
-        MiningTask task = new MiningTask(player, stack, search, initialBrokenCount, sx, sy, sz);
-        TASKS.put(player.getUniqueID(), task);
     }
 
     private static boolean matchesTarget(World world, int x, int y, int z, Block target, int metadata,

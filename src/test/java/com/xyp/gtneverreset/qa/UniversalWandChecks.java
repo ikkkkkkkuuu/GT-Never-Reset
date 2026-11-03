@@ -7,6 +7,9 @@ import java.nio.file.Path;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.WorldSettings;
@@ -20,6 +23,7 @@ import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.xyp.gtneverreset.common.item.items.ItemUniversalWand;
 import com.xyp.gtneverreset.common.packet.UniversalWandNetwork;
+import com.xyp.gtneverreset.common.wand.UniversalWandMiningHandler;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtnrlib.gui.theme.ScreenTheme;
 
@@ -38,6 +42,7 @@ public final class UniversalWandChecks {
     private volatile int stage;
     private boolean oldProtection;
     private volatile boolean syncPassed;
+    private volatile boolean miningChecked;
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
@@ -73,6 +78,7 @@ public final class UniversalWandChecks {
                 }
                 return;
             }
+            if (!miningChecked) return;
             mc.ingameGUI.getChatGUI()
                 .clearChatMessages();
             mc.gameSettings.guiScale = themes[theme] == ScreenTheme.AE2_DARK ? 3 : 2;
@@ -147,14 +153,68 @@ public final class UniversalWandChecks {
 
     @SubscribeEvent
     public void server(TickEvent.ServerTickEvent event) {
-        if (stage != 1 || event.phase != TickEvent.Phase.END) return;
+        if (event.phase != TickEvent.Phase.END || finished || miningChecked && stage != 1) return;
         var players = MinecraftServer.getServer()
             .getConfigurationManager().playerEntityList;
         if (players.isEmpty()) return;
         var player = (EntityPlayerMP) players.get(0);
         var held = player.getHeldItem();
-        if (held != null && held.getItem() instanceof ItemUniversalWand
-            && ItemUniversalWand.isProtectionMode(held) != oldProtection) syncPassed = true;
+        if (held == null || !(held.getItem() instanceof ItemUniversalWand)) return;
+        if (!miningChecked) {
+            try {
+                checkInstantMining(player, held);
+                miningChecked = true;
+            } catch (Throwable failure) {
+                Minecraft.getMinecraft()
+                    .func_152344_a(() -> finish(failure));
+            }
+        } else if (ItemUniversalWand.isProtectionMode(held) != oldProtection) syncPassed = true;
+    }
+
+    private static void checkInstantMining(EntityPlayerMP player, ItemStack original) {
+        int slot = player.inventory.currentItem;
+        ItemStack wand = original.copy();
+        player.inventory.setInventorySlotContents(slot, wand);
+        var world = player.worldObj;
+        int x = (player.chunkCoordX << 4) + 2, z = (player.chunkCoordZ << 4) + 2;
+        int y = 64;
+        try {
+            ItemUniversalWand.setProtectionMode(player, wand, false);
+            ItemUniversalWand.setInventoryCollection(player, wand, true);
+            ItemUniversalWand.setMaxMiningCount(player, wand, 23);
+            ItemUniversalWand.setEnhancedChain(player, wand, false);
+            for (int i = 0; i < 25; i++) world.setBlock(x + i % 5, y, z + i / 5, Blocks.gold_block);
+            int before = goldBlocks(player);
+            UniversalWandMiningHandler.setKeyHeld(player, true);
+            if (!player.theItemInWorldManager.tryHarvestBlock(x, y, z))
+                throw new AssertionError("Wand failed to mine origin");
+            int remaining = 0;
+            for (int i = 0; i < 25; i++) if (world.getBlock(x + i % 5, y, z + i / 5) == Blocks.gold_block) remaining++;
+            if (remaining != 2 || goldBlocks(player) - before != 23) throw new AssertionError(
+                "Instant 23-block limit: remaining=" + remaining + ", collected=" + (goldBlocks(player) - before));
+            ItemUniversalWand.setEnhancedChain(player, wand, true);
+            ItemUniversalWand.setEnhancedChainRadius(player, wand, 2);
+            y += 4;
+            world.setBlock(x, y, z, Blocks.gold_block);
+            world.setBlock(x + 2, y, z, Blocks.gold_block);
+            world.setBlock(x + 3, y, z, Blocks.gold_block);
+            UniversalWandMiningHandler.setKeyHeld(player, true);
+            if (!player.theItemInWorldManager.tryHarvestBlock(x, y, z) || !world.isAirBlock(x + 2, y, z)
+                || world.getBlock(x + 3, y, z) != Blocks.gold_block
+                || goldBlocks(player) - before != 25)
+                throw new AssertionError("Instant enhanced mining radius or drops");
+        } finally {
+            UniversalWandMiningHandler.setKeyHeld(player, false);
+            player.inventory.setInventorySlotContents(slot, original);
+            player.sendContainerToPlayer(player.inventoryContainer);
+        }
+    }
+
+    private static int goldBlocks(EntityPlayerMP player) {
+        int count = 0;
+        for (ItemStack stack : player.inventory.mainInventory)
+            if (stack != null && stack.getItem() == Item.getItemFromBlock(Blocks.gold_block)) count += stack.stackSize;
+        return count;
     }
 
     private static IWidget find(IWidget widget, String name) {

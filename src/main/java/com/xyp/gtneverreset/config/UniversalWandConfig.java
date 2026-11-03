@@ -148,7 +148,7 @@ public final class UniversalWandConfig {
     @Config.DefaultBoolean(true)
     public static boolean enableFlight = true;
 
-    @Config.Comment("Mining budget per player and tick.")
+    @Config.Comment("Automatic crop harvest attempts per player and tick.")
     @Config.DefaultInt(16)
     @Config.RangeInt(min = 1)
     public static int universalWandBlocksPerTick = 16;
@@ -166,17 +166,17 @@ public final class UniversalWandConfig {
     @Config.DefaultBoolean(true)
     public static boolean universalWandGrantOnFirstJoin = true;
 
-    @Config.Comment("Search budget per player and tick.")
+    @Config.Comment("Automatic crop search positions per player and tick.")
     @Config.DefaultInt(4096)
     @Config.RangeInt(min = 1, max = 65536)
     public static int universalWandSearchPositionsPerTick = 4096;
 
-    @Config.Comment("Shared search budget per tick.")
+    @Config.Comment("Shared automatic crop search budget per tick.")
     @Config.DefaultInt(16384)
     @Config.RangeInt(min = 1, max = 65536)
     public static int universalWandGlobalSearchPositionsPerTick = 16384;
 
-    @Config.Comment("Shared mining budget per tick.")
+    @Config.Comment("Shared automatic crop harvest budget per tick.")
     @Config.DefaultInt(128)
     @Config.RangeInt(min = 1, max = 65536)
     public static int universalWandGlobalBlocksPerTick = 128;
