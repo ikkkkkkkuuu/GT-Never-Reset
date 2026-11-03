@@ -1,7 +1,6 @@
 package com.xyp.gtneverreset.client.wand;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovingObjectPosition;
@@ -49,15 +48,6 @@ public final class UniversalWandKeyHandler {
         "key.categories.gtneverreset");
     private boolean lastChainHeld;
     private int chainHeartbeat;
-    private static final KeyBinding UNDO = new KeyBinding(
-        // #tr key.gtneverreset.universal_wand.undo
-        // # Building undo (hold and right-click)
-        // # zh_CN 建筑撤回（按住并右键）
-        "key.gtneverreset.universal_wand.undo",
-        Keyboard.KEY_LCONTROL,
-        "key.categories.gtneverreset");
-    private boolean lastUndoHeld;
-    private int undoHeartbeat;
     private static final KeyBinding FLIGHT_SPEED = new KeyBinding(
         // #tr key.gtneverreset.universal_wand.flight_speed
         // # Universal Wand Flight Speed (Shift to Decrease)
@@ -70,11 +60,6 @@ public final class UniversalWandKeyHandler {
         return UniversalWandFeature.CHAIN.allowed() && CHAIN.getIsKeyPressed();
     }
 
-    public static boolean isUndoKeyHeld() {
-        Minecraft minecraft = Minecraft.getMinecraft();
-        return minecraft.currentScreen == null && minecraft.inGameHasFocus && GameSettings.isKeyDown(UNDO);
-    }
-
     private UniversalWandKeyHandler() {}
 
     public static void init() {
@@ -82,7 +67,6 @@ public final class UniversalWandKeyHandler {
         ClientRegistry.registerKeyBinding(OPEN_GUI);
         ClientRegistry.registerKeyBinding(FORCE_BEDROCK);
         ClientRegistry.registerKeyBinding(CHAIN);
-        ClientRegistry.registerKeyBinding(UNDO);
         ClientRegistry.registerKeyBinding(FLIGHT_SPEED);
         FMLCommonHandler.instance()
             .bus()
@@ -111,17 +95,9 @@ public final class UniversalWandKeyHandler {
         if (minecraft.thePlayer == null) {
             UniversalWandUtilityHandler.receiveClientSpeed(null, 0, false);
             lastChainHeld = false;
-            lastUndoHeld = false;
             return;
         }
         ItemStack stack = minecraft.thePlayer.getHeldItem();
-        boolean undo = isUndoKeyHeld() && ItemUniversalWand.isHeldBy(minecraft.thePlayer)
-            && ItemUniversalWand.isBuildingEnabled(stack);
-        if (undo != lastUndoHeld || undo && ++undoHeartbeat >= 10) {
-            UniversalWandNetwork.requestUndoKey(undo);
-            lastUndoHeld = undo;
-            undoHeartbeat = 0;
-        }
         boolean held = minecraft.currentScreen == null && minecraft.inGameHasFocus
             && isChainKeyHeld()
             && stack != null

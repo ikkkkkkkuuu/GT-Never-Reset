@@ -5,7 +5,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
-import com.xyp.gtneverreset.common.wand.building.BuildingContext;
 import com.xyp.gtneverreset.loader.ContentLoaders;
 
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -61,13 +60,4 @@ public class CommonProxy {
     }
 
     public void useWandTravelIfImmediate(ItemStack stack, EntityPlayer player) {}
-
-    public int getWandBuildingSupply(BuildingContext context, ItemStack material) {
-        return 0;
-    }
-
-    public boolean isWandUndoKeyHeld() {
-        return false;
-    }
-
 }

@@ -97,9 +97,6 @@ public final class UniversalWandGui {
         BooleanSyncValue cropSticks = new BooleanSyncValue(
             () -> ItemUniversalWand.isCropSticksEnabled(expected),
             value -> ItemUniversalWand.setCropSticksEnabled(player, expected, value)).allowC2S();
-        BooleanSyncValue building = new BooleanSyncValue(
-            () -> ItemUniversalWand.isBuildingEnabled(expected),
-            value -> ItemUniversalWand.setBuildingEnabled(player, expected, value)).allowC2S();
         BooleanSyncValue forceKill = new BooleanSyncValue(
             () -> ItemUniversalWand.isForceKillEnabled(expected),
             value -> ItemUniversalWand.setForceKillEnabled(player, expected, value)).allowC2S();
@@ -130,12 +127,6 @@ public final class UniversalWandGui {
         BooleanSyncValue acceleration = new BooleanSyncValue(
             () -> ItemUniversalWand.isTimeAccelerationEnabled(expected),
             value -> ItemUniversalWand.setTimeAccelerationEnabled(player, expected, value)).allowC2S();
-        BooleanSyncValue buildingAe = new BooleanSyncValue(
-            () -> ItemUniversalWand.isBuildingAeEnabled(expected),
-            value -> ItemUniversalWand.setBuildingAeEnabled(player, expected, value)).allowC2S();
-        IntSyncValue buildingCore = new IntSyncValue(
-            () -> ItemUniversalWand.getBuildingCore(expected)
-                .ordinal());
         syncManager.syncValue("wand_fortune", 0, fortune);
         syncManager.syncValue("wand_protection", 0, protection);
         syncManager.syncValue("wand_force_bedrock", 0, bedrock);
@@ -150,9 +141,6 @@ public final class UniversalWandGui {
         syncManager.syncValue("wand_hoe", 0, hoe);
         syncManager.syncValue("wand_crop_harvest", 0, crops);
         syncManager.syncValue("wand_crop_sticks", 0, cropSticks);
-        syncManager.syncValue("wand_building", 0, building);
-        syncManager.syncValue("wand_building_core", 0, buildingCore);
-        syncManager.syncValue("wand_building_ae", 0, buildingAe);
         syncManager.syncValue("wand_force_kill", 0, forceKill);
         syncManager.syncValue("wand_beheading", 0, beheading);
         syncManager.syncValue("wand_spawn_egg", 0, spawnEgg);
@@ -288,12 +276,12 @@ public final class UniversalWandGui {
                     .pos(6, 62)
                     .size(222, 16));
         // #tr gtneverreset.gui.universal_wand.section.mining
-        // # Mining and building
-        // # zh_CN 采矿与建造
+        // # Mining
+        // # zh_CN 采矿
         // #tr gtneverreset.gui.universal_wand.tab.mining
         // # Mining
-        // # zh_CN 采矿 / 建造
-        ParentWidget<?> mining = section("mining", 0, 204)
+        // # zh_CN 采矿
+        ParentWidget<?> mining = section("mining", 0, 164)
             // #tr gtneverreset.gui.universal_wand.enhanced_chain
             // # Enhanced chain
             // # zh_CN 增强连锁
@@ -380,57 +368,6 @@ public final class UniversalWandGui {
             // # Store drops in bound AE first, then your inventory. Enables item collection.
             // # zh_CN 掉落优先存入已绑定 AE，剩余收入背包；自动开启物品收集。
             .child(stateButton("ae_priority", ae).pos(119, 122))
-            // #tr gtneverreset.gui.universal_wand.building
-            // # Building
-            // # zh_CN 建筑手杖
-            // #tr gtneverreset.gui.universal_wand.building.tooltip
-            // # Right-click to use the selected core. Supports GT machine placement. Hold the undo key and right-click
-            // to undo ordinary blocks; GT machines cannot be undone.
-            // # zh_CN 右键使用当前建筑核心；支持 GT 机器放置。普通方块可按住撤回键并右键撤回，GT 机器不支持撤回。
-            .child(stateButton("building", building).pos(6, 142))
-            // #tr gtneverreset.gui.universal_wand.building_ae
-            // # AE integration mode
-            // # zh_CN AE 接入模式
-            // #tr gtneverreset.gui.universal_wand.building_ae.tooltip
-            // # Construction core only: use bound AE materials first, then inventory and offhand. Undo returns
-            // materials to AE first.
-            // # zh_CN 仅建造核心生效：优先从已绑定 AE 取材，不足时使用背包和副手；撤回优先返还 AE。
-            .child(stateButton("building_ae", buildingAe).pos(119, 142))
-            .child(
-                // #tr gtneverreset.gui.universal_wand.building_normal
-                // # Construct
-                // # zh_CN 建造核心
-                // #tr gtneverreset.gui.universal_wand.building_normal.tooltip
-                // # Expand the clicked matching surface with up to 1024 blocks.
-                // # zh_CN 扩建点击的同类表面，单次最多1024块。
-                coreButton(player, expected, buildingCore, ItemUniversalWand.BuildingCore.NORMAL, "building_normal")
-                    .pos(6, 162)
-                    .size(72, 16))
-            .child(
-                // #tr gtneverreset.gui.universal_wand.building_angel
-                // # Angel
-                // # zh_CN 天使核心
-                // #tr gtneverreset.gui.universal_wand.building_angel.tooltip
-                // # Select offhand material. Air use places one block; block use searches up to 16 blocks behind the
-                // surface.
-                // # zh_CN 副手选择建材；空气右键放置一块，点击方块向背面搜索最多16格。
-                coreButton(player, expected, buildingCore, ItemUniversalWand.BuildingCore.ANGEL, "building_angel")
-                    .pos(81, 162)
-                    .size(72, 16))
-            .child(
-                coreButton(
-                    player,
-                    expected,
-                    buildingCore,
-                    ItemUniversalWand.BuildingCore.DESTRUCTION,
-                    // #tr gtneverreset.gui.universal_wand.building_destruction
-                    // # Destroy
-                    // # zh_CN 破坏核心
-                    // #tr gtneverreset.gui.universal_wand.building_destruction.tooltip
-                    // # Remove up to 81 connected matching blocks on the clicked plane without harvest drops.
-                    // # zh_CN 移除点击平面上相连同类方块，最多81块，不产生采集掉落。
-                    "building_destruction").pos(156, 162)
-                        .size(72, 16))
             .child(
                 // #tr gtneverreset.gui.universal_wand.gt_wrench.tooltip
                 // # Right-click to use wrench functions.
@@ -438,7 +375,7 @@ public final class UniversalWandGui {
                 // #tr gtneverreset.gui.universal_wand.gt_wrench
                 // # GT Wrench
                 // # zh_CN GT 扳手
-                toolModeButton(player, expected, toolMode, ItemUniversalWand.GtToolMode.WRENCH, "gt_wrench").pos(6, 182)
+                toolModeButton(player, expected, toolMode, ItemUniversalWand.GtToolMode.WRENCH, "gt_wrench").pos(6, 142)
                     .size(72, 16))
             .child(
                 // #tr gtneverreset.gui.universal_wand.gt_cutter.tooltip
@@ -448,7 +385,7 @@ public final class UniversalWandGui {
                 // # GT Wire Cutter
                 // # zh_CN GT 剪线钳
                 toolModeButton(player, expected, toolMode, ItemUniversalWand.GtToolMode.WIRE_CUTTER, "gt_cutter")
-                    .pos(81, 182)
+                    .pos(81, 142)
                     .size(72, 16))
             .child(
                 // #tr gtneverreset.gui.universal_wand.gt_off.tooltip
@@ -457,7 +394,7 @@ public final class UniversalWandGui {
                 // #tr gtneverreset.gui.universal_wand.gt_off
                 // # Off
                 // # zh_CN 关闭工具
-                toolModeButton(player, expected, toolMode, ItemUniversalWand.GtToolMode.OFF, "gt_off").pos(156, 182)
+                toolModeButton(player, expected, toolMode, ItemUniversalWand.GtToolMode.OFF, "gt_off").pos(156, 142)
                     .size(72, 16));
         // #tr gtneverreset.gui.universal_wand.shears
         // # Shears
@@ -479,17 +416,17 @@ public final class UniversalWandGui {
         PagedWidget.Controller tabs = new PagedWidget.Controller();
         PagedWidget<?> pages = new PagedWidget<>().controller(tabs)
             .pos(6, 32)
-            .size(234, 204);
+            .size(234, 172);
         pages.addPage(
-            new ParentWidget<>().size(234, 204)
+            new ParentWidget<>().size(234, 172)
                 .child(tools)
                 .child(vanilla));
         pages.addPage(mining);
         pages.addPage(
-            new ParentWidget<>().size(234, 204)
+            new ParentWidget<>().size(234, 172)
                 .child(combat)
                 .child(auxiliary));
-        ModularPanel panel = ModularPanel.defaultPanel("gtneverreset_universal_wand", 246, 240)
+        ModularPanel panel = ModularPanel.defaultPanel("gtneverreset_universal_wand", 246, 208)
             // #tr gtneverreset.gui.universal_wand.title
             // # Universal Wand
             // # zh_CN 无用之杖
@@ -873,7 +810,7 @@ public final class UniversalWandGui {
         panel.child(
             new ButtonWidget<>().syncHandler(previous)
                 .overlay(IKey.str("<"))
-                .pos(8, 182)
+                .pos(8, 142)
                 .size(24, 20));
         panel.child(new TextWidget<>(IKey.dynamic(() -> {
             String[] header = history.getStringValue()
@@ -885,7 +822,7 @@ public final class UniversalWandGui {
         panel.child(
             new ButtonWidget<>().syncHandler(next)
                 .overlay(IKey.str(">"))
-                .pos(92, 182)
+                .pos(92, 142)
                 .size(24, 20));
         panel.child(
             new ButtonWidget<>()
@@ -898,7 +835,7 @@ public final class UniversalWandGui {
                     UniversalWandNetwork.requestAccelerationManagement(4, 0, 0, 0, 0);
                     return true;
                 })
-                .pos(196, 182)
+                .pos(196, 142)
                 .size(46, 20));
         panel.child(
             new ButtonWidget<>()
@@ -911,7 +848,7 @@ public final class UniversalWandGui {
                     panel.closeIfOpen();
                     return true;
                 })
-                .pos(244, 182)
+                .pos(244, 142)
                 .size(46, 20));
         return panel.child(
             new ButtonWidget<>().setEnabledIf(
@@ -926,7 +863,7 @@ public final class UniversalWandGui {
                     UniversalWandNetwork.requestAccelerationManagement(3, 0, 0, 0, 0);
                     return true;
                 })
-                .pos(120, 182)
+                .pos(120, 142)
                 .size(72, 20));
     }
 
@@ -952,18 +889,6 @@ public final class UniversalWandGui {
         if (entries.length <= row + 1) return "";
         String entry = entries[row + 1];
         return entry.split(",", -1).length == 9 ? entry : "";
-    }
-
-    private static ButtonWidget<?> coreButton(EntityPlayer player, ItemStack expected, IntSyncValue selected,
-        ItemUniversalWand.BuildingCore core, String key) {
-        return actionButton(key, () -> ItemUniversalWand.setBuildingCore(player, expected, core))
-            .overlay(
-                IKey.dynamic(
-                    () -> (!controlAllowed(key) ? "§7" : selected.getIntValue() == core.ordinal() ? "✓ " : "")
-                        + StatCollector.translateToLocal("gtneverreset.gui.universal_wand." + key))
-                    .scale(1.0F))
-            .tooltipDynamic(tooltip -> featureTooltip(tooltip, key))
-            .size(68, 18);
     }
 
     private static ButtonWidget<?> actionButton(String key, Runnable action) {

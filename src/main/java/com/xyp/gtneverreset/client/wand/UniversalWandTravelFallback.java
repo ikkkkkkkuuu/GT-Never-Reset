@@ -87,18 +87,12 @@ public final class UniversalWandTravelFallback {
 
     private static boolean needsDecision(PlayerInteractEvent event, ItemStack stack) {
         EntityPlayer player = event.entityPlayer;
-        boolean building = ItemUniversalWand.isBuildingEnabled(stack);
-        boolean undo = building && UniversalWandKeyHandler.isUndoKeyHeld();
         if (event.action == PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK) {
-            return undo || building && !player.isSneaking()
-                || ItemUniversalWand.getGtToolMode(stack) != ItemUniversalWand.GtToolMode.OFF
+            return ItemUniversalWand.getGtToolMode(stack) != ItemUniversalWand.GtToolMode.OFF
                 || ItemUniversalWand.isHoeEnabled(stack)
                 || player.isSneaking() && (ItemUniversalWand.isTimeAccelerationEnabled(stack)
                     || event.world.getTileEntity(event.x, event.y, event.z) instanceof IWirelessAccessPoint);
         }
-        if (building && !undo
-            && !player.isSneaking()
-            && ItemUniversalWand.getBuildingCore(stack) == ItemUniversalWand.BuildingCore.ANGEL) return true;
         MovingObjectPosition hit = Minecraft.getMinecraft().objectMouseOver;
         return ItemUniversalWand.isShearsEnabled(stack) && hit != null && hit.entityHit != null;
     }

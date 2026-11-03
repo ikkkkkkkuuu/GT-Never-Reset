@@ -33,7 +33,6 @@ public final class UniversalWandBlockOverlayRenderer {
             || event.target.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) return;
         ItemStack stack = event.currentItem;
         if (!(stack.getItem() instanceof ItemUniversalWand)) return;
-        if (ItemUniversalWand.isBuildingEnabled(stack) && !event.player.isSneaking()) return;
         ItemUniversalWand.GtToolMode mode = ItemUniversalWand.getGtToolMode(stack);
         if (mode == ItemUniversalWand.GtToolMode.OFF) return;
         TileEntity tile = event.player.worldObj

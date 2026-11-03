@@ -45,17 +45,14 @@ import com.google.common.collect.Multimap;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.entity.EntityUselessWandItem;
 import com.xyp.gtneverreset.common.gui.UniversalWandGui;
-import com.xyp.gtneverreset.common.packet.UniversalWandNetwork;
 import com.xyp.gtneverreset.common.wand.GtToolBackend;
 import com.xyp.gtneverreset.common.wand.UniversalWandAccelerationHandler;
 import com.xyp.gtneverreset.common.wand.UniversalWandActions;
-import com.xyp.gtneverreset.common.wand.UniversalWandBuildingHandler;
 import com.xyp.gtneverreset.common.wand.UniversalWandFeature;
 import com.xyp.gtneverreset.common.wand.UniversalWandMiningHandler;
 import com.xyp.gtneverreset.common.wand.UniversalWandRightClick;
 import com.xyp.gtneverreset.common.wand.UniversalWandStorage;
 import com.xyp.gtneverreset.common.wand.VanillaToolBackend;
-import com.xyp.gtneverreset.common.wand.building.BuildingUndoHistory;
 import com.xyp.gtneverreset.compat.backhand.UniversalWandBackhandIntegration;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtneverreset.config.UniversalWandConfig;
@@ -109,9 +106,6 @@ public final class ItemUniversalWand extends Item
     private static final String NBT_INVENTORY_COLLECTION = "collectToInventory";
     private static final String NBT_SHEARS = "shearsEnabled";
     private static final String NBT_HOE = "hoeEnabled";
-    private static final String NBT_BUILDING = "buildingEnabled";
-    private static final String NBT_BUILDING_CORE = "buildingCore";
-    private static final String NBT_BUILDING_AE = "buildingAeEnabled";
     private static final String NBT_FORCE_KILL = "forceKill";
     private static final String NBT_AOE_SIZE = "aoeSize";
     private static final String NBT_BEHEADING = "beheading";
@@ -134,12 +128,6 @@ public final class ItemUniversalWand extends Item
         OFF,
         WRENCH,
         WIRE_CUTTER
-    }
-
-    public enum BuildingCore {
-        NORMAL,
-        ANGEL,
-        DESTRUCTION
     }
 
     private static final int SETTINGS_SCHEMA = 1;
@@ -210,13 +198,6 @@ public final class ItemUniversalWand extends Item
 
     @Override
     public ItemStack onItemRightClick(ItemStack stack, World world, EntityPlayer player) {
-        if (!player.isSneaking() && isBuildingEnabled(stack)) {
-            boolean undo = world.isRemote ? GTNeverReset.proxy.isWandUndoKeyHeld()
-                : BuildingUndoHistory.isActive(player);
-            if (!undo && getBuildingCore(stack) == BuildingCore.ANGEL) {
-                if (!world.isRemote && player instanceof EntityPlayerMP mp) UniversalWandBuildingHandler.requestAir(mp);
-            }
-        }
         if (world.isRemote) GTNeverReset.proxy.useWandTravelIfImmediate(stack, player);
         return stack;
     }
@@ -240,28 +221,10 @@ public final class ItemUniversalWand extends Item
             if (player instanceof EntityPlayerMP mp) UniversalWandAccelerationHandler.use(mp, x, y, z);
             return true;
         }
-        boolean undo = isBuildingEnabled(stack)
-            && (world.isRemote ? GTNeverReset.proxy.isWandUndoKeyHeld() : BuildingUndoHistory.isActive(player));
-        if (undo) {
-            if (world.isRemote) {
-                UniversalWandNetwork.requestUndoKey(true);
-                UniversalWandNetwork
-                    .requestBuildStart(x, y, z, side, hitX, hitY, hitZ, getBuildingCore(stack).ordinal(), true);
-            } else if (player instanceof EntityPlayerMP mp) UniversalWandBuildingHandler
-                .requestStart(mp, x, y, z, side, hitX, hitY, hitZ, getBuildingCore(stack).ordinal(), true);
-            return true;
-        }
         if (player.isSneaking() && world.getTileEntity(x, y, z) instanceof IWirelessAccessPoint) {
             // A true client result prevents 1.7.10 from sending the block-use packet.
             if (world.isRemote) return false;
             if (player instanceof EntityPlayerMP mp) UniversalWandStorage.toggleBinding(mp, x, y, z);
-            return true;
-        }
-        if (!player.isSneaking() && isBuildingEnabled(stack)) {
-            if (world.isRemote) UniversalWandNetwork
-                .requestBuildStart(x, y, z, side, hitX, hitY, hitZ, getBuildingCore(stack).ordinal());
-            else if (player instanceof EntityPlayerMP mp) UniversalWandBuildingHandler
-                .requestStart(mp, x, y, z, side, hitX, hitY, hitZ, getBuildingCore(stack).ordinal());
             return true;
         }
         GtToolMode mode = getGtToolMode(stack);
@@ -533,7 +496,6 @@ public final class ItemUniversalWand extends Item
         addStateTooltip(tooltip, "crop_sticks", isCropSticksEnabled(stack), EnumChatFormatting.GREEN);
         addStateTooltip(tooltip, "force_bedrock", isForceBedrock(stack), EnumChatFormatting.RED);
         addStateTooltip(tooltip, "collect_items", isInventoryCollection(stack), EnumChatFormatting.AQUA);
-        addStateTooltip(tooltip, "building", isBuildingEnabled(stack), EnumChatFormatting.YELLOW);
         tooltip.add(
             EnumChatFormatting.YELLOW + StatCollector.translateToLocalFormatted(
                 // #tr gtneverreset.item.universal_wand.gt_mode
@@ -959,46 +921,6 @@ public final class ItemUniversalWand extends Item
 
     public static boolean setCropSticksEnabled(EntityPlayer player, ItemStack expected, boolean enabled) {
         return setBooleanSetting(player, expected, "cropSticks", enabled);
-    }
-
-    public static boolean isBuildingEnabled(ItemStack stack) {
-        return getSettings(stack).getBoolean(NBT_BUILDING);
-    }
-
-    public static boolean setBuildingEnabled(EntityPlayer player, ItemStack expected, boolean enabled) {
-        return setBooleanSetting(player, expected, NBT_BUILDING, enabled);
-    }
-
-    public static boolean isBuildingAeEnabled(ItemStack stack) {
-        return getSettings(stack).getBoolean(NBT_BUILDING_AE);
-    }
-
-    public static boolean setBuildingAeEnabled(EntityPlayer player, ItemStack expected, boolean enabled) {
-        return setBooleanSetting(player, expected, NBT_BUILDING_AE, enabled);
-    }
-
-    public static BuildingCore getBuildingCore(ItemStack stack) {
-        int core = getSettings(stack).getInteger(NBT_BUILDING_CORE);
-        return core >= 0 && core < BuildingCore.values().length ? BuildingCore.values()[core] : BuildingCore.NORMAL;
-    }
-
-    public static boolean setBuildingCore(EntityPlayer player, ItemStack expected, BuildingCore core) {
-        if (!UniversalWandFeature.BUILDING.allowed()) return false;
-        if (player == null || player.worldObj.isRemote
-            || expected == null
-            || core == null
-            || player.getHeldItem() != expected
-            || !(expected.getItem() instanceof ItemUniversalWand)) return false;
-        NBTTagCompound root = expected.getTagCompound();
-        if (root == null) root = new NBTTagCompound();
-        NBTTagCompound settings = getSettings(expected);
-        settings.setInteger(NBT_SCHEMA, SETTINGS_SCHEMA);
-        settings.setInteger(NBT_BUILDING_CORE, core.ordinal());
-        root.setTag(NBT_SETTINGS, settings);
-        expected.setTagCompound(root);
-        player.inventory.markDirty();
-        if (player instanceof EntityPlayerMP mp) mp.sendContainerToPlayer(player.inventoryContainer);
-        return true;
     }
 
     public static boolean setShearsEnabled(EntityPlayer player, ItemStack expected, boolean enabled) {

@@ -108,14 +108,6 @@ public final class UniversalWandConfig {
     @Config.DefaultBoolean(true)
     public static boolean enableCollection = true;
 
-    // #tr gtneverreset.config.universalwand.enablebuilding
-    // # Building wand
-    // # zh_CN 建筑手杖
-    @Config.LangKey("gtneverreset.config.universalwand.enablebuilding")
-    @Config.Comment("Disabling also blocks AE building supply and switching building cores.")
-    @Config.DefaultBoolean(true)
-    public static boolean enableBuilding = true;
-
     // #tr gtneverreset.config.universalwand.enablegttools
     // # GT tools
     // # zh_CN GT 工具
@@ -180,11 +172,6 @@ public final class UniversalWandConfig {
     @Config.DefaultInt(128)
     @Config.RangeInt(min = 1, max = 65536)
     public static int universalWandGlobalBlocksPerTick = 128;
-
-    @Config.Comment("Number of building actions kept for undo.")
-    @Config.DefaultInt(3)
-    @Config.RangeInt(min = 0, max = 10)
-    public static int universalWandUndoHistory = 3;
 
     @Config.Comment("Maximum targets per area attack.")
     @Config.DefaultInt(64)

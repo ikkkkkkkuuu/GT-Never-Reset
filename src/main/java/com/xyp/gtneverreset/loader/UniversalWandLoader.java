@@ -6,7 +6,6 @@ import net.minecraftforge.common.MinecraftForge;
 
 import com.xyp.gtneverreset.client.wand.UniversalWandAccelerationRenderer;
 import com.xyp.gtneverreset.client.wand.UniversalWandBlockOverlayRenderer;
-import com.xyp.gtneverreset.client.wand.UniversalWandBuildingPreview;
 import com.xyp.gtneverreset.client.wand.UniversalWandChainHudRenderer;
 import com.xyp.gtneverreset.client.wand.UniversalWandFlightSpeedHudRenderer;
 import com.xyp.gtneverreset.client.wand.UniversalWandItemRenderer;
@@ -16,7 +15,6 @@ import com.xyp.gtneverreset.client.wand.UniversalWandStealthRenderer;
 import com.xyp.gtneverreset.client.wand.UniversalWandTravelFallback;
 import com.xyp.gtneverreset.common.entity.EntityUselessWandItem;
 import com.xyp.gtneverreset.common.wand.UniversalWandAccelerationHandler;
-import com.xyp.gtneverreset.common.wand.UniversalWandBuildingHandler;
 import com.xyp.gtneverreset.common.wand.UniversalWandCombatHandler;
 import com.xyp.gtneverreset.common.wand.UniversalWandExperienceHandler;
 import com.xyp.gtneverreset.common.wand.UniversalWandFeaturePolicy;
@@ -50,11 +48,8 @@ public final class UniversalWandLoader implements IContentLoader {
         MinecraftForge.EVENT_BUS.register(protectionHandler);
         events.register(protectionHandler);
         events.register(miningHandler);
-        UniversalWandBuildingHandler buildingHandler = new UniversalWandBuildingHandler();
         events.register(new UniversalWandUtilityHandler());
         MinecraftForge.EVENT_BUS.register(new UniversalWandFlightMotionHandler());
-        MinecraftForge.EVENT_BUS.register(buildingHandler);
-        events.register(buildingHandler);
     }
 
     @Override
@@ -67,13 +62,10 @@ public final class UniversalWandLoader implements IContentLoader {
         MinecraftForgeClient.registerItemRenderer(ItemLoader.universalWand, new UniversalWandItemRenderer());
         var travel = new UniversalWandTravelFallback();
         var acceleration = new UniversalWandAccelerationRenderer();
-        var building = new UniversalWandBuildingPreview();
         events.register(travel);
         events.register(acceleration);
-        events.register(building);
         MinecraftForge.EVENT_BUS.register(travel);
         MinecraftForge.EVENT_BUS.register(acceleration);
-        MinecraftForge.EVENT_BUS.register(building);
         MinecraftForge.EVENT_BUS.register(new UniversalWandBlockOverlayRenderer());
         MinecraftForge.EVENT_BUS.register(new UniversalWandChainHudRenderer());
         MinecraftForge.EVENT_BUS.register(new UniversalWandFlightSpeedHudRenderer());
@@ -89,6 +81,5 @@ public final class UniversalWandLoader implements IContentLoader {
         UniversalWandAccelerationHandler.clearAll();
         UniversalWandUtilityHandler.clearAll();
         UniversalWandProtectionHandler.clearAll();
-        UniversalWandBuildingHandler.clearAll();
     }
 }

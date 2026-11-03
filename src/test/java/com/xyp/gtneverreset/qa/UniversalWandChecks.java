@@ -184,6 +184,17 @@ public final class UniversalWandChecks {
             ItemUniversalWand.setMaxMiningCount(player, wand, 23);
             ItemUniversalWand.setEnhancedChain(player, wand, false);
             for (int i = 0; i < 25; i++) world.setBlock(x + i % 5, y, z + i / 5, Blocks.gold_block);
+            ItemUniversalWand.setGtToolMode(player, wand, ItemUniversalWand.GtToolMode.OFF);
+            var legacy = wand.getTagCompound()
+                .getCompoundTag("gtneverresetUniversalWand");
+            legacy.setBoolean("buildingEnabled", true);
+            legacy.setBoolean("buildingAeEnabled", true);
+            for (int core = 0; core < 3; core++) {
+                legacy.setInteger("buildingCore", core);
+                if (wand.getItem()
+                    .onItemUseFirst(wand, player, world, x, y, z, 1, 0.5F, 1.0F, 0.5F))
+                    throw new AssertionError("Legacy core intercepted block use: " + core);
+            }
             int before = goldBlocks(player);
             UniversalWandMiningHandler.setKeyHeld(player, true);
             if (!player.theItemInWorldManager.tryHarvestBlock(x, y, z))

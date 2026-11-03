@@ -21,7 +21,7 @@ public final class UniversalWandFeaturePolicy {
     private long lastServerMask = Long.MIN_VALUE;
 
     public static boolean allowed(UniversalWandFeature feature) {
-        return (mask() & (1L << feature.ordinal())) != 0;
+        return (mask() & feature.mask) != 0;
     }
 
     static long mask() {

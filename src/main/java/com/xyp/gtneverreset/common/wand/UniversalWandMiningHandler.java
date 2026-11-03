@@ -1,7 +1,6 @@
 package com.xyp.gtneverreset.common.wand;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -582,26 +581,6 @@ public final class UniversalWandMiningHandler {
         else persisted.setTag(PENDING_DROPS, drops.writeToNbt());
         player.getEntityData()
             .setTag(EntityPlayer.PERSISTED_NBT_TAG, persisted);
-    }
-
-    /** Building refunds use the existing legal-stack distribution and persistent overflow recovery. */
-    public static void refundBuildingMaterials(EntityPlayerMP player, List<ItemStack> materials) {
-        refundBuildingMaterials(player, materials, new UniversalWandStorage.Destination(false, true));
-    }
-
-    public static void refundBuildingMaterials(EntityPlayerMP player, List<ItemStack> materials,
-        UniversalWandStorage.Destination destination) {
-        if (materials.isEmpty()) return;
-        UniversalWandDropBuffer drops = new UniversalWandDropBuffer();
-        for (ItemStack material : materials) drops.collect(material);
-        releaseSoloDrops(
-            drops,
-            destination,
-            player,
-            player.worldObj,
-            (int) Math.floor(player.posX),
-            (int) Math.floor(player.posY),
-            (int) Math.floor(player.posZ));
     }
 
     private static boolean tryReleaseDrops(UniversalWandDropBuffer drops, World world, double x, double y, double z) {

@@ -93,21 +93,8 @@ public final class NetWorkHandler {
         registerServerbound(UniversalWandNetwork.ForceBedrockMessage.class, UniversalWandNetwork::handleForceBedrock);
         registerServerbound(UniversalWandNetwork.ChainKeyMessage.class, UniversalWandNetwork::handleChainKey);
         registerServerbound(UniversalWandNetwork.ChainStartMessage.class, UniversalWandNetwork::handleChainStart);
-        registerServerbound(UniversalWandNetwork.BuildStartMessage.class, UniversalWandNetwork::handleBuildStart);
-        registerServerbound(UniversalWandNetwork.UndoKeyMessage.class, UniversalWandNetwork::handleUndoKey);
-        CHANNEL.registerMessage(
-            UniversalWandNetwork.UndoPreviewHandler.class,
-            UniversalWandNetwork.UndoPreviewMessage.class,
-            nextPacketId++,
-            Side.CLIENT);
-        registerServerbound(
-            UniversalWandNetwork.BuildingSupplyRequest.class,
-            UniversalWandNetwork::handleBuildingSupplyRequest);
-        CHANNEL.registerMessage(
-            UniversalWandNetwork.BuildingSupplyHandler.class,
-            UniversalWandNetwork.BuildingSupplyMessage.class,
-            nextPacketId++,
-            Side.CLIENT);
+        // IDs 27 through 31 belonged to the removed wand building packets.
+        nextPacketId = 32;
         registerServerbound(UniversalWandNetwork.FlightSpeedMessage.class, UniversalWandNetwork::handleFlightSpeed);
         CHANNEL.registerMessage(
             UniversalWandNetwork.FlightSpeedSyncHandler.class,

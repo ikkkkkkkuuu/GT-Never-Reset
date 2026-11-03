@@ -41,17 +41,8 @@ public final class UniversalWandRightClick {
     /** Sent after every vanilla/custom use packet belonging to this click, on the same connection. */
     public static void finish(EntityPlayerMP player, int id) {
         Request request = REQUESTS.get(player.getUniqueID());
-        if (request == null || request.player != player || request.id != id) return;
-        request.ready = true;
-        complete(player);
-    }
-
-    /** Building calls this when its existing main-thread job completes; no additional tick is scheduled. */
-    public static void complete(EntityPlayerMP player) {
-        Request request = REQUESTS.get(player.getUniqueID());
         if (request == null || request.player != player
-            || !request.ready
-            || UniversalWandBuildingHandler.hasPendingAction(player)
+            || request.id != id
             || !REQUESTS.remove(player.getUniqueID(), request)) return;
         ItemStack stack = player.getHeldItem();
         if (request.handled || System.nanoTime() > request.deadline
@@ -90,7 +81,6 @@ public final class UniversalWandRightClick {
         final int id;
         final long deadline = System.nanoTime() + 2_000_000_000L;
         volatile boolean handled;
-        volatile boolean ready;
 
         Request(EntityPlayerMP player, int id) {
             this.player = player;

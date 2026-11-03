@@ -1,10 +1,8 @@
 package com.xyp.gtneverreset.common.wand;
 
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.world.World;
@@ -12,7 +10,6 @@ import net.minecraftforge.common.DimensionManager;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.item.items.ItemUniversalWand;
-import com.xyp.gtneverreset.common.item.items.ItemUniversalWand.BuildingCore;
 
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
@@ -29,8 +26,6 @@ import appeng.api.storage.data.IAEItemStack;
 /** Uses an already loaded wireless access point; never creates nodes, connections or chunk tickets. */
 public final class UniversalWandStorage {
 
-    private static final String EXTRACTION_RECOVERY = "gtneverresetWandAeExtractionRecovery";
-
     public static final class Destination {
 
         final boolean aePriority;
@@ -42,28 +37,6 @@ public final class UniversalWandStorage {
             // AE priority sends any remainder to the player's inventory before dropping it.
             inventory = ItemUniversalWand.isInventoryCollection(wand) || aePriority;
             binding = ItemUniversalWand.getAeBinding(wand);
-        }
-
-        Destination(boolean aePriority, boolean inventory) {
-            this(aePriority, inventory, new NBTTagCompound());
-        }
-
-        private Destination(boolean aePriority, boolean inventory, NBTTagCompound binding) {
-            this.aePriority = aePriority;
-            this.inventory = inventory;
-            this.binding = (NBTTagCompound) binding.copy();
-        }
-
-        public static Destination forBuilding(ItemStack wand) {
-            return new Destination(
-                ItemUniversalWand.getBuildingCore(wand) == BuildingCore.NORMAL
-                    && ItemUniversalWand.isBuildingAeEnabled(wand),
-                true,
-                ItemUniversalWand.getAeBinding(wand));
-        }
-
-        public static Destination forAeReturn(NBTTagCompound binding) {
-            return new Destination(true, true, binding);
         }
 
         boolean collects() {
@@ -80,21 +53,14 @@ public final class UniversalWandStorage {
         }
     }
 
-    public static final class UnknownExtractionOutcome extends RuntimeException {
-
-        private UnknownExtractionOutcome(Throwable cause) {
-            super("AE extraction did not return a trustworthy acquired stack", cause);
-        }
-    }
-
     public static void toggleBinding(EntityPlayerMP player, int x, int y, int z) {
         ItemStack wand = player.getHeldItem();
         if (player.isDead || !ItemUniversalWand.isHeldBy(player)
             || !player.worldObj.blockExists(x, y, z)
             || !UniversalWandActions.isTarget(player, x, y, z)) {
             // #tr gtneverreset.universal_wand.ae_invalid
-            // # Target must be an online AE access point with insertion or extraction permission.
-            // # zh_CN 目标不是在线且有注入或提取权限的 AE 无线访问点。
+            // # Target must be an online AE access point with insertion permission.
+            // # zh_CN 目标不是在线且有注入权限的 AE 无线访问点。
             player.addChatMessage(new ChatComponentTranslation("gtneverreset.universal_wand.ae_invalid"));
             return;
         }
@@ -112,8 +78,7 @@ public final class UniversalWandStorage {
                 player.addChatMessage(new ChatComponentTranslation("gtneverreset.universal_wand.ae_unbound"));
             return;
         }
-        if (!point.isActive() || !(canInsert(player, point.getGrid())
-            || canAccess(player, point.getGrid(), SecurityPermissions.EXTRACT))) {
+        if (!point.isActive() || !canInsert(player, point.getGrid())) {
             player.addChatMessage(new ChatComponentTranslation("gtneverreset.universal_wand.ae_invalid"));
             return;
         }
@@ -178,122 +143,9 @@ public final class UniversalWandStorage {
     }
 
     private static boolean canInsert(EntityPlayerMP player, IGrid grid) {
-        return canAccess(player, grid, SecurityPermissions.INJECT);
-    }
-
-    private static boolean canAccess(EntityPlayerMP player, IGrid grid, SecurityPermissions permission) {
         if (grid == null) return false;
         ISecurityGrid security = grid.getCache(ISecurityGrid.class);
-        return security != null && security.hasPermission(player, permission);
-    }
-
-    public static int availableBuildingMaterial(EntityPlayerMP player, NBTTagCompound binding, ItemStack material,
-        int limit) {
-        IAEItemStack available = extractBuildingMaterial(player, binding, material, limit, Actionable.SIMULATE);
-        return available == null ? 0 : (int) available.getStackSize();
-    }
-
-    public static ItemStack takeBuildingMaterial(EntityPlayerMP player, NBTTagCompound binding, ItemStack material) {
-        IAEItemStack acquired = extractBuildingMaterial(player, binding, material, 1, Actionable.MODULATE);
-        if (acquired == null) return null;
-        ItemStack result = material.copy();
-        result.stackSize = 1;
-        return result;
-    }
-
-    /** Only an authorized, online inventory can confirm depletion; an unavailable network cannot. */
-    public static boolean isBuildingMaterialExhausted(EntityPlayerMP player, NBTTagCompound binding,
-        ItemStack material) {
-        if (material == null || extractionQuarantined(player, binding)) return false;
-        try {
-            IWirelessAccessPoint point = resolve(binding);
-            if (point == null) return false;
-            IGrid grid = point.getGrid();
-            if (!canAccess(player, grid, SecurityPermissions.EXTRACT)) return false;
-            IStorageGrid storage = grid.getCache(IStorageGrid.class);
-            if (storage == null || storage.getItemInventory() == null) return false;
-            IAEItemStack request = AEApi.instance()
-                .storage()
-                .createItemStack(material.copy());
-            if (request == null) return false;
-            request.setStackSize(1);
-            IAEItemStack available = storage.getItemInventory()
-                .extractItems(request, Actionable.SIMULATE, new PlayerSource(player, point));
-            return available == null || available.getStackSize() == 0;
-        } catch (RuntimeException failure) {
-            GTNeverReset.LOG.warn("Universal Wand AE depletion check unavailable", failure);
-            return false;
-        }
-    }
-
-    private static IAEItemStack extractBuildingMaterial(EntityPlayerMP player, NBTTagCompound binding,
-        ItemStack material, int count, Actionable action) {
-        if (count <= 0 || material == null || extractionQuarantined(player, binding)) return null;
-        IMEMonitor<IAEItemStack> inventory;
-        IAEItemStack request;
-        PlayerSource source;
-        try {
-            IWirelessAccessPoint point = resolve(binding);
-            if (point == null) return null;
-            IGrid grid = point.getGrid();
-            if (!canAccess(player, grid, SecurityPermissions.EXTRACT)) return null;
-            IStorageGrid storage = grid.getCache(IStorageGrid.class);
-            if (storage == null || (inventory = storage.getItemInventory()) == null) return null;
-            request = AEApi.instance()
-                .storage()
-                .createItemStack(material.copy());
-            if (request == null) return null;
-            request.setStackSize(count);
-            source = new PlayerSource(player, point);
-        } catch (RuntimeException failure) {
-            GTNeverReset.LOG.warn("Universal Wand AE unavailable before extraction; using inventory", failure);
-            return null;
-        }
-        try {
-            IAEItemStack extracted = inventory.extractItems(request, action, source);
-            if (extracted == null) return null;
-            long acquired = extracted.getStackSize();
-            if (acquired < 0 || acquired > count
-                || !ItemInputKey.of(material)
-                    .equals(ItemInputKey.of(extracted.getItemStack())))
-                throw new IllegalStateException("Invalid AE extraction result");
-            if (acquired == 0) return null;
-            return extracted;
-        } catch (RuntimeException failure) {
-            if (action == Actionable.SIMULATE) {
-                GTNeverReset.LOG.warn("Universal Wand AE material simulation failed; using inventory", failure);
-                return null;
-            }
-            NBTTagCompound persisted = player.getEntityData()
-                .getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
-            NBTTagList entries = persisted.getTagList(EXTRACTION_RECOVERY, 10);
-            NBTTagCompound entry = new NBTTagCompound();
-            entry.setTag("binding", binding.copy());
-            entry.setTag("requestedItem", material.writeToNBT(new NBTTagCompound()));
-            entry.setInteger("requestedCount", count);
-            entry.setBoolean("quarantined", true);
-            entries.appendTag(entry);
-            persisted.setTag(EXTRACTION_RECOVERY, entries);
-            player.getEntityData()
-                .setTag(EntityPlayer.PERSISTED_NBT_TAG, persisted);
-            // #tr gtneverreset.universal_wand.ae_extract_unknown
-            // # AE material extraction outcome unknown; paused. Ask an admin to check storage and logs.
-            // # zh_CN AE 建材提取结果未知，已暂停；请联系管理员核对库存与日志。
-            player.addChatMessage(new ChatComponentTranslation("gtneverreset.universal_wand.ae_extract_unknown"));
-            throw new UnknownExtractionOutcome(failure);
-        }
-    }
-
-    private static boolean extractionQuarantined(EntityPlayerMP player, NBTTagCompound binding) {
-        NBTTagList entries = player.getEntityData()
-            .getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG)
-            .getTagList(EXTRACTION_RECOVERY, 10);
-        for (int i = 0; i < entries.tagCount(); i++) {
-            if (entries.getCompoundTagAt(i)
-                .getCompoundTag("binding")
-                .equals(binding)) return true;
-        }
-        return false;
+        return security != null && security.hasPermission(player, SecurityPermissions.INJECT);
     }
 
     /** Returns the actual remainder. Commit exceptions must be quarantined by the caller. */
