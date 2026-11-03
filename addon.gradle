@@ -26,25 +26,32 @@ tasks.register('collectLibraryArtifacts')
 tasks.named('assemble') { dependsOn 'collectLibraryArtifacts' }
 tasks.named('check') { dependsOn ':gtnrlib:check' }
 
-tasks.register('checkConfigurationContracts', JavaExec) {
-    group = 'verification'
-    dependsOn tasks.named('testClasses')
-    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.config.ConfigurationContracts'
+// Register contract checks when their local test sources are available.
+def localContract = { String taskName, String entryPoint, Closure options ->
+    if (file("src/test/java/${entryPoint.replace('.', '/')}.java").isFile()) {
+        def contract = tasks.register(taskName, JavaExec) {
+            group = 'verification'
+            dependsOn tasks.named('testClasses')
+            classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
+            mainClass = entryPoint
+        }
+        contract.configure(options)
+        tasks.named('check') { dependsOn contract }
+    }
+}
+
+localContract('checkConfigurationContracts',
+    'com.xyp.gtneverreset.config.ConfigurationContracts') {
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
 }
-tasks.named('check') { dependsOn 'checkConfigurationContracts' }
 
-tasks.register('checkModuleArtifacts', JavaExec) {
-    group = 'verification'
-    dependsOn tasks.named('testClasses'), tasks.named('reobfJar'), tasks.named('collectLibraryArtifacts')
-    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.ModuleArtifactContracts'
+localContract('checkModuleArtifacts',
+    'com.xyp.gtneverreset.ModuleArtifactContracts') {
+    dependsOn tasks.named('reobfJar'), tasks.named('collectLibraryArtifacts')
     args layout.buildDirectory.file("libs/gtneverreset-${project.version}.jar").get().asFile.absolutePath,
         layout.buildDirectory.file("libs/gtnrlib-${project(":gtnrlib").version}.jar").get().asFile.absolutePath
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
 }
-tasks.named('check') { dependsOn 'checkModuleArtifacts' }
 
 /** Validates the Formatter syntax remaining after Minecraft 1.7.10 loads a language entry. */
 class TranslationFormatValidator {
@@ -212,25 +219,15 @@ tasks.register('checkTranslationFormatValidator') {
 
 tasks.named('check') { dependsOn 'checkTranslationFormatValidator' }
 
-tasks.register('checkWirelessFrequencyContracts', JavaExec) {
-    group = 'verification'
+localContract('checkWirelessFrequencyContracts',
+    'com.xyp.gtneverreset.common.wireless.WirelessFrequencyContracts') {
     description = 'Checks wireless frequency persistence, multi-source migration and merge/split provenance.'
-    dependsOn tasks.named('testClasses')
-    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.common.wireless.WirelessFrequencyContracts'
 }
 
-tasks.named('check') { dependsOn 'checkWirelessFrequencyContracts' }
-
-tasks.register('checkWirelessPowerContracts', JavaExec) {
-    group = 'verification'
+localContract('checkWirelessPowerContracts',
+    'com.xyp.gtneverreset.common.wireless.WirelessPowerContracts') {
     description = 'Checks wireless power accounting limits, persistence and device ownership.'
-    dependsOn tasks.named('testClasses')
-    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.common.wireless.WirelessPowerContracts'
 }
-
-tasks.named('check') { dependsOn 'checkWirelessPowerContracts' }
 
 // A running LaunchClassLoader keeps ZIP offsets. Rebuilding its JAR in place corrupts lazy class loads.
 // Give each game process its own copies, outside build/ so even clean cannot remove live inputs.
@@ -429,35 +426,20 @@ afterEvaluate {
     }
 }
 
-tasks.register('checkMEDataAccessContracts', JavaExec) {
-    group = 'verification'
+localContract('checkMEDataAccessContracts',
+    'com.xyp.gtneverreset.common.machine.hatch.MEDataAccessContracts') {
     description = 'Checks read-only ME research snapshots, invalidation and reconnect behavior.'
-    dependsOn tasks.named('testClasses')
-    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.common.machine.hatch.MEDataAccessContracts'
 }
 
-tasks.named('check') { dependsOn 'checkMEDataAccessContracts' }
-
-tasks.register('checkRecipeThreadInputPreflightContracts', JavaExec) {
-    group = 'verification'
+localContract('checkRecipeThreadInputPreflightContracts',
+    'com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadInputPreflightContracts') {
     description = 'Checks ME energy rounding and real shortfalls for recipe input preflight.'
-    dependsOn tasks.named('testClasses')
-    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadInputPreflightContracts'
 }
 
-tasks.named('check') { dependsOn 'checkRecipeThreadInputPreflightContracts' }
-
-tasks.register('checkOverloadedProviderContracts', JavaExec) {
-    group = 'verification'
+localContract('checkOverloadedProviderContracts',
+    'com.xyp.gtneverreset.common.block.blocks.tile.OverloadedProviderContracts') {
     description = 'Checks overloaded provider cache invalidation, batch accounting and overflow persistence.'
-    dependsOn tasks.named('testClasses')
-    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.common.block.blocks.tile.OverloadedProviderContracts'
 }
-
-tasks.named('check') { dependsOn 'checkOverloadedProviderContracts' }
 
 // Contract checks run through JavaExec tasks attached to check; QA mods are not JUnit tests.
 tasks.named('test', Test).configure {
@@ -503,20 +485,12 @@ tasks.named("sourcesJar", Jar) {
     from("licenses/overloaded-provider/LICENSE-CODE-LGPL-3.0.txt") { into "META-INF/licenses/overloaded-provider" }
 }
 
-tasks.register('checkAssemblerMatrixTaskContracts', JavaExec) {
-    group = 'verification'
-    dependsOn tasks.testClasses
-    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.common.crafting.batch.AssemblerMatrixTaskContracts'
+localContract('checkAssemblerMatrixTaskContracts',
+    'com.xyp.gtneverreset.common.crafting.batch.AssemblerMatrixTaskContracts') {
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
 }
-tasks.named('check') { dependsOn 'checkAssemblerMatrixTaskContracts' }
 
-tasks.register('checkWildcardPatternStateContracts', JavaExec) {
-    group = 'verification'
-    dependsOn tasks.testClasses
-    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
-    mainClass = 'com.xyp.gtneverreset.common.me.wildcard.WildcardPatternStateContracts'
+localContract('checkWildcardPatternStateContracts',
+    'com.xyp.gtneverreset.common.me.wildcard.WildcardPatternStateContracts') {
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
 }
-tasks.named('check') { dependsOn 'checkWildcardPatternStateContracts' }
