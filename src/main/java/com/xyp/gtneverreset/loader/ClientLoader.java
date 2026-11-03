@@ -5,7 +5,6 @@ import java.io.File;
 import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraftforge.common.MinecraftForge;
 
-import com.xyp.gtneverreset.client.InsectStaffInputHandler;
 import com.xyp.gtneverreset.client.VeinMiningInputHandler;
 import com.xyp.gtneverreset.client.event.WindowsTaskbarButton;
 import com.xyp.gtneverreset.client.quantum.QuantumCraftingClientEvents;
@@ -47,13 +46,6 @@ public final class ClientLoader {
     }
 
     public static void init() {
-        if (ModList.DraconicEvolution.isModLoaded() && ModList.EnderIO.isModLoaded()) {
-            com.xyp.gtneverreset.compat.draconicevolution.InsectStaffCompat.registerRenderer();
-            ClientRegistry.registerKeyBinding(InsectStaffInputHandler.CONFIGURE);
-            FMLCommonHandler.instance()
-                .bus()
-                .register(new InsectStaffInputHandler());
-        }
         if (ModList.BetterQuesting.isModLoaded()) QuestContextMenuRegistry.register(new QuestSkipMenu());
         MinecraftForge.EVENT_BUS.register(new VeinMiningInputHandler());
         FMLCommonHandler.instance()

@@ -2,6 +2,7 @@ package com.xyp.gtneverreset;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
 import com.xyp.gtneverreset.loader.ContentLoaders;
@@ -57,4 +58,6 @@ public class CommonProxy {
     public boolean preferOwnInterfaceNames() {
         return false;
     }
+
+    public void useWandTravelIfImmediate(ItemStack stack, EntityPlayer player) {}
 }

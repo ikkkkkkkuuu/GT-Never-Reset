@@ -26,7 +26,7 @@ MUI2 足以支持本项目的复杂机器控制台：可搜索列表、分页、
 
 ## 本次怎样验证
 
-测试代码是 [Mui2CapabilitiesChecks.java](../src/test/java/com/xyp/gtneverreset/qa/Mui2CapabilitiesChecks.java)，启动配置是 [mui2-capabilities-qa.init.gradle](../src/test/resources/mui2-capabilities-qa.init.gradle)。测试模组仅进入本次启动的测试 classpath，不进入 GTNR 正式 JAR。
+本机测试代码为 `src/test/java/com/xyp/gtneverreset/qa/Mui2CapabilitiesChecks.java`，启动配置为 `src/test/resources/mui2-capabilities-qa.init.gradle`。测试模组仅进入本次启动的测试 classpath，不进入 GTNR 正式 JAR。
 
 - 使用 `build/mui2-capabilities-qa/run` 独立实例和新建的超平坦存档，不修改正常游戏实例。
 - Windows 辅助进程只匹配本项目且带 `-Dgtnr.mui2Capabilities.qa=true` 的 Java 进程，设置透明、点击穿透、无任务栏按钮、非激活窗口；实例音量为零。
@@ -232,7 +232,7 @@ panel.child(new ButtonWidget<>().syncHandler("apply"));
 
 ## 复现与证据
 
-在项目根目录运行：
+本机具备上述测试文件时，在项目根目录运行：
 
 ```powershell
 .\gradlew.bat -I src/test/resources/mui2-capabilities-qa.init.gradle :runClient17 --no-configuration-cache

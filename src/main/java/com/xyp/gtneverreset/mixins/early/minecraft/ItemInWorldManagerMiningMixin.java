@@ -1,0 +1,83 @@
+package com.xyp.gtneverreset.mixins.early.minecraft;
+
+import net.minecraft.block.Block;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.item.ItemStack;
+import net.minecraft.server.management.ItemInWorldManager;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldSettings;
+import net.minecraftforge.event.world.BlockEvent;
+
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.xyp.gtneverreset.common.item.items.ItemUniversalWand;
+import com.xyp.gtneverreset.common.wand.UniversalWandMiningHandler;
+
+@Mixin(ItemInWorldManager.class)
+public abstract class ItemInWorldManagerMiningMixin {
+
+    @Shadow
+    public EntityPlayerMP thisPlayerMP;
+
+    @WrapOperation(
+        method = "tryHarvestBlock",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraftforge/common/ForgeHooks;onBlockBreakEvent(Lnet/minecraft/world/World;Lnet/minecraft/world/WorldSettings$GameType;Lnet/minecraft/entity/player/EntityPlayerMP;III)Lnet/minecraftforge/event/world/BlockEvent$BreakEvent;",
+            remap = false))
+    private BlockEvent.BreakEvent gtneverreset$prepareNativeShears(World world, WorldSettings.GameType gameType,
+        EntityPlayerMP player, int x, int y, int z, Operation<BlockEvent.BreakEvent> original) {
+        BlockEvent.BreakEvent event = original.call(world, gameType, player, x, y, z);
+        if (!event.isCanceled()) UniversalWandMiningHandler.beginBlockShearing(player, x, y, z);
+        return event;
+    }
+
+    @WrapOperation(
+        method = "tryHarvestBlock",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/block/Block;harvestBlock(Lnet/minecraft/world/World;Lnet/minecraft/entity/player/EntityPlayer;IIII)V"))
+    private void gtneverreset$avoidDuplicateShearingDrops(Block block, World world, EntityPlayer player, int x, int y,
+        int z, int metadata, Operation<Void> original) {
+        // ItemShears already produced the native shear drops and mining statistic before removal.
+        if (!UniversalWandMiningHandler.hasShearedBlock(player, x, y, z))
+            original.call(block, world, player, x, y, z, metadata);
+    }
+
+    @Inject(method = "getBlockReachDistance", at = @At("RETURN"), cancellable = true, remap = false)
+    private void gtneverreset$extendBlockReach(CallbackInfoReturnable<Double> cir) {
+        if (ItemUniversalWand.hasReachBonus(thisPlayerMP))
+            cir.setReturnValue(cir.getReturnValue() + ItemUniversalWand.REACH_BONUS);
+    }
+
+    @WrapMethod(method = "tryHarvestBlock")
+    private boolean gtneverreset$useConfiguredMiningExhaustion(int x, int y, int z, Operation<Boolean> original) {
+        EntityPlayerMP player = thisPlayerMP;
+        ItemStack stack = player.getHeldItem();
+        if (stack == null || !(stack.getItem() instanceof ItemUniversalWand)) return original.call(x, y, z);
+        if (ItemUniversalWand.isProtectionMode(stack)) return false;
+        FoodStatsMiningAccessor food = (FoodStatsMiningAccessor) player.getFoodStats();
+        float exhaustionBefore = food.gtneverreset$getMiningExhaustion();
+        boolean harvested = false;
+        try (UniversalWandMiningHandler.HarvestScope scope = UniversalWandMiningHandler.beginHarvest(player, x, y, z)) {
+            try {
+                harvested = original.call(x, y, z);
+                scope.complete(harvested);
+                return harvested;
+            } finally {
+                // Account for this block before the scope mines the rest of its vein.
+                food.gtneverreset$setMiningExhaustion(exhaustionBefore);
+                if (harvested) ItemUniversalWand.applyMiningExhaustion(player);
+            }
+        }
+    }
+
+}

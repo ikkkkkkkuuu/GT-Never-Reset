@@ -2,7 +2,6 @@ package com.xyp.gtneverreset.common.item.items;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -303,11 +302,11 @@ public class VeinMiningPickaxe extends ItemPickaxe {
         return false;
     }
 
-    public boolean isHarvesting(EntityPlayer player) {
+    private boolean isHarvesting(EntityPlayer player) {
         return activePlayers.contains(player.getUniqueID());
     }
 
-    public void queueOreBackfill(World world, int x, int y, int z) {
+    private void queueOreBackfill(World world, int x, int y, int z) {
         if (!world.isRemote && isOre(world, x, y, z, world.getBlock(x, y, z))) {
             pendingBackfill.computeIfAbsent(world, ignored -> new HashSet<>())
                 .add(new BackfillPosition(x, y, z));
@@ -316,22 +315,6 @@ public class VeinMiningPickaxe extends ItemPickaxe {
 
     public void clearConnectedBlocks(EntityPlayerMP player, ItemStack stack, int x, int y, int z, Block targetBlock,
         int targetMeta, int maxGap, int amount, boolean preciseMode) {
-        clearConnectedBlocks(
-            player,
-            stack,
-            x,
-            y,
-            z,
-            targetBlock,
-            targetMeta,
-            maxGap,
-            amount,
-            preciseMode,
-            Collections.emptyMap());
-    }
-
-    public void clearConnectedBlocks(EntityPlayerMP player, ItemStack stack, int x, int y, int z, Block targetBlock,
-        int targetMeta, int maxGap, int amount, boolean preciseMode, Map<Block, Integer> voidedBlocks) {
         if (!activePlayers.add(player.getUniqueID())) return;
         if (player.getFoodStats()
             .getFoodLevel() <= 0
@@ -389,8 +372,6 @@ public class VeinMiningPickaxe extends ItemPickaxe {
                 }
 
                 if (matches) {
-                    boolean voidDrops = Integer.valueOf(world.getBlockMetadata(px, py, pz))
-                        .equals(voidedBlocks.get(block));
                     List<ItemStack> drops = removeBlockAndGetDrops(
                         player,
                         stack,
@@ -401,7 +382,7 @@ public class VeinMiningPickaxe extends ItemPickaxe {
                         block,
                         silkTouch,
                         fortune);
-                    if (!player.capabilities.isCreativeMode && !voidDrops) {
+                    if (!player.capabilities.isCreativeMode) {
                         for (ItemStack drop : drops) {
                             if (drop != null) merged.addTo(new ItemStackWrapper(drop), drop.stackSize);
                         }

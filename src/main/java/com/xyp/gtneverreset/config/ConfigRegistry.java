@@ -23,6 +23,7 @@ public final class ConfigRegistry {
     static {
         CATEGORIES.put(GregTechConfig.class, false);
         CATEGORIES.put(QuestsConfig.class, false);
+        CATEGORIES.put(UniversalWandConfig.class, false);
         CATEGORIES.put(ToolsConfig.class, false);
         CATEGORIES.put(CropsNHConfig.class, false);
         CATEGORIES.put(CropBreederConfig.class, false);

@@ -28,7 +28,7 @@ import cpw.mods.fml.common.event.FMLServerStoppingEvent;
         + ModList.ModIds.AE2_FLUID_CRAFT
         + ";required-after:"
         + ModList.ModIds.BAUBLES
-        + ";after:DraconicEvolution;after:EnderIO"
+        + ";after:EnderIO"
         + ";",
     acceptedMinecraftVersions = "[1.7.10]",
     guiFactory = "com.xyp.gtneverreset.config.ConfigGuiFactory")

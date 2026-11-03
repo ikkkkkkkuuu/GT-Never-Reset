@@ -47,4 +47,13 @@ public class ScreenThemeConfig {
     // # zh_CN ME 高级 IO 总线
     @Config.LangKey("gtneverreset.gui.config.general.screen_theme.advancedIOBus")
     public static ScreenTheme advancedIOBus = ScreenTheme.AE2_LIGHT;
+
+    @Config.Comment("DEFAULT: ModularUI 2 default, AE2_LIGHT: AE2 light, AE2_DARK: AE2 dark")
+    @Config.DefaultEnum("AE2_LIGHT")
+    // #tr gtneverreset.gui.config.general.screen_theme.universalWand
+    // # Useless Tools
+    // # zh_CN 无用之杖
+    @Config.LangKey("gtneverreset.gui.config.general.screen_theme.universalWand")
+    public static ScreenTheme universalWand = ScreenTheme.AE2_LIGHT;
+
 }
