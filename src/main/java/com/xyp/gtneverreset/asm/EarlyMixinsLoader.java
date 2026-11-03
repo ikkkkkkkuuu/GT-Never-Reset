@@ -49,7 +49,7 @@ public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLo
             .isClient())
             mixins.addAll(
                 List.of(
-                    "client.PlayerControllerMPAccessor",
+                    "client.UniversalWandBreakDelayMixin",
                     "client.UniversalWandBlockReachMixin",
                     "client.UniversalWandDeathStatusMixin",
                     "client.UniversalWandEntityReachMixin",
