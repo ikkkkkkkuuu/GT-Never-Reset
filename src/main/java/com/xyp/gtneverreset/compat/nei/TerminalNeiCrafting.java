@@ -31,25 +31,27 @@ public final class TerminalNeiCrafting {
     public static boolean requestCraft(GuiScreen screen, ItemStack stack) {
         if (screen instanceof GuiQuickEncodingTerminal terminal && terminal.requestFluidCraft(stack)) return true;
         if (!(screen instanceof GuiMEMonitorable gui)
-            || !(gui.inventorySlots instanceof ContainerMEMonitorable container)
-            || ITEM_REPO == null
-            || ITEM_REPO_LIST == null) return false;
+            || !(gui.inventorySlots instanceof ContainerMEMonitorable container)) return false;
         IAEItemStack item = AEItemStack.create(stack);
-        if (item == null) return false;
+        if (!isCraftable(gui, item)) return false;
+        container.setTargetStack(item);
+        NetworkHandler.instance.sendToServer(new PacketMonitorableAction(MonitorableAction.AUTO_CRAFT, -1));
+        return true;
+    }
+
+    public static boolean isCraftable(GuiMEMonitorable gui, IAEStack<?> stack) {
+        if (stack == null || ITEM_REPO == null || ITEM_REPO_LIST == null) return false;
         try {
             ItemRepo repo = (ItemRepo) ITEM_REPO.get(gui);
             if (repo == null) return false;
             // Query the full network list so search and view filters do not hide craftable items.
             @SuppressWarnings("unchecked")
             IItemList<IAEStack<?>> items = (IItemList<IAEStack<?>>) ITEM_REPO_LIST.get(repo);
-            IAEStack<?> available = items == null ? null : items.findPrecise(item);
-            if (available == null || !available.isCraftable()) return false;
+            IAEStack<?> available = items == null ? null : items.findPrecise(stack);
+            return available != null && available.isCraftable();
         } catch (IllegalAccessException ignored) {
             return false;
         }
-        container.setTargetStack(item);
-        NetworkHandler.instance.sendToServer(new PacketMonitorableAction(MonitorableAction.AUTO_CRAFT, -1));
-        return true;
     }
 
     private static Field findField(Class<?> owner, String name) {
