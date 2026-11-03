@@ -21,9 +21,16 @@ public final class AnimationPlayer {
     }
 
     public Playback play(AnimationClip clip, double fadeIn) {
+        return play(clip, fadeIn, 0);
+    }
+
+    /** Higher priorities are applied last, independent of when another state starts. */
+    public Playback play(AnimationClip clip, double fadeIn, int priority) {
         AnimationClip.validTime(fadeIn);
-        Playback handle = new Playback(Objects.requireNonNull(clip), fadeIn);
-        layers.add(handle);
+        Playback handle = new Playback(Objects.requireNonNull(clip), fadeIn, priority);
+        int index = layers.size();
+        while (index > 0 && layers.get(index - 1).priority > priority) index--;
+        layers.add(index, handle);
         return handle;
     }
 
@@ -60,12 +67,14 @@ public final class AnimationPlayer {
 
         private final AnimationClip clip;
         private final double fadeIn;
+        private final int priority;
         private double position, age, fadeAge, fadeLength;
         private double speed = 1;
         private boolean started, stopping;
         private boolean active = true;
 
-        private Playback(AnimationClip clip, double fadeIn) {
+        private Playback(AnimationClip clip, double fadeIn, int priority) {
+            this.priority = priority;
             this.clip = clip;
             this.fadeIn = fadeIn;
         }

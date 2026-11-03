@@ -42,6 +42,17 @@ public class GTNRLibConfig {
     @Config.Ignore
     private static String[] themes = {};
 
+    @Comment("Optional animation-only ZIP or folder name in resourcepacks. Reload resources after changing.")
+    // #tr gtnrlib.gui.config.client.animation_pack
+    // # Animation-only pack
+    // # zh_CN 仅导入动画的资源包
+    // #tr gtnrlib.gui.config.client.animation_pack.tooltip
+    // # ZIP or directory name inside resourcepacks. Reload resources after changing.
+    // # zh_CN 填写 resourcepacks 中的 ZIP 或目录名。修改后重新加载资源。
+    @LangKey("gtnrlib.gui.config.client.animation_pack")
+    @DefaultString("")
+    public static String animationPack = "";
+
     @Comment("Show every HUD element; arrange them with Edit HUD")
     // #tr gtnrlib.gui.config.client.enable_hud
     // # Show HUD

@@ -11,6 +11,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum GTNRLibMixins implements IMixins {
 
+    FIRST_PERSON_ANIMATION(new MixinBuilder("Optional first-person pose application")
+        .addClientMixins(
+            "animation.ItemRendererMixin",
+            "animation.MinecraftAttackMixin",
+            "animation.ItemBlockPlacementMixin")
+        .setPhase(Phase.EARLY)),
+
     KEY_INPUT(new MixinBuilder("Key binding input access").addClientMixins("input.KeyBindingAccessor")
         .setPhase(Phase.EARLY)),
 
