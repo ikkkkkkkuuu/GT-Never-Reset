@@ -112,7 +112,7 @@ public final class UniversalWandConfig {
     // # GT tools
     // # zh_CN GT 工具
     @Config.LangKey("gtneverreset.config.universalwand.enablegttools")
-    @Config.Comment("Disabling forces Off and locks all three GT tool mode buttons.")
+    @Config.Comment("Disabling turns off both GT tools and locks the tool mode control.")
     @Config.DefaultBoolean(true)
     public static boolean enableGtTools = true;
 

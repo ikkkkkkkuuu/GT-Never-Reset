@@ -38,7 +38,13 @@ public final class UniversalWandBlockOverlayRenderer {
         TileEntity tile = event.player.worldObj
             .getTileEntity(event.target.blockX, event.target.blockY, event.target.blockZ);
         if (!(tile instanceof IGregTechTileEntity)) {
-            int[] cable = ItemUniversalWand.findGtCableOnViewRay(event.player, event.player.worldObj);
+            if (mode == ItemUniversalWand.GtToolMode.WRENCH) return;
+            int[] cable = ItemUniversalWand.findGtCableOnViewRay(
+                event.player,
+                event.player.worldObj,
+                event.target.blockX,
+                event.target.blockY,
+                event.target.blockZ);
             if (cable == null) return;
             tile = event.player.worldObj.getTileEntity(cable[0], cable[1], cable[2]);
             if (!(tile instanceof IGregTechTileEntity)) return;
@@ -63,7 +69,7 @@ public final class UniversalWandBlockOverlayRenderer {
         BlockOverlayRendererInvoker.gtneverreset$drawGrid(
             event,
             false,
-            mode == ItemUniversalWand.GtToolMode.WRENCH,
+            !ItemUniversalWand.usesWireCutter(mode, tile),
             event.player.isSneaking());
     }
 

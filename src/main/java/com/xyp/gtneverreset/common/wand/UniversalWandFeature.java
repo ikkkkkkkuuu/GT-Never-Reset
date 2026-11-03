@@ -25,7 +25,7 @@ public enum UniversalWandFeature {
     // #tr gtneverreset.gui.universal_wand.gt_mode
     // # GT tool mode
     // # zh_CN GT 工具模式
-    GT_TOOLS(13, () -> UniversalWandConfig.enableGtTools, "gtToolMode", "gt_mode", "gt_wrench", "gt_cutter", "gt_off"),
+    GT_TOOLS(13, () -> UniversalWandConfig.enableGtTools, "gtToolMode", "gt_mode"),
     SHEARS(14, () -> UniversalWandConfig.enableShears, "shearsEnabled", "shears"),
     HOE(15, () -> UniversalWandConfig.enableHoe, "hoeEnabled", "hoe"),
     FLIGHT(16, () -> UniversalWandConfig.enableFlight, "flightSpeedOverride", "flight", "flight_speed_override");

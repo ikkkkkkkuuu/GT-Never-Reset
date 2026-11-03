@@ -368,34 +368,24 @@ public final class UniversalWandGui {
             // # Store drops in bound AE first, then your inventory. Enables item collection.
             // # zh_CN 掉落优先存入已绑定 AE，剩余收入背包；自动开启物品收集。
             .child(stateButton("ae_priority", ae).pos(119, 122))
-            .child(
-                // #tr gtneverreset.gui.universal_wand.gt_wrench.tooltip
-                // # Right-click to use wrench functions.
-                // # zh_CN 右键使用扳手功能。
-                // #tr gtneverreset.gui.universal_wand.gt_wrench
-                // # GT Wrench
-                // # zh_CN GT 扳手
-                toolModeButton(player, expected, toolMode, ItemUniversalWand.GtToolMode.WRENCH, "gt_wrench").pos(6, 142)
-                    .size(72, 16))
-            .child(
-                // #tr gtneverreset.gui.universal_wand.gt_cutter.tooltip
-                // # Right-click to cut wires or select AE parts.
-                // # zh_CN 右键使用剪线钳或选择 AE 部件。
-                // #tr gtneverreset.gui.universal_wand.gt_cutter
-                // # GT Wire Cutter
-                // # zh_CN GT 剪线钳
-                toolModeButton(player, expected, toolMode, ItemUniversalWand.GtToolMode.WIRE_CUTTER, "gt_cutter")
-                    .pos(81, 142)
-                    .size(72, 16))
-            .child(
-                // #tr gtneverreset.gui.universal_wand.gt_off.tooltip
-                // # Disable wrench and wire cutter modes; keep other enabled functions.
-                // # zh_CN 关闭扳手与剪线钳，不影响其他功能。
-                // #tr gtneverreset.gui.universal_wand.gt_off
-                // # Off
-                // # zh_CN 关闭工具
-                toolModeButton(player, expected, toolMode, ItemUniversalWand.GtToolMode.OFF, "gt_off").pos(156, 142)
-                    .size(72, 16));
+            // #tr gtneverreset.gui.universal_wand.gt_mode.tooltip
+            // # Automatic uses the cutter on GT cables and AE parts, and the wrench on machines. Click to override.
+            // # zh_CN 自动模式对 GT 电缆和 AE 部件使用剪线钳，对机器使用扳手。点击可切换模式。
+            .child(actionButton("gt_mode", () -> {
+                var modes = ItemUniversalWand.GtToolMode.values();
+                int current = ItemUniversalWand.getGtToolMode(expected)
+                    .ordinal();
+                ItemUniversalWand.setGtToolMode(player, expected, modes[(current + 1) % modes.length]);
+            }).overlay(
+                IKey.dynamic(
+                    () -> StatCollector.translateToLocalFormatted(
+                        "gtneverreset.item.universal_wand.gt_mode",
+                        StatCollector.translateToLocal(
+                            "gtneverreset.item.universal_wand.gt_mode."
+                                + ItemUniversalWand.GtToolMode.values()[toolMode.getIntValue()].name()))))
+                .tooltipDynamic(tooltip -> featureTooltip(tooltip, "gt_mode"))
+                .pos(6, 142)
+                .size(222, 16));
         // #tr gtneverreset.gui.universal_wand.shears
         // # Shears
         // # zh_CN 剪刀
@@ -903,18 +893,6 @@ public final class UniversalWandGui {
         }
         return new FeatureButton().syncHandler(handler)
             .overlay(IKey.lang("gtneverreset.gui.universal_wand." + key));
-    }
-
-    private static ButtonWidget<?> toolModeButton(EntityPlayer player, ItemStack expected, IntSyncValue selected,
-        ItemUniversalWand.GtToolMode mode, String key) {
-        return actionButton(key, () -> ItemUniversalWand.setGtToolMode(player, expected, mode))
-            .overlay(
-                IKey.dynamic(
-                    () -> (!controlAllowed(key) ? "§7" : selected.getIntValue() == mode.ordinal() ? "✓ " : "")
-                        + StatCollector.translateToLocal("gtneverreset.gui.universal_wand." + key))
-                    .scale(1.0F))
-            .tooltipDynamic(tooltip -> featureTooltip(tooltip, key))
-            .size(68, 18);
     }
 
     private static boolean controlAllowed(String key) {

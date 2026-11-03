@@ -14,6 +14,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import com.cleanroommc.modularui.api.IMuiScreen;
 import com.cleanroommc.modularui.api.widget.IWidget;
@@ -32,6 +33,11 @@ import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import gregtech.api.GregTechAPI;
+import gregtech.api.enums.ItemList;
+import gregtech.api.metatileentity.BaseMetaPipeEntity;
+import gregtech.api.metatileentity.BaseMetaTileEntity;
+import gregtech.api.metatileentity.implementations.MTECable;
 
 @Mod(modid = "wandqa", name = "Useless Tools QA", version = "1", dependencies = "after:gtneverreset")
 public final class UniversalWandChecks {
@@ -184,6 +190,7 @@ public final class UniversalWandChecks {
             ItemUniversalWand.setMaxMiningCount(player, wand, 23);
             ItemUniversalWand.setEnhancedChain(player, wand, false);
             for (int i = 0; i < 25; i++) world.setBlock(x + i % 5, y, z + i / 5, Blocks.gold_block);
+            checkAutomaticTools(player, wand, x, y + 8, z);
             ItemUniversalWand.setGtToolMode(player, wand, ItemUniversalWand.GtToolMode.OFF);
             var legacy = wand.getTagCompound()
                 .getCompoundTag("gtneverresetUniversalWand");
@@ -219,6 +226,45 @@ public final class UniversalWandChecks {
             player.inventory.setInventorySlotContents(slot, original);
             player.sendContainerToPlayer(player.inventoryContainer);
         }
+    }
+
+    private static void checkAutomaticTools(EntityPlayerMP player, ItemStack wand, int x, int y, int z) {
+        if (ItemUniversalWand.getGtToolMode(wand) != ItemUniversalWand.GtToolMode.AUTO)
+            throw new AssertionError("First-login wand must have both GT tools");
+        var world = player.worldObj;
+        world.setBlock(x, y, z, GregTechAPI.sBlockMachines, 0, 3);
+        var machine = (BaseMetaTileEntity) world.getTileEntity(x, y, z);
+        machine.setInitialValuesAsNBT(
+            null,
+            (short) ItemList.Machine_HV_Bender.get(1)
+                .getItemDamage());
+        machine.setFrontFacing(ForgeDirection.NORTH);
+        machine.setOwnerName(player.getCommandSenderName());
+        wand.getItem()
+            .onItemUseFirst(wand, player, world, x, y, z, 5, 1F, 0.5F, 0.5F);
+        if (machine.getFrontFacing() != ForgeDirection.EAST)
+            throw new AssertionError("Auto wrench did not rotate GT machine");
+        for (var meta : GregTechAPI.METATILEENTITIES) {
+            if (!(meta instanceof MTECable cable)) continue;
+            for (int dx = 1; dx <= 2; dx++) {
+                world.setBlock(x + dx, y, z, GregTechAPI.sBlockMachines, cable.getTileEntityBaseType(), 3);
+                var pipe = (BaseMetaPipeEntity) world.getTileEntity(x + dx, y, z);
+                pipe.setInitialValuesAsNBT(
+                    null,
+                    (short) cable.getStackForm(1)
+                        .getItemDamage());
+            }
+            var pipe = (BaseMetaPipeEntity) world.getTileEntity(x + 1, y, z);
+            var placed = (MTECable) pipe.getMetaTileEntity();
+            placed.connect(ForgeDirection.EAST);
+            if (!placed.isConnectedAtSide(ForgeDirection.EAST)) throw new AssertionError("Cable fixture not connected");
+            wand.getItem()
+                .onItemUseFirst(wand, player, world, x + 1, y, z, 5, 1F, 0.5F, 0.5F);
+            if (placed.isConnectedAtSide(ForgeDirection.EAST) || player.getHeldItem() != wand)
+                throw new AssertionError("Auto cutter did not disconnect GT cable with the same wand");
+            return;
+        }
+        throw new AssertionError("No GT cable for wand test");
     }
 
     private static int goldBlocks(EntityPlayerMP player) {
