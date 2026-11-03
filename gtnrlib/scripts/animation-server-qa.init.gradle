@@ -1,0 +1,28 @@
+gradle.projectsEvaluated {
+    def lib = gradle.rootProject.project(':gtnrlib')
+    def out = lib.file('build/animation-qa/server')
+    def classes = new File(out, 'classes')
+    def fixture = lib.tasks.register('compileAnimationServerQA', JavaCompile) {
+        dependsOn lib.tasks.named('classes')
+        source lib.file('scripts/qa/AnimationServerChecks.java')
+        classpath = lib.sourceSets.test.compileClasspath
+        destinationDirectory.set(classes)
+        javaCompiler.set(lib.javaToolchains.compilerFor(lib.java.toolchain))
+        options.compilerArgs += ['-proc:none']
+    }
+    lib.tasks.named('runServer25', JavaExec).configure {
+        dependsOn fixture
+        classpath += lib.files(classes)
+        workingDir lib.file('run/animation-qa/server')
+        systemProperty 'gtnrlib.animation.server.result', new File(out,'result.txt').absolutePath
+        args 'nogui'
+        doFirst {
+            workingDir.mkdirs()
+            new File(workingDir,'server.properties').setText('server-ip=127.0.0.1\nserver-port=0\nlevel-type=FLAT\nview-distance=3\n','UTF-8')
+            java.nio.file.Files.deleteIfExists(new File(out,'result.txt').toPath())
+        }
+        doLast {
+            if (!new File(out,'result.txt').isFile()) throw new GradleException('dedicated-server fixture did not reach startup')
+        }
+    }
+}

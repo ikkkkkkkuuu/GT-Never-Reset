@@ -1,0 +1,28 @@
+{
+  "default_animations": [
+    {
+      "type": "idle",
+      "name": "gtnrlib_grip"
+    },
+    {
+      "type": "attack",
+      "name": "gtnrlib_swing"
+    },
+    {
+      "type": "mining",
+      "name": "gtnrlib_mine"
+    },
+    {
+      "type": "useItem",
+      "name": "gtnrlib_place"
+    },
+    {
+      "type": "walk",
+      "name": "gtnrlib_walk"
+    },
+    {
+      "type": "sprint",
+      "name": "gtnrlib_walk"
+    }
+  ]
+}

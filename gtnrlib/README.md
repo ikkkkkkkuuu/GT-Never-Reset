@@ -1,5 +1,7 @@
 # GTNRLib
 
+[动画 API、示例包、兼容矩阵和验证说明](ANIMATION.md)
+
 Minecraft 1.7.10 的通用支持库，Mod ID 为 `gtnrlib`，Java 包为 `com.xyp.gtnrlib`。GT-Never-Reset 通过 Gradle 项目依赖使用本模块；库不依赖 GT-Never-Reset 或 GregTech。
 
 - `text`：文字标记解析、样式、原版格式码处理、保留颜色和样式的提示行折行（可指定宽度）。

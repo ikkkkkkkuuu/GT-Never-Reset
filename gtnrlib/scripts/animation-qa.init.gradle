@@ -1,0 +1,58 @@
+// A separate dev client, with optional host mod dependencies (-PanimationQaHost).
+gradle.projectsEvaluated {
+    def lib = gradle.rootProject.project(':gtnrlib')
+    lib.spotless { java { target 'src/*/java/**/*.java', 'scripts/qa/Animation*Checks.java' } }
+    def host = gradle.startParameter.projectProperties.containsKey('animationQaHost') ? gradle.rootProject : lib
+    def mode = host == lib ? 'library' : 'host'
+    def output = lib.file("build/animation-qa/" + mode)
+    def classes = new File(output, 'classes')
+    def fixture = lib.tasks.register('compileAnimationQA', JavaCompile) {
+        dependsOn lib.tasks.named('classes')
+        source lib.file('scripts/qa/AnimationClientChecks.java')
+        classpath = lib.sourceSets.test.compileClasspath
+        destinationDirectory.set(classes)
+        javaCompiler.set(lib.javaToolchains.compilerFor(lib.java.toolchain))
+        options.encoding = 'UTF-8'
+        options.compilerArgs += ['-proc:none']
+    }
+    host.tasks.named('runClient25', JavaExec).configure {
+        dependsOn fixture
+        classpath += lib.files(classes)
+        workingDir lib.file("run/animation-qa/" + mode)
+        systemProperty 'gtnrlib.animation.qa', 'true'
+        systemProperty 'gtnrlib.animation.qa.workspace', lib.projectDir.absolutePath
+        systemProperty 'gtnrlib.animation.qa.output', output.absolutePath
+        systemProperty 'gtnrlib.animation.qa.host', mode == 'host'
+        args '--width', '640', '--height', '480'
+        notCompatibleWithConfigurationCache('isolated automatic client')
+        doFirst {
+            output.mkdirs()
+            workingDir.mkdirs()
+            if(mode=='host') {
+                def settings=new File(workingDir,'config/DreamCoreMod.properties')
+                settings.parentFile.mkdirs()
+                def props=new Properties()
+                if(settings.isFile()) settings.withInputStream { props.load(it) }
+                props.setProperty('showConfirmExitWindow','false')
+                settings.withOutputStream { props.store(it,'Isolated automation client') }
+            }
+            lib.copy { from lib.file('examples/first-person'); into new File(workingDir, 'resourcepacks/animation-qa') }
+            new File(workingDir, 'options.txt').setText('lang:en_US\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsound:0.0\nmusic:0.0\nrenderDistance:2\n', 'UTF-8')
+            def result = new File(output, 'result.txt')
+            java.nio.file.Files.deleteIfExists(result.toPath())
+            def relativeReady = "build/animation-qa/" + mode + "/window-helper.ready"
+            def ready = lib.file(relativeReady)
+            java.nio.file.Files.deleteIfExists(ready.toPath())
+            def helper = new ProcessBuilder('powershell.exe', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
+                '-ExecutionPolicy', 'Bypass', '-File', lib.file('scripts/qa/HideTestClient.ps1').absolutePath,
+                '-Workspace', lib.projectDir.absolutePath, '-Marker', 'gtnrlib.animation.qa=true', '-ReadyFile', relativeReady)
+                .redirectErrorStream(true).redirectOutput(new File(output, 'window-helper.log')).start()
+            for (int i = 0; i < 100 && !ready.exists() && helper.isAlive(); i++) Thread.sleep(100)
+            if (!ready.isFile()) throw new GradleException('window guard failed to start')
+        }
+        doLast {
+            def result = new File(output, 'result.txt')
+            if (!result.isFile() || !result.text.startsWith('PASS')) throw new GradleException('animation fixture did not pass')
+        }
+    }
+}
