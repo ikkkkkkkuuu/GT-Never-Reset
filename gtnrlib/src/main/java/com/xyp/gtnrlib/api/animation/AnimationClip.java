@@ -36,7 +36,18 @@ public final class AnimationClip {
         }
     }
 
-    public record Vec(double x, double y, double z) {
+    @FunctionalInterface
+    public interface Value {
+
+        Vec at(double seconds);
+    }
+
+    public record Vec(double x, double y, double z) implements Value {
+
+        @Override
+        public Vec at(double seconds) {
+            return this;
+        }
 
         public Vec {
             if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z))
@@ -56,13 +67,19 @@ public final class AnimationClip {
         }
     }
 
-    public record Key(double time, Vec before, Vec after, Curve curve) {
+    public record Key(double time, Value before, Value after, Curve curve,
+        java.util.function.DoubleUnaryOperator easing) {
+
+        public Key(double time, Value before, Value after, Curve curve) {
+            this(time, before, after, curve, t -> t);
+        }
 
         public Key {
             validTime(time);
             Objects.requireNonNull(before);
             Objects.requireNonNull(after);
             Objects.requireNonNull(curve);
+            Objects.requireNonNull(easing);
         }
 
         public Key(double time, Vec value) {
@@ -135,15 +152,16 @@ public final class AnimationClip {
             if (keys.get(mid).time <= seconds) lo = mid + 1;
             else hi = mid;
         }
-        if (lo == 0) return keys.get(0).before;
+        if (lo == 0) return keys.get(0).before.at(seconds);
         Key left = keys.get(lo - 1);
-        if (lo == keys.size() || left.time == seconds || left.curve == Curve.STEP) return left.after;
+        Vec l = left.after.at(seconds);
+        if (lo == keys.size() || left.time == seconds || left.curve == Curve.STEP) return l;
         Key right = keys.get(lo);
-        double t = (seconds - left.time) / (right.time - left.time);
-        if (left.curve != Curve.CATMULL_ROM && right.curve != Curve.CATMULL_ROM) return left.after.mix(right.before, t);
-        Vec p = keys.get(Math.max(0, lo - 2)).after;
-        Vec q = keys.get(Math.min(keys.size() - 1, lo + 1)).before;
-        Vec l = left.after, r = right.before;
+        double t = right.easing.applyAsDouble((seconds - left.time) / (right.time - left.time));
+        Vec r = right.before.at(seconds);
+        if (left.curve != Curve.CATMULL_ROM && right.curve != Curve.CATMULL_ROM) return l.mix(r, t);
+        Vec p = keys.get(Math.max(0, lo - 2)).after.at(seconds);
+        Vec q = keys.get(Math.min(keys.size() - 1, lo + 1)).before.at(seconds);
         return new Vec(cubic(p.x, l.x, r.x, q.x, t), cubic(p.y, l.y, r.y, q.y, t), cubic(p.z, l.z, r.z, q.z, t));
     }
 

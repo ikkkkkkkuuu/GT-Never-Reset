@@ -14,6 +14,7 @@ public final class LibraryContracts {
         absent("com.xyp.gtneverreset.GTNeverReset");
         absent("gregtech.api.GregTechAPI");
         AnimationContracts.verify();
+        PunchyPackContracts.verify();
         CommandTreeContracts.verify();
         LocalSupportContracts.verify();
         SharedImplementationContracts.verify();
