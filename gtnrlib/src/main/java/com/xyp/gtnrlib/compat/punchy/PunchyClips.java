@@ -66,7 +66,7 @@ final class PunchyClips {
     private static Key key(double time, JsonElement element, Property property, boolean v2) {
         if (element.isJsonArray()) {
             Value v = value(element);
-            return new Key(time, v, v, Curve.LINEAR);
+            return new Key(time, v, v, !v2 && property == Property.ROTATION ? Curve.SHORTEST_ANGLE : Curve.LINEAR);
         }
         var obj = element.getAsJsonObject();
         JsonElement post = obj.has("post") ? obj.get("post") : obj.has("vector") ? obj.get("vector") : obj.get("pre");
@@ -74,7 +74,9 @@ final class PunchyClips {
         Value after = value(post);
         Value before = v2 && property == Property.ROTATION && obj.has("pre") ? value(obj.get("pre")) : after;
         Curve mode = switch (string(obj, "lerp_mode", "linear").toLowerCase(Locale.ROOT)) {
-            case "linear" -> Curve.LINEAR;
+            case "linear" -> !v2 && property == Property.ROTATION ? Curve.SHORTEST_ANGLE : Curve.LINEAR;
+            case "spherical_linear" -> v2 && property == Property.ROTATION ? Curve.SLERP : Curve.LINEAR;
+            case "spherical_squad" -> v2 && property == Property.ROTATION ? Curve.SQUAD : Curve.LINEAR;
             case "catmullrom" -> Curve.CATMULL_ROM;
             case "step" -> Curve.STEP;
             default -> throw new IllegalArgumentException("unsupported interpolation: " + obj.get("lerp_mode"));

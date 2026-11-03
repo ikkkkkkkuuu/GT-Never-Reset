@@ -20,7 +20,10 @@ public final class AnimationClip {
     public enum Curve {
         LINEAR,
         STEP,
-        CATMULL_ROM
+        CATMULL_ROM,
+        SHORTEST_ANGLE,
+        SLERP,
+        SQUAD
     }
 
     public enum Property {
@@ -159,6 +162,23 @@ public final class AnimationClip {
         Key right = keys.get(lo);
         double t = right.easing.applyAsDouble((seconds - left.time) / (right.time - left.time));
         Vec r = right.before.at(seconds);
+        if (channel.property == Property.ROTATION) {
+            if (left.curve == Curve.SQUAD || right.curve == Curve.SQUAD)
+                return com.xyp.gtnrlib.animation.RotationCurves.squad(
+                    keys.get(Math.max(0, lo - 2)).after.at(seconds),
+                    l,
+                    r,
+                    keys.get(Math.min(keys.size() - 1, lo + 1)).before.at(seconds),
+                    t);
+            if (left.curve == Curve.SLERP || right.curve == Curve.SLERP)
+                return com.xyp.gtnrlib.animation.RotationCurves.slerp(l, r, t);
+            if (left.curve == Curve.SHORTEST_ANGLE && right.curve != Curve.CATMULL_ROM) return l.mix(
+                new Vec(
+                    l.x + Math.IEEEremainder(r.x - l.x, 360),
+                    l.y + Math.IEEEremainder(r.y - l.y, 360),
+                    l.z + Math.IEEEremainder(r.z - l.z, 360)),
+                t);
+        }
         if (left.curve != Curve.CATMULL_ROM && right.curve != Curve.CATMULL_ROM) return l.mix(r, t);
         Vec p = keys.get(Math.max(0, lo - 2)).after.at(seconds);
         Vec q = keys.get(Math.min(keys.size() - 1, lo + 1)).before.at(seconds);

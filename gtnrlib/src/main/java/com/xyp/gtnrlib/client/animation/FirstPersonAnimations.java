@@ -38,6 +38,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     private Item item;
     private int slot = -1, combo;
     private Motion baseMotion, actionMotion;
+    private PunchyPack.Pose rightItem, rightArm, leftArm;
     private AnimationPlayer.Playback base, action;
     private String activeAction = "";
     private boolean mining;
@@ -183,6 +184,9 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
                     : current instanceof ItemSpade ? "SHOVEL"
                         : current instanceof ItemHoe ? "HOE"
                             : current instanceof ItemBlock ? "BLOCK" : current instanceof ItemBow ? "BOW" : "ITEM";
+        rightItem = packs.pose(id, group, "item_right");
+        rightArm = packs.pose(id, group, "arm_right");
+        leftArm = packs.pose(id, group, "arm_left");
         return packs.select(id, group, actionName, index);
     }
 
@@ -191,7 +195,10 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     }
 
     public boolean applies(ItemStack rendered) {
-        if (!enabled() || (base == null || !base.active()) && (action == null || !action.active())) return false;
+        if (!enabled() || rightItem == null && rightArm == null
+            && leftArm == null
+            && (base == null || !base.active())
+            && (action == null || !action.active())) return false;
         var mc = Minecraft.getMinecraft();
         if (mc.theWorld != world || mc.thePlayer == null
             || mc.gameSettings.thirdPersonView != 0
@@ -199,6 +206,14 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
             || rendered != mc.thePlayer.getHeldItem()) return false;
         return rendered == null || !(rendered.getItem() instanceof ItemMap)
             && MinecraftForgeClient.getItemRenderer(rendered, ItemRenderType.EQUIPPED_FIRST_PERSON) == null;
+    }
+
+    public PunchyPack.Pose tunedArm(boolean left) {
+        return left ? leftArm : rightArm;
+    }
+
+    public PunchyPack.Pose tunedItem() {
+        return rightItem;
     }
 
     public boolean dualHanded() {
@@ -233,6 +248,9 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     }
 
     private void reset() {
+        rightItem = null;
+        rightArm = null;
+        leftArm = null;
         player.clear();
         slot = -1;
         item = null;

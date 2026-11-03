@@ -23,22 +23,35 @@ public final class PunchyPack {
 
     public record Motion(AnimationClip clip, double speed, boolean dualHanded, boolean v2) {}
 
+    public record Pose(AnimationClip.Vec offset, AnimationClip.Vec rotation, AnimationClip.Vec pivot, double scale) {}
+
     private record Rule(String target, String action) {}
+
+    private final Map<Rule, Pose> poses;
 
     private final Map<String, Motion> clips;
     private final Map<Rule, List<String>> bindings;
 
-    private PunchyPack(Map<String, Motion> clips, Map<Rule, List<String>> bindings) {
+    private PunchyPack(Map<String, Motion> clips, Map<Rule, List<String>> bindings, Map<Rule, Pose> poses) {
+        this.poses = Map.copyOf(poses);
         this.clips = Map.copyOf(clips);
         this.bindings = Map.copyOf(bindings);
     }
 
     public static PunchyPack empty() {
-        return new PunchyPack(Map.of(), Map.of());
+        return new PunchyPack(Map.of(), Map.of(), Map.of());
     }
 
     public boolean hasMotions() {
-        return !clips.isEmpty();
+        return !clips.isEmpty() || !poses.isEmpty();
+    }
+
+    public Pose pose(String item, String kind, String side) {
+        for (String key : List.of(item, kind, "*")) {
+            Pose result = poses.get(new Rule(key, side));
+            if (result != null) return result;
+        }
+        return null;
     }
 
     public Motion clip(String name) {
@@ -56,6 +69,7 @@ public final class PunchyPack {
     public static PunchyPack load(List<Path> sources, Consumer<String> diagnostics) throws IOException {
         Map<String, Motion> clips = new LinkedHashMap<>();
         Map<Rule, List<String>> rules = new LinkedHashMap<>();
+        Map<Rule, Pose> poses = new LinkedHashMap<>();
         for (Path source : sources) AnimationPackFiles.read(source, ROOTS, (path, json) -> {
             String origin = source.getFileName() + "/" + path;
             try {
@@ -79,9 +93,15 @@ public final class PunchyPack {
                     }
                 } else {
                     Map<Rule, List<String>> file = new LinkedHashMap<>();
+                    Map<Rule, Pose> filePoses = new LinkedHashMap<>();
+                    poses(filePoses, "*", "item", PunchyClips.object(root, "globalItem"));
+                    poses(filePoses, "*", "arm", PunchyClips.object(root, "globalArm"));
                     for (String section : List.of("item", "itemSpecific")) {
                         for (var entry : PunchyClips.object(root, section)
                             .entrySet()) {
+                            var tuning = entry.getValue()
+                                .getAsJsonObject();
+                            readTuning(filePoses, entry.getKey(), tuning, diagnostics, origin);
                             rules(
                                 file,
                                 entry.getKey(),
@@ -100,7 +120,9 @@ public final class PunchyPack {
                         diagnostics,
                         origin);
                     rules(file, "*", root.get("default_animations"), diagnostics, origin);
+                    readTuning(filePoses, "emptyHand", PunchyClips.object(root, "emptyHand"), diagnostics, origin);
                     rules.putAll(file);
+                    poses.putAll(filePoses);
                 }
             } catch (Exception e) {
                 diagnostics.accept(origin + ": " + e.getMessage());
@@ -110,7 +132,34 @@ public final class PunchyPack {
             for (String name : names) if (!clips.containsKey(name))
                 diagnostics.accept(key.target + "/" + key.action + ": missing clip " + name);
         });
-        return new PunchyPack(clips, rules);
+        return new PunchyPack(clips, rules, poses);
+    }
+
+    private static void readTuning(Map<Rule, Pose> result, String target, JsonObject tuning,
+        Consumer<String> diagnostics, String origin) {
+        poses(result, target, "item", PunchyClips.object(tuning, "transforms"));
+        poses(result, target, "arm", PunchyClips.object(tuning, "armTransforms"));
+        if (tuning.has("customItemAnimations"))
+            diagnostics.accept(origin + " " + target + ": custom model animation requires an item model adapter");
+    }
+
+    private static void poses(Map<Rule, Pose> result, String target, String part, JsonObject sides) {
+        for (String side : List.of("right", "left")) if (sides.has(side)) {
+            var o = sides.getAsJsonObject(side);
+            var p = new Pose(vector(o, "off"), vector(o, "rot"), vector(o, "pivot"), number(o, "scale"));
+            result.put(new Rule(target, part + "_" + side), p);
+        }
+    }
+
+    private static AnimationClip.Vec vector(JsonObject o, String prefix) {
+        return new AnimationClip.Vec(number(o, prefix + "X"), number(o, prefix + "Y"), number(o, prefix + "Z"));
+    }
+
+    private static double number(JsonObject o, String key) {
+        double n = o.has(key) ? o.get(key)
+            .getAsDouble() : 0;
+        if (!Double.isFinite(n)) throw new IllegalArgumentException(key + " must be finite");
+        return n;
     }
 
     private static void rules(Map<Rule, List<String>> rules, String target, JsonElement list,

@@ -18,16 +18,20 @@ public final class FirstPersonPoseRenderer {
 
     private static final FirstPersonAnimations ANIMATIONS = FirstPersonAnimations.INSTANCE;
     private static final Bone BODY = new Bone("body"), RIGHT = new Bone("right_arm"), LEFT = new Bone("left_arm"),
-        ITEM = new Bone("right_item");
+        ITEM = new Bone("item_right"), GRIP = new Bone("itemgrip_right");
     private static ModelBiped arms;
 
     public static void held(ItemStack stack, float partial) {
         if (!ANIMATIONS.applies(stack)) return;
+        // Move the grip inward so there is room for the support hand inside vanilla's item matrix.
+        GL11.glTranslated(-.65, .32, -.2);
         root(partial);
         arm(false, partial);
         if (ANIMATIONS.dualHanded()) arm(true, partial);
         RIGHT.apply(partial);
         ITEM.apply(partial);
+        GRIP.apply(partial);
+        tuning(ANIMATIONS.tunedItem());
     }
 
     public static void empty(float partial) {
@@ -35,6 +39,7 @@ public final class FirstPersonPoseRenderer {
         root(partial);
         if (ANIMATIONS.dualHanded()) arm(true, partial);
         RIGHT.apply(partial);
+        tuning(ANIMATIONS.tunedArm(false));
     }
 
     private static void root(float partial) {
@@ -53,7 +58,9 @@ public final class FirstPersonPoseRenderer {
                 .bindTexture(mc.thePlayer.getLocationSkin());
             GL11.glColor4f(1, 1, 1, 1);
             (left ? LEFT : RIGHT).apply(partial);
-            GL11.glTranslated(left ? -.2 : .12, .04, .05);
+            tuning(ANIMATIONS.tunedArm(left));
+            GL11.glTranslated(left ? -.28 : .08, left ? .18 : .04, .05);
+            GL11.glScaled(1.35, 1.35, 1.35);
             GL11.glRotatef(left ? 45 : -48, 0, 0, 1);
             GL11.glRotatef(-64, 1, 0, 0);
             GL11.glTranslated(left ? -.3125 : .3125, -.72, 0);
@@ -62,6 +69,17 @@ public final class FirstPersonPoseRenderer {
             GL11.glPopAttrib();
             GL11.glPopMatrix();
         }
+    }
+
+    private static void tuning(com.xyp.gtnrlib.compat.punchy.PunchyPack.Pose pose) {
+        if (pose == null) return;
+        Vec off = pose.offset(), p = pose.pivot(), r = pose.rotation();
+        GL11.glTranslated(off.x() + p.x(), off.y() + p.y(), off.z() + p.z());
+        GL11.glRotated(r.z(), 0, 0, 1);
+        GL11.glRotated(r.y(), 0, 1, 0);
+        GL11.glRotated(r.x(), 1, 0, 0);
+        GL11.glScaled(pose.scale(), pose.scale(), pose.scale());
+        GL11.glTranslated(-p.x(), -p.y(), -p.z());
     }
 
     private record Bone(Channel position, Channel rotation, Channel scale) {

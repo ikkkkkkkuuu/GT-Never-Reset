@@ -42,6 +42,21 @@ final class AnimationContracts {
         check(
             !handle.active() && player.sample(arm, 0)
                 .x() == 0);
+        for (Curve curve : List.of(Curve.SHORTEST_ANGLE, Curve.SLERP, Curve.SQUAD)) {
+            Vec a = new Vec(0, 0, 170), b = new Vec(0, 0, -170);
+            var rotate = new AnimationClip(
+                1,
+                End.ONCE,
+                Map.of(arm, List.of(new Key(0, a, a, curve), new Key(1, b, b, curve))),
+                List.of());
+            check(
+                Math.abs(
+                    Math.abs(
+                        rotate.sample(arm, .5)
+                            .z())
+                        - 180)
+                    < 1e-6);
+        }
         AnimationLibrary library = new AnimationLibrary();
         library.registerProvider("test:base", out -> out.register("test:spin", clip));
         check(library.reload(events::add));
