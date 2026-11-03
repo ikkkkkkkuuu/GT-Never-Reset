@@ -23,12 +23,20 @@
   ],
   "item": {
     "BLOCK": {
+      "armTransforms": {
+        "right": {
+          "rotX": 10,
+          "rotY": -10,
+          "scale": 1.1
+        }
+      },
       "transforms": {
         "right": {
           "offY": 0.28,
-          "rotY": -45,
+          "rotY": -79,
+          "rotZ": -39,
           "scale": 0.79,
-          "rotX": 17
+          "rotX": 60
         }
       },
       "customAnimation": [

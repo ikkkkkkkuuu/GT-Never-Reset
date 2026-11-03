@@ -86,96 +86,38 @@
       }
     },
     "gtnrlib_place": {
-      "animation_length": 0.2,
+      "animation_length": 0.4,
       "loop": false,
       "timeline": {
-        "0": "use_keyframes_v2;anim_speed_1;gtnrlib:replace_swing;"
+        "0": "use_keyframes_v2;anim_speed_1;gtnrlib:replace_swing;gtnrlib:chain_placement;"
       },
       "bones": {
         "right_arm": {
           "position": {
-            "0": [
-              12,
-              14,
-              14
-            ],
-            "0.075": {
-              "post": [
-                17,
-                9.5,
-                -6
-              ],
-              "easing": "easeInOutSine"
-            },
-            "0.10": {
-              "post": [
-                17,
-                9.5,
-                -6
-              ],
-              "easing": "easeInOutSine"
-            },
-            "0.20": {
-              "post": [
-                12,
-                14,
-                14
-              ],
-              "easing": "easeInOutSine"
-            }
+            "0": { "post": [15.8, 16.2, 11.3], "lerp_mode": "catmullrom" },
+            "0.04": { "post": [17.7, 19.5, 0.1], "lerp_mode": "catmullrom" },
+            "0.08": { "post": [13.7, 11.1, -4.4], "lerp_mode": "catmullrom" },
+            "0.12": { "post": [12.1, 9.5, -7.2], "lerp_mode": "catmullrom" },
+            "0.16": { "post": [12.4, 9.5, -5.5], "lerp_mode": "catmullrom" },
+            "0.20": { "post": [10.3, 10, 0.9], "lerp_mode": "catmullrom" },
+            "0.24": { "post": [11.4, 11.9, 5.9], "lerp_mode": "catmullrom" },
+            "0.28": { "post": [13.3, 13.9, 7.7], "lerp_mode": "catmullrom" },
+            "0.32": { "post": [14, 15.9, 9.3], "lerp_mode": "catmullrom" },
+            "0.36": { "post": [14.9, 16.5, 10.6], "lerp_mode": "catmullrom" },
+            "0.40": { "post": [15.8, 16.2, 11.3], "lerp_mode": "catmullrom" }
           },
           "rotation": {
-            "0": [
-              5,
-              -4,
-              -5
-            ],
-            "0.075": {
-              "post": [
-                -6,
-                0,
-                4
-              ],
-              "easing": "easeInOutSine"
-            },
-            "0.20": {
-              "post": [
-                5,
-                -4,
-                -5
-              ],
-              "easing": "easeInOutSine"
-            }
-          }
-        },
-        "item_right": {
-          "scale": {
-            "0": [
-              1,
-              1,
-              1
-            ],
-            "0.075": {
-              "post": [
-                0.85,
-                0.85,
-                0.85
-              ],
-              "easing": "easeInOutSine"
-            },
-            "0.10": [
-              0.85,
-              0.85,
-              0.85
-            ],
-            "0.20": {
-              "post": [
-                1,
-                1,
-                1
-              ],
-              "easing": "easeInOutSine"
-            }
+            "0": { "post": [5, -4, -5], "lerp_mode": "catmullrom" },
+            "0.04": { "post": [8.4, -6.7, -7.9], "lerp_mode": "catmullrom" },
+            "0.08": { "post": [13.6, -10.8, -12.9], "lerp_mode": "catmullrom" },
+            "0.12": { "post": [17.3, -13.7, -19.1], "lerp_mode": "catmullrom" },
+            "0.16": { "post": [16.6, -13.1, -19.3], "lerp_mode": "catmullrom" },
+            "0.20": { "post": [12.4, -9.8, -15.5], "lerp_mode": "catmullrom" },
+            "0.24": { "post": [8.4, -6.7, -9.9], "lerp_mode": "catmullrom" },
+            "0.28": { "post": [5.7, -4.6, -5.8], "lerp_mode": "catmullrom" },
+            "0.32": { "post": [4.3, -3.4, -4.2], "lerp_mode": "catmullrom" },
+            "0.36": { "post": [4.6, -3.7, -4.6], "lerp_mode": "catmullrom" },
+            "0.40": { "post": [5, -4, -5], "lerp_mode": "catmullrom" }
           }
         }
       }
@@ -372,7 +314,7 @@
       },
       "bones": {
         "right_arm": {
-          "position": [12, 14, 14],
+          "position": [15.8, 16.2, 11.3],
           "rotation": [5, -4, -5]
         }
       }

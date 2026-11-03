@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
 
@@ -28,6 +29,7 @@ import net.minecraftforge.client.MinecraftForgeClient;
 
 import org.lwjgl.opengl.GL11;
 
+import com.xyp.gtnrlib.api.animation.AnimationClip.Marker;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.config.GTNRLibConfig;
 
@@ -210,49 +212,7 @@ public final class AnimationClientChecks {
                 "quick mining release stays at rest while vanilla swing finishes");
             advanceHands(mc, 4);
             require(!target.replacesSwing(mc.thePlayer.getHeldItem()), "native swing ownership released at rest");
-            var stone = new ItemStack(Blocks.cobblestone);
-            equip(mc, stone);
-            tickPlayer();
-            int[] carry = draw(mc, "block-carry");
-            int placeX = x + 2, ground = mc.theWorld.getTopSolidOrLiquidBlock(placeX, z) - 1;
-            placeOnTop(mc, placeX, ground, z);
-            require(
-                mc.theWorld.getBlock(placeX, ground + 1, z) == Blocks.cobblestone && mc.thePlayer.isSwingInProgress
-                    && observed.contains("useitem"),
-                "normal right click placed cobblestone");
-            advanceHands(mc, 2);
-            var rest = grayItem(carry, mc.displayWidth);
-            var extended = grayItem(draw(mc, "block-extended", 0), mc.displayWidth);
-            int[] reach = draw(mc, "block-place");
-            int h = mc.displayHeight, center = mc.displayWidth / 2;
-            // Measure from the optical center in viewport heights so the check works in 4:3 and widescreen.
-            require(
-                !target.dualHanded() && rest.x > center + .46 * h
-                    && rest.y > .75 * h
-                    && extended.x > center + .15 * h
-                    && extended.x < center + .32 * h
-                    && extended.y > .58 * h
-                    && extended.y < .77 * h
-                    && extended.width < .78 * rest.width,
-                "block travels inward and recedes from " + rest + " to " + extended);
-            advanceHands(mc, 2);
-            require(
-                Arrays.equals(carry, draw(mc, "block-recovered")),
-                "block at carry pose by the next vanilla right click");
-            int nextGround = mc.theWorld.getTopSolidOrLiquidBlock(placeX, z + 1) - 1;
-            placeOnTop(mc, placeX, nextGround, z + 1);
-            require(
-                mc.theWorld.getBlock(placeX, nextGround + 1, z + 1) == Blocks.cobblestone,
-                "second right click placed cobblestone");
-            advanceHands(mc, 2);
-            require(Arrays.equals(reach, draw(mc, "block-repeat")), "repeated placement follows the same reach");
-            advanceHands(mc, 2);
-            require(
-                Arrays.equals(carry, draw(mc, "block-repeat-recovered")),
-                "repeated placement returns without recoil");
-            advanceHands(mc, 4);
-            mc.playerController.clickBlock(placeX, ground + 1, z, 1);
-            mc.playerController.clickBlock(placeX, nextGround + 1, z + 1, 1);
+            checkPlacement(mc, x + 2, z, observed);
             target.unbind("fixture:observer");
             equip(mc, new ItemStack(Items.filled_map));
             tickPlayer();
@@ -269,6 +229,106 @@ public final class AnimationClientChecks {
             finish(mc, null);
         } catch (Throwable e) {
             finish(mc, e);
+        }
+    }
+
+    private void checkPlacement(Minecraft mc, int x, int z, List<String> observed) throws Exception {
+        equip(mc, new ItemStack(Blocks.cobblestone));
+        tickPlayer();
+        int[] carry = draw(mc, "block-carry");
+        int[] start = draw(mc, "block-at-input", 0);
+        int ground = mc.theWorld.getTopSolidOrLiquidBlock(x, z) - 1;
+        placeDuringTick(mc, x, ground, z);
+        require(
+            mc.theWorld.getBlock(x, ground + 1, z) == Blocks.cobblestone && mc.thePlayer.isSwingInProgress
+                && observed.contains("useitem"),
+            "normal right click placed cobblestone");
+        require(Arrays.equals(start, draw(mc, "block-first-render", 0)), "placement renders its first interval");
+        int width = mc.displayWidth, h = mc.displayHeight;
+        var rest = grayItem(carry, width);
+        var launch = grayItem(draw(mc, "block-launch", .75f), width);
+        advanceHands(mc, 2);
+        var extended = grayItem(draw(mc, "block-extended"), width);
+        require(
+            !target.dualHanded() && rest.x > width / 2 + .43 * h
+                && extended.x > width / 2 + .10 * h
+                && extended.x < width / 2 + .30 * h
+                && extended.y > .58 * h
+                && extended.y < .77 * h
+                && extended.width < .78 * rest.width
+                && launch.x > extended.x
+                && launch.y > extended.y + .12 * h
+                && launch.width < .92 * rest.width,
+            "depth leads lift: " + rest + " -> " + launch + " -> " + extended);
+        advanceHands(mc, 1);
+        int[] beforeInput = draw(mc, "block-before-repeat", 1);
+        var before = grayItem(beforeInput, width);
+        int wrist = wristX(beforeInput, width);
+        require(
+            before.x > extended.x + .04 * h && before.x < rest.x - .10 * h,
+            "first return still in flight at four ticks: " + before);
+        int nextGround = mc.theWorld.getTopSolidOrLiquidBlock(x, z + 1) - 1;
+        placeDuringTick(mc, x, nextGround, z + 1);
+        require(
+            mc.theWorld.getBlock(x, nextGround + 1, z + 1) == Blocks.cobblestone,
+            "second right click placed cobblestone");
+        int[] atInput = draw(mc, "block-repeat-start", 0);
+        var after = grayItem(atInput, width);
+        require(
+            wrist >= 0 && Math.abs(wristX(atInput, width) - wrist) <= 1
+                && Math.abs(after.x - before.x) <= 1
+                && Math.abs(after.y - before.y) <= 1
+                && Math.abs(after.width - before.width) <= 1,
+            "repeat starts at the outgoing grip: " + before + " -> " + after);
+        int outermost = after.x, outermostWrist = wrist;
+        for (int tick = 0; tick < 2; tick++) {
+            for (int quarter = 1; quarter <= 4; quarter++) {
+                int[] pose = draw(mc, "block-handoff-" + tick + "-" + quarter, quarter * .25f);
+                outermost = Math.max(outermost, grayItem(pose, width).x);
+                outermostWrist = Math.max(outermostWrist, wristX(pose, width));
+            }
+            advanceHands(mc, 1);
+        }
+        require(
+            outermost - after.x < h * .045 && outermostWrist - wrist < h * .055,
+            "maximum outward travel at repeat: block " + (outermost - after.x)
+                + "px, wrist "
+                + (outermostWrist - wrist)
+                + "px");
+        var repeated = grayItem(draw(mc, "block-repeat"), width);
+        require(
+            Math.abs(repeated.x - extended.x) <= 1 && Math.abs(repeated.width - extended.width) <= 1,
+            "second placement reaches the same contact pose");
+        int lastX = repeated.x;
+        for (int tick = 3; tick < 8; tick++) {
+            advanceHands(mc, 1);
+            for (int half = 0; half < 2; half++) {
+                var point = grayItem(draw(mc, "block-return-" + tick + "-" + half, half * .5f), width);
+                require(
+                    point.x >= lastX - 2 && point.x <= rest.x + 2,
+                    "shared grip returns without reversing at " + (tick + .5 * half) + " ticks: " + point);
+                lastX = point.x;
+            }
+        }
+        advanceHands(mc, 2);
+        require(Arrays.equals(carry, draw(mc, "block-recovered")), "release settles to the original carry pose");
+        mc.playerController.clickBlock(x, ground + 1, z, 1);
+        mc.playerController.clickBlock(x, nextGround + 1, z + 1, 1);
+    }
+
+    private void placeDuringTick(Minecraft mc, int x, int y, int z) throws Exception {
+        var markers = new ArrayList<String>();
+        Consumer<Marker> listener = m -> markers.add(m.name());
+        target.addListener(listener);
+        try {
+            target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.START));
+            placeOnTop(mc, x, y, z);
+            finishHandTick(mc);
+            require(
+                java.util.Collections.frequency(markers, "gtnrlib:chain_placement") == 1,
+                "new placement fires its zero-time marker in the input tick");
+        } finally {
+            target.removeListener(listener);
         }
     }
 
@@ -290,14 +350,33 @@ public final class AnimationClientChecks {
     }
 
     private void advanceHands(Minecraft mc, int ticks) throws Exception {
+        for (int i = 0; i < ticks; i++) {
+            target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.START));
+            finishHandTick(mc);
+        }
+    }
+
+    private void finishHandTick(Minecraft mc) throws Exception {
         var swing = EntityLivingBase.class.getDeclaredMethod("updateArmSwingProgress");
         swing.setAccessible(true);
-        for (int i = 0; i < ticks; i++) {
-            mc.thePlayer.prevSwingProgress = mc.thePlayer.swingProgress;
-            swing.invoke(mc.thePlayer);
-            mc.entityRenderer.itemRenderer.updateEquippedItem();
-            target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.END));
+        mc.thePlayer.prevSwingProgress = mc.thePlayer.swingProgress;
+        swing.invoke(mc.thePlayer);
+        mc.entityRenderer.itemRenderer.updateEquippedItem();
+        target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.END));
+    }
+
+    // In the cobblestone test the skin supplies all colored texels. Its upper edge follows the visible wrist.
+    private static int wristX(int[] pixels, int width) {
+        long sum = 0;
+        int count = 0, bottom = pixels.length;
+        for (int i = 0; i < bottom; i++) {
+            int rgb = pixels[i], r = rgb >> 16 & 255, g = rgb >> 8 & 255, b = rgb & 255;
+            if (Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b)) <= 6) continue;
+            if (count == 0) bottom = Math.min(pixels.length, (i / width + 12) * width);
+            sum += i % width;
+            count++;
         }
+        return count == 0 ? -1 : (int) (sum / count);
     }
 
     private record Footprint(int x, int y, int width) {}
@@ -548,7 +627,10 @@ public final class AnimationClientChecks {
     }
 
     private void tickPlayer() {
-        for (int i = 0; i < 4; i++) target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.END));
+        for (int i = 0; i < 4; i++) {
+            target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.START));
+            target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.END));
+        }
     }
 
     private void reload(Minecraft mc, String name) {
