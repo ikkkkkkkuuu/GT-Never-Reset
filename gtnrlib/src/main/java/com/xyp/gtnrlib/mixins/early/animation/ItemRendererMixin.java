@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.xyp.gtnrlib.client.render.animation.FirstPersonPoseRenderer;
@@ -27,10 +28,13 @@ public abstract class ItemRendererMixin {
 
     @Inject(
         method = "renderItemInFirstPerson",
+        slice = @Slice(
+            from = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;shouldRotateAroundWhenRendering()Z")),
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/client/renderer/entity/RenderPlayer;renderFirstPersonArm(Lnet/minecraft/entity/player/EntityPlayer;)V",
-            ordinal = 1),
+            target = "Lnet/minecraft/client/renderer/texture/TextureManager;bindTexture(Lnet/minecraft/util/ResourceLocation;)V",
+            ordinal = 0,
+            shift = At.Shift.AFTER),
         require = 0)
     private void gtnrlib$empty(float partial, CallbackInfo ci) {
         FirstPersonPoseRenderer.empty(partial);

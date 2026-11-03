@@ -21,16 +21,22 @@ public final class FirstPersonPoseRenderer {
     private static final FirstPersonAnimations ANIMATIONS = FirstPersonAnimations.INSTANCE;
     private static final Bone BODY = new Bone("body"), RIGHT = new Bone("right_arm"), LEFT = new Bone("left_arm"),
         ITEM = new Bone("item_right"), GRIP = new Bone("itemgrip_right");
+    private static final float VANILLA_HAND_YAW = 45;
+    private static final float MODEL_UNIT = 1F / 16;
     private static ModelBiped arms;
 
     public static void held(ItemStack stack, float partial) {
         if (!ANIMATIONS.applies(stack)) return;
-        // Move the grip inward so there is room for the support hand inside vanilla's item matrix.
-        GL11.glTranslated(-.65, .32, -.2);
+        // The vanilla item branch has already scaled to 0.4 and translated the item towards the lower edge.
+        // Put the wrist inside the 70-degree hand frustum before posing the item and both arms together.
+        GL11.glTranslated(-.43, .95, -.92);
         root(partial);
-        arm(false, partial);
-        if (ANIMATIONS.dualHanded()) arm(true, partial);
+        heldArm(false, partial);
+        if (ANIMATIONS.dualHanded()) heldArm(true, partial);
         RIGHT.apply(partial);
+        // Vanilla rotates flat item sprites another 50 degrees around Y when drawing them.
+        // From the inward grip their broad face would otherwise be nearly edge-on.
+        GL11.glRotatef(32, 0, 1, 0);
         ITEM.apply(partial);
         GRIP.apply(partial);
         tuning(ANIMATIONS.tunedItem());
@@ -39,7 +45,21 @@ public final class FirstPersonPoseRenderer {
     public static void empty(float partial) {
         if (!ANIMATIONS.applies(null)) return;
         root(partial);
-        if (ANIMATIONS.dualHanded()) arm(true, partial);
+        GL11.glRotatef(-VANILLA_HAND_YAW, 0, 1, 0);
+        if (ANIMATIONS.dualHanded()) {
+            GL11.glPushMatrix();
+            try {
+                GL11.glTranslated(-.88, .43, -.22);
+                LEFT.apply(partial);
+                tuning(ANIMATIONS.tunedArm(true));
+                drawFromWrist(true, .82);
+            } finally {
+                GL11.glPopMatrix();
+            }
+        }
+        // The original renderFirstPersonArm call still draws the primary empty hand, with the player's skin.
+        GL11.glTranslated(-.10, .31, -.18);
+        GL11.glRotatef(65 + VANILLA_HAND_YAW, 0, 1, 0);
         RIGHT.apply(partial);
         tuning(ANIMATIONS.tunedArm(false));
     }
@@ -50,26 +70,35 @@ public final class FirstPersonPoseRenderer {
         BODY.apply(partial);
     }
 
-    private static void arm(boolean left, float partial) {
+    private static void heldArm(boolean left, float partial) {
+        GL11.glPushMatrix();
+        try {
+            (left ? LEFT : RIGHT).apply(partial);
+            tuning(ANIMATIONS.tunedArm(left));
+            GL11.glTranslated(left ? -.16 : .04, left ? -.06 : 0, .04);
+            GL11.glRotatef(-VANILLA_HAND_YAW, 0, 1, 0);
+            drawFromWrist(left, 1.95);
+        } finally {
+            GL11.glPopMatrix();
+        }
+    }
+
+    /** ModelBiped defines shoulders as pivots. Place the hand end of its 4 x 12 x 4 mesh at the grip. */
+    private static void drawFromWrist(boolean left, double scale) {
         var mc = Minecraft.getMinecraft();
         if (arms == null) arms = new ModelBiped(0);
-        GL11.glPushMatrix();
         GL11.glPushAttrib(GL11.GL_CURRENT_BIT | GL11.GL_TEXTURE_BIT | GL11.GL_ENABLE_BIT);
         try {
             mc.getTextureManager()
                 .bindTexture(mc.thePlayer.getLocationSkin());
             GL11.glColor4f(1, 1, 1, 1);
-            (left ? LEFT : RIGHT).apply(partial);
-            tuning(ANIMATIONS.tunedArm(left));
-            GL11.glTranslated(left ? -.28 : .08, left ? .18 : .04, .05);
-            GL11.glScaled(1.35, 1.35, 1.35);
-            GL11.glRotatef(left ? 45 : -48, 0, 0, 1);
-            GL11.glRotatef(-64, 1, 0, 0);
-            GL11.glTranslated(left ? -.3125 : .3125, -.72, 0);
-            (left ? arms.bipedLeftArm : arms.bipedRightArm).render(1F / 16);
+            GL11.glRotatef(left ? -51 : 43, 0, 0, 1);
+            GL11.glRotatef(-32, 1, 0, 0);
+            GL11.glScaled(scale, scale, scale);
+            GL11.glTranslatef((left ? -6 : 6) * MODEL_UNIT, -11 * MODEL_UNIT, 0);
+            (left ? arms.bipedLeftArm : arms.bipedRightArm).render(MODEL_UNIT);
         } finally {
             GL11.glPopAttrib();
-            GL11.glPopMatrix();
         }
     }
 

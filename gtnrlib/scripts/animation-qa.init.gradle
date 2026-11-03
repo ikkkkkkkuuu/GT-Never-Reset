@@ -23,7 +23,7 @@ gradle.projectsEvaluated {
         systemProperty 'gtnrlib.animation.qa.workspace', lib.projectDir.absolutePath
         systemProperty 'gtnrlib.animation.qa.output', output.absolutePath
         systemProperty 'gtnrlib.animation.qa.host', mode == 'host'
-        args '--width', '640', '--height', '480'
+        args '--width', (mode == 'host' ? '854' : '640'), '--height', '480'
         notCompatibleWithConfigurationCache('isolated automatic client')
         doFirst {
             output.mkdirs()

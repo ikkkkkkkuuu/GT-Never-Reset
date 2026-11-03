@@ -4,6 +4,8 @@
 
 将本仓库 `gtnrlib/examples/first-person` 整个目录放入游戏实例的 `resourcepacks`，在资源包列表中选中后拿起原版剑。取消选择并重载即可恢复。示例是本项目编写的独立资源包，不随库 JAR 激活。
 
+在第一人称里，持剑时应能看到两侧袖口和延伸到剑柄的前臂。切到空槽后，两条手臂应分开。姿势使用玩家皮肤和 1.7.10 原版手臂网格；资源未声明 `dual_handed` 时只显示主手。更换库 JAR 后需要重启客户端，修改资源包后可以按 F3+T 重载。
+
 现代包可以直接使用原始 ZIP 或目录。在 GTNRLib 客户端配置的“仅导入动画的资源包”填入其在 `resourcepacks` 中的文件名，按 F3+T 重载。这个显式导入项位于已选包之上，不要求 1.7.10 理解现代 pack.mcmeta。ZIP 的根应直接包含 assets。
 
 ## 第三方调用
@@ -79,4 +81,6 @@ if (library.reload(logger::warn)) {
 .\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-server-qa.init.gradle :gtnrlib:runServer25
 ```
 
-Windows 客户端夹具在库 run 目录内启动独立静音实例，守护脚本隐藏窗口并设置点击穿透。它通过集成服务器和游戏帧缓冲操作，结果与 PNG 写入库 build 目录的 `animation-qa/{library,host}`。宿主模式使用项目声明的开发依赖。专服夹具使用独立的 `animation-qa/server`，监听环回地址和临时端口，需要该测试实例已有的 EULA 设置。测试结束自动停服。
+Windows 客户端夹具在库 run 目录内启动独立静音实例，守护脚本隐藏窗口并设置点击穿透。它通过集成服务器和游戏帧缓冲操作，结果与 PNG 写入库 build 目录的 `animation-qa/{library,host}`。其中 `screenshots/world-grip.png` 和 `world-empty.png` 来自正常游戏帧。隔离绘制使用陆地上的 70° 手部投影，并临时在测试皮肤的腕部与袖口加上不同颜色的标记。夹具分别检查单手和双手姿势，要求两处标记可见且按对应方向分开，并核对禁用后的持剑、空手画面与原版逐像素一致。
+
+独立库使用 640×480 窗口，宿主模式使用 854×480 窗口和项目声明的开发依赖。专服夹具使用独立的 `animation-qa/server`，监听环回地址和临时端口，需要该测试实例已有的 EULA 设置。测试结束自动停服。
