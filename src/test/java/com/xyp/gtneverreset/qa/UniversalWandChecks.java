@@ -21,12 +21,12 @@ import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.PageButton;
 import com.cleanroommc.modularui.widgets.PagedWidget;
-import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.xyp.gtneverreset.common.item.items.ItemUniversalWand;
 import com.xyp.gtneverreset.common.packet.UniversalWandNetwork;
 import com.xyp.gtneverreset.common.wand.UniversalWandMiningHandler;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtnrlib.gui.theme.ScreenTheme;
+import com.xyp.gtnrlib.gui.widget.SlideSwitch;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
@@ -127,7 +127,7 @@ public final class UniversalWandChecks {
             if (stage == 0) {
                 oldProtection = ItemUniversalWand.isProtectionMode(mc.thePlayer.getHeldItem());
                 syncPassed = false;
-                ((ToggleButton) find(panel, "protection")).onMousePressed(0);
+                ((SlideSwitch) find(panel, "protection")).onMousePressed(0);
             }
             if (stage < 2) {
                 var nextTab = panel.getChildren()
