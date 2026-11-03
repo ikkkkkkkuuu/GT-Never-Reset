@@ -37,7 +37,6 @@
 def elytraModpackVersion = project.extensions.getByName("elytraModpackVersion")
 
 dependencies {
-    devOnlyNonPublishable(elytraModpackVersion.gtnhdev("Draconic-Evolution") as String)
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("EnderIO") as String)
     compileOnly(elytraModpackVersion.gtnhdev("Backhand") as String) { transitive = false }
     shadowImplementation("org.luaj:luaj-jse:3.0.1") { transitive = false }

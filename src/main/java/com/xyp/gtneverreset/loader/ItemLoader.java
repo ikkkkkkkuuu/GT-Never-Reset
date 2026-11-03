@@ -17,7 +17,6 @@ import com.xyp.gtneverreset.common.item.items.WirelessPowerCard;
 import com.xyp.gtneverreset.common.machine.packaged.AssemblyLineAdapter;
 import com.xyp.gtneverreset.common.machine.packaged.CircuitAssemblyLineAdapter;
 import com.xyp.gtneverreset.compat.bloodmagic.BloodMagicCompat;
-import com.xyp.gtneverreset.compat.draconicevolution.InsectStaffCompat;
 import com.xyp.gtneverreset.compat.thaumcraft.ThaumcraftCompat;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.mod.ModList;
@@ -73,9 +72,6 @@ public final class ItemLoader {
     public static void registerItems() {
         GameRegistry.registerItem(universalWand, "universal_wand");
         new VeinMiningPickaxe();
-        if (ModList.DraconicEvolution.isModLoaded() && ModList.EnderIO.isModLoaded()) {
-            InsectStaffCompat.register();
-        }
         if (ModList.BloodMagic.isModLoaded()) BloodMagicCompat.registerPackagedCores();
 
         PackagedCoreRegistry.register("assembly_line", new AssemblyLineAdapter(false));
