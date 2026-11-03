@@ -13,6 +13,7 @@ public final class LibraryContracts {
     public static void main(String[] args) throws Exception {
         absent("com.xyp.gtneverreset.GTNeverReset");
         absent("gregtech.api.GregTechAPI");
+        AnimationContracts.verify();
         CommandTreeContracts.verify();
         LocalSupportContracts.verify();
         SharedImplementationContracts.verify();
