@@ -109,3 +109,11 @@ https://github.com/GTNotLeisure/GTNLLib/pull/2
 Adapted namespaces, resource paths and registration to the GTNRLib client lifecycle. See GPL-3.0.txt for the code and the AE2 and Modernity notices in this directory for the assets.
 
 The additional AE2 widgets, scrollbar and theme guide come from [GTNLLib PR 3](https://github.com/GTNotLeisure/GTNLLib/pull/3) at d5c43b46380948c0b043b483823c99b7b3751288. The guide is reproduced verbatim. The library uses its own namespace and generates the quantity validation messages from Java translation declarations.
+
+## First-person hand motion
+
+The example poses and the client motion sampler were authored for the 1.7.10 rig. The releases and the separate Forge source port below were inspected for behavior. Upstream code, scripts and assets are not bundled.
+
+- The bundled `hand_pose.lua`, `hand_relative_pose.lua` and `item_pose.lua` separate hand motion, wrist placement and item transforms. The ground gait uses traveled distance and eases in and out. SHA-1 `cb8c8301fcd51ed255a3d77bfcb85a0426d1a222`. [Hold My Items 5.1.1 for Fabric](https://modrinth.com/mod/hold-my-items/version/KZm1qTcU)
+- `de.bene2212.holdmyitems.mixin.HeldItemsMixin` in the published Forge JAR applies a vertical-velocity response, idle breathing and a tilt during the equip transition. SHA-1 `a7d8354adb258be8d57c344a40dd1873647868ea`. [Hold My Items – Reforged 2.0](https://modrinth.com/mod/hold-my-items-reforged/version/TBHht5Nt)
+- The separate 1.19.2 Forge backport of 5.1.1 runs the shared pose before pushing separate arm and item matrices. It was used to verify transform order. [Forge source at 4302ab2, HeldItemsMixin](https://github.com/zadei/hold-my-items-1.19.2-port/blob/4302ab25e233893e97fb6131fc09e9c14a724e40/src/main/java/de/bene2212/holdmyitems/mixin/HeldItemsMixin.java#L250-L368)

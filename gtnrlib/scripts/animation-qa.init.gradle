@@ -40,11 +40,15 @@ gradle.projectsEvaluated {
             lib.copy { from example; into new File(workingDir, 'resourcepacks/animation-qa') }
             // Keep the primary pose identical while opting into a second arm only in this test pack.
             def motions = 'assets/minecraft/punchy/animations/gtnrlib.json'
-            def grip = new groovy.json.JsonSlurper().parse(new File(example, motions)).animations.gtnrlib_grip
-            grip.timeline['0'] += 'dual_handed;'
+            def clips = new groovy.json.JsonSlurper().parse(new File(example, motions)).animations
+            def grip = clips.gtnrlib_grip, empty = clips.gtnrlib_empty
+            [grip, empty].each { it.timeline['0'] += 'dual_handed;' }
             def dual = new File(workingDir, 'resourcepacks/animation-qa-dual/' + motions)
             dual.parentFile.mkdirs()
-            dual.setText(groovy.json.JsonOutput.toJson([animations: [idle: grip, attack: grip]]), 'UTF-8')
+            dual.setText(groovy.json.JsonOutput.toJson([animations: [idle: grip, attack: grip, empty: empty]]), 'UTF-8')
+            def rules = new File(workingDir, 'resourcepacks/animation-qa-dual/assets/minecraft/punchy/compat/test.json')
+            rules.parentFile.mkdirs()
+            rules.setText(groovy.json.JsonOutput.toJson([emptyHand: [customAnimation: [[type: 'idle', name: 'empty']]]]), 'UTF-8')
             new File(workingDir, 'options.txt').setText('lang:en_US\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsound:0.0\nmusic:0.0\nrenderDistance:2\n', 'UTF-8')
             def result = new File(output, 'result.txt')
             java.nio.file.Files.deleteIfExists(result.toPath())

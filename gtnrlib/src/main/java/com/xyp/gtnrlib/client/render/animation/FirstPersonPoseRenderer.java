@@ -30,7 +30,7 @@ public final class FirstPersonPoseRenderer {
         // The vanilla item branch has already scaled to 0.4 and translated the item towards the lower edge.
         // Put the wrist inside the 70-degree hand frustum before posing the item and both arms together.
         GL11.glTranslated(-.43, .95, -.92);
-        root(partial);
+        root(partial, .4);
         heldArm(false, partial);
         if (ANIMATIONS.dualHanded()) heldArm(true, partial);
         RIGHT.apply(partial);
@@ -44,7 +44,7 @@ public final class FirstPersonPoseRenderer {
 
     public static void empty(float partial) {
         if (!ANIMATIONS.applies(null)) return;
-        root(partial);
+        root(partial, 1);
         GL11.glRotatef(-VANILLA_HAND_YAW, 0, 1, 0);
         if (ANIMATIONS.dualHanded()) {
             GL11.glPushMatrix();
@@ -64,7 +64,18 @@ public final class FirstPersonPoseRenderer {
         tuning(ANIMATIONS.tunedArm(false));
     }
 
-    private static void root(float partial) {
+    private static void root(float partial, double branchScale) {
+        Vec lag = ANIMATIONS.handOffset(partial);
+        if (lag != null) {
+            // Both branches have applied vanilla's 45-degree yaw; only the item branch has scaled by 0.4.
+            GL11.glRotatef(-VANILLA_HAND_YAW, 0, 1, 0);
+            GL11.glTranslated(lag.x() / branchScale, lag.y() / branchScale, lag.z() / branchScale);
+            float dip = ((FirstPersonAnimations.EquippedStack) Minecraft.getMinecraft().entityRenderer.itemRenderer)
+                .gtnrlib$equipDip(partial);
+            GL11.glRotated(-55 * lag.x() - 17 * dip, 0, 0, 1);
+            GL11.glRotated(12 * dip, 1, 0, 0);
+            GL11.glRotatef(VANILLA_HAND_YAW, 0, 1, 0);
+        }
         GL11.glRotated(-ANIMATIONS.yaw(partial) * .35, 0, 1, 0);
         GL11.glRotated(-ANIMATIONS.pitch(partial) * .35, 1, 0, 0);
         BODY.apply(partial);

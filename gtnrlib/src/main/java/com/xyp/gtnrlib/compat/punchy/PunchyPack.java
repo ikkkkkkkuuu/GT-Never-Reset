@@ -54,8 +54,12 @@ public final class PunchyPack {
         return !clips.isEmpty() || !poses.isEmpty();
     }
 
+    private static List<String> targets(String item, String kind) {
+        return kind.equals("GTNRLIB_FLAT_ITEM") ? List.of(item, kind, "ITEM", "*") : List.of(item, kind, "*");
+    }
+
     public Pose pose(String item, String kind, String side) {
-        for (String key : List.of(item, kind, "*")) {
+        for (String key : targets(item, kind)) {
             Pose result = poses.get(new Rule(key, side));
             if (result != null) return result;
         }
@@ -67,7 +71,7 @@ public final class PunchyPack {
     }
 
     public Motion select(String item, String kind, String action, int sequence) {
-        for (String target : List.of(item, kind, "*")) {
+        for (String target : targets(item, kind)) {
             List<String> names = bindings.get(new Rule(target, action));
             if (names != null) return clips.get(names.get(Math.floorMod(sequence, names.size())));
         }

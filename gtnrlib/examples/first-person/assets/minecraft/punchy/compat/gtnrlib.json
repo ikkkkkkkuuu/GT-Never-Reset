@@ -27,22 +27,22 @@
         "right": {
           "offY": 0.28,
           "rotY": -45,
-          "scale": 0.65,
+          "scale": 0.79,
           "rotX": 17
         }
       },
       "customAnimation": [
         {
           "type": "idle",
-          "name": "gtnrlib_carry_low"
+          "name": "gtnrlib_block"
         },
         {
           "type": "walk",
-          "name": "gtnrlib_carry_low"
+          "name": "gtnrlib_block"
         },
         {
           "type": "sprint",
-          "name": "gtnrlib_carry_low"
+          "name": "gtnrlib_block"
         },
         {
           "type": "useItem",
@@ -74,6 +74,62 @@
           "scale": 0.76
         }
       }
+    },
+    "GTNRLIB_FLAT_ITEM": {
+      "transforms": {
+        "right": {
+          "offY": 0.12,
+          "rotX": 10,
+          "rotZ": -6,
+          "scale": 0.72
+        }
+      },
+      "customAnimation": [
+        {
+          "type": "idle",
+          "name": "gtnrlib_hold"
+        },
+        {
+          "type": "walk",
+          "name": "gtnrlib_hold"
+        },
+        {
+          "type": "sprint",
+          "name": "gtnrlib_hold"
+        },
+        {
+          "type": "attack",
+          "name": "gtnrlib_item_swing"
+        },
+        {
+          "type": "mining",
+          "name": "gtnrlib_item_swing"
+        }
+      ]
     }
+  },
+  "emptyHand": {
+    "customAnimation": [
+      {
+        "type": "idle",
+        "name": "gtnrlib_empty"
+      },
+      {
+        "type": "walk",
+        "name": "gtnrlib_empty"
+      },
+      {
+        "type": "sprint",
+        "name": "gtnrlib_empty"
+      },
+      {
+        "type": "attack",
+        "name": "gtnrlib_punch"
+      },
+      {
+        "type": "mining",
+        "name": "gtnrlib_punch"
+      }
+    ]
   }
 }

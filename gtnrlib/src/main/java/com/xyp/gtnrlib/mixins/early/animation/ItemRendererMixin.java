@@ -15,10 +15,26 @@ import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.render.animation.FirstPersonPoseRenderer;
 
 @Mixin(ItemRenderer.class)
-public abstract class ItemRendererMixin {
+public abstract class ItemRendererMixin implements FirstPersonAnimations.EquippedStack {
 
     @Shadow
     private ItemStack itemToRender;
+
+    @Shadow
+    private float prevEquippedProgress;
+    @Shadow
+    private float equippedProgress;
+
+    @Override
+    public float gtnrlib$equipDip(float partial) {
+        if (FirstPersonAnimations.INSTANCE.replacesPlacementDip(itemToRender)) return 0;
+        return 1 - (prevEquippedProgress + (equippedProgress - prevEquippedProgress) * partial);
+    }
+
+    @Override
+    public ItemStack gtnrlib$equippedStack() {
+        return itemToRender;
+    }
 
     @ModifyExpressionValue(
         method = "renderItemInFirstPerson",

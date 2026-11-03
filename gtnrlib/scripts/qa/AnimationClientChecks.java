@@ -124,6 +124,7 @@ public final class AnimationClientChecks {
             tickPlayer();
             draw(mc, "empty-grip");
             checkArmVisibility(mc, sword);
+            checkHandMotion(mc, sword);
             require(!Arrays.equals(baseline, active), "render injection changed first-person output");
             var observed = new ArrayList<String>();
             target.bind("fixture:observer", (held, action) -> {
@@ -176,8 +177,8 @@ public final class AnimationClientChecks {
                         && target.replacesSwing(mc.thePlayer.getHeldItem())
                         && mc.thePlayer.getSwingProgress(.5f) > 0,
                     "axe clip replaces only the visual swing");
-                int idleX = grayItemCenterX(axeIdle, mc.displayWidth);
-                int strikeX = grayItemCenterX(draw(mc, "axe-chop"), mc.displayWidth);
+                int idleX = grayItem(axeIdle, mc.displayWidth).x;
+                int strikeX = grayItem(draw(mc, "axe-chop"), mc.displayWidth).x;
                 require(
                     strikeX > 0 && idleX - strikeX > mc.displayHeight * .12,
                     "axe head swings inward: " + idleX + " -> " + strikeX);
@@ -188,7 +189,9 @@ public final class AnimationClientChecks {
             advanceHands(mc, 8);
             require(Arrays.equals(axeIdle, draw(mc, "axe-recovered")), "axe returns to its grip after mining stops");
             // Release on the first tick of a new native swing. The pack's short fade finishes before that swing does.
-            int tapX = x - 2, tapY = mc.theWorld.getTopSolidOrLiquidBlock(tapX, z) - 1;
+            // Give each run a fresh target. Repeated creative clicks otherwise excavate the flat test world.
+            int tapX = x - 2, tapY = y;
+            mc.theWorld.setBlock(tapX, tapY, z, Blocks.log);
             mc.objectMouseOver = new net.minecraft.util.MovingObjectPosition(
                 tapX,
                 tapY,
@@ -198,6 +201,7 @@ public final class AnimationClientChecks {
             try {
                 click.invoke(mc);
             } finally {
+                mc.theWorld.setBlockToAir(tapX, tapY, z);
                 mc.objectMouseOver = previousHit;
             }
             advanceHands(mc, 4);
@@ -217,13 +221,20 @@ public final class AnimationClientChecks {
                     && observed.contains("useitem"),
                 "normal right click placed cobblestone");
             advanceHands(mc, 2);
+            var rest = grayItem(carry, mc.displayWidth);
+            var extended = grayItem(draw(mc, "block-extended", 0), mc.displayWidth);
             int[] reach = draw(mc, "block-place");
-            int restX = grayItemCenterX(carry, mc.displayWidth), reachX = grayItemCenterX(reach, mc.displayWidth);
+            int h = mc.displayHeight, center = mc.displayWidth / 2;
+            // Measure from the optical center in viewport heights so the check works in 4:3 and widescreen.
             require(
-                !target.dualHanded() && restX > mc.displayWidth * .65
-                    && reachX >= mc.displayWidth * .45
-                    && restX - reachX > mc.displayHeight * .10,
-                "block moves inward from right hand: " + restX + " -> " + reachX);
+                !target.dualHanded() && rest.x > center + .46 * h
+                    && rest.y > .75 * h
+                    && extended.x > center + .15 * h
+                    && extended.x < center + .32 * h
+                    && extended.y > .58 * h
+                    && extended.y < .77 * h
+                    && extended.width < .78 * rest.width,
+                "block travels inward and recedes from " + rest + " to " + extended);
             advanceHands(mc, 2);
             require(
                 Arrays.equals(carry, draw(mc, "block-recovered")),
@@ -289,18 +300,121 @@ public final class AnimationClientChecks {
         }
     }
 
-    private static int grayItemCenterX(int[] pixels, int width) {
-        // Both cobblestone and the iron axe head have gray texels against the dark (32, 32, 32) background.
-        long sum = 0;
-        int count = 0;
+    private record Footprint(int x, int y, int width) {}
+
+    private static Footprint grayItem(int[] pixels, int width) {
+        // Cobblestone, iron ingots and axe heads have gray texels against the dark (32, 32, 32) background.
+        long sumX = 0, sumY = 0;
+        int count = 0, minX = width, maxX = -1;
         for (int i = 0; i < pixels.length; i++) {
             int rgb = pixels[i], r = rgb >> 16 & 255;
             if (r > 48 && r == (rgb >> 8 & 255) && r == (rgb & 255)) {
-                sum += i % width;
+                int x = i % width;
+                sumX += x;
+                sumY += i / width;
+                minX = Math.min(minX, x);
+                maxX = Math.max(maxX, x);
                 count++;
             }
         }
-        return count == 0 ? -1 : (int) (sum / count);
+        return count == 0 ? new Footprint(-1, -1, 0)
+            : new Footprint((int) (sumX / count), (int) (sumY / count), maxX - minX + 1);
+    }
+
+    private void checkHandMotion(Minecraft mc, ItemStack sword) throws Exception {
+        require(target.handOffset(.5f) == null, "sword keeps its existing motion profile");
+        equip(mc, new ItemStack(Items.fishing_rod));
+        tickPlayer();
+        require(target.handOffset(.5f) == null, "fishing rod stays outside the flat item profile");
+        var ingot = new ItemStack(Items.iron_ingot);
+        equip(mc, null);
+        tickPlayer();
+        int[] relaxed = draw(mc, "empty-relaxed");
+        target.trigger("attack");
+        advanceHands(mc, 2);
+        require(!Arrays.equals(relaxed, draw(mc, "empty-punch")), "empty punch extends from its idle pose");
+        advanceHands(mc, 6);
+        require(Arrays.equals(relaxed, draw(mc, "empty-return")), "empty punch returns to its idle pose");
+        var local = mc.thePlayer;
+        local.inventory.mainInventory[local.inventory.currentItem] = ingot;
+        advanceHands(mc, 1);
+        require(target.applies(null) && !target.applies(ingot), "lowering keeps the outgoing empty hand");
+        target.trigger("attack");
+        require(target.applies(null), "a click during the switch retains the outgoing pose");
+        advanceHands(mc, 3);
+        require(
+            target.replacesSwing(ingot) && !target.applies(null) && target.applies(ingot),
+            "raising plays the incoming item action");
+        advanceHands(mc, 8);
+        int[] held = draw(mc, "ingot-carry");
+        require(grayItem(held, mc.displayWidth).x > mc.displayWidth / 2, "ingot sprite visible at the grip");
+        target.trigger("attack");
+        advanceHands(mc, 2);
+        require(!Arrays.equals(held, draw(mc, "ingot-swing")), "ordinary item swings with the hand");
+        advanceHands(mc, 6);
+        require(Arrays.equals(held, draw(mc, "ingot-return")), "ordinary item swing recovers to its grip");
+
+        double prevX = local.prevPosX, prevY = local.prevPosY, prevZ = local.prevPosZ;
+        float oldYaw = local.rotationYaw, oldPrevYaw = local.prevRotationYaw;
+        try {
+            local.prevPosX = local.posX;
+            local.prevPosY = local.posY;
+            local.prevPosZ = local.posZ;
+            local.rotationYaw = local.prevRotationYaw = 160;
+            advanceHands(mc, 20);
+            var rest = target.handOffset(.5f);
+            local.prevPosY -= .35;
+            for (int i = 0; i < 7; i++) {
+                local.rotationYaw = local.prevRotationYaw = net.minecraft.util.MathHelper
+                    .wrapAngleTo180_float(local.rotationYaw + 18);
+                double angle = Math.toRadians(local.rotationYaw);
+                local.prevPosX = local.posX + .20 * Math.sin(angle);
+                local.prevPosZ = local.posZ - .20 * Math.cos(angle);
+                advanceHands(mc, 1);
+            }
+            var lag = target.handOffset(.5f);
+            require(
+                lag.x() < rest.x() - .02 && lag.y() < rest.y() - .01 && lag.z() > rest.z() + .02,
+                "turn, ascent and forward motion produce camera-space lag");
+            int[] moving = draw(mc, "ingot-inertia");
+            require(
+                !Arrays.equals(held, moving) && Arrays.equals(moving, draw(mc, "ingot-extra-render")),
+                "extra render pass does not advance inertia");
+            var boundary = target.handOffset(1);
+            local.prevPosX = local.posX;
+            local.prevPosY = local.posY;
+            local.prevPosZ = local.posZ;
+            advanceHands(mc, 1);
+            // advanceHands steps the hand subsystem only. Match the outer player clock for this boundary.
+            local.ticksExisted++;
+            try {
+                require(boundary.equals(target.handOffset(0)), "motion interpolates across tick boundaries");
+            } finally {
+                local.ticksExisted--;
+            }
+            advanceHands(mc, 24);
+            var stopped = target.handOffset(.5f);
+            require(
+                Math.abs(stopped.x() - rest.x()) + Math.abs(stopped.y() - rest.y()) + Math.abs(stopped.z() - rest.z())
+                    < .0001,
+                "stopping settles to breathing at rest");
+            local.prevPosX = local.posX - 8;
+            advanceHands(mc, 1);
+            require(
+                Math.abs(
+                    target.handOffset(1)
+                        .x())
+                    < .0001,
+                "teleport clears simulated lag");
+        } finally {
+            local.prevPosX = prevX;
+            local.prevPosY = prevY;
+            local.prevPosZ = prevZ;
+            local.rotationYaw = oldYaw;
+            local.prevRotationYaw = oldPrevYaw;
+        }
+        equip(mc, sword);
+        tickPlayer();
     }
 
     private void checkArmVisibility(Minecraft mc, ItemStack sword) throws Exception {

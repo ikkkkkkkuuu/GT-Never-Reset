@@ -38,7 +38,7 @@ final class PunchyPackContracts {
             Files.writeString(high.resolve(clips), "{\"animations\":{\"swing\":" + clip.replace(",4]", ",8]") + "}}");
             Files.writeString(
                 high.resolve(rules),
-                "{\"item\":{\"SWORD\":{\"customAnimation\":[{\"type\":\"attack\",\"var_1\":\"swing\",\"var_2\":\"keep\"}]}}}");
+                "{\"item\":{\"ITEM\":{\"customAnimation\":[{\"type\":\"idle\",\"name\":\"keep\"}]},\"SWORD\":{\"customAnimation\":[{\"type\":\"attack\",\"var_1\":\"swing\",\"var_2\":\"keep\"}]}}}");
             List<String> errors = new ArrayList<>();
             var pack = PunchyPack.load(List.of(base, high), errors::add);
             var swing = pack.select("mod:item", "SWORD", "attack", 0);
@@ -49,6 +49,7 @@ final class PunchyPackContracts {
                 || !swing.dualHanded()
                 || swing.speed() != 1
                 || !swing.v2()
+                || pack.select("mod:ingot", "GTNRLIB_FLAT_ITEM", "idle", 0) != pack.clip("keep")
                 || pack.select("mod:item", "SWORD", "idle", 0) != pack.clip("keep")
                 || pack.select("mod:item", "SWORD", "attack", 1) != pack.clip("keep"))
                 throw new AssertionError("pack layering " + errors);
