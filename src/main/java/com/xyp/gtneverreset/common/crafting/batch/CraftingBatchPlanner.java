@@ -25,8 +25,18 @@ public interface CraftingBatchPlanner {
         /** All registered media are compatible with exact long-sized batching. */
         Batch,
 
+        /** Every destination is a GTNR pattern buffer with int-sized physical input stacks. */
+        PatternBuffer,
+
+        /** Every destination is a circuit pattern buffer with long input reserves. */
+        CircuitBuffer,
+
         /** At least one registered medium is absent or incompatible, so AE must use its native single-craft path. */
-        Native
+        Native;
+
+        public boolean isPatternBuffer() {
+            return this == PatternBuffer || this == CircuitBuffer;
+        }
     }
 
     /**

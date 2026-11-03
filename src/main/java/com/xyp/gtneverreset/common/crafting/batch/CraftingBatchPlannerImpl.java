@@ -86,7 +86,7 @@ public final class CraftingBatchPlannerImpl implements CraftingBatchPlanner {
         Objects.requireNonNull(outputAmounts, "outputAmounts");
         Objects.requireNonNull(energySimulation, "energySimulation");
 
-        if (mediumStrategy != MediumStrategy.Batch) return new BatchPlan(1, LimitingFactor.Medium);
+        if (mediumStrategy == MediumStrategy.Native) return new BatchPlan(1, LimitingFactor.Medium);
         if (requestedCrafts < 2) return new BatchPlan(1, LimitingFactor.Task);
         if (requirements.isEmpty() || outputAmounts.length == 0) {
             return new BatchPlan(1, LimitingFactor.StackContract);

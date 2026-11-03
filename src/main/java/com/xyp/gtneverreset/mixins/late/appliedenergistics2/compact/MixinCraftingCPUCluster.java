@@ -31,6 +31,7 @@ import com.xyp.gtneverreset.common.crafting.batch.CraftingBatchPlanner.SessionAl
 import com.xyp.gtneverreset.common.crafting.batch.CraftingBatchPlanner.SessionSegment;
 import com.xyp.gtneverreset.common.crafting.batch.CraftingBatchPlannerImpl;
 import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingCpuCluster;
+import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
 import com.xyp.gtneverreset.common.me.DireCraftingPatternDetails;
@@ -58,6 +59,9 @@ public abstract class MixinCraftingCPUCluster {
     @Shadow
     private MECraftingInventory inventory;
 
+    @Shadow
+    protected CraftingCPUCluster.finalOutput finalOutput;
+
     /**
      * Starts one dispatch context after AE resolves every medium registered for the pattern.
      */
@@ -73,8 +77,13 @@ public abstract class MixinCraftingCPUCluster {
         @Share("gtnr$batchDispatch") LocalRef<BatchDispatchState> contextRef) {
         List<ICraftingMedium> media = original.call(cache, details);
         List<Boolean> compatibility = new ArrayList<>(media.size());
+        boolean quantumCpu = (Object) this instanceof QuantumCraftingCpuCluster;
+        boolean onlyPatternBuffers = quantumCpu && !media.isEmpty();
+        boolean onlyCircuitBuffers = onlyPatternBuffers;
         for (ICraftingMedium medium : media) {
-            compatibility.add(gtnr$isCompatiblePair(details, medium));
+            compatibility.add(gtnr$isCompatiblePair(details, medium, quantumCpu));
+            onlyPatternBuffers &= medium instanceof SuperMTEHatchCraftingInputME;
+            onlyCircuitBuffers &= medium instanceof CircuitMEPatternBuffer;
         }
 
         Object progress = craftingEntry.getValue();
@@ -84,12 +93,12 @@ public abstract class MixinCraftingCPUCluster {
             return media;
         }
 
-        contextRef.set(
-            new BatchDispatchState(
-                details,
-                taskProgress::getValue,
-                taskProgress::setValue,
-                GTNR$BATCH_PLANNER.resolveMediumStrategy(compatibility)));
+        MediumStrategy strategy = GTNR$BATCH_PLANNER.resolveMediumStrategy(compatibility);
+        if (strategy == MediumStrategy.Batch && onlyPatternBuffers) {
+            strategy = onlyCircuitBuffers ? MediumStrategy.CircuitBuffer : MediumStrategy.PatternBuffer;
+            if (finalOutput.isFakeCrafting() && finalOutput.isFinalPattern(details)) strategy = MediumStrategy.Native;
+        }
+        contextRef.set(new BatchDispatchState(details, taskProgress::getValue, taskProgress::setValue, strategy));
         return media;
     }
 
@@ -109,9 +118,12 @@ public abstract class MixinCraftingCPUCluster {
         BatchDispatchState context = contextRef.get();
         if (expandedInputs == null || context == null || !context.hasTask()) return expandedInputs;
 
+        MediumStrategy strategy = context.mediumStrategy();
+        if (strategy == MediumStrategy.Native) return expandedInputs;
+
         boolean physicalHatch = !(details instanceof DireCraftingPatternDetails);
         long requestedCrafts = context.taskValue();
-        if (physicalHatch) {
+        if (physicalHatch && strategy != MediumStrategy.CircuitBuffer) {
             requestedCrafts = CraftingBatchPlannerImpl.limitPhysicalInputs(requestedCrafts, expandedInputs);
             if (!(cluster instanceof QuantumCraftingCpuCluster)) {
                 requestedCrafts = Math.min(requestedCrafts, this.remainingOperations);
@@ -222,7 +234,10 @@ public abstract class MixinCraftingCPUCluster {
         }
         if (!accepted) return false;
 
-        this.remainingOperations = context.complete(commit);
+        int remaining = context.complete(commit);
+        // AE charges one operation for this handoff immediately after pushPattern returns.
+        if (!context.mediumStrategy()
+            .isPatternBuffer()) this.remainingOperations = remaining;
         return true;
     }
 
@@ -272,10 +287,14 @@ public abstract class MixinCraftingCPUCluster {
             target = "Lappeng/api/networking/crafting/ICraftingPatternDetails;getCondensedAEOutputs()[Lappeng/api/storage/data/IAEStack;"),
         require = 1)
     private IAEStack<?>[] gtnr$scaleCommittedOutputs(ICraftingPatternDetails details, Operation<IAEStack<?>[]> original,
+        @Local(name = "expandedInputs") LocalRef<List<IAEStack<?>>> expandedInputs,
         @Share("gtnr$batchDispatch") LocalRef<BatchDispatchState> contextRef) {
         IAEStack<?>[] outputs = original.call(details);
         BatchDispatchState context = contextRef.get();
         if (context == null || !context.isCommitted()) return outputs;
+        // A second delivery in this loop must plan again from one craft and the remaining stock.
+        if (context.mediumStrategy()
+            .isPatternBuffer()) expandedInputs.set(null);
         return GTNR$BATCH_PLANNER.scaleOutputs(
             outputs,
             context.plan()
@@ -321,10 +340,12 @@ public abstract class MixinCraftingCPUCluster {
     }
 
     @Unique
-    private static boolean gtnr$isCompatiblePair(ICraftingPatternDetails details, ICraftingMedium medium) {
+    private static boolean gtnr$isCompatiblePair(ICraftingPatternDetails details, ICraftingMedium medium,
+        boolean quantumCpu) {
         return (details instanceof DireCraftingPatternDetails && medium instanceof AssemblerMatrix)
             || (medium instanceof TileEntityOverloadedProvider provider && provider.supportsBatchCrafting(details))
-            || (medium instanceof SuperMTEHatchCraftingInputME && !details.isCraftable()
+            || (quantumCpu && medium instanceof SuperMTEHatchCraftingInputME
+                && !details.isCraftable()
                 && !details.isInputOnly()
                 && !details.canSubstitute());
     }
