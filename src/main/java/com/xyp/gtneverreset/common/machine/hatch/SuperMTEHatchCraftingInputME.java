@@ -48,8 +48,6 @@ import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
@@ -88,6 +86,7 @@ import appeng.api.util.IInterfaceViewable;
 import appeng.core.AppEng;
 import appeng.core.sync.GuiBridge;
 import appeng.helpers.ICustomNameObject;
+import appeng.items.misc.ItemTunnelPattern;
 import appeng.items.tools.quartz.ToolQuartzCuttingKnife;
 import appeng.me.GridAccessException;
 import appeng.me.cache.CraftingGridCache;
@@ -97,6 +96,7 @@ import appeng.util.PatternMultiplierHelper;
 import appeng.util.Platform;
 import appeng.util.ReadableNumberConverter;
 import appeng.util.ScheduledReason;
+import appeng.util.TunnelPatternExpander;
 import appeng.util.inv.MEInventoryCrafting;
 import appeng.util.inv.WrapperInventoryRange;
 import appeng.util.item.AEFluidStack;
@@ -1492,24 +1492,35 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
         @Override
         public GTDualInputPattern getPatternInputs() {
             GTDualInputPattern dualInputs = new GTDualInputPattern();
+            List<ItemStack> items = new ArrayList<>(Arrays.asList(parentMTE.getSharedItems()));
+            List<FluidStack> fluids = new ArrayList<>();
+            for (IAEStack<?> input : getExpandedInputs()) {
+                if (input instanceof IAEItemStack item) items.add(item.getItemStack());
+                else if (input instanceof IAEFluidStack fluid) fluids.add(fluid.getFluidStack());
+            }
+            dualInputs.inputItems = items.toArray(GTValues.emptyItemStackArray);
+            dualInputs.inputFluid = fluids.toArray(GTValues.emptyFluidStackArray);
+            return dualInputs;
+        }
 
-            ItemStack[] inputItems = this.parentMTE.getSharedItems();
-            FluidStack[] inputFluids = GTValues.emptyFluidStackArray;
-
-            if (patternDetails != null) {
-                for (IAEStack<?> singleInput : patternDetails.getAEInputs()) {
-                    if (singleInput == null) continue;
-                    if (singleInput instanceof IAEItemStack ais) {
-                        inputItems = ArrayUtils.addAll(inputItems, ais.getItemStack());
-                    } else if (singleInput instanceof IAEFluidStack ifs) {
-                        inputFluids = ArrayUtils.addAll(inputFluids, ifs.getFluidStack());
-                    }
+        private List<IAEStack<?>> getExpandedInputs() {
+            if (patternDetails == null) return Collections.emptyList();
+            IAEStack<?>[] inputs = patternDetails.getAEInputs();
+            if (parentMTE instanceof IGridProxyable host) {
+                for (IAEStack<?> input : inputs) {
+                    if (!(input instanceof IAEItemStack item) || !(item.getItem() instanceof ItemTunnelPattern))
+                        continue;
+                    try {
+                        if (host.getProxy()
+                            .getCrafting() instanceof CraftingGridCache cache) {
+                            List<IAEStack<?>> expanded = TunnelPatternExpander.expandInputs(inputs, cache, null);
+                            if (expanded != null) return expanded;
+                        }
+                    } catch (GridAccessException ignored) {}
+                    break;
                 }
             }
-
-            dualInputs.inputItems = inputItems;
-            dualInputs.inputFluid = inputFluids;
-            return dualInputs;
+            return Arrays.asList(inputs);
         }
 
         /**

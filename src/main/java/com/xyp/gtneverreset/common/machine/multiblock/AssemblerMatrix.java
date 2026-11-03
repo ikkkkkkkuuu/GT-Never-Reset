@@ -50,7 +50,6 @@ import appeng.api.networking.events.MENetworkCraftingPatternChange;
 import appeng.api.networking.events.MENetworkEventSubscribe;
 import appeng.api.networking.events.MENetworkPowerStatusChange;
 import appeng.api.networking.security.MachineSource;
-import appeng.api.networking.storage.IStorageGrid;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IAEStack;
 import appeng.api.util.AECableType;
@@ -204,7 +203,7 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
         }
         // Queued products can outlive the one-shot recipe check (offline AE or full storage). Retry only while
         // actual work is waiting; never turn a manually disabled controller back on.
-        if (active && timer % 20 == 0 && mMaxProgresstime <= 0 && tasks.hasPending()) {
+        if (active && timer % 20 == 0 && mMaxProgresstime <= 0 && tasks.hasQueuedWork()) {
             scheduleRecipeCheck(RecipeCheckReason.IMMEDIATE);
         }
         if (!needsPatternSync || timer % 10 != 0 || !active) return;
@@ -322,14 +321,21 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
             lEUt = 0;
             return CheckRecipeResultRegistry.SUCCESSFUL;
         } else if (isActive() && machineMode == MODE_OPERATING) {
-            if (mMaxSlots > 0 && tasks.hasPending()) {
+            if (tasks.hasQueuedWork()) {
                 costingEUText = "0";
                 if (tasks.hasReturns()) {
-                    var grid = getProxy().getNode()
-                        .getGrid();
-                    IStorageGrid storageGrid = grid.getCache(IStorageGrid.class);
-                    var storage = storageGrid.getItemInventory();
-                    tasks.sendReturns(stack -> storage.injectItems(stack, Actionable.MODULATE, source));
+                    try {
+                        var storage = getProxy().getStorage()
+                            .getItemInventory();
+                        tasks.sendReturns(stack -> {
+                            long amount = stack.getStackSize();
+                            var leftover = storage.injectItems(stack, Actionable.MODULATE, source);
+                            if (leftover == null || leftover.getStackSize() < amount) markDirty();
+                            return leftover;
+                        });
+                    } catch (GridAccessException ignored) {
+                        return CheckRecipeResultRegistry.NO_RECIPE;
+                    }
                 }
                 usedParallel = tasks.takeBatch(mMaxParallelLong);
                 if (tasks.hasBatch()) {

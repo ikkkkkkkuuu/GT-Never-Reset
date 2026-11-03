@@ -47,6 +47,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
         }
         if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
             mixins.add("gregtech.BrickedBlastFurnaceAutomationMixin");
+            mixins.add("gregtech.CleanroomRequirementMixin");
             mixins.add("gregtech.OverloadedMachineConfigurationMixin");
             mixins.add("gregtech.BasicMachineMoldGuiMixin");
             if (FMLLaunchHandler.side()

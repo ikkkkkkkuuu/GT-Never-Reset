@@ -1118,6 +1118,7 @@ gtneverreset.gui.config.crop_breeder.tier_chances=杂交等级默认成功率（
 gtneverreset.gui.config.crop_breeder.crop_overrides=按作物 ID 覆盖成功率
 gtneverreset.gui.config.general.cropsnh=CropsNH 作物
 gtneverreset.gui.config.general.gregtech=GregTech
+gtneverreset.gui.config.general.gregtech.requireCleanroom=要求超净间
 gtneverreset.gui.config.general.packaged_provider=封包样板供应器
 gtneverreset.gui.config.general.packaged_provider.arcane_vis_per_essentia=每单位源质转换的 Vis
 gtneverreset.gui.config.general.quantum_crafting=量子合成

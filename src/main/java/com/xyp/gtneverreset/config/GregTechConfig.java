@@ -23,4 +23,12 @@ public final class GregTechConfig {
     @Comment("开启后，砖高炉控制器各面支持自动输入原料和输出产物；关闭恢复原版手动上下料")
     @DefaultBoolean(true)
     public static boolean enableBrickedBlastFurnaceAutomation = true;
+
+    // #tr gtneverreset.gui.config.general.gregtech.requireCleanroom
+    // # Require a cleanroom
+    // # zh_CN 要求超净间
+    @Sync
+    @Comment("默认免除 GT 配方的超净间要求和洁净度不足导致的产物损失。开启后使用 GT 原有的超净间判定。")
+    @DefaultBoolean(false)
+    public static boolean requireCleanroom = false;
 }

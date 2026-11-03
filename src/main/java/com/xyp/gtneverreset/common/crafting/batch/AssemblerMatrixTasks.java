@@ -93,6 +93,10 @@ public final class AssemblerMatrixTasks {
         return !returns.isEmpty();
     }
 
+    public boolean hasQueuedWork() {
+        return hasPending() || hasReturns();
+    }
+
     public boolean hasBatch() {
         return !batch.isEmpty();
     }

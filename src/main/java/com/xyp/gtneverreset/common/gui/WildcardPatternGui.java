@@ -29,6 +29,7 @@ import com.cleanroommc.modularui.factory.PlayerInventoryGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.utils.Alignment;
+import com.cleanroommc.modularui.value.DoubleValue;
 import com.cleanroommc.modularui.value.LongValue;
 import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
@@ -40,6 +41,7 @@ import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.PageButton;
 import com.cleanroommc.modularui.widgets.PagedWidget;
+import com.cleanroommc.modularui.widgets.ProgressWidget;
 import com.cleanroommc.modularui.widgets.ScrollingTextWidget;
 import com.cleanroommc.modularui.widgets.SlotGroupWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
@@ -62,7 +64,6 @@ import com.xyp.gtneverreset.common.me.wildcard.model.io.SimpleIOComponent;
 import com.xyp.gtneverreset.compat.ae2fc.FluidDropCompat;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
-import com.xyp.gtnrlib.gui.theme.ButtonPurpose;
 import com.xyp.gtnrlib.gui.widget.ItemStackSlot;
 import com.xyp.gtnrlib.gui.widget.ScrollingDropdown;
 
@@ -72,6 +73,7 @@ import gregtech.api.enums.FluidState;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.api.enums.SubTag;
+import gregtech.api.modularui2.GTGuiTextures;
 import gregtech.api.util.GTUtility;
 
 public class WildcardPatternGui {
@@ -639,8 +641,7 @@ public class WildcardPatternGui {
     }
 
     private ButtonWidget<?> saveButton() {
-        return ButtonPurpose.PRIMARY.apply(new ButtonWidget<>())
-            .size(30, 20)
+        return new ButtonWidget<>().size(30, 20)
             // #tr gui.wildcardpattern.save
             // # Save
             // # zh_CN 保存
@@ -746,6 +747,8 @@ public class WildcardPatternGui {
      */
     private static final class PreviewPage extends ParentWidget<PreviewPage> {
 
+        private static final int PREVIEW_TICKS = 20;
+
         private List<WildcardExpansion.Expanded> allPatterns = Collections.emptyList();
         private List<WildcardExpansion.Expanded> patterns = Collections.emptyList();
         private String search = "";
@@ -790,10 +793,10 @@ public class WildcardPatternGui {
                         .pos(94 + i % 3 * 18, 18 + i / 3 * 18));
             }
             child(
-                IKey.str(">")
-                    .asWidget()
-                    .pos(74, 32)
-                    .size(15, 10));
+                new ProgressWidget().value(new DoubleValue.Dynamic(() -> (double) ticks / (PREVIEW_TICKS - 1), null))
+                    .texture(GTGuiTextures.PROGRESSBAR_ARROW_STANDARD, 20)
+                    .pos(69, 27)
+                    .size(20, 18));
             child(
                 // #tr gui.wildcardpattern.preview_search
                 // # Search
@@ -820,7 +823,7 @@ public class WildcardPatternGui {
         @Override
         public void onUpdate() {
             super.onUpdate();
-            if (areAncestorsEnabled() && !patterns.isEmpty() && ++ticks >= 20) {
+            if (areAncestorsEnabled() && !patterns.isEmpty() && ++ticks >= PREVIEW_TICKS) {
                 ticks = 0;
                 index = (index + 1) % patterns.size();
             }

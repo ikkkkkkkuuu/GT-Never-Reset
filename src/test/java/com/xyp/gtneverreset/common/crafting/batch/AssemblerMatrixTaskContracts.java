@@ -80,12 +80,14 @@ public final class AssemblerMatrixTaskContracts {
         });
         require(delivered.get() == 19, "failed insertion is recoverable on retry");
         tasks.sendReturns(value -> value);
+        require(tasks.hasQueuedWork(), "undelivered containers keep the idle matrix scheduled");
         AtomicLong returned = new AtomicLong();
         tasks.sendReturns(value -> {
             returned.addAndGet(value.getStackSize());
             return null;
         });
         require(returned.get() == 3, "a full network retains container returns");
+        require(!tasks.hasQueuedWork(), "the idle matrix stops retrying after delivery");
     }
 
     private static void checkLegacySave(IAEItemStack stack) throws Exception {
