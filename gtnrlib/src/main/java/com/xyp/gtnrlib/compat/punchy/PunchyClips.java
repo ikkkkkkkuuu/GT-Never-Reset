@@ -1,11 +1,23 @@
 package com.xyp.gtnrlib.compat.punchy;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.DoubleUnaryOperator;
 
-import com.google.gson.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.xyp.gtnrlib.api.animation.AnimationClip;
-import com.xyp.gtnrlib.api.animation.AnimationClip.*;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Channel;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Curve;
+import com.xyp.gtnrlib.api.animation.AnimationClip.End;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Key;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Marker;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Property;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Value;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
 
 final class PunchyClips {
 
@@ -13,7 +25,13 @@ final class PunchyClips {
         Map<Channel, List<Key>> tracks = new LinkedHashMap<>();
         List<Marker> markers = new ArrayList<>();
         boolean v2 = false, dual = false;
-        double speed = 5.5;
+        Map<Double, Double> rates = new LinkedHashMap<>();
+        if (obj.has("effects")) for (var effect : obj.getAsJsonArray("effects")) for (String raw : effect.getAsString()
+            .split(";")) {
+                String flag = raw.trim();
+                if (flag.equals("use_keyframes_v2")) v2 = true;
+                if (flag.equals("dual_handed")) dual = true;
+            }
         double last = 0;
         for (var point : object(obj, "timeline").entrySet()) {
             double time = Double.parseDouble(point.getKey());
@@ -26,13 +44,18 @@ final class PunchyClips {
                 if (token.isEmpty()) continue;
                 if (token.equals("use_keyframes_v2")) v2 = true;
                 if (time == 0 && token.equals("dual_handed")) dual = true;
-                if (time == 0 && token.startsWith("anim_speed_")) speed = Double.parseDouble(token.substring(11));
+                if (token.startsWith("anim_speed_")) {
+                    double value = Double.parseDouble(token.substring(11));
+                    if (!Double.isFinite(value)) throw new IllegalArgumentException("nonfinite animation speed");
+                    rates.put(time, Math.max(.5, Math.min(5.5, value)));
+                }
                 markers.add(new Marker(time, token));
                 last = Math.max(time, last);
             }
         }
-        if (!Double.isFinite(speed) || speed <= 0 || speed > 128)
-            throw new IllegalArgumentException("invalid animation speed");
+        double speed = rates.getOrDefault(0.0, 5.5);
+        rates.remove(0.0);
+        rates.replaceAll((t, value) -> value / speed);
         for (var bone : object(obj, "bones").entrySet()) {
             for (Property property : Property.values()) {
                 var channel = bone.getValue()
@@ -60,7 +83,7 @@ final class PunchyClips {
         };
         double duration = obj.has("animation_length") ? obj.get("animation_length")
             .getAsDouble() : Math.max(last, .05);
-        return new PunchyPack.Motion(new AnimationClip(duration, end, tracks, markers), speed, dual, v2);
+        return new PunchyPack.Motion(new AnimationClip(duration, end, tracks, markers, rates), speed, dual, v2);
     }
 
     private static Key key(double time, JsonElement element, Property property, boolean v2) {

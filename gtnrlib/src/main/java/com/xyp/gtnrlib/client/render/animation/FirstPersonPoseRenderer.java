@@ -6,7 +6,9 @@ import net.minecraft.item.ItemStack;
 
 import org.lwjgl.opengl.GL11;
 
-import com.xyp.gtnrlib.api.animation.AnimationClip.*;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Channel;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Property;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 
 import cpw.mods.fml.relauncher.Side;

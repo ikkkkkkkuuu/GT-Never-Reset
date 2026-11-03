@@ -1,19 +1,38 @@
 package com.xyp.gtnrlib.client.animation;
 
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.*;
-import net.minecraft.item.*;
+import net.minecraft.client.resources.IReloadableResourceManager;
+import net.minecraft.client.resources.IResourceManager;
+import net.minecraft.client.resources.IResourceManagerReloadListener;
+import net.minecraft.client.resources.ResourcePackRepository;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemAxe;
+import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemBow;
+import net.minecraft.item.ItemHoe;
+import net.minecraft.item.ItemMap;
+import net.minecraft.item.ItemPickaxe;
+import net.minecraft.item.ItemSpade;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemSword;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.MinecraftForgeClient;
 
 import com.xyp.gtnrlib.GTNRLib;
-import com.xyp.gtnrlib.api.animation.*;
-import com.xyp.gtnrlib.api.animation.AnimationClip.*;
+import com.xyp.gtnrlib.api.animation.AnimationClip;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Channel;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Marker;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
+import com.xyp.gtnrlib.api.animation.AnimationPlayer;
 import com.xyp.gtnrlib.compat.punchy.PunchyPack;
 import com.xyp.gtnrlib.compat.punchy.PunchyPack.Motion;
 import com.xyp.gtnrlib.config.GTNRLibConfig;

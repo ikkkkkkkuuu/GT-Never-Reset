@@ -1,11 +1,16 @@
 package com.xyp.gtnrlib;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
-import java.util.zip.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
-import com.xyp.gtnrlib.api.animation.AnimationClip.*;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Channel;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Property;
 import com.xyp.gtnrlib.compat.punchy.PunchyPack;
 
 final class PunchyPackContracts {

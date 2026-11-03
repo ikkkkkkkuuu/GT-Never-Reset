@@ -13,6 +13,11 @@ import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
 /** One target on one owner thread. Later layers override only channels authored by that clip. */
 public final class AnimationPlayer {
 
+    public enum Blend {
+        OVERRIDE,
+        ADDITIVE
+    }
+
     private final List<Playback> layers = new ArrayList<>();
     private final Consumer<Marker> listener;
 
@@ -26,8 +31,18 @@ public final class AnimationPlayer {
 
     /** Higher priorities are applied last, independent of when another state starts. */
     public Playback play(AnimationClip clip, double fadeIn, int priority) {
+        return play(clip, fadeIn, priority, Blend.OVERRIDE, channel -> true);
+    }
+
+    public Playback play(AnimationClip clip, double fadeIn, int priority, Blend blend,
+        java.util.function.Predicate<Channel> mask) {
         AnimationClip.validTime(fadeIn);
-        Playback handle = new Playback(Objects.requireNonNull(clip), fadeIn, priority);
+        Playback handle = new Playback(
+            Objects.requireNonNull(clip),
+            fadeIn,
+            priority,
+            Objects.requireNonNull(blend),
+            Objects.requireNonNull(mask));
         int index = layers.size();
         while (index > 0 && layers.get(index - 1).priority > priority) index--;
         layers.add(index, handle);
@@ -54,11 +69,17 @@ public final class AnimationPlayer {
         Vec result = channel.property().rest;
         for (Playback layer : layers) {
             if (!layer.active || !layer.clip.tracks()
-                .containsKey(channel)) continue;
-            double t = layer.position + ahead * layer.speed;
+                .containsKey(channel) || !layer.mask.test(channel)) continue;
+            double t = layer.clip.advanceTime(layer.position, ahead * layer.speed);
             double local = layer.clip.end() == End.LOOP ? t % layer.clip.duration()
                 : Math.min(t, layer.clip.duration());
-            result = result.mix(layer.clip.sample(channel, local), layer.weight(ahead));
+            Vec value = layer.clip.sample(channel, local);
+            double w = layer.weight(ahead);
+            if (layer.blend == Blend.OVERRIDE) result = result.mix(value, w);
+            else if (channel.property() == AnimationClip.Property.SCALE) {
+                Vec factor = channel.property().rest.mix(value, w);
+                result = new Vec(result.x() * factor.x(), result.y() * factor.y(), result.z() * factor.z());
+            } else result = new Vec(result.x() + value.x() * w, result.y() + value.y() * w, result.z() + value.z() * w);
         }
         return result;
     }
@@ -73,7 +94,13 @@ public final class AnimationPlayer {
         private boolean started, stopping;
         private boolean active = true;
 
-        private Playback(AnimationClip clip, double fadeIn, int priority) {
+        private final Blend blend;
+        private final java.util.function.Predicate<Channel> mask;
+
+        private Playback(AnimationClip clip, double fadeIn, int priority, Blend blend,
+            java.util.function.Predicate<Channel> mask) {
+            this.blend = blend;
+            this.mask = mask;
             this.priority = priority;
             this.clip = clip;
             this.fadeIn = fadeIn;
@@ -113,7 +140,7 @@ public final class AnimationPlayer {
             if (!active) return;
             if (stopping) dt = Math.min(dt, fadeLength - fadeAge);
             double old = position, length = clip.duration();
-            double next = old + dt * speed;
+            double next = clip.advanceTime(old, dt * speed);
             if (!Double.isFinite(next)) throw new IllegalArgumentException("playback overflow");
             if (clip.end() != End.LOOP) next = Math.min(next, length);
             if (!started) {

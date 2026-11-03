@@ -4,8 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.xyp.gtnrlib.api.animation.*;
-import com.xyp.gtnrlib.api.animation.AnimationClip.*;
+import com.xyp.gtnrlib.api.animation.AnimationClip;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Channel;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Curve;
+import com.xyp.gtnrlib.api.animation.AnimationClip.End;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Key;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Marker;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Property;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
+import com.xyp.gtnrlib.api.animation.AnimationLibrary;
+import com.xyp.gtnrlib.api.animation.AnimationPlayer;
+import com.xyp.gtnrlib.api.animation.AnimationRig;
 
 final class AnimationContracts {
 
@@ -57,6 +66,28 @@ final class AnimationContracts {
                         - 180)
                     < 1e-6);
         }
+        Vec zero = new Vec(0, 0, 0), one = new Vec(1, 1, 1);
+        var rig = new AnimationRig(
+            List.of(
+                new AnimationRig.Bone("root", null, new Vec(1, 0, 0), new Vec(0, 0, 90), one),
+                new AnimationRig.Bone("tip", "root", new Vec(2, 0, 0), zero, one)));
+        var joint = new Channel("tip", Property.POSITION);
+        var translate = new AnimationClip(1, End.HOLD, Map.of(joint, List.of(new Key(0, new Vec(1, 0, 0)))), List.of());
+        player.clear();
+        player.play(translate, 0);
+        player.play(translate, 0, 1, AnimationPlayer.Blend.ADDITIVE, c -> c.property() == Property.POSITION);
+        double[] pose = new double[32];
+        rig.sample(player, 0, pose);
+        check(Math.abs(pose[28] - 1) < 1e-7 && Math.abs(pose[29] - 4) < 1e-7);
+        player.clear();
+        var tempo = new AnimationClip(1, End.LOOP, Map.of(), List.of(new Marker(.75, "fast")), Map.of(.5, 2.0));
+        var timed = player.play(tempo, 0);
+        player.advance(.625);
+        check(
+            Math.abs(timed.time() - .75) < 1e-8 && events.get(events.size() - 1)
+                .equals("fast"));
+        player.advance(.25);
+        check(Math.abs(timed.time() - .125) < 1e-8);
         AnimationLibrary library = new AnimationLibrary();
         library.registerProvider("test:base", out -> out.register("test:spin", clip));
         check(library.reload(events::add));

@@ -2,7 +2,8 @@ package com.xyp.gtnrlib.mixins.early.animation;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.*;
+import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
 import org.spongepowered.asm.mixin.Mixin;

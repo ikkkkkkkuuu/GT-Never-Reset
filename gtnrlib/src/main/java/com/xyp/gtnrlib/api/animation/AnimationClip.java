@@ -102,11 +102,19 @@ public final class AnimationClip {
     private final End end;
     private final Map<Channel, List<Key>> tracks;
     private final List<Marker> markers;
+    private final Tempo tempo;
 
     public AnimationClip(double duration, End end, Map<Channel, List<Key>> tracks, List<Marker> markers) {
+        this(duration, end, tracks, markers, Map.of());
+    }
+
+    /** Optional positive rate multipliers keyed by local clip time. The base rate is one. */
+    public AnimationClip(double duration, End end, Map<Channel, List<Key>> tracks, List<Marker> markers,
+        Map<Double, Double> rates) {
         validTime(duration);
         if (duration == 0) throw new IllegalArgumentException("zero length clip");
         this.duration = duration;
+        this.tempo = rates.isEmpty() ? null : new Tempo(duration, rates);
         this.end = Objects.requireNonNull(end);
         Map<Channel, List<Key>> ordered = new LinkedHashMap<>();
         tracks.forEach((channel, values) -> {
@@ -187,6 +195,47 @@ public final class AnimationClip {
 
     private static double cubic(double a, double b, double c, double d, double t) {
         return b + 0.5 * t * ((c - a) + t * ((2 * a - 5 * b + 4 * c - d) + t * (3 * b - a - 3 * c + d)));
+    }
+
+    double advanceTime(double position, double delta) {
+        if (tempo == null) return position + delta;
+        int i = tempo.segment(tempo.keys, position);
+        double elapsed = tempo.wall[i] + (position - tempo.keys[i]) / tempo.rate[i] + delta;
+        if (end != End.LOOP && elapsed >= tempo.period) return duration;
+        double cycles = Math.floor(elapsed / tempo.period), remainder = elapsed % tempo.period;
+        i = tempo.segment(tempo.wall, remainder);
+        return cycles * duration + tempo.keys[i] + (remainder - tempo.wall[i]) * tempo.rate[i];
+    }
+
+    private static final class Tempo {
+
+        private final double[] keys, wall, rate;
+        private final double period;
+
+        Tempo(double duration, Map<Double, Double> rates) {
+            var points = new java.util.TreeMap<Double, Double>(rates);
+            points.putIfAbsent(0.0, 1.0);
+            keys = new double[points.size()];
+            wall = new double[keys.length];
+            rate = new double[keys.length];
+            int i = 0;
+            for (var entry : points.entrySet()) {
+                double t = entry.getKey(), v = entry.getValue();
+                validTime(t);
+                if (t > duration || !Double.isFinite(v) || v <= 0) throw new IllegalArgumentException("invalid tempo");
+                keys[i] = t;
+                rate[i] = v;
+                if (i > 0) wall[i] = wall[i - 1] + (t - keys[i - 1]) / rate[i - 1];
+                i++;
+            }
+            period = wall[i - 1] + (duration - keys[i - 1]) / rate[i - 1];
+            if (!Double.isFinite(period) || period <= 0) throw new IllegalArgumentException("invalid tempo period");
+        }
+
+        int segment(double[] axis, double t) {
+            int i = java.util.Arrays.binarySearch(axis, t);
+            return i < 0 ? -i - 2 : i;
+        }
     }
 
     static void validTime(double value) {
