@@ -18,6 +18,18 @@
 
 示例中的空手右臂垂在画面右下，站立时随呼吸轻微转腕，走路时随步幅摆动。空手左键点空气或轻点方块共用约 0.30 秒的出拳动作。手腕先向内抬起、向前送出，再从右侧回到待机。轻点方块即使立刻松开，也会收完这一拳。在 `emptyHand` 的 `attack` 和 `mining` 规则中复用同一片段，并在第 0 秒同时声明 `gtnrlib:replace_swing;` 与 `gtnrlib:empty_punch;`，即可在原版接受下一拳时从当前腕部姿势和速度衔接。点击判定与挖掘仍由游戏处理。
 
+### 从 Hold My Items 转换持握姿势
+
+示例的持剑、镐、斧、锄、铲及铁锭握姿来自 Hold My Items 5.1.1 的静止主手采样。转换时保留原手臂的三维朝向和物品的侧转，用 1.7.10 的纹理坐标选取握点。长柄沿前臂的横向穿过拳心，剑单独选在护手下方的短柄。手臂和物品一起跟随 `right_arm` 运动。待机高度按本示例的短前臂构图设置。
+
+开发者可在仓库根运行以下命令。需要 Python 3、NumPy、Java 21 或以上，以及[作者发布的 5.1.1 / MC 1.21.11 JAR](https://modrinth.com/mod/hold-my-items/version/KZm1qTcU)。工具校验发布包，从临时目录运行包内的 LuaJ、缓动函数和三个原版脚本，在固定视角、主手静止的条件下以 60 Hz 预热四秒。命令输出各物品的姿势参数，加 `--check` 可与示例包比较。
+
+```powershell
+python gtnrlib/scripts/hmi-grip/convert.py "C:/mods/HMI 5.1.1 (1.21.11).jar" --check
+```
+
+此转换器覆盖上述物品的主手持握基准。连击、蓄力、双手交互及完整 Lua 状态机需要另外适配。
+
 ## 第三方调用
 
 `com.xyp.gtnrlib.api.animation` 独立于游戏客户端。每个目标持有自己的播放器，clip 和 rig 可以共享。注册、模拟和采样均在调用方的 owner thread 运行。下例中的 reader、日志和标记回调由宿主提供。

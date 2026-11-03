@@ -21,6 +21,12 @@
       "name": "gtnrlib_walk"
     }
   ],
+  "globalArm": {
+    "right": { "rotX": -81.34, "rotY": 11.93, "rotZ": 117.41, "scale": 0.97 }
+  },
+  "globalItem": {
+    "right": { "offX": -0.044, "offY": -0.039, "offZ": 0.007, "rotX": -1.13, "rotY": -36.13, "rotZ": -10.84, "scale": 1.02 }
+  },
   "item": {
     "BLOCK": {
       "armTransforms": {
@@ -58,7 +64,20 @@
         }
       ]
     },
+    "SWORD": {
+      "transforms": {
+        "right": { "offX": -0.073, "offY": 0.164, "offZ": 0.021, "rotX": -1.13, "rotY": -36.13, "rotZ": -10.84, "scale": 1.02 }
+      }
+    },
+    "SHOVEL": {
+      "transforms": {
+        "right": { "offX": -0.13, "offY": -0.005, "offZ": -0.131, "rotX": 4.95, "rotY": 46.43, "rotZ": 8.91, "scale": 1.02 }
+      }
+    },
     "AXE": {
+      "armTransforms": {
+        "right": { "rotX": -92.08, "rotY": 5.62, "rotZ": 123.86, "scale": 0.97 }
+      },
       "customAnimation": [
         {
           "type": "idle",
@@ -78,19 +97,15 @@
         }
       ],
       "transforms": {
-        "right": {
-          "scale": 0.76
-        }
+        "right": { "offX": -0.039, "offY": -0.038, "offZ": 0, "rotX": 6.01, "rotY": -41.43, "rotZ": -2.72, "scale": 1.02 }
       }
     },
     "GTNRLIB_FLAT_ITEM": {
+      "armTransforms": {
+        "right": { "rotX": -91.87, "rotY": 4.34, "rotZ": 124.97, "scale": 0.97 }
+      },
       "transforms": {
-        "right": {
-          "offY": 0.12,
-          "rotX": 10,
-          "rotZ": -6,
-          "scale": 0.72
-        }
+        "right": { "offX": 0.095, "offY": -0.197, "offZ": 0.035, "rotX": -1, "rotY": -53.05, "rotZ": 4.54, "scale": 1.02 }
       },
       "customAnimation": [
         {

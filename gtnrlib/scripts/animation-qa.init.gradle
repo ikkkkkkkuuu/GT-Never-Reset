@@ -49,9 +49,11 @@ gradle.projectsEvaluated {
             def rules = new File(workingDir, 'resourcepacks/animation-qa-dual/assets/minecraft/punchy/compat/test.json')
             rules.parentFile.mkdirs()
             def exampleRules = new File(example, 'assets/minecraft/punchy/compat/gtnrlib.json')
-            def emptyRule = new groovy.json.JsonSlurper().parse(exampleRules).emptyHand
-            emptyRule.customAnimation = [[type: 'idle', name: 'empty']]
-            rules.setText(groovy.json.JsonOutput.toJson([emptyHand: emptyRule]), 'UTF-8')
+            def poses = new groovy.json.JsonSlurper().parse(exampleRules)
+            poses.emptyHand.customAnimation = [[type: 'idle', name: 'empty']]
+            rules.setText(groovy.json.JsonOutput.toJson([
+                globalArm: poses.globalArm, globalItem: poses.globalItem, item: [SWORD: poses.item.SWORD], emptyHand: poses.emptyHand
+            ]), 'UTF-8')
             new File(workingDir, 'options.txt').setText('lang:en_US\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsound:0.0\nmusic:0.0\nrenderDistance:2\n', 'UTF-8')
             def result = new File(output, 'result.txt')
             java.nio.file.Files.deleteIfExists(result.toPath())

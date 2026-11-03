@@ -9,6 +9,7 @@
       },
       "bones": {
         "right_arm": {
+          "position": [13.5, 15.5, 8],
           "rotation": [
             -6,
             2,
@@ -130,6 +131,7 @@
       },
       "bones": {
         "right_arm": {
+          "position": [13.5, 15.5, 8],
           "rotation": {
             "0": [
               0,
@@ -162,33 +164,17 @@
       "bones": {
         "right_arm": {
           "position": {
-            "0": [
-              8,
-              10,
-              5
-            ],
+            "0": [14, 17, 8],
             "0.10": {
-              "post": [
-                10,
-                6,
-                7
-              ],
+              "post": [16, 13, 10],
               "easing": "easeInOutSine"
             },
             "0.23": {
-              "post": [
-                1,
-                5,
-                -4
-              ],
+              "post": [7, 12, -1],
               "easing": "easeInOutSine"
             },
             "0.45": {
-              "post": [
-                8,
-                10,
-                5
-              ],
+              "post": [14, 17, 8],
               "easing": "easeInOutSine"
             }
           },
@@ -223,39 +209,6 @@
               "easing": "easeInOutSine"
             }
           }
-        },
-        "item_right": {
-          "rotation": {
-            "0": [
-              0,
-              0,
-              0
-            ],
-            "0.10": {
-              "post": [
-                -16,
-                0,
-                -4
-              ],
-              "easing": "easeInOutSine"
-            },
-            "0.23": {
-              "post": [
-                46,
-                -7,
-                11
-              ],
-              "easing": "easeInOutSine"
-            },
-            "0.45": {
-              "post": [
-                0,
-                0,
-                0
-              ],
-              "easing": "easeInOutSine"
-            }
-          }
         }
       }
     },
@@ -267,11 +220,7 @@
       },
       "bones": {
         "right_arm": {
-          "position": [
-            8,
-            10,
-            5
-          ],
+          "position": [14, 17, 8],
           "rotation": [
             5,
             -4,
@@ -301,7 +250,7 @@
       },
       "bones": {
         "right_arm": {
-          "position": [4, 6, 4],
+          "position": [14, 17, 8],
           "rotation": [6, -3, -6]
         }
       }
@@ -361,13 +310,13 @@
       "bones": {
         "right_arm": {
           "position": {
-            "0": [4, 6, 4],
+            "0": [14, 17, 8],
             "0.1": {
-              "post": [-1, 3, -3],
+              "post": [9, 14, 1],
               "easing": "easeOutSine"
             },
             "0.3": {
-              "post": [4, 6, 4],
+              "post": [14, 17, 8],
               "easing": "easeInOutSine"
             }
           },

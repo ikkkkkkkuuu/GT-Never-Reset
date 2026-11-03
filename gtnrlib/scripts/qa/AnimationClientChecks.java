@@ -596,12 +596,31 @@ public final class AnimationClientChecks {
         Arrays.fill(texels, 0xff888888);
         // Only the side faces carry markers. A wrist end-cap alone cannot pass the check.
         for (int y = 20; y < 32; y++) {
-            if (y < 25 || y >= 28) Arrays.fill(texels, y * 64 + 40, y * 64 + 56, y < 25 ? 0xff00ff00 : 0xffff00ff);
+            int band = y < 25 ? 0xff00ff00 : y < 28 ? 0xffff0000 : 0xffff00ff;
+            Arrays.fill(texels, y * 64 + 40, y * 64 + 56, band);
         }
         try {
             markers.updateDynamicTexture();
             textures.loadTexture(skin, markers);
             checkArmPose(mc, null, "empty");
+            for (Item item : List
+                .of(Items.iron_ingot, Items.iron_axe, Items.iron_pickaxe, Items.iron_shovel, Items.iron_hoe)) {
+                equip(mc, new ItemStack(item));
+                tickPlayer();
+                String id = item.getUnlocalizedName();
+                checkArmMarkers(mc, draw(mc, id + "-carry-markers"), null, id);
+                if (item == Items.iron_pickaxe) {
+                    float forward = mc.thePlayer.moveForward;
+                    try {
+                        mc.thePlayer.moveForward = 1;
+                        tickPlayer();
+                        checkArmMarkers(mc, draw(mc, "pickaxe-walk-markers"), null, "walking pickaxe");
+                    } finally {
+                        mc.thePlayer.moveForward = forward;
+                        tickPlayer();
+                    }
+                }
+            }
             checkArmPose(mc, sword, "sword");
         } finally {
             textures.loadTexture(skin, original);
@@ -614,13 +633,13 @@ public final class AnimationClientChecks {
         tickPlayer();
         require(!target.dualHanded(), pose + " example uses primary hand");
         int[] right = draw(mc, pose + "-markers-right");
-        checkArmSpan(mc, right, null, false, pose);
+        checkArmMarkers(mc, right, null, pose);
         try {
             reload(mc, "animation-qa-dual");
             tickPlayer();
             require(target.dualHanded(), pose + " pack explicitly requested support arm");
             int[] both = draw(mc, pose + "-markers-both");
-            checkArmSpan(mc, both, right, true, pose);
+            checkArmMarkers(mc, both, right, pose);
             target.trigger("attack");
             mc.thePlayer.swingItem();
             advanceHands(mc, 3);
@@ -634,9 +653,11 @@ public final class AnimationClientChecks {
         }
     }
 
-    private void checkArmSpan(Minecraft mc, int[] pixels, int[] withoutLeft, boolean left, String pose) {
+    private void checkArmMarkers(Minecraft mc, int[] pixels, int[] withoutLeft, String pose) {
+        boolean left = withoutLeft != null;
         long sleeveX = 0, wristX = 0, sleeveY = 0, wristY = 0;
-        int sleeve = 0, wrist = 0;
+        int sleeve = 0, wrist = 0, forearm = 0, shaftContact = 0, top = mc.displayHeight;
+        boolean lowGrip = !left && !pose.equals("empty");
         for (int i = 0; i < pixels.length; i++) {
             int rgb = pixels[i];
             if (withoutLeft != null && rgb == withoutLeft[i]) continue;
@@ -645,19 +666,46 @@ public final class AnimationClientChecks {
                 sleeveX += i % mc.displayWidth;
                 sleeveY += i / mc.displayWidth;
                 sleeve++;
+            } else if (r > 40 && r > 2 * g && r > 2 * b) {
+                forearm++;
             } else if (r > 40 && b > 40 && r > 2 * g && b > 2 * g) {
+                top = Math.min(top, i / mc.displayWidth);
                 wristX += i % mc.displayWidth;
                 wristY += i / mc.displayWidth;
                 wrist++;
+                // The vanilla iron handles and the diamond sword's hilt use brown texels.
+                if (i >= mc.displayWidth && isHandlePixel(pixels[i - mc.displayWidth])
+                    || i % mc.displayWidth < mc.displayWidth - 1 && isHandlePixel(pixels[i + 1])) shaftContact++;
             }
         }
         int area = pixels.length / 600;
+        if (lowGrip) {
+            int x = (int) (wristX / Math.max(1, wrist)), y = (int) (wristY / Math.max(1, wrist));
+            int h = mc.displayHeight;
+            require(
+                wrist >= area && forearm >= area / 2
+                    && top >= .78 * h
+                    && x > mc.displayWidth / 2 + .37 * h
+                    && y > .85 * h
+                    && y < .97 * h,
+                pose + " keeps the wrist low with a visible forearm: "
+                    + x
+                    + ", "
+                    + y
+                    + "; top "
+                    + top
+                    + ", forearm "
+                    + forearm);
+            if (!pose.equals(Items.iron_ingot.getUnlocalizedName())) require(
+                shaftContact >= mc.displayHeight / 48,
+                pose + " handle meets the fist along " + shaftContact + " pixels");
+            return;
+        }
         double span = (sleeveX / (double) sleeve - wristX / (double) wrist) * (left ? -1 : 1);
         double drop = sleeveY / (double) sleeve - wristY / (double) wrist;
-        boolean separated = !left && pose.equals("empty")
-            ? span > mc.displayHeight * .05 && drop > mc.displayHeight * .08
-                && Math.hypot(span, drop) >= mc.displayHeight * .14
-            : span >= mc.displayHeight * .14;
+        boolean separated = left ? span >= mc.displayHeight * .14
+            : span > mc.displayHeight * .05 && drop > mc.displayHeight * .08
+                && Math.hypot(span, drop) >= mc.displayHeight * .14;
         require(
             sleeve >= area && wrist >= area && separated,
             pose + (left ? " left" : " right")
@@ -666,6 +714,11 @@ public final class AnimationClientChecks {
                 + " x "
                 + Math.round(drop)
                 + "px");
+    }
+
+    private static boolean isHandlePixel(int rgb) {
+        int r = rgb >> 16 & 255, g = rgb >> 8 & 255, b = rgb & 255;
+        return r > 10 && r > 1.2 * g && g > b + 6 && b > 0;
     }
 
     private void checkRepositoryReload(Minecraft mc, ItemStack sword) {
