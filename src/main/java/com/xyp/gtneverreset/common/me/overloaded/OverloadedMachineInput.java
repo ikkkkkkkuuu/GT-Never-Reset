@@ -146,6 +146,7 @@ public final class OverloadedMachineInput {
             } else return false;
         }
         Match selected = null;
+        boolean conflictingCircuits = false;
         List<Match> candidates = matches(machine.getRecipeMap(), pattern);
         Map<Ingredient, Long> expectedOutputs = new HashMap<>();
         for (IAEStack<?> output : pattern.getAEOutputs())
@@ -154,8 +155,12 @@ public final class OverloadedMachineInput {
             long expectedBatches = CircuitPatternQuantities.requestedOutputBatches(candidate.outputs, expectedOutputs);
             if (candidate.recipe.mEUt > GTValues.V[machine.mTier] || expectedBatches <= 0
                 || !matchesDeliveryBatches(expectedBatches, crafts, matchingInputs(candidate, actual))) continue;
-            if (selected != null && !sameCircuit(selected.circuit, candidate.circuit))
-                return reportRejection(tile, pattern, aeTable, "ambiguous-circuit", candidates);
+            if (selected != null && !sameCircuit(selected.circuit, candidate.circuit)) {
+                // A matching circuit-free recipe can still appear after two numbered variants.
+                if (candidate.circuit == null) selected = candidate;
+                else if (selected.circuit != null) conflictingCircuits = true;
+                continue;
+            }
             // Several catalog lenses can produce the same encoded output from the same delivery.
             // Keep the first valid choice unless another matches the installed mold, so retries and
             // continuous refills do not switch catalysts merely because registration order differs.
@@ -168,6 +173,8 @@ public final class OverloadedMachineInput {
             aeTable,
             candidates.isEmpty() ? "no-pattern-match" : "voltage-or-delivered-inputs",
             candidates);
+        if (selected.circuit != null && conflictingCircuits)
+            return reportRejection(tile, pattern, aeTable, "ambiguous-circuit", candidates);
         if (!canAccept(
             machine.mMaxProgresstime > 0,
             !buffered.isEmpty(),

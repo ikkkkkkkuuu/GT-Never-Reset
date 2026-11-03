@@ -126,6 +126,7 @@ public final class WirelessFrequencyCardGui {
         public static final int DELETE_SOURCE = 80;
         public static final int OPEN_ENTRANCES = 90;
         public static final int SET_VISUALISATION = 100;
+        public static final int MANAGE_DEVICES = 110; // Client-side navigation only.
         private static final int ROW_STRIDE = 10;
 
         public static int type(int id) {
@@ -138,7 +139,8 @@ public final class WirelessFrequencyCardGui {
 
         public static boolean isRowAction(int id) {
             return id >= TOGGLE_PAUSE && id < TELEPORT + ROW_STRIDE
-                || id >= RENAME_SOURCE && id < OPEN_ENTRANCES + ROW_STRIDE;
+                || id >= RENAME_SOURCE && id < OPEN_ENTRANCES + ROW_STRIDE
+                || id >= MANAGE_DEVICES && id < MANAGE_DEVICES + ROW_STRIDE;
         }
     }
 
@@ -570,6 +572,7 @@ public final class WirelessFrequencyCardGui {
                     .icon());
             entry.setString("serverIconName", icon == null ? "" : icon.getDisplayName());
             if (row.group()) {
+                entry.setIntArray("energyHatches", row.energyHatches());
                 NBTTagList children = new NBTTagList();
                 for (var link : row.links()) {
                     var child = writeRow(Row.cluster(link), interfaces, dimensions, nextIds, targets, false);

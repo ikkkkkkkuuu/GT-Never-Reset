@@ -6,6 +6,7 @@ import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessC
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.CYCLE_VISUALISATION;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.DELETE_SOURCE;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.HIGHLIGHT;
+import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.MANAGE_DEVICES;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.NEXT_PAGE;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.OPEN_DETAILS;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.OPEN_ENTRANCES;
@@ -23,6 +24,7 @@ import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessC
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.isRowAction;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.rowIndex;
 import static com.xyp.gtneverreset.common.gui.WirelessFrequencyCardGui.WirelessCardActions.type;
+import static net.minecraft.client.gui.Gui.drawRect;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
@@ -61,6 +64,8 @@ import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.layout.IViewportStack;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.ModularScreen;
+import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
+import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.value.BoolValue;
 import com.cleanroommc.modularui.value.IntValue;
 import com.cleanroommc.modularui.value.StringValue;
@@ -68,6 +73,7 @@ import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.Dialog;
 import com.cleanroommc.modularui.widgets.ToggleButton;
+import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.menu.MenuPanel;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.github.bsideup.jabel.Desugar;
@@ -96,6 +102,7 @@ public class WirelessCardGui extends WirelessCardPanel {
     private static final int[] CHIP_STATES = { 0, 3, 4, 5, 1, 2 };
     private static final int DIMENSION_WIDTH = 100, MENU_HEIGHT = 120, ALL_DIMENSIONS = Integer.MIN_VALUE;
     private final List<ButtonWidget<?>> chips = new ArrayList<>();
+    private final Flow stats = Flow.row();
     private final TextFieldWidget search;
     private final CycleDropdown<Integer> dimension, visualisation;
     private Layout layout = Layout.forScreen(0, 0);
@@ -114,6 +121,19 @@ public class WirelessCardGui extends WirelessCardPanel {
                 searchText = text;
                 filter(clientView().dimension(), clientView().state());
             }));
+        stats.top(19)
+            .left(10)
+            .right(10)
+            .height(34);
+        for (Stat stat : Stat.values()) {
+            if (stat != Stat.CONTROLLER) stats.child(
+                new CardDivider().width(8)
+                    .heightRel(1f));
+            stats.child(
+                new StatCard(stat).expanded()
+                    .heightRel(1f));
+        }
+        child(stats);
         child(search);
         for (int index = 0; index < CHIP_STATES.length; index++) child(chip(index));
         dimension = WirelessCardFilters
@@ -140,7 +160,7 @@ public class WirelessCardGui extends WirelessCardPanel {
             OPEN_DETAILS,
             OPEN_ENTRANCES,
             TOGGLE_PAUSE,
-            COPY_POSITION,
+            MANAGE_DEVICES,
             HIGHLIGHT,
             TELEPORT,
             RENAME_SOURCE,
@@ -154,7 +174,7 @@ public class WirelessCardGui extends WirelessCardPanel {
 
     @Override
     public int rowTop() {
-        return 82;
+        return 91;
     }
 
     @Override
@@ -240,10 +260,10 @@ public class WirelessCardGui extends WirelessCardPanel {
             .resize(layout.rows());
         this.layout = layout;
         visualisation.deleteMenu();
-        int searchWidth = xSize - 28 - DIMENSION_WIDTH - mergeWidth();
-        search.pos(10, 65)
+        int searchWidth = xSize - 24 - DIMENSION_WIDTH;
+        search.pos(10, 74)
             .size(searchWidth, 12);
-        dimension.pos(14 + searchWidth, 64)
+        dimension.pos(14 + searchWidth, 73)
             .size(DIMENSION_WIDTH, 14);
         visualisation.pos(layout.visualisationX(), ySize - 27)
             .size(layout.visualisationWidth(), 20);
@@ -253,11 +273,12 @@ public class WirelessCardGui extends WirelessCardPanel {
     @Override
     void layoutButton(WirelessCardButton control, Layout layout) {
         switch (control.id) {
-            case OPEN_SOURCES -> control.widget.pos(8, 23)
-                .size(xSize - 92, 12);
-            case TOGGLE_AUTO -> control.widget.pos(xSize - 10 - autoWidth(), 12)
+            case OPEN_SOURCES -> control.widget.pos(10, 19)
+                .size((xSize - 36) / 3, 34);
+            case TOGGLE_AUTO -> control.widget.pos(layout.visualisationX() - 4 - autoWidth(), ySize - 23)
                 .size(autoWidth(), AE2Theme.SWITCH_HEIGHT);
-            case TOGGLE_GROUPING -> control.widget.pos(xSize - 10 - mergeWidth(), 65)
+            case TOGGLE_GROUPING -> control.widget
+                .pos(layout.visualisationX() - 8 - autoWidth() - mergeWidth(), ySize - 23)
                 .size(mergeWidth(), AE2Theme.SWITCH_HEIGHT);
         }
     }
@@ -350,11 +371,14 @@ public class WirelessCardGui extends WirelessCardPanel {
     }
 
     private void layoutChips() {
-        WirelessCardFilters.layoutChips(chips, xSize, WirelessCardGui::chipLabel, this::chipCount);
+        WirelessCardFilters.layoutChips(chips, xSize, 56, WirelessCardGui::chipLabel, this::chipCount);
     }
 
     private int autoWidth() {
-        return Math.max(AE2Theme.switchWidth(tr("auto_on")), AE2Theme.switchWidth(tr("auto_off")));
+        // #tr gtneverreset.wireless.gui.auto_connect
+        // # Auto-connect
+        // # zh_CN 自动连接
+        return AE2Theme.switchWidth(tr("auto_connect"));
     }
 
     private int mergeWidth() {
@@ -371,6 +395,7 @@ public class WirelessCardGui extends WirelessCardPanel {
         }
         boolean showFilters = !detail && !detailsPanel.isPanelOpen() && !view().getBoolean("sourcesPage");
         if (!showFilters && editingText()) getContext().removeFocus();
+        stats.setEnabled(!view().getBoolean("sourcesPage"));
         search.setEnabled(showFilters);
         dimension.setEnabled(showFilters);
         visualisation.setEnabled(showFilters);
@@ -441,31 +466,7 @@ public class WirelessCardGui extends WirelessCardPanel {
                 .drawString(fontRendererObj.trimStringToWidth(tr("sources_auto_hint"), xSize - 20), 10, 47, textColor);
             return;
         }
-        fontRendererObj.drawString(fontRendererObj.trimStringToWidth(tr("title"), xSize - 140), 10, 11, textColor);
-        boolean budgetKnown = data.getBoolean("sourceLoaded") && data.getBoolean("channels")
-            && data.getBoolean("stable")
-            && data.getInteger("used") >= 0
-            && data.getInteger("capacity") > 0;
-        int budgetColor = !budgetKnown ? textColor
-            : data.getInteger("used") >= data.getInteger("capacity") ? badColor() : goodColor();
-        String budget = fontRendererObj.trimStringToWidth(budgetText(data), xSize / 2);
-        int budgetWidth = fontRendererObj.getStringWidth(budget);
-        fontRendererObj.drawString(budget, xSize - 76 - budgetWidth, 25, budgetColor);
-        ratioBar(
-            xSize - 72,
-            26,
-            60,
-            6,
-            budgetKnown ? data.getInteger("used") : -1,
-            data.getInteger("capacity"),
-            budgetColor,
-            secondary());
-        String sourceLabel = data.getString("sourceLabel");
-        if (!data.getString("sourceName")
-            .isEmpty()) sourceLabel = data.getString("sourceName") + " (" + sourceLabel + ")";
-        String source = data.getBoolean("bound") ? tr("source", sourceLabel) : tr("unbound");
-        fontRendererObj
-            .drawString(fontRendererObj.trimStringToWidth(source, xSize - 92 - budgetWidth), 10, 25, textColor);
+        fontRendererObj.drawString(fontRendererObj.trimStringToWidth(tr("title"), xSize - 20), 10, 6, textColor);
     }
 
     @Override
@@ -475,10 +476,200 @@ public class WirelessCardGui extends WirelessCardPanel {
         fontRendererObj.drawString(
             fontRendererObj.trimStringToWidth(
                 tr(data.getBoolean("filtered") ? "matched" : "loaded", data.getInteger("total")),
-                layout.visualisationX() - layout.footerInfoX() - 4),
-            layout.footerInfoX(),
+                layout.visualisationX() - mergeWidth() - autoWidth() - 22),
+            10,
             ySize - 20,
             textColor);
+    }
+
+    private int onlineColor(NBTTagCompound data) {
+        int online = data.getInteger("online"), devices = data.getInteger("devices");
+        return data.getBoolean("paused") ? badColor()
+            : !data.getBoolean("stable") ? infoColor() : online == devices && devices > 0 ? goodColor() : foreground();
+    }
+
+    private int missingColor(NBTTagCompound data) {
+        return !data.getBoolean("stable") ? infoColor() : data.getInteger("missing") > 0 ? badColor() : foreground();
+    }
+
+    private static Object missingText(NBTTagCompound data) {
+        return data.getBoolean("stable") ? data.getInteger("missing") : "?";
+    }
+
+    private int usageColor(int used, int total, int normal) {
+        if (total <= 0 || used < 0) return normal;
+        return used >= total ? badColor() : used >= total * 0.75 ? waitingColor() : normal;
+    }
+
+    private void drawBar(int x, int y, int width, int total, int[] values, int[] colors) {
+        drawRect(x, y, x + width, y + 4, tint(0x4d));
+        if (total <= 0) return;
+        int filled = 0;
+        for (int i = 0; i < values.length; i++) {
+            if (values[i] <= 0) continue;
+            int start = (int) Math.round((double) width * filled / total);
+            filled = Math.min(total, filled + values[i]);
+            int end = (int) Math.round((double) width * filled / total);
+            if (end > start) drawRect(x + start, y, x + end, y + 4, colors[i] | 0xFF000000);
+        }
+    }
+
+    // #tr gtneverreset.wireless.gui.module.controller
+    // # Controller
+    // # zh_CN 控制器
+    // #tr gtneverreset.wireless.gui.module.entrances
+    // # Links
+    // # zh_CN 接入点
+    // #tr gtneverreset.wireless.gui.module.devices
+    // # Devices
+    // # zh_CN 设备
+    private enum Stat {
+
+        CONTROLLER("controller"),
+        ENTRANCES("entrances"),
+        DEVICES("devices");
+
+        private final String key;
+
+        Stat(String key) {
+            this.key = key;
+        }
+    }
+
+    @Desugar
+    private record Reading(String value, int valueColor, int total, int[] values, int[] colors, String sub,
+        int subColor, List<String> details) {}
+
+    private Reading read(Stat stat, NBTTagCompound data) {
+        return switch (stat) {
+            case CONTROLLER -> readController(data);
+            case ENTRANCES -> readEntrances(data);
+            case DEVICES -> readDevices(data);
+        };
+    }
+
+    private Reading readController(NBTTagCompound data) {
+        int[] none = new int[0];
+        if (!data.getBoolean("bound"))
+            return new Reading("", foreground(), 0, none, none, tr("bind_hint"), infoColor(), List.of(tr("unbound")));
+        String source = data.getString("sourceLabel");
+        if (!data.getString("sourceName")
+            .isEmpty()) source = data.getString("sourceName") + " (" + source + ")";
+        List<String> details = new ArrayList<>();
+        details.add(tr("source", source));
+        if (data.getBoolean("frequencySplit") || !data.getBoolean("sourceLoaded")) {
+            boolean split = data.getBoolean("frequencySplit");
+            // #tr gtneverreset.wireless.gui.frequency_split
+            // # Frequency split: take over one controller structure to reconnect.
+            // # zh_CN 频率分裂：请接管一组控制器以恢复连接。
+            String state = tr(split ? "frequency_split" : "source_waiting");
+            details.add(state);
+            return new Reading("", foreground(), 0, none, none, state, split ? badColor() : infoColor(), details);
+        }
+        if (!data.getBoolean("channels")) {
+            details.add(tr("unlimited"));
+            return new Reading("∞", foreground(), 0, none, none, tr("unlimited"), secondary(), details);
+        }
+        int used = data.getInteger("used"), capacity = data.getInteger("capacity");
+        boolean known = data.getBoolean("stable") && used >= 0 && capacity > 0;
+        int color = known ? usageColor(used, capacity, goodColor()) : infoColor();
+        details.add(tr("budget_compact", known ? used : "?", capacity));
+        return new Reading(
+            (known ? used : "?") + " / " + capacity,
+            color,
+            known ? capacity : 0,
+            new int[] { used },
+            new int[] { color },
+            source,
+            secondary(),
+            details);
+    }
+
+    private Reading readEntrances(NBTTagCompound data) {
+        int used = data.getInteger("entrances"), limit = data.getInteger("entranceLimit");
+        if (limit <= 0) return new Reading(
+            Integer.toString(used),
+            foreground(),
+            0,
+            new int[0],
+            new int[0],
+            "",
+            secondary(),
+            List.of(tr("entrances", used)));
+        // #tr gtneverreset.wireless.gui.module.entrances_free
+        // # %s free
+        // # zh_CN 剩余 %s 个
+        String free = tr("module.entrances_free", Math.max(0, limit - used));
+        return new Reading(
+            used + " / " + limit,
+            foreground(),
+            limit,
+            new int[] { used },
+            new int[] { usageColor(used, limit, infoColor()) },
+            free,
+            secondary(),
+            List.of(tr("entrances", used + " / " + limit), free));
+    }
+
+    private Reading readDevices(NBTTagCompound data) {
+        int online = data.getInteger("online"), devices = data.getInteger("devices");
+        int missing = data.getBoolean("stable") ? data.getInteger("missing") : 0;
+        int offline = Math.max(0, devices - online - missing);
+        // #tr gtneverreset.wireless.gui.module.offline
+        // # Offline %s
+        // # zh_CN 离线 %s
+        String missingLine = tr("missing_metric", missingText(data));
+        return new Reading(
+            online + " / " + devices,
+            onlineColor(data),
+            devices,
+            new int[] { online, offline, missing },
+            new int[] { goodColor(), secondary(), badColor() },
+            missingLine,
+            missingColor(data),
+            List.of(tr("online_metric", online, devices), tr("module.offline", offline), missingLine));
+    }
+
+    private class StatCard extends Widget<StatCard> {
+
+        private final Stat stat;
+        private NBTTagCompound lastView;
+        private Reading reading;
+
+        private Reading reading() {
+            if (lastView != view()) {
+                lastView = view();
+                reading = read(stat, lastView);
+            }
+            return reading;
+        }
+
+        private StatCard(Stat stat) {
+            this.stat = stat;
+            tooltipAutoUpdate(true)
+                .tooltipBuilder(tooltip -> { for (String line : reading().details()) tooltip.addLine(line); });
+        }
+
+        @Override
+        public void draw(ModularGuiContext context, WidgetThemeEntry<?> theme) {
+            Reading reading = reading();
+            int width = getArea().width, inner = width - 8;
+            int valueWidth = fontRendererObj.getStringWidth(reading.value());
+            fontRendererObj
+                .drawString(trim(tr("module." + stat.key), inner - valueWidth - 4), 4, 4, foreground(), false);
+            fontRendererObj.drawString(reading.value(), width - 4 - valueWidth, 4, reading.valueColor(), false);
+            drawBar(4, 16, inner, reading.total(), reading.values(), reading.colors());
+            fontRendererObj.drawString(trim(reading.sub(), inner), 4, 24, reading.subColor(), false);
+        }
+    }
+
+    private class CardDivider extends Widget<CardDivider> {
+
+        @Override
+        public void draw(ModularGuiContext context, WidgetThemeEntry<?> theme) {
+            int x = getArea().width / 2;
+            drawRect(x, 3, x + 1, getArea().height - 3, tint(0x80));
+        }
     }
 
     @SideOnly(Side.CLIENT)
@@ -780,7 +971,7 @@ public class WirelessCardGui extends WirelessCardPanel {
                     : AE2Theme.toggleSwitch(
                         toggle,
                         () -> on,
-                        () -> id == TOGGLE_AUTO ? tr(on ? "auto_on" : "auto_off") : tr("merge_types"),
+                        () -> id == TOGGLE_AUTO ? tr("auto_connect") : tr("merge_types"),
                         () -> available);
                 widget = toggle.value(new BoolValue.Dynamic(() -> on, ignored -> panel.action(id)))
                     .background(false, IDrawable.EMPTY)
@@ -792,7 +983,9 @@ public class WirelessCardGui extends WirelessCardPanel {
             } else {
                 widget = new ActionButton().onMousePressed(button -> {
                     if (button != 0 || !available) return false;
-                    panel.action(id);
+                    if (type(id) == MANAGE_DEVICES)
+                        panel.action((GuiScreen.isShiftKeyDown() ? OPEN_ENTRANCES : OPEN_DETAILS) + rowIndex(id));
+                    else panel.action(id);
                     return true;
                 });
                 if (id == OPEN_SOURCES) widget.background(IDrawable.EMPTY)
@@ -814,7 +1007,12 @@ public class WirelessCardGui extends WirelessCardPanel {
                     tooltip.addLine(tr(row.getBoolean("loaded") ? "source_loaded" : "source_unloaded"));
             })
                 .tooltipAutoUpdate(true);
-            if (id == OPEN_SOURCES) widget.tooltipBuilder(tooltip -> tooltip.addLine(tr("sources_open")));
+            if (id == OPEN_SOURCES) widget.tooltipBuilder(tooltip -> {
+                for (String line : ((WirelessCardGui) panel).readController(panel.view())
+                    .details()) tooltip.addLine(line);
+                tooltip.addLine(tr("sources_open"));
+            })
+                .tooltipAutoUpdate(true);
             if (type(id) == DELETE_SOURCE) widget.tooltipBuilder(tooltip -> tooltip.addLine(tr("source_delete_hint")));
             if (id == TOGGLE_GROUPING) widget
                 .tooltipBuilder(
@@ -845,6 +1043,7 @@ public class WirelessCardGui extends WirelessCardPanel {
             Icon icon = switch (type(id)) {
                 case OPEN_ENTRANCES -> Icon.MORE;
                 case COPY_POSITION -> Icon.COPY;
+                case MANAGE_DEVICES -> Icon.GEAR;
                 case HIGHLIGHT -> Icon.VISIBLE;
                 case TELEPORT -> Icon.MOVE_TO;
                 default -> null;
@@ -873,11 +1072,11 @@ public class WirelessCardGui extends WirelessCardPanel {
             int actionType = type(id);
             if (actionType == OPEN_DETAILS) {
                 int y = panel.rowTop() + rowIndex(id) * WirelessCardPanel.ROW_HEIGHT;
-                if (data.getBoolean("sourcesPage")) widget.pos(panel.xSize - 116, y + 2)
+                if (data.getBoolean("sourcesPage")) widget.pos(panel.rowRight() - 107, y + 2)
                     .size(60, 20);
                 else {
                     var row = rows.getCompoundTagAt(rowIndex(id));
-                    int end = row.getBoolean("group") ? panel.xSize - 10 : panel.rowStateX();
+                    int end = row.getBoolean("group") ? panel.rowRight() : panel.rowStateX();
                     widget.pos(10, y)
                         .size(end - 10, WirelessCardPanel.ROW_HEIGHT);
                 }
@@ -894,8 +1093,9 @@ public class WirelessCardGui extends WirelessCardPanel {
                 if (actionType == TOGGLE_PAUSE) on = !row.getBoolean("paused");
                 if (actionType == TOGGLE_PAUSE || actionType == HIGHLIGHT || actionType == TELEPORT)
                     visible = !row.getBoolean("group");
-                if (actionType == COPY_POSITION) visible = !row.getBoolean("category");
-                if (actionType == OPEN_ENTRANCES) visible = !data.getBoolean("detail") && !row.getBoolean("group");
+                if (actionType == COPY_POSITION || actionType == MANAGE_DEVICES) visible = !row.getBoolean("group");
+                if (actionType == OPEN_ENTRANCES)
+                    visible = !data.getBoolean("detail") && !row.getBoolean("group") && row.getInteger("entrances") > 1;
                 if (actionType == TOGGLE_PAUSE && row.getBoolean("device")) visible = false;
                 if (actionType == OPEN_DETAILS && data.getBoolean("sourcesPage"))
                     available &= !row.getBoolean("selected");
@@ -919,11 +1119,7 @@ public class WirelessCardGui extends WirelessCardPanel {
             }
             widget.setEnabled(visible);
             if (!visible) return;
-            if (id == PREVIOUS_PAGE) available &= data.getInteger("page") > 0;
-            if (id == NEXT_PAGE) available &= data.getInteger("page") + 1 < data.getInteger("pages");
             label = switch (actionType) {
-                case PREVIOUS_PAGE -> "<";
-                case NEXT_PAGE -> ">";
                 case REFRESH -> tr("refresh");
                 case BACK -> tr("back_compact");
                 case RENAME, RENAME_SOURCE -> StatCollector.translateToLocal("selectWorld.rename");
@@ -932,6 +1128,10 @@ public class WirelessCardGui extends WirelessCardPanel {
 
                 case TELEPORT -> tr("teleport");
                 case HIGHLIGHT -> tr("highlight");
+                // #tr gtneverreset.wireless.gui.manage_devices
+                // # Device list (Shift: access points)
+                // # zh_CN 设备列表（Shift：接入点）
+                case MANAGE_DEVICES -> tr("manage_devices");
                 case COPY_POSITION -> tr("copy");
                 case OPEN_DETAILS -> data.getBoolean("sourcesPage") ? tr(
                     rows.getCompoundTagAt(rowIndex(id))
@@ -959,7 +1159,7 @@ public class WirelessCardGui extends WirelessCardPanel {
         private String query = "";
         private Integer dimension;
         private List<int[]> dimensions = Collections.emptyList();
-        private int state, page, detailPage;
+        private int state, scroll, detailScroll;
         private int pageSize = Layout.MIN_ROWS;
         private byte[] incoming;
         private long incomingRevision = -1;
@@ -995,12 +1195,12 @@ public class WirelessCardGui extends WirelessCardPanel {
             if (!source.getString("selectedSource")
                 .equals(data.getString("selectedSource"))) {
                 expanded.clear();
-                page = detailPage = 0;
+                scroll = detailScroll = 0;
             }
             if (data.getBoolean("detail") && (!source.getBoolean("detail") || !data.getString("detailTarget")
-                .equals(source.getString("detailTarget")))) detailPage = 0;
+                .equals(source.getString("detailTarget")))) detailScroll = 0;
             if (source.hasKey("session") && data.getBoolean("collapseTypes") != source.getBoolean("collapseTypes"))
-                page = 0;
+                scroll = 0;
             localizeDimensions(data);
             source = data;
             List<Row> next = new ArrayList<>();
@@ -1070,7 +1270,7 @@ public class WirelessCardGui extends WirelessCardPanel {
             query = nextQuery;
             this.dimension = dimension;
             this.state = state;
-            page = 0;
+            scroll = 0;
             rebuild();
         }
 
@@ -1093,9 +1293,15 @@ public class WirelessCardGui extends WirelessCardPanel {
 
         public void resize(int rows) {
             if (!Layout.validRows(rows) || rows == pageSize) return;
-            page = page * pageSize / rows;
-            detailPage = detailPage * pageSize / rows;
             pageSize = rows;
+            rebuild();
+        }
+
+        public void scrollTo(int offset) {
+            offset = Math.max(0, Math.min(offset, container.display.getInteger("maxScroll")));
+            if (offset == container.display.getInteger("scroll")) return;
+            if (source.getBoolean("detail")) detailScroll = offset;
+            else scroll = offset;
             rebuild();
         }
 
@@ -1103,21 +1309,22 @@ public class WirelessCardGui extends WirelessCardPanel {
             if (action == OPEN_SOURCES) {
                 expanded.clear();
                 sourcesPage = true;
-                page = 0;
+                scroll = 0;
                 rebuild();
                 return true;
             }
             if (sourcesPage && action == BACK) {
                 sourcesPage = false;
-                page = 0;
+                scroll = 0;
                 rebuild();
                 return true;
             }
             boolean detail = source.getBoolean("detail");
+            String revealGroup = null;
             if (action == PREVIOUS_PAGE || action == NEXT_PAGE) {
                 int change = action == NEXT_PAGE ? 1 : -1;
-                if (detail) detailPage += change;
-                else page += change;
+                if (detail) detailScroll += change;
+                else scroll += change;
             } else if (type(action) == OPEN_DETAILS && !detail) {
                 NBTTagList rows = container.display.getTagList("rows", 10);
                 int index = rowIndex(action);
@@ -1125,22 +1332,29 @@ public class WirelessCardGui extends WirelessCardPanel {
                 NBTTagCompound row = rows.getCompoundTagAt(index);
                 if (!row.getBoolean("group")) return false;
                 String key = row.getString("key");
-                if (!expanded.remove(key)) expanded.add(key);
+                if (!expanded.remove(key)) {
+                    expanded.add(key);
+                    revealGroup = key;
+                }
             } else return false;
-            rebuild();
+            rebuild(revealGroup);
             return true;
         }
 
         public void rebuild() {
-            if (!source.hasKey("session")) return;
-            boolean detail = source.getBoolean("detail");
-            container.display = buildListing(detail ? detailPage : page);
-            if (detail) detailPage = container.display.getInteger("page");
-            else page = container.display.getInteger("page");
+            rebuild(null);
         }
 
-        private NBTTagCompound buildListing(int requestedPage) {
-            if (sourcesPage) return buildSources(requestedPage);
+        private void rebuild(String revealGroup) {
+            if (!source.hasKey("session")) return;
+            boolean detail = source.getBoolean("detail");
+            container.display = buildListing(detail ? detailScroll : scroll, revealGroup);
+            if (detail) detailScroll = container.display.getInteger("scroll");
+            else scroll = container.display.getInteger("scroll");
+        }
+
+        private NBTTagCompound buildListing(int requestedOffset, String revealGroup) {
+            if (sourcesPage) return buildSources(requestedOffset);
             boolean detail = source.getBoolean("detail");
             NBTTagCompound data = copy(source);
             List<Shown> shown = new ArrayList<>();
@@ -1175,17 +1389,26 @@ public class WirelessCardGui extends WirelessCardPanel {
                 order(rows, "", data.getBoolean("collapseTypes"));
                 flatten(rows, 0, 0, data.getBoolean("collapseTypes"), shown);
             }
-            data.setInteger("rowCount", shown.size());
-            int pages = Math.max(1, (shown.size() + pageSize - 1) / pageSize);
-            int currentPage = Math.max(0, Math.min(requestedPage, pages - 1));
-            data.setInteger("page", currentPage);
-            data.setInteger("pageSize", pageSize);
-            data.setInteger("pages", pages);
+            if (revealGroup != null) {
+                for (int start = 0; start < shown.size(); start++) {
+                    Shown group = shown.get(start);
+                    if (!revealGroup.equals(
+                        group.row()
+                            .data()
+                            .getString("key")))
+                        continue;
+                    int end = start + 1;
+                    while (end < shown.size() && shown.get(end)
+                        .depth() > group.depth()) end++;
+                    requestedOffset = Math.min(start, Math.max(requestedOffset, end - pageSize));
+                    break;
+                }
+            }
+            int offset = setScrollRange(data, requestedOffset, shown.size());
             data.setInteger("filterState", state);
             data.setBoolean("filtered", !query.isEmpty() || dimension != null || state != 0);
             NBTTagList entries = new NBTTagList();
-            for (Shown entry : shown
-                .subList(currentPage * pageSize, Math.min(shown.size(), (currentPage + 1) * pageSize))) {
+            for (Shown entry : shown.subList(offset, Math.min(shown.size(), offset + pageSize))) {
                 NBTTagCompound row = copy(
                     entry.row()
                         .data());
@@ -1224,23 +1447,29 @@ public class WirelessCardGui extends WirelessCardPanel {
                     .next());
         }
 
-        private NBTTagCompound buildSources(int requestedPage) {
+        private NBTTagCompound buildSources(int requestedOffset) {
             NBTTagCompound data = copy(source);
             NBTTagList saved = source.getTagList("sources", 10);
-            int pages = Math.max(1, (saved.tagCount() + pageSize - 1) / pageSize);
-            int currentPage = Math.max(0, Math.min(requestedPage, pages - 1));
             data.setBoolean("sourcesPage", true);
-            data.setInteger("page", currentPage);
-            data.setInteger("pages", pages);
-            data.setInteger("pageSize", pageSize);
+            int offset = setScrollRange(data, requestedOffset, saved.tagCount());
             NBTTagList entries = new NBTTagList();
-            for (int i = currentPage * pageSize; i < Math.min(saved.tagCount(), (currentPage + 1) * pageSize); i++) {
+            for (int i = offset; i < Math.min(saved.tagCount(), offset + pageSize); i++) {
                 NBTTagCompound row = copy(saved.getCompoundTagAt(i));
                 localizePosition(row, "position", source.getCompoundTag("dimensions"));
                 entries.appendTag(row);
             }
             data.setTag("rows", entries);
             return data;
+        }
+
+        private int setScrollRange(NBTTagCompound data, int requestedOffset, int count) {
+            int max = Math.max(0, count - pageSize);
+            int offset = Math.max(0, Math.min(requestedOffset, max));
+            data.setInteger("scroll", offset);
+            data.setInteger("maxScroll", max);
+            data.setInteger("rowCount", count);
+            data.setInteger("pageSize", pageSize);
+            return offset;
         }
 
         private Row filtered(Row row) {
@@ -1322,6 +1551,14 @@ public class WirelessCardGui extends WirelessCardPanel {
                     category.removeTag("targetName");
                     category.setString("position", "D" + category.getInteger("dimension"));
                     category.setInteger("items", children.size());
+                    category.removeTag("energyHatches");
+                    category.setInteger(
+                        "groupItems",
+                        (int) children.stream()
+                            .filter(
+                                row -> row.data()
+                                    .getBoolean("group"))
+                            .count());
                     category.removeTag("targetId");
                     result.add(new Row(category, Collections.unmodifiableList(new ArrayList<>(children)), "", ""));
                 }
@@ -1516,8 +1753,12 @@ public class WirelessCardGui extends WirelessCardPanel {
         public static final int MAX_ROWS = 9;
 
         public static Layout forScreen(int width, int height) {
-            int rows = Math.max(MIN_ROWS, Math.min(MAX_ROWS, (height - 8 - 112) / 24));
-            return new Layout(Math.max(320, Math.min(520, width - 12)), 112 + rows * 24, rows);
+            return forScreen(width, height, 440, 121);
+        }
+
+        static Layout forScreen(int width, int height, int maxWidth, int fixedHeight) {
+            int rows = Math.max(MIN_ROWS, Math.min(MAX_ROWS, (height - 8 - fixedHeight) / ROW_HEIGHT));
+            return new Layout(Math.max(320, Math.min(maxWidth, width - 12)), fixedHeight + rows * ROW_HEIGHT, rows);
         }
 
         public int visualisationWidth() {

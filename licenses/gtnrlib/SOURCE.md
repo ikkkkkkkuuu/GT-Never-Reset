@@ -107,3 +107,5 @@ source notice for its original source and attribution.
 Ported the reusable light and dark AE2 themes from GTNLLib PR 2 at babc4ac208aa51b19d176444a19de4b4aad004d8.
 https://github.com/GTNotLeisure/GTNLLib/pull/2
 Adapted namespaces, resource paths and registration to the GTNRLib client lifecycle. See GPL-3.0.txt for the code and the AE2 and Modernity notices in this directory for the assets.
+
+The additional AE2 widgets, scrollbar and theme guide come from [GTNLLib PR 3](https://github.com/GTNotLeisure/GTNLLib/pull/3) at d5c43b46380948c0b043b483823c99b7b3751288. The guide is reproduced verbatim. The library uses its own namespace and generates the quantity validation messages from Java translation declarations.

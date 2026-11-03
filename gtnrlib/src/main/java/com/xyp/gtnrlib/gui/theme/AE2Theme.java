@@ -53,17 +53,26 @@ public class AE2Theme {
     public static final int HIGHLIGHT = 0xFF9CD3FF, HIGHLIGHT_SHADOW = 0xFF708CBA, FIELD_SELECTION = 0xFF0000FF;
     public static final int BUTTON_HEIGHT = 20, TEXT_FIELD_HEIGHT = 12, ICON_SIZE = 16, ICON_BUTTON_WIDTH = 18,
         ICON_BUTTON_HEIGHT = 20, TAB_BUTTON_SIZE = 20, SWITCH_WIDTH = 22, SWITCH_HEIGHT = 12, SWITCH_LABEL_X = 26,
-        SWITCH_LABEL_Y = 4, SCROLLBAR_WIDTH = 7, INSET_TOP = 3, INSET_EDGE = 1;
+        SWITCH_LABEL_Y = 2, SCROLLBAR_WIDTH = 7, INSET_TOP = 3, INSET_EDGE = 1, BIG_SCROLLER_WIDTH = 12,
+        SCROLLER_HEIGHT = 15, RADIO_SIZE = 14, RADIO_LABEL_X = 16, RADIO_LABEL_Y = 3, LIST_ROW_HEIGHT = 22,
+        PROGRESS_WIDTH = 6, PROGRESS_HEIGHT = 18, BUTTON_BAR_MARGIN = 2, BUTTON_BAR_SPACING = 6, UPGRADE_PADDING = 5,
+        UPGRADE_ROWS = 8, VALIDATION_ICON_SIZE = 8;
     private static final String ROOT = "textures/gui/skin/";
     private static final ResourceLocation AE2_LEGACY_STATES = new ResourceLocation(
         "appliedenergistics2",
         "textures/guis/states.png"),
-        AE2_LEGACY_TERMINAL = new ResourceLocation("appliedenergistics2", "textures/guis/terminal.png");
-    private static final int PANEL_SIZE = 256, INSET_WIDTH = 8, INSET_HEIGHT = 9, SLOT_SIZE = 18, SCROLLER_HEIGHT = 15,
-        FIELD_WIDTH = 128, SHEET = 256, SWITCH_SHEET = 64, TAB_HOVER_SIZE = 22, LABEL_PADDING = 2, LABEL_HEIGHT = 8,
-        TRACK_WIDTH = 8, TRACK_HEIGHT = 6, FILL_SIZE = 4, TAG_WIDTH = 6, TAG_HEIGHT = 9, DIVIDER_WIDTH = 4,
-        DIVIDER_HEIGHT = 2, LEGACY_CELLS = 16, DISABLED_TEXT = 0xFFA0A0A0, VANILLA_TEXT = 0xFF404040,
-        WHEEL_DISC_ALPHA = 0xE6000000;
+        AE2_LEGACY_TERMINAL = new ResourceLocation("appliedenergistics2", "textures/guis/terminal.png"),
+        CREATIVE_TABS = new ResourceLocation("textures/gui/container/creative_inventory/tabs.png");
+    private static final int PANEL_SIZE = 256, INSET_WIDTH = 8, INSET_HEIGHT = 9, SLOT_SIZE = 18, FIELD_WIDTH = 128,
+        SHEET = 256, SWITCH_SHEET = 64, TAB_HOVER_SIZE = 22, LABEL_PADDING = 2, LABEL_HEIGHT = 8, TRACK_WIDTH = 8,
+        TRACK_HEIGHT = 6, FILL_SIZE = 4, TAG_WIDTH = 6, TAG_HEIGHT = 9, DIVIDER_WIDTH = 4, DIVIDER_HEIGHT = 2,
+        LEGACY_CELLS = 16, DISABLED_TEXT = 0xFFA0A0A0, VANILLA_TEXT = 0xFF404040, WHEEL_DISC_ALPHA = 0xE6000000,
+        GROOVE_X = 3, GROOVE_WIDTH = 6, SMALL_GROOVE_X = 1, SMALL_GROOVE_WIDTH = 5, LIST_ROW_WIDTH = 67,
+        BUTTON_BAR_WIDTH = 21, BUTTON_BAR_HEIGHT = 26, RADIO_X = 28, INVALID_Y = 128, UPGRADE_SHADOW = 2,
+        VANILLA_SCROLLER_U = 232, VANILLA_SCROLLER_DISABLED_U = 244, VANILLA_TRACK = 0xFF8B8B8B,
+        VANILLA_TRACK_SHADOW = 0xFF373737, VANILLA_TRACK_LIGHT = 0xFFFFFFFF;
+    private static final UITexture VANILLA_SCROLLER = vanillaScroller(VANILLA_SCROLLER_U),
+        VANILLA_SCROLLER_DISABLED = vanillaScroller(VANILLA_SCROLLER_DISABLED_U);
     private static final float INACTIVE_ALPHA = 0.5F;
     public static final ThemeStyle STYLE = new ThemeStyle(
         ThemeStyle.DEFAULT.cornerLength(),
@@ -127,6 +136,137 @@ public class AE2Theme {
 
     public static ResourceLocation legacyTerminal(@Nullable Variant variant) {
         return variant == null ? AE2_LEGACY_TERMINAL : variant.legacyTerminal;
+    }
+
+    public static int scrollbarWidth(@Nullable Variant variant) {
+        return variant == null ? BIG_SCROLLER_WIDTH + 2 : BIG_SCROLLER_WIDTH;
+    }
+
+    public static void drawScrollbar(@Nullable Variant variant, int x, int y, int height, int handleY,
+        boolean enabled) {
+        GlStateManager.color(1, 1, 1, 1);
+        int handleTop = y + 1 + handleY;
+        if (variant == null) {
+            int width = scrollbarWidth(null);
+            GuiDraw.drawRect(x, y, width, height, VANILLA_TRACK);
+            GuiDraw.drawRect(x, y, width - 1, 1, VANILLA_TRACK_SHADOW);
+            GuiDraw.drawRect(x, y, 1, height - 1, VANILLA_TRACK_SHADOW);
+            GuiDraw.drawRect(x + width - 1, y + 1, 1, height - 1, VANILLA_TRACK_LIGHT);
+            GuiDraw.drawRect(x + 1, y + height - 1, width - 1, 1, VANILLA_TRACK_LIGHT);
+            GlStateManager.color(1, 1, 1, 1);
+            (enabled ? VANILLA_SCROLLER : VANILLA_SCROLLER_DISABLED)
+                .draw(x + 1, handleTop, BIG_SCROLLER_WIDTH, SCROLLER_HEIGHT);
+            return;
+        }
+        variant.inset.draw(x + GROOVE_X, y, GROOVE_WIDTH, height);
+        (enabled ? variant.bigScroller : variant.bigScrollerDisabled)
+            .draw(x, handleTop, BIG_SCROLLER_WIDTH, SCROLLER_HEIGHT);
+    }
+
+    public static void drawSmallScrollbar(Variant variant, int x, int y, int height, int handleY, boolean enabled) {
+        GlStateManager.color(1, 1, 1, 1);
+        variant.inset.draw(x + SMALL_GROOVE_X, y, SMALL_GROOVE_WIDTH, height);
+        (enabled ? variant.scroller : variant.scrollerDisabled)
+            .draw(x, y + 1 + handleY, SCROLLBAR_WIDTH, SCROLLER_HEIGHT);
+    }
+
+    public static void drawButtonBar(Variant variant, int x, int y, int width, int height) {
+        GlStateManager.color(1, 1, 1, 1);
+        variant.buttonBar.draw(x, y, width, height);
+    }
+
+    public static int upgradePanelWidth(int slots) {
+        return UPGRADE_PADDING * 2 + Math.max(1, (slots + UPGRADE_ROWS - 1) / UPGRADE_ROWS) * SLOT_SIZE;
+    }
+
+    public static int upgradePanelHeight(int slots) {
+        return UPGRADE_PADDING * 2 + UPGRADE_SHADOW + Math.max(1, Math.min(slots, UPGRADE_ROWS)) * SLOT_SIZE;
+    }
+
+    public static void drawUpgradePanel(Variant variant, int x, int y, int slots) {
+        GlStateManager.color(1, 1, 1, 1);
+        variant.panel.draw(x, y, upgradePanelWidth(slots), upgradePanelHeight(slots));
+        for (int i = 0; i < slots; i++) variant.slotItem.draw(
+            x + UPGRADE_PADDING + i / UPGRADE_ROWS * SLOT_SIZE,
+            y + UPGRADE_PADDING + i % UPGRADE_ROWS * SLOT_SIZE,
+            SLOT_SIZE,
+            SLOT_SIZE);
+    }
+
+    public static int tableSize(int cells, int cellSize) {
+        return cells * cellSize + cells - 1 + INSET_EDGE * 2;
+    }
+
+    public static void drawTable(Variant variant, int x, int y, int columns, int rows, int cellWidth, int cellHeight) {
+        int width = tableSize(columns, cellWidth), height = tableSize(rows, cellHeight);
+        GlStateManager.color(1, 1, 1, 1);
+        variant.inset.draw(x, y, width, height);
+        for (int column = 1; column < columns; column++) GuiDraw.drawRect(
+            x + INSET_EDGE + column * (cellWidth + 1) - 1,
+            y + INSET_EDGE,
+            1,
+            height - INSET_EDGE * 2,
+            variant.colors.line);
+        for (int row = 1; row < rows; row++) GuiDraw.drawRect(
+            x + INSET_EDGE,
+            y + INSET_EDGE + row * (cellHeight + 1) - 1,
+            width - INSET_EDGE * 2,
+            1,
+            variant.colors.line);
+        GlStateManager.color(1, 1, 1, 1);
+    }
+
+    public static IDrawable listRow(BooleanSupplier selected) {
+        return (context, x, y, width, height, theme) -> {
+            boolean lit = selected.getAsBoolean();
+            Variant variant = active(context);
+            if (variant == null) {
+                themeButton(context, lit ? State.HOVER : State.NORMAL, x, y, width, height);
+                return;
+            }
+            GlStateManager.color(1, 1, 1, 1);
+            (lit ? variant.listRowSelected : variant.listRow).draw(x, y, width, height);
+        };
+    }
+
+    public static IDrawable radio(Widget<?> widget, BooleanSupplier selected, Supplier<String> label,
+        BooleanSupplier available) {
+        return (context, x, y, width, height, theme) -> {
+            boolean usable = available.getAsBoolean(), lit = usable && widget.isHovering(),
+                checked = selected.getAsBoolean();
+            FontRenderer font = Minecraft.getMinecraft().fontRenderer;
+            String fitted = font.trimStringToWidth(label.get(), Math.max(0, width - RADIO_LABEL_X));
+            Variant variant = active(context);
+            GlStateManager.color(1, 1, 1, usable ? 1 : INACTIVE_ALPHA);
+            if (variant == null) {
+                (checked ? GuiTextures.CHECK_BOX_FULL : GuiTextures.CHECK_BOX_EMPTY).draw(x, y, RADIO_SIZE, RADIO_SIZE);
+                GlStateManager.color(1, 1, 1, 1);
+                ITheme screen = screenTheme(context);
+                WidgetTheme look = screen == null ? null
+                    : screen.getFallback()
+                        .getTheme();
+                text(
+                    fitted,
+                    x + RADIO_LABEL_X,
+                    y + RADIO_LABEL_Y,
+                    look == null ? VANILLA_TEXT : look.getTextColor(),
+                    look != null && look.getTextShadow());
+                return;
+            }
+            variant.radioSprite(checked, lit)
+                .draw(x, y, RADIO_SIZE, RADIO_SIZE);
+            GlStateManager.color(1, 1, 1, 1);
+            text(
+                fitted,
+                x + RADIO_LABEL_X,
+                y + RADIO_LABEL_Y,
+                usable ? variant.colors.text : variant.colors.muted,
+                false);
+        };
+    }
+
+    public static int radioWidth(String label) {
+        return RADIO_LABEL_X + Minecraft.getMinecraft().fontRenderer.getStringWidth(label);
     }
 
     public static void drawLegacyState(@Nullable Variant variant, int index, float x, float y, float size) {
@@ -313,6 +453,23 @@ public class AE2Theme {
             .build();
     }
 
+    private static UITexture image(String folder, String name, int width, int height) {
+        return UITexture.builder()
+            .location(texture(folder, name))
+            .imageSize(width, height)
+            .nonOpaque()
+            .name("gtnrlib_" + folder + "_" + name)
+            .build();
+    }
+
+    private static UITexture vanillaScroller(int u) {
+        return UITexture.builder()
+            .location(CREATIVE_TABS)
+            .imageSize(SHEET, SHEET)
+            .subAreaXYWH(u, 0, BIG_SCROLLER_WIDTH, SCROLLER_HEIGHT)
+            .build();
+    }
+
     private static UITexture sprite(String folder, String sheet, int size, int x, int y, int width, int height) {
         return UITexture.builder()
             .location(texture(folder, sheet))
@@ -387,8 +544,10 @@ public class AE2Theme {
         public final ThemePalette palette;
         public final ThemeSkin skin;
         public final ResourceLocation legacyStates, legacyTerminal;
-        public final UITexture panel, inset, slotFluid, scroller, textField, iconButton, iconButtonHover, tabButton,
-            tabButtonHover, switchOff, switchOffHover, switchOn, switchOnHover;
+        public final UITexture panel, inset, slotItem, slotFluid, scroller, scrollerDisabled, bigScroller,
+            bigScrollerDisabled, textField, iconButton, iconButtonHover, tabButton, tabButtonHover, switchOff,
+            switchOffHover, switchOn, switchOnHover, radioOff, radioOffHover, radioOn, radioOnHover, listRow,
+            listRowSelected, buttonBar, progressEmpty, progressFull, invalid;
 
         Variant(String id, String menuId, String folder, Colors colors) {
             this.id = id;
@@ -418,8 +577,12 @@ public class AE2Theme {
                 INSET_TOP,
                 INSET_EDGE,
                 INSET_EDGE);
+            slotItem = adaptable(folder, "slot_item", SLOT_SIZE, SLOT_SIZE, 1, 1, 1, 1);
             slotFluid = adaptable(folder, "slot_fluid", SLOT_SIZE, SLOT_SIZE, 1, 1, 1, 1);
             scroller = adaptable(folder, "scroller", SCROLLBAR_WIDTH, SCROLLER_HEIGHT, 2, 2, 2, 3);
+            scrollerDisabled = image(folder, "scroller_disabled", SCROLLBAR_WIDTH, SCROLLER_HEIGHT);
+            bigScroller = image(folder, "big_scroller", BIG_SCROLLER_WIDTH, SCROLLER_HEIGHT);
+            bigScrollerDisabled = image(folder, "big_scroller_disabled", BIG_SCROLLER_WIDTH, SCROLLER_HEIGHT);
             textField = UITexture.builder()
                 .location(texture(folder, "text_field"))
                 .imageSize(FIELD_WIDTH, FIELD_WIDTH)
@@ -435,10 +598,50 @@ public class AE2Theme {
             switchOffHover = checkbox(folder, "switch_off_hover", 22, 28);
             switchOn = checkbox(folder, "switch_on", 0, 40);
             switchOnHover = checkbox(folder, "switch_on_hover", 22, 40);
+            radioOff = sprite(folder, "checkbox", SWITCH_SHEET, RADIO_X, 0, RADIO_SIZE, RADIO_SIZE);
+            radioOffHover = sprite(folder, "checkbox", SWITCH_SHEET, RADIO_X + RADIO_SIZE, 0, RADIO_SIZE, RADIO_SIZE);
+            radioOn = sprite(folder, "checkbox", SWITCH_SHEET, RADIO_X, RADIO_SIZE, RADIO_SIZE, RADIO_SIZE);
+            radioOnHover = sprite(
+                folder,
+                "checkbox",
+                SWITCH_SHEET,
+                RADIO_X + RADIO_SIZE,
+                RADIO_SIZE,
+                RADIO_SIZE,
+                RADIO_SIZE);
+            listRow = rowSprite(folder, "list_row", 0);
+            listRowSelected = rowSprite(folder, "list_row_selected", LIST_ROW_HEIGHT);
+            buttonBar = adaptable(folder, "button_bar", BUTTON_BAR_WIDTH, BUTTON_BAR_HEIGHT, 0, 2, 0, 4);
+            progressEmpty = progressSprite(folder, "progress_empty", 0);
+            progressFull = progressSprite(folder, "progress_full", PROGRESS_WIDTH);
+            invalid = sprite(folder, "states", SHEET, 0, INVALID_Y, ICON_SIZE, ICON_SIZE);
         }
 
         public UITexture switchSprite(boolean on, boolean hovered) {
             return on ? hovered ? switchOnHover : switchOn : hovered ? switchOffHover : switchOff;
+        }
+
+        public UITexture radioSprite(boolean on, boolean hovered) {
+            return on ? hovered ? radioOnHover : radioOn : hovered ? radioOffHover : radioOff;
+        }
+
+        private static UITexture rowSprite(String folder, String name, int y) {
+            return UITexture.builder()
+                .location(texture(folder, "list_row"))
+                .imageSize(LIST_ROW_WIDTH, LIST_ROW_HEIGHT * 2)
+                .subAreaXYWH(0, y, LIST_ROW_WIDTH, LIST_ROW_HEIGHT)
+                .adaptable(1, 1, 1, 2)
+                .name("gtnrlib_" + folder + "_" + name)
+                .build();
+        }
+
+        private static UITexture progressSprite(String folder, String name, int x) {
+            return UITexture.builder()
+                .location(texture(folder, "progress"))
+                .imageSize(PROGRESS_WIDTH * 2, PROGRESS_HEIGHT)
+                .subAreaXYWH(x, 0, PROGRESS_WIDTH, PROGRESS_HEIGHT)
+                .name("gtnrlib_" + folder + "_" + name)
+                .build();
         }
 
         public WheelStyle.Builder wheel(WheelStyle.Builder style) {
@@ -536,8 +739,9 @@ public class AE2Theme {
                         .textColor(hover)
                         .selectedBackground(lit)
                         .selectedTextColor(hover))
+                .background(IThemeApi.CLOSE_BUTTON, button)
                 .hoverBackground(IThemeApi.CLOSE_BUTTON, lit)
-                .textColor(IThemeApi.CLOSE_BUTTON, colors.text)
+                .textColor(IThemeApi.CLOSE_BUTTON, normal)
                 .textHoverColor(IThemeApi.CLOSE_BUTTON, hover)
                 .textShadow(IThemeApi.CLOSE_BUTTON, false)
                 .textHoverShadow(IThemeApi.CLOSE_BUTTON, false)

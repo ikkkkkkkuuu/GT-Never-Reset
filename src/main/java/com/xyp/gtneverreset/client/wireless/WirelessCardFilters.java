@@ -113,7 +113,8 @@ final class WirelessCardFilters {
             GuiDraw.drawRect(arrowX + row, arrowY + row, 5 - row * 2, 1, 0xFF000000 | style.color());
     }
 
-    static void layoutChips(List<ButtonWidget<?>> chips, int xSize, IntFunction<String> label, IntUnaryOperator count) {
+    static void layoutChips(List<ButtonWidget<?>> chips, int xSize, int y, IntFunction<String> label,
+        IntUnaryOperator count) {
         int available = xSize - 20 - CHIP_GAP * (chips.size() - 1), total = 0;
         int[] widths = new int[chips.size()];
         var font = Minecraft.getMinecraft().fontRenderer;
@@ -127,7 +128,7 @@ final class WirelessCardFilters {
         for (int i = 0; i < widths.length; i++) {
             int width = total <= available ? widths[i] : widths[i] * available / total;
             chips.get(i)
-                .pos(x, 47)
+                .pos(x, y)
                 .size(width, 14);
             x += width + CHIP_GAP;
         }

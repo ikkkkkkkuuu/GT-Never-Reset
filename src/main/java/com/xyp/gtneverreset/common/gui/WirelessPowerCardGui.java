@@ -50,7 +50,7 @@ public final class WirelessPowerCardGui {
     public static final int MIN_ROWS = 5, MAX_ROWS = 9;
     public static final int SOURCES = 1, DEVICES = 2, PREVIOUS = 3, NEXT = 4, AUTO = 5, SELECT = 6, PAUSE = 7,
         REMOVE = 8, REFRESH = 9, RESIZE = 10, FILTER = 11, TELEPORT = 12, HIGHLIGHT = 13, OPEN = 14, CLOSE = 15,
-        STATE = 16, DIMENSION = 17, MERGE_TYPES = 18, EXPAND_TYPE = 19;
+        STATE = 16, DIMENSION = 17, MERGE_TYPES = 18, EXPAND_TYPE = 19, SCROLL_TO = 20, SCROLL_BY = 21;
 
     public enum PowerState {
         ALL,
@@ -88,14 +88,15 @@ public final class WirelessPowerCardGui {
 
         private final PlayerInventoryGuiData data;
         private final WirelessPowerCardContainer container;
-        private int page, ticks, visibleRows = MIN_ROWS;
+        private int offset, ticks, visibleRows = MIN_ROWS;
         private boolean sources;
         private Integer dimension;
         private PowerState state = PowerState.ALL;
         private final Set<Integer> expandedTypes = new HashSet<>();
         private String filter = "";
         private String detail = "";
-        private int overviewPage;
+        private int overviewOffset;
+        private boolean scrollDirty;
         private long lastAction = Long.MIN_VALUE;
         private NBTTagCompound display = new NBTTagCompound();
 
@@ -120,12 +121,13 @@ public final class WirelessPowerCardGui {
         @Override
         public void detectAndSendChanges(boolean init) {
             if (!hasCard()) return;
-            if (init || ++ticks % 20 == 0) update();
+            if (init || ++ticks % 20 == 0 || scrollDirty) update();
         }
 
         private void update() {
             WirelessPowerSavedData saved = WirelessPowerSavedData.get();
             if (saved == null) return;
+            scrollDirty = false;
             var player = data.getPlayer();
             ItemStack card = container.card();
             saved.remember(player.getUniqueID(), player.getCommandSenderName());
@@ -150,7 +152,7 @@ public final class WirelessPowerCardGui {
                     .orElse(null);
                 if (group == null) {
                     detail = "";
-                    page = overviewPage;
+                    offset = overviewOffset;
                 } else {
                     next.setTag("controller", group.write(saved));
                     devices = group.members.stream()
@@ -162,15 +164,18 @@ public final class WirelessPowerCardGui {
             if (!sources && detail.isEmpty()) devices = overview(devices, saved, next);
             int count = visibleRows;
             int total = sources ? networks.size() : devices.size();
-            int pages = Math.max(1, (total + count - 1) / count);
-            page = Math.max(0, Math.min(page, pages - 1));
-            next.setInteger("page", page);
-            next.setInteger("pages", pages);
+            int maxScroll = Math.max(0, total - count);
+            offset = Math.max(0, Math.min(offset, maxScroll));
+            next.setInteger("scroll", offset);
+            next.setInteger("maxScroll", maxScroll);
+            next.setInteger("rowCount", total);
+            next.setInteger("page", (offset + count - 1) / count);
+            next.setInteger("pages", Math.max(1, (total + count - 1) / count));
             next.setInteger("total", total);
             next.setInteger("rowsPerPage", visibleRows);
             next.setString("filter", filter);
             NBTTagList rows = new NBTTagList();
-            for (int i = page * count; i < Math.min(total, (page + 1) * count); i++) {
+            for (int i = offset; i < Math.min(total, offset + count); i++) {
                 NBTTagCompound row;
                 if (sources) {
                     UUID id = networks.get(i);
@@ -212,16 +217,20 @@ public final class WirelessPowerCardGui {
             next.setInteger("deviceCount", devices.size());
 
             int[] counts = new int[PowerState.values().length];
+            int[] overall = new int[counts.length];
             List<DeviceRow> matches = new ArrayList<>();
             String query = filter.toLowerCase(Locale.ROOT);
             for (DeviceRow row : devices) {
+                PowerState status = row.status();
+                overall[status.ordinal()]++;
                 if (dimension != null && row.dimension() != dimension || !query.isEmpty() && !row.matches(query, saved))
                     continue;
-                PowerState status = row.status();
                 counts[PowerState.ALL.ordinal()]++;
                 counts[status.ordinal()]++;
                 if (state == PowerState.ALL || state == status) matches.add(row);
             }
+            next.setIntArray("overall", overall);
+            next.setInteger("matched", matches.size());
             next.setIntArray("stateCounts", counts);
             if (!mergeTypes) return matches;
 
@@ -241,6 +250,7 @@ public final class WirelessPowerCardGui {
                 shown.add(folder);
                 if (folder.expanded) {
                     for (DeviceRow row : type) row.indented = true;
+                    type.get(type.size() - 1).lastChild = true;
                     shown.addAll(type);
                 }
             }
@@ -292,7 +302,7 @@ public final class WirelessPowerCardGui {
 
         @Override
         public void readOnServer(int action, PacketBuffer buffer) throws IOException {
-            if (action < SOURCES || action > EXPAND_TYPE) return;
+            if (action < SOURCES || action > SCROLL_BY) return;
             String target = buffer.readStringFromBuffer(64);
             ServerThreadUtil.addScheduledTask(() -> {
                 if (!isValid() || !hasCard() || data.getPlayer().openContainer != container) return;
@@ -301,6 +311,19 @@ public final class WirelessPowerCardGui {
                 if (action != RESIZE && action != FILTER && action < STATE) {
                     if (lastAction == now) return;
                     lastAction = now;
+                }
+                if (action == SCROLL_TO || action == SCROLL_BY) {
+                    try {
+                        long value = Integer.parseInt(target);
+                        int targetOffset = (int) Math.max(
+                            0,
+                            Math.min(display.getInteger("maxScroll"), action == SCROLL_BY ? offset + value : value));
+                        if (offset != targetOffset) {
+                            offset = targetOffset;
+                            scrollDirty = true;
+                        }
+                    } catch (NumberFormatException ignored) {}
+                    return;
                 }
                 if (action >= STATE && (sources || !detail.isEmpty())) return;
                 WirelessPowerSavedData saved = WirelessPowerSavedData.get();
@@ -317,20 +340,20 @@ public final class WirelessPowerCardGui {
                     case SOURCES -> {
                         sources = true;
                         detail = "";
-                        page = 0;
+                        offset = 0;
                     }
                     case DEVICES -> {
                         sources = false;
                         detail = "";
-                        page = 0;
+                        offset = 0;
                     }
-                    case PREVIOUS -> page = Math.max(0, page - 1);
-                    case NEXT -> page = Math.min(display.getInteger("pages") - 1, page + 1);
+                    case PREVIOUS -> offset = Math.max(0, offset - visibleRows);
+                    case NEXT -> offset = Math.min(display.getInteger("maxScroll"), offset + visibleRows);
                     case AUTO -> WirelessPowerCard.toggleAutomatic(card, data.getPlayer());
                     case SELECT -> {
                         WirelessPowerCard.selectSource(card, data.getPlayer(), id);
                         sources = false;
-                        page = 0;
+                        offset = 0;
                     }
                     case PAUSE -> saved.toggle(
                         id,
@@ -348,14 +371,14 @@ public final class WirelessPowerCardGui {
                             .findFirst()
                             .orElse(null);
                         if (group == null) return;
-                        overviewPage = page;
+                        overviewOffset = offset;
                         detail = group.key();
                         sources = false;
-                        page = 0;
+                        offset = 0;
                     }
                     case CLOSE -> {
                         detail = "";
-                        page = overviewPage;
+                        offset = overviewOffset;
                     }
                     case TELEPORT, HIGHLIGHT -> {
                         Connection connection = saved.connection(id);
@@ -398,7 +421,7 @@ public final class WirelessPowerCardGui {
                         } catch (IllegalArgumentException invalid) {
                             return;
                         }
-                        page = 0;
+                        offset = 0;
                     }
                     case DIMENSION -> {
                         try {
@@ -406,12 +429,12 @@ public final class WirelessPowerCardGui {
                         } catch (NumberFormatException invalid) {
                             return;
                         }
-                        page = 0;
+                        offset = 0;
                     }
                     case MERGE_TYPES -> {
                         WirelessPowerCard.toggleGrouping(card, data.getPlayer());
                         expandedTypes.clear();
-                        page = 0;
+                        offset = 0;
                     }
                     case EXPAND_TYPE -> {
                         if (!WirelessPowerCard.mergeTypes(card)) return;
@@ -435,7 +458,7 @@ public final class WirelessPowerCardGui {
                     }
                     case FILTER -> {
                         filter = target.trim();
-                        page = 0;
+                        offset = 0;
                     }
                     default -> {}
                 }
@@ -463,7 +486,7 @@ public final class WirelessPowerCardGui {
             private final List<Connection> members = new ArrayList<>();
 
             private int typeCount;
-            private boolean expanded, indented;
+            private boolean expanded, indented, lastChild;
             private PowerState status;
             private int online;
             private boolean paused, ready;
@@ -552,6 +575,7 @@ public final class WirelessPowerCardGui {
                 }
                 NBTTagCompound row = first.write();
                 row.setBoolean("indented", indented);
+                row.setBoolean("lastChild", lastChild);
                 row.setString("id", key());
                 row.setBoolean("group", controller != null);
                 row.setInteger("members", members.size());

@@ -17,6 +17,7 @@ import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Address;
 
 import appeng.api.implementations.parts.IPartCable;
 import appeng.helpers.IInterfaceHost;
+import gregtech.api.enums.GTValues;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEHatch;
 import gregtech.api.metatileentity.implementations.MTEMultiBlockBase;
@@ -108,6 +109,16 @@ public class WirelessMachineGroups {
 
         public static Row cluster(IWirelessLinkView link, TypeKey type) {
             return new Row(null, type, Collections.singletonList(link), link.statistics());
+        }
+
+        public int[] energyHatches() {
+            int[] counts = new int[GTValues.VN.length];
+            Set<MTEHatch> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+            for (MTEHatch hatch : machine.getExoticAndNormalEnergyHatchList()) {
+                if (hatch != null && seen.add(hatch) && hatch.mTier >= 0 && hatch.mTier < counts.length)
+                    counts[hatch.mTier]++;
+            }
+            return counts;
         }
 
         public boolean group() {
