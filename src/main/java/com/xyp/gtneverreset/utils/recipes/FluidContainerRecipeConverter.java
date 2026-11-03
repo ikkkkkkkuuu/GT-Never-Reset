@@ -4,6 +4,7 @@ import static gregtech.api.util.GTRecipeConstants.SKIP_CELL_RECIPE_GENERATION;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -12,10 +13,9 @@ import java.util.Set;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
 import com.xyp.gtneverreset.GTNeverReset;
 
 import gregtech.api.enums.GTValues;
@@ -235,35 +235,44 @@ public final class FluidContainerRecipeConverter {
         return copy;
     }
 
-    private record RecipeKey(Multiset<InputKey> inputs, List<OutputKey> outputs, int duration, int eut,
-        int specialValue, Object specialItems, Set<Map.Entry<RecipeMetadataKey<?>, Object>> metadata,
-        boolean nbtSensitive, boolean hidden, boolean canBeBuffered, boolean needsEmptyOutput, List<String> neiDesc) {
+    private record RecipeKey(List<InputKey> itemInputs, List<InputKey> fluidInputs, List<OutputKey> outputs,
+        int duration, int eut, int specialValue, Object specialItems,
+        Set<Map.Entry<RecipeMetadataKey<?>, Object>> metadata, boolean nbtSensitive, boolean hidden,
+        boolean canBeBuffered, boolean needsEmptyOutput, List<String> neiDesc) {
 
         private static RecipeKey of(GTRecipe_WithAlt recipe) {
-            // Converted cells can change the order of otherwise identical fluid inputs.
-            Multiset<InputKey> inputs = HashMultiset.create();
+            List<InputKey> items = new ArrayList<>();
             for (int i = 0; i < recipe.mInputs.length; i++) {
                 StackKey primary = StackKey.of(recipe.mInputs[i]);
-                Set<StackKey> choices = new HashSet<>();
+                List<StackKey> choices = null;
                 if (recipe.mOreDictAlt[i] != null) {
+                    choices = new ArrayList<>();
                     for (ItemStack alt : recipe.mOreDictAlt[i]) {
                         if (alt != null) choices.add(StackKey.of(alt));
                     }
                 }
-                choices.remove(primary);
-                inputs.add(new InputKey(primary, choices, recipe.getInputChance(i), recipe.mOreDictIds[i]));
+                items.add(new InputKey(primary, choices, recipe.getInputChance(i), recipe.mOreDictIds[i]));
             }
+            List<InputKey> fluids = new ArrayList<>();
+            Set<Integer> fluidIds = new HashSet<>();
+            boolean independentFluids = true;
             for (int i = 0; i < recipe.mFluidInputs.length; i++) {
                 StackKey primary = StackKey.of(recipe.mFluidInputs[i]);
-                Set<StackKey> choices = new HashSet<>();
+                List<StackKey> choices = null;
                 if (recipe.mAltFluidInputs[i] != null) {
+                    choices = new ArrayList<>();
                     for (FluidStack alt : recipe.mAltFluidInputs[i]) {
                         if (alt != null) choices.add(StackKey.of(alt));
                     }
                 }
-                choices.remove(primary);
-                inputs.add(new InputKey(primary, choices, recipe.getFluidInputChance(i), -1));
+                int chance = recipe.getFluidInputChance(i);
+                fluids.add(new InputKey(primary, choices, chance, -1));
+                if (choices != null || chance != 10000
+                    || primary.amount <= 0
+                    || !fluidIds.add(recipe.mFluidInputs[i].getFluidID())) independentFluids = false;
             }
+            // Cells can change the order of direct inputs. Only distinct, unconditional fluids commute.
+            if (independentFluids) fluids.sort(Comparator.comparingInt(key -> ((Fluid) key.stack.type).getID()));
             List<OutputKey> outputs = new ArrayList<>();
             for (int i = 0; i < recipe.mOutputs.length; i++) {
                 outputs.add(new OutputKey(StackKey.of(recipe.mOutputs[i]), recipe.getOutputChance(i)));
@@ -272,7 +281,8 @@ public final class FluidContainerRecipeConverter {
                 outputs.add(new OutputKey(StackKey.of(recipe.mFluidOutputs[i]), recipe.getFluidOutputChance(i)));
             }
             return new RecipeKey(
-                inputs,
+                items,
+                fluids,
                 outputs,
                 recipe.mDuration,
                 recipe.mEUt,
@@ -288,7 +298,7 @@ public final class FluidContainerRecipeConverter {
         }
     }
 
-    private record InputKey(StackKey stack, Set<StackKey> alternatives, int chance, int oreDictId) {}
+    private record InputKey(StackKey stack, List<StackKey> alternatives, int chance, int oreDictId) {}
 
     private record OutputKey(StackKey stack, int chance) {}
 
