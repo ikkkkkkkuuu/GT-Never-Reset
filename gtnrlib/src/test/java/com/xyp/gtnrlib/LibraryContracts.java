@@ -15,6 +15,8 @@ public final class LibraryContracts {
         absent("gregtech.api.GregTechAPI");
         AnimationContracts.verify();
         PunchyPackContracts.verify();
+        String release = System.getProperty("gtnrlib.test.hmi");
+        if (release != null) HmiPlaybackContracts.verify(Path.of(release));
         CommandTreeContracts.verify();
         LocalSupportContracts.verify();
         SharedImplementationContracts.verify();

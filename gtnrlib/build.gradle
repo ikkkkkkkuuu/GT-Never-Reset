@@ -6,7 +6,7 @@ buildscript {
 }
 
 // Library version changes only when its implementation or resources change.
-ext.modVersion = '0.1.17'
+ext.modVersion = '0.1.18'
 ext.modName = 'GTNRLib'
 ext.modId = 'gtnrlib'
 ext.modGroup = 'com.xyp.gtnrlib'
@@ -14,7 +14,7 @@ ext.generateGradleTokenClass = ''
 ext.accessTransformersFile = 'gtnrlib_at.cfg'
 ext.coreModClass = 'asm.EarlyMixinsLoader'
 ext.customArchiveBaseName = 'gtnrlib'
-ext.usesShadowedDependencies = false
+ext.usesShadowedDependencies = true
 ext['gtnh.modules.ideIntegration'] = false
 
 apply plugin: 'com.gtnewhorizons.gtnhconvention'
@@ -23,6 +23,7 @@ apply from: rootProject.file('repositories.gradle')
 def elytraModpackVersion = rootProject.extensions.getByName('elytraModpackVersion')
 
 dependencies {
+    shadowImplementation('org.luaj:luaj-jse:3.0.1') { transitive = false }
     api(elytraModpackVersion.gtnhdev('GTNHLib') as String) { transitive = false }
     api(elytraModpackVersion.gtnhdev('ModularUI2') as String) { transitive = false }
     runtimeOnly(elytraModpackVersion.gtnhdev('Baubles-Expanded') as String) { transitive = false }
@@ -47,6 +48,7 @@ tasks.register('checkLibraryContracts', JavaExec) {
     dependsOn tasks.testClasses
     classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
     mainClass = 'com.xyp.gtnrlib.LibraryContracts'
+    if (project.hasProperty('hmiRelease')) systemProperty 'gtnrlib.test.hmi', project.property('hmiRelease')
     workingDir = projectDir
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
 }
@@ -63,7 +65,11 @@ configurations.create('distribution') {
     artifacts.add('distribution', tasks.named(archive))
 }
 
-['jar', 'sourcesJar'].each { archive ->
+tasks.named('shadowJar') {
+    exclude 'lua.class', 'luac.class', 'luajc*.class', 'META-INF/services/javax.script.ScriptEngineFactory'
+}
+
+['jar', 'shadowJar', 'sourcesJar'].each { archive ->
     tasks.named(archive, Jar) {
         from(rootProject.file('licenses/gtnrlib')) { into 'META-INF/licenses/gtnrlib' }
     }
