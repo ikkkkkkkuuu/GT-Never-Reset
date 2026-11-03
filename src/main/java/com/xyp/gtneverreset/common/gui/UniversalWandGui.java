@@ -13,6 +13,7 @@ import net.minecraft.util.StatCollector;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.IThemeApi;
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.factory.GuiData;
@@ -170,8 +171,25 @@ public final class UniversalWandGui {
         // # Tools
         // # zh_CN 工具
         ParentWidget<?> tools = section("tools", 0, 84)
-            .child(enchantButton(player, expected, fortune, false).pos(6, 22))
-            .child(enchantButton(player, expected, fortune, true).pos(119, 22))
+            // #tr gtneverreset.gui.universal_wand.harvest_mode
+            // # Harvest mode
+            // # zh_CN 采集模式
+            .child(
+                IKey.lang("gtneverreset.gui.universal_wand.harvest_mode")
+                    .asWidget()
+                    .pos(6, 25))
+            // #tr gtneverreset.gui.universal_wand.silk
+            // # Silk Touch
+            // # zh_CN 精准采集
+            .child(
+                radioOption(syncManager, "silk", fortune, false).pos(80, 22)
+                    .size(74, 16))
+            // #tr gtneverreset.gui.universal_wand.fortune
+            // # Fortune
+            // # zh_CN 时运
+            .child(
+                radioOption(syncManager, "fortune", fortune, true).pos(158, 22)
+                    .size(70, 16))
             .child(
                 // #tr gtneverreset.gui.universal_wand.protection
                 // # Protection mode
@@ -479,32 +497,23 @@ public final class UniversalWandGui {
             .size(109, 16);
     }
 
-    private static ButtonWidget<?> enchantButton(EntityPlayer player, ItemStack expected, BooleanSyncValue fortune,
-        boolean selectFortune) {
-        // #tr gtneverreset.gui.universal_wand.silk
-        // # Silk Touch
-        // # zh_CN 精准采集
-        // #tr gtneverreset.gui.universal_wand.fortune
-        // # Fortune
-        // # zh_CN 时运
-        String key = selectFortune ? "fortune" : "silk";
-        return actionButton(
-            key,
-            () -> ItemUniversalWand.setEnchantMode(
-                player,
-                expected,
-                selectFortune ? ItemUniversalWand.EnchantMode.FORTUNE : ItemUniversalWand.EnchantMode.SILK))
-                    .overlay(
-                        IKey.dynamic(
-                            () -> StatCollector.translateToLocal("gtneverreset.gui.universal_wand." + key)
-                                + (fortune.getBoolValue() == selectFortune
-                                    // #tr gtneverreset.gui.universal_wand.current
-                                    // # (Current)
-                                    // # zh_CN （当前）
-                                    ? StatCollector.translateToLocal("gtneverreset.gui.universal_wand.current")
-                                    : ""))
-                            .scale(1.0F))
-                    .size(109, 16);
+    private static ButtonWidget<?> radioOption(PanelSyncManager manager, String key, BooleanSyncValue value,
+        boolean choice) {
+        ButtonWidget<?> option = new ButtonWidget<>().name(key)
+            .onMousePressed(button -> {
+                if (button != 0 || !controlAllowed(key)) return false;
+                if (value.getBoolValue() != choice) value.setBoolValue(choice, true, true);
+                return true;
+            })
+            .background(IDrawable.EMPTY)
+            .disableHoverBackground();
+        if (manager.isClient()) option.overlay(
+            AE2Theme.radio(
+                option,
+                () -> value.getBoolValue() == choice,
+                IKey.lang("gtneverreset.gui.universal_wand." + key)::get,
+                () -> controlAllowed(key)));
+        return option;
     }
 
     private static ParentWidget<?> numberRow(String key, IntSyncValue value, int min, int max, int y, boolean area) {
@@ -551,7 +560,9 @@ public final class UniversalWandGui {
             value -> ItemUniversalWand.setTimeAccelerationEnabled(player, expected, value)).allowC2S();
         IntSyncValue rate = new IntSyncValue(() -> ItemUniversalWand.getAccelerationRate(expected));
         IntSyncValue mode = new IntSyncValue(() -> ItemUniversalWand.getAccelerationMode(expected));
-        BooleanSyncValue gtMode = new BooleanSyncValue(() -> ItemUniversalWand.isAccelerationGtMode(expected));
+        BooleanSyncValue gtMode = new BooleanSyncValue(
+            () -> ItemUniversalWand.isAccelerationGtMode(expected),
+            value -> ItemUniversalWand.setAccelerationGtMode(player, expected, value)).allowC2S();
         manager.syncValue("acceleration_enabled", 0, enabled);
         manager.syncValue("acceleration_rate", 0, rate);
         manager.syncValue("acceleration_mode", 0, mode);
@@ -608,9 +619,16 @@ public final class UniversalWandGui {
                     // # zh_CN 无用之杖 · 加速配置
                     IKey.lang("gtneverreset.gui.universal_wand.acceleration_title")).pos(8, 7)
                         .size(244, 16))
+            // #tr gtneverreset.gui.universal_wand.acceleration_engine
+            // # Engine
+            // # zh_CN 加速方式
             .child(
-                stateSwitch("time_acceleration", enabled).pos(144, 30)
-                    .size(124, 18))
+                IKey.lang("gtneverreset.gui.universal_wand.acceleration_engine")
+                    .asWidget()
+                    .pos(12, 33))
+            .child(
+                stateSwitch("time_acceleration", enabled).pos(173, 30)
+                    .size(101, 16))
             .child(
                 new TextWidget<>(
                     // #tr gtneverreset.gui.universal_wand.acceleration_multiplier
@@ -641,14 +659,10 @@ public final class UniversalWandGui {
             // # zh_CN GT 机器加速进度，其他目标正常加速；重新应用后生效。
             String engineKey = selected ? "acceleration_engine_gt" : "acceleration_engine_normal";
             panel.child(
-                actionButton(engineKey, () -> ItemUniversalWand.setAccelerationGtMode(player, expected, selected))
-                    .overlay(
-                        IKey.dynamic(
-                            () -> (gtMode.getBoolValue() == selected ? "✓ " : "")
-                                + StatCollector.translateToLocal("gtneverreset.gui.universal_wand." + engineKey)))
+                radioOption(manager, engineKey, gtMode, selected)
                     .addTooltipLine(IKey.lang("gtneverreset.gui.universal_wand." + engineKey + ".tooltip"))
-                    .pos(12 + value * 64, 30)
-                    .size(60, 18));
+                    .pos(54 + value * 60, 30)
+                    .size(58, 16));
         }
         if (pageCount > 1) {
             for (int page = 0; page < pageCount; page++) panel.child(

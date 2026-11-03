@@ -237,31 +237,29 @@ public class AE2Theme {
             FontRenderer font = Minecraft.getMinecraft().fontRenderer;
             String fitted = font.trimStringToWidth(label.get(), Math.max(0, width - RADIO_LABEL_X));
             Variant variant = active(context);
-            GlStateManager.color(1, 1, 1, usable ? 1 : INACTIVE_ALPHA);
-            if (variant == null) {
-                (checked ? GuiTextures.CHECK_BOX_FULL : GuiTextures.CHECK_BOX_EMPTY).draw(x, y, RADIO_SIZE, RADIO_SIZE);
-                GlStateManager.color(1, 1, 1, 1);
-                ITheme screen = screenTheme(context);
-                WidgetTheme look = screen == null ? null
-                    : screen.getFallback()
-                        .getTheme();
-                text(
-                    fitted,
-                    x + RADIO_LABEL_X,
-                    y + RADIO_LABEL_Y,
-                    look == null ? VANILLA_TEXT : look.getTextColor(),
-                    look != null && look.getTextShadow());
-                return;
+            ITheme screen = screenTheme(context);
+            WidgetTheme look = screen == null ? null
+                : screen.getFallback()
+                    .getTheme();
+            int textColor = look == null ? VANILLA_TEXT : look.getTextColor();
+            int ring = VANILLA_TEXT, center = lit ? Color.WHITE.main : 0xFFDDDDDD, dot = VANILLA_TEXT;
+            if (variant != null) {
+                Colors colors = variant.colors;
+                textColor = colors.text;
+                ring = lit ? HIGHLIGHT : colors.text;
+                center = colors.well;
+                dot = variant == Variant.LIGHT ? colors.info : HIGHLIGHT;
             }
-            variant.radioSprite(checked, lit)
-                .draw(x, y, RADIO_SIZE, RADIO_SIZE);
-            GlStateManager.color(1, 1, 1, 1);
+            if (!usable) ring = dot = textColor = variant == null ? DISABLED_TEXT : variant.colors.muted;
+            GuiDraw.drawCircle(x + 1, y + 1, 12, ring, 20);
+            GuiDraw.drawCircle(x + 2, y + 2, 10, center, 20);
+            if (checked) GuiDraw.drawCircle(x + 4, y + 4, 6, dot, 20);
             text(
                 fitted,
                 x + RADIO_LABEL_X,
                 y + RADIO_LABEL_Y,
-                usable ? variant.colors.text : variant.colors.muted,
-                false);
+                textColor,
+                variant == null && look != null && look.getTextShadow());
         };
     }
 

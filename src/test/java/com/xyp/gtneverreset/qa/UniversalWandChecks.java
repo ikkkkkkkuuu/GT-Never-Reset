@@ -46,7 +46,8 @@ public final class UniversalWandChecks {
     private boolean launched, waiting, finished;
     private int ticks, theme, frames;
     private volatile int stage;
-    private boolean oldProtection;
+    private boolean oldProtection, selectFortune, selectGt;
+    private volatile boolean enginePassed;
     private volatile boolean syncPassed;
     private volatile boolean miningChecked;
 
@@ -110,7 +111,8 @@ public final class UniversalWandChecks {
             var panel = screen.getMainPanel();
             var panels = screen.getPanelManager()
                 .getOpenPanels();
-            if (stage == 1 && !syncPassed || stage >= 3 && panels.size() < stage - 1) return;
+            if (stage == 1 && !syncPassed || stage == 4 && !enginePassed || stage >= 3 && panels.size() < stage - 1)
+                return;
             var pages = (PagedWidget<?>) panel.getChildren()
                 .stream()
                 .filter(w -> w instanceof PagedWidget)
@@ -127,6 +129,11 @@ public final class UniversalWandChecks {
             if (stage == 0) {
                 oldProtection = ItemUniversalWand.isProtectionMode(mc.thePlayer.getHeldItem());
                 syncPassed = false;
+                selectFortune = ItemUniversalWand.getEnchantMode(mc.thePlayer.getHeldItem())
+                    == ItemUniversalWand.EnchantMode.SILK;
+                var enchant = (ButtonWidget<?>) find(panel, selectFortune ? "fortune" : "silk");
+                enchant.onMousePressed(0);
+                enchant.onMousePressed(0);
                 ((SlideSwitch) find(panel, "protection")).onMousePressed(0);
             }
             if (stage < 2) {
@@ -140,6 +147,15 @@ public final class UniversalWandChecks {
             } else if (stage == 2) {
                 ((ButtonWidget<?>) find(panel, "acceleration")).onMousePressed(0);
             } else if (stage == 3) {
+                selectGt = !ItemUniversalWand.isAccelerationGtMode(mc.thePlayer.getHeldItem());
+                enginePassed = false;
+                var engine = panels.stream()
+                    .map(p -> find(p, selectGt ? "acceleration_engine_gt" : "acceleration_engine_normal"))
+                    .filter(java.util.Objects::nonNull)
+                    .findFirst()
+                    .orElseThrow();
+                ((ButtonWidget<?>) engine).onMousePressed(0);
+                ((ButtonWidget<?>) engine).onMousePressed(0);
                 var history = panels.stream()
                     .map(p -> find(p, "history"))
                     .filter(java.util.Objects::nonNull)
@@ -159,7 +175,7 @@ public final class UniversalWandChecks {
 
     @SubscribeEvent
     public void server(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || finished || miningChecked && stage != 1) return;
+        if (event.phase != TickEvent.Phase.END || finished || miningChecked && stage != 1 && stage != 4) return;
         var players = MinecraftServer.getServer()
             .getConfigurationManager().playerEntityList;
         if (players.isEmpty()) return;
@@ -174,7 +190,10 @@ public final class UniversalWandChecks {
                 Minecraft.getMinecraft()
                     .func_152344_a(() -> finish(failure));
             }
-        } else if (ItemUniversalWand.isProtectionMode(held) != oldProtection) syncPassed = true;
+        } else if (stage == 1) {
+            syncPassed = ItemUniversalWand.isProtectionMode(held) != oldProtection
+                && (ItemUniversalWand.getEnchantMode(held) == ItemUniversalWand.EnchantMode.FORTUNE) == selectFortune;
+        } else if (stage == 4) enginePassed = ItemUniversalWand.isAccelerationGtMode(held) == selectGt;
     }
 
     private static void checkInstantMining(EntityPlayerMP player, ItemStack original) {
