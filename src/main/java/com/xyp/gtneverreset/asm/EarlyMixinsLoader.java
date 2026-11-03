@@ -25,6 +25,36 @@ public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLo
                 "wireless.MixinWirelessTileData",
                 "gtnhlib.ServerThreadUtilMixin",
                 "minecraft.VanillaFurnaceMixin"));
+        mixins.add("minecraft.ItemInWorldManagerMiningMixin");
+        mixins.add("minecraft.UniversalWandBlockInteractionMixin");
+        mixins.add("minecraft.UniversalWandCombatMixin");
+        mixins.add("minecraft.UniversalWandEntityInteractionMixin");
+        mixins.add("minecraft.UniversalWandEntityProtectionMixin");
+        mixins.add("minecraft.UniversalWandFlightMixin");
+        mixins.add("minecraft.UniversalWandFlightSpeedAccessor");
+        mixins.add("minecraft.UniversalWandFlightSpeedMixin");
+        mixins.add("minecraft.UniversalWandLegacyNoAggroMixin");
+        mixins.add("minecraft.UniversalWandLivingAccess");
+        mixins.add("minecraft.UniversalWandLivingDropsMixin");
+        mixins.add("minecraft.UniversalWandLivingProtectionMixin");
+        mixins.add("minecraft.UniversalWandNaturalSpawnMixin");
+        mixins.add("minecraft.UniversalWandNoAggroMixin");
+        mixins.add("minecraft.UniversalWandPlayerProtectionMixin");
+        mixins.add("minecraft.UniversalWandPotionAccessor");
+        mixins.add("minecraft.UniversalWandRemovalMixin");
+        mixins.add("minecraft.UniversalWandServerPlayerProtectionMixin");
+        mixins.add("minecraft.UniversalWandSpawnerActivationMixin");
+        mixins.add("minecraft.FoodStatsMiningAccessor");
+        if (cpw.mods.fml.relauncher.FMLLaunchHandler.side()
+            .isClient())
+            mixins.addAll(
+                List.of(
+                    "client.PlayerControllerMPAccessor",
+                    "client.UniversalWandBlockReachMixin",
+                    "client.UniversalWandDeathStatusMixin",
+                    "client.UniversalWandEntityReachMixin",
+                    "client.UniversalWandFlightMovementMixin",
+                    "client.UniversalWandRightClickMixin"));
         return mixins;
     }
 

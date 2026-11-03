@@ -22,6 +22,16 @@ public final class LateMixinsLoader implements ILateMixinLoader {
     @Override
     public List<String> getMixins(Set<String> loadedMods) {
         List<String> mixins = new ArrayList<>();
+        if (loadedMods.contains("Botania")) mixins.add("botania.UniversalWandGaiaAccess");
+        if (cpw.mods.fml.relauncher.FMLLaunchHandler.side()
+            .isClient() && loadedMods.contains("duradisplay")) mixins.add("client.UniversalWandChargeOverlayMixin");
+        if (loadedMods.contains(ModList.ModIds.GREGTECH) && cpw.mods.fml.relauncher.FMLLaunchHandler.side()
+            .isClient()) mixins.add("gregtech.BlockOverlayRendererInvoker");
+        if (loadedMods.contains(ModList.ModIds.ENDER_IO)) {
+            mixins.add("enderio.ToolUtilMixin");
+            mixins.add("enderio.UniversalWandLongDistanceTravelMixin");
+            mixins.add("enderio.UniversalWandTeleportStaffMixin");
+        }
         if (loadedMods.contains("Avaritia")) {
             mixins.add("avaritia.InfinityChestFlightMixin");
         }
@@ -46,6 +56,10 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("thaumcraft.MixinPackagedCrucible");
         }
         if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
+            mixins.add("gregtech.UniversalWandAssemblyAccelerationMixin");
+            mixins.add("gregtech.UniversalWandBasicAccelerationEnergyMixin");
+            mixins.add("gregtech.UniversalWandMultiAccelerationEnergyMixin");
+            mixins.add("gregtech.UniversalWandResearchAccelerationMixin");
             mixins.add("gregtech.BrickedBlastFurnaceAutomationMixin");
             mixins.add("gregtech.CleanroomRequirementMixin");
             mixins.add("gregtech.OverloadedMachineConfigurationMixin");

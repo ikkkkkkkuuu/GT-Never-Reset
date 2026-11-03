@@ -2,14 +2,19 @@ package com.xyp.gtneverreset;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 
 import com.glodblock.github.client.gui.GuiMagnetFilter;
 import com.glodblock.github.inventory.item.WirelessMagnetCardFilterInventory;
 import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
 import com.xyp.gtneverreset.client.render.VaultConnectedTextureRender;
+import com.xyp.gtneverreset.client.wand.UniversalWandBuildingPreview;
+import com.xyp.gtneverreset.client.wand.UniversalWandKeyHandler;
+import com.xyp.gtneverreset.client.wand.UniversalWandTravelFallback;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalGuiHandler;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
+import com.xyp.gtneverreset.common.wand.building.BuildingContext;
 import com.xyp.gtneverreset.config.ClientConfig;
 import com.xyp.gtneverreset.loader.ContentLoaders;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
@@ -58,6 +63,21 @@ public class ClientProxy extends CommonProxy {
     @Override
     public boolean preferOwnInterfaceNames() {
         return ClientConfig.wirelessTerminal.preferOwnInterfaceNames;
+    }
+
+    @Override
+    public void useWandTravelIfImmediate(ItemStack stack, EntityPlayer player) {
+        UniversalWandTravelFallback.useIfImmediate(stack, player);
+    }
+
+    @Override
+    public int getWandBuildingSupply(BuildingContext context, ItemStack material) {
+        return UniversalWandBuildingPreview.getSupply(context, material);
+    }
+
+    @Override
+    public boolean isWandUndoKeyHeld() {
+        return UniversalWandKeyHandler.isUndoKeyHeld();
     }
 
 }

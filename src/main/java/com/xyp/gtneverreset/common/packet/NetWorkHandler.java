@@ -89,9 +89,72 @@ public final class NetWorkHandler {
         // ID 21 is reserved for TerminalMagnetPacket.
         nextPacketId = 22;
         registerServerbound(QuestSkipPacket.class, QuestSkipPacket::handle);
+        registerServerbound(UniversalWandNetwork.OpenGuiMessage.class, UniversalWandNetwork::handleOpenGui);
+        registerServerbound(UniversalWandNetwork.ForceBedrockMessage.class, UniversalWandNetwork::handleForceBedrock);
+        registerServerbound(UniversalWandNetwork.ChainKeyMessage.class, UniversalWandNetwork::handleChainKey);
+        registerServerbound(UniversalWandNetwork.ChainStartMessage.class, UniversalWandNetwork::handleChainStart);
+        registerServerbound(UniversalWandNetwork.BuildStartMessage.class, UniversalWandNetwork::handleBuildStart);
+        registerServerbound(UniversalWandNetwork.UndoKeyMessage.class, UniversalWandNetwork::handleUndoKey);
+        CHANNEL.registerMessage(
+            UniversalWandNetwork.UndoPreviewHandler.class,
+            UniversalWandNetwork.UndoPreviewMessage.class,
+            nextPacketId++,
+            Side.CLIENT);
+        registerServerbound(
+            UniversalWandNetwork.BuildingSupplyRequest.class,
+            UniversalWandNetwork::handleBuildingSupplyRequest);
+        CHANNEL.registerMessage(
+            UniversalWandNetwork.BuildingSupplyHandler.class,
+            UniversalWandNetwork.BuildingSupplyMessage.class,
+            nextPacketId++,
+            Side.CLIENT);
+        registerServerbound(UniversalWandNetwork.FlightSpeedMessage.class, UniversalWandNetwork::handleFlightSpeed);
+        CHANNEL.registerMessage(
+            UniversalWandNetwork.FlightSpeedSyncHandler.class,
+            UniversalWandNetwork.FlightSpeedSyncMessage.class,
+            nextPacketId++,
+            Side.CLIENT);
+        CHANNEL.registerMessage(
+            UniversalWandNetwork.ProtectionSyncHandler.class,
+            UniversalWandNetwork.ProtectionSyncMessage.class,
+            nextPacketId++,
+            Side.CLIENT);
+        CHANNEL.registerMessage(
+            UniversalWandNetwork.AccelerationSyncHandler.class,
+            UniversalWandNetwork.AccelerationSyncMessage.class,
+            nextPacketId++,
+            Side.CLIENT);
+        registerServerbound(
+            UniversalWandNetwork.AccelerationManagementMessage.class,
+            UniversalWandNetwork::handleAccelerationManagement);
+        CHANNEL.registerMessage(
+            UniversalWandNetwork.AccelerationNoticeHandler.class,
+            UniversalWandNetwork.AccelerationNoticeMessage.class,
+            nextPacketId++,
+            Side.CLIENT);
+        registerServerbound(
+            UniversalWandNetwork.TravelFallbackRequest.class,
+            UniversalWandNetwork::handleTravelFallbackRequest);
+        CHANNEL.registerMessage(
+            UniversalWandNetwork.TravelFallbackGrantHandler.class,
+            UniversalWandNetwork.TravelFallbackGrant.class,
+            nextPacketId++,
+            Side.CLIENT);
+        registerServerbound(
+            UniversalWandNetwork.TravelFallbackFinish.class,
+            UniversalWandNetwork::handleTravelFallbackFinish);
+        CHANNEL.registerMessage(
+            UniversalWandNetwork.FeatureHandler.class,
+            UniversalWandNetwork.FeatureMessage.class,
+            nextPacketId++,
+            Side.CLIENT);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);
+    }
+
+    public static void sendToAllAround(IMessage packet, NetworkRegistry.TargetPoint target) {
+        CHANNEL.sendToAllAround(packet, target);
     }
 
     public static void sendToServer(IMessage packet) {

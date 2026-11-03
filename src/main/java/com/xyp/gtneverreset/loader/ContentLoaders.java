@@ -25,6 +25,7 @@ public final class ContentLoaders {
         new BlockLoader.Card(),
         new EntityLoader(),
         new NetworkLoader(),
+        new UniversalWandLoader(),
         new WorldLoader(),
         new GuiLoader(),
         new MachineLoader(),

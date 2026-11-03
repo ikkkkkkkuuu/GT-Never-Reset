@@ -5,6 +5,7 @@ import com.xyp.gtneverreset.common.item.items.HarvestRing;
 import com.xyp.gtneverreset.common.item.items.ItemAdvancedIOBus;
 import com.xyp.gtneverreset.common.item.items.ItemPackagedCore;
 import com.xyp.gtneverreset.common.item.items.ItemStockIOInterface;
+import com.xyp.gtneverreset.common.item.items.ItemUniversalWand;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessConnector;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
 import com.xyp.gtneverreset.common.item.items.PermanentMagnetRing;
@@ -16,9 +17,13 @@ import com.xyp.gtneverreset.common.item.items.WirelessPowerCard;
 import com.xyp.gtneverreset.common.machine.packaged.AssemblyLineAdapter;
 import com.xyp.gtneverreset.common.machine.packaged.CircuitAssemblyLineAdapter;
 import com.xyp.gtneverreset.compat.bloodmagic.BloodMagicCompat;
+import com.xyp.gtneverreset.compat.draconicevolution.InsectStaffCompat;
 import com.xyp.gtneverreset.compat.thaumcraft.ThaumcraftCompat;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.mod.ModList;
+
+import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.registry.GameRegistry;
 
 public final class ItemLoader {
 
@@ -63,10 +68,13 @@ public final class ItemLoader {
     public static final ItemAdvancedIOBus advancedIOBus = new ItemAdvancedIOBus();
     public static final ItemStockIOInterface stockIOInterface = new ItemStockIOInterface();
 
+    public static final ItemUniversalWand universalWand = new ItemUniversalWand();
+
     public static void registerItems() {
+        GameRegistry.registerItem(universalWand, "universal_wand");
         new VeinMiningPickaxe();
         if (ModList.DraconicEvolution.isModLoaded() && ModList.EnderIO.isModLoaded()) {
-            com.xyp.gtneverreset.compat.draconicevolution.InsectStaffCompat.register();
+            InsectStaffCompat.register();
         }
         if (ModList.BloodMagic.isModLoaded()) BloodMagicCompat.registerPackagedCores();
 
@@ -80,7 +88,7 @@ public final class ItemLoader {
     public static final class Card implements IContentLoader {
 
         @Override
-        public void preInit(cpw.mods.fml.common.event.FMLPreInitializationEvent event) {
+        public void preInit(FMLPreInitializationEvent event) {
             ItemLoader.registerItems();
         }
     }
