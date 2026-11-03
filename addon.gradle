@@ -500,6 +500,7 @@ tasks.named("processResources") {
 }
 tasks.named("sourcesJar", Jar) {
     from("licenses/ports") { into "META-INF" }
+    from("licenses/overloaded-provider/LICENSE-CODE-LGPL-3.0.txt") { into "META-INF/licenses/overloaded-provider" }
 }
 
 tasks.register('checkAssemblerMatrixTaskContracts', JavaExec) {
