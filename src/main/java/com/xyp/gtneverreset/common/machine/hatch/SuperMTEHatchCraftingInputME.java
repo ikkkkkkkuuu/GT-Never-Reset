@@ -1284,8 +1284,8 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
             "tooltip.gtneverreset.crafting_input.tier",
             TIER_COLORS[supportFluids ? 10 : 6] + VN[supportFluids ? 10 : 6]);
         // #tr tooltip.gtneverreset.crafting_input.processes
-        // # Stores patterns and buffers their delivered ingredients separately
-        // # zh_CN 存放样板，并分别缓存各样板收到的原料
+        // # The Quantum Computer batches exact processing patterns and buffers ingredients per pattern
+        // # zh_CN 量子计算机可按库存向处理样板批量发料，每个样板独立缓存
         String processes = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.processes");
         // #tr tooltip.gtneverreset.crafting_input.supports_fluids
         // # Supports fluid ingredients; use Ultimate Encoded Patterns for fluid recipes
