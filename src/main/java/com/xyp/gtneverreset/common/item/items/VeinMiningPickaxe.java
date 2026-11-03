@@ -231,7 +231,12 @@ public class VeinMiningPickaxe extends ItemPickaxe {
         World world = event.world;
         if (event.isCanceled() || world.isRemote || !(player instanceof EntityPlayerMP playerMP)) return;
         ItemStack heldItem = playerMP.getCurrentEquippedItem();
-        if (heldItem == null || !(heldItem.getItem() instanceof VeinMiningPickaxe)) return;
+        if (heldItem == null) return;
+        if (heldItem.getItem() instanceof ItemUniversalWand) {
+            if (!ItemUniversalWand.isProtectionMode(heldItem)) queueOreBackfill(world, event.x, event.y, event.z);
+            return;
+        }
+        if (!(heldItem.getItem() instanceof VeinMiningPickaxe)) return;
         queueOreBackfill(world, event.x, event.y, event.z);
         if (playerMP.isSneaking()) {
             ItemStack stack = heldItem;

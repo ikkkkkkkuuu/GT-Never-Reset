@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.UUID;
 
 import net.minecraft.block.Block;
-import net.minecraft.client.Minecraft;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.Entity;
@@ -55,7 +54,6 @@ import com.xyp.gtneverreset.common.wand.VanillaToolBackend;
 import com.xyp.gtneverreset.compat.backhand.UniversalWandBackhandIntegration;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtneverreset.config.UniversalWandConfig;
-import com.xyp.gtneverreset.mixins.early.client.PlayerControllerMPAccessor;
 
 import appeng.api.implementations.items.IAEWrench;
 import appeng.api.implementations.tiles.IWirelessAccessPoint;
@@ -160,6 +158,7 @@ public final class ItemUniversalWand extends Item
         setMaxDamage(0);
         setHarvestLevel("pickaxe", HARVEST_LEVEL);
         setHarvestLevel("axe", HARVEST_LEVEL);
+        setHarvestLevel("shovel", HARVEST_LEVEL);
     }
 
     @Override
@@ -437,7 +436,7 @@ public final class ItemUniversalWand extends Item
     }
 
     @Override
-    public boolean canHarvestBlock(Block block, ItemStack stack) {
+    public boolean func_150897_b(Block block) {
         return true;
     }
 
@@ -447,17 +446,13 @@ public final class ItemUniversalWand extends Item
     }
 
     @Override
-    public float getDigSpeed(ItemStack stack, Block block, int metadata) {
+    public float func_150893_a(ItemStack stack, Block block) {
         return isProtectionMode(stack) ? 0F : Integer.MAX_VALUE;
     }
 
     @Override
     public boolean onBlockDestroyed(ItemStack stack, World world, Block block, int x, int y, int z,
         EntityLivingBase entityLiving) {
-        if (world.isRemote && getBreakCooldown(stack) > 0) {
-            ((PlayerControllerMPAccessor) Minecraft.getMinecraft().playerController)
-                .gtneverreset$setBlockHitDelay(getBreakCooldown(stack));
-        }
         return true;
     }
 
