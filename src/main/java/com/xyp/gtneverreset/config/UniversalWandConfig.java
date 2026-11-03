@@ -108,14 +108,6 @@ public final class UniversalWandConfig {
     @Config.DefaultBoolean(true)
     public static boolean enableCollection = true;
 
-    // #tr gtneverreset.config.universalwand.enablegttools
-    // # GT tools
-    // # zh_CN GT 工具
-    @Config.LangKey("gtneverreset.config.universalwand.enablegttools")
-    @Config.Comment("Disabling turns off both GT tools and locks the tool mode control.")
-    @Config.DefaultBoolean(true)
-    public static boolean enableGtTools = true;
-
     // #tr gtneverreset.config.universalwand.enableshears
     // # Shears
     // # zh_CN 剪刀

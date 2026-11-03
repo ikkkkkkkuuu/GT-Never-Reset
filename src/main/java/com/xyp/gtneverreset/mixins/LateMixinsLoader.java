@@ -25,10 +25,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
         if (loadedMods.contains("Botania")) mixins.add("botania.UniversalWandGaiaAccess");
         if (cpw.mods.fml.relauncher.FMLLaunchHandler.side()
             .isClient() && loadedMods.contains("duradisplay")) mixins.add("client.UniversalWandChargeOverlayMixin");
-        if (loadedMods.contains(ModList.ModIds.GREGTECH) && cpw.mods.fml.relauncher.FMLLaunchHandler.side()
-            .isClient()) mixins.add("gregtech.BlockOverlayRendererInvoker");
         if (loadedMods.contains(ModList.ModIds.ENDER_IO)) {
-            mixins.add("enderio.ToolUtilMixin");
             mixins.add("enderio.UniversalWandLongDistanceTravelMixin");
             mixins.add("enderio.UniversalWandTeleportStaffMixin");
         }

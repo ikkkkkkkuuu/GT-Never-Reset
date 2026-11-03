@@ -23,10 +23,6 @@ public enum UniversalWandFeature {
     CROPS(9, () -> UniversalWandConfig.enableCrops, "cropHarvest", "crop_harvest", "crop_sticks"),
     BEDROCK(10, () -> UniversalWandConfig.enableBedrock, "forceBedrock", "force_bedrock"),
     COLLECTION(11, () -> UniversalWandConfig.enableCollection, "collectToInventory", "collect_items", "ae_priority"),
-    // #tr gtneverreset.gui.universal_wand.gt_mode
-    // # GT tool mode
-    // # zh_CN GT 工具模式
-    GT_TOOLS(13, () -> UniversalWandConfig.enableGtTools, "gtToolMode", "gt_mode"),
     SHEARS(14, () -> UniversalWandConfig.enableShears, "shearsEnabled", "shears"),
     HOE(15, () -> UniversalWandConfig.enableHoe, "hoeEnabled", "hoe"),
     FLIGHT(16, () -> UniversalWandConfig.enableFlight, "flightSpeedOverride", "flight", "flight_speed_override");
@@ -98,7 +94,6 @@ public enum UniversalWandFeature {
         for (UniversalWandFeature feature : FEATURES) {
             if ((mask & feature.mask) != 0 || feature.setting == null) continue;
             if (feature == AREA_ATTACK) settings.setInteger(feature.setting, 1);
-            else if (feature == GT_TOOLS) settings.setInteger(feature.setting, 0);
             else settings.setBoolean(feature.setting, false);
             if (feature == CHAIN) settings.setBoolean("gtSmallChain", false);
             if (feature == CROPS) settings.setBoolean("cropSticks", false);
