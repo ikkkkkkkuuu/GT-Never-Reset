@@ -27,9 +27,9 @@
         "right_arm": {
           "rotation": {
             "0": [
-              0,
-              0,
-              0
+              -6,
+              2,
+              3
             ],
             "0.18": {
               "post": [
@@ -39,11 +39,14 @@
               ],
               "easing": "easeOutSine"
             },
-            "0.36": [
-              0,
-              0,
-              0
-            ]
+            "0.36": {
+              "post": [
+                -6,
+                2,
+                3
+              ],
+              "easing": "easeInOutSine"
+            }
           }
         }
       }
@@ -58,9 +61,9 @@
         "right_arm": {
           "rotation": {
             "0": [
-              0,
-              0,
-              0
+              -6,
+              2,
+              3
             ],
             "0.2": {
               "post": [
@@ -70,17 +73,20 @@
               ],
               "easing": "easeOutSine"
             },
-            "0.4": [
-              0,
-              0,
-              0
-            ]
+            "0.4": {
+              "post": [
+                -6,
+                2,
+                3
+              ],
+              "easing": "easeInOutSine"
+            }
           }
         }
       }
     },
     "gtnrlib_place": {
-      "animation_length": 0.32,
+      "animation_length": 0.2,
       "loop": false,
       "timeline": {
         "0": "use_keyframes_v2;anim_speed_1;gtnrlib:replace_swing;"
@@ -93,7 +99,7 @@
               10,
               5
             ],
-            "0.11": {
+            "0.075": {
               "post": [
                 3,
                 4.5,
@@ -101,7 +107,7 @@
               ],
               "easing": "easeInOutSine"
             },
-            "0.18": {
+            "0.10": {
               "post": [
                 3,
                 4.5,
@@ -109,7 +115,7 @@
               ],
               "easing": "easeInOutSine"
             },
-            "0.32": {
+            "0.20": {
               "post": [
                 8,
                 10,
@@ -124,7 +130,7 @@
               -4,
               -5
             ],
-            "0.11": {
+            "0.075": {
               "post": [
                 -6,
                 0,
@@ -132,7 +138,7 @@
               ],
               "easing": "easeInOutSine"
             },
-            "0.32": {
+            "0.20": {
               "post": [
                 5,
                 -4,

@@ -147,6 +147,12 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
             && mc.objectMouseOver != null
             && mc.objectMouseOver.typeOfHit == MovingObjectType.BLOCK;
         player.advance(.05);
+        if (replacesSwing && (action == null || !action.active())) {
+            // Vanilla interpolates the final tick from the previous progress through 1, even after the swing stops.
+            var local = mc.thePlayer;
+            if (local.swingProgress == 0 && local.prevSwingProgress == 0
+                || local.isSwingInProgress && local.swingProgress < local.prevSwingProgress) replacesSwing = false;
+        }
         if (hitting && (!mining || action == null || !action.active())) trigger("mining");
         else if (!hitting && mining && activeAction.equals("mining")) {
             if (action != null) action.stop(.08);
@@ -177,15 +183,25 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         ItemStack held = mc.thePlayer.getHeldItem();
         synchronizeTarget(mc, held);
         Motion motion = resolve(held, name, name.equals("attack") ? combo : 0);
-        if (motion == null) return;
+        if (motion == null) {
+            if (action == null || !action.active()) replacesSwing = false;
+            return;
+        }
+        if (name.equals("mining")) mining = true;
         if (name.equals("attack")) combo++;
-        if (action != null) action.stop(.05);
+        boolean replacingActiveSwing = replacesSwing && action != null && action.active();
+        if (action != null) action.stop(replacingActiveSwing ? .10 : .05);
         activeAction = name;
         actionMotion = motion;
         replacesSwing = motion.clip()
             .markers()
             .contains(REPLACE_SWING);
-        action = play(motion, .025, 1);
+        action = play(motion, replacingActiveSwing && replacesSwing ? .10 : .025, 1);
+        if (replacesSwing) action.fadeOutAtEnd(
+            Math.min(
+                .08,
+                motion.clip()
+                    .duration() * .25));
     }
 
     private AnimationPlayer.Playback play(Motion motion, double fade, int priority) {
@@ -222,8 +238,14 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
             && leftArm == null
             && (base == null || !base.active())
             && (action == null || !action.active())) return false;
+        return matchesTarget(rendered);
+    }
+
+    private boolean matchesTarget(ItemStack rendered) {
         var mc = Minecraft.getMinecraft();
         if (mc.theWorld != world || mc.thePlayer == null
+            || slot != mc.thePlayer.inventory.currentItem
+            || item != (rendered == null ? null : rendered.getItem())
             || mc.gameSettings.thirdPersonView != 0
             || mc.thePlayer.isInvisible()
             || rendered != mc.thePlayer.getHeldItem()) return false;
@@ -240,11 +262,11 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     }
 
     public boolean replacesSwing(ItemStack rendered) {
-        return replacesSwing && action != null && action.active() && applies(rendered);
+        return replacesSwing && matchesTarget(rendered);
     }
 
     public boolean replacesPlacementDip(ItemStack rendered) {
-        return activeAction.equals("useitem") && replacesSwing(rendered);
+        return activeAction.equals("useitem") && action != null && action.active() && replacesSwing(rendered);
     }
 
     public boolean dualHanded() {

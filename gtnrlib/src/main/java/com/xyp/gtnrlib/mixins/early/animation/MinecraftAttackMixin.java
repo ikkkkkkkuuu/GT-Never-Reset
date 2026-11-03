@@ -15,11 +15,20 @@ public abstract class MinecraftAttackMixin {
 
     @Inject(
         method = "func_147116_af",
-        at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/EntityClientPlayerMP;swingItem()V"),
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/entity/EntityClientPlayerMP;swingItem()V",
+            shift = At.Shift.AFTER),
         require = 0)
     private void gtnrlib$attack(CallbackInfo ci) {
         if (!FirstPersonAnimations.INSTANCE.enabled()) return;
-        var hit = Minecraft.getMinecraft().objectMouseOver;
-        if (hit == null || hit.typeOfHit != MovingObjectType.BLOCK) FirstPersonAnimations.INSTANCE.trigger("attack");
+        var mc = Minecraft.getMinecraft();
+        // swingItem can decline an early repeat or let the held item's onEntitySwing hook consume it.
+        if (!mc.thePlayer.isSwingInProgress || mc.thePlayer.swingProgressInt != -1) return;
+        var hit = mc.objectMouseOver;
+        if (hit != null && hit.typeOfHit == MovingObjectType.BLOCK) {
+            if (!mc.theWorld.isAirBlock(hit.blockX, hit.blockY, hit.blockZ))
+                FirstPersonAnimations.INSTANCE.trigger("mining");
+        } else FirstPersonAnimations.INSTANCE.trigger("attack");
     }
 }

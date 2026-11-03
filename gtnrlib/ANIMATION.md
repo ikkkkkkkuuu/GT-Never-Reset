@@ -8,7 +8,7 @@
 
 现代包可以直接使用原始 ZIP 或目录。在 GTNRLib 客户端配置的“仅导入动画的资源包”填入其在 `resourcepacks` 中的文件名，按 F3+T 重载。这个显式导入项位于已选包之上，不要求 1.7.10 理解现代 pack.mcmeta。ZIP 的根应直接包含 assets。
 
-在动作片段的时间轴第 0 秒添加 `gtnrlib:replace_swing;` 可让关键帧控制本次第一人称挥动。成功放置方块时，这个标记也让持物高度在播放期间保持稳定。普通换物仍走原有装备过渡。这个标记是 GTNRLib 扩展，省略时保留原版挥动叠加。
+在动作片段的时间轴第 0 秒添加 `gtnrlib:replace_swing;` 可让关键帧控制本次第一人称挥动。一次性动作结束时会淡回当前待机或行走姿势；松开挖掘后，已被接管的原版挥动会自然结束，其尾段继续隐藏。成功放置方块时，这个标记也让持物高度在播放期间保持稳定。普通换物仍走原有装备过渡。这个标记是 GTNRLib 扩展，省略时保留原版挥动叠加。
 
 ## 第三方调用
 
@@ -53,7 +53,7 @@ if (library.reload(logger::warn)) {
 
 - Provider 按注册顺序加载，后者覆盖同名 clip，重复 provider ID 报错，失败保留先前快照。调用 `removeProvider` 后重载即可卸载。
 - `AnimationRig` 按父节点在前的顺序定义骨架，合成静止姿势和父子变换到调用方提供的列主序矩阵数组。位置使用模型单位，旋转使用度。编辑器可以 `clip.sample` 定点采样或 `Playback.seek` 静默跳转。
-- `AnimationPlayer.play(clip, fade, priority, blend, mask)` 支持优先级、通道遮罩、覆盖、加法位移/欧拉角和乘法缩放。事件在模拟结束后派发，相同帧的多次采样只读取姿势。极长暂停后每次最多补发 64 个完整循环的事件以及末尾部分。
+- `AnimationPlayer.play(clip, fade, priority, blend, mask)` 支持优先级、通道遮罩、覆盖、加法位移/欧拉角和乘法缩放。对一次性片段调用 `Playback.fadeOutAtEnd(片段秒数)`，可在结尾平滑淡回下层当前姿势，默认时长为零。事件在模拟结束后派发，相同帧的多次采样只读取姿势。极长暂停后每次最多补发 64 个完整循环的事件以及末尾部分。
 - `AnimationStates<T>` 按声明顺序选取首个满足谓词且资源可用的状态。同名状态重载到新片段时保留播放位置。每 tick 先 update 再推进共享播放器。
 - 客户端第一人称入口是 `FirstPersonAnimations.INSTANCE`。用 `bind("mymod:tools", (held, action) -> ...)` 返回共享 clip 或 null，用 trigger 请求动作，用 addListener/removeListener 订阅标记，用 unbind 释放绑定。绑定按注册顺序选首个匹配，之后再查询资源包。第一人称适配器在重载后重新选取当前持物状态，正在播放的一次性动作会结束。
 

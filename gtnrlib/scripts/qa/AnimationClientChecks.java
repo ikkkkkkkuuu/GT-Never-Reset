@@ -135,11 +135,26 @@ public final class AnimationClientChecks {
             var click = Minecraft.class.getDeclaredMethod("func_147116_af");
             click.setAccessible(true);
             click.invoke(mc);
-            advanceHands(mc, 4);
+            advanceHands(mc, 2);
+            int[] beforeRepeat = draw(mc, "sword-before-early-repeat");
+            int requests = java.util.Collections.frequency(observed, "attack");
+            click.invoke(mc);
+            require(
+                requests == java.util.Collections.frequency(observed, "attack")
+                    && Arrays.equals(beforeRepeat, draw(mc, "sword-after-early-repeat")),
+                "ignored early click does not restart sword pose");
+            advanceHands(mc, 2);
             require(
                 observed.contains("attack") && !target.dualHanded(),
                 "accepted left click dispatched single-hand attack");
             require(!Arrays.equals(active, draw(mc, "03-swing")), "attack changes grip");
+            for (int step = 0; step < 4; step++) {
+                int[] before = draw(mc, "sword-return-" + step + "-before", 1);
+                advanceHands(mc, 1);
+                require(
+                    Arrays.equals(before, draw(mc, "sword-return-" + step + "-after", 0)),
+                    "sword recovery is continuous across tick " + step);
+            }
             int x = (int) mc.thePlayer.posX, y = (int) mc.thePlayer.posY + 3, z = (int) mc.thePlayer.posZ;
             mc.objectMouseOver = new net.minecraft.util.MovingObjectPosition(
                 x,
@@ -172,24 +187,31 @@ public final class AnimationClientChecks {
             }
             advanceHands(mc, 8);
             require(Arrays.equals(axeIdle, draw(mc, "axe-recovered")), "axe returns to its grip after mining stops");
+            // Release on the first tick of a new native swing. The pack's short fade finishes before that swing does.
+            int tapX = x - 2, tapY = mc.theWorld.getTopSolidOrLiquidBlock(tapX, z) - 1;
+            mc.objectMouseOver = new net.minecraft.util.MovingObjectPosition(
+                tapX,
+                tapY,
+                z,
+                1,
+                net.minecraft.util.Vec3.createVectorHelper(tapX + .5, tapY + 1, z + .5));
+            try {
+                click.invoke(mc);
+            } finally {
+                mc.objectMouseOver = previousHit;
+            }
+            advanceHands(mc, 4);
+            require(
+                mc.thePlayer.getSwingProgress(.5f) > 0 && Arrays.equals(axeIdle, draw(mc, "axe-tap-released")),
+                "quick mining release stays at rest while vanilla swing finishes");
+            advanceHands(mc, 4);
+            require(!target.replacesSwing(mc.thePlayer.getHeldItem()), "native swing ownership released at rest");
             var stone = new ItemStack(Blocks.cobblestone);
             equip(mc, stone);
             tickPlayer();
             int[] carry = draw(mc, "block-carry");
             int placeX = x + 2, ground = mc.theWorld.getTopSolidOrLiquidBlock(placeX, z) - 1;
-            var rightClick = Minecraft.class.getDeclaredMethod("func_147121_ag");
-            rightClick.setAccessible(true);
-            try {
-                mc.objectMouseOver = new net.minecraft.util.MovingObjectPosition(
-                    placeX,
-                    ground,
-                    z,
-                    1,
-                    net.minecraft.util.Vec3.createVectorHelper(placeX + .5, ground + 1, z + .5));
-                rightClick.invoke(mc);
-            } finally {
-                mc.objectMouseOver = previousHit;
-            }
+            placeOnTop(mc, placeX, ground, z);
             require(
                 mc.theWorld.getBlock(placeX, ground + 1, z) == Blocks.cobblestone && mc.thePlayer.isSwingInProgress
                     && observed.contains("useitem"),
@@ -202,9 +224,24 @@ public final class AnimationClientChecks {
                     && reachX >= mc.displayWidth * .45
                     && restX - reachX > mc.displayHeight * .10,
                 "block moves inward from right hand: " + restX + " -> " + reachX);
-            advanceHands(mc, 8);
-            require(Arrays.equals(carry, draw(mc, "block-recovered")), "placed block returns to carry pose");
+            advanceHands(mc, 2);
+            require(
+                Arrays.equals(carry, draw(mc, "block-recovered")),
+                "block at carry pose by the next vanilla right click");
+            int nextGround = mc.theWorld.getTopSolidOrLiquidBlock(placeX, z + 1) - 1;
+            placeOnTop(mc, placeX, nextGround, z + 1);
+            require(
+                mc.theWorld.getBlock(placeX, nextGround + 1, z + 1) == Blocks.cobblestone,
+                "second right click placed cobblestone");
+            advanceHands(mc, 2);
+            require(Arrays.equals(reach, draw(mc, "block-repeat")), "repeated placement follows the same reach");
+            advanceHands(mc, 2);
+            require(
+                Arrays.equals(carry, draw(mc, "block-repeat-recovered")),
+                "repeated placement returns without recoil");
+            advanceHands(mc, 4);
             mc.playerController.clickBlock(placeX, ground + 1, z, 1);
+            mc.playerController.clickBlock(placeX, nextGround + 1, z + 1, 1);
             target.unbind("fixture:observer");
             equip(mc, new ItemStack(Items.filled_map));
             tickPlayer();
@@ -221,6 +258,23 @@ public final class AnimationClientChecks {
             finish(mc, null);
         } catch (Throwable e) {
             finish(mc, e);
+        }
+    }
+
+    private static void placeOnTop(Minecraft mc, int x, int y, int z) throws Exception {
+        var previous = mc.objectMouseOver;
+        var click = Minecraft.class.getDeclaredMethod("func_147121_ag");
+        click.setAccessible(true);
+        try {
+            mc.objectMouseOver = new net.minecraft.util.MovingObjectPosition(
+                x,
+                y,
+                z,
+                1,
+                net.minecraft.util.Vec3.createVectorHelper(x + .5, y + 1, z + .5));
+            click.invoke(mc);
+        } finally {
+            mc.objectMouseOver = previous;
         }
     }
 
@@ -394,6 +448,10 @@ public final class AnimationClientChecks {
     }
 
     private int[] draw(Minecraft mc, String name) throws Exception {
+        return draw(mc, name, .5f);
+    }
+
+    private int[] draw(Minecraft mc, String name, float partial) throws Exception {
         int w = mc.displayWidth, h = mc.displayHeight;
         Framebuffer buffer = mc.getFramebuffer();
         buffer.bindFramebuffer(true);
@@ -415,7 +473,7 @@ public final class AnimationClientChecks {
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
             GL11.glEnable(GL11.GL_DEPTH_TEST);
             GL11.glEnable(GL11.GL_TEXTURE_2D);
-            mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+            mc.entityRenderer.itemRenderer.renderItemInFirstPerson(partial);
             ScreenShotHelper.saveScreenshot(output, name + ".png", w, h, buffer);
             var image = ImageIO.read(new File(output, "screenshots/" + name + ".png"));
             return image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());

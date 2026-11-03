@@ -41,6 +41,22 @@ final class AnimationContracts {
         check(
             other.sample(arm, 0)
                 .x() == 0);
+        var recover = new AnimationClip(1, End.ONCE, Map.of(arm, List.of(new Key(0, new Vec(120, 0, 0)))), List.of());
+        var overlay = other.play(recover, 0, 1);
+        overlay.fadeOutAtEnd(.25);
+        // The walking layer keeps moving during the action's last quarter, including across the final tick.
+        check(
+            other.sample(arm, .875)
+                .x() == (315 + 120) / 2.0);
+        other.advance(.95);
+        double beforeEnd = other.sample(arm, .05)
+            .x();
+        other.advance(.05);
+        check(
+            !overlay.active() && Math.abs(
+                beforeEnd - other.sample(arm, 0)
+                    .x())
+                < 1e-7);
         handle.speed(0);
         handle.stop(.5);
         player.advance(.25);

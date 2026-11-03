@@ -74,7 +74,7 @@ public final class AnimationPlayer {
             double local = layer.clip.end() == End.LOOP ? t % layer.clip.duration()
                 : Math.min(t, layer.clip.duration());
             Vec value = layer.clip.sample(channel, local);
-            double w = layer.weight(ahead);
+            double w = layer.weight(ahead, local);
             if (layer.blend == Blend.OVERRIDE) result = result.mix(value, w);
             else if (channel.property() == AnimationClip.Property.SCALE) {
                 Vec factor = channel.property().rest.mix(value, w);
@@ -89,7 +89,7 @@ public final class AnimationPlayer {
         private final AnimationClip clip;
         private final double fadeIn;
         private final int priority;
-        private double position, age, fadeAge, fadeLength;
+        private double position, age, fadeAge, fadeLength, endFade;
         private double speed = 1;
         private boolean started, stopping;
         private boolean active = true;
@@ -126,6 +126,12 @@ public final class AnimationPlayer {
             speed = value;
         }
 
+        /** Blend a once-playing layer into the underlying pose over its final clip-local seconds. */
+        public void fadeOutAtEnd(double clipSeconds) {
+            AnimationClip.validTime(clipSeconds);
+            endFade = Math.min(clipSeconds, clip.duration());
+        }
+
         public void stop(double fadeOut) {
             AnimationClip.validTime(fadeOut);
             if (fadeOut == 0) {
@@ -138,8 +144,12 @@ public final class AnimationPlayer {
             }
         }
 
-        private double weight(double ahead) {
+        private double weight(double ahead, double local) {
             double gain = fadeIn == 0 ? 1 : Math.min(1, (age + ahead) / fadeIn);
+            if (endFade > 0 && clip.end() == End.ONCE) {
+                double remaining = Math.min(1, (clip.duration() - local) / endFade);
+                gain *= remaining * remaining * (3 - 2 * remaining);
+            }
             return stopping ? gain * Math.max(0, 1 - (fadeAge + ahead) / fadeLength) : gain;
         }
 
