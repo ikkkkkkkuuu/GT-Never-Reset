@@ -38,3 +38,4 @@ addon.late.local.gradle.kts
 layout.json
 /scripts/
 /.serena/
+/.changelogs/
