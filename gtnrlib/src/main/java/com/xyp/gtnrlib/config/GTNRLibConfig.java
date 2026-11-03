@@ -42,13 +42,13 @@ public class GTNRLibConfig {
     @Config.Ignore
     private static String[] themes = {};
 
-    @Comment("Optional animation-only ZIP or folder name in resourcepacks. Reload resources after changing.")
+    @Comment("Optional Punchy ZIP/folder or original HMI 5.1.1 (1.21.11) JAR in resourcepacks. Reload after changing.")
     // #tr gtnrlib.gui.config.client.animation_pack
     // # Animation-only pack
     // # zh_CN 仅导入动画的资源包
     // #tr gtnrlib.gui.config.client.animation_pack.tooltip
-    // # ZIP or directory name inside resourcepacks. Reload resources after changing.
-    // # zh_CN 填写 resourcepacks 中的 ZIP 或目录名。修改后重新加载资源。
+    // # Name in resourcepacks. Use a Punchy ZIP/folder or HMI 5.1.1 (1.21.11) JAR, then reload.
+    // # zh_CN 填写 resourcepacks 中的 Punchy ZIP、目录名，或 HMI 5.1.1（1.21.11）原版 JAR 文件名。修改后重新加载资源。
     @LangKey("gtnrlib.gui.config.client.animation_pack")
     @DefaultString("")
     public static String animationPack = "";

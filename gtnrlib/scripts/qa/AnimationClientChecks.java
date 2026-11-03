@@ -226,10 +226,87 @@ public final class AnimationClientChecks {
             require(Arrays.equals(emptyBaseline, draw(mc, "empty-disabled")), "unload restores vanilla empty arm");
             equip(mc, sword);
             if (!Boolean.getBoolean("gtnrlib.animation.qa.host")) checkRepositoryReload(mc, sword);
+            if (System.getProperty("gtnrlib.animation.qa.hmi") != null) checkHmi(mc);
             finish(mc, null);
         } catch (Throwable e) {
             finish(mc, e);
         }
+    }
+
+    private void checkHmi(Minecraft mc) throws Exception {
+        String release = System.getProperty("gtnrlib.animation.qa.hmi");
+        var hmi = com.xyp.gtnrlib.client.animation.HmiFirstPerson.INSTANCE;
+        reload(mc, release);
+        require(hmi.enabled(), "verified HMI release enabled");
+        int ticks = mc.thePlayer.ticksExisted;
+        try {
+            var items = new ItemStack[] { null, new ItemStack(Items.diamond_sword), new ItemStack(Items.iron_pickaxe),
+                new ItemStack(Items.iron_axe), new ItemStack(Items.iron_shovel), new ItemStack(Items.iron_hoe),
+                new ItemStack(Blocks.stone), new ItemStack(Items.iron_ingot), new ItemStack(Items.snowball),
+                new ItemStack(Items.apple), new ItemStack(Items.potionitem), new ItemStack(Items.bow),
+                new ItemStack(Items.fishing_rod), new ItemStack(Items.filled_map), new ItemStack(Items.water_bucket),
+                new ItemStack(Items.bucket), new ItemStack(Items.lava_bucket), new ItemStack(Items.milk_bucket),
+                new ItemStack(Items.boat) };
+            for (ItemStack stack : items) {
+                equip(mc, stack);
+                String name = stack == null ? "empty"
+                    : stack.getItem()
+                        .getUnlocalizedName()
+                        .replace('.', '-');
+                for (int tick = 0; tick < 48; tick++) {
+                    mc.thePlayer.ticksExisted++;
+                    mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+                }
+                int[] rest = draw(mc, "hmi-" + name);
+                require(
+                    hmi.enabled() && !hmi.right.equals(new org.joml.Matrix4f())
+                        && Arrays.stream(rest)
+                            .filter(p -> (p & 0xffffff) != 0x202020)
+                            .count() > 500,
+                    "HMI rendered " + name);
+                var before = new org.joml.Matrix4f(hmi.right);
+                mc.thePlayer.isSwingInProgress = false;
+                mc.thePlayer.swingItem();
+                if (stack != null && stack.getItemUseAction() != net.minecraft.item.EnumAction.none)
+                    mc.thePlayer.setItemInUse(stack, stack.getMaxItemUseDuration());
+                for (int tick = 0; tick < 5; tick++) {
+                    mc.thePlayer.ticksExisted++;
+                    mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+                }
+                require(
+                    hmi.enabled() && !before.equals(hmi.right, .001f)
+                        && !Arrays.equals(rest, draw(mc, "hmi-action-" + name)),
+                    "HMI action for " + name);
+                if (stack != null && stack.getItem() == Items.bow) {
+                    var support = new org.joml.Matrix4f(hmi.left);
+                    for (int tick = 0; tick < 24; tick++) {
+                        mc.thePlayer.ticksExisted++;
+                        mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+                    }
+                    require(!support.equals(hmi.left, .01f), "drawn bow moves the support arm");
+                    require(
+                        hmi.program()
+                            .bowStage() == 2,
+                        "upstream use duration selects the fully drawn bow sprite");
+                    draw(mc, "hmi-bow-fully-drawn");
+                }
+                if (stack != null && stack.getItem() == Items.milk_bucket) {
+                    mc.thePlayer.setItemInUse(stack, stack.getMaxItemUseDuration() - 28);
+                    require(
+                        !Arrays.equals(rest, draw(mc, "hmi-milk-drinking")),
+                        "milk model dispatches elapsed use duration");
+                }
+                mc.thePlayer.clearItemInUse();
+            }
+            if (Boolean.getBoolean("gtnrlib.animation.qa.host")) checkHost(mc);
+            reload(mc, "invalid-hmi-fixture.jar");
+            require(hmi.enabled(), "failed HMI reload retains previous program");
+        } finally {
+            mc.thePlayer.ticksExisted = ticks;
+            mc.thePlayer.clearItemInUse();
+            reload(mc, "");
+        }
+        require(!hmi.enabled(), "HMI unload releases runtime");
     }
 
     private void checkPlacement(Minecraft mc, int x, int z, List<String> observed) throws Exception {
@@ -765,6 +842,9 @@ public final class AnimationClientChecks {
             equip(mc, stack);
             tickPlayer();
             require(!target.applies(stack), "delegated " + id);
+            if (com.xyp.gtnrlib.client.animation.HmiFirstPerson.INSTANCE.enabled()) require(
+                !com.xyp.gtnrlib.client.animation.HmiFirstPerson.INSTANCE.sample(stack, .5f, 0),
+                "HMI delegates " + id);
             draw(
                 mc,
                 renderer.getClass()

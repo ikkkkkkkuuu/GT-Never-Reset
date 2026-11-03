@@ -14,6 +14,7 @@ public enum GTNRLibMixins implements IMixins {
     FIRST_PERSON_ANIMATION(new MixinBuilder("Optional first-person pose application")
         .addClientMixins(
             "animation.ItemRendererMixin",
+            "animation.LocalSwingMixin",
             "animation.MinecraftAttackMixin",
             "animation.ItemBlockPlacementMixin")
         .setPhase(Phase.EARLY)),

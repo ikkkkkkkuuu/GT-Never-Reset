@@ -2,6 +2,7 @@ package com.xyp.gtnrlib.mixins.early.animation;
 
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.IIcon;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -13,9 +14,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.render.animation.FirstPersonPoseRenderer;
+import com.xyp.gtnrlib.client.render.animation.HmiPoseRenderer;
 
 @Mixin(ItemRenderer.class)
 public abstract class ItemRendererMixin implements FirstPersonAnimations.EquippedStack {
+
+    @ModifyExpressionValue(
+        method = "renderItem(Lnet/minecraft/entity/EntityLivingBase;Lnet/minecraft/item/ItemStack;ILnet/minecraftforge/client/IItemRenderer$ItemRenderType;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/entity/EntityLivingBase;getItemIcon(Lnet/minecraft/item/ItemStack;I)Lnet/minecraft/util/IIcon;",
+            remap = true),
+        remap = false,
+        require = 0)
+    private IIcon gtnrlib$bowStage(IIcon icon) {
+        return HmiPoseRenderer.bowIcon(icon);
+    }
 
     @Shadow
     private ItemStack itemToRender;
@@ -42,6 +56,21 @@ public abstract class ItemRendererMixin implements FirstPersonAnimations.Equippe
         require = 0)
     private float gtnrlib$visualSwing(float vanilla) {
         return FirstPersonAnimations.INSTANCE.replacesSwing(itemToRender) ? 0 : vanilla;
+    }
+
+    @Inject(
+        method = "renderItemInFirstPerson",
+        at = @At(
+            value = "INVOKE",
+            target = "Lorg/lwjgl/opengl/GL11;glColor4f(FFFF)V",
+            ordinal = 0,
+            shift = At.Shift.AFTER,
+            remap = false),
+        cancellable = true,
+        require = 0)
+    private void gtnrlib$hmi(float partial, CallbackInfo ci) {
+        float dip = 1 - (prevEquippedProgress + (equippedProgress - prevEquippedProgress) * partial);
+        if (HmiPoseRenderer.render((ItemRenderer) (Object) this, itemToRender, partial, dip)) ci.cancel();
     }
 
     // Successful block placement resets the equipped height. Sample both interpolation endpoints at rest for that clip.

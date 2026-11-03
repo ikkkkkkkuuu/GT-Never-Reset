@@ -1,0 +1,224 @@
+package com.xyp.gtnrlib.client.animation;
+
+import java.io.IOException;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemAxe;
+import net.minecraft.item.ItemBed;
+import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemBoat;
+import net.minecraft.item.ItemBow;
+import net.minecraft.item.ItemDoor;
+import net.minecraft.item.ItemEgg;
+import net.minecraft.item.ItemEnderPearl;
+import net.minecraft.item.ItemFishingRod;
+import net.minecraft.item.ItemHoe;
+import net.minecraft.item.ItemMap;
+import net.minecraft.item.ItemPickaxe;
+import net.minecraft.item.ItemPotion;
+import net.minecraft.item.ItemRecord;
+import net.minecraft.item.ItemSign;
+import net.minecraft.item.ItemSkull;
+import net.minecraft.item.ItemSnowball;
+import net.minecraft.item.ItemSpade;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemSword;
+import net.minecraft.item.ItemTool;
+import net.minecraft.util.MovingObjectPosition.MovingObjectType;
+import net.minecraftforge.client.IItemRenderer.ItemRenderType;
+import net.minecraftforge.client.MinecraftForgeClient;
+
+import org.joml.Matrix4f;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
+import org.lwjgl.input.Keyboard;
+
+import com.xyp.gtnrlib.GTNRLib;
+import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
+
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
+/** Maps the local player's rendered stack and accepted swings to HMI's two visual hand passes. */
+@SideOnly(Side.CLIENT)
+public final class HmiFirstPerson {
+
+    public static final HmiFirstPerson INSTANCE = new HmiFirstPerson();
+    public final Matrix4f right = new Matrix4f(), left = new Matrix4f(), item = new Matrix4f();
+    private HmiPoseProgram.Scripts scripts;
+    private HmiPoseProgram program;
+    private boolean resetProgram;
+    private Object player;
+    private Item lastItem;
+    private int lastDamage, swings;
+    private String id;
+    private boolean breaking;
+    private double swingStart = Double.NEGATIVE_INFINITY, lastFrame = Double.NaN;
+
+    private HmiFirstPerson() {}
+
+    public void install(HmiPoseProgram.Scripts next) throws IOException {
+        var ready = next == null ? null : new HmiPoseProgram(next);
+        resetProgram = false;
+        scripts = next;
+        program = ready;
+        reset(null);
+    }
+
+    private void reset(Object nextPlayer) {
+        player = nextPlayer;
+        id = null;
+        lastItem = null;
+        swings = 0;
+        lastFrame = Double.NaN;
+        swingStart = Double.NEGATIVE_INFINITY;
+        breaking = false;
+    }
+
+    public boolean enabled() {
+        return program != null;
+    }
+
+    public void detach() {
+        if (player == null) return;
+        reset(null);
+        resetProgram = true;
+    }
+
+    public HmiPoseProgram program() {
+        return program;
+    }
+
+    public String itemId() {
+        return id;
+    }
+
+    public void swing() {
+        if (program == null) return;
+        var mc = Minecraft.getMinecraft();
+        var p = mc.thePlayer;
+        if (p == null || p != player || mc.gameSettings.thirdPersonView != 0) return;
+        swings++;
+        swingStart = p.ticksExisted;
+        breaking = mc.gameSettings.keyBindAttack.getIsKeyPressed() && mc.objectMouseOver != null
+            && mc.objectMouseOver.typeOfHit == MovingObjectType.BLOCK;
+    }
+
+    public boolean sample(ItemStack stack, float partial, float dip) {
+        if (program == null) return false;
+        var mc = Minecraft.getMinecraft();
+        var p = mc.thePlayer;
+        if (p == null || mc.gameSettings.thirdPersonView != 0 || p.isInvisible()) return false;
+        if (stack != null && (MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON) != null
+            || stack.getItem() instanceof ItemMap
+                && MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.FIRST_PERSON_MAP) != null))
+            return false;
+        try {
+            if (player != p) {
+                if (player != null || resetProgram) program = new HmiPoseProgram(scripts);
+                resetProgram = false;
+                reset(p);
+            }
+            Item held = stack == null ? null : stack.getItem();
+            boolean changed = id == null || held != lastItem;
+            int damage = stack == null ? 0 : stack.getItemDamage();
+            if (changed || damage != lastDamage) classify(held, stack, damage);
+            double now = (double) p.ticksExisted + partial;
+            if (!changed && lastFrame == now && damage == lastDamage) return true;
+            float seconds = Double.isNaN(lastFrame) ? 1f / 60
+                : (float) Math.max(0, Math.min(.05, (now - lastFrame) / 20));
+            lastFrame = now;
+            lastItem = held;
+            lastDamage = damage;
+            var frame = program.frame;
+            frame.set("age", p.ticksExisted);
+            frame.set(
+                "using",
+                LuaValue.valueOf(
+                    p.isUsingItem() && stack != null
+                        && p.getItemInUse() != null
+                        && p.getItemInUse()
+                            .getItem() == held));
+            frame.set("ground", LuaValue.valueOf(p.onGround));
+            frame.set("climb", LuaValue.valueOf(p.isOnLadder()));
+            frame.set("water", LuaValue.valueOf(p.isInWater()));
+            frame.set("sneak", LuaValue.valueOf(p.isSneaking()));
+            frame.set("inspect", LuaValue.valueOf(mc.currentScreen == null && Keyboard.isKeyDown(Keyboard.KEY_J)));
+            frame.set("swings", swings);
+            frame.set("speed", Math.sqrt(p.motionX * p.motionX + p.motionY * p.motionY + p.motionZ * p.motionZ));
+            frame.set("vertical", p.motionY);
+            frame.set("pitch", p.prevRotationPitch + (p.rotationPitch - p.prevRotationPitch) * partial);
+            frame.set(
+                "yaw",
+                p.prevRotationYaw
+                    + net.minecraft.util.MathHelper.wrapAngleTo180_float(p.rotationYaw - p.prevRotationYaw) * partial);
+            double elapsed = now - swingStart;
+            int duration = program.swingDuration(id);
+            float progress = elapsed >= 0 && elapsed < duration ? (float) (elapsed / duration) : 0;
+            boolean hit = elapsed < duration && breaking;
+            program.pose(true, id, progress, dip, changed, (swings & 1) != 0, hit, seconds);
+            right.set(program.armMatrix);
+            item.set(program.itemMatrix);
+            program.pose(false, HmiPoseProgram.EMPTY, progress, 0, changed, (swings & 1) != 0, hit, seconds);
+            left.set(program.armMatrix);
+            return true;
+        } catch (Exception ex) {
+            GTNRLib.LOG.error("HMI pose failed for {}. Reload resources to retry.", id, ex);
+            program = null;
+            return false;
+        }
+    }
+
+    public boolean blockPose() {
+        return program.frame.get("block")
+            .toboolean() && program.renderAsBlock(id);
+    }
+
+    private void classify(Item held, ItemStack stack, int damage) {
+        id = held == null ? HmiPoseProgram.EMPTY : String.valueOf(Item.itemRegistry.getNameForObject(held));
+        if (held instanceof ItemPotion && ItemPotion.isSplash(damage)) id = "minecraft:splash_potion";
+        else if (held instanceof ItemBoat) id = "minecraft:oak_boat";
+        else if (id.equals("minecraft:wooden_door")) id = "minecraft:oak_door";
+        else if (id.equals("minecraft:sign")) id = "minecraft:oak_sign";
+        var tags = new LuaTable();
+        tag(tags, "swords", held instanceof ItemSword);
+        tag(tags, "pickaxes", held instanceof ItemPickaxe);
+        tag(tags, "axes", held instanceof ItemAxe);
+        tag(tags, "shovels", held instanceof ItemSpade);
+        tag(tags, "hoes", held instanceof ItemHoe);
+        tag(tags, "skulls", held instanceof ItemSkull);
+        tag(tags, "doors", held instanceof ItemDoor);
+        tag(tags, "signs", held instanceof ItemSign);
+        tag(tags, "beds", held instanceof ItemBed);
+        tag(tags, "music_discs", held instanceof ItemRecord);
+        tag(tags, "nuggets", id.endsWith("_nugget"));
+        var frame = program.frame;
+        frame.set("mainItem", id);
+        frame.set("tags", tags);
+        frame.set(
+            "action",
+            held == null ? "none"
+                : stack.getItemUseAction()
+                    .name());
+        frame.set("block", LuaValue.valueOf(held instanceof ItemBlock));
+        frame.set(
+            "throwable",
+            LuaValue.valueOf(
+                held instanceof ItemSnowball || held instanceof ItemEgg
+                    || held instanceof ItemEnderPearl
+                    || id.equals("minecraft:splash_potion")));
+        frame.set(
+            "translate",
+            LuaValue.valueOf(
+                !(held instanceof ItemTool || held instanceof ItemSword
+                    || held instanceof ItemHoe
+                    || held instanceof ItemFishingRod
+                    || held instanceof ItemBow
+                    || held != null && held.isFull3D())));
+    }
+
+    private static void tag(LuaTable tags, String name, boolean present) {
+        if (present) tags.set(name, LuaValue.TRUE);
+    }
+}

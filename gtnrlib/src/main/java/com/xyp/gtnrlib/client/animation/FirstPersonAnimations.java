@@ -37,6 +37,8 @@ import com.xyp.gtnrlib.api.animation.AnimationClip.Marker;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Value;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
 import com.xyp.gtnrlib.api.animation.AnimationPlayer;
+import com.xyp.gtnrlib.client.render.animation.HmiPoseRenderer;
+import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
 import com.xyp.gtnrlib.compat.punchy.PunchyPack;
 import com.xyp.gtnrlib.compat.punchy.PunchyPack.Motion;
 import com.xyp.gtnrlib.config.GTNRLibConfig;
@@ -134,15 +136,20 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
             if (dir.equals(path.getParent())) sources.add(path);
         }
         try {
+            HmiPoseProgram.Scripts hmi = null;
             if (!GTNRLibConfig.animationPack.isEmpty()) {
                 Path imported = dir.resolve(GTNRLibConfig.animationPack)
                     .normalize();
                 if (!dir.equals(imported.getParent()))
                     throw new IllegalArgumentException("expected a name inside resourcepacks");
                 sources.remove(imported);
-                sources.add(imported);
+                if (GTNRLibConfig.animationPack.endsWith(".jar")) hmi = HmiPoseProgram.Scripts.read(imported);
+                else sources.add(imported);
             }
-            PunchyPack next = PunchyPack.load(sources, message -> GTNRLib.LOG.warn("animation pack: {}", message));
+            PunchyPack next = hmi == null
+                ? PunchyPack.load(sources, message -> GTNRLib.LOG.warn("animation pack: {}", message))
+                : PunchyPack.empty();
+            HmiPoseRenderer.install(hmi);
             packs = next;
             reset();
         } catch (Exception e) {
@@ -157,8 +164,10 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
             advancedOnInput = false;
             return;
         }
-        if (!enabled()) return;
         var mc = Minecraft.getMinecraft();
+        if (HmiFirstPerson.INSTANCE.enabled() && (mc.thePlayer == null || mc.gameSettings.thirdPersonView != 0))
+            HmiFirstPerson.INSTANCE.detach();
+        if (!enabled()) return;
         if (mc.thePlayer == null || mc.theWorld != world || mc.gameSettings.thirdPersonView != 0) {
             reset();
             world = mc.theWorld;

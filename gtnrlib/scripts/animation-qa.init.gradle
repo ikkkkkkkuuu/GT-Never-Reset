@@ -25,7 +25,14 @@ gradle.projectsEvaluated {
         systemProperty 'gtnrlib.animation.qa.host', mode == 'host'
         args '--width', (mode == 'host' ? '854' : '640'), '--height', '480'
         notCompatibleWithConfigurationCache('isolated automatic client')
+        def release = gradle.startParameter.projectProperties['hmiRelease']
+        if (release) systemProperty 'gtnrlib.animation.qa.hmi', 'hmi-fixture.jar'
         doFirst {
+            if (release) {
+                def input = new File(release)
+                if (!input.isFile()) throw new GradleException("Missing HMI fixture: " + input)
+                lib.copy { from input; into new File(workingDir, 'resourcepacks'); rename { 'hmi-fixture.jar' } }
+            }
             output.mkdirs()
             workingDir.mkdirs()
             if(mode=='host') {
