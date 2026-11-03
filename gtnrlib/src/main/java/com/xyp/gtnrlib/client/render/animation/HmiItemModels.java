@@ -11,6 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.stream.IntStream;
 
 import javax.imageio.ImageIO;
 
@@ -21,7 +22,6 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -30,42 +30,56 @@ import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-/** First-person model variants shipped in the local HMI archive for items present in 1.7.10. */
+/** First-person model variants from the local HMI release, indexed by the identity used by its scripts. */
 @SideOnly(Side.CLIENT)
 public final class HmiItemModels implements AutoCloseable {
 
     private final Map<String, Mesh> base = new HashMap<>();
     private final NavigableMap<Float, Mesh> drinking = new TreeMap<>();
+    private final Map<String, Map<String, Mesh>> variants = new HashMap<>();
     private final Map<String, Texture> textures = new HashMap<>();
 
     public HmiItemModels(Map<String, byte[]> assets) throws IOException {
-        for (String color : List.of("orange", "red", "blue", "copper")) {
-            String texture = "textures/particle/" + color + "_glow.png";
-            textures.put(texture, new Texture(assets, texture));
+        for (String path : assets.keySet()) {
+            if (path.startsWith("textures/particle/") && path.endsWith(".png"))
+                textures.put(path, new Texture(assets, path));
         }
         Map<String, Mesh> meshes = new HashMap<>();
-        for (String item : List.of("bucket", "water_bucket", "lava_bucket", "milk_bucket", "oak_boat")) {
-            JsonObject dispatch = json(assets, "items/" + item + ".json").getAsJsonObject("model");
-            for (JsonElement variant : dispatch.getAsJsonArray("cases")) {
-                var entry = variant.getAsJsonObject();
-                boolean first = false;
-                for (JsonElement context : entry.getAsJsonArray("when")) first |= context.getAsString()
-                    .equals("firstperson_righthand");
-                if (!first) continue;
-                var model = entry.getAsJsonObject("model");
-                if (model.has("on_true")) {
-                    for (JsonElement threshold : model.getAsJsonObject("on_true")
-                        .getAsJsonArray("entries")) {
-                        JsonObject t = threshold.getAsJsonObject();
-                        drinking.put(
-                            t.get("threshold")
-                                .getAsFloat(),
-                            mesh(assets, meshes, t.getAsJsonObject("model")));
-                    }
-                    model = model.getAsJsonObject("on_false");
+        for (String path : assets.keySet()) {
+            if (!path.startsWith("items/") || !path.endsWith(".json")) continue;
+            String id = "minecraft:" + path.substring("items/".length(), path.length() - ".json".length());
+            JsonObject select = json(assets, path).getAsJsonObject("model");
+            JsonObject model = select.getAsJsonObject("fallback");
+            for (JsonElement entry : select.getAsJsonArray("cases")) {
+                var rule = entry.getAsJsonObject();
+                for (JsonElement context : rule.getAsJsonArray("when")) {
+                    if (context.getAsString()
+                        .equals("firstperson_righthand")) model = rule.getAsJsonObject("model");
                 }
-                base.put("minecraft:" + item, mesh(assets, meshes, model));
             }
+            if (model.has("on_true")) {
+                for (JsonElement threshold : model.getAsJsonObject("on_true")
+                    .getAsJsonArray("entries")) {
+                    JsonObject t = threshold.getAsJsonObject();
+                    drinking.put(
+                        t.get("threshold")
+                            .getAsFloat(),
+                        mesh(assets, meshes, t.getAsJsonObject("model")));
+                }
+                model = model.getAsJsonObject("on_false");
+            } else if (model.has("component")) {
+                var choices = new HashMap<String, Mesh>();
+                for (JsonElement choice : model.getAsJsonArray("cases")) {
+                    var rule = choice.getAsJsonObject();
+                    choices.put(
+                        rule.get("when")
+                            .getAsString(),
+                        mesh(assets, meshes, rule.getAsJsonObject("model")));
+                }
+                variants.put(id, choices);
+                model = model.getAsJsonObject("fallback");
+            }
+            base.put(id, mesh(assets, meshes, model));
         }
     }
 
@@ -148,12 +162,14 @@ public final class HmiItemModels implements AutoCloseable {
         return result;
     }
 
-    public boolean draw(String id, int ticksUsed, int age, HmiPoseProgram program) {
+    public boolean draw(String id, String variant, int ticksUsed, int age, HmiPoseProgram program) {
         var mesh = base.get(id);
+        var choices = variants.get(id);
+        if (choices != null) mesh = choices.getOrDefault(variant, mesh);
         if (mesh == null) return false;
         if (id.equals("minecraft:milk_bucket") && ticksUsed >= 0) {
-            var variant = drinking.floorEntry((float) ticksUsed);
-            if (variant != null) mesh = variant.getValue();
+            var stage = drinking.floorEntry((float) ticksUsed);
+            if (stage != null) mesh = stage.getValue();
         }
         HmiPoseRenderer.apply(mesh.mount);
         var tess = Tessellator.instance;
@@ -180,9 +196,11 @@ public final class HmiItemModels implements AutoCloseable {
         return true;
     }
 
-    void bindGlow(String texture) {
-        textures.get(texture)
-            .bind(0);
+    boolean bindParticle(String texture) {
+        var sprite = textures.get(texture);
+        if (sprite == null) return false;
+        sprite.bind(0);
+        return true;
     }
 
     @Override
@@ -249,13 +267,19 @@ public final class HmiItemModels implements AutoCloseable {
                 .getAsInt() : 1;
             interpolate = anim.has("interpolate") && anim.get("interpolate")
                 .getAsBoolean();
-            if (anim.has("frames")) {
-                JsonArray list = anim.getAsJsonArray("frames");
-                frames = new int[list.size()];
-                for (int i = 0; i < frames.length; i++) frames[i] = list.get(i)
-                    .getAsInt();
-            } else frames = java.util.stream.IntStream.range(0, image.getHeight() / size)
+            int count = image.getHeight() / size;
+            int[] sequence;
+            if (count > 1 && anim.has("frames")) {
+                var entries = anim.getAsJsonArray("frames");
+                sequence = IntStream.range(0, entries.size())
+                    .map(
+                        i -> entries.get(i)
+                            .getAsInt())
+                    .filter(i -> i >= 0 && i < count)
+                    .toArray();
+            } else sequence = IntStream.range(0, count)
                 .toArray();
+            frames = sequence.length == 0 ? new int[] { 0 } : sequence;
         }
 
         void bind(int age) {

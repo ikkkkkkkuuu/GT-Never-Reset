@@ -23,14 +23,34 @@ I = {
     shouldTranslateItem=function(_, item) return item == frame.mainItem and frame.translate end,
     isCustomTranslate=function(_, item) return translateItem[item] or false end,
     isThrowable=function(_, item) return item == frame.mainItem and frame.throwable end,
-    isLantern=no, isChargedCrossbow=no, setChestOpen=ignore, setShulkerOpen=ignore
+    isLantern=function(_, item) return item == frame.mainItem and frame.lantern or false end,
+    isChargedCrossbow=no, setChestOpen=ignore, setShulkerOpen=ignore
 }
 KeyBindManager = {isKeyPressed=function() return frame.inspect end}
 Texture = {of=function(_, namespace, name) return name end}
+local sprites = {}
+frame.screenParticles = sprites
+function advanceScreenParticles(dt)
+    if #sprites == 0 or dt <= 0 then return end
+    local step, drag = dt * 30, 0.9^(dt * 30)
+    for i=#sprites,1,-1 do
+        local p=sprites[i]
+        p.remaining=math.max(0,p.remaining-0.1*step)
+        p.x,p.y,p.z=p.x+p.dx*step,p.y+p.dy*step,p.z+p.dz*step
+        p.dx,p.dy,p.dz=p.dx*drag,p.dy*drag,p.dz*drag
+        if p.gravity then p.dy=p.dy-0.01*step end
+        if p.remaining==0 then p.alpha=math.max(0,p.alpha-10*step) end
+        if p.tick then p.tick(p) end
+        if p.alpha==0 then table.remove(sprites,i) end
+    end
+end
 particleManager = {addParticle=function(_, particles, gravity, x,y,z, dx,dy,dz, rx,ry,rz,
-        drx,dry,drz, size, texture, space, hand, life, blend, duration, alpha)
+        drx,dry,drz, size, texture, space, hand, life, blend, duration, alpha, tick)
     if hand=="main" and space=="ITEM" and life=="SPAWN" and blend=="ADDITIVE" and duration==0 then
         frame.glow={x=x,y=y,z=z,size=size,texture=texture,alpha=alpha}
+    elseif hand=="main" and space=="SCREEN" and life=="OPACITY" and blend=="TRANSLUCENT_L" then
+        sprites[#sprites+1]={x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,size=size,texture=texture,
+            alpha=alpha,remaining=duration,gravity=gravity,tick=tick}
     end
 end}
 S = {playSound=ignore}

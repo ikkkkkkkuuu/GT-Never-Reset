@@ -33,7 +33,7 @@ public final class HmiPoseProgram {
     public final LuaTable frame = new LuaTable();
     private final LuaTable context = new LuaTable();
     private int bowStage = -1;
-    private final LuaValue shared, relative, item, model;
+    private final LuaValue shared, relative, item, model, advanceScreenParticles;
     private final Map<Integer, Matrix4f> parts = new HashMap<>();
     private final Matrix4f working = new Matrix4f(), scene = new Matrix4f(), shear = new Matrix4f(),
         partOp = new Matrix4f();
@@ -125,6 +125,7 @@ public final class HmiPoseProgram {
                 .call();
         }
         env.set("maps", LuaValue.NIL);
+        advanceScreenParticles = env.get("advanceScreenParticles");
         shared = compile("hand_pose", scripts.hand);
         relative = compile("hand_relative_pose", scripts.arm);
         item = compile("item_pose", scripts.item);
@@ -161,6 +162,41 @@ public final class HmiPoseProgram {
             .optboolean(true);
     }
 
+    public record Particle(String texture, float x, float y, float z, float size, float alpha) {
+
+        private static Particle read(LuaValue value) {
+            return new Particle(
+                value.get("texture")
+                    .tojstring(),
+                value.get("x")
+                    .tofloat(),
+                value.get("y")
+                    .tofloat(),
+                value.get("z")
+                    .tofloat(),
+                value.get("size")
+                    .tofloat(),
+                value.get("alpha")
+                    .tofloat() / 255f);
+        }
+    }
+
+    public Particle glow() {
+        var value = frame.get("glow");
+        return value.isnil() ? null : Particle.read(value);
+    }
+
+    public int screenParticleCount() {
+        return frame.get("screenParticles")
+            .length();
+    }
+
+    public Particle screenParticle(int index) {
+        return Particle.read(
+            frame.get("screenParticles")
+                .get(index + 1));
+    }
+
     public int bowStage() {
         return bowStage;
     }
@@ -184,6 +220,7 @@ public final class HmiPoseProgram {
         context.set("swingOHand", LuaValue.FALSE);
         context.set("blockBreaking", LuaValue.valueOf(breaking));
         context.set("deltaTime", seconds);
+        if (main) advanceScreenParticles.call(LuaValue.valueOf(seconds));
         float swing = main ? progress : 0;
         working.identity();
         stage(shared, swing, dip);

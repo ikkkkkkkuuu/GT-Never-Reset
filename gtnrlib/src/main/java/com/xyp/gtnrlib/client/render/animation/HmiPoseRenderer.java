@@ -98,6 +98,7 @@ public final class HmiPoseRenderer {
             } finally {
                 GL11.glPopMatrix();
             }
+            drawScreenParticles();
         } finally {
             GL11.glPopAttrib();
             if (stack != null && stack.getItem() instanceof ItemCloth) GL11.glDisable(GL11.GL_BLEND);
@@ -140,7 +141,7 @@ public final class HmiPoseRenderer {
 
     private static void draw(ItemRenderer renderer, Minecraft mc, ItemStack stack) {
         int used = mc.thePlayer.isUsingItem() ? mc.thePlayer.getItemInUseDuration() : -1;
-        if (models.draw(HMI.itemId(), used, mc.thePlayer.ticksExisted, HMI.program())) return;
+        if (models.draw(HMI.itemId(), HMI.modelVariant(), used, mc.thePlayer.ticksExisted, HMI.program())) return;
         Item held = stack.getItem();
         boolean cube = held instanceof ItemBlock && RenderBlocks.renderItemIn3d(
             Block.getBlockFromItem(held)
@@ -184,7 +185,7 @@ public final class HmiPoseRenderer {
 
     private static void blockMount(Item held) {
         GL11.glTranslated(.22, .25, .2);
-        if (net.minecraft.block.Block.getBlockFromItem(held) instanceof net.minecraft.block.BlockTorch) {
+        if (Block.getBlockFromItem(held) instanceof net.minecraft.block.BlockTorch || HMI.isLantern()) {
             GL11.glTranslated(-.05, 0, 0);
             GL11.glScalef(1.75f, 1.75f, 1.75f);
         } else GL11.glTranslated(-.25, -.05, 0);
@@ -193,40 +194,48 @@ public final class HmiPoseRenderer {
     }
 
     private static void glow(ItemStack stack) {
-        var glow = HMI.program().frame.get("glow");
-        if (glow.isnil()) return;
+        var glow = HMI.program()
+            .glow();
+        if (glow == null) return;
         if (HMI.blockPose()) {
             blockMount(stack.getItem());
             GL11.glTranslated(-.5, -.5, -.5);
         }
-        GL11.glTranslated(
-            glow.get("x")
-                .todouble(),
-            glow.get("y")
-                .todouble(),
-            glow.get("z")
-                .todouble());
+        GL11.glTranslated(glow.x(), glow.y(), glow.z());
         GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, BUFFER);
-        float radius = .25f * glow.get("size")
-            .tofloat()
+        float radius = .25f * glow.size()
             * (float) Math
                 .sqrt(BUFFER.get(0) * BUFFER.get(0) + BUFFER.get(1) * BUFFER.get(1) + BUFFER.get(2) * BUFFER.get(2));
         float x = BUFFER.get(12), y = BUFFER.get(13), z = BUFFER.get(14);
         GL11.glLoadIdentity();
+        particleBlend(GL11.GL_ONE);
+        GL11.glColor4f(1, 1, 1, glow.alpha());
+        if (models.bindParticle(glow.texture())) quad(x, y, z, radius);
+    }
+
+    private static void drawScreenParticles() {
+        int count = HMI.program()
+            .screenParticleCount();
+        if (count == 0) return;
+        particleBlend(GL11.GL_ONE_MINUS_SRC_ALPHA);
+        for (int i = 0; i < count; i++) {
+            var p = HMI.program()
+                .screenParticle(i);
+            if (!models.bindParticle(p.texture())) continue;
+            GL11.glColor4f(1, 1, 1, p.alpha());
+            quad(p.x(), p.y(), p.z(), p.size() * .25f);
+        }
+    }
+
+    private static void particleBlend(int destination) {
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDisable(GL11.GL_CULL_FACE);
         GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE);
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, destination);
         GL11.glDepthMask(false);
-        GL11.glColor4f(
-            1,
-            1,
-            1,
-            glow.get("alpha")
-                .tofloat() / 255f);
-        models.bindGlow(
-            glow.get("texture")
-                .tojstring());
+    }
+
+    private static void quad(float x, float y, float z, float radius) {
         var mesh = Tessellator.instance;
         mesh.startDrawingQuads();
         mesh.addVertexWithUV(x - radius, y - radius, z, 0, 1);

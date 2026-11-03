@@ -1,8 +1,10 @@
 package com.xyp.gtnrlib.client.animation;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemBed;
@@ -51,6 +53,7 @@ public final class HmiFirstPerson {
     private boolean resetProgram;
     private Object player;
     private Item lastItem;
+    private HmiItemBindings.Profile bound;
     private int lastDamage, swings;
     private String id;
     private boolean breaking;
@@ -69,6 +72,7 @@ public final class HmiFirstPerson {
     private void reset(Object nextPlayer) {
         player = nextPlayer;
         id = null;
+        bound = null;
         lastItem = null;
         swings = 0;
         lastFrame = Double.NaN;
@@ -92,6 +96,14 @@ public final class HmiFirstPerson {
 
     public String itemId() {
         return id;
+    }
+
+    public String modelVariant() {
+        return bound == null ? "" : bound.variant();
+    }
+
+    public boolean isLantern() {
+        return "minecraft:lantern".equals(id) || "minecraft:soul_lantern".equals(id);
     }
 
     public void swing() {
@@ -123,9 +135,17 @@ public final class HmiFirstPerson {
             Item held = stack == null ? null : stack.getItem();
             boolean changed = id == null || held != lastItem;
             int damage = stack == null ? 0 : stack.getItemDamage();
-            if (changed || damage != lastDamage) classify(held, stack, damage);
+            var profile = HmiItemBindings.resolve(stack);
+            boolean reclassify = changed || damage != lastDamage
+                || !Objects.equals(bound == null ? null : bound.itemId(), profile == null ? null : profile.itemId());
+            bound = profile;
+            if (reclassify) {
+                String previous = id;
+                classify(held, stack, damage);
+                changed |= !Objects.equals(previous, id);
+            }
             double now = (double) p.ticksExisted + partial;
-            if (!changed && lastFrame == now && damage == lastDamage) return true;
+            if (!reclassify && lastFrame == now) return true;
             float seconds = Double.isNaN(lastFrame) ? 1f / 60
                 : (float) Math.max(0, Math.min(.05, (now - lastFrame) / 20));
             lastFrame = now;
@@ -177,21 +197,39 @@ public final class HmiFirstPerson {
 
     private void classify(Item held, ItemStack stack, int damage) {
         id = held == null ? HmiPoseProgram.EMPTY : String.valueOf(Item.itemRegistry.getNameForObject(held));
-        if (held instanceof ItemPotion && ItemPotion.isSplash(damage)) id = "minecraft:splash_potion";
-        else if (held instanceof ItemBoat) id = "minecraft:oak_boat";
+        if (bound != null) id = bound.itemId();
+        else if (id.startsWith("etfuturum:")) {
+            String name = id.substring("etfuturum:".length());
+            if (scripts.assets()
+                .containsKey("items/" + name + ".json")) id = "minecraft:" + name;
+            else id = switch (name) {
+                case "slime" -> "minecraft:slime_block";
+                case "honey_block", "lantern", "soul_lantern", "soul_torch" -> "minecraft:" + name;
+                default -> id;
+            };
+        } else if (held instanceof ItemPotion && ItemPotion.isSplash(damage)) id = "minecraft:splash_potion";
+        else if (held == Items.boat || held instanceof ItemBoat) id = "minecraft:oak_boat";
         else if (id.equals("minecraft:wooden_door")) id = "minecraft:oak_door";
         else if (id.equals("minecraft:sign")) id = "minecraft:oak_sign";
+        // Legacy equipment can borrow a vanilla item's grip and tool tags while keeping its own use behaviour.
+        Item shape = bound == null ? held : (Item) Item.itemRegistry.getObject(id);
+        if (shape == null) shape = held;
         var tags = new LuaTable();
-        tag(tags, "swords", held instanceof ItemSword);
-        tag(tags, "pickaxes", held instanceof ItemPickaxe);
-        tag(tags, "axes", held instanceof ItemAxe);
-        tag(tags, "shovels", held instanceof ItemSpade);
-        tag(tags, "hoes", held instanceof ItemHoe);
-        tag(tags, "skulls", held instanceof ItemSkull);
-        tag(tags, "doors", held instanceof ItemDoor);
-        tag(tags, "signs", held instanceof ItemSign);
-        tag(tags, "beds", held instanceof ItemBed);
-        tag(tags, "music_discs", held instanceof ItemRecord);
+        if (id.startsWith("minecraft:")) {
+            boolean chestBoat = id.endsWith("_chest_boat") || id.equals("minecraft:bamboo_chest_raft");
+            tag(tags, "chest_boats", chestBoat);
+            tag(tags, "boats", chestBoat || id.endsWith("_boat") || id.equals("minecraft:bamboo_raft"));
+        }
+        tag(tags, "swords", shape instanceof ItemSword);
+        tag(tags, "pickaxes", shape instanceof ItemPickaxe);
+        tag(tags, "axes", shape instanceof ItemAxe);
+        tag(tags, "shovels", shape instanceof ItemSpade);
+        tag(tags, "hoes", shape instanceof ItemHoe);
+        tag(tags, "skulls", shape instanceof ItemSkull);
+        tag(tags, "doors", shape instanceof ItemDoor);
+        tag(tags, "signs", shape instanceof ItemSign);
+        tag(tags, "beds", shape instanceof ItemBed);
+        tag(tags, "music_discs", shape instanceof ItemRecord);
         tag(tags, "nuggets", id.endsWith("_nugget"));
         var frame = program.frame;
         frame.set("mainItem", id);
@@ -201,21 +239,22 @@ public final class HmiFirstPerson {
             held == null ? "none"
                 : stack.getItemUseAction()
                     .name());
-        frame.set("block", LuaValue.valueOf(held instanceof ItemBlock));
+        frame.set("block", LuaValue.valueOf(shape instanceof ItemBlock));
+        frame.set("lantern", LuaValue.valueOf(isLantern()));
         frame.set(
             "throwable",
             LuaValue.valueOf(
-                held instanceof ItemSnowball || held instanceof ItemEgg
-                    || held instanceof ItemEnderPearl
+                shape instanceof ItemSnowball || shape instanceof ItemEgg
+                    || shape instanceof ItemEnderPearl
                     || id.equals("minecraft:splash_potion")));
         frame.set(
             "translate",
             LuaValue.valueOf(
-                !(held instanceof ItemTool || held instanceof ItemSword
-                    || held instanceof ItemHoe
-                    || held instanceof ItemFishingRod
-                    || held instanceof ItemBow
-                    || held != null && held.isFull3D())));
+                !(shape instanceof ItemTool || shape instanceof ItemSword
+                    || shape instanceof ItemHoe
+                    || shape instanceof ItemFishingRod
+                    || shape instanceof ItemBow
+                    || shape != null && shape.isFull3D())));
     }
 
     private static void tag(LuaTable tags, String name, boolean present) {

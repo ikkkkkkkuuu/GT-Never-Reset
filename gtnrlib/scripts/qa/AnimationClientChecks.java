@@ -31,6 +31,10 @@ import org.lwjgl.opengl.GL11;
 
 import com.xyp.gtnrlib.api.animation.AnimationClip.Marker;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
+import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
+import com.xyp.gtnrlib.client.animation.HmiItemBindings;
+import com.xyp.gtnrlib.client.animation.HmiItemBindings.Profile;
+import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
 import com.xyp.gtnrlib.config.GTNRLibConfig;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -298,7 +302,11 @@ public final class AnimationClientChecks {
                 }
                 mc.thePlayer.clearItemInUse();
             }
-            if (Boolean.getBoolean("gtnrlib.animation.qa.host")) checkHost(mc);
+            checkHmiProfiles(mc, release);
+            if (Boolean.getBoolean("gtnrlib.animation.qa.host")) {
+                checkEtFuturum(mc);
+                checkHost(mc);
+            }
             reload(mc, "invalid-hmi-fixture.jar");
             require(hmi.enabled(), "failed HMI reload retains previous program");
         } finally {
@@ -307,6 +315,149 @@ public final class AnimationClientChecks {
             reload(mc, "");
         }
         require(!hmi.enabled(), "HMI unload releases runtime");
+    }
+
+    private void checkHmiProfiles(Minecraft mc, String release) throws Exception {
+        var hmi = HmiFirstPerson.INSTANCE;
+        var stack = new ItemStack(Items.stick);
+        stack.stackTagCompound = new net.minecraft.nbt.NBTTagCompound();
+        equip(mc, stack);
+        HmiItemBindings.register(
+            Items.stick,
+            s -> new Profile(s.stackTagCompound.getString("hmi"), s.stackTagCompound.getString("variant")));
+        try {
+            var assets = HmiPoseProgram.Scripts.read(
+                mc.getResourcePackRepository()
+                    .getDirResourcepacks()
+                    .toPath()
+                    .resolve(release))
+                .assets();
+            int count = 0;
+            for (String path : assets.keySet()) {
+                if (!path.startsWith("items/") || !path.endsWith(".json")) continue;
+                String id = "minecraft:" + path.substring(6, path.length() - 5);
+                stack.stackTagCompound.setString("hmi", id);
+                mc.thePlayer.ticksExisted++;
+                mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+                require(hmi.enabled() && id.equals(hmi.itemId()), "HMI item entry " + id);
+                count++;
+            }
+            require(count == 35, "all 35 original item model entries selected through a third-party binding");
+            stack.stackTagCompound.setString("hmi", "minecraft:axolotl_bucket");
+            for (int i = 0; i < 45; i++) {
+                mc.thePlayer.ticksExisted++;
+                mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+            }
+            int[] fallback = draw(mc, "hmi-axolotl-fallback");
+            stack.stackTagCompound.setString("variant", "lucy");
+            require(
+                Arrays.equals(fallback, draw(mc, "hmi-axolotl-lucy")),
+                "component fallback matches original lucy model");
+            for (String color : List.of("wild", "gold", "cyan", "blue")) {
+                stack.stackTagCompound.setString("variant", color);
+                require(
+                    !Arrays.equals(fallback, draw(mc, "hmi-axolotl-" + color)),
+                    "same-stack component selects " + color);
+            }
+            stack.stackTagCompound.setString("hmi", "minecraft:pink_petals");
+            mc.thePlayer.ticksExisted++;
+            mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+            mc.thePlayer.isSwingInProgress = false;
+            mc.thePlayer.swingItem();
+            mc.thePlayer.ticksExisted++;
+            draw(mc, "hmi-petal-swing");
+            var program = hmi.program();
+            int spawned = program.screenParticleCount();
+            require(spawned > 0, "upstream swing emitted screen particles");
+            double y = program.screenParticle(0)
+                .y();
+            mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+            require(
+                spawned == program.screenParticleCount() && y == program.screenParticle(0)
+                    .y(),
+                "second draw does not emit or advance particles");
+            for (int i = 0; i < 3; i++) {
+                mc.thePlayer.ticksExisted++;
+                mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+            }
+            require(
+                y != program.screenParticle(0)
+                    .y(),
+                "upstream screen particles travel after emission");
+            for (int i = 0; i < 48; i++) {
+                mc.thePlayer.ticksExisted++;
+                mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+            }
+            require(program.screenParticleCount() == 0, "screen particle lifetime and fade completed");
+        } finally {
+            HmiItemBindings.unregister(Items.stick);
+        }
+        mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+        require(
+            "minecraft:stick".equals(hmi.itemId()),
+            "removing binding restores original stack without re-equipping");
+        HmiItemBindings.register(Items.stick, broken -> { throw new IllegalStateException("QA resolver failure"); });
+        try {
+            mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+            require(
+                hmi.enabled() && "minecraft:stick".equals(hmi.itemId()),
+                "failing third-party resolver falls back without disabling HMI");
+        } finally {
+            HmiItemBindings.unregister(Items.stick);
+        }
+    }
+
+    private void checkEtFuturum(Minecraft mc) throws Exception {
+        var hmi = HmiFirstPerson.INSTANCE;
+        int rendered = 0;
+        for (String path : List.of(
+            "spruce_boat",
+            "oak_chest_boat",
+            "bamboo_chest_raft",
+            "lantern",
+            "soul_lantern",
+            "slime",
+            "honey_block",
+            "end_crystal")) {
+            Item item = (Item) Item.itemRegistry.getObject("etfuturum:" + path);
+            if (item == null) continue;
+            var stack = new ItemStack(item);
+            equip(mc, stack);
+            if (MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON) != null) {
+                require(!hmi.sample(stack, .5f, 0), "delegated Et Futurum renderer " + path);
+                continue;
+            }
+            for (int tick = 0; tick < 35; tick++) {
+                mc.thePlayer.ticksExisted++;
+                mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+            }
+            draw(mc, "hmi-etfuturum-" + path);
+            String expected = path.equals("slime") ? "slime_block" : path;
+            require(
+                hmi.enabled() && ("minecraft:" + expected).equals(hmi.itemId()),
+                "Et Futurum uses original " + expected + " profile");
+            if (path.endsWith("lantern")) require(
+                hmi.isLantern() && hmi.program()
+                    .glow() != null,
+                "upstream " + path + " glow");
+            if (path.contains("_chest_")) {
+                float pitch = mc.thePlayer.rotationPitch;
+                try {
+                    mc.thePlayer.rotationPitch = pitch + 28;
+                    mc.thePlayer.ticksExisted++;
+                    mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+                    var lid = hmi.program()
+                        .part(0);
+                    require(
+                        lid != null && !lid.equals(new org.joml.Matrix4f(), .0001f),
+                        "upstream chest boat parts for " + path);
+                } finally {
+                    mc.thePlayer.rotationPitch = pitch;
+                }
+            }
+            rendered++;
+        }
+        require(rendered > 0, "Et Futurum built-in mappings exercised");
     }
 
     private void checkPlacement(Minecraft mc, int x, int z, List<String> observed) throws Exception {
