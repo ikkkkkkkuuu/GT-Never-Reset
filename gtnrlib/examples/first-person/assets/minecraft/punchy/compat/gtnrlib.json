@@ -13,10 +13,6 @@
       "name": "gtnrlib_mine"
     },
     {
-      "type": "useItem",
-      "name": "gtnrlib_place"
-    },
-    {
       "type": "walk",
       "name": "gtnrlib_walk"
     },
@@ -24,5 +20,60 @@
       "type": "sprint",
       "name": "gtnrlib_walk"
     }
-  ]
+  ],
+  "item": {
+    "BLOCK": {
+      "transforms": {
+        "right": {
+          "offY": 0.28,
+          "rotY": -45,
+          "scale": 0.65,
+          "rotX": 17
+        }
+      },
+      "customAnimation": [
+        {
+          "type": "idle",
+          "name": "gtnrlib_carry_low"
+        },
+        {
+          "type": "walk",
+          "name": "gtnrlib_carry_low"
+        },
+        {
+          "type": "sprint",
+          "name": "gtnrlib_carry_low"
+        },
+        {
+          "type": "useItem",
+          "name": "gtnrlib_place"
+        }
+      ]
+    },
+    "AXE": {
+      "customAnimation": [
+        {
+          "type": "idle",
+          "name": "gtnrlib_carry_low"
+        },
+        {
+          "type": "walk",
+          "name": "gtnrlib_carry_low"
+        },
+        {
+          "type": "sprint",
+          "name": "gtnrlib_carry_low"
+        },
+        {
+          "type": "mining",
+          "name": "gtnrlib_chop"
+        }
+      ],
+      "transforms": {
+        "right": {
+          "scale": 0.76
+        }
+      }
+    }
+  }
 }

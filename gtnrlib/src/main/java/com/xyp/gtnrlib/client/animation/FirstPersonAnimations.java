@@ -48,6 +48,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 public final class FirstPersonAnimations implements IResourceManagerReloadListener {
 
     public static final FirstPersonAnimations INSTANCE = new FirstPersonAnimations();
+    private static final Marker REPLACE_SWING = new Marker(0, "gtnrlib:replace_swing");
     private final List<Consumer<Marker>> listeners = new ArrayList<>();
     private final AnimationPlayer player = new AnimationPlayer(
         m -> { for (var listener : List.copyOf(listeners)) listener.accept(m); });
@@ -60,7 +61,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     private PunchyPack.Pose rightItem, rightArm, leftArm;
     private AnimationPlayer.Playback base, action;
     private String activeAction = "";
-    private boolean mining;
+    private boolean mining, replacesSwing;
     private double sway, previousSway, pitch, previousPitch;
 
     @FunctionalInterface
@@ -181,6 +182,9 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         if (action != null) action.stop(.05);
         activeAction = name;
         actionMotion = motion;
+        replacesSwing = motion.clip()
+            .markers()
+            .contains(REPLACE_SWING);
         action = play(motion, .025, 1);
     }
 
@@ -235,6 +239,14 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         return rightItem;
     }
 
+    public boolean replacesSwing(ItemStack rendered) {
+        return replacesSwing && action != null && action.active() && applies(rendered);
+    }
+
+    public boolean replacesPlacementDip(ItemStack rendered) {
+        return activeAction.equals("useitem") && replacesSwing(rendered);
+    }
+
     public boolean dualHanded() {
         return (action != null && action.active() && actionMotion.dualHanded())
             || (base != null && base.active() && baseMotion.dualHanded());
@@ -278,6 +290,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         base = null;
         baseMotion = null;
         actionMotion = null;
+        replacesSwing = false;
         mining = false;
         combo = 0;
         activeAction = "";

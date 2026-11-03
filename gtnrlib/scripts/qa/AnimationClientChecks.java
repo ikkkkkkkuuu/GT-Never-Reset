@@ -15,9 +15,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.SoundCategory;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.shader.Framebuffer;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.WorldSettings;
@@ -27,9 +28,7 @@ import net.minecraftforge.client.MinecraftForgeClient;
 
 import org.lwjgl.opengl.GL11;
 
-import com.xyp.gtnrlib.api.animation.AnimationClip;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
-import com.xyp.gtnrlib.compat.punchy.PunchyPack;
 import com.xyp.gtnrlib.config.GTNRLibConfig;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -119,7 +118,7 @@ public final class AnimationClientChecks {
                 "nonempty vanilla silhouette");
             reload(mc, "animation-qa");
             tickPlayer();
-            require(target.applies(sword) && target.dualHanded(), "selected pack bound sword");
+            require(target.applies(sword) && !target.dualHanded(), "example sword uses primary hand");
             int[] active = draw(mc, "02-grip");
             equip(mc, null);
             tickPlayer();
@@ -136,8 +135,10 @@ public final class AnimationClientChecks {
             var click = Minecraft.class.getDeclaredMethod("func_147116_af");
             click.setAccessible(true);
             click.invoke(mc);
-            tickPlayer();
-            require(observed.contains("attack"), "accepted left click dispatched attack");
+            advanceHands(mc, 4);
+            require(
+                observed.contains("attack") && !target.dualHanded(),
+                "accepted left click dispatched single-hand attack");
             require(!Arrays.equals(active, draw(mc, "03-swing")), "attack changes grip");
             int x = (int) mc.thePlayer.posX, y = (int) mc.thePlayer.posY + 3, z = (int) mc.thePlayer.posZ;
             mc.objectMouseOver = new net.minecraft.util.MovingObjectPosition(
@@ -146,23 +147,64 @@ public final class AnimationClientChecks {
                 z,
                 1,
                 net.minecraft.util.Vec3.createVectorHelper(x, y, z));
+            equip(mc, new ItemStack(Items.iron_axe));
+            tickPlayer();
+            advanceHands(mc, 8);
+            int[] axeIdle = draw(mc, "axe-idle");
             var attackKey = mc.gameSettings.keyBindAttack;
             net.minecraft.client.settings.KeyBinding.setKeyBindState(attackKey.getKeyCode(), true);
             try {
-                tickPlayer();
-                require(observed.contains("mining"), "held attack on block dispatched mining");
+                mc.thePlayer.swingItem();
+                advanceHands(mc, 5);
+                require(
+                    observed.contains("mining") && !target.dualHanded()
+                        && target.replacesSwing(mc.thePlayer.getHeldItem())
+                        && mc.thePlayer.getSwingProgress(.5f) > 0,
+                    "axe clip replaces only the visual swing");
+                int idleX = grayItemCenterX(axeIdle, mc.displayWidth);
+                int strikeX = grayItemCenterX(draw(mc, "axe-chop"), mc.displayWidth);
+                require(
+                    strikeX > 0 && idleX - strikeX > mc.displayHeight * .12,
+                    "axe head swings inward: " + idleX + " -> " + strikeX);
             } finally {
                 net.minecraft.client.settings.KeyBinding.setKeyBindState(attackKey.getKeyCode(), false);
                 mc.objectMouseOver = previousHit;
             }
-            var stone = new ItemStack(net.minecraft.init.Blocks.stone);
+            advanceHands(mc, 8);
+            require(Arrays.equals(axeIdle, draw(mc, "axe-recovered")), "axe returns to its grip after mining stops");
+            var stone = new ItemStack(Blocks.cobblestone);
             equip(mc, stone);
             tickPlayer();
+            int[] carry = draw(mc, "block-carry");
+            int placeX = x + 2, ground = mc.theWorld.getTopSolidOrLiquidBlock(placeX, z) - 1;
+            var rightClick = Minecraft.class.getDeclaredMethod("func_147121_ag");
+            rightClick.setAccessible(true);
+            try {
+                mc.objectMouseOver = new net.minecraft.util.MovingObjectPosition(
+                    placeX,
+                    ground,
+                    z,
+                    1,
+                    net.minecraft.util.Vec3.createVectorHelper(placeX + .5, ground + 1, z + .5));
+                rightClick.invoke(mc);
+            } finally {
+                mc.objectMouseOver = previousHit;
+            }
             require(
-                ((ItemBlock) stone.getItem())
-                    .placeBlockAt(stone, mc.thePlayer, mc.theWorld, x, y, z, 1, .5f, .5f, .5f, 0)
+                mc.theWorld.getBlock(placeX, ground + 1, z) == Blocks.cobblestone && mc.thePlayer.isSwingInProgress
                     && observed.contains("useitem"),
-                "successful local placement dispatched useItem");
+                "normal right click placed cobblestone");
+            advanceHands(mc, 2);
+            int[] reach = draw(mc, "block-place");
+            int restX = grayItemCenterX(carry, mc.displayWidth), reachX = grayItemCenterX(reach, mc.displayWidth);
+            require(
+                !target.dualHanded() && restX > mc.displayWidth * .65
+                    && reachX >= mc.displayWidth * .45
+                    && restX - reachX > mc.displayHeight * .10,
+                "block moves inward from right hand: " + restX + " -> " + reachX);
+            advanceHands(mc, 8);
+            require(Arrays.equals(carry, draw(mc, "block-recovered")), "placed block returns to carry pose");
+            mc.playerController.clickBlock(placeX, ground + 1, z, 1);
             target.unbind("fixture:observer");
             equip(mc, new ItemStack(Items.filled_map));
             tickPlayer();
@@ -182,14 +224,32 @@ public final class AnimationClientChecks {
         }
     }
 
+    private void advanceHands(Minecraft mc, int ticks) throws Exception {
+        var swing = EntityLivingBase.class.getDeclaredMethod("updateArmSwingProgress");
+        swing.setAccessible(true);
+        for (int i = 0; i < ticks; i++) {
+            mc.thePlayer.prevSwingProgress = mc.thePlayer.swingProgress;
+            swing.invoke(mc.thePlayer);
+            mc.entityRenderer.itemRenderer.updateEquippedItem();
+            target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.END));
+        }
+    }
+
+    private static int grayItemCenterX(int[] pixels, int width) {
+        // Both cobblestone and the iron axe head have gray texels against the dark (32, 32, 32) background.
+        long sum = 0;
+        int count = 0;
+        for (int i = 0; i < pixels.length; i++) {
+            int rgb = pixels[i], r = rgb >> 16 & 255;
+            if (r > 48 && r == (rgb >> 8 & 255) && r == (rgb & 255)) {
+                sum += i % width;
+                count++;
+            }
+        }
+        return count == 0 ? -1 : (int) (sum / count);
+    }
+
     private void checkArmVisibility(Minecraft mc, ItemStack sword) throws Exception {
-        var dir = mc.getResourcePackRepository()
-            .getDirResourcepacks()
-            .toPath()
-            .resolve("animation-qa");
-        AnimationClip grip = PunchyPack.load(List.of(dir), message -> {})
-            .clip("gtnrlib_grip")
-            .clip();
         var textures = mc.getTextureManager();
         var skin = mc.thePlayer.getLocationSkin();
         textures.bindTexture(skin);
@@ -204,27 +264,35 @@ public final class AnimationClientChecks {
         try {
             markers.updateDynamicTexture();
             textures.loadTexture(skin, markers);
-            checkArmPose(mc, null, grip, "empty");
-            checkArmPose(mc, sword, grip, "sword");
+            checkArmPose(mc, null, "empty");
+            checkArmPose(mc, sword, "sword");
         } finally {
             textures.loadTexture(skin, original);
             markers.deleteGlTexture();
         }
     }
 
-    private void checkArmPose(Minecraft mc, ItemStack held, AnimationClip grip, String pose) throws Exception {
+    private void checkArmPose(Minecraft mc, ItemStack held, String pose) throws Exception {
         equip(mc, held);
         tickPlayer();
-        int[] both = draw(mc, pose + "-markers-both");
-        target.bind("fixture:single", (stack, action) -> "idle".equals(action) ? grip : null);
+        require(!target.dualHanded(), pose + " example uses primary hand");
+        int[] right = draw(mc, pose + "-markers-right");
+        checkArmSpan(mc, right, null, false, pose);
         try {
+            reload(mc, "animation-qa-dual");
             tickPlayer();
-            require(!target.dualHanded(), pose + " single-arm override active");
-            int[] right = draw(mc, pose + "-markers-right");
-            checkArmSpan(mc, right, null, false, pose);
+            require(target.dualHanded(), pose + " pack explicitly requested support arm");
+            int[] both = draw(mc, pose + "-markers-both");
             checkArmSpan(mc, both, right, true, pose);
+            target.trigger("attack");
+            mc.thePlayer.swingItem();
+            advanceHands(mc, 3);
+            require(
+                !target.replacesSwing(held) && !Arrays.equals(both, draw(mc, pose + "-vanilla-swing")),
+                pose + " unmarked clip keeps vanilla swing");
+            advanceHands(mc, 6);
         } finally {
-            target.unbind("fixture:single");
+            reload(mc, "animation-qa");
             tickPlayer();
         }
     }
