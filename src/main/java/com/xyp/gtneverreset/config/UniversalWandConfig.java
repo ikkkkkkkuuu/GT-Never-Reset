@@ -175,9 +175,11 @@ public final class UniversalWandConfig {
     @Config.DefaultIntList({ 2, 4, 16, 32, 64, 128, 256, 512, 1024 })
     public static int[] universalWandAccelerationRates = { 2, 4, 16, 32, 64, 128, 256, 512, 1024 };
 
-    @Config.Comment("Potion ID and amplifier pairs applied while carrying the wand.")
-    @Config.DefaultStringList({ "23,1", "10,6", "16,1", "12,1", "13,1", "11,6" })
-    public static String[] universalWandEffects = { "23,1", "10,6", "16,1", "12,1", "13,1", "11,6" };
+    @Config.Comment("Effects applied while carrying the wand. Use a potion ID or potion name key, followed by a comma and a level starting at 1.")
+    @Config.DefaultStringList({ "23,1", "10,6", "16,1", "12,1", "13,1", "11,6", "6,1", "21,1", "22,1", "5,1", "1,1",
+        "botania.potion.soulCross,1", "botania.potion.allure,1", "bm.buff.whirlwind,1" })
+    public static String[] universalWandEffects = { "23,1", "10,6", "16,1", "12,1", "13,1", "11,6", "6,1", "21,1",
+        "22,1", "5,1", "1,1", "botania.potion.soulCross,1", "botania.potion.allure,1", "bm.buff.whirlwind,1" };
 
     public static int[] accelerationRates() {
         return Rates.get(universalWandAccelerationRates);
