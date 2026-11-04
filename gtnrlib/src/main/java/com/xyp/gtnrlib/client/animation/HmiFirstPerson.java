@@ -5,8 +5,8 @@ import java.util.Objects;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Items;
+import net.minecraft.item.EnumAction;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemBed;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemBoat;
@@ -15,17 +15,15 @@ import net.minecraft.item.ItemDoor;
 import net.minecraft.item.ItemEgg;
 import net.minecraft.item.ItemEnderPearl;
 import net.minecraft.item.ItemFishingRod;
-import net.minecraft.item.ItemHoe;
+import net.minecraft.item.ItemFlintAndSteel;
 import net.minecraft.item.ItemMap;
-import net.minecraft.item.ItemPickaxe;
 import net.minecraft.item.ItemPotion;
 import net.minecraft.item.ItemRecord;
+import net.minecraft.item.ItemShears;
 import net.minecraft.item.ItemSign;
 import net.minecraft.item.ItemSkull;
 import net.minecraft.item.ItemSnowball;
-import net.minecraft.item.ItemSpade;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemSword;
 import net.minecraft.item.ItemTool;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 import net.minecraftforge.client.IItemRenderer;
@@ -56,6 +54,8 @@ public final class HmiFirstPerson {
     private Item lastItem;
     private HmiItemBindings.Profile bound;
     private HmiItemBindings.HandheldTool tool;
+    private ToolGrip family;
+    private EnumAction genericAction;
     private IItemRenderer forgeRenderer;
     private final Matrix4f wristMotion = new Matrix4f(), sceneMotion = new Matrix4f();
     private int lastDamage, swings;
@@ -78,6 +78,8 @@ public final class HmiFirstPerson {
         id = null;
         bound = null;
         tool = null;
+        family = null;
+        genericAction = null;
         forgeRenderer = null;
         lastItem = null;
         swings = 0;
@@ -155,6 +157,7 @@ public final class HmiFirstPerson {
         var p = mc.thePlayer;
         if (p == null || mc.gameSettings.thirdPersonView != 0 || p.isInvisible()) return false;
         HmiItemBindings.HandheldTool selected = null;
+        ToolGrip grip = ToolGrip.resolve(stack);
         IItemRenderer renderer = null;
         if (stack != null) {
             if (stack.getItem() instanceof ItemMap
@@ -162,7 +165,7 @@ public final class HmiFirstPerson {
             renderer = MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON);
             if (renderer != null) {
                 selected = HmiItemBindings.tool(stack, renderer);
-                if (selected == null && !IngotGrip.matches(stack)) {
+                if (selected == null && grip == null && !OreGrip.isIngot(stack)) {
                     tool = null;
                     return false;
                 }
@@ -175,8 +178,9 @@ public final class HmiFirstPerson {
                 reset(p);
             }
             Item held = stack == null ? null : stack.getItem();
-            boolean changed = id == null || held != lastItem || selected != tool;
+            boolean changed = id == null || held != lastItem || selected != tool || family != grip;
             tool = selected;
+            family = grip;
             forgeRenderer = renderer;
             int damage = stack == null ? 0 : stack.getItemDamage();
             var profile = HmiItemBindings.resolve(stack);
@@ -187,7 +191,8 @@ public final class HmiFirstPerson {
                 String previous = id;
                 classify(held, stack, damage);
                 changed |= !Objects.equals(previous, id);
-                if (damage != lastDamage && bound == null && tool == null && IngotGrip.matches(stack)) changed = true;
+                if (damage != lastDamage && bound == null
+                    && (OreGrip.isIngot(stack) || grip != null && held.getHasSubtypes())) changed = true;
             }
             double now = (double) p.ticksExisted + partial;
             if (!reclassify && lastFrame == now) return true;
@@ -204,7 +209,9 @@ public final class HmiFirstPerson {
                     p.isUsingItem() && stack != null
                         && p.getItemInUse() != null
                         && p.getItemInUse()
-                            .getItem() == held));
+                            .getItem() == held
+                        && (genericAction == null
+                            || genericAction != EnumAction.none && stack.getItemUseAction() == genericAction)));
             frame.set("ground", LuaValue.valueOf(p.onGround));
             frame.set("climb", LuaValue.valueOf(p.isOnLadder()));
             frame.set("water", LuaValue.valueOf(p.isInWater()));
@@ -260,7 +267,15 @@ public final class HmiFirstPerson {
 
     private void classify(Item held, ItemStack stack, int damage) {
         id = held == null ? HmiPoseProgram.EMPTY : String.valueOf(Item.itemRegistry.getNameForObject(held));
+        // Some melee tools report "bow" to implement a charged ability. Only the visual Lua context uses the family
+        // action.
+        genericAction = family != null && bound == null && tool == null && !id.startsWith("minecraft:")
+            ? (family == ToolGrip.SWORD ? EnumAction.block : EnumAction.none)
+            : null;
         if (bound != null) id = bound.itemId();
+        else if (held instanceof ItemShears && tool == null) id = "minecraft:shears";
+        else if (family != null && family.reference != null && tool == null && !id.startsWith("minecraft:"))
+            id = family.reference;
         else if (id.startsWith("etfuturum:")) {
             String name = id.substring("etfuturum:".length());
             if (scripts.assets()
@@ -283,11 +298,8 @@ public final class HmiFirstPerson {
             tag(tags, "chest_boats", chestBoat);
             tag(tags, "boats", chestBoat || id.endsWith("_boat") || id.equals("minecraft:bamboo_raft"));
         }
-        tag(tags, "swords", shape instanceof ItemSword);
-        tag(tags, "pickaxes", shape instanceof ItemPickaxe);
-        tag(tags, "axes", shape instanceof ItemAxe);
-        tag(tags, "shovels", shape instanceof ItemSpade);
-        tag(tags, "hoes", shape instanceof ItemHoe);
+        var grip = bound == null ? family : ToolGrip.vanilla(shape);
+        if (grip != null && grip.tag != null) tag(tags, grip.tag, true);
         tag(tags, "skulls", shape instanceof ItemSkull);
         tag(tags, "doors", shape instanceof ItemDoor);
         tag(tags, "signs", shape instanceof ItemSign);
@@ -297,11 +309,9 @@ public final class HmiFirstPerson {
         var frame = program.frame;
         frame.set("mainItem", id);
         frame.set("tags", tags);
-        frame.set(
-            "action",
-            held == null ? "none"
-                : stack.getItemUseAction()
-                    .name());
+        EnumAction action = genericAction != null ? genericAction
+            : held == null ? EnumAction.none : stack.getItemUseAction();
+        frame.set("action", action.name());
         frame.set("block", LuaValue.valueOf(shape instanceof ItemBlock));
         frame.set("lantern", LuaValue.valueOf(isLantern()));
         frame.set(
@@ -310,14 +320,13 @@ public final class HmiFirstPerson {
                 shape instanceof ItemSnowball || shape instanceof ItemEgg
                     || shape instanceof ItemEnderPearl
                     || id.equals("minecraft:splash_potion")));
-        boolean handheld = shape instanceof ItemTool || shape instanceof ItemSword
-            || shape instanceof ItemHoe
+        boolean flatUtility = shape instanceof ItemShears || shape instanceof ItemFlintAndSteel;
+        boolean handheld = (grip != null && !flatUtility) || shape instanceof ItemTool
             || shape instanceof ItemFishingRod
             || shape instanceof ItemBow
             || shape != null && shape.isFull3D();
-        frame.set(
-            "translate",
-            LuaValue.valueOf(tool == null && (!handheld || bound == null && IngotGrip.matches(stack))));
+        frame
+            .set("translate", LuaValue.valueOf(tool == null && (!handheld || bound == null && OreGrip.isIngot(stack))));
     }
 
     private static void tag(LuaTable tags, String name, boolean present) {

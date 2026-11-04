@@ -14,15 +14,10 @@ import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraft.client.resources.ResourcePackRepository;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemBow;
-import net.minecraft.item.ItemHoe;
 import net.minecraft.item.ItemMap;
-import net.minecraft.item.ItemPickaxe;
-import net.minecraft.item.ItemSpade;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemSword;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.MinecraftForgeClient;
@@ -67,6 +62,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     private PunchyPack packs = PunchyPack.empty();
     private Object world;
     private Item item;
+    private ToolGrip toolFamily;
     private int slot = -1, combo;
     private Motion baseMotion, actionMotion;
     private PendingAction pending;
@@ -121,7 +117,8 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
 
     @Override
     public void onResourceManagerReload(IResourceManager manager) {
-        IngotGrip.invalidate();
+        OreGrip.invalidate();
+        ToolGrip.invalidate();
         var repo = Minecraft.getMinecraft()
             .getResourcePackRepository();
         if (repo == null) return;
@@ -355,15 +352,11 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     private static String group(ItemStack stack) {
         if (stack == null) return "ITEM";
         Item item = stack.getItem();
-        if (item instanceof ItemSword) return "SWORD";
-        if (item instanceof ItemPickaxe) return "PICKAXE";
-        if (item instanceof ItemAxe) return "AXE";
-        if (item instanceof ItemSpade) return "SHOVEL";
-        if (item instanceof ItemHoe) return "HOE";
+        ToolGrip grip = ToolGrip.resolve(stack);
+        if (grip != null) return grip == ToolGrip.HANDHELD ? "ITEM" : grip.name();
         if (item instanceof ItemBlock) return "BLOCK";
         if (item instanceof ItemBow) return "BOW";
-        return (!item.isFull3D() && stack.getMaxDamage() == 0) || IngotGrip.matches(stack) ? "GTNRLIB_FLAT_ITEM"
-            : "ITEM";
+        return (!item.isFull3D() && stack.getMaxDamage() == 0) || OreGrip.isIngot(stack) ? "GTNRLIB_FLAT_ITEM" : "ITEM";
     }
 
     public boolean enabled() {
@@ -389,7 +382,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         if (rendered == null) return true;
         if (rendered.getItem() instanceof ItemMap) return false;
         var renderer = MinecraftForgeClient.getItemRenderer(rendered, ItemRenderType.EQUIPPED_FIRST_PERSON);
-        return renderer == null || IngotGrip.matches(rendered);
+        return renderer == null || OreGrip.isIngot(rendered) || ToolGrip.resolve(rendered) != null;
     }
 
     private boolean isLowering(Minecraft mc) {
@@ -448,11 +441,15 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
 
     private void synchronizeTarget(Minecraft mc, ItemStack held) {
         Item current = held == null ? null : held.getItem();
-        if (mc.theWorld != world || current != item || mc.thePlayer.inventory.currentItem != slot) {
+        ToolGrip family = ToolGrip.resolve(held);
+        if (mc.theWorld != world || current != item
+            || family != toolFamily
+            || mc.thePlayer.inventory.currentItem != slot) {
             if (world != mc.theWorld) handMotion.clear();
             resetPlayback();
             world = mc.theWorld;
             item = current;
+            toolFamily = family;
             slot = mc.thePlayer.inventory.currentItem;
         }
     }
@@ -470,6 +467,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         player.clear();
         slot = -1;
         item = null;
+        toolFamily = null;
         world = null;
         action = null;
         base = null;
