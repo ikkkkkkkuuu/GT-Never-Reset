@@ -3,7 +3,6 @@ package com.xyp.gtnrlib.mixins.early.texteffect.angelica;
 import net.minecraft.client.gui.FontRenderer;
 
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL20;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -15,8 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.gtnewhorizons.angelica.client.font.BatchingFontRenderer;
 import com.gtnewhorizons.angelica.config.FontConfig;
-import com.gtnewhorizons.angelica.glsm.GLSMPrograms;
-import com.gtnewhorizons.angelica.glsm.GLSMQueries;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.xyp.gtnrlib.client.text.DeferredTextEffects;
 import com.xyp.gtnrlib.client.text.EffectTextRenderer;
@@ -109,15 +106,14 @@ public abstract class MixinFontBatchTextEffects implements FontBatchBridge {
         return EffectTextRenderer.isCapturing() && !AngelicaTextAdapter.usesCustomFont(underlying) ? 0 : mode;
     }
 
+    // Angelica moved this call from GLStateManager to GLSMBlend between 2.2.35 and 2.2.43.
     @ModifyArg(
         method = "setupFontDrawState",
-        at = @At(
-            value = "INVOKE",
-            target = "Lcom/gtnewhorizons/angelica/glsm/GLSMBlend;tryBlendFuncSeparate(IIII)V",
-            ordinal = 0),
+        at = @At(value = "INVOKE", target = "tryBlendFuncSeparate(IIII)V"),
         index = 3,
         remap = false,
-        require = 1)
+        require = 1,
+        allow = 1)
     private int gtnr$compositeMaskCoverage(int destinationAlpha) {
         // Bold copies must accumulate coverage instead of erasing strokes with their translucent edges.
         return EffectTextRenderer.isCapturing() ? GL11.GL_ONE_MINUS_SRC_ALPHA : destinationAlpha;
@@ -128,13 +124,7 @@ public abstract class MixinFontBatchTextEffects implements FontBatchBridge {
     private void gtnr$restoreFontAntialiasing(CallbackInfo ci) {
         int configuredMode = FontConfig.fontAAMode;
         if (!EffectTextRenderer.isCapturing() || fontAAModeLast == configuredMode) return;
-        int previousProgram = GLSMQueries.glGetInteger(GL20.GL_CURRENT_PROGRAM);
-        GLSMPrograms.glUseProgram(fontShaderId);
-        try {
-            GLSMPrograms.glUniform1i(AAMode, configuredMode);
-            fontAAModeLast = configuredMode;
-        } finally {
-            GLSMPrograms.glUseProgram(previousProgram);
-        }
+        AngelicaTextAdapter.restoreFontAntialiasing(fontShaderId, AAMode, configuredMode);
+        fontAAModeLast = configuredMode;
     }
 }
