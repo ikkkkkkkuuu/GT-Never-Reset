@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
@@ -23,6 +24,7 @@ import com.xyp.gtnrlib.compat.gregtech.GregTechWrenchAnimation;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import gregtech.api.GregTechAPI;
 import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
@@ -170,6 +172,31 @@ public final class AnimationWrenchChecks implements Runnable {
                     if (!serverDone || hmi.strokeSeconds() == 0) return;
                     qa.draw(mc, "cutter-cable-use");
                     qa.require(true, "server cut an actual copper cable connection and acknowledged the local snip");
+                    qa.equip(mc, AnimationToolChecks.screwdriver());
+                    requestScrewdriver(Blocks.stone);
+                    waitTick = tick + 6;
+                    step++;
+                }
+                case 11 -> {
+                    if (screwdriverTurning()) throw new AssertionError("stone started a screwdriver turn");
+                    if (!serverDone || tick < waitTick) return;
+                    qa.require(true, "stone does not acknowledge screwdriver use");
+                    requestScrewdriver(GregTechAPI.sBlockMachines);
+                    step++;
+                }
+                case 12 -> {
+                    if (!serverDone || !screwdriverTurning()) return;
+                    qa.require(true, "GT pipe acknowledged the manual screwdriver");
+                    step++;
+                }
+                case 13 -> {
+                    if (screwdriverTurning()) return;
+                    requestScrewdriver(Blocks.unpowered_repeater);
+                    step++;
+                }
+                case 14 -> {
+                    if (!serverDone || !screwdriverTurning()) return;
+                    qa.require(true, "GT rotated a repeater and acknowledged the manual screwdriver");
                     FMLCommonHandler.instance()
                         .bus()
                         .unregister(this);
@@ -226,12 +253,35 @@ public final class AnimationWrenchChecks implements Runnable {
         return FirstPersonItemActions.INSTANCE.playing("gtneverreset:wrench_turn");
     }
 
+    private boolean screwdriverTurning() {
+        return FirstPersonItemActions.INSTANCE.playing(AnimationToolChecks.SCREWDRIVER_TURN);
+    }
+
+    private void requestScrewdriver(Block target) {
+        serverDone = false;
+        serverTask.set(() -> {
+            var p = serverPlayer();
+            var world = p.worldObj;
+            var tool = AnimationToolChecks.screwdriver();
+            p.inventory.mainInventory[slot] = tool;
+            // Keep the previously placed copper cable at x. Use the adjacent position for vanilla targets.
+            int tx = target == GregTechAPI.sBlockMachines ? x : x + 1;
+            if (target != GregTechAPI.sBlockMachines) {
+                world.setBlock(tx, y - 1, z, Blocks.stone);
+                world.setBlock(tx, y, z, target, 0, 3);
+            }
+            if (world.getBlock(tx, y, z) != target) throw new AssertionError("screwdriver target missing");
+            p.theItemInWorldManager.activateBlockOrUseItem(p, world, tool, tx, y, z, 1, .5f, .5f, .5f);
+            if (target == Blocks.unpowered_repeater && world.getBlockMetadata(tx, y, z) != 1)
+                throw new AssertionError("GT screwdriver did not rotate the repeater");
+            serverDone = true;
+        });
+    }
+
     private void request(int mode) {
         serverDone = false;
         serverTask.set(() -> {
-            var server = MinecraftServer.getServer();
-            EntityPlayerMP p = (EntityPlayerMP) server.worldServerForDimension(dimension)
-                .func_152378_a(actor);
+            var p = serverPlayer();
             var world = p.worldObj;
             p.inventory.currentItem = slot;
             if (mode == 4) {
@@ -295,6 +345,12 @@ public final class AnimationWrenchChecks implements Runnable {
             if (mode == 3 && world.getBlockMetadata(x, y, z) != side) throw new AssertionError("piston did not rotate");
             serverDone = true;
         });
+    }
+
+    private EntityPlayerMP serverPlayer() {
+        return (EntityPlayerMP) MinecraftServer.getServer()
+            .worldServerForDimension(dimension)
+            .func_152378_a(actor);
     }
 
     @SubscribeEvent

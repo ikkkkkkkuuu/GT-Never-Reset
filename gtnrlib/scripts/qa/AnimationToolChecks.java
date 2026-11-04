@@ -12,8 +12,10 @@ import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.MinecraftForgeClient;
 
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
+import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.client.animation.ToolGrip;
@@ -31,6 +33,8 @@ import tconstruct.library.tools.Weapon;
 import tconstruct.tools.TinkerTools;
 
 public final class AnimationToolChecks {
+
+    static final String SCREWDRIVER_TURN = "gtnrlib:screwdriver_turn";
 
     public static void check(AnimationClientChecks qa) throws Exception {
         var mc = Minecraft.getMinecraft();
@@ -92,7 +96,79 @@ public final class AnimationToolChecks {
         qa.require(ToolGrip.resolve(movingTool) == ToolGrip.PICKAXE, "drill before changing the same stack");
         movingTool.setItemDamage(IDMetaTool01.CHAINSAW_LV.ID);
         qa.require(ToolGrip.resolve(movingTool) == ToolGrip.AXE, "same-slot GT metadata changes the grip immediately");
-        if (hmi.enabled()) checkCutter(qa, mc);
+        if (hmi.enabled()) {
+            checkCutter(qa, mc);
+            checkScrewdriver(qa, mc);
+        }
+    }
+
+    static ItemStack screwdriver() {
+        return MetaGeneratedTool01.INSTANCE
+            .getToolWithStats(IDMetaTool01.SCREWDRIVER.ID, 1, Materials.Steel, Materials.Wood, null);
+    }
+
+    private static void checkScrewdriver(AnimationClientChecks qa, Minecraft mc) throws Exception {
+        var hmi = HmiFirstPerson.INSTANCE;
+        var actions = FirstPersonItemActions.INSTANCE;
+        var p = mc.thePlayer;
+        int savedTick = p.ticksExisted;
+        try {
+            hmi.detach();
+            var tool = screwdriver();
+            qa.equip(mc, tool);
+            for (int i = 0; i < 24; i++) {
+                p.ticksExisted++;
+                hmi.sample(tool, 0, 0);
+            }
+            qa.require(
+                hmi.handheldTool() != null && hmi.handheldTool()
+                    .handlesBlockUseSwing(),
+                "manual screwdriver waits for confirmed use");
+            qa.draw(mc, "screwdriver-idle");
+            qa.require(actions.trigger(SCREWDRIVER_TURN), "manual screwdriver has a built-in turn");
+            int start = p.ticksExisted;
+            Vector3f engagedTip = new Vector3f(), engagedFace = new Vector3f();
+            for (int i = 0; i <= 20; i++) {
+                p.ticksExisted = start + i / 2;
+                var frame = qa.draw(mc, "screwdriver-frame-" + i, i % 2 * .5f);
+                if (!armReachesEdge(frame, mc.displayWidth))
+                    throw new AssertionError("floating screwdriver arm at frame " + i);
+                // The shaft runs along local Y. Track the same tip and blade face through the loaded turn.
+                var tip = hmi.item.transformPosition(new Vector3f(.0393f, .66f, .0834f));
+                var face = hmi.item.transformDirection(new Vector3f(1, 0, 0))
+                    .normalize();
+                if (i == 5) {
+                    engagedTip.set(tip);
+                    engagedFace.set(face);
+                } else if (i == 12) {
+                    qa.require(
+                        engagedTip.distance(tip) < .045f && engagedFace.angle(face) > Math.toRadians(65),
+                        "screwdriver tip stays seated while the wrist rolls around the shaft");
+                }
+            }
+            qa.require(!actions.playing(SCREWDRIVER_TURN), "screwdriver returns to carry after one stroke");
+            for (var variant : List.of(IDMetaTool01.SCREWDRIVER_LV, IDMetaTool01.POCKET_SCREWDRIVER)) {
+                var other = gt(variant);
+                qa.equip(mc, other);
+                qa.require(
+                    hmi.sample(other, 0, 0) && hmi.handheldTool() == null && !actions.trigger(SCREWDRIVER_TURN),
+                    "manual turn excluded for " + variant);
+            }
+        } finally {
+            p.ticksExisted = savedTick;
+            hmi.detach();
+        }
+    }
+
+    private static boolean armReachesEdge(int[] pixels, int width) {
+        int background = pixels[0];
+        for (int i = pixels.length - width; i < pixels.length; i++) {
+            if (pixels[i] != background) return true;
+        }
+        for (int i = width - 1; i < pixels.length; i += width) {
+            if (pixels[i] != background) return true;
+        }
+        return false;
     }
 
     static ItemStack cutter() {

@@ -17,7 +17,7 @@ import gregtech.common.items.IDMetaTool01;
 import gregtech.common.items.MetaGeneratedTool01;
 import io.netty.buffer.ByteBuf;
 
-/** The two discriminators retain the original dimension and hotbar slot wire format. */
+/** Each tool acknowledgement carries the dimension and hotbar slot where it was used. */
 public abstract class GregTechToolUsePacket extends ClientboundPacket {
 
     private final IDMetaTool01 tool;
@@ -31,6 +31,11 @@ public abstract class GregTechToolUsePacket extends ClientboundPacket {
         channel.registerMessage(new PayloadHandler.Client<WrenchTurn>(), WrenchTurn.class, nextId++, Side.CLIENT);
         channel
             .registerMessage(new PayloadHandler.Client<WireCutterSnip>(), WireCutterSnip.class, nextId++, Side.CLIENT);
+        channel.registerMessage(
+            new PayloadHandler.Client<ScrewdriverTurn>(),
+            ScrewdriverTurn.class,
+            nextId++,
+            Side.CLIENT);
         return nextId;
     }
 
@@ -46,6 +51,7 @@ public abstract class GregTechToolUsePacket extends ClientboundPacket {
         GregTechToolUsePacket packet;
         if (tool == IDMetaTool01.WRENCH) packet = new WrenchTurn();
         else if (tool == IDMetaTool01.WIRECUTTER) packet = new WireCutterSnip();
+        else if (tool == IDMetaTool01.SCREWDRIVER) packet = new ScrewdriverTurn();
         else return;
         packet.dimension = mp.dimension;
         packet.slot = mp.inventory.currentItem;
@@ -76,6 +82,8 @@ public abstract class GregTechToolUsePacket extends ClientboundPacket {
                 || player.inventory.currentItem != slot
                 || !matches(player.getHeldItem(), tool)) return;
             if (tool == IDMetaTool01.WRENCH) FirstPersonItemActions.INSTANCE.trigger("gtneverreset:wrench_turn");
+            else if (tool == IDMetaTool01.SCREWDRIVER)
+                FirstPersonItemActions.INSTANCE.trigger("gtnrlib:screwdriver_turn");
             else if (HmiFirstPerson.INSTANCE.handheldTool() instanceof GregTechWireCutterAnimation)
                 HmiFirstPerson.INSTANCE.swing("gtneverreset:wire_cutter_snip");
         });
@@ -92,6 +100,13 @@ public abstract class GregTechToolUsePacket extends ClientboundPacket {
 
         public WireCutterSnip() {
             super(IDMetaTool01.WIRECUTTER);
+        }
+    }
+
+    public static final class ScrewdriverTurn extends GregTechToolUsePacket {
+
+        public ScrewdriverTurn() {
+            super(IDMetaTool01.SCREWDRIVER);
         }
     }
 }

@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "clips": {
+    "gtnrlib:screwdriver_turn": {
+      "duration": 0.48,
+      "tracks": [
+        {
+          "bone": "wrist", "property": "position",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0], "curve": "catmull_rom"},
+            {"time": 0.065, "value": [-0.025, 0.0134, -0.0886], "curve": "catmull_rom"},
+            {"time": 0.125, "value": [-0.0461, 0.0103, -0.175], "curve": "catmull_rom"},
+            {"time": 0.18, "value": [-0.074, 0.0181, -0.1614], "curve": "catmull_rom"},
+            {"time": 0.24, "value": [-0.1045, 0.0413, -0.1212], "curve": "catmull_rom"},
+            {"time": 0.295, "value": [-0.1067, 0.0612, -0.0867], "curve": "catmull_rom"},
+            {"time": 0.32, "value": [-0.1032, 0.0549, -0.0787], "curve": "catmull_rom"},
+            {"time": 0.405, "value": [-0.0474, 0.004, -0.0394], "curve": "catmull_rom"},
+            {"time": 0.48, "value": [0, 0, 0]}
+          ]
+        },
+        {
+          "bone": "wrist", "property": "rotation",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0], "curve": "catmull_rom"},
+            {"time": 0.065, "value": [-14, 0, 0], "curve": "catmull_rom"},
+            {"time": 0.125, "value": [-30, -6, 0], "curve": "catmull_rom"},
+            {"time": 0.18, "value": [-30, 14, 0], "curve": "catmull_rom"},
+            {"time": 0.24, "value": [-30, 49, 0], "curve": "catmull_rom"},
+            {"time": 0.295, "value": [-30, 74, 0], "curve": "catmull_rom"},
+            {"time": 0.32, "value": [-29, 72, 0], "curve": "catmull_rom"},
+            {"time": 0.405, "value": [-12, 22, 0], "curve": "catmull_rom"},
+            {"time": 0.48, "value": [0, 0, 0]}
+          ]
+        }
+      ]
+    }
+  }
+}
