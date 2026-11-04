@@ -1,6 +1,7 @@
 package com.xyp.gtnrlib.mixins.early.animation;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -8,10 +9,23 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
+import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 
 @Mixin(Minecraft.class)
 public abstract class MinecraftAttackMixin {
+
+    @WrapOperation(
+        method = "func_147121_ag",
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/EntityClientPlayerMP;swingItem()V"),
+        require = 0)
+    private void gtnrlib$blockUseSwing(EntityClientPlayerMP player, Operation<Void> vanilla) {
+        if (HmiFirstPerson.INSTANCE.handheldTool() != null && HmiFirstPerson.INSTANCE.enabled())
+            HmiFirstPerson.INSTANCE.duringBlockUseSwing(() -> vanilla.call(player));
+        else vanilla.call(player);
+    }
 
     @Inject(
         method = "func_147116_af",

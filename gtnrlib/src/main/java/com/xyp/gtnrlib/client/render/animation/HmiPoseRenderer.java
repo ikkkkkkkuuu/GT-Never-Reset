@@ -22,7 +22,7 @@ import net.minecraft.util.IIcon;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 
-import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
@@ -135,13 +135,15 @@ public final class HmiPoseRenderer {
         }
     }
 
-    static void apply(Matrix4f matrix) {
+    static void apply(Matrix4fc matrix) {
         GL11.glMultMatrix(matrix.get(BUFFER));
     }
 
     private static void draw(ItemRenderer renderer, Minecraft mc, ItemStack stack) {
         int used = mc.thePlayer.isUsingItem() ? mc.thePlayer.getItemInUseDuration() : -1;
-        if (models.draw(HMI.itemId(), HMI.modelVariant(), used, mc.thePlayer.ticksExisted, HMI.program())) return;
+        var tool = HMI.handheldTool();
+        if (tool == null
+            && models.draw(HMI.itemId(), HMI.modelVariant(), used, mc.thePlayer.ticksExisted, HMI.program())) return;
         Item held = stack.getItem();
         boolean cube = held instanceof ItemBlock && RenderBlocks.renderItemIn3d(
             Block.getBlockFromItem(held)
@@ -159,11 +161,17 @@ public final class HmiPoseRenderer {
             // Center the legacy reversed-U extruded card in model space and undo renderItem's fixed sprite mount.
             GL11.glRotatef(180, 0, 1, 0);
             GL11.glTranslated(-.5, -.5, .03125);
+            if (tool != null && tool.spriteMount() != null) apply(tool.spriteMount());
             GL11.glTranslated(.9375, .0625, 0);
             GL11.glRotatef(25, 0, 0, 1);
             GL11.glRotatef(-50, 0, 1, 0);
             GL11.glScalef(2f / 3, 2f / 3, 2f / 3);
             GL11.glTranslated(0, .3, 0);
+        }
+        if (tool != null) {
+            // Forge invokes the owner's renderer once; it draws all material layers itself.
+            renderer.renderItem(mc.thePlayer, stack, 0, ItemRenderType.EQUIPPED_FIRST_PERSON);
+            return;
         }
         int passes = held.requiresMultipleRenderPasses() ? held.getRenderPasses(stack.getItemDamage()) : 1;
         for (int pass = 0; pass < passes; pass++) {

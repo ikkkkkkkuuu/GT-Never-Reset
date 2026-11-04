@@ -54,9 +54,11 @@ public final class HmiFirstPerson {
     private Object player;
     private Item lastItem;
     private HmiItemBindings.Profile bound;
+    private HmiItemBindings.HandheldTool tool;
+    private final Matrix4f wristMotion = new Matrix4f(), sceneMotion = new Matrix4f();
     private int lastDamage, swings;
     private String id;
-    private boolean breaking;
+    private boolean breaking, blockUseSwing;
     private double swingStart = Double.NEGATIVE_INFINITY, lastFrame = Double.NaN;
 
     private HmiFirstPerson() {}
@@ -73,6 +75,7 @@ public final class HmiFirstPerson {
         player = nextPlayer;
         id = null;
         bound = null;
+        tool = null;
         lastItem = null;
         swings = 0;
         lastFrame = Double.NaN;
@@ -102,8 +105,22 @@ public final class HmiFirstPerson {
         return bound == null ? "" : bound.variant();
     }
 
+    public HmiItemBindings.HandheldTool handheldTool() {
+        return tool;
+    }
+
     public boolean isLantern() {
         return "minecraft:lantern".equals(id) || "minecraft:soul_lantern".equals(id);
+    }
+
+    public void duringBlockUseSwing(Runnable vanillaSwing) {
+        boolean previous = blockUseSwing;
+        blockUseSwing = true;
+        try {
+            vanillaSwing.run();
+        } finally {
+            blockUseSwing = previous;
+        }
     }
 
     public void swing() {
@@ -111,6 +128,14 @@ public final class HmiFirstPerson {
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
         if (p == null || p != player || mc.gameSettings.thirdPersonView != 0) return;
+        if (blockUseSwing && tool != null
+            && tool.handlesBlockUseSwing()
+            && p.getHeldItem() != null
+            && p.getHeldItem()
+                .getItem() == lastItem
+            && p.getHeldItem()
+                .getItemDamage() == lastDamage)
+            return;
         swings++;
         swingStart = p.ticksExisted;
         breaking = mc.gameSettings.keyBindAttack.getIsKeyPressed() && mc.objectMouseOver != null
@@ -122,10 +147,19 @@ public final class HmiFirstPerson {
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
         if (p == null || mc.gameSettings.thirdPersonView != 0 || p.isInvisible()) return false;
-        if (stack != null && (MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON) != null
-            || stack.getItem() instanceof ItemMap
-                && MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.FIRST_PERSON_MAP) != null))
-            return false;
+        HmiItemBindings.HandheldTool selected = null;
+        if (stack != null) {
+            if (stack.getItem() instanceof ItemMap
+                && MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.FIRST_PERSON_MAP) != null) return false;
+            var renderer = MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON);
+            if (renderer != null) {
+                selected = HmiItemBindings.tool(stack, renderer);
+                if (selected == null) {
+                    tool = null;
+                    return false;
+                }
+            }
+        }
         try {
             if (player != p) {
                 if (player != null || resetProgram) program = new HmiPoseProgram(scripts);
@@ -133,7 +167,8 @@ public final class HmiFirstPerson {
                 reset(p);
             }
             Item held = stack == null ? null : stack.getItem();
-            boolean changed = id == null || held != lastItem;
+            boolean changed = id == null || held != lastItem || selected != tool;
+            tool = selected;
             int damage = stack == null ? 0 : stack.getItemDamage();
             var profile = HmiItemBindings.resolve(stack);
             boolean reclassify = changed || damage != lastDamage
@@ -180,6 +215,24 @@ public final class HmiFirstPerson {
             program.pose(true, id, progress, dip, changed, (swings & 1) != 0, hit, seconds);
             right.set(program.armMatrix);
             item.set(program.itemMatrix);
+            if (tool != null) {
+                try {
+                    if (tool.pose(stack, partial, wristMotion.identity())) {
+                        if (!wristMotion.isFinite()) throw new IllegalArgumentException("Non-finite wrist transform");
+                        // Conjugate the local wrist motion into the independent arm's coordinate system.
+                        item.invert(sceneMotion)
+                            .mulLocal(wristMotion)
+                            .mulLocal(item);
+                        right.mulLocal(sceneMotion);
+                        item.mul(wristMotion);
+                    }
+                } catch (RuntimeException ex) {
+                    HmiItemBindings.unregisterTool(held, tool);
+                    tool = null;
+                    GTNRLib.LOG.error("Disabled failing HMI tool pose for {}", stack, ex);
+                    return false;
+                }
+            }
             program.pose(false, HmiPoseProgram.EMPTY, progress, 0, changed, (swings & 1) != 0, hit, seconds);
             left.set(program.armMatrix);
             return true;
@@ -250,7 +303,7 @@ public final class HmiFirstPerson {
         frame.set(
             "translate",
             LuaValue.valueOf(
-                !(shape instanceof ItemTool || shape instanceof ItemSword
+                tool == null && !(shape instanceof ItemTool || shape instanceof ItemSword
                     || shape instanceof ItemHoe
                     || shape instanceof ItemFishingRod
                     || shape instanceof ItemBow
