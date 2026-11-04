@@ -4,6 +4,9 @@ import java.util.Objects;
 
 import net.minecraft.client.gui.FontRenderer;
 
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL20;
+
 import com.gtnewhorizons.angelica.client.font.FontProvider;
 import com.gtnewhorizons.angelica.client.font.FontStrategist;
 import com.gtnewhorizons.angelica.config.FontConfig;
@@ -19,6 +22,17 @@ import cpw.mods.fml.common.Optional;
 public class AngelicaTextAdapter {
 
     private static FontSettings currentSettings;
+
+    // Angelica redirects these LWJGL calls to the state manager provided by the installed version.
+    public static void restoreFontAntialiasing(int shader, int uniform, int mode) {
+        int previousProgram = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+        GL20.glUseProgram(shader);
+        try {
+            GL20.glUniform1i(uniform, mode);
+        } finally {
+            GL20.glUseProgram(previousProgram);
+        }
+    }
 
     /** Reuses an immutable cache discriminator until native font configuration changes. */
     public static FontSettings fontSettings() {
