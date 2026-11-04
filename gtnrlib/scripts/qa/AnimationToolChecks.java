@@ -18,8 +18,12 @@ import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.client.animation.ToolGrip;
 
+import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
+import gregtech.api.enums.OrePrefixes;
+import gregtech.api.items.MetaGeneratedItemX32;
 import gregtech.api.items.MetaGeneratedTool;
+import gregtech.api.util.GTOreDictUnificator;
 import gregtech.common.items.IDMetaTool01;
 import gregtech.common.items.MetaGeneratedTool01;
 import gregtech.common.tools.ToolTurbine;
@@ -35,6 +39,7 @@ public final class AnimationToolChecks {
     public static void check(AnimationClientChecks qa) throws Exception {
         var mc = Minecraft.getMinecraft();
         var hmi = HmiFirstPerson.INSTANCE;
+        checkMaterials(qa, mc, hmi);
         int checked = 0;
         for (var tool : MetaGeneratedTool.sInstances.values()) {
             for (var entry : tool.mToolStats.entrySet()) {
@@ -98,6 +103,48 @@ public final class AnimationToolChecks {
     static ItemStack cutter() {
         return MetaGeneratedTool01.INSTANCE
             .getToolWithStats(IDMetaTool01.WIRECUTTER.ID, 1, Materials.Steel, Materials.Wood, null);
+    }
+
+    private static void checkMaterials(AnimationClientChecks qa, Minecraft mc, HmiFirstPerson hmi) throws Exception {
+        var plate = Materials.Chrome.getPlates(1);
+        var mold = ItemList.Shape_Mold_Plate.get(1);
+        qa.require(plate.getItem() == mold.getItem(), "plate and mold share a GT meta-item");
+        qa.equip(mc, plate);
+        qa.tickPlayer();
+        qa.require(
+            hmi.enabled() ? hmi.sample(plate, .5f, 0) : FirstPersonAnimations.INSTANCE.applies(plate),
+            "GT plate metadata selects the material grip");
+        qa.equip(mc, mold);
+        qa.tickPlayer();
+        qa.require(
+            !(hmi.enabled() ? hmi.sample(mold, .5f, 0) : FirstPersonAnimations.INSTANCE.applies(mold)),
+            "switching to a casting mold on the same GT meta-item delegates to its renderer");
+        var wire = GTOreDictUnificator.get(OrePrefixes.wireGt01, Materials.Copper, 1);
+        qa.require(
+            wire != null && wire.getItem() instanceof net.minecraft.item.ItemBlock,
+            "found GT copper wire block");
+        qa.equip(mc, wire);
+        qa.tickPlayer();
+        qa.require(
+            hmi.enabled() ? hmi.sample(wire, .5f, 0) && hmi.blockPose() : FirstPersonAnimations.INSTANCE.applies(wire),
+            "copper wire uses a material block grip");
+        qa.draw(mc, "material-copper-wire");
+        if (!hmi.enabled()) return;
+        int checked = 0;
+        for (Object value : Item.itemRegistry) {
+            if (!(value instanceof MetaGeneratedItemX32 generated)) continue;
+            var variants = new ArrayList<ItemStack>();
+            generated.getSubItems(generated, generated.getCreativeTab(), variants);
+            for (var stack : variants) {
+                var prefix = generated.getOrePrefix(stack.getItemDamage());
+                if (prefix == null || !prefix.isMaterialBased()) continue;
+                if (!hmi.sample(stack, .5f, 0) || hmi.forgeRenderer()
+                    != MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON))
+                    throw new AssertionError("missing generated material grip or renderer: " + stack);
+                checked++;
+            }
+        }
+        qa.require(checked > 0, "animated " + checked + " generated GT material variants with their own renderers");
     }
 
     private static void checkCutter(AnimationClientChecks qa, Minecraft mc) throws Exception {

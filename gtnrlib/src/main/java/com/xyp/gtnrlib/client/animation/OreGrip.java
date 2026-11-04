@@ -5,18 +5,21 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 
+import com.xyp.gtnrlib.compat.gregtech.GregTechMaterialGrips;
+import com.xyp.gtnrlib.mod.ModList;
+
 /** The first-person passes share the ore lookup for the currently equipped item and metadata. */
 final class OreGrip {
 
     private static Item lastItem;
     private static int lastDamage;
-    private static boolean ingot;
+    private static boolean material;
     private static ToolGrip tool;
 
-    static boolean isIngot(ItemStack stack) {
-        if (stack == null || stack.getItem() instanceof ItemBlock) return false;
+    static boolean isMaterial(ItemStack stack) {
+        if (stack == null) return false;
         update(stack);
-        return ingot;
+        return material;
     }
 
     static ToolGrip tool(ItemStack stack) {
@@ -28,11 +31,12 @@ final class OreGrip {
         if (stack.getItem() != lastItem || stack.getItemDamage() != lastDamage) {
             lastItem = stack.getItem();
             lastDamage = stack.getItemDamage();
-            ingot = false;
+            int[] oreIds = OreDictionary.getOreIDs(stack);
+            material = ModList.GregTech.isModLoaded() && GregTechMaterialGrips.matches(stack, oreIds);
             tool = null;
-            for (int ore : OreDictionary.getOreIDs(stack)) {
+            for (int ore : oreIds) {
                 String name = OreDictionary.getOreName(ore);
-                if (name.startsWith("ingot")) ingot = true;
+                if (!(lastItem instanceof ItemBlock) && name.startsWith("ingot")) material = true;
                 if (name.startsWith("craftingTool")) {
                     ToolGrip next = switch (name) {
                         case "craftingToolSword", "craftingToolKnife", "craftingToolBlade", "craftingToolElectricButcherKnife" -> ToolGrip.SWORD;
