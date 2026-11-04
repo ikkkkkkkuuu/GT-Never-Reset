@@ -50,6 +50,23 @@ public final class HmiItemBindings {
         }
     }
 
+    /** A tool whose two grips and moving parts share the main hand's pre-mount HMI transform. */
+    public interface TwoHandedTool extends HandheldTool {
+
+        /** Positive duration of one accepted first-person swing in seconds. */
+        double strokeDuration();
+
+        /** Draw the tool and both hands. Time is zero at rest. The current matrix already includes shared inertia. */
+        void render(ItemStack stack, IItemRenderer renderer, double strokeSeconds, GripHands hands);
+    }
+
+    @FunctionalInterface
+    public interface GripHands {
+
+        /** Draw the player's skinned arm with the fist centered at the origin and the elbow pointing along -Y. */
+        void draw(boolean left);
+    }
+
     public static void registerTool(Item item, HandheldTool adapter) {
         var entries = tools.computeIfAbsent(Objects.requireNonNull(item), unused -> new ArrayList<>());
         if (!entries.contains(Objects.requireNonNull(adapter))) entries.add(adapter);

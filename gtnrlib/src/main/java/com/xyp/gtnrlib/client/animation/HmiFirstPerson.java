@@ -62,6 +62,9 @@ public final class HmiFirstPerson {
     private String id;
     private boolean breaking, blockUseSwing;
     private double swingStart = Double.NEGATIVE_INFINITY, lastFrame = Double.NaN;
+    private double strokeStart = Double.NEGATIVE_INFINITY, strokeSeconds;
+    private boolean repeatStroke;
+    private int strokeSlot;
 
     private HmiFirstPerson() {}
 
@@ -85,6 +88,7 @@ public final class HmiFirstPerson {
         swings = 0;
         lastFrame = Double.NaN;
         swingStart = Double.NEGATIVE_INFINITY;
+        clearStroke();
         breaking = false;
     }
 
@@ -137,18 +141,56 @@ public final class HmiFirstPerson {
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
         if (p == null || p != player || mc.gameSettings.thirdPersonView != 0) return;
-        if (blockUseSwing && tool != null
-            && tool.handlesBlockUseSwing()
-            && p.getHeldItem() != null
-            && p.getHeldItem()
-                .getItem() == lastItem
-            && p.getHeldItem()
-                .getItemDamage() == lastDamage)
+        var stack = p.getHeldItem();
+        boolean holdingTool = tool != null && stack != null
+            && stack.getItem() == lastItem
+            && stack.getItemDamage() == lastDamage;
+        if (holdingTool && blockUseSwing && tool.handlesBlockUseSwing()) return;
+        if (holdingTool && tool instanceof HmiItemBindings.TwoHandedTool rig) {
+            if (strokeSlot != p.inventory.currentItem) clearStroke();
+            try {
+                sampleStroke(p.ticksExisted, rig.strokeDuration() * 20);
+            } catch (RuntimeException ex) {
+                disableTool(stack, ex);
+                return;
+            }
+            if (Double.isFinite(strokeStart)) repeatStroke = true;
+            else strokeStart = p.ticksExisted;
+            strokeSlot = p.inventory.currentItem;
             return;
+        }
         swings++;
         swingStart = p.ticksExisted;
         breaking = mc.gameSettings.keyBindAttack.getIsKeyPressed() && mc.objectMouseOver != null
             && mc.objectMouseOver.typeOfHit == MovingObjectType.BLOCK;
+    }
+
+    public double strokeSeconds() {
+        return strokeSeconds;
+    }
+
+    public void disableTool(ItemStack stack, RuntimeException failure) {
+        HmiItemBindings.unregisterTool(stack.getItem(), tool);
+        tool = null;
+        id = null;
+        clearStroke();
+        GTNRLib.LOG.error("Disabled failing HMI tool adapter for {}", stack, failure);
+    }
+
+    private void sampleStroke(double now, double duration) {
+        if (!Double.isFinite(duration) || duration <= 0) throw new IllegalArgumentException("Invalid stroke duration");
+        if (repeatStroke && now >= strokeStart + duration) {
+            strokeStart += duration;
+            repeatStroke = false;
+        }
+        if (now >= strokeStart + duration) clearStroke();
+        else strokeSeconds = Math.max(0, now - strokeStart) / 20;
+    }
+
+    private void clearStroke() {
+        strokeStart = Double.NEGATIVE_INFINITY;
+        strokeSeconds = 0;
+        repeatStroke = false;
     }
 
     public boolean sample(ItemStack stack, float partial, float dip) {
@@ -179,6 +221,9 @@ public final class HmiFirstPerson {
             }
             Item held = stack == null ? null : stack.getItem();
             boolean changed = id == null || held != lastItem || selected != tool || family != grip;
+            if (changed || strokeSlot != p.inventory.currentItem
+                || stack == null
+                || stack.getItemDamage() != lastDamage) clearStroke();
             tool = selected;
             family = grip;
             forgeRenderer = renderer;
@@ -229,12 +274,22 @@ public final class HmiFirstPerson {
             int duration = program.swingDuration(id);
             float progress = elapsed >= 0 && elapsed < duration ? (float) (elapsed / duration) : 0;
             boolean hit = elapsed < duration && breaking;
-            program.pose(true, id, progress, dip, changed, (swings & 1) != 0, hit, seconds);
+            var rig = tool instanceof HmiItemBindings.TwoHandedTool twoHanded ? twoHanded : null;
+            program.pose(
+                true,
+                id,
+                rig == null ? progress : 0,
+                dip,
+                changed,
+                (swings & 1) != 0,
+                rig == null && hit,
+                seconds);
             right.set(program.armMatrix);
-            item.set(program.itemMatrix);
+            item.set(rig == null ? program.itemMatrix : program.sharedPose());
             if (tool != null) {
                 try {
-                    if (tool.pose(stack, partial, wristMotion.identity())) {
+                    if (rig != null) sampleStroke(now, rig.strokeDuration() * 20);
+                    else if (tool.pose(stack, partial, wristMotion.identity())) {
                         if (!wristMotion.isFinite()) throw new IllegalArgumentException("Non-finite wrist transform");
                         // Conjugate the local wrist motion into the independent arm's coordinate system.
                         item.invert(sceneMotion)
@@ -244,9 +299,7 @@ public final class HmiFirstPerson {
                         item.mul(wristMotion);
                     }
                 } catch (RuntimeException ex) {
-                    HmiItemBindings.unregisterTool(held, tool);
-                    tool = null;
-                    GTNRLib.LOG.error("Disabled failing HMI tool pose for {}", stack, ex);
+                    disableTool(stack, ex);
                     return false;
                 }
             }

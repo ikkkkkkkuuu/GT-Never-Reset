@@ -30,6 +30,7 @@ import org.lwjgl.opengl.GL12;
 
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
+import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
 
 import cpw.mods.fml.relauncher.Side;
@@ -76,11 +77,18 @@ public final class HmiPoseRenderer {
                 // Preserve the reference's wide-screen grip framing on narrower legacy windows.
                 float aspect = (float) mc.displayWidth / mc.displayHeight;
                 GL11.glTranslated(-.40 * Math.max(0, 16f / 9 - aspect), 0, -.10);
-                arm(false, stack != null);
-                arm(true, false);
-                if (stack != null) {
-                    GL11.glPushMatrix();
+                if (HMI.handheldTool() instanceof HmiItemBindings.TwoHandedTool rig) {
+                    apply(HMI.item);
                     try {
+                        rig.render(stack, HMI.forgeRenderer(), HMI.strokeSeconds(), HmiPoseRenderer::gripHand);
+                    } catch (RuntimeException ex) {
+                        HMI.disableTool(stack, ex);
+                        return false;
+                    }
+                } else {
+                    arm(false, stack != null);
+                    arm(true, false);
+                    if (stack != null) {
                         apply(HMI.item);
                         if (stack.getItem() instanceof ItemMap map) map(mc, stack, map);
                         else {
@@ -92,8 +100,6 @@ public final class HmiPoseRenderer {
                             }
                             glow(stack);
                         }
-                    } finally {
-                        GL11.glPopMatrix();
                     }
                 }
             } finally {
@@ -130,6 +136,20 @@ public final class HmiPoseRenderer {
             GL11.glRotatef(200, 1, 0, 0);
             GL11.glRotatef(-135 * side, 0, 1, 0);
             GL11.glTranslated(5.6 * side, 0, 0);
+            (left ? arms.bipedLeftArm : arms.bipedRightArm).render(1f / 16);
+        } finally {
+            GL11.glPopMatrix();
+        }
+    }
+
+    private static void gripHand(boolean left) {
+        GL11.glPushMatrix();
+        try {
+            var mc = Minecraft.getMinecraft();
+            mc.getTextureManager()
+                .bindTexture(mc.thePlayer.getLocationSkin());
+            GL11.glColor4f(1, 1, 1, 1);
+            GL11.glTranslatef((left ? -6 : 6) / 16f, -10f / 16, 0);
             (left ? arms.bipedLeftArm : arms.bipedRightArm).render(1f / 16);
         } finally {
             GL11.glPopMatrix();

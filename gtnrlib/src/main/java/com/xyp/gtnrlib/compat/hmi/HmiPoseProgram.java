@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipInputStream;
 
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
@@ -203,6 +204,10 @@ public final class HmiPoseProgram {
 
     public Matrix4f part(int index) {
         return parts.get(index);
+    }
+
+    public Matrix4fc sharedPose() {
+        return scene;
     }
 
     public void pose(boolean main, String id, float progress, float dip, boolean changed, boolean alternate,
