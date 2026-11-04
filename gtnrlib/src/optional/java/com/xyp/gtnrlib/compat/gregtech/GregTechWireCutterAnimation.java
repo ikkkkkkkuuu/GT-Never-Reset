@@ -44,7 +44,8 @@ public final class GregTechWireCutterAnimation
     private static final Channel REACH = new Channel("hinge", Property.POSITION),
         JAW = new Channel("jaw", Property.ROTATION);
     // Coordinates in GT's 16px equipped sprite, measured from the lower edge.
-    private static final float PIXEL = 1f / 16, HINGE_Y = 9.5f * PIXEL, GRIP = 5.25f * PIXEL;
+    private static final float PIXEL = 1f / 16, HINGE_Y = 9.5f * PIXEL;
+    private static final float GRIP_X = 6.5f * PIXEL, GRIP_Y = 3.5f * PIXEL;
     private static final float REST_OPEN_DEGREES = 17;
     private static final DoubleBuffer LEFT = plane(-1, 0, 0), RIGHT = plane(1, 0, 0);
     // Row 9 is the pin. The jaws start at row 10 and the handles end at row 8.
@@ -124,7 +125,7 @@ public final class GregTechWireCutterAnimation
                 section(stack, renderer, left ? LEFT : RIGHT, HANDLES, depthBias);
                 section(stack, renderer, left ? RIGHT : LEFT, JAWS, depthBias);
             }
-            GL11.glTranslatef(side * GRIP, GRIP - HINGE_Y, .015f);
+            GL11.glTranslatef(side * GRIP_X, GRIP_Y - HINGE_Y, .015f);
             GL11.glRotatef(side * 38, 0, 0, 1);
             GL11.glRotatef(-22, 1, 0, 0);
             hands.draw(left);
