@@ -119,17 +119,23 @@ public final class NetWorkHandler {
             UniversalWandNetwork.AccelerationNoticeMessage.class,
             nextPacketId++,
             Side.CLIENT);
-        registerServerbound(
+        // Forge 1.7.10 dispatches these markers in the server's inbound packet loop. Keep the vanilla use
+        // packet between them so its handled result is visible before granting travel.
+        CHANNEL.registerMessage(
+            UniversalWandNetwork::handleTravelFallbackRequest,
             UniversalWandNetwork.TravelFallbackRequest.class,
-            UniversalWandNetwork::handleTravelFallbackRequest);
+            nextPacketId++,
+            Side.SERVER);
         CHANNEL.registerMessage(
             UniversalWandNetwork.TravelFallbackGrantHandler.class,
             UniversalWandNetwork.TravelFallbackGrant.class,
             nextPacketId++,
             Side.CLIENT);
-        registerServerbound(
+        CHANNEL.registerMessage(
+            UniversalWandNetwork::handleTravelFallbackFinish,
             UniversalWandNetwork.TravelFallbackFinish.class,
-            UniversalWandNetwork::handleTravelFallbackFinish);
+            nextPacketId++,
+            Side.SERVER);
         CHANNEL.registerMessage(
             UniversalWandNetwork.FeatureHandler.class,
             UniversalWandNetwork.FeatureMessage.class,
