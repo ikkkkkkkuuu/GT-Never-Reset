@@ -1,7 +1,6 @@
 package com.xyp.gtnrlib.client.render.animation;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.ModelBiped;
 import net.minecraft.item.ItemStack;
 
 import org.lwjgl.opengl.GL11;
@@ -23,7 +22,6 @@ public final class FirstPersonPoseRenderer {
         ITEM = new Bone("item_right"), GRIP = new Bone("itemgrip_right");
     private static final float VANILLA_HAND_YAW = 45;
     private static final float MODEL_UNIT = 1F / 16;
-    private static ModelBiped arms;
 
     public static void held(ItemStack stack, float partial) {
         if (!ANIMATIONS.applies(stack)) return;
@@ -102,21 +100,11 @@ public final class FirstPersonPoseRenderer {
 
     /** ModelBiped defines shoulders as pivots. Place the hand end of its 4 x 12 x 4 mesh at the grip. */
     private static void drawFromWrist(boolean left, double scale) {
-        var mc = Minecraft.getMinecraft();
-        if (arms == null) arms = new ModelBiped(0);
-        GL11.glPushAttrib(GL11.GL_CURRENT_BIT | GL11.GL_TEXTURE_BIT | GL11.GL_ENABLE_BIT);
-        try {
-            mc.getTextureManager()
-                .bindTexture(mc.thePlayer.getLocationSkin());
-            GL11.glColor4f(1, 1, 1, 1);
-            GL11.glRotatef(left ? -51 : 43, 0, 0, 1);
-            GL11.glRotatef(-32, 1, 0, 0);
-            GL11.glScaled(scale, scale, scale);
-            GL11.glTranslatef((left ? -6 : 6) * MODEL_UNIT, -11 * MODEL_UNIT, 0);
-            (left ? arms.bipedLeftArm : arms.bipedRightArm).render(MODEL_UNIT);
-        } finally {
-            GL11.glPopAttrib();
-        }
+        GL11.glRotatef(left ? -51 : 43, 0, 0, 1);
+        GL11.glRotatef(-32, 1, 0, 0);
+        GL11.glScaled(scale, scale, scale);
+        GL11.glTranslatef((left ? -6 : 6) * MODEL_UNIT, -11 * MODEL_UNIT, 0);
+        FirstPersonArmRenderer.render(left, 0);
     }
 
     private static void tuning(com.xyp.gtnrlib.compat.punchy.PunchyPack.Pose pose) {

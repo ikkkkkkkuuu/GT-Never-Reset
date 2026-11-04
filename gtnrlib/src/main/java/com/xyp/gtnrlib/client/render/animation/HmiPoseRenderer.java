@@ -5,7 +5,6 @@ import java.nio.FloatBuffer;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.RenderHelper;
@@ -47,7 +46,6 @@ public final class HmiPoseRenderer {
     private static final Matrix4fc ROD = display(0, 4, 2.5f, 0, 90, 55, .85f);
     private static final Matrix4fc BOW = display(-1, -2, 2.5f, -80, 260, -40, .9f);
     private static final Matrix4fc GENERATED = display(0, 3, 1, 0, 0, 0, .55f);
-    private static ModelBiped arms;
     private static HmiItemModels models;
     private static IIcon bowIcon;
 
@@ -74,10 +72,6 @@ public final class HmiPoseRenderer {
         try {
             GL11.glEnable(GL12.GL_RESCALE_NORMAL);
             var mc = Minecraft.getMinecraft();
-            mc.getTextureManager()
-                .bindTexture(mc.thePlayer.getLocationSkin());
-            GL11.glColor4f(1, 1, 1, 1);
-            if (arms == null) arms = new ModelBiped(0);
             GL11.glPushMatrix();
             try {
                 // Preserve the reference's wide-screen grip framing on narrower legacy windows.
@@ -142,7 +136,7 @@ public final class HmiPoseRenderer {
             GL11.glRotatef(200, 1, 0, 0);
             GL11.glRotatef(-135 * side, 0, 1, 0);
             GL11.glTranslated(5.6 * side, 0, 0);
-            drawArm(left, side * .1f);
+            FirstPersonArmRenderer.render(left, side * .1f);
         } finally {
             GL11.glPopMatrix();
         }
@@ -151,22 +145,12 @@ public final class HmiPoseRenderer {
     private static void gripHand(boolean left) {
         GL11.glPushMatrix();
         try {
-            var mc = Minecraft.getMinecraft();
-            mc.getTextureManager()
-                .bindTexture(mc.thePlayer.getLocationSkin());
-            GL11.glColor4f(1, 1, 1, 1);
             apply(com.xyp.gtnrlib.client.animation.FirstPersonItemActions.INSTANCE.grip(left));
             GL11.glTranslatef((left ? -6 : 6) / 16f, -10f / 16, 0);
-            drawArm(left, 0);
+            FirstPersonArmRenderer.render(left, 0);
         } finally {
             GL11.glPopMatrix();
         }
-    }
-
-    private static void drawArm(boolean left, float shoulderRoll) {
-        var part = left ? arms.bipedLeftArm : arms.bipedRightArm;
-        part.rotateAngleZ = shoulderRoll;
-        part.render(1f / 16);
     }
 
     private static Matrix4fc display(float x, float y, float z, float pitch, float yaw, float roll, float scale) {

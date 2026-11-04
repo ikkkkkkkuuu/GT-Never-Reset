@@ -1,6 +1,8 @@
 package com.xyp.gtnrlib.mixins.early.animation;
 
 import net.minecraft.client.renderer.ItemRenderer;
+import net.minecraft.client.renderer.entity.RenderPlayer;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 
@@ -12,7 +14,10 @@ import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
+import com.xyp.gtnrlib.client.render.animation.FirstPersonArmRenderer;
 import com.xyp.gtnrlib.client.render.animation.FirstPersonPoseRenderer;
 import com.xyp.gtnrlib.client.render.animation.HmiPoseRenderer;
 
@@ -103,5 +108,18 @@ public abstract class ItemRendererMixin implements FirstPersonAnimations.Equippe
         require = 0)
     private void gtnrlib$empty(float partial, CallbackInfo ci) {
         FirstPersonPoseRenderer.empty(partial);
+    }
+
+    @WrapOperation(
+        method = "renderItemInFirstPerson",
+        slice = @Slice(
+            from = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;shouldRotateAroundWhenRendering()Z")),
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/entity/RenderPlayer;renderFirstPersonArm(Lnet/minecraft/entity/player/EntityPlayer;)V"),
+        require = 0)
+    private void gtnrlib$emptyArmArmor(RenderPlayer renderer, EntityPlayer player, Operation<Void> original) {
+        original.call(renderer, player);
+        if (FirstPersonAnimations.INSTANCE.applies(null)) FirstPersonArmRenderer.renderOverVanillaArm(player, renderer);
     }
 }

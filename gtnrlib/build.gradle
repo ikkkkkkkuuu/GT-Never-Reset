@@ -29,6 +29,7 @@ configurations.compileOnly.extendsFrom(configurations.animationCompat)
 
 dependencies {
     animationCompat(elytraModpackVersion.gtnhdev('GT5-Unofficial') as String) { transitive = false }
+    animationCompat(elytraModpackVersion.gtnhdev('Draconic-Evolution') as String) { transitive = false }
     animationCompat(elytraModpackVersion.gtnhdev('TinkersConstruct') as String) { transitive = false }
     animationCompat('net.industrial-craft:industrialcraft-2:2.2.828-experimental:dev') { transitive = false }
     shadowImplementation('org.luaj:luaj-jse:3.0.1') { transitive = false }
