@@ -121,6 +121,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
 
     @Override
     public void onResourceManagerReload(IResourceManager manager) {
+        IngotGrip.invalidate();
         var repo = Minecraft.getMinecraft()
             .getResourcePackRepository();
         if (repo == null) return;
@@ -361,7 +362,8 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         if (item instanceof ItemHoe) return "HOE";
         if (item instanceof ItemBlock) return "BLOCK";
         if (item instanceof ItemBow) return "BOW";
-        return !item.isFull3D() && stack.getMaxDamage() == 0 ? "GTNRLIB_FLAT_ITEM" : "ITEM";
+        return (!item.isFull3D() && stack.getMaxDamage() == 0) || IngotGrip.matches(stack) ? "GTNRLIB_FLAT_ITEM"
+            : "ITEM";
     }
 
     public boolean enabled() {
@@ -384,8 +386,10 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
             || item != (rendered == null ? null : rendered.getItem())) return false;
         if ((slot != mc.thePlayer.inventory.currentItem || rendered != mc.thePlayer.getHeldItem()) && !(isLowering(mc)
             && ((EquippedStack) mc.entityRenderer.itemRenderer).gtnrlib$equippedStack() == rendered)) return false;
-        return rendered == null || !(rendered.getItem() instanceof ItemMap)
-            && MinecraftForgeClient.getItemRenderer(rendered, ItemRenderType.EQUIPPED_FIRST_PERSON) == null;
+        if (rendered == null) return true;
+        if (rendered.getItem() instanceof ItemMap) return false;
+        var renderer = MinecraftForgeClient.getItemRenderer(rendered, ItemRenderType.EQUIPPED_FIRST_PERSON);
+        return renderer == null || IngotGrip.matches(rendered);
     }
 
     private boolean isLowering(Minecraft mc) {

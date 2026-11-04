@@ -21,6 +21,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
+import net.minecraftforge.client.IItemRenderer.ItemRendererHelper;
 
 import org.joml.Matrix4fc;
 import org.lwjgl.BufferUtils;
@@ -142,7 +143,8 @@ public final class HmiPoseRenderer {
     private static void draw(ItemRenderer renderer, Minecraft mc, ItemStack stack) {
         int used = mc.thePlayer.isUsingItem() ? mc.thePlayer.getItemInUseDuration() : -1;
         var tool = HMI.handheldTool();
-        if (tool == null
+        var custom = HMI.forgeRenderer();
+        if (custom == null
             && models.draw(HMI.itemId(), HMI.modelVariant(), used, mc.thePlayer.ticksExisted, HMI.program())) return;
         Item held = stack.getItem();
         boolean cube = held instanceof ItemBlock && RenderBlocks.renderItemIn3d(
@@ -157,7 +159,11 @@ public final class HmiPoseRenderer {
             GL11.glRotatef(25, 0, 0, 1);
             GL11.glScalef(.68f, .68f, .68f);
         }
-        if (!cube) {
+        // Forge already centers models that request its equipped-block helper.
+        boolean blockHelper = custom != null && tool == null
+            && custom
+                .shouldUseRenderHelper(ItemRenderType.EQUIPPED_FIRST_PERSON, stack, ItemRendererHelper.EQUIPPED_BLOCK);
+        if (!cube && !blockHelper) {
             // Center the legacy reversed-U extruded card in model space and undo renderItem's fixed sprite mount.
             GL11.glRotatef(180, 0, 1, 0);
             GL11.glTranslated(-.5, -.5, .03125);
@@ -168,7 +174,7 @@ public final class HmiPoseRenderer {
             GL11.glScalef(2f / 3, 2f / 3, 2f / 3);
             GL11.glTranslated(0, .3, 0);
         }
-        if (tool != null) {
+        if (custom != null) {
             // Forge invokes the owner's renderer once; it draws all material layers itself.
             renderer.renderItem(mc.thePlayer, stack, 0, ItemRenderType.EQUIPPED_FIRST_PERSON);
             return;

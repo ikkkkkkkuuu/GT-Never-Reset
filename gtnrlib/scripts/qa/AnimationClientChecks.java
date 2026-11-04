@@ -26,6 +26,7 @@ import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.MinecraftForgeClient;
+import net.minecraftforge.oredict.OreDictionary;
 
 import org.lwjgl.opengl.GL11;
 
@@ -1001,6 +1002,7 @@ public final class AnimationClientChecks {
     }
 
     private void checkHost(Minecraft mc) throws Exception {
+        checkIngotGrips(mc);
         Set<String> wanted = new HashSet<>(
             List.of("MetaGeneratedToolRenderer", "ItemWandRenderer", "ToolBiometricCardRender"));
         for (Object value : Item.itemRegistry) {
@@ -1026,6 +1028,94 @@ public final class AnimationClientChecks {
                     .getSimpleName());
         }
         require(wanted.isEmpty(), "host renderers found; missing " + wanted);
+    }
+
+    private void checkIngotGrips(Minecraft mc) throws Exception {
+        var hmi = HmiFirstPerson.INSTANCE;
+        var iron = new ItemStack(Items.iron_ingot);
+        var gold = new ItemStack(Items.gold_ingot);
+        var chrome = gregTechStack("ingotChrome");
+        var cobalt = gregTechStack("ingotCobalt");
+        var hot = gregTechStack("ingotHotTitanium");
+        var plate = gregTechStack("plateChrome");
+        require(
+            chrome.getItem() == plate.getItem() && chrome.getItem() == cobalt.getItem(),
+            "ingots and plate share the real GT meta-item");
+        org.joml.Matrix4f arm = null, item = null;
+        int[] chromePixels = null;
+        for (var stack : List.of(iron, gold, chrome, cobalt, hot)) {
+            equip(mc, stack);
+            tickPlayer();
+            String name = stack.getUnlocalizedName();
+            if (hmi.enabled()) {
+                // Start each upstream program at the same idle frame so the matrices can be compared directly.
+                hmi.detach();
+                require(hmi.sample(stack, .5f, 0), "HMI handles ingot " + name);
+                int[] pixels = draw(mc, "hmi-ingot-" + name);
+                if (arm == null) {
+                    arm = new org.joml.Matrix4f(hmi.right);
+                    item = new org.joml.Matrix4f(hmi.item);
+                } else require(
+                    arm.equals(hmi.right, .0001f) && item.equals(hmi.item, .0001f),
+                    "matches iron ingot arm and item pose: " + name);
+                if (stack == chrome) chromePixels = pixels;
+                if (stack == cobalt) {
+                    int changed = 0;
+                    for (int i = 0; i < pixels.length; i++) if (pixels[i] != chromePixels[i]) changed++;
+                    require(changed > 50, "GT ingot material changes visible pixels: " + changed);
+                }
+            } else {
+                require(target.applies(stack), "Punchy flat grip handles ingot " + name);
+                draw(mc, "punchy-ingot-" + name);
+            }
+        }
+        equip(mc, plate);
+        tickPlayer();
+        require(
+            !(hmi.enabled() ? hmi.sample(plate, .5f, 0) : target.applies(plate)),
+            "the plate metadata keeps its custom renderer");
+        if (hmi.enabled()) checkRegisteredIngots(hmi);
+    }
+
+    private void checkRegisteredIngots(HmiFirstPerson hmi) {
+        record Variant(Item item, int damage) {}
+        hmi.detach();
+        require(
+            hmi.sample(new ItemStack(Items.iron_ingot), .5f, 0) && hmi.sample(new ItemStack(Items.gold_ingot), .5f, 0),
+            "reference ingot pose at a fixed frame");
+        var arm = new org.joml.Matrix4f(hmi.right);
+        var item = new org.joml.Matrix4f(hmi.item);
+        var seen = new HashSet<Variant>();
+        int custom = 0;
+        for (String name : OreDictionary.getOreNames()) {
+            if (!name.startsWith("ingot")) continue;
+            for (var stack : OreDictionary.getOres(name)) {
+                if (stack.getItem() instanceof net.minecraft.item.ItemBlock
+                    || !seen.add(new Variant(stack.getItem(), stack.getItemDamage()))) continue;
+                var renderer = MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON);
+                if (!hmi.sample(stack, .5f, 0) || !arm.equals(hmi.right, .0001f)
+                    || !item.equals(hmi.item, .0001f)
+                    || hmi.forgeRenderer() != renderer)
+                    throw new AssertionError("Missing ingot grip for " + name + " " + stack);
+                if (renderer != null) custom++;
+            }
+        }
+        require(
+            custom > 0,
+            "HMI flat grip for all " + seen.size()
+                + " registered ingot variants, including "
+                + custom
+                + " with a Forge renderer");
+    }
+
+    private static ItemStack gregTechStack(String ore) {
+        for (var stack : OreDictionary.getOres(ore)) {
+            if (String.valueOf(Item.itemRegistry.getNameForObject(stack.getItem()))
+                .startsWith("gregtech:")
+                && MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON) != null)
+                return stack.copy();
+        }
+        throw new AssertionError("Missing GT stack with equipped renderer for " + ore);
     }
 
     void require(boolean ok, String label) {

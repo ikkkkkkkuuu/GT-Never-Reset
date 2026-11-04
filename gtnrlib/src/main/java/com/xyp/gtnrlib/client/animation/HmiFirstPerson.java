@@ -28,6 +28,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
 import net.minecraft.item.ItemTool;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
+import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.MinecraftForgeClient;
 
@@ -55,6 +56,7 @@ public final class HmiFirstPerson {
     private Item lastItem;
     private HmiItemBindings.Profile bound;
     private HmiItemBindings.HandheldTool tool;
+    private IItemRenderer forgeRenderer;
     private final Matrix4f wristMotion = new Matrix4f(), sceneMotion = new Matrix4f();
     private int lastDamage, swings;
     private String id;
@@ -76,6 +78,7 @@ public final class HmiFirstPerson {
         id = null;
         bound = null;
         tool = null;
+        forgeRenderer = null;
         lastItem = null;
         swings = 0;
         lastFrame = Double.NaN;
@@ -107,6 +110,10 @@ public final class HmiFirstPerson {
 
     public HmiItemBindings.HandheldTool handheldTool() {
         return tool;
+    }
+
+    public IItemRenderer forgeRenderer() {
+        return forgeRenderer;
     }
 
     public boolean isLantern() {
@@ -148,13 +155,14 @@ public final class HmiFirstPerson {
         var p = mc.thePlayer;
         if (p == null || mc.gameSettings.thirdPersonView != 0 || p.isInvisible()) return false;
         HmiItemBindings.HandheldTool selected = null;
+        IItemRenderer renderer = null;
         if (stack != null) {
             if (stack.getItem() instanceof ItemMap
                 && MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.FIRST_PERSON_MAP) != null) return false;
-            var renderer = MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON);
+            renderer = MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON);
             if (renderer != null) {
                 selected = HmiItemBindings.tool(stack, renderer);
-                if (selected == null) {
+                if (selected == null && !IngotGrip.matches(stack)) {
                     tool = null;
                     return false;
                 }
@@ -169,6 +177,7 @@ public final class HmiFirstPerson {
             Item held = stack == null ? null : stack.getItem();
             boolean changed = id == null || held != lastItem || selected != tool;
             tool = selected;
+            forgeRenderer = renderer;
             int damage = stack == null ? 0 : stack.getItemDamage();
             var profile = HmiItemBindings.resolve(stack);
             boolean reclassify = changed || damage != lastDamage
@@ -178,6 +187,7 @@ public final class HmiFirstPerson {
                 String previous = id;
                 classify(held, stack, damage);
                 changed |= !Objects.equals(previous, id);
+                if (damage != lastDamage && bound == null && tool == null && IngotGrip.matches(stack)) changed = true;
             }
             double now = (double) p.ticksExisted + partial;
             if (!reclassify && lastFrame == now) return true;
@@ -300,14 +310,14 @@ public final class HmiFirstPerson {
                 shape instanceof ItemSnowball || shape instanceof ItemEgg
                     || shape instanceof ItemEnderPearl
                     || id.equals("minecraft:splash_potion")));
+        boolean handheld = shape instanceof ItemTool || shape instanceof ItemSword
+            || shape instanceof ItemHoe
+            || shape instanceof ItemFishingRod
+            || shape instanceof ItemBow
+            || shape != null && shape.isFull3D();
         frame.set(
             "translate",
-            LuaValue.valueOf(
-                tool == null && !(shape instanceof ItemTool || shape instanceof ItemSword
-                    || shape instanceof ItemHoe
-                    || shape instanceof ItemFishingRod
-                    || shape instanceof ItemBow
-                    || shape != null && shape.isFull3D())));
+            LuaValue.valueOf(tool == null && (!handheld || bound == null && IngotGrip.matches(stack))));
     }
 
     private static void tag(LuaTable tags, String name, boolean present) {
