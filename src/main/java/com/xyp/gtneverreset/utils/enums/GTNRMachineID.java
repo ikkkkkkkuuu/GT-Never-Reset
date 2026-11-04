@@ -132,8 +132,21 @@ public enum GTNRMachineID {
     ModernCentrifugeIV(29643),
     ModernCentrifugeLuV(29644),
     ModernCentrifugeZPM(29645),
-    ModernCentrifugeUV(29646);
-    // 预留：29647–29899（253 个）。
+    ModernCentrifugeUV(29646),
+
+    DisassemblerLV(29647),
+    DisassemblerMV(29648),
+    DisassemblerHV(29649),
+    DisassemblerEV(29650),
+    DisassemblerIV(29651),
+    DisassemblerLuV(29652),
+    DisassemblerZPM(29653),
+    DisassemblerUV(29654),
+    DisassemblerUHV(29655),
+    DisassemblerUEV(29656),
+    DisassemblerUIV(29657),
+    DisassemblerUMV(29658);
+    // 预留：29659–29899（241 个）。
     // endregion
 
     public final int id;

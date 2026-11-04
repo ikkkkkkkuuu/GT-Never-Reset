@@ -3,6 +3,7 @@ package com.xyp.gtneverreset.loader.machine;
 import net.minecraft.util.StatCollector;
 
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
+import com.xyp.gtneverreset.common.machine.basicMachine.Disassembler;
 import com.xyp.gtneverreset.common.machine.basicMachine.EndCrystalResonator;
 import com.xyp.gtneverreset.common.machine.basicMachine.FragmentWorldCollector;
 import com.xyp.gtneverreset.common.machine.basicMachine.ModernFluidMachine;
@@ -28,6 +29,7 @@ public final class BasicMachineLoader {
                 StatCollector.translateToLocal("gtnr.fragment_world_collector.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.FragmentWorldCollector.get(1), AnimatedText.GT_NEVER_RESET);
         registerModernFluidMachines();
+        registerDisassemblers();
         GTNRItemList.EndCrystalResonatorLV.set(
             new EndCrystalResonator(
                 GTNRMachineID.EndCrystalResonatorLV.id,
@@ -112,6 +114,69 @@ public final class BasicMachineLoader {
                 "gtneverreset.end_crystal_resonator.tier.14",
                 VoltageIndex.MAX));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.EndCrystalResonatorMAX.get(1), AnimatedText.GT_NEVER_RESET);
+    }
+
+    private static void registerDisassemblers() {
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.1.name
+        // # Basic Disassembler
+        // # zh_CN 基础拆解机
+        GTNRItemList.DisassemblerLV.set(
+            new Disassembler(GTNRMachineID.DisassemblerLV.id, "gtneverreset.disassembler.tier.1", VoltageIndex.LV));
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.2.name
+        // # Advanced Disassembler
+        // # zh_CN 进阶拆解机
+        GTNRItemList.DisassemblerMV.set(
+            new Disassembler(GTNRMachineID.DisassemblerMV.id, "gtneverreset.disassembler.tier.2", VoltageIndex.MV));
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.3.name
+        // # Advanced Disassembler II
+        // # zh_CN 进阶拆解机 II
+        GTNRItemList.DisassemblerHV.set(
+            new Disassembler(GTNRMachineID.DisassemblerHV.id, "gtneverreset.disassembler.tier.3", VoltageIndex.HV));
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.4.name
+        // # Advanced Disassembler III
+        // # zh_CN 进阶拆解机 III
+        GTNRItemList.DisassemblerEV.set(
+            new Disassembler(GTNRMachineID.DisassemblerEV.id, "gtneverreset.disassembler.tier.4", VoltageIndex.EV));
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.5.name
+        // # Advanced Disassembler IV
+        // # zh_CN 进阶拆解机 IV
+        GTNRItemList.DisassemblerIV.set(
+            new Disassembler(GTNRMachineID.DisassemblerIV.id, "gtneverreset.disassembler.tier.5", VoltageIndex.IV));
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.6.name
+        // # Elite Disassembler
+        // # zh_CN 精英拆解机
+        GTNRItemList.DisassemblerLuV.set(
+            new Disassembler(GTNRMachineID.DisassemblerLuV.id, "gtneverreset.disassembler.tier.6", VoltageIndex.LuV));
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.7.name
+        // # Elite Disassembler II
+        // # zh_CN 精英拆解机 II
+        GTNRItemList.DisassemblerZPM.set(
+            new Disassembler(GTNRMachineID.DisassemblerZPM.id, "gtneverreset.disassembler.tier.7", VoltageIndex.ZPM));
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.8.name
+        // # Ultimate Deconstructor
+        // # zh_CN 终极解构者
+        GTNRItemList.DisassemblerUV.set(
+            new Disassembler(GTNRMachineID.DisassemblerUV.id, "gtneverreset.disassembler.tier.8", VoltageIndex.UV));
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.9.name
+        // # Epic Deconstructor
+        // # zh_CN 史诗解构者
+        GTNRItemList.DisassemblerUHV.set(
+            new Disassembler(GTNRMachineID.DisassemblerUHV.id, "gtneverreset.disassembler.tier.9", VoltageIndex.UHV));
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.10.name
+        // # Epic Deconstructor II
+        // # zh_CN 史诗解构者 II
+        GTNRItemList.DisassemblerUEV.set(
+            new Disassembler(GTNRMachineID.DisassemblerUEV.id, "gtneverreset.disassembler.tier.10", VoltageIndex.UEV));
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.11.name
+        // # Epic Deconstructor III
+        // # zh_CN 史诗解构者 III
+        GTNRItemList.DisassemblerUIV.set(
+            new Disassembler(GTNRMachineID.DisassemblerUIV.id, "gtneverreset.disassembler.tier.11", VoltageIndex.UIV));
+        // #tr gt.blockmachines.gtneverreset.disassembler.tier.12.name
+        // # Epic Deconstructor IV
+        // # zh_CN 史诗解构者 IV
+        GTNRItemList.DisassemblerUMV.set(
+            new Disassembler(GTNRMachineID.DisassemblerUMV.id, "gtneverreset.disassembler.tier.12", VoltageIndex.UMV));
     }
 
     private static void registerModernFluidMachines() {
