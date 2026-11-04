@@ -1,5 +1,6 @@
 package com.xyp.gtnrlib.qa;
 
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -13,6 +14,9 @@ import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import org.joml.Vector3f;
+
+import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.compat.gregtech.GregTechWrenchAnimation;
 
@@ -89,6 +93,7 @@ public final class AnimationWrenchChecks implements Runnable {
                     }
                     qa.require(changed > 40, "GT material changes visible wrench pixels: " + changed);
                     qa.require(gripContact > 8, "wrench handle meets the fist along " + gripContact + " pixels");
+                    checkLooseningStroke();
                     var electric = new ItemStack(MetaGeneratedTool01.INSTANCE, 1, IDMetaTool01.WRENCH_LV.ID);
                     qa.require(
                         hmi.sample(electric, .5f, 0) && hmi.handheldTool() == null,
@@ -121,7 +126,8 @@ public final class AnimationWrenchChecks implements Runnable {
                     step++;
                 }
                 case 5 -> {
-                    if (!serverDone || tick < firstTurnTick + 7) return;
+                    // The original nine-tick stroke must have finished by this point.
+                    if (!serverDone || tick < firstTurnTick + 10) return;
                     qa.require(
                         turning() && mc.thePlayer.motionY < 0,
                         "second acknowledgement extends the turn into descent");
@@ -176,8 +182,48 @@ public final class AnimationWrenchChecks implements Runnable {
         }
     }
 
+    private void checkLooseningStroke() throws Exception {
+        var player = mc.thePlayer;
+        int tick = player.ticksExisted;
+        var hmi = HmiFirstPerson.INSTANCE;
+        // Centers of the jaw opening and lower handle on the mounted 16px GT wrench, in HMI item space.
+        var jaw = new Vector3f(0, .419f, -.114f);
+        var grip = new Vector3f(0, -.046f, .083f);
+        var rest = hmi.item.transformPosition(jaw, new Vector3f());
+        var contact = new Vector3f();
+        var startGrip = new Vector3f();
+        try {
+            qa.require(FirstPersonItemActions.INSTANCE.trigger("gtneverreset:wrench_turn"), "manual wrench clip bound");
+            for (int frame = 0; frame <= 20; frame++) {
+                player.ticksExisted = tick + frame / 2;
+                int[] pixels = qa.draw(mc, "wrench-stroke-" + frame, (frame % 2) * .5f);
+                if (Arrays.stream(pixels, pixels.length - mc.displayWidth, pixels.length)
+                    .allMatch(pixel -> pixel == pixels[0]))
+                    throw new AssertionError("floating forearm at frame " + frame);
+                var tip = hmi.item.transformPosition(jaw, new Vector3f());
+                if (frame == 4) {
+                    contact.set(tip);
+                    hmi.item.transformPosition(grip, startGrip);
+                    qa.require(tip.x < rest.x - .3f && tip.z < rest.z - .12f, "jaw reaches inward and forward");
+                }
+                if (frame > 4 && frame <= 10 && tip.distance(contact) > .055f) throw new AssertionError(
+                    "jaw slipped during torque at frame " + frame + ": " + tip.distance(contact));
+                if (frame == 10) qa.require(
+                    hmi.item.transformPosition(grip, new Vector3f())
+                        .distance(startGrip) > .26f,
+                    "handle turns around the planted jaws");
+                if (frame == 13) qa.require(tip.z > contact.z + .08f, "open end clears the fastener on the return");
+                if (frame == 18) qa.require(tip.distance(rest) < .06f, "wrench settles back into its carrying pose");
+            }
+            qa.require(!turning(), "single wrench stroke has ended");
+        } finally {
+            player.ticksExisted = tick;
+            hmi.detach();
+        }
+    }
+
     private boolean turning() {
-        return com.xyp.gtnrlib.client.animation.FirstPersonItemActions.INSTANCE.playing("gtneverreset:wrench_turn");
+        return FirstPersonItemActions.INSTANCE.playing("gtneverreset:wrench_turn");
     }
 
     private void request(int mode) {
@@ -229,8 +275,18 @@ public final class AnimationWrenchChecks implements Runnable {
                 return;
             }
             var machine = world.getTileEntity(x, y, z) instanceof IGregTechTileEntity gt ? gt : null;
+            if (mode == 1 && machine != null && machine.getTimer() < 2) {
+                // GT consumes clicks before the newly placed machine is usable.
+                request(mode);
+                return;
+            }
             ForgeDirection before = machine == null ? null : machine.getFrontFacing();
-            int side = before == ForgeDirection.EAST ? 4 : 5;
+            int side = machine == null ? ForgeDirection.EAST.ordinal()
+                : Arrays.stream(ForgeDirection.VALID_DIRECTIONS)
+                    .filter(facing -> facing.offsetY == 0 && facing != before && machine.isValidFacing(facing))
+                    .findFirst()
+                    .orElseThrow()
+                    .ordinal();
             boolean handled = p.theItemInWorldManager
                 .activateBlockOrUseItem(p, world, tool, x, y, z, side, .5f, .5f, .5f);
             if (mode != 0 && !handled) throw new AssertionError("GT rejected use " + mode);
