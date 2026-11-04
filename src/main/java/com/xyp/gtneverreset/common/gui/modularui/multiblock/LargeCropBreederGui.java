@@ -125,7 +125,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     private BooleanSyncValue washingMode;
     private BooleanSyncValue washingOperation;
     private IntSyncValue progress, duration, chance;
-    private IntSyncValue parallel, breedingMinutes;
+    private IntSyncValue parallel;
     private List<NBTTagCompound> chanceSnapshot;
     private BreedingRouteWidget routeWidget;
     private int snapshotRevision = Integer.MIN_VALUE;
@@ -158,8 +158,6 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
             new InteractionSyncHandler().setOnMousePressed(
                 mouse -> { if (!mouse.isClient() && mouse.mouseButton == 0) multiblock.toggleWashingMode(); }));
         chance = new IntSyncValue(multiblock::getSuccessChance);
-        breedingMinutes = new IntSyncValue(multiblock::getBreedingMinutes);
-        sync.syncValue("cropBreedingMinutes", breedingMinutes);
         parallel = new IntSyncValue(multiblock::getCurrentParallel);
         sync.syncValue("cropParallel", parallel);
         sync.syncValue("cropDraft", draft);
@@ -778,7 +776,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
 
     private int effectiveChance(String id) {
         if (duration.getIntValue() > 0 && id.equals(activeBreedingCrop())) return chance.getIntValue();
-        return CropBreedingChance.warmedPercent(cropChances.getOrDefault(id, 0), breedingMinutes.getIntValue());
+        return cropChances.getOrDefault(id, 0);
     }
 
     private static String requirementLabel(NBTTagCompound requirement) {

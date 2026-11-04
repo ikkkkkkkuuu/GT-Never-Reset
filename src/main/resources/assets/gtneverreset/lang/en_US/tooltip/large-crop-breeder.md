@@ -1,5 +1,7 @@
+Insert an analyzed seed into an input bus to archive its species and stats. Each new species consumes one seed
+Select a target in the controller to breed it from archived parents through any required intermediate generations
 Newly bred species start at 1/1/1. Subsequent production uses their archived stats
-Seed improvement uses {white:{var:washUU} L of UU-Matter} per tick at {white:{var:baseEu} EU/t}
+Seed improvement uses {white:{var:baseEu} EU/t}
 Every {white:{var:washSeconds} seconds}, it attempts to raise one stat below 31 by one point
 Place required substrates in an {white:input bus}; they are {green:not consumed}. Vanilla substrates need no item
 
