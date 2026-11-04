@@ -62,6 +62,15 @@ public final class AnimationClientChecks {
             .register(this);
     }
 
+    @Mod.EventHandler
+    public void prepareWorld(cpw.mods.fml.common.event.FMLServerStartedEvent event) {
+        var world = net.minecraft.server.MinecraftServer.getServer()
+            .worldServerForDimension(0);
+        world.setWorldTime(6000);
+        world.getGameRules()
+            .setOrCreateGameRule("doDaylightCycle", "false");
+    }
+
     @SubscribeEvent
     public void tick(TickEvent.ClientTickEvent event) {
         if (finished || event.phase != TickEvent.Phase.END) return;
@@ -72,7 +81,7 @@ public final class AnimationClientChecks {
             if (!started && mc.currentScreen != null && mc.theWorld == null) {
                 started = true;
                 mc.launchIntegratedServer(
-                    "animation-qa",
+                    java.util.Objects.requireNonNull(System.getProperty("gtnrlib.animation.qa.world")),
                     "Animation QA",
                     new WorldSettings(4711, WorldSettings.GameType.CREATIVE, false, false, WorldType.FLAT));
             }
@@ -480,12 +489,7 @@ public final class AnimationClientChecks {
         tickPlayer();
         int[] carry = draw(mc, "block-carry");
         int[] start = draw(mc, "block-at-input", 0);
-        int ground = (int) mc.thePlayer.posY;
-        // Use ordinary solid targets even when an earlier fixture left a machine in these columns.
-        for (int dz = 0; dz <= 1; dz++) {
-            mc.theWorld.setBlock(x, ground, z + dz, Blocks.stone);
-            mc.theWorld.setBlockToAir(x, ground + 1, z + dz);
-        }
+        int ground = mc.theWorld.getTopSolidOrLiquidBlock(x, z) - 1;
         placeDuringTick(mc, x, ground, z);
         require(
             mc.theWorld.getBlock(x, ground + 1, z) == Blocks.cobblestone && mc.thePlayer.isSwingInProgress
@@ -515,7 +519,7 @@ public final class AnimationClientChecks {
         require(
             before.x > extended.x + .04 * h && before.x < rest.x - .10 * h,
             "first return still in flight at four ticks: " + before);
-        int nextGround = ground;
+        int nextGround = mc.theWorld.getTopSolidOrLiquidBlock(x, z + 1) - 1;
         placeDuringTick(mc, x, nextGround, z + 1);
         require(
             mc.theWorld.getBlock(x, nextGround + 1, z + 1) == Blocks.cobblestone,
@@ -1071,6 +1075,9 @@ public final class AnimationClientChecks {
             GL11.glClearColor(.125f, .125f, .125f, 1);
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
             GL11.glEnable(GL11.GL_DEPTH_TEST);
+            // The isolated item silhouettes use neutral illumination for material-pixel comparisons.
+            GL11.glDisable(GL11.GL_FOG);
+            mc.entityRenderer.disableLightmap(partial);
             GL11.glEnable(GL11.GL_TEXTURE_2D);
             mc.entityRenderer.itemRenderer.renderItemInFirstPerson(partial);
             ScreenShotHelper.saveScreenshot(output, name + ".png", w, h, buffer);

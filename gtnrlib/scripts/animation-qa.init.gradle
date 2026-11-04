@@ -20,6 +20,7 @@ gradle.projectsEvaluated {
         options.encoding = 'UTF-8'
         options.compilerArgs += ['-proc:none']
     }
+    File sessionWorld
     host.tasks.named('runClient25', JavaExec).configure {
         dependsOn fixture
         classpath += lib.files(classes)
@@ -33,6 +34,10 @@ gradle.projectsEvaluated {
         def release = gradle.startParameter.projectProperties['hmiRelease']
         if (release) systemProperty 'gtnrlib.animation.qa.hmi', 'hmi-fixture.jar'
         doFirst {
+            def saves = new File(workingDir, 'saves').toPath()
+            java.nio.file.Files.createDirectories(saves)
+            sessionWorld = java.nio.file.Files.createTempDirectory(saves, 'animation-qa-').toFile()
+            systemProperty 'gtnrlib.animation.qa.world', sessionWorld.name
             if (release) {
                 def input = new File(release)
                 if (!input.isFile()) throw new GradleException("Missing HMI fixture: " + input)
@@ -82,6 +87,7 @@ gradle.projectsEvaluated {
         doLast {
             def result = new File(output, 'result.txt')
             if (!result.isFile() || !result.text.startsWith('PASS')) throw new GradleException('animation fixture did not pass')
+            if (sessionWorld?.canonicalFile?.parentFile == new File(workingDir, 'saves').canonicalFile) lib.delete(sessionWorld)
         }
     }
 }
