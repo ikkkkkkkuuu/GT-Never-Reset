@@ -1003,6 +1003,9 @@ public final class AnimationClientChecks {
 
     private void checkHost(Minecraft mc) throws Exception {
         checkIngotGrips(mc);
+        Class.forName("com.xyp.gtnrlib.qa.AnimationToolChecks")
+            .getMethod("check", AnimationClientChecks.class)
+            .invoke(null, this);
         Set<String> wanted = new HashSet<>(
             List.of("MetaGeneratedToolRenderer", "ItemWandRenderer", "ToolBiometricCardRender"));
         for (Object value : Item.itemRegistry) {
@@ -1123,7 +1126,7 @@ public final class AnimationClientChecks {
         results.add(label);
     }
 
-    private void tickPlayer() {
+    void tickPlayer() {
         for (int i = 0; i < 4; i++) {
             target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.START));
             target.tick(new TickEvent.ClientTickEvent(TickEvent.Phase.END));

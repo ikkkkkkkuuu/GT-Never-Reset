@@ -88,8 +88,10 @@ public final class AnimationWrenchChecks implements Runnable {
                     }
                     qa.require(changed > 40, "GT material changes visible wrench pixels: " + changed);
                     qa.require(gripContact > 8, "wrench handle meets the fist along " + gripContact + " pixels");
-                    var unadapted = new ItemStack(MetaGeneratedTool01.INSTANCE, 1, IDMetaTool01.WRENCH_LV.ID);
-                    qa.require(!hmi.sample(unadapted, .5f, 0), "electric wrench keeps its Forge renderer");
+                    var electric = new ItemStack(MetaGeneratedTool01.INSTANCE, 1, IDMetaTool01.WRENCH_LV.ID);
+                    qa.require(
+                        hmi.sample(electric, .5f, 0) && hmi.handheldTool() == null,
+                        "electric wrench uses a generic grip without the manual turn");
                     request(0);
                     waitTick = tick + 5;
                     step++;

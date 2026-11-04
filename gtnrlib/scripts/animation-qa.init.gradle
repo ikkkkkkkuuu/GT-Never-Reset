@@ -13,6 +13,7 @@ gradle.projectsEvaluated {
         if (mode == 'host') {
             dependsOn host.tasks.named('classes')
             source lib.file('scripts/qa/AnimationWrenchChecks.java')
+            source lib.file('scripts/qa/AnimationToolChecks.java')
             classpath += host.sourceSets.main.output + host.sourceSets.main.compileClasspath
         }
         destinationDirectory.set(classes)

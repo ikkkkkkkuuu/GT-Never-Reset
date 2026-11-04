@@ -1,4 +1,4 @@
-# GTNRLib 动画 API 0.1.20
+# GTNRLib 动画 API 0.1.21
 
 ## 在 1.7.10 运行 Hold My Items 5.1.1
 
@@ -11,8 +11,11 @@ GTNRLib 用独立的 LuaJ 环境运行原包的四段程序。每次绘制先采
 - Et Futurum 的同名船、筏、末地水晶以及灯笼、灵魂灯笼、灵魂火把、黏液块和蜂蜜块会匹配对应的上游物品。火把、灯笼和岩浆桶可显示脚本生成的附着光晕。挥动粉红花瓣、野花或枯叶时，适配器按脚本生成屏幕空间粒子，并执行其逐帧回调。
 - Forge 自定义物品和地图默认沿用提供者的渲染路径。使用标准手持贴图坐标的自定义渲染器可用 `HmiItemBindings.registerTool` 显式接入 HMI 握姿。适配器按物品栈和渲染器筛选，可在 `pose` 提供物品局部坐标下的腕部变换，手和工具会跟随同一变换。Forge 仍负责调用原渲染器绘制完整工具。
 - 启用 HMI 后，Forge 矿物词典登记的锭（如 `ingotCopper`、`ingotHotTitanium`）沿用原版金锭、铁锭的握姿。识别按手中的物品和元数据进行，各模组仍绘制自己的纹理、材质颜色和叠层。Punchy 资源包可通过 `GTNRLIB_FLAT_ITEM` 为这些锭设置握姿。锭形模具、金属板和粒按各自的矿词分类处理。
-- 同时安装 GT-Never-Reset 0.1.20 并启用本地 HMI 原包后，普通 GT 手动扳手沿用默认手持姿势。服务端确认扳手转动后只通知操作者，连续拧动会从上一段运动淡入。材质由 GT 绘制。拧腕曲线可用资源包覆盖 `assets/gtneverreset/animations/wrench_turn.json`，按 F3+T 重载。电动款、工具箱和其他模组的扳手仍走各自的原有路径。
+- HMI 和 Punchy 共用工具类型识别。原版工具基类、Forge 采掘类型和 craftingTool 矿词可选择剑、镐、斧、铲、锄或普通手工具的握持与挥动；实际堆栈仍交给原渲染器。安装 GT-Never-Reset 0.1.21 后，还会识别 GT 元工具、匠魂近战/采掘工具和 IC2 电动工具。例如电钻沿用镐、电锯沿用斧，锉刀等使用普通手工具动作。电机、链条、充能等专属动作留待后续。没有可识别类型的自定义物品继续使用原路径。
+- 同时安装 GT-Never-Reset 0.1.21 并启用本地 HMI 原包后，普通 GT 手动扳手沿用默认手持姿势。服务端确认扳手转动后只通知操作者，连续拧动会从上一段运动淡入。材质由 GT 绘制。拧腕曲线可用资源包覆盖 `assets/gtneverreset/animations/wrench_turn.json`，按 F3+T 重载。电动扳手使用通用工具挥动。工具箱仍由原模组处理。
 - 现代物品在 1.7.10 中需要由其他模组提供实物。弩、三叉戟、长矛、重锤、副手装备槽、现代游泳及匍匐还缺对应的使用状态。通用外部 HMI addon 和动作音效尚未接入。原包未附 `firefly.png`，引用它的粒子会跳过绘制。1.7.10 的图标、皮肤、方块网格和光照也会影响最终画面。
+
+第三方工具需要明确持握类型时，可在客户端初始化时调用 `ToolGrip.registerFamily(MyDrill.class, stack -> ToolGrip.PICKAXE)`，也可按元数据或 NBT 返回不同的类型。子类的回调优先于父类，返回 `null` 继续匹配。
 
 第三方 Mod 可在客户端初始化时调用 `com.xyp.gtnrlib.client.animation.HmiItemBindings.register`。下例把模组自己的物品绑定到蓝色美西螈桶，其他颜色可通过同一个回调按物品 NBT 或损伤值选择。回调在渲染线程读取当前 `ItemStack`，建议复用已创建的 `Profile`。返回 `null` 时按物品自身身份解析，`unregister(item)` 可撤销绑定。
 
