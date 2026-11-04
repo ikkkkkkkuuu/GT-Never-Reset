@@ -15,6 +15,10 @@ import javax.imageio.ImageIO;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.SoundCategory;
+import net.minecraft.client.gui.ScaledResolution;
+import net.minecraft.client.gui.inventory.GuiInventory;
+import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.renderer.entity.RenderPlayer;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.entity.EntityLivingBase;
@@ -138,6 +142,16 @@ public final class AnimationClientChecks {
                     "built-in player active on the first ordinary world frame");
                 AnimationBlockUseChecks.verify(mc);
                 checkHmi(mc);
+                Item chest = (Item) Item.itemRegistry.getObject("DraconicEvolution:draconicChest");
+                Item wand = (Item) Item.itemRegistry.getObject("gtneverreset:universal_wand");
+                if (host) require(chest != null && wand != null, "found the Draconic chestplate and universal wand");
+                var armor = new ItemStack(chest == null ? Items.iron_chestplate : chest);
+                checkChestplate(mc, null, armor, "empty");
+                checkChestplate(
+                    mc,
+                    new ItemStack(wand == null ? Items.diamond_sword : wand),
+                    armor,
+                    wand == null ? "sword" : "wand");
                 movement = new AnimationMovementChecks(this, output);
                 return;
             }
@@ -182,6 +196,11 @@ public final class AnimationClientChecks {
             tickPlayer();
             draw(mc, "empty-grip");
             checkArmVisibility(mc, sword);
+            checkChestplate(mc, null, new ItemStack(Items.iron_chestplate), "empty");
+            // The one-handed sword pose exposes only the wrist below an iron chestplate's short sleeve.
+            reload(mc, "animation-qa-dual");
+            checkChestplate(mc, sword, new ItemStack(Items.iron_chestplate), "dual-sword");
+            reload(mc, "animation-qa");
             checkHandMotion(mc, sword);
             require(!Arrays.equals(baseline, active), "render injection changed first-person output");
             var observed = new ArrayList<String>();
@@ -1083,13 +1102,16 @@ public final class AnimationClientChecks {
         var skin = mc.thePlayer.getLocationSkin();
         textures.bindTexture(skin);
         var original = textures.getTexture(skin);
-        var markers = new DynamicTexture(64, 32);
+        int height = ((RenderPlayer) RenderManager.instance
+            .getEntityRenderObject(mc.thePlayer)).modelBipedMain.textureHeight;
+        var markers = new DynamicTexture(64, height);
         int[] texels = markers.getTextureData();
-        Arrays.fill(texels, 0xff888888);
+        Arrays.fill(texels, 0, 64 * 32, 0xff888888);
         // Only the side faces carry markers. A wrist end-cap alone cannot pass the check.
         for (int y = 20; y < 32; y++) {
             int band = y < 25 ? 0xff00ff00 : y < 28 ? 0xffff0000 : 0xffff00ff;
             Arrays.fill(texels, y * 64 + 40, y * 64 + 56, band);
+            if (height == 64) Arrays.fill(texels, (y + 32) * 64 + 32, (y + 32) * 64 + 48, band);
         }
         try {
             markers.updateDynamicTexture();
@@ -1117,6 +1139,51 @@ public final class AnimationClientChecks {
         } finally {
             textures.loadTexture(skin, original);
             markers.deleteGlTexture();
+        }
+    }
+
+    private void checkChestplate(Minecraft mc, ItemStack held, ItemStack chest, String pose) throws Exception {
+        var armor = mc.thePlayer.inventory.armorInventory;
+        var previous = armor[2];
+        try {
+            equip(mc, held);
+            tickPlayer();
+            Runnable hand = () -> {
+                // Include the upper arm in the small standalone viewport when checking vanilla's short iron sleeve.
+                if (held != null && chest.getItem() == Items.iron_chestplate) GL11.glTranslatef(0, 0, -.8f);
+                mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+            };
+            armor[2] = null;
+            int[] skin = draw(mc, "skin-" + pose, .5f, hand);
+            armor[2] = chest;
+            int[] equipped = draw(mc, "chestplate-" + pose, .5f, hand);
+            if (held == null) {
+                draw(mc, "chestplate-inventory", .5f, () -> {
+                    mc.entityRenderer.setupOverlayRendering();
+                    var ui = new ScaledResolution(mc, mc.displayWidth, mc.displayHeight);
+                    GuiInventory.func_147046_a(
+                        ui.getScaledWidth() / 2,
+                        ui.getScaledHeight() * 3 / 4,
+                        ui.getScaledHeight() / 3,
+                        16,
+                        0,
+                        mc.thePlayer);
+                });
+                require(
+                    Arrays.equals(equipped, draw(mc, "chestplate-after-inventory")),
+                    "inventory preview preserves the equipped arm");
+            }
+            armor[2] = null;
+            int[] removed = draw(mc, "removed-" + pose, .5f, hand);
+            int changed = 0;
+            for (int i = 0; i < skin.length; i++) {
+                if (skin[i] == removed[i] && skin[i] != equipped[i]) changed++;
+            }
+            require(
+                changed > skin.length / 1000,
+                pose + " chestplate appears and clears on removal: " + changed + "px");
+        } finally {
+            armor[2] = previous;
         }
     }
 

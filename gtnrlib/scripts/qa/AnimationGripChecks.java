@@ -4,9 +4,10 @@ import java.nio.FloatBuffer;
 import java.util.Locale;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.model.ModelRenderer;
 import net.minecraft.client.renderer.ItemRenderer;
+import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.renderer.entity.RenderPlayer;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -40,9 +41,7 @@ final class AnimationGripChecks implements IItemRenderer {
     static void measure(AnimationClientChecks qa, Minecraft mc, ItemStack held, String name, boolean rest)
         throws Exception {
         var probe = new AnimationGripChecks();
-        var field = HmiPoseRenderer.class.getDeclaredField("arms");
-        field.setAccessible(true);
-        ModelBiped model = (ModelBiped) field.get(null);
+        var model = ((RenderPlayer) RenderManager.instance.getEntityRenderObject(mc.thePlayer)).modelBipedMain;
         var hand = new ModelRenderer(model) {
 
             @Override
@@ -72,6 +71,7 @@ final class AnimationGripChecks implements IItemRenderer {
             model.bipedRightArm.childModels.remove(hand);
             model.boxList.remove(hand);
         }
+        qa.require(probe.arm != null, name + " rendered the active player arm");
         // 1.21.11 thirdperson_righthand axes, read independently from the four source models. Legacy U and Z reverse.
         boolean shaft = ToolGrip.resolve(held) != null;
         Vector3f up, normal;
