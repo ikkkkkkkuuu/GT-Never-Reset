@@ -5,6 +5,7 @@ import com.xyp.gtnrlib.compat.gregtech.GregTechWireCutterAnimation;
 import com.xyp.gtnrlib.compat.gregtech.GregTechWrenchAnimation;
 import com.xyp.gtnrlib.compat.ic2.IndustrialCraftToolGrips;
 import com.xyp.gtnrlib.compat.tconstruct.TinkersToolGrips;
+import com.xyp.gtnrlib.compat.thaumcraft.ThaumcraftWandGrip;
 import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.common.Loader;
@@ -32,5 +33,6 @@ public final class ToolAnimationCompat {
             IndustrialCraftToolGrips.register();
         if (Loader.isModLoaded("TConstruct") && !legacyClass("compat/tconstruct/TinkersToolGrips"))
             TinkersToolGrips.register();
+        if (ModList.Thaumcraft.isModLoaded()) ThaumcraftWandGrip.register();
     }
 }

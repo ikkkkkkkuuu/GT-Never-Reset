@@ -1,0 +1,8 @@
+{
+  "bindings": [
+    {"item": "Thaumcraft:WandCasting", "trigger": "attack", "clip": "gtnrlib:wand_flick"},
+    {"item": "Thaumcraft:WandCasting", "trigger": "mining", "clip": "gtnrlib:wand_flick"},
+    {"item": "Thaumcraft:WandCasting", "trigger": "interact", "clip": "gtnrlib:wand_flick"},
+    {"item": "Thaumcraft:WandCasting", "trigger": "use", "clip": "gtnrlib:wand_channel", "fadeIn": 0.25, "fadeOut": 0.28}
+  ]
+}

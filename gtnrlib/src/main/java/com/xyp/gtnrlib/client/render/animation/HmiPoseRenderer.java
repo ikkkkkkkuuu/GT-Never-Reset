@@ -48,6 +48,12 @@ public final class HmiPoseRenderer {
     private static final Matrix4fc GENERATED = display(0, 3, 1, 0, 0, 0, .55f);
     private static HmiItemModels models;
     private static IIcon bowIcon;
+    private static ItemStack mountedStack;
+
+    /** True only inside Forge's first-person draw with the adapter's native model mount active. */
+    public static boolean renderingMountedStack(ItemStack stack) {
+        return stack != null && mountedStack == stack;
+    }
 
     public static IIcon bowIcon(IIcon original) {
         return bowIcon == null ? original : bowIcon;
@@ -170,6 +176,18 @@ public final class HmiPoseRenderer {
         if (models == null
             ? DefaultItemModels.draw(HMI.itemId(), HMI.modelVariant(), used, mc.thePlayer.ticksExisted, HMI.program())
             : models.draw(HMI.itemId(), HMI.modelVariant(), used, mc.thePlayer.ticksExisted, HMI.program())) return;
+        var mount = tool == null ? null : tool.equippedMount(stack);
+        if (mount != null) {
+            apply(mount);
+            var previous = mountedStack;
+            mountedStack = stack;
+            try {
+                renderer.renderItem(mc.thePlayer, stack, 0, ItemRenderType.EQUIPPED_FIRST_PERSON);
+            } finally {
+                mountedStack = previous;
+            }
+            return;
+        }
         Item held = stack.getItem();
         boolean cube = held instanceof ItemBlock && RenderBlocks.renderItemIn3d(
             Block.getBlockFromItem(held)

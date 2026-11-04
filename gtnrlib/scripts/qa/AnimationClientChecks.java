@@ -1312,8 +1312,8 @@ public final class AnimationClientChecks {
         Class.forName("com.xyp.gtnrlib.qa.AnimationToolChecks")
             .getMethod("check", AnimationClientChecks.class)
             .invoke(null, this);
-        Set<String> wanted = new HashSet<>(
-            List.of("MetaGeneratedToolRenderer", "ItemWandRenderer", "ToolBiometricCardRender"));
+        Set<String> wanted = new HashSet<>(List.of("MetaGeneratedToolRenderer", "ToolBiometricCardRender"));
+        if (!HmiFirstPerson.INSTANCE.enabled()) wanted.add("ItemWandRenderer");
         for (Object value : Item.itemRegistry) {
             Item item = (Item) value;
             String id = String.valueOf(Item.itemRegistry.getNameForObject(item))

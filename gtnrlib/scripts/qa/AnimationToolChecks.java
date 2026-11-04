@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.ModelRenderer;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -14,6 +15,7 @@ import net.minecraftforge.client.MinecraftForgeClient;
 import org.joml.Matrix4f;
 
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
+import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.client.animation.ToolGrip;
@@ -29,6 +31,12 @@ import tconstruct.library.tools.HarvestTool;
 import tconstruct.library.tools.ToolCore;
 import tconstruct.library.tools.Weapon;
 import tconstruct.tools.TinkerTools;
+import thaumcraft.api.aspects.Aspect;
+import thaumcraft.client.renderers.item.ItemWandRenderer;
+import thaumcraft.client.renderers.models.gear.ModelWand;
+import thaumcraft.common.config.ConfigItems;
+import thaumcraft.common.items.wands.ItemWandCasting;
+import thaumcraft.common.items.wands.WandManager;
 
 public final class AnimationToolChecks {
 
@@ -92,7 +100,128 @@ public final class AnimationToolChecks {
         qa.require(ToolGrip.resolve(movingTool) == ToolGrip.PICKAXE, "drill before changing the same stack");
         movingTool.setItemDamage(IDMetaTool01.CHAINSAW_LV.ID);
         qa.require(ToolGrip.resolve(movingTool) == ToolGrip.AXE, "same-slot GT metadata changes the grip immediately");
-        if (hmi.enabled()) checkCutter(qa, mc);
+        if (hmi.enabled()) {
+            checkWand(qa, mc);
+            checkCutter(qa, mc);
+        }
+    }
+
+    private static void checkWand(AnimationClientChecks qa, Minecraft mc) throws Exception {
+        var hmi = HmiFirstPerson.INSTANCE;
+        var actions = FirstPersonItemActions.INSTANCE;
+        var p = mc.thePlayer;
+        int savedTick = p.ticksExisted;
+        var hit = mc.objectMouseOver;
+        var wand = (ItemWandCasting) ConfigItems.itemWandCasting;
+        var stack = new ItemStack(wand);
+        try {
+            hmi.detach();
+            mc.objectMouseOver = null;
+            wand.setCap(stack, ConfigItems.WAND_CAP_GOLD);
+            wand.setRod(stack, ConfigItems.WAND_ROD_GREATWOOD);
+            qa.equip(mc, stack);
+            for (int i = 0; i < 32; i++) {
+                p.ticksExisted++;
+                hmi.sample(stack, .5f, 0);
+            }
+            qa.require(
+                hmi.handheldTool() != null && hmi.forgeRenderer() instanceof ItemWandRenderer,
+                "Thaumcraft wand uses its original renderer in the animated hand");
+            var model = ItemWandRenderer.class.getDeclaredField("model");
+            var capField = ModelWand.class.getDeclaredField("CapBottom");
+            model.setAccessible(true);
+            capField.setAccessible(true);
+            var cap = (ModelRenderer) capField.get(model.get(hmi.forgeRenderer()));
+            var idle = AnimationGripChecks.measureWand(qa, mc, stack, "wand-idle", cap);
+            wand.setFocus(stack, new ItemStack(ConfigItems.itemFocusFrost));
+            p.isSwingInProgress = false;
+            WandManager.setCooldown(p, 0);
+            stack.useItemRightClick(p.worldObj, p);
+            qa.require(actions.playing("attack"), "frost focus swing starts the wand flick");
+            p.ticksExisted += 3;
+            var flick = AnimationGripChecks.measureWand(qa, mc, stack, "wand-flick", cap);
+            qa.require(
+                flick.fist()
+                    .distance(idle.fist()) > .10
+                    && flick.forearm()
+                        .angle(idle.forearm()) > .25,
+                "frost cast moves and turns the casting arm");
+            p.ticksExisted += 6;
+            hmi.sample(stack, .5f, 0);
+            qa.require(!actions.playing("attack"), "wand flick returns to rest");
+
+            wand.addVis(stack, Aspect.FIRE, wand.getMaxVis(stack), true);
+            wand.setFocus(stack, new ItemStack(ConfigItems.itemFocusFire));
+            checkChannel(qa, mc, stack, "wand", cap);
+            wand.setRod(stack, ConfigItems.STAFF_ROD_SILVERWOOD);
+            checkChannel(qa, mc, stack, "staff", cap);
+
+            wand.setFocus(stack, null);
+            wand.setRod(stack, ConfigItems.WAND_ROD_SILVERWOOD);
+            stack.getTagCompound()
+                .setBoolean("sceptre", true);
+            AnimationGripChecks.measureWand(qa, mc, stack, "sceptre-idle", cap);
+        } finally {
+            p.clearItemInUse();
+            WandManager.setCooldown(p, 0);
+            p.ticksExisted = savedTick;
+            p.isSwingInProgress = false;
+            mc.objectMouseOver = hit;
+            hmi.detach();
+        }
+    }
+
+    private static void checkChannel(AnimationClientChecks qa, Minecraft mc, ItemStack stack, String name,
+        ModelRenderer cap) throws Exception {
+        var p = mc.thePlayer;
+        var actions = FirstPersonItemActions.INSTANCE;
+        var rest = AnimationGripChecks.measureWand(qa, mc, stack, name + "-cast-0", cap);
+        WandManager.setCooldown(p, 0);
+        stack.useItemRightClick(p.worldObj, p);
+        HmiFirstPerson.INSTANCE.sample(stack, .5f, 0);
+        qa.require(p.getItemInUse() == stack && actions.playing("use"), name + " starts a fire cast");
+        var extended = rest;
+        for (int tick = 1; tick <= 36; tick++) {
+            if (tick == 29) {
+                p.stopUsingItem();
+                HmiFirstPerson.INSTANCE.sample(stack, .5f, 0);
+            }
+            // World.updateEntityWithOptionalForce advances the entity clock before calling onUpdate.
+            p.ticksExisted++;
+            p.onUpdate();
+            var pose = AnimationGripChecks.measureWand(qa, mc, stack, name + "-cast-" + tick, cap);
+            qa.require(
+                rest.shoulder()
+                    .distance(pose.shoulder()) < .09,
+                name + " shoulder remains anchored at " + tick);
+            qa.require(
+                rest.shaftInHand()
+                    .angle(pose.shaftInHand()) < .015,
+                name + " shaft follows the fist at " + tick);
+            if (tick == 7) {
+                extended = pose;
+                qa.require(
+                    rest.fist()
+                        .distance(pose.fist()) > .16
+                        && rest.forearm()
+                            .angle(pose.forearm()) > .4,
+                    name + " forearm reaches forward and turns into the cast");
+            }
+            if (tick == 20) qa.require(
+                actions.playing("use") && extended.fist()
+                    .distance(pose.fist()) > .06
+                    && extended.forearm()
+                        .angle(pose.forearm()) > .10,
+                name + " wrist and arm keep moving during channel");
+            if (tick == 31) qa.require(
+                actions.playing("use") && rest.fist()
+                    .distance(pose.fist()) > .045,
+                name + " arm eases back from the release");
+            if (tick == 36) qa.require(
+                !actions.playing("use") && rest.fist()
+                    .distance(pose.fist()) < .06,
+                name + " hand recovers to rest");
+        }
     }
 
     static ItemStack cutter() {

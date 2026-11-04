@@ -29,10 +29,15 @@ public final class HmiItemBindings {
 
     private static final Map<Item, List<HandheldTool>> tools = new IdentityHashMap<>();
 
-    /** Opt in a Forge renderer using the standard extruded handheld sprite mount. Called on the client thread. */
+    /** Opt in a Forge handheld renderer. Called on the client thread. */
     public interface HandheldTool {
 
         boolean matches(ItemStack stack, IItemRenderer renderer);
+
+        /** Optional complete mount for a native Forge model, before Forge applies its equipped render helper. */
+        default Matrix4fc equippedMount(ItemStack stack) {
+            return null;
+        }
 
         /** Optional alignment in Forge's unit sprite coordinates (X points towards the texture's left edge, Y up). */
         default Matrix4fc spriteMount() {

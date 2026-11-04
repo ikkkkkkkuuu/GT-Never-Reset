@@ -45,7 +45,11 @@ public enum GTNRLibMixins implements IMixins {
     TEXT_EFFECTS_NEI(
         new MixinBuilder("Optional NEI text effect input").addClientMixins("texteffect.MixinNEIFormattedTextField")
             .setPhase(Phase.LATE)
-            .addRequiredMod(ModList.NotEnoughItems));
+            .addRequiredMod(ModList.NotEnoughItems)),
+
+    THAUMCRAFT_WAND(new MixinBuilder("First-person wand handle").addClientMixins("thaumcraft.WandHandleMixin")
+        .setPhase(Phase.LATE)
+        .addRequiredMod(ModList.Thaumcraft));
 
     private final MixinBuilder builder;
 }

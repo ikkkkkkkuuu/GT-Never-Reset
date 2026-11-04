@@ -32,6 +32,7 @@ dependencies {
     animationCompat(elytraModpackVersion.gtnhdev('Draconic-Evolution') as String) { transitive = false }
     animationCompat(elytraModpackVersion.gtnhdev('TinkersConstruct') as String) { transitive = false }
     animationCompat('net.industrial-craft:industrialcraft-2:2.2.828-experimental:dev') { transitive = false }
+    animationCompat('thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev') { transitive = false }
     shadowImplementation('org.luaj:luaj-jse:3.0.1') { transitive = false }
     api(elytraModpackVersion.gtnhdev('GTNHLib') as String) { transitive = false }
     api(elytraModpackVersion.gtnhdev('ModularUI2') as String) { transitive = false }
