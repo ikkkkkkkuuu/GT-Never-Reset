@@ -13,6 +13,7 @@ import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.gtnhlib.compat.BaublesCompat;
 import com.gtnewhorizon.gtnhlib.item.ItemStackNBT;
 import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Address;
+import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.AEApi;
 import appeng.api.config.Settings;
@@ -96,7 +97,7 @@ public class WirelessCardVisualisation {
         if (tool == null) return null;
         NBTTagCompound tag = new NBTTagCompound();
         binding.write(tag);
-        tag.setBoolean(DELEGATE, true);
+        tag.setBoolean(delegateKey(), true);
         // Single-link modes are anchored to the source block. Do not select an unrelated block at the
         // same coordinates when viewing another dimension; full-network modes still show local nodes.
         new DimensionalCoord(source.x(), dimension == source.dimension() ? source.y() : -1, source.z(), dimension)
@@ -110,7 +111,12 @@ public class WirelessCardVisualisation {
     public static boolean delegated(ItemStack stack) {
         return stack != null && stack.hasTagCompound()
             && stack.getTagCompound()
-                .getBoolean(DELEGATE);
+                .getBoolean(delegateKey());
+    }
+
+    private static String delegateKey() {
+        // GTNL also uses the legacy tag to choose its own snapshot packet.
+        return ModList.GTNotLeisure.isModLoaded() ? "GTNRWirelessVisualiserDelegate" : DELEGATE;
     }
 
     public static ItemStack activeCard(EntityPlayer player) {

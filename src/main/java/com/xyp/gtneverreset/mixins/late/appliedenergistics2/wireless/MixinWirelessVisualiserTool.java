@@ -7,7 +7,6 @@ import net.minecraft.world.World;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -37,19 +36,19 @@ public abstract class MixinWirelessVisualiserTool {
             : original.call(player, position);
     }
 
-    @Redirect(
+    @WrapOperation(
         method = "onUpdate",
         remap = true,
         at = @At(
             value = "INVOKE",
             target = "Lappeng/api/util/DimensionalCoord;isInWorld(Lnet/minecraft/world/World;)Z",
             remap = false))
-    private boolean gtnr$viewerDimension(DimensionalCoord position, World world, ItemStack stack, World currentWorld,
-        Entity entity, int slot, boolean active) {
-        return position.isInWorld(WirelessCardVisualisation.delegated(stack) ? entity.worldObj : world);
+    private boolean gtnr$viewerDimension(DimensionalCoord position, World world, Operation<Boolean> original,
+        ItemStack stack, World currentWorld, Entity entity, int slot, boolean active) {
+        return original.call(position, WirelessCardVisualisation.delegated(stack) ? entity.worldObj : world);
     }
 
-    @Redirect(
+    @WrapOperation(
         method = "onUpdate",
         remap = true,
         at = @At(
@@ -57,13 +56,13 @@ public abstract class MixinWirelessVisualiserTool {
             target = "Lappeng/core/sync/network/NetworkHandler;sendTo("
                 + "Lappeng/core/sync/AppEngPacket;Lnet/minecraft/entity/player/EntityPlayerMP;)V",
             remap = false))
-    private void gtnr$cardSnapshot(NetworkHandler network, AppEngPacket message, EntityPlayerMP player, ItemStack stack,
-        World world, Entity entity, int slot, boolean active) {
+    private void gtnr$cardSnapshot(NetworkHandler network, AppEngPacket message, EntityPlayerMP player,
+        Operation<Void> original, ItemStack stack, World world, Entity entity, int slot, boolean active) {
         if (WirelessCardVisualisation.delegated(stack)) {
             NetWorkHandler
                 .sendTo(new WirelessVisualisationPacket(stack.getTagCompound(), player.dimension, message), player);
         } else {
-            network.sendTo(message, player);
+            original.call(network, message, player);
         }
     }
 }

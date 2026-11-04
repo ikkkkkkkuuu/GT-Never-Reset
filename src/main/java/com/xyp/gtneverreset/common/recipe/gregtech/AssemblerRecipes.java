@@ -8,11 +8,15 @@ import static gregtech.api.util.GTRecipeBuilder.SECONDS;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.fluids.FluidStack;
 
+import com.gtnewhorizon.cropsnh.api.CropsNHItemList;
+import com.gtnewhorizon.cropsnh.init.CropsNHFluids;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtnrlib.mod.ModList;
 
+import cpw.mods.fml.common.Optional;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
@@ -362,19 +366,18 @@ public final class AssemblerRecipes {
             .addTo(assemblerRecipes);
     }
 
+    @Optional.Method(modid = ModList.ModIds.CROPSNH)
     private static void registerLargeCropBreederRecipes() {
         GTRecipeBuilder.builder()
             .itemInputs(
-                ItemList.Hull_LV.get(1),
-                ItemList.Electric_Motor_LV.get(2),
-                ItemList.Electric_Pump_LV.get(2),
-                new Object[] { OrePrefixes.circuit.get(Materials.LV), 2 },
-                Materials.Steel.getPlates(4),
-                GTUtility.getIntegratedCircuit(18))
-            .fluidInputs(Materials.Tin.getMolten(144))
+                CropsNHItemList.IndustrialFarmController.get(8),
+                CropsNHItemList.cropSticks.get(64),
+                ModList.GTNotLeisure.isModLoaded() ? CropsNHItemList.BrickedAgriculturalCasing.get(1)
+                    : new ItemStack(Blocks.dirt, 64))
+            .fluidInputs(new FluidStack(CropsNHFluids.enrichedFertilizer, 32_000))
             .itemOutputs(GTNRItemList.LargeCropBreeder.get(1))
             .duration(20 * SECONDS)
-            .eut(TierEU.RECIPE_LV)
+            .eut(TierEU.RECIPE_MV)
             .addTo(assemblerRecipes);
     }
 
