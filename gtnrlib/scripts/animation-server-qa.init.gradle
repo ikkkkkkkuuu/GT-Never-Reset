@@ -1,6 +1,8 @@
 gradle.projectsEvaluated {
     def lib = gradle.rootProject.project(':gtnrlib')
-    def out = lib.file('build/animation-qa/server')
+    def host = gradle.startParameter.projectProperties.containsKey('animationQaHost') ? gradle.rootProject : lib
+    def mode = host == lib ? 'server' : 'host-server'
+    def out = lib.file("build/animation-qa/" + mode)
     def classes = new File(out, 'classes')
     def fixture = lib.tasks.register('compileAnimationServerQA', JavaCompile) {
         dependsOn lib.tasks.named('classes')
@@ -10,10 +12,12 @@ gradle.projectsEvaluated {
         javaCompiler.set(lib.javaToolchains.compilerFor(lib.java.toolchain))
         options.compilerArgs += ['-proc:none']
     }
-    lib.tasks.named('runServer25', JavaExec).configure {
+    host.tasks.named('runServer25', JavaExec).configure {
         dependsOn fixture
+        // The host includes Angelica for client development. Its OpenGL coremod cannot run on a dedicated server.
+        if (host != lib) classpath = classpath.filter { !it.name.toLowerCase(Locale.ROOT).startsWith('angelica-') }
         classpath += lib.files(classes)
-        workingDir lib.file('run/animation-qa/server')
+        workingDir lib.file("run/animation-qa/" + mode)
         systemProperty 'gtnrlib.animation.server.result', new File(out,'result.txt').absolutePath
         args 'nogui'
         doFirst {

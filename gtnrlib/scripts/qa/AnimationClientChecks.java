@@ -51,6 +51,7 @@ public final class AnimationClientChecks {
     private final File output = new File(System.getProperty("gtnrlib.animation.qa.output", "."));
     private boolean started, finished;
     private int ticks, frames;
+    private Runnable wrenchChecks;
     private final FirstPersonAnimations target = FirstPersonAnimations.INSTANCE;
     private final List<String> results = new ArrayList<>();
 
@@ -89,6 +90,10 @@ public final class AnimationClientChecks {
             || event.phase != TickEvent.Phase.END
             || ++frames < WORLD_WARMUP_FRAMES) return;
         try {
+            if (wrenchChecks != null) {
+                wrenchChecks.run();
+                return;
+            }
             var sword = new ItemStack(Items.diamond_sword);
             if (frames == WORLD_WARMUP_FRAMES) {
                 mc.gameSettings.heldItemTooltips = false;
@@ -230,7 +235,17 @@ public final class AnimationClientChecks {
             require(Arrays.equals(emptyBaseline, draw(mc, "empty-disabled")), "unload restores vanilla empty arm");
             equip(mc, sword);
             if (!Boolean.getBoolean("gtnrlib.animation.qa.host")) checkRepositoryReload(mc, sword);
-            if (System.getProperty("gtnrlib.animation.qa.hmi") != null) checkHmi(mc);
+            String release = System.getProperty("gtnrlib.animation.qa.hmi");
+            if (release != null) {
+                checkHmi(mc);
+                if (Boolean.getBoolean("gtnrlib.animation.qa.host")) {
+                    reload(mc, release);
+                    wrenchChecks = (Runnable) Class.forName("com.xyp.gtnrlib.qa.AnimationWrenchChecks")
+                        .getConstructor(AnimationClientChecks.class)
+                        .newInstance(this);
+                    return;
+                }
+            }
             finish(mc, null);
         } catch (Throwable e) {
             finish(mc, e);
@@ -465,7 +480,12 @@ public final class AnimationClientChecks {
         tickPlayer();
         int[] carry = draw(mc, "block-carry");
         int[] start = draw(mc, "block-at-input", 0);
-        int ground = mc.theWorld.getTopSolidOrLiquidBlock(x, z) - 1;
+        int ground = (int) mc.thePlayer.posY;
+        // Use ordinary solid targets even when an earlier fixture left a machine in these columns.
+        for (int dz = 0; dz <= 1; dz++) {
+            mc.theWorld.setBlock(x, ground, z + dz, Blocks.stone);
+            mc.theWorld.setBlockToAir(x, ground + 1, z + dz);
+        }
         placeDuringTick(mc, x, ground, z);
         require(
             mc.theWorld.getBlock(x, ground + 1, z) == Blocks.cobblestone && mc.thePlayer.isSwingInProgress
@@ -495,7 +515,7 @@ public final class AnimationClientChecks {
         require(
             before.x > extended.x + .04 * h && before.x < rest.x - .10 * h,
             "first return still in flight at four ticks: " + before);
-        int nextGround = mc.theWorld.getTopSolidOrLiquidBlock(x, z + 1) - 1;
+        int nextGround = ground;
         placeDuringTick(mc, x, nextGround, z + 1);
         require(
             mc.theWorld.getBlock(x, nextGround + 1, z + 1) == Blocks.cobblestone,
@@ -1004,7 +1024,7 @@ public final class AnimationClientChecks {
         require(wanted.isEmpty(), "host renderers found; missing " + wanted);
     }
 
-    private void require(boolean ok, String label) {
+    void require(boolean ok, String label) {
         if (!ok) throw new AssertionError(label);
         results.add(label);
     }
@@ -1021,12 +1041,12 @@ public final class AnimationClientChecks {
         target.onResourceManagerReload(mc.getResourceManager());
     }
 
-    private void equip(Minecraft mc, ItemStack stack) {
+    void equip(Minecraft mc, ItemStack stack) {
         mc.thePlayer.inventory.mainInventory[mc.thePlayer.inventory.currentItem] = stack;
         for (int i = 0; i < 8; i++) mc.entityRenderer.itemRenderer.updateEquippedItem();
     }
 
-    private int[] draw(Minecraft mc, String name) throws Exception {
+    int[] draw(Minecraft mc, String name) throws Exception {
         return draw(mc, name, .5f);
     }
 
@@ -1065,7 +1085,7 @@ public final class AnimationClientChecks {
         }
     }
 
-    private void finish(Minecraft mc, Throwable error) {
+    void finish(Minecraft mc, Throwable error) {
         finished = true;
         if (error != null) error.printStackTrace();
         try {

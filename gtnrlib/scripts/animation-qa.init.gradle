@@ -10,6 +10,11 @@ gradle.projectsEvaluated {
         dependsOn lib.tasks.named('classes')
         source lib.file('scripts/qa/AnimationClientChecks.java')
         classpath = lib.sourceSets.test.compileClasspath
+        if (mode == 'host') {
+            dependsOn host.tasks.named('classes')
+            source lib.file('scripts/qa/AnimationWrenchChecks.java')
+            classpath += host.sourceSets.main.output + host.sourceSets.main.compileClasspath
+        }
         destinationDirectory.set(classes)
         javaCompiler.set(lib.javaToolchains.compilerFor(lib.java.toolchain))
         options.encoding = 'UTF-8'

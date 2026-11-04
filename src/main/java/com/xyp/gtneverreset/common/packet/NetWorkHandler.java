@@ -135,6 +135,7 @@ public final class NetWorkHandler {
             UniversalWandNetwork.FeatureMessage.class,
             nextPacketId++,
             Side.CLIENT);
+        CHANNEL.registerMessage(WrenchTurnPacket.Handler.class, WrenchTurnPacket.class, nextPacketId++, Side.CLIENT);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);

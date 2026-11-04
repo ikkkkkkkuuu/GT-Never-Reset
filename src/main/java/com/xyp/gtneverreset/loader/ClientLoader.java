@@ -21,6 +21,7 @@ import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
 import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
 import com.xyp.gtneverreset.compat.betterquesting.QuestSkipMenu;
 import com.xyp.gtneverreset.compat.bloodmagic.BloodMagicCompat;
+import com.xyp.gtneverreset.compat.gregtech.GregTechWrenchAnimation;
 import com.xyp.gtneverreset.compat.nei.NEIWirelessTerminalConfig;
 import com.xyp.gtneverreset.compat.nei.WildcardRecipeImport;
 import com.xyp.gtneverreset.compat.thaumcraft.ThaumcraftCompat;
@@ -52,6 +53,7 @@ public final class ClientLoader {
             .bus()
             .register(new WindowsTaskbarButton());
         registerPackagedCoreRenderers();
+        GregTechWrenchAnimation.register();
         MinecraftForge.EVENT_BUS.register(new WirelessConnectorRenderer());
         RadialMenuLoader.init();
         RenderingRegistry.registerEntityRenderingHandler(StableEndCrystalEntity.class, new StableEndCrystalRender());

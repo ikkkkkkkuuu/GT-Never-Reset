@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "clips": {
+    "gtneverreset:wrench_turn": {
+      "duration": 0.35,
+      "tracks": [
+        {
+          "bone": "wrist", "property": "position",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0], "curve": "catmull_rom"},
+            {"time": 0.08, "value": [-0.025, 0.035, -0.10], "curve": "catmull_rom"},
+            {"time": 0.17, "value": [-0.03, 0.035, -0.11], "curve": "catmull_rom"},
+            {"time": 0.29, "value": [0, 0.005, -0.012], "curve": "catmull_rom"},
+            {"time": 0.35, "value": [0, 0, 0]}
+          ]
+        },
+        {
+          "bone": "wrist", "property": "rotation",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0], "curve": "catmull_rom"},
+            {"time": 0.075, "value": [-5, 0, 4], "curve": "catmull_rom"},
+            {"time": 0.17, "value": [-7, 5, -29], "curve": "catmull_rom"},
+            {"time": 0.29, "value": [-1, 1, -4], "curve": "catmull_rom"},
+            {"time": 0.35, "value": [0, 0, 0]}
+          ]
+        }
+      ]
+    }
+  }
+}
