@@ -14,11 +14,12 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 
-@Mixin(Minecraft.class)
+// Backhand overwrites right click at priority 1000 and moves the accepted block swing into its helper.
+@Mixin(value = Minecraft.class, priority = 1001)
 public abstract class MinecraftAttackMixin {
 
     @WrapOperation(
-        method = "func_147121_ag",
+        method = { "func_147121_ag", "backhand$rightClickBlock" },
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/EntityClientPlayerMP;swingItem()V"),
         require = 0)
     private void gtnrlib$blockUseSwing(EntityClientPlayerMP player, Operation<Void> vanilla) {
