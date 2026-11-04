@@ -39,6 +39,7 @@ public enum ModList implements IMod, ITargetMod {
     StructureLib(ModIds.STRUCTURE_LIB, Names.STRUCTURE_LIB),
     KubaTech(ModIds.KUBATECH, Names.KUBATECH),
     Thaumcraft(ModIds.THAUMCRAFT, Names.THAUMCRAFT),
+    TinkersConstruct("TConstruct", "Tinkers' Construct", false),
     ThaumcraftResearchTweaks(ModIds.THAUMCRAFT_RESEARCH_TWEAKS, Names.THAUMCRAFT_RESEARCH_TWEAKS),
     BloodMagic(ModIds.BLOOD_MAGIC, Names.BLOOD_MAGIC),
     EnderIO(ModIds.ENDER_IO, Names.ENDER_IO),

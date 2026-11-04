@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "clips": {
+    "gtnrlib:crossbow_fire": {
+      "duration": 0.26,
+      "tracks": [
+        {
+          "bone": "wrist", "property": "position",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0]},
+            {"time": 0.035, "value": [0.01, 0.014, 0.11], "curve": "catmull_rom"},
+            {"time": 0.11, "value": [0.002, -0.008, 0.024], "curve": "catmull_rom"},
+            {"time": 0.18, "value": [0, 0, -0.008], "curve": "catmull_rom"},
+            {"time": 0.26, "value": [0, 0, 0]}
+          ]
+        },
+        {
+          "bone": "wrist", "property": "rotation",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0]},
+            {"time": 0.045, "value": [5, -1, -2], "curve": "catmull_rom"},
+            {"time": 0.14, "value": [-0.8, 0.2, 0.4], "curve": "catmull_rom"},
+            {"time": 0.26, "value": [0, 0, 0]}
+          ]
+        }
+      ]
+    }
+  }
+}
