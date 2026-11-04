@@ -435,6 +435,12 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
         }
 
         @Override
+        public boolean shouldBeCached() {
+            // One AE delivery can be a fraction of a GT batch. Match the accumulated inputs and current manual slots.
+            return false;
+        }
+
+        @Override
         public GTDualInputPattern getPatternInputs() {
             GTDualInputPattern inputs = new GTDualInputPattern();
             List<ItemStack> items = new ArrayList<>();
