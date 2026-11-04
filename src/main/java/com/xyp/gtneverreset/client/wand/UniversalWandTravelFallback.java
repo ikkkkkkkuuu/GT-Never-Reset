@@ -88,8 +88,7 @@ public final class UniversalWandTravelFallback {
     private static boolean needsDecision(PlayerInteractEvent event, ItemStack stack) {
         EntityPlayer player = event.entityPlayer;
         if (event.action == PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK) {
-            return ItemUniversalWand.getGtToolMode(stack) != ItemUniversalWand.GtToolMode.OFF
-                || ItemUniversalWand.isHoeEnabled(stack)
+            return ItemUniversalWand.isHoeEnabled(stack)
                 || player.isSneaking() && (ItemUniversalWand.isTimeAccelerationEnabled(stack)
                     || event.world.getTileEntity(event.x, event.y, event.z) instanceof IWirelessAccessPoint);
         }

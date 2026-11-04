@@ -106,8 +106,9 @@ public final class UniversalWandNetwork {
         }
     }
 
-    static void handleTravelFallbackRequest(TravelFallbackRequest message, EntityPlayerMP player) {
-        UniversalWandRightClick.request(player, message.id);
+    static IMessage handleTravelFallbackRequest(TravelFallbackRequest message, MessageContext context) {
+        UniversalWandRightClick.request(context.getServerHandler().playerEntity, message.id);
+        return null;
     }
 
     public static final class TravelFallbackFinish extends TravelFallbackRequest {
@@ -119,8 +120,9 @@ public final class UniversalWandNetwork {
         }
     }
 
-    static void handleTravelFallbackFinish(TravelFallbackFinish message, EntityPlayerMP player) {
-        UniversalWandRightClick.finish(player, message.id);
+    static IMessage handleTravelFallbackFinish(TravelFallbackFinish message, MessageContext context) {
+        UniversalWandRightClick.finish(context.getServerHandler().playerEntity, message.id);
+        return null;
     }
 
     public static final class TravelFallbackGrantHandler implements IMessageHandler<TravelFallbackGrant, IMessage> {

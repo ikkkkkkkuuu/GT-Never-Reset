@@ -5,7 +5,6 @@ import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.xyp.gtneverreset.client.wand.UniversalWandAccelerationRenderer;
-import com.xyp.gtneverreset.client.wand.UniversalWandBlockOverlayRenderer;
 import com.xyp.gtneverreset.client.wand.UniversalWandChainHudRenderer;
 import com.xyp.gtneverreset.client.wand.UniversalWandFlightSpeedHudRenderer;
 import com.xyp.gtneverreset.client.wand.UniversalWandItemRenderer;
@@ -66,7 +65,6 @@ public final class UniversalWandLoader implements IContentLoader {
         events.register(acceleration);
         MinecraftForge.EVENT_BUS.register(travel);
         MinecraftForge.EVENT_BUS.register(acceleration);
-        MinecraftForge.EVENT_BUS.register(new UniversalWandBlockOverlayRenderer());
         MinecraftForge.EVENT_BUS.register(new UniversalWandChainHudRenderer());
         MinecraftForge.EVENT_BUS.register(new UniversalWandFlightSpeedHudRenderer());
         MinecraftForge.EVENT_BUS.register(new UniversalWandStealthRenderer());

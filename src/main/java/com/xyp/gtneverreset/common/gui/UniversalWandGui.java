@@ -79,11 +79,6 @@ public final class UniversalWandGui {
         IntSyncValue max = new IntSyncValue(
             () -> ItemUniversalWand.getMaxMiningCount(expected),
             value -> ItemUniversalWand.setMaxMiningCount(player, expected, value)).allowC2S();
-        IntSyncValue toolMode = new IntSyncValue(
-            () -> ItemUniversalWand.getGtToolMode(expected)
-                .ordinal());
-        syncManager.syncValue("wand_tool_mode", 0, toolMode);
-
         BooleanSyncValue ae = new BooleanSyncValue(
             () -> ItemUniversalWand.isAePriority(expected),
             value -> ItemUniversalWand.setAePriority(player, expected, value)).allowC2S();
@@ -303,7 +298,7 @@ public final class UniversalWandGui {
         // #tr gtneverreset.gui.universal_wand.tab.mining
         // # Mining
         // # zh_CN 采矿
-        ParentWidget<?> mining = section("mining", 0, 164)
+        ParentWidget<?> mining = section("mining", 0, 144)
             // #tr gtneverreset.gui.universal_wand.enhanced_chain
             // # Enhanced chain
             // # zh_CN 增强连锁
@@ -389,25 +384,7 @@ public final class UniversalWandGui {
             // #tr gtneverreset.gui.universal_wand.ae_priority.tooltip
             // # Store drops in bound AE first, then your inventory. Enables item collection.
             // # zh_CN 掉落优先存入已绑定 AE，剩余收入背包；自动开启物品收集。
-            .child(stateSwitch("ae_priority", ae).pos(119, 122))
-            // #tr gtneverreset.gui.universal_wand.gt_mode.tooltip
-            // # Automatic uses the cutter on GT cables and AE parts, and the wrench on machines. Click to override.
-            // # zh_CN 自动模式对 GT 电缆和 AE 部件使用剪线钳，对机器使用扳手。点击可切换模式。
-            .child(actionButton("gt_mode", () -> {
-                var modes = ItemUniversalWand.GtToolMode.values();
-                int current = ItemUniversalWand.getGtToolMode(expected)
-                    .ordinal();
-                ItemUniversalWand.setGtToolMode(player, expected, modes[(current + 1) % modes.length]);
-            }).overlay(
-                IKey.dynamic(
-                    () -> StatCollector.translateToLocalFormatted(
-                        "gtneverreset.item.universal_wand.gt_mode",
-                        StatCollector.translateToLocal(
-                            "gtneverreset.item.universal_wand.gt_mode."
-                                + ItemUniversalWand.GtToolMode.values()[toolMode.getIntValue()].name()))))
-                .tooltipDynamic(tooltip -> featureTooltip(tooltip, "gt_mode"))
-                .pos(6, 142)
-                .size(222, 16));
+            .child(stateSwitch("ae_priority", ae).pos(119, 122));
         // #tr gtneverreset.gui.universal_wand.shears
         // # Shears
         // # zh_CN 剪刀
