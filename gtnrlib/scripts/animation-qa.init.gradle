@@ -47,6 +47,7 @@ gradle.projectsEvaluated {
             source lib.file('scripts/qa/AnimationWrenchChecks.java')
             source lib.file('scripts/qa/AnimationToolChecks.java')
             source lib.file('scripts/qa/AnimationCutterChecks.java')
+            source lib.file('scripts/qa/AnimationCrossbowChecks.java')
         }
         destinationDirectory.set(classes)
         javaCompiler.set(lib.javaToolchains.compilerFor(lib.java.toolchain))

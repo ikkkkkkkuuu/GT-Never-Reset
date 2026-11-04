@@ -309,7 +309,7 @@ public final class HmiFirstPerson {
                 rig == null && hit,
                 seconds);
             right.set(program.armMatrix);
-            item.set(rig == null ? program.itemMatrix : program.sharedPose());
+            item.set(tool instanceof HmiItemBindings.TwoHandedModel ? program.sharedPose() : program.itemMatrix);
             if (tool != null) {
                 try {
                     if (rig != null) sampleStroke(now, rig.strokeDuration() * 20);

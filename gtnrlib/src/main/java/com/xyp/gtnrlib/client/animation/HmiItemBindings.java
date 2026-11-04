@@ -55,14 +55,25 @@ public final class HmiItemBindings {
         }
     }
 
-    /** A tool whose two grips and moving parts share the main hand's pre-mount HMI transform. */
-    public interface TwoHandedTool extends HandheldTool {
+    /** A model and two hand grips drawn together in the player's moving first-person frame. */
+    public interface TwoHandedModel extends HandheldTool {
+
+        void renderGripped(ItemStack stack, IItemRenderer renderer, float partial, GripHands hands);
+    }
+
+    /** A two-handed tool driven by accepted swing strokes. */
+    public interface TwoHandedTool extends TwoHandedModel {
 
         /** Positive duration of one accepted first-person swing in seconds. */
         double strokeDuration();
 
         /** Draw the tool and both hands. Time is zero at rest. The current matrix already includes shared inertia. */
         void render(ItemStack stack, IItemRenderer renderer, double strokeSeconds, GripHands hands);
+
+        @Override
+        default void renderGripped(ItemStack stack, IItemRenderer renderer, float partial, GripHands hands) {
+            render(stack, renderer, HmiFirstPerson.INSTANCE.strokeSeconds(), hands);
+        }
     }
 
     @FunctionalInterface

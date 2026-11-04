@@ -83,10 +83,10 @@ public final class HmiPoseRenderer {
                 // Preserve the reference's wide-screen grip framing on narrower legacy windows.
                 float aspect = (float) mc.displayWidth / mc.displayHeight;
                 GL11.glTranslated(-.40 * Math.max(0, 16f / 9 - aspect), 0, -.10);
-                if (HMI.handheldTool() instanceof HmiItemBindings.TwoHandedTool rig) {
+                if (HMI.handheldTool() instanceof HmiItemBindings.TwoHandedModel rig) {
                     apply(HMI.item);
                     try {
-                        rig.render(stack, HMI.forgeRenderer(), HMI.strokeSeconds(), HmiPoseRenderer::gripHand);
+                        rig.renderGripped(stack, HMI.forgeRenderer(), partial, HmiPoseRenderer::gripHand);
                     } catch (RuntimeException ex) {
                         HMI.disableTool(stack, ex);
                         return false;

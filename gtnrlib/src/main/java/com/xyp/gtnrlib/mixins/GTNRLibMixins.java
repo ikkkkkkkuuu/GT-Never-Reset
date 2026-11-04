@@ -47,6 +47,11 @@ public enum GTNRLibMixins implements IMixins {
             .setPhase(Phase.LATE)
             .addRequiredMod(ModList.NotEnoughItems)),
 
+    TINKERS_CROSSBOW(new MixinBuilder("First-person crossbow")
+        .addClientMixins("tconstruct.CrossbowFireMixin", "tconstruct.CrossbowAmmoAccess")
+        .setPhase(Phase.LATE)
+        .addRequiredMod(ModList.TinkersConstruct)),
+
     THAUMCRAFT_WAND(new MixinBuilder("First-person wand handle").addClientMixins("thaumcraft.WandHandleMixin")
         .setPhase(Phase.LATE)
         .addRequiredMod(ModList.Thaumcraft));

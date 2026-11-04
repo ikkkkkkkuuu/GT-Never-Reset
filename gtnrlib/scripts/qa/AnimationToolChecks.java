@@ -109,6 +109,7 @@ public final class AnimationToolChecks {
         movingTool.setItemDamage(IDMetaTool01.CHAINSAW_LV.ID);
         qa.require(ToolGrip.resolve(movingTool) == ToolGrip.AXE, "same-slot GT metadata changes the grip immediately");
         if (hmi.enabled()) {
+            AnimationCrossbowChecks.check(qa, mc);
             checkWand(qa, mc);
             checkCutter(qa, mc);
             checkScrewdriver(qa, mc);

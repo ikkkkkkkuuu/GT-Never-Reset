@@ -1,5 +1,6 @@
 {
   "bindings": [
+    {"item": "TConstruct:Crossbow", "trigger": "gtnrlib:crossbow_fire", "clip": "gtnrlib:crossbow_fire", "fadeIn": 0, "fadeOut": 0.04},
     {"item": "gregtech:gt.metatool.01", "damage": 22, "trigger": "gtnrlib:screwdriver_turn", "clip": "gtnrlib:screwdriver_turn"},
     {"item": "Thaumcraft:WandCasting", "trigger": "attack", "clip": "gtnrlib:wand_flick"},
     {"item": "Thaumcraft:WandCasting", "trigger": "mining", "clip": "gtnrlib:wand_flick"},
