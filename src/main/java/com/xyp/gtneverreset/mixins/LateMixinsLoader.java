@@ -49,7 +49,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("thaumcraft.MixinPackagedCrucible");
         }
         if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
-            mixins.add("gregtech.WrenchMachineUseMixin");
+            mixins.add("gregtech.ToolMachineUseMixin");
             mixins.add("gregtech.WrenchToolUseMixin");
             mixins.add("gregtech.UniversalWandAssemblyAccelerationMixin");
             mixins.add("gregtech.UniversalWandBasicAccelerationEnergyMixin");

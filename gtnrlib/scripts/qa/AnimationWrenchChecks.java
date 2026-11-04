@@ -23,7 +23,10 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
+import gregtech.api.enums.OrePrefixes;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
+import gregtech.api.metatileentity.implementations.MTECable;
+import gregtech.api.util.GTOreDictUnificator;
 import gregtech.common.items.IDMetaTool01;
 import gregtech.common.items.MetaGeneratedTool01;
 
@@ -147,6 +150,22 @@ public final class AnimationWrenchChecks implements Runnable {
                     mc.thePlayer.inventory.currentItem = slot;
                     qa.equip(mc, wrench(Materials.Steel));
                     qa.require(!turning(), "switching away cancels the old wrist motion");
+                    qa.equip(mc, AnimationToolChecks.cutter());
+                    hmi.sample(mc.thePlayer.getHeldItem(), .5f, 0);
+                    request(4);
+                    waitTick = tick + 6;
+                    step++;
+                }
+                case 9 -> {
+                    if (!serverDone || tick < waitTick) return;
+                    request(5);
+                    step++;
+                }
+                case 10 -> {
+                    hmi.sample(mc.thePlayer.getHeldItem(), .5f, 0);
+                    if (!serverDone || hmi.strokeSeconds() == 0) return;
+                    qa.draw(mc, "cutter-cable-use");
+                    qa.require(true, "server cut an actual copper cable connection and acknowledged the local snip");
                     FMLCommonHandler.instance()
                         .bus()
                         .unregister(this);
@@ -171,6 +190,31 @@ public final class AnimationWrenchChecks implements Runnable {
                 .func_152378_a(actor);
             var world = p.worldObj;
             p.inventory.currentItem = slot;
+            if (mode == 4) {
+                var cutter = AnimationToolChecks.cutter();
+                p.inventory.mainInventory[slot] = cutter;
+                var cable = GTOreDictUnificator.get(OrePrefixes.cableGt01, Materials.Copper, 1);
+                for (int dx = 0; dx < 2; dx++) {
+                    world.setBlockToAir(x + dx, y, z);
+                    if (!((ItemBlock) cable.getItem()).placeBlockAt(cable, p, world, x + dx, y, z, 1, .5f, .5f, .5f, 0))
+                        throw new AssertionError("could not place copper cable");
+                }
+                var pipe = (MTECable) ((IGregTechTileEntity) world.getTileEntity(x, y, z)).getMetaTileEntity();
+                pipe.connect(ForgeDirection.EAST);
+                serverDone = true;
+                return;
+            }
+            if (mode == 5) {
+                var cutter = p.getHeldItem();
+                var pipe = (MTECable) ((IGregTechTileEntity) world.getTileEntity(x, y, z)).getMetaTileEntity();
+                if (!pipe.isConnectedAtSide(ForgeDirection.EAST))
+                    throw new AssertionError("cable setup is disconnected");
+                p.theItemInWorldManager.activateBlockOrUseItem(p, world, cutter, x, y, z, 5, 1f, .5f, .5f);
+                if (pipe.isConnectedAtSide(ForgeDirection.EAST))
+                    throw new AssertionError("wire cutter did not disconnect copper cable");
+                serverDone = true;
+                return;
+            }
             var tool = wrench(Materials.Gold);
             p.inventory.mainInventory[slot] = tool;
             // All three operations target the same fixed position, including while the player is airborne.

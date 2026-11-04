@@ -22,6 +22,7 @@ import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
 import com.xyp.gtneverreset.compat.betterquesting.QuestSkipMenu;
 import com.xyp.gtneverreset.compat.bloodmagic.BloodMagicCompat;
 import com.xyp.gtneverreset.compat.gregtech.GregTechToolGrips;
+import com.xyp.gtneverreset.compat.gregtech.GregTechWireCutterAnimation;
 import com.xyp.gtneverreset.compat.gregtech.GregTechWrenchAnimation;
 import com.xyp.gtneverreset.compat.ic2.IndustrialCraftToolGrips;
 import com.xyp.gtneverreset.compat.nei.NEIWirelessTerminalConfig;
@@ -58,6 +59,7 @@ public final class ClientLoader {
             .register(new WindowsTaskbarButton());
         registerPackagedCoreRenderers();
         GregTechWrenchAnimation.register();
+        GregTechWireCutterAnimation.register();
         GregTechToolGrips.register();
         if (Mods.IndustrialCraft2.isModLoaded()) IndustrialCraftToolGrips.register();
         if (Mods.TinkerConstruct.isModLoaded()) TinkersToolGrips.register();

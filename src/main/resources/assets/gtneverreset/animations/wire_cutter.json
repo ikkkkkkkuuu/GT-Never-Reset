@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "clips": {
+    "gtneverreset:wire_cutter": {
+      "duration": 0.30,
+      "tracks": [
+        {
+          "bone": "hinge", "property": "position",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0], "curve": "catmull_rom"},
+            {"time": 0.08, "value": [0, 0.055, -0.20], "curve": "catmull_rom"},
+            {"time": 0.13, "value": [0, 0.075, -0.28], "curve": "catmull_rom"},
+            {"time": 0.19, "value": [0, 0.055, -0.20], "curve": "catmull_rom"},
+            {"time": 0.26, "value": [0, 0.008, -0.03], "curve": "catmull_rom"},
+            {"time": 0.30, "value": [0, 0, 0]}
+          ]
+        },
+        {
+          "bone": "jaw", "property": "rotation",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0]},
+            {"time": 0.05, "value": [0, 0, 0]},
+            {"time": 0.125, "value": [0, 0, 17]},
+            {"time": 0.15, "value": [0, 0, 17]},
+            {"time": 0.25, "value": [0, 0, 2]},
+            {"time": 0.30, "value": [0, 0, 0]}
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -142,6 +142,11 @@ public final class NetWorkHandler {
             nextPacketId++,
             Side.CLIENT);
         CHANNEL.registerMessage(WrenchTurnPacket.Handler.class, WrenchTurnPacket.class, nextPacketId++, Side.CLIENT);
+        CHANNEL.registerMessage(
+            WireCutterSnipPacket.Handler.class,
+            WireCutterSnipPacket.class,
+            nextPacketId++,
+            Side.CLIENT);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);

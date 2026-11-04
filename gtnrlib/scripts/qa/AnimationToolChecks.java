@@ -1,6 +1,7 @@
 package com.xyp.gtnrlib.qa;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
@@ -14,6 +15,7 @@ import org.joml.Matrix4f;
 
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
+import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.client.animation.ToolGrip;
 
 import gregtech.api.enums.Materials;
@@ -90,6 +92,94 @@ public final class AnimationToolChecks {
         qa.require(ToolGrip.resolve(movingTool) == ToolGrip.PICKAXE, "drill before changing the same stack");
         movingTool.setItemDamage(IDMetaTool01.CHAINSAW_LV.ID);
         qa.require(ToolGrip.resolve(movingTool) == ToolGrip.AXE, "same-slot GT metadata changes the grip immediately");
+        if (hmi.enabled()) checkCutter(qa, mc);
+    }
+
+    static ItemStack cutter() {
+        return MetaGeneratedTool01.INSTANCE
+            .getToolWithStats(IDMetaTool01.WIRECUTTER.ID, 1, Materials.Steel, Materials.Wood, null);
+    }
+
+    private static void checkCutter(AnimationClientChecks qa, Minecraft mc) throws Exception {
+        var hmi = HmiFirstPerson.INSTANCE;
+        var p = mc.thePlayer;
+        var tool = cutter();
+        int tick = p.ticksExisted;
+        try {
+            hmi.detach();
+            qa.equip(mc, tool);
+            for (int i = 0; i < 32; i++) {
+                p.ticksExisted++;
+                hmi.sample(tool, .5f, 0);
+            }
+            int[] opened = qa.draw(mc, "cutter-open");
+            qa.require(hmi.handheldTool() instanceof HmiItemBindings.TwoHandedTool, "manual GT cutter uses both grips");
+            p.isSwingInProgress = false;
+            hmi.duringBlockUseSwing(p::swingItem);
+            p.ticksExisted++;
+            hmi.sample(tool, .5f, 0);
+            qa.require(hmi.strokeSeconds() == 0, "block prediction waits for GT to accept the cut");
+            p.isSwingInProgress = false;
+            p.swingItem();
+            int openSpan = gripSpan(qa, mc, opened), start = p.ticksExisted;
+            int[] frame = opened;
+            for (int i = 1; i <= 12; i++) {
+                p.ticksExisted = start + i / 2;
+                float partial = (i % 2) * .5f;
+                frame = qa.draw(mc, "cutter-frame-" + i, partial);
+                if (i == 5) {
+                    int closedSpan = gripSpan(qa, mc, frame);
+                    qa.require(
+                        closedSpan < .8 * openSpan,
+                        "both hands squeeze the handles: contact span " + openSpan + " to " + closedSpan);
+                    qa.require(
+                        Math.abs(hmi.strokeSeconds() - .125) < .00001 && !Arrays.equals(opened, frame),
+                        "accepted swing reaches the closed frame");
+                    qa.require(
+                        Arrays.equals(frame, qa.draw(mc, "cutter-closed-repeat", partial)),
+                        "rendering twice does not advance the cut");
+                }
+            }
+            int restored = gripSpan(qa, mc, frame);
+            qa.require(Math.abs(restored - openSpan) < .12 * openSpan, "handles reopen to the resting separation");
+            qa.require(hmi.strokeSeconds() == 0, "both grips return to rest after one snip");
+            hmi.swing();
+            p.ticksExisted += 3;
+            hmi.swing();
+            p.ticksExisted += 4;
+            hmi.sample(tool, .5f, 0);
+            qa.require(Math.abs(hmi.strokeSeconds() - .075) < .00001, "early repeat follows the first complete snip");
+            qa.equip(mc, gt(IDMetaTool01.WIRECUTTER_LV));
+            qa.draw(mc, "cutter-powered-generic");
+            qa.require(hmi.handheldTool() == null && hmi.strokeSeconds() == 0, "powered cutter retains generic grip");
+        } finally {
+            p.ticksExisted = tick;
+            p.isSwingInProgress = false;
+            hmi.detach();
+        }
+    }
+
+    private static int gripSpan(AnimationClientChecks qa, Minecraft mc, int[] pixels) {
+        // Find both actual skin-to-steel boundaries in the fixture's neutral lighting.
+        int width = mc.displayWidth, first = width, last = -1, contacts = 0;
+        for (int i = width + 1; i < pixels.length - width - 1; i++) {
+            int rgb = pixels[i], r = rgb >> 16 & 255, g = rgb >> 8 & 255, b = rgb & 255;
+            if (r < g + 18 || g < b + 8) continue;
+            if (!steel(pixels[i - width], pixels[0]) && !steel(pixels[i + width], pixels[0])
+                && !steel(pixels[i - 1], pixels[0])
+                && !steel(pixels[i + 1], pixels[0])) continue;
+            contacts++;
+            first = Math.min(first, i % width);
+            last = Math.max(last, i % width);
+        }
+        qa.require(
+            contacts > 12 && last - first > mc.displayHeight / 12,
+            "visible steel touches separate fists at x=" + first + " and " + last);
+        return last - first;
+    }
+
+    private static boolean steel(int rgb, int background) {
+        return rgb != background && Math.abs((rgb >> 16 & 255) - (rgb & 255)) <= 3;
     }
 
     private static Matrix4f[] action(AnimationClientChecks qa, ItemStack stack, String name) throws Exception {

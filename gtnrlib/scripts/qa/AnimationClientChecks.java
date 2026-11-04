@@ -1147,7 +1147,7 @@ public final class AnimationClientChecks {
         return draw(mc, name, .5f);
     }
 
-    private int[] draw(Minecraft mc, String name, float partial) throws Exception {
+    int[] draw(Minecraft mc, String name, float partial) throws Exception {
         int w = mc.displayWidth, h = mc.displayHeight;
         Framebuffer buffer = mc.getFramebuffer();
         buffer.bindFramebuffer(true);
