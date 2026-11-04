@@ -43,7 +43,7 @@ public final class FirstPersonItemActions {
     private final Matrix4f local = new Matrix4f(), changeOfBasis = new Matrix4f();
     private final Matrix4f leftGrip = new Matrix4f(), rightGrip = new Matrix4f();
     private final AnimationPlayer player = new AnimationPlayer(marker -> {});
-    private Map<Key, AnimationClip> rules = Map.of();
+    private Map<Key, Binding> rules = Map.of();
     private AnimationPlayer.Playback action;
     private Key selected;
     private EntityPlayer owner, useOwner;
@@ -56,7 +56,7 @@ public final class FirstPersonItemActions {
     private FirstPersonItemActions() {}
 
     void reload(IResourceManager resources) throws IOException {
-        var next = new HashMap<Key, AnimationClip>();
+        var next = new HashMap<Key, Binding>();
         var clips = new HashMap<String, AnimationClip>();
         for (String domain : new TreeSet<>(resources.getResourceDomains())) {
             var index = new ResourceLocation(domain, "animations/first_person.json");
@@ -91,7 +91,7 @@ public final class FirstPersonItemActions {
     }
 
     private static void loadBinding(com.google.gson.JsonObject json, IResourceManager resources,
-        Map<String, AnimationClip> clips, Map<Key, AnimationClip> rules) throws IOException {
+        Map<String, AnimationClip> clips, Map<Key, Binding> rules) throws IOException {
         String clipId = json.get("clip")
             .getAsString();
         if (!clips.containsKey(clipId)) {
@@ -121,7 +121,13 @@ public final class FirstPersonItemActions {
                 .stream()
                 .anyMatch(channel -> !BONES.contains(channel.bone())))
             throw new IllegalArgumentException("Invalid first-person clip " + clipId + " for " + key);
-        rules.put(key, clip);
+        double fadeIn = json.has("fadeIn") ? json.get("fadeIn")
+            .getAsDouble() : .025;
+        double fadeOut = json.has("fadeOut") ? json.get("fadeOut")
+            .getAsDouble() : BLEND;
+        if (!Double.isFinite(fadeIn) || fadeIn < 0 || !Double.isFinite(fadeOut) || fadeOut < 0)
+            throw new IllegalArgumentException("Invalid first-person fade for " + key);
+        rules.put(key, new Binding(clip, fadeIn, fadeOut));
     }
 
     /** Play a named accepted action on the currently held stack. Unknown item/action pairs fall through. */
@@ -133,12 +139,12 @@ public final class FirstPersonItemActions {
         var stack = p.getHeldItem();
         String id = id(stack);
         Key key = new Key(id, stack == null ? -1 : stack.getItemDamage(), trigger);
-        var clip = rules.get(key);
-        if (clip == null) {
+        var binding = rules.get(key);
+        if (binding == null) {
             key = new Key(id, -1, trigger);
-            clip = rules.get(key);
+            binding = rules.get(key);
         }
-        if (clip == null) return false;
+        if (binding == null) return false;
         if (!matches(p, stack)) clear();
         advance(p.ticksExisted);
         boolean chaining = action != null && action.active();
@@ -149,8 +155,8 @@ public final class FirstPersonItemActions {
         selected = key;
         startedTick = p.ticksExisted;
         tick = Math.max(tick, p.ticksExisted);
-        action = player.play(clip, chaining ? BLEND : .025);
-        action.fadeOutAtEnd(BLEND);
+        action = player.play(binding.clip, chaining ? Math.max(BLEND, binding.fadeIn) : binding.fadeIn);
+        action.fadeOutAtEnd(binding.fadeOut);
         return true;
     }
 
@@ -196,7 +202,7 @@ public final class FirstPersonItemActions {
         int damage = active == null ? 0 : active.getItemDamage();
         int currentSlot = p == null ? -1 : p.inventory.currentItem;
         if (active != useStack || p != useOwner || currentSlot != useSlot || damage != useDamage) {
-            if (playing("use")) action.stop(BLEND);
+            if (playing("use")) action.stop(rules.get(selected).fadeOut);
             useOwner = p;
             useSlot = currentSlot;
             useStack = active;
@@ -271,4 +277,6 @@ public final class FirstPersonItemActions {
     }
 
     private record Key(String item, int damage, String trigger) {}
+
+    private record Binding(AnimationClip clip, double fadeIn, double fadeOut) {}
 }

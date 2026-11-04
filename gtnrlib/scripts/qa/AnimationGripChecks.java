@@ -27,7 +27,7 @@ import com.xyp.gtnrlib.client.render.animation.HmiPoseRenderer;
 final class AnimationGripChecks implements IItemRenderer {
 
     private final FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
-    private Matrix4f arm, sprite;
+    private Matrix4f arm, sprite, pommel;
 
     static boolean covers(ItemStack stack) {
         if (stack == null) return false;
@@ -38,8 +38,8 @@ final class AnimationGripChecks implements IItemRenderer {
             || item == Items.iron_ingot;
     }
 
-    static void measure(AnimationClientChecks qa, Minecraft mc, ItemStack held, String name, boolean rest)
-        throws Exception {
+    private static AnimationGripChecks capture(AnimationClientChecks qa, Minecraft mc, ItemStack held, String name,
+        ModelRenderer cap) throws Exception {
         var probe = new AnimationGripChecks();
         var model = ((RenderPlayer) RenderManager.instance.getEntityRenderObject(mc.thePlayer)).modelBipedMain;
         var hand = new ModelRenderer(model) {
@@ -58,8 +58,16 @@ final class AnimationGripChecks implements IItemRenderer {
             }
         };
         model.bipedRightArm.addChild(hand);
+        var tip = cap == null ? null : new ModelRenderer(model) {
+
+            @Override
+            public void render(float scale) {
+                probe.pommel = probe.modelView();
+            }
+        };
+        if (tip != null) cap.addChild(tip);
         try {
-            qa.draw(
+            int[] pixels = qa.draw(
                 mc,
                 "grip-" + name,
                 .5f,
@@ -67,11 +75,56 @@ final class AnimationGripChecks implements IItemRenderer {
                     if (!HmiPoseRenderer.render(renderer, held, .5f, 0))
                         throw new AssertionError("Missing grip " + name);
                 });
+            if (cap != null) qa.require(armReachesEdge(pixels, mc.displayWidth), name + " arm reaches the screen edge");
         } finally {
             model.bipedRightArm.childModels.remove(hand);
             model.boxList.remove(hand);
+            if (tip != null) {
+                cap.childModels.remove(tip);
+                model.boxList.remove(tip);
+            }
         }
         qa.require(probe.arm != null, name + " rendered the active player arm");
+        return probe;
+    }
+
+    static WandPose measureWand(AnimationClientChecks qa, Minecraft mc, ItemStack held, String name, ModelRenderer cap)
+        throws Exception {
+        var probe = capture(qa, mc, held, name, cap);
+        var fist = probe.arm.transformPosition(new Vector3f(-1f / 16, 8f / 16, 0));
+        var shoulder = probe.arm.transformPosition(new Vector3f(-1f / 16, -1f / 16, 0));
+        // Read the actual bottom cap, including Thaumcraft's focus animation and staff scaling.
+        var local = probe.pommel.invert(new Matrix4f())
+            .transformPosition(new Vector3f(fist))
+            .mul(16);
+        qa.require(
+            Math.hypot(local.x, local.z) < .15 && local.y < -1.5 && local.y > -3,
+            name + " fist relative to the bottom cap in model pixels: " + local);
+        var forearm = probe.arm.transformDirection(new Vector3f(0, 1, 0))
+            .normalize();
+        var shaftInHand = probe.arm.invert(new Matrix4f())
+            .mul(probe.pommel)
+            .transformDirection(new Vector3f(0, -1, 0))
+            .normalize();
+        return new WandPose(fist, forearm, shaftInHand, shoulder);
+    }
+
+    record WandPose(Vector3f fist, Vector3f forearm, Vector3f shaftInHand, Vector3f shoulder) {}
+
+    static boolean armReachesEdge(int[] pixels, int width) {
+        int background = pixels[0];
+        for (int i = pixels.length - width; i < pixels.length; i++) {
+            if (pixels[i] != background) return true;
+        }
+        for (int i = width - 1; i < pixels.length; i += width) {
+            if (pixels[i] != background) return true;
+        }
+        return false;
+    }
+
+    static void measure(AnimationClientChecks qa, Minecraft mc, ItemStack held, String name, boolean rest)
+        throws Exception {
+        var probe = capture(qa, mc, held, name, null);
         // 1.21.11 thirdperson_righthand axes, read independently from the four source models. Legacy U and Z reverse.
         boolean shaft = ToolGrip.resolve(held) != null;
         Vector3f up, normal;
