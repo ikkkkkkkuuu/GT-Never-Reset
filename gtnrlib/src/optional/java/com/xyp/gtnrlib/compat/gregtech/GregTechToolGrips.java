@@ -1,4 +1,4 @@
-package com.xyp.gtneverreset.compat.gregtech;
+package com.xyp.gtnrlib.compat.gregtech;
 
 import com.xyp.gtnrlib.client.animation.ToolGrip;
 

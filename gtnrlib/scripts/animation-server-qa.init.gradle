@@ -1,7 +1,8 @@
 gradle.projectsEvaluated {
     def lib = gradle.rootProject.project(':gtnrlib')
-    def host = gradle.startParameter.projectProperties.containsKey('animationQaHost') ? gradle.rootProject : lib
-    def mode = host == lib ? 'server' : 'host-server'
+    def modsOnly = gradle.startParameter.projectProperties.containsKey('animationQaStandaloneMods')
+    def host = (modsOnly || gradle.startParameter.projectProperties.containsKey('animationQaHost')) ? gradle.rootProject : lib
+    def mode = modsOnly ? 'library-mods-server' : host == lib ? 'server' : 'host-server'
     def out = lib.file("build/animation-qa/" + mode)
     def classes = new File(out, 'classes')
     def fixture = lib.tasks.register('compileAnimationServerQA', JavaCompile) {
@@ -14,11 +15,17 @@ gradle.projectsEvaluated {
     }
     host.tasks.named('runServer25', JavaExec).configure {
         dependsOn fixture
+        if (modsOnly) {
+            // RFG launches the project's dev JAR even when its loose classes and resources are excluded.
+            classpath = (classpath - host.sourceSets.main.output).filter { !it.name.startsWith('gtneverreset-') }
+        }
         // The host includes Angelica for client development. Its OpenGL coremod cannot run on a dedicated server.
         if (host != lib) classpath = classpath.filter { !it.name.toLowerCase(Locale.ROOT).startsWith('angelica-') }
         classpath += lib.files(classes)
         workingDir lib.file("run/animation-qa/" + mode)
         systemProperty 'gtnrlib.animation.server.result', new File(out,'result.txt').absolutePath
+        systemProperty 'gtnrlib.animation.qa.expectHost', host != lib && !modsOnly
+        systemProperty 'gtnrlib.animation.qa.toolMods', host != lib
         args 'nogui'
         doFirst {
             workingDir.mkdirs()

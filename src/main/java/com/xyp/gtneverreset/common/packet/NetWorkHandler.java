@@ -8,6 +8,7 @@ import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingMode;
+import com.xyp.gtnrlib.network.GregTechToolUsePacket;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -141,12 +142,8 @@ public final class NetWorkHandler {
             UniversalWandNetwork.FeatureMessage.class,
             nextPacketId++,
             Side.CLIENT);
-        CHANNEL.registerMessage(WrenchTurnPacket.Handler.class, WrenchTurnPacket.class, nextPacketId++, Side.CLIENT);
-        CHANNEL.registerMessage(
-            WireCutterSnipPacket.Handler.class,
-            WireCutterSnipPacket.class,
-            nextPacketId++,
-            Side.CLIENT);
+        // Older servers send these two acknowledgements on the original host channel.
+        nextPacketId = GregTechToolUsePacket.register(CHANNEL, nextPacketId);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);

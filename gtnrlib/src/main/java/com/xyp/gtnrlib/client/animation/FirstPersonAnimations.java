@@ -134,7 +134,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
             if (dir.equals(path.getParent())) sources.add(path);
         }
         try {
-            HmiPoseProgram.Scripts hmi = null;
+            HmiPoseProgram.Scripts hmi = GTNRLibConfig.builtInFirstPerson ? HmiPoseProgram.Scripts.BUILT_IN : null;
             if (!GTNRLibConfig.animationPack.isEmpty()) {
                 Path imported = dir.resolve(GTNRLibConfig.animationPack)
                     .normalize();
@@ -144,14 +144,23 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
                 if (GTNRLibConfig.animationPack.endsWith(".jar")) hmi = HmiPoseProgram.Scripts.read(imported);
                 else sources.add(imported);
             }
-            PunchyPack next = hmi == null
+            PunchyPack next = hmi == null || hmi == HmiPoseProgram.Scripts.BUILT_IN
                 ? PunchyPack.load(sources, message -> GTNRLib.LOG.warn("animation pack: {}", message))
                 : PunchyPack.empty();
+            FirstPersonItemActions.INSTANCE.reload(manager);
             HmiPoseRenderer.install(hmi);
             packs = next;
             reset();
         } catch (Exception e) {
             GTNRLib.LOG.warn("animation reload retained previous snapshot", e);
+            if (GTNRLibConfig.builtInFirstPerson && !HmiFirstPerson.INSTANCE.enabled()) {
+                try {
+                    HmiPoseRenderer.install(HmiPoseProgram.Scripts.BUILT_IN);
+                    FirstPersonItemActions.INSTANCE.reload(manager);
+                } catch (Exception failure) {
+                    GTNRLib.LOG.error("Could not initialize built-in first-person poses", failure);
+                }
+            }
         }
     }
 
@@ -165,6 +174,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         var mc = Minecraft.getMinecraft();
         if (HmiFirstPerson.INSTANCE.enabled() && (mc.thePlayer == null || mc.gameSettings.thirdPersonView != 0))
             HmiFirstPerson.INSTANCE.detach();
+        FirstPersonItemActions.INSTANCE.tick();
         if (!enabled()) return;
         if (mc.thePlayer == null || mc.theWorld != world || mc.gameSettings.thirdPersonView != 0) {
             reset();

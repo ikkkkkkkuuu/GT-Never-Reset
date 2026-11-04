@@ -13,7 +13,7 @@
 
 开发环境使用 Minecraft `1.7.10`、Forge `10.13.4.1614`，主模组与 GTNRLib 共用 GTNH [`2.9.0` 正式版依赖清单](https://github.com/GTNewHorizons/DreamAssemblerXXL/blob/master/releases/manifests/2.9.0.json)，由 `gradle.properties` 中的 `elytra.manifest.version` 统一选择；其他 GTNH 版本的兼容性尚待验证。
 
-从 0.1.8 起，已将文字特效、共享 GUI 与轮盘基础、世界监听及通用工具拆为独立的 [GTNRLib](gtnrlib/README.md)。安装本版本时，需要同时安装同次构建的 `gtneverreset-*.jar` 与 `gtnrlib-0.1.16.jar`。`build/libs` 会收集两个模组的产物，`-dev`、`-sources` 和 `-predowngrade` 文件不用于正式安装。
+从 0.1.8 起，已将文字特效、共享 GUI 与轮盘基础、世界监听及通用工具拆为独立的 [GTNRLib](gtnrlib/README.md)。安装本版本时，需要同时安装同次构建的 `gtneverreset-*.jar` 与对应版本的 `gtnrlib-*.jar`。只使用第一人称动画时，在已有库前置的实例中单装 GTNRLib 即可。`build/libs` 会收集两个模组的产物，`-dev`、`-sources` 和 `-predowngrade` 文件不用于正式安装。
 
 ## 🧩 功能介绍
 

@@ -1,0 +1,5 @@
+{
+  "bindings": [
+    {"item": "gregtech:gt.metatool.01", "damage": 16, "trigger": "gtneverreset:wrench_turn", "clip": "gtneverreset:wrench_turn"}
+  ]
+}

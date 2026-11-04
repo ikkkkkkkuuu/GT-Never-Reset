@@ -9,11 +9,13 @@ import com.xyp.gtnrlib.client.GTNRLibClient;
 import com.xyp.gtnrlib.command.CommandItemInfo;
 import com.xyp.gtnrlib.command.CommandSuicide;
 import com.xyp.gtnrlib.command.tree.CommandTreeService;
+import com.xyp.gtnrlib.compat.animation.ToolAnimationCompat;
 import com.xyp.gtnrlib.network.GTNRLibNetwork;
 import com.xyp.gtnrlib.world.WorldListener;
 
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
@@ -42,6 +44,12 @@ public class GTNRLib {
         WorldListener listener = WorldListener.INSTANCE;
         MinecraftForge.EVENT_BUS.register(listener);
         LOG.info("GTNRLib initialized");
+    }
+
+    @Mod.EventHandler
+    public void postInit(FMLPostInitializationEvent event) {
+        if (event.getSide()
+            .isClient()) ToolAnimationCompat.register();
     }
 
     @Mod.EventHandler

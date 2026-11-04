@@ -42,6 +42,17 @@ public class GTNRLibConfig {
     @Config.Ignore
     private static String[] themes = {};
 
+    @Comment("Enable the built-in first-person poses and item actions")
+    // #tr gtnrlib.gui.config.client.built_in_first_person
+    // # Built-in first-person animations
+    // # zh_CN 内置第一人称动画
+    // #tr gtnrlib.gui.config.client.built_in_first_person.tooltip
+    // # Animate hands and items using the built-in profiles. Applies on resource reload.
+    // # zh_CN 使用内置姿势绘制双手和物品。重新加载资源时应用。
+    @LangKey("gtnrlib.gui.config.client.built_in_first_person")
+    @DefaultBoolean(true)
+    public static boolean builtInFirstPerson = true;
+
     @Comment("Optional Punchy ZIP/folder or original HMI 5.1.1 (1.21.11) JAR in resourcepacks. Reload after changing.")
     // #tr gtnrlib.gui.config.client.animation_pack
     // # Animation-only pack

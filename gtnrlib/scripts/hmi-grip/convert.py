@@ -91,15 +91,17 @@ def run_scripts(kind, archive, directory, java):
     return layers
 
 
-def modern_rig(layers):
+def modern_rig(layers, kind):
     # Nonempty right-hand branches of 5.1.1 HeldItemRendererMixin. Scene transforms precede the two draws.
     pivot, undo = translation(.5, .5, .5), translation(-.5, -.5, -.5)
     arm_mount = translation(1.5, -.3, -.6) @ pivot @ rotation(0, 15) @ rotation(1, 35) @ rotation(2, -65) @ undo
     vanilla_arm = (translation(.64, -.6, -.72) @ rotation(1, 45) @ translation(-1, 3.6, 3.5)
                    @ rotation(2, 120) @ rotation(0, 200) @ rotation(1, -135) @ translation(5.6, 0, 0))
-    arm = layers["shared"] @ layers["arm"] @ arm_mount @ scale(.9) @ vanilla_arm
-    # 1.21.11 item/handheld and item/generated have the same firstperson_righthand display transform.
-    display = translation(1.13 / 16, 3.2 / 16, 1.13 / 16) @ rotation(1, -90) @ rotation(2, 25) @ scale(.68)
+    arm = (layers["shared"] @ layers["arm"] @ arm_mount @ scale(.9) @ vanilla_arm
+           @ translation(-5 / 16, 2 / 16, 0) @ rotation(2, np.degrees(.1)))
+    # HMI submits the first-person hand's stack using THIRD_PERSON_RIGHT_HAND (intermediary field_4320).
+    display = (translation(0, 3 / 16, 1 / 16) @ scale(.55) if kind == "ingot" else
+               translation(0, 4 / 16, .5 / 16) @ rotation(1, -90) @ rotation(2, 55) @ scale(.85))
     item_mount = translation(.5, -.15, -.85) @ pivot @ rotation(0, 15) @ undo
     item = layers["shared"] @ item_mount @ scale(.9) @ layers["item"] @ display
     return arm, item
@@ -188,7 +190,7 @@ def main():
             (directory / "luaj.jar").write_bytes(jar.read("META-INF/jars/luaj-jse-3.0.1.jar"))
         for kind in GRIPS:
             layers = run_scripts(kind, archive, directory, args.java)
-            group, arm, item = tune(kind, animations, *modern_rig(layers))
+            group, arm, item = tune(kind, animations, *modern_rig(layers, kind))
             result[group] = {"arm": arm, "item": item}
             if args.check:
                 entry = rules["item"].get(group, {})

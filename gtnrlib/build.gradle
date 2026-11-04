@@ -6,7 +6,7 @@ buildscript {
 }
 
 // Library version changes only when its implementation or resources change.
-ext.modVersion = '0.1.22'
+ext.modVersion = '0.1.26'
 ext.modName = 'GTNRLib'
 ext.modId = 'gtnrlib'
 ext.modGroup = 'com.xyp.gtnrlib'
@@ -22,7 +22,15 @@ apply from: rootProject.file('repositories.gradle')
 
 def elytraModpackVersion = rootProject.extensions.getByName('elytraModpackVersion')
 
+// Compile the optional tool adapters into the library without putting their mods on its runtime classpath.
+sourceSets.main.java.srcDir 'src/optional/java'
+configurations.create('animationCompat') { canBeConsumed = false }
+configurations.compileOnly.extendsFrom(configurations.animationCompat)
+
 dependencies {
+    animationCompat(elytraModpackVersion.gtnhdev('GT5-Unofficial') as String) { transitive = false }
+    animationCompat(elytraModpackVersion.gtnhdev('TinkersConstruct') as String) { transitive = false }
+    animationCompat('net.industrial-craft:industrialcraft-2:2.2.828-experimental:dev') { transitive = false }
     shadowImplementation('org.luaj:luaj-jse:3.0.1') { transitive = false }
     api(elytraModpackVersion.gtnhdev('GTNHLib') as String) { transitive = false }
     api(elytraModpackVersion.gtnhdev('ModularUI2') as String) { transitive = false }
@@ -46,7 +54,7 @@ sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
 tasks.register('checkLibraryContracts', JavaExec) {
     group = 'verification'
     dependsOn tasks.testClasses
-    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.compileClasspath
+    classpath = sourceSets.test.runtimeClasspath + (sourceSets.main.compileClasspath - configurations.animationCompat)
     mainClass = 'com.xyp.gtnrlib.LibraryContracts'
     if (project.hasProperty('hmiRelease')) systemProperty 'gtnrlib.test.hmi', project.property('hmiRelease')
     workingDir = projectDir

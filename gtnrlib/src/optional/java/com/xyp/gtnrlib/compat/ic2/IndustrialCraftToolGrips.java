@@ -1,4 +1,4 @@
-package com.xyp.gtneverreset.compat.ic2;
+package com.xyp.gtnrlib.compat.ic2;
 
 import com.xyp.gtnrlib.client.animation.ToolGrip;
 

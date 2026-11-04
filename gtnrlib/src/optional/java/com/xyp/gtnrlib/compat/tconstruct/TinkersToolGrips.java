@@ -1,4 +1,4 @@
-package com.xyp.gtneverreset.compat.tconstruct;
+package com.xyp.gtnrlib.compat.tconstruct;
 
 import com.xyp.gtnrlib.client.animation.ToolGrip;
 

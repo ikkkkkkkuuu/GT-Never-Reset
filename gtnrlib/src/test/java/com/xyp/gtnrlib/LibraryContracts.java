@@ -13,8 +13,13 @@ public final class LibraryContracts {
     public static void main(String[] args) throws Exception {
         absent("com.xyp.gtneverreset.GTNeverReset");
         absent("gregtech.api.GregTechAPI");
+        for (String file : new String[] { "first_person", "wrench_turn", "wire_cutter" }) {
+            String path = "/assets/gtneverreset/animations/" + file + ".json";
+            check(LibraryContracts.class.getResource(path) != null, "missing built-in animation resource " + path);
+        }
         AnimationContracts.verify();
         PunchyPackContracts.verify();
+        HmiPlaybackContracts.verifyPlayer(com.xyp.gtnrlib.compat.hmi.HmiPoseProgram.Scripts.BUILT_IN);
         String release = System.getProperty("gtnrlib.test.hmi");
         if (release != null) HmiPlaybackContracts.verify(Path.of(release));
         CommandTreeContracts.verify();

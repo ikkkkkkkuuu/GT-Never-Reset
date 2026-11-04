@@ -13,10 +13,8 @@ import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import org.joml.Matrix4f;
-
-import com.xyp.gtneverreset.compat.gregtech.GregTechWrenchAnimation;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
+import com.xyp.gtnrlib.compat.gregtech.GregTechWrenchAnimation;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -179,7 +177,7 @@ public final class AnimationWrenchChecks implements Runnable {
     }
 
     private boolean turning() {
-        return GregTechWrenchAnimation.INSTANCE.pose(mc.thePlayer.getHeldItem(), .5f, new Matrix4f());
+        return com.xyp.gtnrlib.client.animation.FirstPersonItemActions.INSTANCE.playing("gtneverreset:wrench_turn");
     }
 
     private void request(int mode) {

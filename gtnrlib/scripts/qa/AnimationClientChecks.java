@@ -4,6 +4,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -28,6 +29,7 @@ import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraftforge.oredict.OreDictionary;
 
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
 import com.xyp.gtnrlib.api.animation.AnimationClip.Marker;
@@ -35,6 +37,7 @@ import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings.Profile;
+import com.xyp.gtnrlib.client.render.animation.AnimationModelChecks;
 import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
 import com.xyp.gtnrlib.config.GTNRLibConfig;
 
@@ -53,6 +56,7 @@ public final class AnimationClientChecks {
     private boolean started, finished;
     private int ticks, frames;
     private Runnable wrenchChecks;
+    private AnimationMovementChecks movement;
     private final FirstPersonAnimations target = FirstPersonAnimations.INSTANCE;
     private final List<String> results = new ArrayList<>();
 
@@ -102,6 +106,38 @@ public final class AnimationClientChecks {
         try {
             if (wrenchChecks != null) {
                 wrenchChecks.run();
+                return;
+            }
+            if (movement != null) {
+                if (movement.step()) {
+                    movement = null;
+                    if (Boolean.getBoolean("gtnrlib.animation.qa.toolMods")) startWrenchChecks();
+                    else finish(mc, null);
+                }
+                return;
+            }
+            if (Boolean.getBoolean("gtnrlib.animation.qa.defaults")) {
+                boolean host = cpw.mods.fml.common.Loader.isModLoaded("gtneverreset");
+                boolean gt = cpw.mods.fml.common.Loader.isModLoaded("gregtech");
+                require(
+                    host == Boolean.getBoolean("gtnrlib.animation.qa.expectHost")
+                        && gt == Boolean.getBoolean("gtnrlib.animation.qa.toolMods"),
+                    "loaded GTNRLib with GT-Never-Reset=" + host + ", GregTech=" + gt);
+                if (!host) require(
+                    getClass().getClassLoader()
+                        .getResource("com/xyp/gtneverreset/GTNeverReset.class") == null,
+                    "GT-Never-Reset classes absent from the client classpath");
+                require(
+                    mc.getResourcePackRepository()
+                        .getRepositoryEntries()
+                        .isEmpty() && GTNRLibConfig.animationPack.isEmpty(),
+                    "fresh launch with empty selected and imported resource packs");
+                require(
+                    HmiFirstPerson.INSTANCE.enabled() && HmiFirstPerson.INSTANCE.program()
+                        .builtIn(),
+                    "built-in player active on the first ordinary world frame");
+                checkHmi(mc);
+                movement = new AnimationMovementChecks(this, output);
                 return;
             }
             var sword = new ItemStack(Items.diamond_sword);
@@ -236,7 +272,7 @@ public final class AnimationClientChecks {
             equip(mc, new ItemStack(Items.filled_map));
             tickPlayer();
             require(!target.applies(mc.thePlayer.getHeldItem()), "map uses original path");
-            if (Boolean.getBoolean("gtnrlib.animation.qa.host")) checkHost(mc);
+            if (Boolean.getBoolean("gtnrlib.animation.qa.toolMods")) checkModRenderers(mc);
             equip(mc, sword);
             reload(mc, "");
             tickPlayer();
@@ -244,15 +280,13 @@ public final class AnimationClientChecks {
             equip(mc, null);
             require(Arrays.equals(emptyBaseline, draw(mc, "empty-disabled")), "unload restores vanilla empty arm");
             equip(mc, sword);
-            if (!Boolean.getBoolean("gtnrlib.animation.qa.host")) checkRepositoryReload(mc, sword);
+            if (!Boolean.getBoolean("gtnrlib.animation.qa.toolMods")) checkRepositoryReload(mc, sword);
             String release = System.getProperty("gtnrlib.animation.qa.hmi");
             if (release != null) {
                 checkHmi(mc);
-                if (Boolean.getBoolean("gtnrlib.animation.qa.host")) {
+                if (Boolean.getBoolean("gtnrlib.animation.qa.toolMods")) {
                     reload(mc, release);
-                    wrenchChecks = (Runnable) Class.forName("com.xyp.gtnrlib.qa.AnimationWrenchChecks")
-                        .getConstructor(AnimationClientChecks.class)
-                        .newInstance(this);
+                    startWrenchChecks();
                     return;
                 }
             }
@@ -262,11 +296,17 @@ public final class AnimationClientChecks {
         }
     }
 
+    private void startWrenchChecks() throws Exception {
+        wrenchChecks = (Runnable) Class.forName("com.xyp.gtnrlib.qa.AnimationWrenchChecks")
+            .getConstructor(AnimationClientChecks.class)
+            .newInstance(this);
+    }
+
     private void checkHmi(Minecraft mc) throws Exception {
         String release = System.getProperty("gtnrlib.animation.qa.hmi");
         var hmi = com.xyp.gtnrlib.client.animation.HmiFirstPerson.INSTANCE;
-        reload(mc, release);
-        require(hmi.enabled(), "verified HMI release enabled");
+        if (release != null) reload(mc, release);
+        require(hmi.enabled(), "first-person pose program enabled");
         int ticks = mc.thePlayer.ticksExisted;
         try {
             var items = new ItemStack[] { null, new ItemStack(Items.diamond_sword), new ItemStack(Items.iron_pickaxe),
@@ -287,6 +327,7 @@ public final class AnimationClientChecks {
                     mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
                 }
                 int[] rest = draw(mc, "hmi-" + name);
+                if (AnimationGripChecks.covers(stack)) AnimationGripChecks.measure(this, mc, stack, name, true);
                 require(
                     hmi.enabled() && !hmi.right.equals(new org.joml.Matrix4f())
                         && Arrays.stream(rest)
@@ -328,18 +369,20 @@ public final class AnimationClientChecks {
                 mc.thePlayer.clearItemInUse();
             }
             checkHmiProfiles(mc, release);
-            if (Boolean.getBoolean("gtnrlib.animation.qa.host")) {
+            if (Boolean.getBoolean("gtnrlib.animation.qa.toolMods")) {
                 checkEtFuturum(mc);
-                checkHost(mc);
+                checkModRenderers(mc);
             }
-            reload(mc, "invalid-hmi-fixture.jar");
-            require(hmi.enabled(), "failed HMI reload retains previous program");
+            if (release != null) {
+                reload(mc, "invalid-hmi-fixture.jar");
+                require(hmi.enabled(), "failed HMI reload retains previous program");
+            } else checkDefaultMotion(mc);
         } finally {
             mc.thePlayer.ticksExisted = ticks;
             mc.thePlayer.clearItemInUse();
-            reload(mc, "");
+            if (release != null) reload(mc, "");
         }
-        require(!hmi.enabled(), "HMI unload releases runtime");
+        if (release != null) require(!hmi.enabled(), "HMI unload releases runtime");
     }
 
     private void checkHmiProfiles(Minecraft mc, String release) throws Exception {
@@ -351,23 +394,91 @@ public final class AnimationClientChecks {
             Items.stick,
             s -> new Profile(s.stackTagCompound.getString("hmi"), s.stackTagCompound.getString("variant")));
         try {
-            var assets = HmiPoseProgram.Scripts.read(
-                mc.getResourcePackRepository()
-                    .getDirResourcepacks()
-                    .toPath()
-                    .resolve(release))
-                .assets();
-            int count = 0;
-            for (String path : assets.keySet()) {
-                if (!path.startsWith("items/") || !path.endsWith(".json")) continue;
-                String id = "minecraft:" + path.substring(6, path.length() - 5);
-                stack.stackTagCompound.setString("hmi", id);
-                mc.thePlayer.ticksExisted++;
-                mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
-                require(hmi.enabled() && id.equals(hmi.itemId()), "HMI item entry " + id);
-                count++;
+            var models = com.xyp.gtnrlib.client.render.animation.DefaultItemModels.entries();
+            if (release != null) {
+                var reference = new java.util.TreeSet<String>();
+                for (String path : HmiPoseProgram.Scripts.read(
+                    mc.getResourcePackRepository()
+                        .getDirResourcepacks()
+                        .toPath()
+                        .resolve(release))
+                    .assets()
+                    .keySet()) {
+                    if (path.startsWith("items/") && path.endsWith(".json"))
+                        reference.add("minecraft:" + path.substring(6, path.length() - 5));
+                }
+                require(reference.equals(models), "complete model inventory agrees with pinned reference archive");
             }
-            require(count == 35, "all 35 original item model entries selected through a third-party binding");
+            require(models.size() == 35, "35 distinct first-person model profiles");
+            var isolated = new HashMap<String, Integer>();
+            for (String id : new java.util.TreeSet<>(models)) {
+                String name = id.substring(10);
+                Item match = (Item) Item.itemRegistry.getObject(id);
+                if (match == null && name.equals("oak_boat")) match = Items.boat;
+                if (match == null) match = (Item) Item.itemRegistry.getObject("etfuturum:" + name);
+                stack.stackTagCompound.setString("hmi", id);
+                var held = match == null ? stack : new ItemStack(match);
+                equip(mc, held);
+                for (int i = 0; i < 30; i++) {
+                    mc.thePlayer.ticksExisted++;
+                    mc.entityRenderer.itemRenderer.renderItemInFirstPerson(.5f);
+                }
+                int[] rest = draw(mc, "model-" + name);
+                if (release == null) {
+                    int[] mesh = draw(mc, "mesh-" + name, .5f, AnimationModelChecks.draw(id, "", -1, 0, hmi.program()));
+                    require(
+                        Arrays.stream(mesh)
+                            .filter(rgb -> (rgb & 0xffffff) != 0x202020)
+                            .count() > 30,
+                        "isolated geometry visible " + name);
+                    isolated.put(name, Arrays.hashCode(mesh));
+                    if (Set
+                        .of(
+                            "cod_bucket",
+                            "salmon_bucket",
+                            "axolotl_bucket",
+                            "pufferfish_bucket",
+                            "tropical_fish_bucket",
+                            "tadpole_bucket",
+                            "end_crystal",
+                            "milk_bucket")
+                        .contains(name)) {
+                        var moving = draw(
+                            mc,
+                            "mesh-" + name + "-moving",
+                            .5f,
+                            AnimationModelChecks.draw(id, "", 28, 7, hmi.program()));
+                        require(!Arrays.equals(mesh, moving), "isolated moving parts " + name);
+                    }
+                }
+                var right = new org.joml.Matrix4f(hmi.right);
+                mc.thePlayer.isSwingInProgress = false;
+                mc.thePlayer.swingItem();
+                mc.thePlayer.ticksExisted += 3;
+                int[] action = draw(mc, "model-" + name + "-action");
+                require(
+                    hmi.enabled() && id.equals(hmi.itemId())
+                        && !right.equals(hmi.right, .0001f)
+                        && !Arrays.equals(rest, action),
+                    "MODEL " + name
+                        + " | "
+                        + (match == null ? "profile fixture (item absent)" : Item.itemRegistry.getNameForObject(match))
+                        + " | grip + swing");
+            }
+            if (release == null) {
+                for (String model : Set
+                    .of("oak", "birch", "spruce", "acacia", "jungle", "dark_oak", "cherry", "mangrove", "pale_oak")) {
+                    require(
+                        !isolated.get(model + "_boat")
+                            .equals(isolated.get(model + "_chest_boat")),
+                        "cargo geometry " + model);
+                }
+                require(
+                    !isolated.get("bamboo_raft")
+                        .equals(isolated.get("bamboo_chest_raft")),
+                    "cargo geometry bamboo");
+            }
+            equip(mc, stack);
             stack.stackTagCompound.setString("hmi", "minecraft:axolotl_bucket");
             for (int i = 0; i < 45; i++) {
                 mc.thePlayer.ticksExisted++;
@@ -432,6 +543,132 @@ public final class AnimationClientChecks {
         }
     }
 
+    private void checkDefaultMotion(Minecraft mc) throws Exception {
+        var hmi = HmiFirstPerson.INSTANCE;
+        var p = mc.thePlayer;
+        int ticks = p.ticksExisted;
+        float oldYaw = p.rotationYaw, oldPitch = p.rotationPitch, prevYaw = p.prevRotationYaw,
+            prevPitch = p.prevRotationPitch;
+        double oldX = p.motionX, oldY = p.motionY, oldZ = p.motionZ;
+        boolean ground = p.onGround;
+        var originalTarget = mc.objectMouseOver;
+        try {
+            var sequences = new HashMap<String, Matrix4f[]>();
+            for (String scenario : List.of(
+                "rest",
+                "walk",
+                "turn",
+                "jump-twice",
+                "standing-strike",
+                "walking-strike",
+                "walking-mine",
+                "walking-punch",
+                "rest-bow",
+                "standing-bow",
+                "walking-bow")) {
+                var samples = new Matrix4f[40];
+                sequences.put(scenario, samples);
+                hmi.detach();
+                var held = scenario.endsWith("punch") ? null
+                    : new ItemStack(
+                        scenario.endsWith("bow") ? Items.bow
+                            : scenario.endsWith("mine") ? Items.iron_pickaxe : Items.iron_sword);
+                mc.objectMouseOver = scenario.endsWith("mine")
+                    ? new net.minecraft.util.MovingObjectPosition(
+                        0,
+                        0,
+                        0,
+                        1,
+                        net.minecraft.util.Vec3.createVectorHelper(0, 0, 0))
+                    : null;
+                equip(mc, held);
+                p.isSwingInProgress = false;
+                p.clearItemInUse();
+                p.motionX = p.motionY = p.motionZ = 0;
+                p.rotationYaw = p.prevRotationYaw = p.rotationPitch = p.prevRotationPitch = 0;
+                p.onGround = true;
+                for (int i = 0; i < 55; i++) {
+                    p.ticksExisted++;
+                    hmi.sample(held, .5f, 0);
+                }
+                var start = new org.joml.Matrix4f(hmi.item);
+                for (int i = 0; i < 40; i++) {
+                    if (scenario.startsWith("walk")) p.motionZ = .22;
+                    if (scenario.equals("turn")) {
+                        p.prevRotationYaw = p.rotationYaw;
+                        p.prevRotationPitch = p.rotationPitch;
+                        if (i < 7) {
+                            p.rotationYaw += 6;
+                            p.rotationPitch -= 2;
+                        }
+                    }
+                    if (scenario.equals("jump-twice")) {
+                        int t = i % 17;
+                        if (t == 0) p.jump();
+                        p.onGround = t >= 11;
+                        if (t > 0) p.motionY = p.onGround ? 0 : (p.motionY - .08) * .98;
+                    }
+                    if (i == 9
+                        && (scenario.endsWith("strike") || scenario.endsWith("punch") || scenario.endsWith("mine")))
+                        p.swingItem();
+                    if (i == 7 && scenario.endsWith("bow") && !scenario.equals("rest-bow"))
+                        p.setItemInUse(held, held.getMaxItemUseDuration());
+                    if (i == 32) p.clearItemInUse();
+                    p.ticksExisted++;
+                    if (!hmi.sample(held, .5f, 0)) throw new AssertionError("failed sample " + scenario + " " + i);
+                    samples[i] = new Matrix4f(hmi.item);
+                    if (i == 13 && (scenario.equals("walking-strike") || scenario.equals("walking-mine")
+                        || scenario.equals("walking-bow")
+                        || scenario.equals("jump-twice"))) AnimationGripChecks.measure(this, mc, held, scenario, false);
+                    var main = new Matrix4f(hmi.right);
+                    var support = new Matrix4f(hmi.left);
+                    if (!hmi.sample(held, .5f, 0) || !samples[i].equals(hmi.item)
+                        || !main.equals(hmi.right)
+                        || !support.equals(hmi.left)) throw new AssertionError("duplicate pass advanced " + scenario);
+                    if (scenario.startsWith("walking-") || i == 0
+                        || i == 5
+                        || i == 10
+                        || i == 13
+                        || i == 17
+                        || i == 27
+                        || i == 31
+                        || i == 36) draw(mc, "motion-" + scenario + "-" + i);
+                }
+                require(!start.equals(hmi.item, .0001f), "motion and duplicate-pass regression " + scenario);
+            }
+            for (String scenario : List.of("walk", "turn", "jump-twice")) {
+                for (int i : new int[] { 2, 8, 11, 19, 25, 29 }) require(
+                    !sequences.get(scenario)[i].equals(sequences.get("rest")[i], .0001f),
+                    scenario + " differs from idle at the same frame " + i);
+            }
+            for (int i : new int[] { 11, 13 }) {
+                require(
+                    !sequences.get("walking-strike")[i].equals(sequences.get("standing-strike")[i], .001f)
+                        && !sequences.get("walking-strike")[i].equals(sequences.get("walk")[i], .001f),
+                    "sword contact preserves both gait and strike at " + i);
+            }
+            for (int i : new int[] { 16, 24, 30 }) {
+                require(
+                    !sequences.get("walking-bow")[i].equals(sequences.get("standing-bow")[i], .001f)
+                        && !sequences.get("standing-bow")[i].equals(sequences.get("rest-bow")[i], .001f),
+                    "drawn bow preserves both gait and draw at " + i);
+            }
+        } finally {
+            p.ticksExisted = ticks;
+            mc.objectMouseOver = originalTarget;
+            p.rotationYaw = oldYaw;
+            p.prevRotationYaw = prevYaw;
+            p.rotationPitch = oldPitch;
+            p.prevRotationPitch = prevPitch;
+            p.motionX = oldX;
+            p.motionY = oldY;
+            p.motionZ = oldZ;
+            p.onGround = ground;
+            p.clearItemInUse();
+            hmi.detach();
+        }
+    }
+
     private void checkEtFuturum(Minecraft mc) throws Exception {
         var hmi = HmiFirstPerson.INSTANCE;
         int rendered = 0;
@@ -448,7 +685,8 @@ public final class AnimationClientChecks {
             if (item == null) continue;
             var stack = new ItemStack(item);
             equip(mc, stack);
-            if (MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON) != null) {
+            if (MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON) != null
+                && !com.xyp.gtnrlib.client.render.animation.DefaultItemModels.contains("minecraft:" + path)) {
                 require(!hmi.sample(stack, .5f, 0), "delegated Et Futurum renderer " + path);
                 continue;
             }
@@ -1001,7 +1239,7 @@ public final class AnimationClientChecks {
         require(!target.enabled(), "deselecting the folder disabled the adapter");
     }
 
-    private void checkHost(Minecraft mc) throws Exception {
+    private void checkModRenderers(Minecraft mc) throws Exception {
         checkIngotGrips(mc);
         Class.forName("com.xyp.gtnrlib.qa.AnimationToolChecks")
             .getMethod("check", AnimationClientChecks.class)
@@ -1030,7 +1268,7 @@ public final class AnimationClientChecks {
                 renderer.getClass()
                     .getSimpleName());
         }
-        require(wanted.isEmpty(), "host renderers found; missing " + wanted);
+        require(wanted.isEmpty(), "optional mod renderers found; missing " + wanted);
     }
 
     private void checkIngotGrips(Minecraft mc) throws Exception {
@@ -1134,6 +1372,7 @@ public final class AnimationClientChecks {
     }
 
     private void reload(Minecraft mc, String name) {
+        GTNRLibConfig.builtInFirstPerson = false;
         GTNRLibConfig.animationPack = name;
         target.onResourceManagerReload(mc.getResourceManager());
     }
@@ -1148,6 +1387,10 @@ public final class AnimationClientChecks {
     }
 
     int[] draw(Minecraft mc, String name, float partial) throws Exception {
+        return draw(mc, name, partial, () -> mc.entityRenderer.itemRenderer.renderItemInFirstPerson(partial));
+    }
+
+    int[] draw(Minecraft mc, String name, float partial, Runnable render) throws Exception {
         int w = mc.displayWidth, h = mc.displayHeight;
         Framebuffer buffer = mc.getFramebuffer();
         buffer.bindFramebuffer(true);
@@ -1172,7 +1415,7 @@ public final class AnimationClientChecks {
             GL11.glDisable(GL11.GL_FOG);
             mc.entityRenderer.disableLightmap(partial);
             GL11.glEnable(GL11.GL_TEXTURE_2D);
-            mc.entityRenderer.itemRenderer.renderItemInFirstPerson(partial);
+            render.run();
             ScreenShotHelper.saveScreenshot(output, name + ".png", w, h, buffer);
             var image = ImageIO.read(new File(output, "screenshots/" + name + ".png"));
             return image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());

@@ -13,9 +13,7 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemCarrotOnAStick;
 import net.minecraft.item.ItemCloth;
-import net.minecraft.item.ItemFishingRod;
 import net.minecraft.item.ItemMap;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
@@ -23,6 +21,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.IItemRenderer.ItemRendererHelper;
 
+import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
@@ -31,6 +30,7 @@ import org.lwjgl.opengl.GL12;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
+import com.xyp.gtnrlib.client.animation.ToolGrip;
 import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
 
 import cpw.mods.fml.relauncher.Side;
@@ -42,6 +42,11 @@ public final class HmiPoseRenderer {
     private static final FloatBuffer BUFFER = BufferUtils.createFloatBuffer(16);
     private static final HmiFirstPerson HMI = HmiFirstPerson.INSTANCE;
     private static final ResourceLocation MAP = new ResourceLocation("textures/map/map_background.png");
+    // The 5.1.1 hand pass submits held items with THIRD_PERSON_RIGHT_HAND.
+    private static final Matrix4fc HANDHELD = display(0, 4, .5f, 0, -90, 55, .85f);
+    private static final Matrix4fc ROD = display(0, 4, 2.5f, 0, 90, 55, .85f);
+    private static final Matrix4fc BOW = display(-1, -2, 2.5f, -80, 260, -40, .9f);
+    private static final Matrix4fc GENERATED = display(0, 3, 1, 0, 0, 0, .55f);
     private static ModelBiped arms;
     private static HmiItemModels models;
     private static IIcon bowIcon;
@@ -51,7 +56,8 @@ public final class HmiPoseRenderer {
     }
 
     public static void install(HmiPoseProgram.Scripts scripts) throws IOException {
-        var next = scripts == null ? null : new HmiItemModels(scripts.assets());
+        var next = scripts == null || scripts == HmiPoseProgram.Scripts.BUILT_IN ? null
+            : new HmiItemModels(scripts.assets());
         HMI.install(scripts);
         if (models != null) models.close();
         models = next;
@@ -136,7 +142,7 @@ public final class HmiPoseRenderer {
             GL11.glRotatef(200, 1, 0, 0);
             GL11.glRotatef(-135 * side, 0, 1, 0);
             GL11.glTranslated(5.6 * side, 0, 0);
-            (left ? arms.bipedLeftArm : arms.bipedRightArm).render(1f / 16);
+            drawArm(left, side * .1f);
         } finally {
             GL11.glPopMatrix();
         }
@@ -149,11 +155,24 @@ public final class HmiPoseRenderer {
             mc.getTextureManager()
                 .bindTexture(mc.thePlayer.getLocationSkin());
             GL11.glColor4f(1, 1, 1, 1);
+            apply(com.xyp.gtnrlib.client.animation.FirstPersonItemActions.INSTANCE.grip(left));
             GL11.glTranslatef((left ? -6 : 6) / 16f, -10f / 16, 0);
-            (left ? arms.bipedLeftArm : arms.bipedRightArm).render(1f / 16);
+            drawArm(left, 0);
         } finally {
             GL11.glPopMatrix();
         }
+    }
+
+    private static void drawArm(boolean left, float shoulderRoll) {
+        var part = left ? arms.bipedLeftArm : arms.bipedRightArm;
+        part.rotateAngleZ = shoulderRoll;
+        part.render(1f / 16);
+    }
+
+    private static Matrix4fc display(float x, float y, float z, float pitch, float yaw, float roll, float scale) {
+        return new Matrix4f().translation(x / 16, y / 16, z / 16)
+            .rotateXYZ((float) Math.toRadians(pitch), (float) Math.toRadians(yaw), (float) Math.toRadians(roll))
+            .scale(scale);
     }
 
     static void apply(Matrix4fc matrix) {
@@ -164,21 +183,19 @@ public final class HmiPoseRenderer {
         int used = mc.thePlayer.isUsingItem() ? mc.thePlayer.getItemInUseDuration() : -1;
         var tool = HMI.handheldTool();
         var custom = HMI.forgeRenderer();
-        if (custom == null
-            && models.draw(HMI.itemId(), HMI.modelVariant(), used, mc.thePlayer.ticksExisted, HMI.program())) return;
+        if (models == null
+            ? DefaultItemModels.draw(HMI.itemId(), HMI.modelVariant(), used, mc.thePlayer.ticksExisted, HMI.program())
+            : models.draw(HMI.itemId(), HMI.modelVariant(), used, mc.thePlayer.ticksExisted, HMI.program())) return;
         Item held = stack.getItem();
         boolean cube = held instanceof ItemBlock && RenderBlocks.renderItemIn3d(
             Block.getBlockFromItem(held)
                 .getRenderType());
-        if (HMI.blockPose()) {
-            blockMount(held);
-        } else {
-            boolean rod = held instanceof ItemFishingRod || held instanceof ItemCarrotOnAStick;
-            GL11.glTranslated(rod ? 0 : 1.13 / 16, rod ? .1 : .2, rod ? .05 : 1.13 / 16);
-            GL11.glRotatef(rod ? 90 : -90, 0, 1, 0);
-            GL11.glRotatef(25, 0, 0, 1);
-            GL11.glScalef(.68f, .68f, .68f);
-        }
+        if (HMI.blockPose()) blockMount(held);
+        else apply(switch (HMI.itemId()) {
+            case "minecraft:bow" -> BOW;
+            case "minecraft:fishing_rod", "minecraft:carrot_on_a_stick" -> ROD;
+            default -> HMI.displayGrip() != null || tool != null ? HANDHELD : GENERATED;
+        });
         // Forge already centers models that request its equipped-block helper.
         boolean blockHelper = custom != null && tool == null
             && custom
@@ -188,6 +205,7 @@ public final class HmiPoseRenderer {
             GL11.glRotatef(180, 0, 1, 0);
             GL11.glTranslated(-.5, -.5, .03125);
             if (tool != null && tool.spriteMount() != null) apply(tool.spriteMount());
+            else if (!HMI.blockPose()) centerHandle(HMI.displayGrip());
             GL11.glTranslated(.9375, .0625, 0);
             GL11.glRotatef(25, 0, 0, 1);
             GL11.glRotatef(-50, 0, 1, 0);
@@ -217,6 +235,19 @@ public final class HmiPoseRenderer {
         }
     }
 
+    private static void centerHandle(ToolGrip grip) {
+        if (grip == null || grip == ToolGrip.HANDHELD) return;
+        // Distances in the legacy 16px sprite. Offset perpendicular to its diagonal and in depth, so the handle
+        // crosses the distal 4x4x4 skin cube without changing the reference shaft angle or sliding along the grip.
+        float across = switch (grip) {
+            case SWORD -> -.13f;
+            case SHOVEL -> -.15f;
+            default -> .38f;
+        };
+        float depth = grip == ToolGrip.SHOVEL ? -1.55f : .74f;
+        GL11.glTranslatef(across / 16, across / 16, depth / 16);
+    }
+
     private static void blockMount(Item held) {
         GL11.glTranslated(.22, .25, .2);
         if (Block.getBlockFromItem(held) instanceof net.minecraft.block.BlockTorch || HMI.isLantern()) {
@@ -244,7 +275,7 @@ public final class HmiPoseRenderer {
         GL11.glLoadIdentity();
         particleBlend(GL11.GL_ONE);
         GL11.glColor4f(1, 1, 1, glow.alpha());
-        if (models.bindParticle(glow.texture())) quad(x, y, z, radius);
+        if (bindParticle(glow.texture())) quad(x, y, z, radius);
     }
 
     private static void drawScreenParticles() {
@@ -255,10 +286,18 @@ public final class HmiPoseRenderer {
         for (int i = 0; i < count; i++) {
             var p = HMI.program()
                 .screenParticle(i);
-            if (!models.bindParticle(p.texture())) continue;
+            if (!bindParticle(p.texture())) continue;
             GL11.glColor4f(1, 1, 1, p.alpha());
             quad(p.x(), p.y(), p.z(), p.size() * .25f);
         }
+    }
+
+    private static boolean bindParticle(String texture) {
+        if (models != null) return models.bindParticle(texture);
+        Minecraft.getMinecraft()
+            .getTextureManager()
+            .bindTexture(new ResourceLocation(texture));
+        return true;
     }
 
     private static void particleBlend(int destination) {

@@ -22,8 +22,7 @@ public abstract class MinecraftAttackMixin {
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/EntityClientPlayerMP;swingItem()V"),
         require = 0)
     private void gtnrlib$blockUseSwing(EntityClientPlayerMP player, Operation<Void> vanilla) {
-        if (HmiFirstPerson.INSTANCE.handheldTool() != null && HmiFirstPerson.INSTANCE.enabled())
-            HmiFirstPerson.INSTANCE.duringBlockUseSwing(() -> vanilla.call(player));
+        if (HmiFirstPerson.INSTANCE.enabled()) HmiFirstPerson.INSTANCE.duringBlockUseSwing(() -> vanilla.call(player));
         else vanilla.call(player);
     }
 

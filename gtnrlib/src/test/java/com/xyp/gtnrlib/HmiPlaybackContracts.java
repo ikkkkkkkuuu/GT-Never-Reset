@@ -13,6 +13,11 @@ final class HmiPlaybackContracts {
 
     static void verify(Path release) throws Exception {
         var scripts = HmiPoseProgram.Scripts.read(release);
+        DefaultMotionContracts.verify(scripts);
+        verifyPlayer(scripts);
+    }
+
+    static void verifyPlayer(HmiPoseProgram.Scripts scripts) throws Exception {
         check(scripts, "walk", p -> p.frame.set("speed", .22));
         check(scripts, "fall", p -> {
             p.frame.set("ground", LuaValue.FALSE);
@@ -25,8 +30,9 @@ final class HmiPlaybackContracts {
         check(scripts, "equip", p -> {});
         var program = create(scripts);
         program.frame.set("mainItem", "minecraft:water_bucket");
+        for (int i = 0; i < 20; i++) sample(program, i, 0, false);
         program.frame.set("pitch", 40);
-        for (int i = 0; i < 24; i++) sample(program, i, 0, false);
+        for (int i = 20; i < 24; i++) sample(program, i, 0, false);
         if (program.part(0) == null || program.part(0)
             .equals(new Matrix4f(), 1e-4f)) throw new AssertionError("liquid quad did not tilt");
     }

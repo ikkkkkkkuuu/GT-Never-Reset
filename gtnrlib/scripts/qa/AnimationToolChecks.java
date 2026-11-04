@@ -114,6 +114,8 @@ public final class AnimationToolChecks {
             }
             int[] opened = qa.draw(mc, "cutter-open");
             qa.require(hmi.handheldTool() instanceof HmiItemBindings.TwoHandedTool, "manual GT cutter uses both grips");
+            AnimationCutterChecks
+                .check(qa, tool, (HmiItemBindings.TwoHandedTool) hmi.handheldTool(), hmi.forgeRenderer());
             p.isSwingInProgress = false;
             hmi.duringBlockUseSwing(p::swingItem);
             p.ticksExisted++;
@@ -164,7 +166,9 @@ public final class AnimationToolChecks {
         int width = mc.displayWidth, first = width, last = -1, contacts = 0;
         for (int i = width + 1; i < pixels.length - width - 1; i++) {
             int rgb = pixels[i], r = rgb >> 16 & 255, g = rgb >> 8 & 255, b = rgb & 255;
-            if (r < g + 18 || g < b + 8) continue;
+            // The selected development skin can be brown or have blue sleeves. Steel and the cleared
+            // framebuffer are neutral in both cases.
+            if (Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b)) < 9) continue;
             if (!steel(pixels[i - width], pixels[0]) && !steel(pixels[i + width], pixels[0])
                 && !steel(pixels[i - 1], pixels[0])
                 && !steel(pixels[i + 1], pixels[0])) continue;

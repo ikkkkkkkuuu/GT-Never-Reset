@@ -36,6 +36,7 @@ import org.luaj.vm2.LuaValue;
 import org.lwjgl.input.Keyboard;
 
 import com.xyp.gtnrlib.GTNRLib;
+import com.xyp.gtnrlib.client.render.animation.DefaultItemModels;
 import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
 
 import cpw.mods.fml.relauncher.Side;
@@ -54,7 +55,7 @@ public final class HmiFirstPerson {
     private Item lastItem;
     private HmiItemBindings.Profile bound;
     private HmiItemBindings.HandheldTool tool;
-    private ToolGrip family;
+    private ToolGrip family, displayGrip;
     private EnumAction genericAction;
     private IItemRenderer forgeRenderer;
     private final Matrix4f wristMotion = new Matrix4f(), sceneMotion = new Matrix4f();
@@ -82,6 +83,7 @@ public final class HmiFirstPerson {
         bound = null;
         tool = null;
         family = null;
+        displayGrip = null;
         genericAction = null;
         forgeRenderer = null;
         lastItem = null;
@@ -118,6 +120,10 @@ public final class HmiFirstPerson {
         return tool;
     }
 
+    public ToolGrip displayGrip() {
+        return displayGrip;
+    }
+
     public IItemRenderer forgeRenderer() {
         return forgeRenderer;
     }
@@ -137,15 +143,31 @@ public final class HmiFirstPerson {
     }
 
     public void swing() {
+        swing(null);
+    }
+
+    /** A server-confirmed tool action has its own trigger, independent of a predicted left click. */
+    public void swing(String confirmedAction) {
         if (program == null) return;
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
-        if (p == null || p != player || mc.gameSettings.thirdPersonView != 0) return;
+        if (p == null || mc.gameSettings.thirdPersonView != 0) return;
         var stack = p.getHeldItem();
-        boolean holdingTool = tool != null && stack != null
+        boolean holdingTool = p == player && tool != null
+            && stack != null
             && stack.getItem() == lastItem
             && stack.getItemDamage() == lastDamage;
-        if (holdingTool && blockUseSwing && tool.handlesBlockUseSwing()) return;
+        if (blockUseSwing && (holdingTool && tool.handlesBlockUseSwing()
+            || FirstPersonItemActions.INSTANCE.startedThisTick("place", p))) return;
+        boolean mining = !blockUseSwing && mc.objectMouseOver != null
+            && mc.objectMouseOver.typeOfHit == MovingObjectType.BLOCK;
+        if (FirstPersonItemActions.INSTANCE.trigger(
+            confirmedAction != null ? confirmedAction : blockUseSwing ? "interact" : mining ? "mining" : "attack")) {
+            clearStroke();
+            swingStart = Double.NEGATIVE_INFINITY;
+            return;
+        }
+        if (p != player) return;
         if (holdingTool && tool instanceof HmiItemBindings.TwoHandedTool rig) {
             if (strokeSlot != p.inventory.currentItem) clearStroke();
             try {
@@ -161,8 +183,7 @@ public final class HmiFirstPerson {
         }
         swings++;
         swingStart = p.ticksExisted;
-        breaking = mc.gameSettings.keyBindAttack.getIsKeyPressed() && mc.objectMouseOver != null
-            && mc.objectMouseOver.typeOfHit == MovingObjectType.BLOCK;
+        breaking = mining;
     }
 
     public double strokeSeconds() {
@@ -198,16 +219,22 @@ public final class HmiFirstPerson {
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
         if (p == null || mc.gameSettings.thirdPersonView != 0 || p.isInvisible()) return false;
+        var actions = FirstPersonItemActions.INSTANCE;
+        boolean customUse = actions.observeUse(p);
         HmiItemBindings.HandheldTool selected = null;
         ToolGrip grip = ToolGrip.resolve(stack);
         IItemRenderer renderer = null;
+        var profile = HmiItemBindings.resolve(stack);
         if (stack != null) {
             if (stack.getItem() instanceof ItemMap
                 && MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.FIRST_PERSON_MAP) != null) return false;
             renderer = MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON);
             if (renderer != null) {
                 selected = HmiItemBindings.tool(stack, renderer);
-                if (selected == null && grip == null && !OreGrip.isIngot(stack)) {
+                if (selected == null && grip == null
+                    && !OreGrip.isIngot(stack)
+                    && !actions.controls(p, stack)
+                    && !hasItemModel(stack, profile)) {
                     tool = null;
                     return false;
                 }
@@ -228,7 +255,6 @@ public final class HmiFirstPerson {
             family = grip;
             forgeRenderer = renderer;
             int damage = stack == null ? 0 : stack.getItemDamage();
-            var profile = HmiItemBindings.resolve(stack);
             boolean reclassify = changed || damage != lastDamage
                 || !Objects.equals(bound == null ? null : bound.itemId(), profile == null ? null : profile.itemId());
             bound = profile;
@@ -242,19 +268,17 @@ public final class HmiFirstPerson {
             double now = (double) p.ticksExisted + partial;
             if (!reclassify && lastFrame == now) return true;
             float seconds = Double.isNaN(lastFrame) ? 1f / 60
-                : (float) Math.max(0, Math.min(.05, (now - lastFrame) / 20));
+                : (float) Math.max(0, Math.min(program.builtIn() ? .25 : .05, (now - lastFrame) / 20));
             lastFrame = now;
             lastItem = held;
             lastDamage = damage;
             var frame = program.frame;
             frame.set("age", p.ticksExisted);
+            boolean using = stack != null && p.getItemInUse() != null && stack.isItemEqual(p.getItemInUse());
             frame.set(
                 "using",
                 LuaValue.valueOf(
-                    p.isUsingItem() && stack != null
-                        && p.getItemInUse() != null
-                        && p.getItemInUse()
-                            .getItem() == held
+                    using && !customUse
                         && (genericAction == null
                             || genericAction != EnumAction.none && stack.getItemUseAction() == genericAction)));
             frame.set("ground", LuaValue.valueOf(p.onGround));
@@ -291,12 +315,7 @@ public final class HmiFirstPerson {
                     if (rig != null) sampleStroke(now, rig.strokeDuration() * 20);
                     else if (tool.pose(stack, partial, wristMotion.identity())) {
                         if (!wristMotion.isFinite()) throw new IllegalArgumentException("Non-finite wrist transform");
-                        // Conjugate the local wrist motion into the independent arm's coordinate system.
-                        item.invert(sceneMotion)
-                            .mulLocal(wristMotion)
-                            .mulLocal(item);
-                        right.mulLocal(sceneMotion);
-                        item.mul(wristMotion);
+                        applyWristMotion();
                     }
                 } catch (RuntimeException ex) {
                     disableTool(stack, ex);
@@ -305,6 +324,7 @@ public final class HmiFirstPerson {
             }
             program.pose(false, HmiPoseProgram.EMPTY, progress, 0, changed, (swings & 1) != 0, hit, seconds);
             left.set(program.armMatrix);
+            FirstPersonItemActions.INSTANCE.apply(stack, partial, right, left, item);
             return true;
         } catch (Exception ex) {
             GTNRLib.LOG.error("HMI pose failed for {}. Reload resources to retry.", id, ex);
@@ -313,9 +333,25 @@ public final class HmiFirstPerson {
         }
     }
 
+    private void applyWristMotion() {
+        // Move the primary hand and held model together in the current, moving item's coordinate system.
+        item.invert(sceneMotion)
+            .mulLocal(wristMotion)
+            .mulLocal(item);
+        right.mulLocal(sceneMotion);
+        item.mul(wristMotion);
+    }
+
     public boolean blockPose() {
         return program.frame.get("block")
             .toboolean() && program.renderAsBlock(id);
+    }
+
+    private boolean hasItemModel(ItemStack stack, HmiItemBindings.Profile bound) {
+        String name = bound == null ? String.valueOf(Item.itemRegistry.getNameForObject(stack.getItem()))
+            : bound.itemId();
+        if (name.startsWith("etfuturum:")) name = "minecraft:" + name.substring(10);
+        return DefaultItemModels.contains(name);
     }
 
     private void classify(Item held, ItemStack stack, int damage) {
@@ -331,14 +367,16 @@ public final class HmiFirstPerson {
             id = family.reference;
         else if (id.startsWith("etfuturum:")) {
             String name = id.substring("etfuturum:".length());
-            if (scripts.assets()
-                .containsKey("items/" + name + ".json")) id = "minecraft:" + name;
+            if (DefaultItemModels.contains("minecraft:" + name)) id = "minecraft:" + name;
             else id = switch (name) {
                 case "slime" -> "minecraft:slime_block";
                 case "honey_block", "lantern", "soul_lantern", "soul_torch" -> "minecraft:" + name;
                 default -> id;
             };
-        } else if (held instanceof ItemPotion && ItemPotion.isSplash(damage)) id = "minecraft:splash_potion";
+        } else if (id.equals("minecraft:golden_rail")) id = "minecraft:powered_rail";
+        else if (id.equals("minecraft:tallgrass")) id = "minecraft:short_grass";
+        else if (id.equals("minecraft:stained_glass_pane")) id = "minecraft:white_stained_glass_pane";
+        else if (held instanceof ItemPotion && ItemPotion.isSplash(damage)) id = "minecraft:splash_potion";
         else if (held == Items.boat || held instanceof ItemBoat) id = "minecraft:oak_boat";
         else if (id.equals("minecraft:wooden_door")) id = "minecraft:oak_door";
         else if (id.equals("minecraft:sign")) id = "minecraft:oak_sign";
@@ -359,13 +397,18 @@ public final class HmiFirstPerson {
         tag(tags, "beds", shape instanceof ItemBed);
         tag(tags, "music_discs", shape instanceof ItemRecord);
         tag(tags, "nuggets", id.endsWith("_nugget"));
+        tag(
+            tags,
+            "saplings",
+            shape instanceof ItemBlock
+                && net.minecraft.block.Block.getBlockFromItem(shape) instanceof net.minecraft.block.BlockSapling);
         var frame = program.frame;
         frame.set("mainItem", id);
         frame.set("tags", tags);
         EnumAction action = genericAction != null ? genericAction
             : held == null ? EnumAction.none : stack.getItemUseAction();
         frame.set("action", action.name());
-        frame.set("block", LuaValue.valueOf(shape instanceof ItemBlock));
+        frame.set("block", LuaValue.valueOf(shape instanceof ItemBlock || DefaultItemModels.basket(id)));
         frame.set("lantern", LuaValue.valueOf(isLantern()));
         frame.set(
             "throwable",
@@ -374,7 +417,12 @@ public final class HmiFirstPerson {
                     || shape instanceof ItemEnderPearl
                     || id.equals("minecraft:splash_potion")));
         boolean flatUtility = shape instanceof ItemShears || shape instanceof ItemFlintAndSteel;
-        boolean handheld = (grip != null && !flatUtility) || shape instanceof ItemTool
+        displayGrip = flatUtility ? null : grip;
+        if (displayGrip == null && (shape == Items.stick || shape == Items.bone
+            || shape == Items.blaze_rod
+            || "minecraft:bamboo".equals(id)
+            || "minecraft:breeze_rod".equals(id))) displayGrip = ToolGrip.HANDHELD;
+        boolean handheld = displayGrip != null || shape instanceof ItemTool
             || shape instanceof ItemFishingRod
             || shape instanceof ItemBow
             || shape != null && shape.isFull3D();

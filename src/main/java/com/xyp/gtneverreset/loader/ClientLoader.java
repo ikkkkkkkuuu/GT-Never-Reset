@@ -21,13 +21,8 @@ import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
 import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
 import com.xyp.gtneverreset.compat.betterquesting.QuestSkipMenu;
 import com.xyp.gtneverreset.compat.bloodmagic.BloodMagicCompat;
-import com.xyp.gtneverreset.compat.gregtech.GregTechToolGrips;
-import com.xyp.gtneverreset.compat.gregtech.GregTechWireCutterAnimation;
-import com.xyp.gtneverreset.compat.gregtech.GregTechWrenchAnimation;
-import com.xyp.gtneverreset.compat.ic2.IndustrialCraftToolGrips;
 import com.xyp.gtneverreset.compat.nei.NEIWirelessTerminalConfig;
 import com.xyp.gtneverreset.compat.nei.WildcardRecipeImport;
-import com.xyp.gtneverreset.compat.tconstruct.TinkersToolGrips;
 import com.xyp.gtneverreset.compat.thaumcraft.ThaumcraftCompat;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
@@ -41,7 +36,6 @@ import cpw.mods.fml.client.registry.RenderingRegistry;
 import cpw.mods.fml.common.FMLCommonHandler;
 import ggfab.GGItemList;
 import gregtech.api.enums.ItemList;
-import gregtech.api.enums.Mods;
 
 @cpw.mods.fml.relauncher.SideOnly(cpw.mods.fml.relauncher.Side.CLIENT)
 public final class ClientLoader {
@@ -58,11 +52,6 @@ public final class ClientLoader {
             .bus()
             .register(new WindowsTaskbarButton());
         registerPackagedCoreRenderers();
-        GregTechWrenchAnimation.register();
-        GregTechWireCutterAnimation.register();
-        GregTechToolGrips.register();
-        if (Mods.IndustrialCraft2.isModLoaded()) IndustrialCraftToolGrips.register();
-        if (Mods.TinkerConstruct.isModLoaded()) TinkersToolGrips.register();
         MinecraftForge.EVENT_BUS.register(new WirelessConnectorRenderer());
         RadialMenuLoader.init();
         RenderingRegistry.registerEntityRenderingHandler(StableEndCrystalEntity.class, new StableEndCrystalRender());

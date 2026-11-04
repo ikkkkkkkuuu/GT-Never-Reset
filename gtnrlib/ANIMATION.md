@@ -1,20 +1,129 @@
-# GTNRLib 动画 API 0.1.22
+# GTNRLib 动画 API 0.1.26
 
-## 在 1.7.10 运行 Hold My Items 5.1.1
+## 第一人称默认动作
 
-下载 [HMI 5.1.1（Minecraft 1.21.11，KZm1qTcU）](https://modrinth.com/mod/hold-my-items/version/KZm1qTcU)，将原始 JAR 放在测试实例的 `resourcepacks` 目录。打开 GTNRLib 客户端配置，在“仅导入动画的资源包”中填写完整文件名（含 `.jar`），进游戏按 F3+T。清空该项并重载即可退出 HMI 模式。GTNRLib 会校验原包 SHA-256。这个模式无需解包或安装 Fabric。
+在已有 GTNH 常规前置（GTNHLib、ModularUI2、Baubles）的 1.7.10 实例中，只需安装 GTNRLib。首次进入世界即启用内置动作，不需要 GT-Never-Reset、HMI JAR、Punchy! 资源包或手动重载。装有 GregTech 时，库会启用 GT 手动扳手和剪线钳。多人游戏的服务端也装 GTNRLib 后，会在操作成功时通知玩家播放。可在客户端配置中关闭 `builtInFirstPerson`。
 
-GTNRLib 用独立的 LuaJ 环境运行原包的四段程序。每次绘制先采样玩家输入与挥动，再分别求主手、物品和辅助手的矩阵。握持、挖掘、攻击、使用和收回共用脚本的持续状态。显示辅助手不占用额外的物品槽。原包模式优先于已选的 Punchy 资源包，显式绑定到具体物品的第三方动画仍可接管该物品。退出、重新加载和切换世界都会重置相应状态。
+空手出拳、剑的地面连击和空中挥砍、镐和其他采掘工具、双手拉弓与松弦、进食、饮用和换物都使用同一个播放器。它分别求主手、物品和辅助手的姿势，再按当前握点合成呼吸、步态、转头滞后和垂直惯性。起跳后仍能挥剑、挖掘或拉弓，收招时回到角色当时的移动姿势。同一帧重复绘制不会重复推进运动。副手可参与持弓及双手工具动作，物品仍使用 1.7.10 的主手槽。
 
-- 空手、普通物品、剑、镐、斧、锄、铲、方块、弓、钓竿、雪球、食物、药水与地图均使用 1.7.10 的输入。走动、下落、攀爬、潜行、接触水、视角变化和换物会进入 Lua 的对应分支。按住 J 可检视。
-- 5.1.1 原包的 35 个物品模型入口均可按第一人称上下文读取。船、运输船、竹筏、桶、花瓣及末地水晶使用原包的模型、显示变换和纹理。液面、桶中生物、运输船的箱盖由原包零件脚本驱动。喝奶按已使用时长选择模型，美西螈桶按变体选择外观。
-- Et Futurum 的同名船、筏、末地水晶以及灯笼、灵魂灯笼、灵魂火把、黏液块和蜂蜜块会匹配对应的上游物品。火把、灯笼和岩浆桶可显示脚本生成的附着光晕。挥动粉红花瓣、野花或枯叶时，适配器按脚本生成屏幕空间粒子，并执行其逐帧回调。
-- Forge 自定义物品和地图默认沿用提供者的渲染路径。使用标准手持贴图坐标的自定义渲染器可用 `HmiItemBindings.registerTool` 显式接入 HMI 握姿。适配器按物品栈和渲染器筛选，可在 `pose` 提供物品局部坐标下的腕部变换，手和工具会跟随同一变换。Forge 仍负责调用原渲染器绘制完整工具。
-- 启用 HMI 后，Forge 矿物词典登记的锭（如 `ingotCopper`、`ingotHotTitanium`）沿用原版金锭、铁锭的握姿。识别按手中的物品和元数据进行，各模组仍绘制自己的纹理、材质颜色和叠层。Punchy 资源包可通过 `GTNRLIB_FLAT_ITEM` 为这些锭设置握姿。锭形模具、金属板和粒按各自的矿词分类处理。
-- HMI 和 Punchy 共用工具类型识别。原版工具基类、Forge 采掘类型和 craftingTool 矿词可选择剑、镐、斧、铲、锄或普通手工具的握持与挥动；实际堆栈仍交给原渲染器。安装 GT-Never-Reset 0.1.21 后，还会识别 GT 元工具、匠魂近战/采掘工具和 IC2 电动工具。例如电钻沿用镐、电锯沿用斧，锉刀等使用普通手工具动作。电机、链条、充能等专属动作留待后续。没有可识别类型的自定义物品继续使用原路径。
-- 同时安装 GT-Never-Reset 0.1.21 并启用本地 HMI 原包后，普通 GT 手动扳手沿用默认手持姿势。服务端确认扳手转动后只通知操作者，连续拧动会从上一段运动淡入。材质由 GT 绘制。拧腕曲线可用资源包覆盖 `assets/gtneverreset/animations/wrench_turn.json`，按 F3+T 重载。电动扳手使用通用工具挥动。工具箱仍由原模组处理。
-- 同时安装 GT-Never-Reset 0.1.22 并启用本地 HMI 原包后，普通 GT 手动剪线钳由双手各握一柄。左键向前试剪，右键由 GT 机器或电缆确认剪线钳操作后播放。连续挥动最多预留下一剪。资源包可覆盖 `assets/gtneverreset/animations/wire_cutter.json` 的前伸位移和钳口转角。铰点按 GT 标准图标布局定位，电动剪线器和折叠工具沿用通用动作。
-- 现代物品在 1.7.10 中需要由其他模组提供实物。弩、三叉戟、长矛、重锤、副手装备槽、现代游泳及匍匐还缺对应的使用状态。通用外部 HMI addon 和动作音效尚未接入。原包未附 `firefly.png`，引用它的粒子会跳过绘制。1.7.10 的图标、皮肤、方块网格和光照也会影响最终画面。
+- 普通 GT 手动扳手在服务端确认操作后拧腕，动作长 0.35 秒。手、扳手和实际材质一起跟随，重复操作从上一段平滑接续。
+- 普通 GT 手动剪线钳由双手分握两柄。左键向前试剪，右键在服务端确认操作后开合，单次约 0.30 秒。张开时每片钳刃向外转 17°，左右握柄分别带动对侧钳刃，中央铰点单独绘制。两刃相接时由 GT 直接绘制完整的闭合工具。电动和折叠型号沿用通用握姿。更改标准 GT 图标铰点的材质包需要单独适配。
+- 工具类型由原版基类、采掘类型和 Forge 矿词判定。库按已安装的模组补充 GT 元工具、匠魂工具和 IC2 电动工具类型。锭按具体物品和元数据匹配矿词，保留该堆栈的纹理与材质颜色。普通 Forge 专用渲染器由提供者绘制；已知工具、显式绑定的动作或模型可进入第一人称播放器。
+
+### 剑和工具如何握在手里
+
+HMI 5.1.1 在第一人称画面中按 `thirdperson_righthand` 提交物品。0.1.23 误用了 `firstperson_righthand`。剑、镐、斧、锄、铲的模型绕 Z 轴的角度因此少了 30°，工具头偏向玩家。0.1.24 使用 1.21.11 对应物品的显示变换，右臂和左臂分别在肩部加上原版的 +0.1 和 −0.1 弧度侧转。弓、钓竿和普通平面物品各自使用源模型的朝向与比例。[1.21.11 显示上下文映射](https://maven.fabricmc.net/docs/yarn-1.21.11%2Bbuild.4/net/minecraft/item/ItemDisplayContext.html#THIRD_PERSON_RIGHT_HAND)
+
+在 60 Hz 下用水平视角静止四秒，测量从握柄指向剑尖或镐头的向量与屏幕平面的夹角。旧版的剑和镐均朝玩家倾斜约 41.1°，HMI 原包同一采样约为 11.1°。工具材质、当前动作和视角会影响屏幕上的轮廓。
+
+为了让旧版贴图的柄穿过拳心，沿柄线横向和厚度方向补了固定的小位移。剑用护手下方的柄，采掘工具用木柄。位移在物品本地坐标中应用，步态、转头、起落和挥动时沿用同一握点。带专属挂点的 GT 扳手和双手剪线钳使用各自的工具模型。
+
+无外部资源包的宿主客户端在同一帧读取手臂模型和 Forge 物品绘制矩阵。拳心取经典手臂末端 4×4×4 皮肤立方体的中心。按 16×16 物品纹理计算，静止时剑（钻石）、镐、斧、铲、锄（铁）的柄轴距拳心分别约为 0.006、0.002、0.015、0.016、0.002 个纹理像素。角度另按 HMI 使用的模型轴核对，并复测了行走中挥剑、挖掘与跳跃。更换柄形状的材质包及第三方自绘的非标准模型需单独核对。
+
+### 用 JSON 给物品增加动作
+
+模组资源随 JAR 自动发现。开发时可在资源包中用相同路径覆盖，F3+T 可重读修改。下面的绑定只改变紫色染料的攻击，由集成服夹具在正常接受挥动的入口验证。把注册名、元数据和动作换成自己的即可。
+
+`assets/example/animations/first_person.json`
+
+```json
+{
+  "bindings": [
+    {"item": "minecraft:dye", "damage": 13, "trigger": "attack", "clip": "example:twist"}
+  ]
+}
+```
+
+`assets/example/animations/twist.json`
+
+```json
+{
+  "version": 1,
+  "clips": {
+    "example:twist": {
+      "duration": 0.30,
+      "tracks": [
+        {"bone": "wrist", "property": "rotation", "keys": [
+          {"time": 0, "value": [0, 0, 0]},
+          {"time": 0.14, "value": [15, 10, -40]},
+          {"time": 0.30, "value": [0, 0, 0]}
+        ]}
+      ]
+    }
+  }
+}
+```
+
+`damage` 省略时匹配该注册名的全部元数据。精确元数据优先，然后查同物品的通配绑定。一次只替换所选触发行为，未绑定的行为继续使用默认姿势。可用触发有 `attack`（点击空气或攻击实体）、`mining`（对准方块挥动）、`place`（ItemBlock 成功放置）、`interact`（右键交互产生挥动）、`use`（物品开始持续使用）。`use` 支持持续片段，松开时淡出。已有的模组专用触发同样可写进 JSON，例如 `gtneverreset:wrench_turn`、`gtneverreset:wire_cutter_snip`。全新的业务事件需由其提供者发出一次 `FirstPersonItemActions.INSTANCE.trigger("域:事件")`。
+
+`wrist` 同时带动主手和物品；`right_arm`、`left_arm`、`item` 可分别添加局部变换。位移使用游戏单位，角度使用度，时间使用秒。切换堆栈或卸载世界时清理播放状态。库内的 [扳手绑定](src/main/resources/assets/gtneverreset/animations/first_person.json) 和 [拧腕曲线](src/main/resources/assets/gtneverreset/animations/wrench_turn.json) 是实际发行的例子。剪线钳的双柄、铰点与握点由库内的 GT 模型提供，其前伸和开合幅度在 [剪线钳曲线](src/main/resources/assets/gtneverreset/animations/wire_cutter.json) 内调整。这三份 JSON 随 GTNRLib 发行，保留原来的 `assets/gtneverreset/animations/` 路径和动作 ID，以便旧资源包继续覆盖。新的内置动作在 `gtnrlib/src/main/resources/assets/gtnrlib/animations/` 维护。
+
+### 与 HMI 5.1.1 默认程序的逐帧对照
+
+开发工具从锁定的发布包采样局部动作、双手和各运动支点。发行库读取压缩数值曲线，并根据实际玩家输入连续计算移动。对照程序以同一组输入分别运行原包 Lua 和内置播放器，记录主手、物品、副手原点之间的最大距离及各自三个轴中最大的夹角。以下为每组连续 2.5 秒内的峰值，包含松开或收回后的帧。位置使用 1.7.10 渲染坐标中的格数。
+
+| 输入 | 采样频率 | 物品位置最大差 | 物品朝向最大差 |
+| --- | --- | ---: | ---: |
+| 原地转头、走动起停、连续起跳和落地，分别对照 | 8 档，30–240 Hz | < 0.0001 | ≤ 0.03° |
+| 空手出拳 | 60 Hz | 0.0032 | 0.33° |
+| 持剑边走边挥 | 8 档，30–240 Hz | 0.0023 | 0.35° |
+| 持镐边走边挖 | 60 Hz | 0.0022 | 0.42° |
+| 拉弓、短拉即松 | 60 Hz | 0.0002 | 0.03° |
+| 边走边拉弓 | 8 档，30–240 Hz | 0.0008 | 0.03° |
+| 空中挥剑 / 拉弓 | 60 Hz | 0.0022 / 0.0007 | 0.33° / 0.03° |
+| 行走中同时转头、挥剑 / 拉弓 | 60 Hz | 0.0022 / 0.0008 | 0.33° / 0.03° |
+| 快速连剑（间隔 6 tick） / 较慢连剑 | 60 Hz | 0.0020 / 0.0023 | 0.30° / 0.35° |
+| 喝药 | 60 Hz | 0.0153 | 1.31° |
+
+采样频率分别为 30、45、60、75、90、120、144 和 240 Hz。共 95 组、18,305 个有效采样帧，包含下方 35 项的逐项对照。角度和距离按上表精度取整。另测了持剑使用、进食、换物和持物高度。游戏侧在空资源包目录启动独立客户端，记录真实前进、两次起跳、下落与触地，并在空中分别挥剑、拉弓。数值参考用的是运行在适配器中的 5.1.1 原包程序；尚未做现代 1.21.11 客户端和 1.7.10 客户端的逐像素对照。玩家皮肤、网格、物品纹理、照明和视场都会影响最终画面。
+
+### 35 个特殊物品模型入口
+
+原包的 `assets/minecraft/items/*.json` 共 35 项。剑、镐、弓、空手和玩家运动归上面的共用姿势程序。内置模型为 1.7.10 单独制作，采样握姿并沿用本机方块图集。实机检查每项的解析目标、独立模型可见像素、静止与挥动的手部矩阵和帧缓冲变化。原包程序另逐项对照 60 Hz 的持握、挥动与收回；其中物品原点的最大差为 0.0156 格（末地水晶），朝向最大差为 1.03°（花叶篮）。开发宿主有 22 项可直接拿在手里（原版 5 项、Et Futurum 17 项）。下表的“映射”表示该实例缺少对应物品，夹具通过绑定堆栈绘制同一入口。它验证模型与握姿，缺失物品的原生使用交互仍无实物可测。
+
+| 5.1.1 入口 | 1.7.10 实例 | 核对项目 |
+| --- | --- | --- |
+| `acacia_boat` | 实物 `etfuturum:acacia_boat` | 握持、挥动通过 |
+| `acacia_chest_boat` | 实物 `etfuturum:acacia_chest_boat` | 握持、挥动通过 |
+| `axolotl_bucket` | 映射，实例缺实物 | 握持、挥动通过 |
+| `bamboo_chest_raft` | 实物 `etfuturum:bamboo_chest_raft` | 握持、挥动通过 |
+| `bamboo_raft` | 实物 `etfuturum:bamboo_raft` | 握持、挥动通过 |
+| `birch_boat` | 实物 `etfuturum:birch_boat` | 握持、挥动通过 |
+| `birch_chest_boat` | 实物 `etfuturum:birch_chest_boat` | 握持、挥动通过 |
+| `bucket` | 实物 `minecraft:bucket` | 握持、挥动通过 |
+| `cherry_boat` | 实物 `etfuturum:cherry_boat` | 握持、挥动通过 |
+| `cherry_chest_boat` | 实物 `etfuturum:cherry_chest_boat` | 握持、挥动通过 |
+| `cod_bucket` | 映射，实例缺实物 | 握持、挥动通过 |
+| `dark_oak_boat` | 实物 `etfuturum:dark_oak_boat` | 握持、挥动通过 |
+| `dark_oak_chest_boat` | 实物 `etfuturum:dark_oak_chest_boat` | 握持、挥动通过 |
+| `end_crystal` | 实物 `etfuturum:end_crystal` | 握持、挥动通过 |
+| `jungle_boat` | 实物 `etfuturum:jungle_boat` | 握持、挥动通过 |
+| `jungle_chest_boat` | 实物 `etfuturum:jungle_chest_boat` | 握持、挥动通过 |
+| `lava_bucket` | 实物 `minecraft:lava_bucket` | 握持、挥动通过 |
+| `leaf_litter` | 映射，实例缺实物 | 握持、挥动通过 |
+| `mangrove_boat` | 映射，实例缺实物 | 握持、挥动通过 |
+| `mangrove_chest_boat` | 映射，实例缺实物 | 握持、挥动通过 |
+| `milk_bucket` | 实物 `minecraft:milk_bucket` | 握持、挥动通过 |
+| `oak_boat` | 实物 `minecraft:boat` | 握持、挥动通过 |
+| `oak_chest_boat` | 实物 `etfuturum:oak_chest_boat` | 握持、挥动通过 |
+| `pale_oak_boat` | 映射，实例缺实物 | 握持、挥动通过 |
+| `pale_oak_chest_boat` | 映射，实例缺实物 | 握持、挥动通过 |
+| `pink_petals` | 实物 `etfuturum:pink_petals` | 握持、挥动通过 |
+| `powder_snow_bucket` | 映射，实例缺实物 | 握持、挥动通过 |
+| `pufferfish_bucket` | 映射，实例缺实物 | 握持、挥动通过 |
+| `salmon_bucket` | 映射，实例缺实物 | 握持、挥动通过 |
+| `spruce_boat` | 实物 `etfuturum:spruce_boat` | 握持、挥动通过 |
+| `spruce_chest_boat` | 实物 `etfuturum:spruce_chest_boat` | 握持、挥动通过 |
+| `tadpole_bucket` | 映射，实例缺实物 | 握持、挥动通过 |
+| `tropical_fish_bucket` | 映射，实例缺实物 | 握持、挥动通过 |
+| `water_bucket` | 实物 `minecraft:water_bucket` | 握持、挥动通过 |
+| `wildflowers` | 映射，实例缺实物 | 握持、挥动通过 |
+
+船／筏有独立船体与桨，运输型带活动箱盖；液面、饮奶液位、桶中生物、花叶粒子和水晶可动。美西螈桶另测了同一堆栈切换五种外观。内置几何、纹理和装饰性粒子保留 1.7.10 的绘制方式，不能据这 35 个通过项判定与上游逐像素相同。1.7.10 原版也缺少现代副手物品槽、弩、三叉戟、长矛、重锤以及现代游泳、匍匐等状态。地图随俯视变焦、攀梯时双臂交替和检视动作的逐帧等价性尚未验证。完整 GTNH 整合包、第三方光影和通用 HMI addon 尚未回归。
+
+## 可选的本地原包对照
+
+需要对照原包资源时，可把 HMI 5.1.1（MC 1.21.11，版本 KZm1qTcU）的原始 JAR 放在独立实例 `resourcepacks` 内，将完整文件名填入客户端的显式导入项后按 F3+T。GTNRLib 校验 SHA-256，运行四段原包程序并读取该包自己的模型和纹理。清空导入项并重载后回到内置默认。已选 Punchy! 包可给匹配物品提供替代姿势，显式加载 HMI 原包时优先使用原包。动作音效和通用 addon 尚未接入。[HMI 5.1.1 发布页](https://modrinth.com/mod/hold-my-items/version/KZm1qTcU)
 
 第三方工具需要明确持握类型时，可在客户端初始化时调用 `ToolGrip.registerFamily(MyDrill.class, stack -> ToolGrip.PICKAXE)`，也可按元数据或 NBT 返回不同的类型。子类的回调优先于父类，返回 `null` 继续匹配。
 
@@ -55,7 +164,7 @@ HmiItemBindings.register(myBucket, stack -> blueBucket);
 python gtnrlib/scripts/hmi-grip/convert.py "C:/mods/HMI 5.1.1 (1.21.11).jar" --check
 ```
 
-此转换器覆盖上述物品的主手持握基准。连击、蓄力、双手交互及完整 Lua 状态机需要另外适配。
+该转换器只用于上述 Punchy 示例的静止握姿。内置播放器的动态采样由 `CapturePoses.java` 完成。
 
 ## 第三方调用
 
@@ -121,15 +230,20 @@ if (library.reload(logger::warn)) {
 
 ## 复现验证
 
-在仓库根运行：
+在仓库根运行。带 `-PanimationQaDefaults` 的客户端命令要求测试资源包目录为空。
 
 ```powershell
-.\gradlew.bat spotlessCheck :gtnrlib:build :gtnrlib:checkLibraryContracts
+.\gradlew.bat spotlessCheck build :gtnrlib:checkLibraryContracts
+.\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-qa.init.gradle -PanimationQaDefaults :gtnrlib:runClient25
+.\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-qa.init.gradle -PanimationQaDefaults -PanimationQaStandaloneMods :runClient25
+.\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-qa.init.gradle -PanimationQaDefaults -PanimationQaHost :runClient25
 .\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-qa.init.gradle :gtnrlib:runClient25
 .\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-qa.init.gradle -PanimationQaHost :runClient25
 .\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-server-qa.init.gradle :gtnrlib:runServer25
 ```
 
+默认动作结果及截图写入库 build 的 `animation-qa/{library-defaults,library-mods-defaults,host-defaults}`，每次启动从空资源包目录直接进入独立世界。附加的旧示例／可选原包测试使用另外的实例。开发者可给 `:gtnrlib:checkLibraryContracts` 传入 `-PhmiRelease=<原包绝对路径>` 运行逐帧对照。要重新生成内置数值资源，使用同一参数和 `-I gtnrlib/scripts/animation-qa.init.gradle :gtnrlib:captureDefaultPoses`，输出在库 build 的 `animation-qa/default-poses.gz`。
+
 Windows 客户端夹具在库 run 目录内启动独立静音实例，守护脚本隐藏窗口并设置点击穿透。它通过集成服务器和游戏帧缓冲操作，结果与 PNG 写入库 build 目录的 `animation-qa/{library,host}`。其中 `screenshots/world-grip.png` 和 `world-empty.png` 来自正常游戏帧。隔离绘制使用陆地上的 70° 手部投影，并临时在测试皮肤的腕部与袖口加上不同颜色的标记。夹具分别检查单手和双手姿势，要求两处标记可见且按对应方向分开，并核对禁用后的持剑、空手画面与原版逐像素一致。
 
-独立库使用 640×480 窗口，宿主模式使用 854×480 窗口和项目声明的开发依赖。专服夹具使用独立的 `animation-qa/server`，监听环回地址和临时端口，需要该测试实例已有的 EULA 设置。测试结束自动停服。
+独立库使用 640×480 窗口，带可选模组的模式使用 854×480 窗口。`-PanimationQaStandaloneMods` 从运行类路径排除 GT-Never-Reset，并核对已加载模组；它使用实际 GregTech 工具检查客户端渲染和服务端确认。专服夹具使用独立的 `animation-qa/server`，监听环回地址和临时端口，需要该测试实例已有的 EULA 设置。测试结束自动停服。

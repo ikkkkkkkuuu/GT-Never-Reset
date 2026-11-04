@@ -23,9 +23,14 @@ public class AnimationServerChecks {
             .getSide() != Side.SERVER) throw new AssertionError("expected dedicated server");
         if (!new AnimationLibrary().reload(message -> { throw new AssertionError(message); }))
             throw new AssertionError("failed to load");
+        boolean host = cpw.mods.fml.common.Loader.isModLoaded("gtneverreset");
+        boolean gt = cpw.mods.fml.common.Loader.isModLoaded("gregtech");
+        if (host != Boolean.getBoolean("gtnrlib.animation.qa.expectHost")
+            || gt != Boolean.getBoolean("gtnrlib.animation.qa.toolMods"))
+            throw new AssertionError("Unexpected mod list, GT-Never-Reset=" + host + ", GregTech=" + gt);
         Files.writeString(
             Path.of(System.getProperty("gtnrlib.animation.server.result")),
-            "PASS dedicated server with GTNRLib");
+            "PASS dedicated server with GTNRLib, GT-Never-Reset=" + host + ", GregTech=" + gt);
         FMLCommonHandler.instance()
             .getMinecraftServerInstance()
             .initiateShutdown();

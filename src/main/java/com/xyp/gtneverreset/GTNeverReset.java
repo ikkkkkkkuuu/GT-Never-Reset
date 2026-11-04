@@ -19,7 +19,7 @@ import cpw.mods.fml.common.event.FMLServerStoppingEvent;
     modid = GTNeverReset.MODID,
     version = Tags.VERSION,
     name = GTNeverReset.NAME,
-    dependencies = "required-after:gtnrlib@[0.1.22,);required-after:" + ModList.ModIds.GREGTECH
+    dependencies = "required-after:gtnrlib@[0.1.26,);required-after:" + ModList.ModIds.GREGTECH
         + ";required-after:"
         + ModList.ModIds.GTNH_LIB
         + ";required-after:"

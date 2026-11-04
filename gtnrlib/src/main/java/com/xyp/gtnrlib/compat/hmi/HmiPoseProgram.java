@@ -23,7 +23,7 @@ import org.luaj.vm2.lib.TableLib;
 import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.jse.JseMathLib;
 
-/** Executes the release's three pose stages in their shared namespace, independently of the game and GL. */
+/** Samples the built-in player or a local reference program independently of the game and OpenGL. */
 public final class HmiPoseProgram {
 
     private static final String DIGEST = "dc90bce5ff8d4a9932ec2226d8d5a2644a190fbe6681b7a26bb1438679f3f9f8";
@@ -33,6 +33,7 @@ public final class HmiPoseProgram {
     private final LuaTable env = new LuaTable();
     public final LuaTable frame = new LuaTable();
     private final LuaTable context = new LuaTable();
+    private final DefaultHandPoses defaults;
     private int bowStage = -1;
     private final LuaValue shared, relative, item, model, advanceScreenParticles;
     private final Map<Integer, Matrix4f> parts = new HashMap<>();
@@ -42,6 +43,8 @@ public final class HmiPoseProgram {
     public static final String EMPTY = "minecraft:air";
 
     public record Scripts(String hand, String arm, String item, String model, Map<String, byte[]> assets) {
+
+        public static final Scripts BUILT_IN = new Scripts("", "", "", "", Map.of());
 
         public static Scripts read(Path path) throws Exception {
             byte[] bytes;
@@ -77,6 +80,7 @@ public final class HmiPoseProgram {
     }
 
     public HmiPoseProgram(Scripts scripts) throws IOException {
+        defaults = scripts == Scripts.BUILT_IN ? new DefaultHandPoses() : null;
         // Only the named primitives are reachable by the release programs. No package, file, class or host access.
         compiler.load(new org.luaj.vm2.lib.jse.JseBaseLib());
         compiler.load(new org.luaj.vm2.lib.PackageLib());
@@ -89,6 +93,7 @@ public final class HmiPoseProgram {
         env.set("context", context);
         env.set("data", context);
         env.set("frame", frame);
+        frame.set("tags", new LuaTable());
         context.set("player", frame);
         context.set("matrices", new LuaTable());
         context.set("particles", new LuaTable());
@@ -127,6 +132,14 @@ public final class HmiPoseProgram {
         }
         env.set("maps", LuaValue.NIL);
         advanceScreenParticles = env.get("advanceScreenParticles");
+        if (defaults != null) {
+            try (var effects = HmiPoseProgram.class.getResourceAsStream("default-effects.lua")) {
+                if (effects == null) throw new IOException("Missing built-in item effects");
+                model = compiler.load(effects, "default-effects", "t", env);
+            }
+            shared = relative = item = LuaValue.NIL;
+            return;
+        }
         shared = compile("hand_pose", scripts.hand);
         relative = compile("hand_relative_pose", scripts.arm);
         item = compile("item_pose", scripts.item);
@@ -149,7 +162,15 @@ public final class HmiPoseProgram {
         return compiler.load(code, name, env);
     }
 
+    public boolean builtIn() {
+        return defaults != null;
+    }
+
     public int swingDuration(String id) {
+        if (defaults != null) {
+            defaults.select(id, frame, false);
+            return defaults.duration();
+        }
         return Math.max(
             1,
             env.get("itemSwingSpeed")
@@ -158,6 +179,10 @@ public final class HmiPoseProgram {
     }
 
     public boolean renderAsBlock(String id) {
+        if (defaults != null) {
+            defaults.select(id, frame, false);
+            return defaults.block();
+        }
         return env.get("renderAsBlock")
             .get(id)
             .optboolean(true);
@@ -212,6 +237,30 @@ public final class HmiPoseProgram {
 
     public void pose(boolean main, String id, float progress, float dip, boolean changed, boolean alternate,
         boolean breaking, float seconds) {
+        if (defaults != null) {
+            defaults.pose(
+                main,
+                id,
+                progress,
+                dip,
+                changed,
+                alternate,
+                breaking,
+                seconds,
+                frame,
+                armMatrix,
+                itemMatrix,
+                scene);
+            if (main) {
+                bowStage = defaults.bowStage();
+                context.set("swingProgress", progress);
+                frame.set("glow", LuaValue.NIL);
+                advanceScreenParticles.call(LuaValue.valueOf(seconds));
+                model.call();
+                defaults.modelPart(id, parts.computeIfAbsent(0, unused -> new Matrix4f()));
+            }
+            return;
+        }
         if (main) frame.set("glow", LuaValue.NIL);
         context.set("bl", LuaValue.valueOf(main));
         context.set("mainHand", LuaValue.valueOf(main));

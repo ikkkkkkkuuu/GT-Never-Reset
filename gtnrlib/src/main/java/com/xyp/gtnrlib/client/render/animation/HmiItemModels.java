@@ -54,7 +54,7 @@ public final class HmiItemModels implements AutoCloseable {
                 var rule = entry.getAsJsonObject();
                 for (JsonElement context : rule.getAsJsonArray("when")) {
                     if (context.getAsString()
-                        .equals("firstperson_righthand")) model = rule.getAsJsonObject("model");
+                        .equals("thirdperson_righthand")) model = rule.getAsJsonObject("model");
                 }
             }
             if (model.has("on_true")) {
@@ -90,8 +90,9 @@ public final class HmiItemModels implements AutoCloseable {
         if (cache.containsKey(path)) return cache.get(path);
         JsonObject json = json(assets, "models/" + path + ".json");
         JsonObject display = json.getAsJsonObject("display")
-            .getAsJsonObject("firstperson_righthand");
-        Vector3f t = vector(display, "translation").div(16), r = vector(display, "rotation").mul((float) Math.PI / 180),
+            .getAsJsonObject("thirdperson_righthand");
+        Vector3f t = vector(display, "translation").div(16),
+            r = display.has("rotation") ? vector(display, "rotation").mul((float) Math.PI / 180) : new Vector3f(),
             s = vector(display, "scale");
         Matrix4f mount = new Matrix4f().translation(t)
             .rotateXYZ(r.x, r.y, r.z)

@@ -22,10 +22,10 @@
     }
   ],
   "globalArm": {
-    "right": { "rotX": -81.34, "rotY": 11.93, "rotZ": 117.41, "scale": 0.97 }
+    "right": { "rotX": -86.71, "rotY": 14.12, "rotZ": 115.35, "scale": 0.97 }
   },
   "globalItem": {
-    "right": { "offX": -0.044, "offY": -0.039, "offZ": 0.007, "rotX": -1.13, "rotY": -36.13, "rotZ": -10.84, "scale": 1.02 }
+    "right": { "offX": -0.013, "offY": -0.047, "offZ": -0.004, "rotX": -1.46, "rotY": -36.21, "rotZ": -10.76, "scale": 1.275 }
   },
   "item": {
     "BLOCK": {
@@ -66,17 +66,17 @@
     },
     "SWORD": {
       "transforms": {
-        "right": { "offX": -0.073, "offY": 0.164, "offZ": 0.021, "rotX": -1.13, "rotY": -36.13, "rotZ": -10.84, "scale": 1.02 }
+        "right": { "offX": -0.048, "offY": 0.207, "offZ": 0.011, "rotX": -1.46, "rotY": -36.21, "rotZ": -10.76, "scale": 1.275 }
       }
     },
     "SHOVEL": {
       "transforms": {
-        "right": { "offX": -0.13, "offY": -0.005, "offZ": -0.131, "rotX": 4.95, "rotY": 46.43, "rotZ": 8.91, "scale": 1.02 }
+        "right": { "offX": -0.098, "offY": -0.069, "offZ": -0.152, "rotX": -32.83, "rotY": 37.75, "rotZ": -11.57, "scale": 1.275 }
       }
     },
     "AXE": {
       "armTransforms": {
-        "right": { "rotX": -92.08, "rotY": 5.62, "rotZ": 123.86, "scale": 0.97 }
+        "right": { "rotX": -97.25, "rotY": 7.4, "rotZ": 121.47, "scale": 0.97 }
       },
       "customAnimation": [
         {
@@ -97,15 +97,15 @@
         }
       ],
       "transforms": {
-        "right": { "offX": -0.039, "offY": -0.038, "offZ": 0, "rotX": 6.01, "rotY": -41.43, "rotZ": -2.72, "scale": 1.02 }
+        "right": { "offX": -0.007, "offY": -0.036, "offZ": -0.008, "rotX": 5.68, "rotY": -41.52, "rotZ": -2.64, "scale": 1.275 }
       }
     },
     "GTNRLIB_FLAT_ITEM": {
       "armTransforms": {
-        "right": { "rotX": -91.87, "rotY": 4.34, "rotZ": 124.97, "scale": 0.97 }
+        "right": { "rotX": -96.98, "rotY": 6.13, "rotZ": 122.59, "scale": 0.97 }
       },
       "transforms": {
-        "right": { "offX": 0.095, "offY": -0.197, "offZ": 0.035, "rotX": -1, "rotY": -53.05, "rotZ": 4.54, "scale": 1.02 }
+        "right": { "offX": -0.1, "offY": -0.057, "offZ": -0.28, "rotX": 32.32, "rotY": 33.65, "rotZ": 39.29, "scale": 0.825 }
       },
       "customAnimation": [
         {
