@@ -5,6 +5,7 @@ import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.client.ClientCommandHandler;
 import net.minecraftforge.common.MinecraftForge;
 
+import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.fx.world.FxEffects;
 import com.xyp.gtnrlib.client.fx.world.FxMoteRenderer;
 import com.xyp.gtnrlib.client.hud.HudLayout;
@@ -27,6 +28,7 @@ public class GTNRLibClient {
         FxEffects.register();
         GTNRLibConfig.register();
         connectConfig();
+        FirstPersonAnimations.INSTANCE.register();
         HudOverlay.register();
         MinecraftForge.EVENT_BUS.register(new ShaderEffect.Reloader());
         MinecraftForge.EVENT_BUS.register(new PaletteThemes.Reloader());

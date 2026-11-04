@@ -1,0 +1,6 @@
+{
+  "bindings": [
+    {"item":"minecraft:dye","damage":13,"trigger":"attack","clip":"animationclientqa:twist"},
+    {"item":"minecraft:golden_apple","damage":1,"trigger":"use","clip":"animationclientqa:hold"}
+  ]
+}

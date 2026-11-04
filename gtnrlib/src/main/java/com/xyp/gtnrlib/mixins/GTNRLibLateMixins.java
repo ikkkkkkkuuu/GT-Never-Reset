@@ -1,11 +1,14 @@
 package com.xyp.gtnrlib.mixins;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import com.gtnewhorizon.gtnhmixins.ILateMixinLoader;
 import com.gtnewhorizon.gtnhmixins.LateMixin;
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
+import com.xyp.gtnrlib.compat.animation.ToolAnimationCompat;
+import com.xyp.gtnrlib.mod.ModList;
 
 @LateMixin
 public class GTNRLibLateMixins implements ILateMixinLoader {
@@ -21,6 +24,13 @@ public class GTNRLibLateMixins implements ILateMixinLoader {
 
     @Override
     public List<String> getMixins(Set<String> loadedMods) {
-        return IMixins.getLateMixins(GTNRLibMixins.class, loadedMods);
+        List<String> mixins = new ArrayList<>(IMixins.getLateMixins(GTNRLibMixins.class, loadedMods));
+        if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
+            if (!ToolAnimationCompat.legacyClass("mixins/late/gregtech/ToolMachineUseMixin"))
+                mixins.add("gregtech.ToolMachineUseMixin");
+            if (!ToolAnimationCompat.legacyClass("mixins/late/gregtech/WrenchToolUseMixin"))
+                mixins.add("gregtech.WrenchToolUseMixin");
+        }
+        return mixins;
     }
 }

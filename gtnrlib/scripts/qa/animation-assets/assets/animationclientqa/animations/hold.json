@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "clips": {
+    "animationclientqa:hold": {
+      "duration": 0.12, "end": "hold",
+      "tracks": [
+        {"bone":"right_arm","property":"rotation","keys":[{"time":0,"value":[0,0,0]},{"time":0.12,"value":[15,0,0]}]},
+        {"bone":"left_arm","property":"rotation","keys":[{"time":0,"value":[0,0,0]},{"time":0.12,"value":[0,-20,0]}]},
+        {"bone":"item","property":"position","keys":[{"time":0,"value":[0,0,0]},{"time":0.12,"value":[0,0.05,0]}]}
+      ]
+    }
+  }
+}

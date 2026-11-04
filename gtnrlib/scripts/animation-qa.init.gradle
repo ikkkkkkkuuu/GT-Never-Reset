@@ -1,0 +1,138 @@
+// An isolated client. -PanimationQaStandaloneMods keeps the optional tool mods without loading GT-Never-Reset.
+gradle.projectsEvaluated {
+    def lib = gradle.rootProject.project(':gtnrlib')
+    lib.spotless { java { target 'src/*/java/**/*.java', 'scripts/qa/Animation*Checks.java', 'scripts/hmi-grip/CapturePoses.java' } }
+    def captureClasses = lib.layout.buildDirectory.dir('animation-qa/capture-classes')
+    def capture = lib.tasks.register('compilePoseCapture', JavaCompile) {
+        dependsOn lib.tasks.named('classes')
+        source lib.file('scripts/hmi-grip/CapturePoses.java')
+        classpath = lib.sourceSets.main.output + lib.sourceSets.main.compileClasspath
+        destinationDirectory.set(captureClasses)
+        javaCompiler.set(lib.javaToolchains.compilerFor(lib.java.toolchain))
+        options.encoding = 'UTF-8'
+        options.compilerArgs += ['-proc:none']
+    }
+    lib.tasks.register('captureDefaultPoses', JavaExec) {
+        description = 'Measure the pinned reference into build/animation-qa/default-poses.gz'
+        dependsOn capture
+        mainClass.set('CapturePoses')
+        classpath = lib.files(captureClasses) + lib.sourceSets.main.output + lib.sourceSets.main.compileClasspath
+        javaLauncher.set(lib.javaToolchains.launcherFor(lib.java.toolchain))
+        maxHeapSize = '2g'
+        def reference = gradle.startParameter.projectProperties['hmiRelease']
+        def atlas = lib.layout.buildDirectory.file('animation-qa/default-poses.gz')
+        doFirst {
+            if (!reference) throw new GradleException('Pass -PhmiRelease=<pinned original jar>')
+            args reference, atlas.get().asFile.absolutePath
+        }
+    }
+    def modsOnly = gradle.startParameter.projectProperties.containsKey('animationQaStandaloneMods')
+    def host = (modsOnly || gradle.startParameter.projectProperties.containsKey('animationQaHost')) ? gradle.rootProject : lib
+    def defaults = gradle.startParameter.projectProperties.containsKey('animationQaDefaults')
+    def mode = (modsOnly ? 'library-mods' : host == lib ? 'library' : 'host') + (defaults ? '-defaults' : '')
+    def output = lib.file("build/animation-qa/" + mode)
+    def classes = new File(output, 'classes')
+    def fixture = host.tasks.register('compileAnimationQA', JavaCompile) {
+        dependsOn lib.tasks.named('classes')
+        source lib.file('scripts/qa/AnimationClientChecks.java')
+        source lib.file('scripts/qa/AnimationGripChecks.java')
+        source lib.file('scripts/qa/AnimationMovementChecks.java')
+        source lib.file('scripts/qa/AnimationModelChecks.java')
+        def fixtureAssets = lib.file('scripts/qa/animation-assets')
+        inputs.dir(fixtureAssets)
+        doLast { lib.copy { from fixtureAssets; into classes } }
+        classpath = host == lib ? lib.sourceSets.test.compileClasspath : host.sourceSets.main.compileClasspath + lib.sourceSets.main.output
+        if (host != lib) {
+            source lib.file('scripts/qa/AnimationWrenchChecks.java')
+            source lib.file('scripts/qa/AnimationToolChecks.java')
+            source lib.file('scripts/qa/AnimationCutterChecks.java')
+        }
+        destinationDirectory.set(classes)
+        javaCompiler.set(lib.javaToolchains.compilerFor(lib.java.toolchain))
+        options.encoding = 'UTF-8'
+        options.compilerArgs += ['-proc:none']
+    }
+    File sessionWorld
+    host.tasks.named('runClient25', JavaExec).configure {
+        dependsOn fixture
+        if (modsOnly) {
+            // RFG launches the project's dev JAR even when its loose classes and resources are excluded.
+            classpath = (classpath - host.sourceSets.main.output).filter { !it.name.startsWith('gtneverreset-') }
+        }
+        classpath += lib.files(classes)
+        workingDir lib.file("run/animation-qa/" + mode)
+        systemProperty 'gtnrlib.animation.qa', 'true'
+        systemProperty 'gtnrlib.animation.qa.workspace', lib.projectDir.absolutePath
+        systemProperty 'gtnrlib.animation.qa.output', output.absolutePath
+        systemProperty 'gtnrlib.animation.qa.toolMods', host != lib
+        systemProperty 'gtnrlib.animation.qa.expectHost', host != lib && !modsOnly
+        args '--width', (host != lib ? '854' : '640'), '--height', '480'
+        notCompatibleWithConfigurationCache('isolated automatic client')
+        def release = gradle.startParameter.projectProperties['hmiRelease']
+        if (defaults && release) throw new GradleException('The built-in acceptance client must not receive an HMI archive')
+        systemProperty 'gtnrlib.animation.qa.defaults', defaults
+        if (release) systemProperty 'gtnrlib.animation.qa.hmi', 'hmi-fixture.jar'
+        doFirst {
+            def saves = new File(workingDir, 'saves').toPath()
+            java.nio.file.Files.createDirectories(saves)
+            sessionWorld = java.nio.file.Files.createTempDirectory(saves, 'animation-qa-').toFile()
+            systemProperty 'gtnrlib.animation.qa.world', sessionWorld.name
+            if (release) {
+                def input = new File(release)
+                if (!input.isFile()) throw new GradleException("Missing HMI fixture: " + input)
+                lib.copy { from input; into new File(workingDir, 'resourcepacks'); rename { 'hmi-fixture.jar' } }
+            }
+            output.mkdirs()
+            workingDir.mkdirs()
+            if(host != lib) {
+                def settings=new File(workingDir,'config/DreamCoreMod.properties')
+                settings.parentFile.mkdirs()
+                def props=new Properties()
+                if(settings.isFile()) settings.withInputStream { props.load(it) }
+                props.setProperty('showConfirmExitWindow','false')
+                settings.withOutputStream { props.store(it,'Isolated automation client') }
+            }
+            if (defaults) {
+                def packs = new File(workingDir, 'resourcepacks')
+                if (packs.listFiles()?.any { it.name != 'repository.json' })
+                    throw new GradleException("Expected empty isolated resourcepacks: " + packs)
+            } else {
+                def example = lib.file('examples/first-person')
+                lib.copy { from example; into new File(workingDir, 'resourcepacks/animation-qa') }
+                // Keep the primary pose identical while opting into a second arm only in this test pack.
+                def motions = 'assets/minecraft/punchy/animations/gtnrlib.json'
+                def clips = new groovy.json.JsonSlurper().parse(new File(example, motions)).animations
+                def grip = clips.gtnrlib_grip, empty = clips.gtnrlib_empty
+                [grip, empty].each { it.timeline['0'] += 'dual_handed;' }
+                def dual = new File(workingDir, 'resourcepacks/animation-qa-dual/' + motions)
+                dual.parentFile.mkdirs()
+                dual.setText(groovy.json.JsonOutput.toJson([animations: [idle: grip, attack: grip, empty: empty]]), 'UTF-8')
+                def rules = new File(workingDir, 'resourcepacks/animation-qa-dual/assets/minecraft/punchy/compat/test.json')
+                rules.parentFile.mkdirs()
+                def exampleRules = new File(example, 'assets/minecraft/punchy/compat/gtnrlib.json')
+                def poses = new groovy.json.JsonSlurper().parse(exampleRules)
+                poses.emptyHand.customAnimation = [[type: 'idle', name: 'empty']]
+                rules.setText(groovy.json.JsonOutput.toJson([
+                    globalArm: poses.globalArm, globalItem: poses.globalItem, item: [SWORD: poses.item.SWORD], emptyHand: poses.emptyHand
+                ]), 'UTF-8')
+            }
+            new File(workingDir, 'options.txt').setText('lang:en_US\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsound:0.0\nmusic:0.0\nrenderDistance:2\n', 'UTF-8')
+            def result = new File(output, 'result.txt')
+            java.nio.file.Files.deleteIfExists(result.toPath())
+            def relativeReady = "build/animation-qa/" + mode + "/window-helper.ready"
+            def ready = lib.file(relativeReady)
+            java.nio.file.Files.deleteIfExists(ready.toPath())
+            def helper = new ProcessBuilder('powershell.exe', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
+                '-ExecutionPolicy', 'Bypass', '-File', lib.file('scripts/qa/HideTestClient.ps1').absolutePath,
+                '-Workspace', lib.projectDir.absolutePath, '-Marker', 'gtnrlib.animation.qa=true', '-ReadyFile', relativeReady)
+                .redirectErrorStream(true).redirectOutput(new File(output, 'window-helper.log')).start()
+            for (int i = 0; i < 100 && !ready.exists() && helper.isAlive(); i++) Thread.sleep(100)
+            if (!ready.isFile()) throw new GradleException('window guard failed to start')
+        }
+        doLast {
+            def result = new File(output, 'result.txt')
+            if (!result.isFile() || !result.text.startsWith('PASS')) throw new GradleException('animation fixture did not pass')
+            if (sessionWorld?.canonicalFile?.parentFile == new File(workingDir, 'saves').canonicalFile) lib.delete(sessionWorld)
+        }
+    }
+}

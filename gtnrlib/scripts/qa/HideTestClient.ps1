@@ -1,4 +1,6 @@
-param([Parameter(Mandatory = $true)][string]$Workspace)
+param([Parameter(Mandatory = $true)][string]$Workspace,
+    [string]$Marker = '-Dgtnrlib.commandtree.qa=true',
+    [string]$ReadyFile = 'build/command-tree-qa/window-helper.ready')
 
 # Scope window changes to the explicitly marked client for this workspace.
 Add-Type @'
@@ -18,10 +20,10 @@ public static class FactoryQaWindows {
 $deadline = [DateTime]::UtcNow.AddMinutes(10)
 $seenClient = $false
 $changed = [Collections.Generic.HashSet[long]]::new()
-Set-Content -LiteralPath (Join-Path $Workspace 'build/command-tree-qa/window-helper.ready') -Value 'READY'
+Set-Content -LiteralPath (Join-Path $Workspace $ReadyFile) -Value 'READY'
 while ([DateTime]::UtcNow -lt $deadline) {
     $clients = @(Get-CimInstance Win32_Process -Filter "Name = 'java.exe' OR Name = 'javaw.exe'" |
-        Where-Object { $_.CommandLine -and $_.CommandLine.Contains('-Dgtnrlib.commandtree.qa=true') -and $_.CommandLine.Contains($Workspace) })
+        Where-Object { $_.CommandLine -and $_.CommandLine.Contains($Marker) -and $_.CommandLine.Contains($Workspace) })
     if ($clients.Count -eq 0 -and $seenClient) { break }
     if ($clients.Count -gt 0) { $seenClient = $true }
     $clientIds = @($clients | ForEach-Object { [uint32]$_.ProcessId })

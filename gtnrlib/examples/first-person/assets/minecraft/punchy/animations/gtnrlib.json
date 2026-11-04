@@ -1,0 +1,338 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "gtnrlib_grip": {
+      "animation_length": 1,
+      "loop": true,
+      "timeline": {
+        "0": "use_keyframes_v2;anim_speed_1;"
+      },
+      "bones": {
+        "right_arm": {
+          "position": [13.5, 15.5, 8],
+          "rotation": [
+            -6,
+            2,
+            3
+          ]
+        }
+      }
+    },
+    "gtnrlib_swing": {
+      "animation_length": 0.36,
+      "loop": false,
+      "timeline": {
+        "0.0": "use_keyframes_v2;anim_speed_1;gtnrlib:replace_swing;"
+      },
+      "bones": {
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -6,
+              2,
+              3
+            ],
+            "0.18": {
+              "post": [
+                -38,
+                5,
+                10
+              ],
+              "easing": "easeOutSine"
+            },
+            "0.36": {
+              "post": [
+                -6,
+                2,
+                3
+              ],
+              "easing": "easeInOutSine"
+            }
+          }
+        }
+      }
+    },
+    "gtnrlib_mine": {
+      "animation_length": 0.4,
+      "loop": true,
+      "timeline": {
+        "0.0": "use_keyframes_v2;anim_speed_1;gtnrlib:replace_swing;"
+      },
+      "bones": {
+        "right_arm": {
+          "rotation": {
+            "0": [
+              -6,
+              2,
+              3
+            ],
+            "0.2": {
+              "post": [
+                -24,
+                0,
+                2
+              ],
+              "easing": "easeOutSine"
+            },
+            "0.4": {
+              "post": [
+                -6,
+                2,
+                3
+              ],
+              "easing": "easeInOutSine"
+            }
+          }
+        }
+      }
+    },
+    "gtnrlib_place": {
+      "animation_length": 0.4,
+      "loop": false,
+      "timeline": {
+        "0": "use_keyframes_v2;anim_speed_1;gtnrlib:replace_swing;gtnrlib:chain_placement;"
+      },
+      "bones": {
+        "right_arm": {
+          "position": {
+            "0": { "post": [15.8, 16.2, 11.3], "lerp_mode": "catmullrom" },
+            "0.04": { "post": [17.7, 19.5, 0.1], "lerp_mode": "catmullrom" },
+            "0.08": { "post": [13.7, 11.1, -4.4], "lerp_mode": "catmullrom" },
+            "0.12": { "post": [12.1, 9.5, -7.2], "lerp_mode": "catmullrom" },
+            "0.16": { "post": [12.4, 9.5, -5.5], "lerp_mode": "catmullrom" },
+            "0.20": { "post": [10.3, 10, 0.9], "lerp_mode": "catmullrom" },
+            "0.24": { "post": [11.4, 11.9, 5.9], "lerp_mode": "catmullrom" },
+            "0.28": { "post": [13.3, 13.9, 7.7], "lerp_mode": "catmullrom" },
+            "0.32": { "post": [14, 15.9, 9.3], "lerp_mode": "catmullrom" },
+            "0.36": { "post": [14.9, 16.5, 10.6], "lerp_mode": "catmullrom" },
+            "0.40": { "post": [15.8, 16.2, 11.3], "lerp_mode": "catmullrom" }
+          },
+          "rotation": {
+            "0": { "post": [5, -4, -5], "lerp_mode": "catmullrom" },
+            "0.04": { "post": [8.4, -6.7, -7.9], "lerp_mode": "catmullrom" },
+            "0.08": { "post": [13.6, -10.8, -12.9], "lerp_mode": "catmullrom" },
+            "0.12": { "post": [17.3, -13.7, -19.1], "lerp_mode": "catmullrom" },
+            "0.16": { "post": [16.6, -13.1, -19.3], "lerp_mode": "catmullrom" },
+            "0.20": { "post": [12.4, -9.8, -15.5], "lerp_mode": "catmullrom" },
+            "0.24": { "post": [8.4, -6.7, -9.9], "lerp_mode": "catmullrom" },
+            "0.28": { "post": [5.7, -4.6, -5.8], "lerp_mode": "catmullrom" },
+            "0.32": { "post": [4.3, -3.4, -4.2], "lerp_mode": "catmullrom" },
+            "0.36": { "post": [4.6, -3.7, -4.6], "lerp_mode": "catmullrom" },
+            "0.40": { "post": [5, -4, -5], "lerp_mode": "catmullrom" }
+          }
+        }
+      }
+    },
+    "gtnrlib_walk": {
+      "animation_length": 0.5,
+      "loop": true,
+      "timeline": {
+        "0.0": "use_keyframes_v2;anim_speed_1;"
+      },
+      "bones": {
+        "right_arm": {
+          "position": [13.5, 15.5, 8],
+          "rotation": {
+            "0": [
+              0,
+              0,
+              0
+            ],
+            "0.25": {
+              "post": [
+                3,
+                0,
+                2
+              ],
+              "easing": "easeOutSine"
+            },
+            "0.5": [
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      }
+    },
+    "gtnrlib_chop": {
+      "animation_length": 0.45,
+      "loop": true,
+      "timeline": {
+        "0": "use_keyframes_v2;anim_speed_1;gtnrlib:replace_swing;"
+      },
+      "bones": {
+        "right_arm": {
+          "position": {
+            "0": [14, 17, 8],
+            "0.10": {
+              "post": [16, 13, 10],
+              "easing": "easeInOutSine"
+            },
+            "0.23": {
+              "post": [7, 12, -1],
+              "easing": "easeInOutSine"
+            },
+            "0.45": {
+              "post": [14, 17, 8],
+              "easing": "easeInOutSine"
+            }
+          },
+          "rotation": {
+            "0": [
+              5,
+              -4,
+              -5
+            ],
+            "0.10": {
+              "post": [
+                15,
+                -8,
+                -15
+              ],
+              "easing": "easeInOutSine"
+            },
+            "0.23": {
+              "post": [
+                -8,
+                -14,
+                22
+              ],
+              "easing": "easeInOutSine"
+            },
+            "0.45": {
+              "post": [
+                5,
+                -4,
+                -5
+              ],
+              "easing": "easeInOutSine"
+            }
+          }
+        }
+      }
+    },
+    "gtnrlib_carry_low": {
+      "animation_length": 1,
+      "loop": true,
+      "timeline": {
+        "0": "use_keyframes_v2;anim_speed_1;"
+      },
+      "bones": {
+        "right_arm": {
+          "position": [14, 17, 8],
+          "rotation": [
+            5,
+            -4,
+            -5
+          ]
+        }
+      }
+    },
+    "gtnrlib_empty": {
+      "animation_length": 1,
+      "loop": true,
+      "timeline": {
+        "0": "use_keyframes_v2;anim_speed_1;gtnrlib:hand_motion;"
+      },
+      "bones": {
+        "right_arm": {
+          "position": [-3.2, 1.4, 2.4],
+          "rotation": [-5.4, 0, -28]
+        }
+      }
+    },
+    "gtnrlib_hold": {
+      "animation_length": 1,
+      "loop": true,
+      "timeline": {
+        "0": "use_keyframes_v2;anim_speed_1;gtnrlib:hand_motion;"
+      },
+      "bones": {
+        "right_arm": {
+          "position": [14, 17, 8],
+          "rotation": [6, -3, -6]
+        }
+      }
+    },
+    "gtnrlib_block": {
+      "animation_length": 1,
+      "loop": true,
+      "timeline": {
+        "0": "use_keyframes_v2;anim_speed_1;gtnrlib:hand_motion;"
+      },
+      "bones": {
+        "right_arm": {
+          "position": [15.8, 16.2, 11.3],
+          "rotation": [5, -4, -5]
+        }
+      }
+    },
+    "gtnrlib_punch": {
+      "animation_length": 0.30,
+      "loop": false,
+      "timeline": {
+        "0": "use_keyframes_v2;anim_speed_1;gtnrlib:replace_swing;gtnrlib:empty_punch;"
+      },
+      "bones": {
+        "right_arm": {
+          "position": {
+            "0": { "post": [-3.2, 1.4, 2.4], "lerp_mode": "catmullrom" },
+            "0.033": { "post": [-1.9, -0.1, 1.3], "lerp_mode": "catmullrom" },
+            "0.075": { "post": [0.6, 0.4, -1.1], "lerp_mode": "catmullrom" },
+            "0.105": { "post": [-0.4, 0.1, 0.6], "lerp_mode": "catmullrom" },
+            "0.15": { "post": [-4.3, 0.2, 2.2], "lerp_mode": "catmullrom" },
+            "0.18": { "post": [-5, 1.3, 3.1], "lerp_mode": "catmullrom" },
+            "0.23": { "post": [-4.1, 1.7, 2.4], "lerp_mode": "catmullrom" },
+            "0.27": { "post": [-3.4, 1.5, 2.3], "lerp_mode": "catmullrom" },
+            "0.30": { "post": [-3.2, 1.4, 2.4], "lerp_mode": "catmullrom" }
+          },
+          "rotation": {
+            "0": { "post": [-5.4, 0, -28], "lerp_mode": "catmullrom" },
+            "0.033": { "post": [10.9, -8, -36], "lerp_mode": "catmullrom" },
+            "0.075": { "post": [27.5, -16, -42], "lerp_mode": "catmullrom" },
+            "0.105": { "post": [19.6, -21, -31], "lerp_mode": "catmullrom" },
+            "0.15": { "post": [-0.9, 3, -18.5], "lerp_mode": "catmullrom" },
+            "0.18": { "post": [-6.3, 11, -21], "lerp_mode": "catmullrom" },
+            "0.23": { "post": [-7.6, 7, -30], "lerp_mode": "catmullrom" },
+            "0.27": { "post": [-5.6, 2, -31], "lerp_mode": "catmullrom" },
+            "0.30": { "post": [-5.4, 0, -28], "lerp_mode": "catmullrom" }
+          }
+        }
+      }
+    },
+    "gtnrlib_item_swing": {
+      "animation_length": 0.3,
+      "loop": false,
+      "timeline": {
+        "0": "use_keyframes_v2;anim_speed_1;gtnrlib:replace_swing;"
+      },
+      "bones": {
+        "right_arm": {
+          "position": {
+            "0": [14, 17, 8],
+            "0.1": {
+              "post": [9, 14, 1],
+              "easing": "easeOutSine"
+            },
+            "0.3": {
+              "post": [14, 17, 8],
+              "easing": "easeInOutSine"
+            }
+          },
+          "rotation": {
+            "0": [6, -3, -6],
+            "0.1": {
+              "post": [-19, 6, 11],
+              "easing": "easeOutSine"
+            },
+            "0.3": {
+              "post": [6, -3, -6],
+              "easing": "easeInOutSine"
+            }
+          }
+        }
+      }
+    }
+  }
+}
