@@ -136,6 +136,7 @@ public final class AnimationClientChecks {
                     HmiFirstPerson.INSTANCE.enabled() && HmiFirstPerson.INSTANCE.program()
                         .builtIn(),
                     "built-in player active on the first ordinary world frame");
+                AnimationBlockUseChecks.verify(mc);
                 checkHmi(mc);
                 movement = new AnimationMovementChecks(this, output);
                 return;
