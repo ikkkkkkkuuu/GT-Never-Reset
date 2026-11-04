@@ -1,0 +1,5 @@
+{
+  "bindings": [
+    {"item": "gregtech:gt.metatool.01", "damage": 22, "trigger": "gtnrlib:screwdriver_turn", "clip": "gtnrlib:screwdriver_turn"}
+  ]
+}

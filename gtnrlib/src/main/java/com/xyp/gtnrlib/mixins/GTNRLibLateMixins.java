@@ -30,6 +30,8 @@ public class GTNRLibLateMixins implements ILateMixinLoader {
                 mixins.add("gregtech.ToolMachineUseMixin");
             if (!ToolAnimationCompat.legacyClass("mixins/late/gregtech/WrenchToolUseMixin"))
                 mixins.add("gregtech.WrenchToolUseMixin");
+            mixins.add("gregtech.ScrewdriverMachineUseMixin");
+            mixins.add("gregtech.ScrewdriverToolUseMixin");
         }
         return mixins;
     }
