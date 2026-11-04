@@ -29,6 +29,7 @@ import ggfab.GGItemList;
 import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
+import gregtech.api.enums.VoltageIndex;
 import gregtech.api.util.GTModHandler;
 import tectech.thing.CustomItemList;
 import thaumcraft.common.config.ConfigBlocks;
@@ -86,6 +87,23 @@ public final class CraftingTableRecipes {
         registerCompactAEMachineRecipes();
         registerStableEndCrystalRecipe();
         registerFragmentWorldCollectorRecipe();
+        registerDisassemblerRecipes();
+    }
+
+    private static void registerDisassemblerRecipes() {
+        Materials[] circuits = { null, Materials.LV, Materials.MV, Materials.HV, Materials.EV, Materials.IV,
+            Materials.LuV, Materials.ZPM, Materials.UV, Materials.UHV, Materials.UEV, Materials.UIV, Materials.UMV };
+        Materials[] cables = { null, Materials.Tin, Materials.AnyCopper, Materials.Gold, Materials.Aluminium,
+            Materials.Tungsten, Materials.VanadiumGallium, Materials.Naquadah, Materials.ElectrumFlux };
+        for (int tier = VoltageIndex.LV; tier <= VoltageIndex.UMV; tier++) {
+            GTModHandler.addCraftingRecipe(
+                GTNRItemList.DISASSEMBLERS[tier].get(1),
+                GTModHandler.RecipeBits.BITS,
+                new Object[] { "RCR", "WHW", "RCR", 'R', ItemList.ROBOT_ARMS[tier - 1], 'C',
+                    OrePrefixes.circuit.get(circuits[tier]), 'W',
+                    OrePrefixes.cableGt01.get(cables[Math.min(tier, VoltageIndex.UV)]), 'H',
+                    ItemList.MACHINE_HULLS[tier] });
+        }
     }
 
     /** Registers ordinary crafting upgrades without replacing any upstream or modpack recipe. */

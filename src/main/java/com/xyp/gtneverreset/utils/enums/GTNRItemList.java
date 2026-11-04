@@ -170,7 +170,20 @@ public enum GTNRItemList implements IItemContainer {
     ModernCentrifugeIV,
     ModernCentrifugeLuV,
     ModernCentrifugeZPM,
-    ModernCentrifugeUV;
+    ModernCentrifugeUV,
+
+    DisassemblerLV,
+    DisassemblerMV,
+    DisassemblerHV,
+    DisassemblerEV,
+    DisassemblerIV,
+    DisassemblerLuV,
+    DisassemblerZPM,
+    DisassemblerUV,
+    DisassemblerUHV,
+    DisassemblerUEV,
+    DisassemblerUIV,
+    DisassemblerUMV;
     // endregion
 
     // region 舱室分组
@@ -210,6 +223,10 @@ public enum GTNRItemList implements IItemContainer {
     // endregion
 
     // region 单方块机器分组
+    public static final GTNRItemList[] DISASSEMBLERS = { null, DisassemblerLV, DisassemblerMV, DisassemblerHV,
+        DisassemblerEV, DisassemblerIV, DisassemblerLuV, DisassemblerZPM, DisassemblerUV, DisassemblerUHV,
+        DisassemblerUEV, DisassemblerUIV, DisassemblerUMV };
+
     public static final GTNRItemList[] MODERN_MIXERS = { null, GTNRItemList.ModernMixerLV, GTNRItemList.ModernMixerMV,
         GTNRItemList.ModernMixerHV, GTNRItemList.ModernMixerEV, GTNRItemList.ModernMixerIV, GTNRItemList.ModernMixerLuV,
         GTNRItemList.ModernMixerZPM, GTNRItemList.ModernMixerUV };

@@ -6,6 +6,7 @@ import net.minecraftforge.client.MinecraftForgeClient;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.xyp.gtneverreset.client.VeinMiningInputHandler;
+import com.xyp.gtneverreset.client.event.DisassemblerTooltip;
 import com.xyp.gtneverreset.client.event.WindowsTaskbarButton;
 import com.xyp.gtneverreset.client.quantum.QuantumCraftingClientEvents;
 import com.xyp.gtneverreset.client.quantum.RecursivePatternReport;
@@ -48,6 +49,7 @@ public final class ClientLoader {
     public static void init() {
         if (ModList.BetterQuesting.isModLoaded()) QuestContextMenuRegistry.register(new QuestSkipMenu());
         MinecraftForge.EVENT_BUS.register(new VeinMiningInputHandler());
+        MinecraftForge.EVENT_BUS.register(new DisassemblerTooltip());
         FMLCommonHandler.instance()
             .bus()
             .register(new WindowsTaskbarButton());

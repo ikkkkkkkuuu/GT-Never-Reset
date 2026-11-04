@@ -1,11 +1,16 @@
 package com.xyp.gtneverreset.common.recipe;
 
+import java.util.Collections;
+
+import net.minecraft.util.StatCollector;
+
 import com.cleanroommc.modularui.widgets.ProgressWidget;
 import com.gtnewhorizons.modularui.common.widget.ProgressBar;
 import com.xyp.gtneverreset.common.gui.recipe.FragmentWorldCollectionFrontend;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectionBackend;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
+import gregtech.api.enums.GTValues;
 import gregtech.api.gui.modularui.GTUITextures;
 import gregtech.api.modularui2.GTGuiTextures;
 import gregtech.api.recipe.RecipeMap;
@@ -14,6 +19,24 @@ import gregtech.api.recipe.RecipeMapBuilder;
 import gregtech.api.recipe.maps.LargeNEIFrontend;
 
 public final class GTNRRecipeMaps {
+
+    public static final RecipeMap<RecipeMapBackend> DISASSEMBLER_RECIPES = RecipeMapBuilder
+        // #tr gtnr.recipe.disassembler
+        // # Disassembler
+        // # zh_CN 拆解机
+        .of("gtnr.recipe.disassembler")
+        .maxIO(1, 9, 0, 0)
+        .minInputs(1, 0)
+        .useCustomFilterForNEI()
+        .neiSpecialInfoFormatter(
+            info -> Collections.singletonList(
+                // #tr gtnr.recipe.disassembler.tier
+                // # Minimum disassembler tier: %s
+                // # zh_CN 最低拆解机等级：%s
+                StatCollector.translateToLocalFormatted(
+                    "gtnr.recipe.disassembler.tier",
+                    GTValues.VN[info.recipe.mSpecialValue])))
+        .build();
 
     // #tr gtnr.recipe.modern_mixer
     // # Small Mixer (Direct Fluids)
