@@ -1,5 +1,6 @@
 {
   "bindings": [
+    {"item": "gregtech:gt.metatool.01", "damage": 22, "trigger": "gtnrlib:screwdriver_turn", "clip": "gtnrlib:screwdriver_turn"},
     {"item": "Thaumcraft:WandCasting", "trigger": "attack", "clip": "gtnrlib:wand_flick"},
     {"item": "Thaumcraft:WandCasting", "trigger": "mining", "clip": "gtnrlib:wand_flick"},
     {"item": "Thaumcraft:WandCasting", "trigger": "interact", "clip": "gtnrlib:wand_flick"},

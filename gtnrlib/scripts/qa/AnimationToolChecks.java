@@ -13,6 +13,7 @@ import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.MinecraftForgeClient;
 
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
@@ -20,8 +21,12 @@ import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.client.animation.ToolGrip;
 
+import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
+import gregtech.api.enums.OrePrefixes;
+import gregtech.api.items.MetaGeneratedItemX32;
 import gregtech.api.items.MetaGeneratedTool;
+import gregtech.api.util.GTOreDictUnificator;
 import gregtech.common.items.IDMetaTool01;
 import gregtech.common.items.MetaGeneratedTool01;
 import gregtech.common.tools.ToolTurbine;
@@ -40,9 +45,12 @@ import thaumcraft.common.items.wands.WandManager;
 
 public final class AnimationToolChecks {
 
+    static final String SCREWDRIVER_TURN = "gtnrlib:screwdriver_turn";
+
     public static void check(AnimationClientChecks qa) throws Exception {
         var mc = Minecraft.getMinecraft();
         var hmi = HmiFirstPerson.INSTANCE;
+        checkMaterials(qa, mc, hmi);
         int checked = 0;
         for (var tool : MetaGeneratedTool.sInstances.values()) {
             for (var entry : tool.mToolStats.entrySet()) {
@@ -103,6 +111,7 @@ public final class AnimationToolChecks {
         if (hmi.enabled()) {
             checkWand(qa, mc);
             checkCutter(qa, mc);
+            checkScrewdriver(qa, mc);
         }
     }
 
@@ -224,9 +233,109 @@ public final class AnimationToolChecks {
         }
     }
 
+    static ItemStack screwdriver() {
+        return MetaGeneratedTool01.INSTANCE
+            .getToolWithStats(IDMetaTool01.SCREWDRIVER.ID, 1, Materials.Steel, Materials.Wood, null);
+    }
+
+    private static void checkScrewdriver(AnimationClientChecks qa, Minecraft mc) throws Exception {
+        var hmi = HmiFirstPerson.INSTANCE;
+        var actions = FirstPersonItemActions.INSTANCE;
+        var p = mc.thePlayer;
+        int savedTick = p.ticksExisted;
+        try {
+            hmi.detach();
+            var tool = screwdriver();
+            qa.equip(mc, tool);
+            for (int i = 0; i < 24; i++) {
+                p.ticksExisted++;
+                hmi.sample(tool, 0, 0);
+            }
+            qa.require(
+                hmi.handheldTool() != null && hmi.handheldTool()
+                    .handlesBlockUseSwing(),
+                "manual screwdriver waits for confirmed use");
+            qa.draw(mc, "screwdriver-idle");
+            qa.require(actions.trigger(SCREWDRIVER_TURN), "manual screwdriver has a built-in turn");
+            int start = p.ticksExisted;
+            Vector3f engagedTip = new Vector3f(), engagedFace = new Vector3f();
+            for (int i = 0; i <= 20; i++) {
+                p.ticksExisted = start + i / 2;
+                var frame = qa.draw(mc, "screwdriver-frame-" + i, i % 2 * .5f);
+                if (!AnimationGripChecks.armReachesEdge(frame, mc.displayWidth))
+                    throw new AssertionError("floating screwdriver arm at frame " + i);
+                // The shaft runs along local Y. Track the same tip and blade face through the loaded turn.
+                var tip = hmi.item.transformPosition(new Vector3f(.0393f, .66f, .0834f));
+                var face = hmi.item.transformDirection(new Vector3f(1, 0, 0))
+                    .normalize();
+                if (i == 5) {
+                    engagedTip.set(tip);
+                    engagedFace.set(face);
+                } else if (i == 12) {
+                    qa.require(
+                        engagedTip.distance(tip) < .045f && engagedFace.angle(face) > Math.toRadians(65),
+                        "screwdriver tip stays seated while the wrist rolls around the shaft");
+                }
+            }
+            qa.require(!actions.playing(SCREWDRIVER_TURN), "screwdriver returns to carry after one stroke");
+            for (var variant : List.of(IDMetaTool01.SCREWDRIVER_LV, IDMetaTool01.POCKET_SCREWDRIVER)) {
+                var other = gt(variant);
+                qa.equip(mc, other);
+                qa.require(
+                    hmi.sample(other, 0, 0) && hmi.handheldTool() == null && !actions.trigger(SCREWDRIVER_TURN),
+                    "manual turn excluded for " + variant);
+            }
+        } finally {
+            p.ticksExisted = savedTick;
+            hmi.detach();
+        }
+    }
+
     static ItemStack cutter() {
         return MetaGeneratedTool01.INSTANCE
             .getToolWithStats(IDMetaTool01.WIRECUTTER.ID, 1, Materials.Steel, Materials.Wood, null);
+    }
+
+    private static void checkMaterials(AnimationClientChecks qa, Minecraft mc, HmiFirstPerson hmi) throws Exception {
+        var plate = Materials.Chrome.getPlates(1);
+        var mold = ItemList.Shape_Mold_Plate.get(1);
+        qa.require(plate.getItem() == mold.getItem(), "plate and mold share a GT meta-item");
+        qa.equip(mc, plate);
+        qa.tickPlayer();
+        qa.require(
+            hmi.enabled() ? hmi.sample(plate, .5f, 0) : FirstPersonAnimations.INSTANCE.applies(plate),
+            "GT plate metadata selects the material grip");
+        qa.equip(mc, mold);
+        qa.tickPlayer();
+        qa.require(
+            !(hmi.enabled() ? hmi.sample(mold, .5f, 0) : FirstPersonAnimations.INSTANCE.applies(mold)),
+            "switching to a casting mold on the same GT meta-item delegates to its renderer");
+        var wire = GTOreDictUnificator.get(OrePrefixes.wireGt01, Materials.Copper, 1);
+        qa.require(
+            wire != null && wire.getItem() instanceof net.minecraft.item.ItemBlock,
+            "found GT copper wire block");
+        qa.equip(mc, wire);
+        qa.tickPlayer();
+        qa.require(
+            hmi.enabled() ? hmi.sample(wire, .5f, 0) && hmi.blockPose() : FirstPersonAnimations.INSTANCE.applies(wire),
+            "copper wire uses a material block grip");
+        qa.draw(mc, "material-copper-wire");
+        if (!hmi.enabled()) return;
+        int checked = 0;
+        for (Object value : Item.itemRegistry) {
+            if (!(value instanceof MetaGeneratedItemX32 generated)) continue;
+            var variants = new ArrayList<ItemStack>();
+            generated.getSubItems(generated, generated.getCreativeTab(), variants);
+            for (var stack : variants) {
+                var prefix = generated.getOrePrefix(stack.getItemDamage());
+                if (prefix == null || !prefix.isMaterialBased()) continue;
+                if (!hmi.sample(stack, .5f, 0) || hmi.forgeRenderer()
+                    != MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON))
+                    throw new AssertionError("missing generated material grip or renderer: " + stack);
+                checked++;
+            }
+        }
+        qa.require(checked > 0, "animated " + checked + " generated GT material variants with their own renderers");
     }
 
     private static void checkCutter(AnimationClientChecks qa, Minecraft mc) throws Exception {

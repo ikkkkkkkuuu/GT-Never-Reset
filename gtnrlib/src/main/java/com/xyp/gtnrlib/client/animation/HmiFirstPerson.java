@@ -232,7 +232,7 @@ public final class HmiFirstPerson {
             if (renderer != null) {
                 selected = HmiItemBindings.tool(stack, renderer);
                 if (selected == null && grip == null
-                    && !OreGrip.isIngot(stack)
+                    && !OreGrip.isMaterial(stack)
                     && !actions.controls(p, stack)
                     && !hasItemModel(stack, profile)) {
                     tool = null;
@@ -263,7 +263,7 @@ public final class HmiFirstPerson {
                 classify(held, stack, damage);
                 changed |= !Objects.equals(previous, id);
                 if (damage != lastDamage && bound == null
-                    && (OreGrip.isIngot(stack) || grip != null && held.getHasSubtypes())) changed = true;
+                    && (OreGrip.isMaterial(stack) || grip != null && held.getHasSubtypes())) changed = true;
             }
             double now = (double) p.ticksExisted + partial;
             if (!reclassify && lastFrame == now) return true;
@@ -426,8 +426,10 @@ public final class HmiFirstPerson {
             || shape instanceof ItemFishingRod
             || shape instanceof ItemBow
             || shape != null && shape.isFull3D();
-        frame
-            .set("translate", LuaValue.valueOf(tool == null && (!handheld || bound == null && OreGrip.isIngot(stack))));
+        boolean flatMaterial = bound == null && displayGrip == null
+            && !(shape instanceof ItemBlock)
+            && OreGrip.isMaterial(stack);
+        frame.set("translate", LuaValue.valueOf(tool == null && (!handheld || flatMaterial)));
     }
 
     private static void tag(LuaTable tags, String name, boolean present) {

@@ -1308,7 +1308,7 @@ public final class AnimationClientChecks {
     }
 
     private void checkModRenderers(Minecraft mc) throws Exception {
-        checkIngotGrips(mc);
+        checkMaterialGrips(mc);
         Class.forName("com.xyp.gtnrlib.qa.AnimationToolChecks")
             .getMethod("check", AnimationClientChecks.class)
             .invoke(null, this);
@@ -1339,7 +1339,7 @@ public final class AnimationClientChecks {
         require(wanted.isEmpty(), "optional mod renderers found; missing " + wanted);
     }
 
-    private void checkIngotGrips(Minecraft mc) throws Exception {
+    private void checkMaterialGrips(Minecraft mc) throws Exception {
         var hmi = HmiFirstPerson.INSTANCE;
         var iron = new ItemStack(Items.iron_ingot);
         var gold = new ItemStack(Items.gold_ingot);
@@ -1347,42 +1347,50 @@ public final class AnimationClientChecks {
         var cobalt = gregTechStack("ingotCobalt");
         var hot = gregTechStack("ingotHotTitanium");
         var plate = gregTechStack("plateChrome");
+        var cobaltPlate = gregTechStack("plateCobalt");
         require(
             chrome.getItem() == plate.getItem() && chrome.getItem() == cobalt.getItem(),
             "ingots and plate share the real GT meta-item");
         org.joml.Matrix4f arm = null, item = null;
         int[] chromePixels = null;
-        for (var stack : List.of(iron, gold, chrome, cobalt, hot)) {
+        for (var stack : List.of(
+            iron,
+            gold,
+            chrome,
+            cobalt,
+            hot,
+            plate,
+            cobaltPlate,
+            gregTechStack("dustChrome"),
+            gregTechStack("stickSteel"),
+            gregTechStack("foilCopper"),
+            gregTechStack("wireFineCopper"),
+            gregTechStack("gearGtSteel"))) {
             equip(mc, stack);
             tickPlayer();
             String name = stack.getUnlocalizedName();
             if (hmi.enabled()) {
                 // Start each upstream program at the same idle frame so the matrices can be compared directly.
                 hmi.detach();
-                require(hmi.sample(stack, .5f, 0), "HMI handles ingot " + name);
-                int[] pixels = draw(mc, "hmi-ingot-" + name);
+                require(hmi.sample(stack, .5f, 0), "HMI handles material " + name);
+                int[] pixels = draw(mc, "hmi-material-" + name);
                 if (arm == null) {
                     arm = new org.joml.Matrix4f(hmi.right);
                     item = new org.joml.Matrix4f(hmi.item);
                 } else require(
                     arm.equals(hmi.right, .0001f) && item.equals(hmi.item, .0001f),
                     "matches iron ingot arm and item pose: " + name);
-                if (stack == chrome) chromePixels = pixels;
-                if (stack == cobalt) {
+                if (stack == chrome || stack == plate) chromePixels = pixels;
+                if (stack == cobalt || stack == cobaltPlate) {
                     int changed = 0;
                     for (int i = 0; i < pixels.length; i++) if (pixels[i] != chromePixels[i]) changed++;
-                    require(changed > 50, "GT ingot material changes visible pixels: " + changed);
+                    require(changed > 50, "material tint changes visible pixels for " + name + ": " + changed);
                 }
             } else {
-                require(target.applies(stack), "Punchy flat grip handles ingot " + name);
-                draw(mc, "punchy-ingot-" + name);
+                require(target.applies(stack), "Punchy flat grip handles " + name);
+                draw(mc, "punchy-material-" + name);
             }
         }
-        equip(mc, plate);
-        tickPlayer();
-        require(
-            !(hmi.enabled() ? hmi.sample(plate, .5f, 0) : target.applies(plate)),
-            "the plate metadata keeps its custom renderer");
         if (hmi.enabled()) checkRegisteredIngots(hmi);
     }
 
