@@ -366,7 +366,8 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         if (grip != null) return grip == ToolGrip.HANDHELD ? "ITEM" : grip.name();
         if (item instanceof ItemBlock) return "BLOCK";
         if (item instanceof ItemBow) return "BOW";
-        return (!item.isFull3D() && stack.getMaxDamage() == 0) || OreGrip.isIngot(stack) ? "GTNRLIB_FLAT_ITEM" : "ITEM";
+        return (!item.isFull3D() && stack.getMaxDamage() == 0) || OreGrip.isMaterial(stack) ? "GTNRLIB_FLAT_ITEM"
+            : "ITEM";
     }
 
     public boolean enabled() {
@@ -392,7 +393,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         if (rendered == null) return true;
         if (rendered.getItem() instanceof ItemMap) return false;
         var renderer = MinecraftForgeClient.getItemRenderer(rendered, ItemRenderType.EQUIPPED_FIRST_PERSON);
-        return renderer == null || OreGrip.isIngot(rendered) || ToolGrip.resolve(rendered) != null;
+        return renderer == null || OreGrip.isMaterial(rendered) || ToolGrip.resolve(rendered) != null;
     }
 
     private boolean isLowering(Minecraft mc) {
