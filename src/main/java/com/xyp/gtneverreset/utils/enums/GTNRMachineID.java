@@ -76,7 +76,8 @@ public enum GTNRMachineID {
     SuperAdvancedMEInputBus(29551),
     SuperAdvancedMEInputHatch(29552),
     MEDataAccessHatch(29553),
-    // 预留：29554–29599（46 个）。
+    CrossRecipeMEPatternBuffer(29554),
+    // 预留：29555–29599（45 个）。
     // endregion
 
     // region 单方块机器

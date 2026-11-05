@@ -56,7 +56,7 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
         super(id, name, regionalName, true, PATTERN_COUNT / 9);
     }
 
-    private CircuitMEPatternBuffer(String name, int tier, String[] description, ITexture[][][] textures) {
+    protected CircuitMEPatternBuffer(String name, int tier, String[] description, ITexture[][][] textures) {
         super(name, tier, description, textures, true, PATTERN_COUNT / 9);
     }
 
@@ -268,7 +268,7 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
     }
 
     /** Live stacks are debited by GT; phantom tools never make an empty buffer runnable. */
-    public static final class CircuitSlot extends PatternSlot<SuperMTEHatchCraftingInputME> {
+    public static class CircuitSlot extends PatternSlot<SuperMTEHatchCraftingInputME> {
 
         private final LongCircuitBuffer buffer;
         private final boolean wildcard;
@@ -276,7 +276,7 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
         private final WildcardPatternCache<List<CircuitRecipe>> expansionCache = new WildcardPatternCache<>();
         private CircuitRecipe activeRecipe;
 
-        private CircuitSlot(ItemStack pattern, NBTTagCompound saved, CircuitMEPatternBuffer parent) {
+        protected CircuitSlot(ItemStack pattern, NBTTagCompound saved, CircuitMEPatternBuffer parent) {
             super(pattern, null, parent, null);
             buffer = new LongCircuitBuffer(saved, parent::markDirty, itemInventory, fluidInventory);
             wildcard = WildcardPatternGenerator.isWildcardPattern(pattern)

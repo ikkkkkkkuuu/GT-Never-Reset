@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
+import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 
 import appeng.api.networking.crafting.ICraftingPatternDetails;
@@ -30,6 +31,16 @@ public abstract class ItemEncodedPatternMixin {
     @Inject(method = "addCheckedInformation", at = @At("TAIL"))
     private void gtnr$describeVirtualTools(ItemStack stack, EntityPlayer player, List<String> lines,
         boolean displayMoreInfo, CallbackInfo ci) {
+        String recipeMap = PatternRecipeMap.name(stack);
+        if (recipeMap != null) {
+            // #tr tooltip.gtneverreset.pattern.recipe_map
+            // # Recipe type: %s
+            // # zh_CN 配方池：%s
+            lines.add(
+                StatCollector.translateToLocalFormatted(
+                    "tooltip.gtneverreset.pattern.recipe_map",
+                    StatCollector.translateToLocal(recipeMap)));
+        }
         int circuit = CircuitPatternCodec.storedCircuit(stack);
         if (circuit >= 0) {
             // #tr tooltip.gtneverreset.pattern.circuit

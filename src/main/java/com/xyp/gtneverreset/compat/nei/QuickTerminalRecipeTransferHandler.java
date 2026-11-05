@@ -109,7 +109,15 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
             // GT-Never-Reset has one processing layout: every processing recipe is
             // transferred as 4x4, while crafting recipes keep their shaped 3x3 positions.
             terminal.transferRecipe(
-                new RecipeTransferPayload(crafting, encode, 4, false, inputs, outputs, arcaneLayout),
+                new RecipeTransferPayload(
+                    crafting,
+                    encode,
+                    4,
+                    false,
+                    inputs,
+                    outputs,
+                    arcaneLayout,
+                    recipe instanceof GTNEIDefaultHandler gt ? gt.getRecipeMap().unlocalizedName : null),
                 interfaceSearch);
         } catch (RuntimeException | LinkageError failure) {
             AELog.warn(failure, "Failed to transfer an NEI recipe to the GT-Never-Reset quick terminal");

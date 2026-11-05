@@ -463,7 +463,7 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
      *
      * @return untranslated recipe-category key for client-side localization, or null when no map is available
      */
-    private String getRecipeMapNameKey() {
+    protected String getRecipeMapNameKey() {
         RecipeMap<?> map = this.mRecipeMap != null ? this.mRecipeMap : this.controllerRecipeMap;
         for (var watcher : watchers) {
             if (watcher instanceof MTEMultiBlockBase controller && controller.isValid()

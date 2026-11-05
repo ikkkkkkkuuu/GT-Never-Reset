@@ -5,6 +5,7 @@ import net.minecraft.util.StatCollector;
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternMirror;
+import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.MEDataAccessHatch;
 import com.xyp.gtneverreset.common.machine.hatch.MEOutputAssembly;
 import com.xyp.gtneverreset.common.machine.hatch.MaxCapacityMEOutputBus;
@@ -405,6 +406,17 @@ public final class HatchLoader {
                 "gtneverreset.circuit_pattern_buffer",
                 StatCollector.translateToLocal("gtnr.hatch.circuit_pattern.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.CircuitMEPatternBuffer.get(1), AnimatedText.GT_NEVER_RESET);
+
+        // #tr gtnr.hatch.cross_recipe_pattern.name
+        // # Super Cross-Recipe Pattern Input Buffer (ME)
+        // # zh_CN 超级跨配方类型样板输入总成 (ME)
+        GTNRItemList.CrossRecipeMEPatternBuffer.set(
+            new CrossRecipeMEPatternBuffer(
+                GTNRMachineID.CrossRecipeMEPatternBuffer.id,
+                "gtneverreset.cross_recipe_pattern_buffer",
+                StatCollector.translateToLocal("gtnr.hatch.cross_recipe_pattern.name")));
+        AnimatedTooltipHandler
+            .addItemTooltip(GTNRItemList.CrossRecipeMEPatternBuffer.get(1), AnimatedText.GT_NEVER_RESET);
 
         // #tr gtnr.hatch.super_mirror.name
         // # Super Pattern Input Mirror (ME)

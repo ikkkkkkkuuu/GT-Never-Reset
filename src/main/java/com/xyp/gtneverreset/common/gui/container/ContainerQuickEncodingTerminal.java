@@ -735,6 +735,7 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
             updateVirtualSlot(StorageName.CRAFTING_OUTPUT, slot, payload.getOutput(slot));
         }
         getDualTerminal().setArcaneLayout(payload.getArcaneLayout());
+        getDualTerminal().setRecipeMapName(payload.getRecipeMapName());
         getDualTerminal().setArcaneWorkbenchView(true);
         patternState.rememberActivePattern(payload.isCrafting());
         // A NEI transfer establishes a new authoritative recipe. The other

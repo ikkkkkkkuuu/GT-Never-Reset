@@ -88,7 +88,7 @@ public class SuperMTEHatchCraftingInputMEGui extends MTEHatchBaseGui<SuperMTEHat
         return Math.min(4, machine.getPatternCount() / PATTERN_SLOT_PER_ROW);
     }
 
-    private Grid createSlots(PanelSyncManager syncManager) {
+    protected Grid createSlots(PanelSyncManager syncManager) {
         int rows = machine.getPatternCount() / PATTERN_SLOT_PER_ROW;
         syncManager.registerSlotGroup(PATTERN_INV_NAME, rows);
         Grid grid = new Grid().minColWidth(SLOT_SIZE)

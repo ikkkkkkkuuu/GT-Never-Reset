@@ -171,6 +171,17 @@ public final class AssemblerRecipes {
 
         GTRecipeBuilder.builder()
             .itemInputs(
+                GTNRItemList.CircuitMEPatternBuffer.get(1),
+                new Object[] { OrePrefixes.circuit.get(Materials.LV), 2 },
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Aluminium, 2))
+            .circuit(24)
+            .itemOutputs(GTNRItemList.CrossRecipeMEPatternBuffer.get(1))
+            .duration(5 * SECONDS)
+            .eut(32)
+            .addTo(assemblerRecipes);
+
+        GTRecipeBuilder.builder()
+            .itemInputs(
                 ItemList.Hatch_Input_Bus_LV.get(1),
                 new Object[] { OrePrefixes.circuit.get(Materials.LV), 2 },
                 GTOreDictUnificator.get(OrePrefixes.plate, Materials.Aluminium, 2))
