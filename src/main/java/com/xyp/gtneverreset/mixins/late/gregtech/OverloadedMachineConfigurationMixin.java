@@ -73,7 +73,7 @@ public abstract class OverloadedMachineConfigurationMixin implements OverloadedM
 
     @Inject(method = "saveNBTData", at = @At("TAIL"))
     private void gtnr$save(NBTTagCompound tag, CallbackInfo ci) {
-        if (!gtnr$configured && gtnr$mold == null) {
+        if (!gtnr$configured && gtnr$mold == null && !gtnr$pending) {
             tag.removeTag("OverloadedConfiguration");
             return;
         }
@@ -102,7 +102,7 @@ public abstract class OverloadedMachineConfigurationMixin implements OverloadedM
 
     @Inject(method = "onPostTick", at = @At("TAIL"))
     private void gtnr$release(IGregTechTileEntity tile, long tick, CallbackInfo ci) {
-        if (!tile.isServerSide() || !gtnr$configured) return;
+        if (!tile.isServerSide() || !gtnr$configured && !gtnr$pending) return;
         if (gtnr$pending && gtnr$provider != null
             && tick % 20 == 0
             && tile.getWorld()
@@ -115,7 +115,7 @@ public abstract class OverloadedMachineConfigurationMixin implements OverloadedM
                 tile.markDirty();
             }
         }
-        if (gtnr$pending) return;
+        if (gtnr$pending || !gtnr$configured) return;
         MTEBasicMachine machine = (MTEBasicMachine) (Object) this;
         if (machine.mMaxProgresstime > 0) return;
         for (int slot = machine.getInputSlot(); slot < machine.getInputSlot() + machine.mInputSlotCount; slot++) {

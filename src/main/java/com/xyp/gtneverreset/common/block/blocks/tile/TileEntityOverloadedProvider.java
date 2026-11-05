@@ -40,7 +40,6 @@ import com.xyp.gtneverreset.common.machine.basicMachine.ModernFluidMachine;
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
 import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineBuffer;
 import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineInput;
-import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineRecipeMatcher;
 import com.xyp.gtneverreset.common.me.overloaded.OverloadedProviderInventory;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternCache;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
@@ -72,7 +71,6 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.metatileentity.implementations.MTEBasicMachine;
-import gregtech.api.recipe.RecipeMap;
 
 public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase implements IInventory,
     ICraftingProvider, IGuiHolder<PosGuiData>, IInterfaceViewable, ITerminalVisibilityToggle, ICustomNameObject {
@@ -87,7 +85,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     private final List<PackagedTarget> clientTargets = new ArrayList<>();
     private final List<PackagedTarget> visibleTargets = Collections.unmodifiableList(clientTargets);
     private final Set<ICraftingPatternDetails> patterns = new LinkedHashSet<>();
-    private final Map<Integer, WildcardPatternCache<List<ProviderPattern>>> patternCaches = new HashMap<>();
+    private final Map<Integer, WildcardPatternCache<List<ICraftingPatternDetails>>> patternCaches = new HashMap<>();
     private final List<FluidStack> returnedFluids = new ArrayList<>();
     private final List<ItemStack> recoveredItems = new ArrayList<>();
     private boolean patternsDirty = true;
@@ -377,53 +375,32 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     @Override
     public void provideCrafting(ICraftingProviderHelper helper) {
         patterns.clear();
-        Set<RecipeMap<?>> recipeMaps = new LinkedHashSet<>();
-        for (Lane lane : lanes) {
-            if (lane.target.resolve(worldObj) instanceof BaseMetaTileEntity gt && OverloadedMachineInput.supports(gt))
-                recipeMaps.add(((MTEBasicMachine) gt.getMetaTileEntity()).getRecipeMap());
-        }
         for (int slot = 0; slot < PATTERNS; slot++) {
             ItemStack stack = inventory[slot];
             if (stack == null || !(stack.getItem() instanceof ICraftingPatternItem)) {
                 patternCaches.remove(slot);
                 continue;
             }
-            List<ProviderPattern> expanded = patternCaches
+            List<ICraftingPatternDetails> expanded = patternCaches
                 .computeIfAbsent(slot, ignored -> new WildcardPatternCache<>())
                 .get(stack, worldObj, () -> decodePatterns(stack));
-            for (ProviderPattern pattern : expanded) {
-                ICraftingPatternDetails details = pattern.original;
-                if (pattern.runtime != null) {
-                    for (RecipeMap<?> map : recipeMaps) {
-                        if (pattern.runtimeMaps.computeIfAbsent(
-                            map,
-                            key -> !OverloadedMachineRecipeMatcher.patternConfigurations(key, pattern.runtime)
-                                .isEmpty())) {
-                            details = pattern.runtime;
-                            break;
-                        }
-                    }
-                }
+            for (ICraftingPatternDetails details : expanded) {
                 if (patterns.add(details)) helper.addCraftingOption(this, details);
             }
         }
     }
 
-    private List<ProviderPattern> decodePatterns(ItemStack stack) {
+    private List<ICraftingPatternDetails> decodePatterns(ItemStack stack) {
         List<ICraftingPatternDetails> decoded;
         if (WildcardPatternGenerator.isWildcardPattern(stack) && !WildcardPatternGenerator.isGeneratedPattern(stack)) {
             decoded = WildcardPatternGenerator.generateAllDetails(stack, worldObj);
         } else {
             decoded = Collections.singletonList(CircuitPatternCodec.decode(stack, worldObj));
         }
-        List<ProviderPattern> result = new ArrayList<>();
+        List<ICraftingPatternDetails> result = new ArrayList<>();
         for (ICraftingPatternDetails details : decoded) {
             if (details == null || details.isCraftable()) continue;
-            result.add(
-                new ProviderPattern(
-                    details,
-                    CircuitPatternCodec
-                        .runtime(details.getPattern(), worldObj, details, CircuitPatternCodec.molds(details))));
+            result.add(details);
         }
         return result;
     }
@@ -964,18 +941,6 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     @Override
     public boolean isItemValidForSlot(int slot, ItemStack stack) {
         return slot < PATTERNS && stack != null && stack.getItem() instanceof ICraftingPatternItem;
-    }
-
-    private static final class ProviderPattern {
-
-        private final ICraftingPatternDetails original;
-        private final ICraftingPatternDetails runtime;
-        private final Map<RecipeMap<?>, Boolean> runtimeMaps = new HashMap<>();
-
-        private ProviderPattern(ICraftingPatternDetails original, ICraftingPatternDetails runtime) {
-            this.original = original;
-            this.runtime = runtime;
-        }
     }
 
     public static final class Lane {

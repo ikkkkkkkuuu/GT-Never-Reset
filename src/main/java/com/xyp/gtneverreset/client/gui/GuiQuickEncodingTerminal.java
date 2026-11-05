@@ -1874,8 +1874,8 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         @Override
         public String getMessage() {
             // #tr gtneverreset.terminal.quick.keep_non_consumables
-            // # Keep circuits and virtual molds when importing recipes
-            // # zh_CN 导入配方时保留电路和虚拟模具
+            // # Write programmed circuit and mold information
+            // # zh_CN 写入编程电路和模具信息
             String title = StatCollector.translateToLocal("gtneverreset.terminal.quick.keep_non_consumables");
             // #tr gtneverreset.terminal.quick.keep_non_consumables.on
             // # Enabled
@@ -1886,8 +1886,8 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
             // # zh_CN 已关闭
             String disabled = StatCollector.translateToLocal("gtneverreset.terminal.quick.keep_non_consumables.off");
             // #tr gtneverreset.terminal.quick.keep_non_consumables.detail
-            // # Import supported non-consumed circuits and molds as 1 item; omit other catalysts
-            // # zh_CN 不消耗的电路和支持的虚拟模具按 1 件导入；忽略其他不消耗物品
+            // # Store circuits and verified reusable molds as editable metadata, separate from ME inputs
+            // # zh_CN 保留支持的工具供编辑；编码时将电路和已核实的不消耗模具保存为附加信息，不计入 ME 原料
             String detail = StatCollector.translateToLocal("gtneverreset.terminal.quick.keep_non_consumables.detail");
             return title + "\n" + (shouldKeepNonConsumables() ? enabled : disabled) + "\n" + detail;
         }

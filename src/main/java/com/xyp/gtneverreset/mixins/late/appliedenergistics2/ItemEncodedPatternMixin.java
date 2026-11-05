@@ -13,15 +13,40 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.storage.data.IAEStack;
 import appeng.items.misc.ItemEncodedPattern;
 import appeng.util.item.AEItemStack;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 @Mixin(value = ItemEncodedPattern.class, remap = false)
 public abstract class ItemEncodedPatternMixin {
+
+    @SideOnly(Side.CLIENT)
+    @Inject(method = "addCheckedInformation", at = @At("TAIL"))
+    private void gtnr$describeVirtualTools(ItemStack stack, EntityPlayer player, List<String> lines,
+        boolean displayMoreInfo, CallbackInfo ci) {
+        int circuit = CircuitPatternCodec.storedCircuit(stack);
+        if (circuit >= 0) {
+            // #tr tooltip.gtneverreset.pattern.circuit
+            // # Stored circuit configuration: %s (not requested from ME)
+            // # zh_CN 内置编程电路：%s（不向 ME 索取）
+            lines.add(StatCollector.translateToLocalFormatted("tooltip.gtneverreset.pattern.circuit", circuit));
+        }
+        ItemStack[] molds = CircuitPatternCodec.storedMolds(stack);
+        if (molds == null) return;
+        for (ItemStack mold : molds) {
+            // #tr tooltip.gtneverreset.pattern.mold
+            // # Stored reusable tool: %s (not requested from ME)
+            // # zh_CN 内置不消耗工具：%s（不向 ME 索取）
+            lines.add(
+                StatCollector.translateToLocalFormatted("tooltip.gtneverreset.pattern.mold", mold.getDisplayName()));
+        }
+    }
 
     @Inject(method = "getPatternForItem", at = @At("HEAD"), cancellable = true)
     private void wildcardpattern$useLightweightPatternDetails(ItemStack item, World world,
