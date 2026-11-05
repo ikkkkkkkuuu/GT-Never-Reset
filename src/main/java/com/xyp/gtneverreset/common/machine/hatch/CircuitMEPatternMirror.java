@@ -25,15 +25,15 @@ public class CircuitMEPatternMirror extends SuperMTEHatchCraftingInputSlave {
 
     @Override
     protected boolean acceptsMaster(SuperMTEHatchCraftingInputME master) {
-        return master instanceof CircuitMEPatternBuffer;
+        return master instanceof CircuitMEPatternBuffer && !(master instanceof CrossRecipeMEPatternBuffer);
     }
 
     @Override
     public String[] getDescription() {
         String[] lines = super.getDescription();
         // #tr gtnr.tooltip.circuit_mirror.proxy
-        // # Shares a Circuit Pattern Buffer (ME) with other multiblocks; only links to this hatch type
-        // # zh_CN 让其他多方块机器共用电路样板总成 (ME)，仅可连接此类主仓
+        // # Only links to Circuit Pattern Input Buffers (ME); cannot link to ordinary or cross-recipe assemblies
+        // # zh_CN 仅可连接电路样板输入总成 (ME)，不可连接普通或跨配方类型总成
         lines[0] = StatCollector.translateToLocal("gtnr.tooltip.circuit_mirror.proxy");
         return lines;
     }

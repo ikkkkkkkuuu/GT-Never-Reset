@@ -148,8 +148,9 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
 
     public SuperMTEHatchCraftingInputME getMaster() {
         if (master == null) return null;
-        if (!master.isValid() || master.getBaseMetaTileEntity()
-            .getWorld() != getBaseMetaTileEntity().getWorld()) {
+        if (!master.isValid() || !acceptsMaster(master)
+            || master.getBaseMetaTileEntity()
+                .getWorld() != getBaseMetaTileEntity().getWorld()) {
             master = null;
             getBaseMetaTileEntity().enableTicking();
         }
@@ -238,7 +239,7 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
     }
 
     protected boolean acceptsMaster(SuperMTEHatchCraftingInputME master) {
-        return true;
+        return !(master instanceof CircuitMEPatternBuffer);
     }
 
     private boolean tryLinkDataStick(EntityPlayer aPlayer) {
@@ -331,7 +332,8 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
             || !COPIED_DATA_IDENTIFIER.equals(nbt.getString("type"))) return false;
         if (nbt.hasKey("master")) {
             NBTTagCompound masterNBT = nbt.getCompoundTag("master");
-            trySetMasterFromCoord(masterNBT.getInteger("x"), masterNBT.getInteger("y"), masterNBT.getInteger("z"));
+            if (trySetMasterFromCoord(masterNBT.getInteger("x"), masterNBT.getInteger("y"), masterNBT.getInteger("z"))
+                == null) return false;
         }
         reverseRecipes = nbt.getBoolean("reverseRecipes");
         markDirty();
@@ -424,8 +426,8 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
     @Override
     public String[] getDescription() {
         // #tr tooltip.gtnr.crafting_input_mirror.proxy
-        // # Shares a linked Crafting Input Buffer/Bus with another multiblock
-        // # zh_CN 让其他多方块机器共用已连接的样板输入总成或总线
+        // # Only links to ordinary Pattern Input Assemblies/Buses; cannot link to circuit or cross-recipe assemblies
+        // # zh_CN 仅可连接普通样板输入总成或总线，不可连接电路或跨配方类型总成
         String proxy = StatCollector.translateToLocal("tooltip.gtnr.crafting_input_mirror.proxy");
         // #tr tooltip.gtnr.crafting_input_mirror.tier
         // # Hatch tier: %s
@@ -440,6 +442,7 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
         // # Data Stick: left-click the master, then right-click this hatch in the same dimension
         // # zh_CN 手持数据棒左键点击主仓，再右键点击同维度内的此仓完成连接
         String link = StatCollector.translateToLocal("tooltip.gtnr.crafting_input_mirror.link");
-        return PatternMEOutput.describe(new String[] { proxy, tier, share, link });
+        String family = StatCollector.translateToLocal("tooltip.gtnr.pattern_input.family");
+        return PatternMEOutput.describe(new String[] { proxy, tier, share, link, family });
     }
 }

@@ -1,6 +1,6 @@
 package com.xyp.gtneverreset.common.machine.hatch;
 
-import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -49,18 +49,22 @@ public final class CrossRecipeMEPatternBuffer extends CircuitMEPatternBuffer {
     }
 
     public List<String> getControllerRecipeMaps() {
+        var maps = new LinkedHashSet<String>();
         for (var watcher : watchers) {
             if (watcher instanceof MTEMultiBlockBase controller && controller.isValid()
                 && controller.mDualInputHatches.contains(this)) {
-                return controller.getAvailableRecipeMaps()
+                controller.getAvailableRecipeMaps()
                     .stream()
                     .filter(Objects::nonNull)
                     .map(map -> map.unlocalizedName)
-                    .distinct()
-                    .toList();
+                    .forEach(maps::add);
             }
         }
-        return Collections.emptyList();
+        for (var proxy : getProxyHatches()) {
+            if (proxy instanceof CrossRecipeMEPatternMirror mirror && mirror.isValid() && mirror.getMaster() == this)
+                maps.addAll(mirror.getControllerRecipeMaps());
+        }
+        return List.copyOf(maps);
     }
 
     public String getTerminalRecipeMap() {
@@ -121,6 +125,14 @@ public final class CrossRecipeMEPatternBuffer extends CircuitMEPatternBuffer {
         // # zh_CN 未标注配方池的样板使用当前模式；不支持的配方池不会消耗缓存原料
         String fallback = StatCollector.translateToLocal("tooltip.gtneverreset.cross_recipe_buffer.fallback");
         return ArrayUtils.addAll(super.getDescription(), routing, support, fallback);
+    }
+
+    @Override
+    protected String getMirrorDescription() {
+        // #tr gtnr.tooltip.cross_recipe_buffer.mirror
+        // # Only supports Super Cross-Recipe Pattern Input Mirrors (ME)
+        // # zh_CN 仅可连接超级跨配方类型样板输入镜像 (ME)
+        return StatCollector.translateToLocal("gtnr.tooltip.cross_recipe_buffer.mirror");
     }
 
     private static final class RecipeMapSlot extends CircuitSlot implements RecipeMapPatternInventory {

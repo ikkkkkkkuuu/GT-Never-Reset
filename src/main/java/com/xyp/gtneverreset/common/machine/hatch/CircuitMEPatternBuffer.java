@@ -219,15 +219,19 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
         // # Each recipe check can use up to 2^31 - 1 per type; remaining stock stays buffered
         // # zh_CN 每次配方检查每种原料最多提供 2^31 - 1，剩余原料继续保留在缓存中
         String recipeView = StatCollector.translateToLocal("tooltip.gtneverreset.circuit_buffer.recipe_view");
-        // #tr gtnr.tooltip.circuit_buffer.mirror
-        // # Supports Circuit Pattern Input Mirrors (ME) and Super Pattern Input Mirrors (ME)
-        // # zh_CN 可连接电路样板输入镜像 (ME) 或超级样板输入镜像 (ME)
-        String mirror = StatCollector.translateToLocal("gtnr.tooltip.circuit_buffer.mirror");
+        String mirror = getMirrorDescription();
         // #tr tooltip.gtneverreset.circuit_buffer.wildcard
         // # Expands wildcard patterns; each slot switches recipes only after its buffer is empty
         // # zh_CN 自动展开通配样板；每个槽位的缓存清空后才能切换展开配方
         String wildcard = StatCollector.translateToLocal("tooltip.gtneverreset.circuit_buffer.wildcard");
         return ArrayUtils.addAll(super.getDescription(), circuit, capacity, recipeView, mirror, wildcard);
+    }
+
+    protected String getMirrorDescription() {
+        // #tr gtnr.tooltip.circuit_buffer.mirror
+        // # Only supports Circuit Pattern Input Mirrors (ME)
+        // # zh_CN 仅可连接电路样板输入镜像 (ME)
+        return StatCollector.translateToLocal("gtnr.tooltip.circuit_buffer.mirror");
     }
 
     private void rebuildCraftingSlots() {

@@ -32,6 +32,8 @@ import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvide
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer.CircuitSlot;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
+import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
+import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputSlave;
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.common.me.PatternRecipeRouting;
@@ -70,6 +72,7 @@ import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
+import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.logic.ProcessingLogic;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.metatileentity.implementations.MTEBasicMachine;
@@ -79,8 +82,11 @@ import gregtech.api.recipe.RecipeMapBackend;
 import gregtech.api.recipe.RecipeMapBuilder;
 import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.recipe.check.CheckRecipeResult;
+import gregtech.api.structure.error.StructureError;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTUtility;
+import gregtech.common.tileentities.machines.IDualInputHatch;
+import gregtech.common.tileentities.machines.multi.MTEIndustrialPackager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -143,9 +149,34 @@ public final class CircuitPatternChecks {
                 mc.displayGuiScreen(new PreviewScreen(tooltip));
             }
             if (++frames < 12) return;
+            if (frames == 12) {
+                ScreenShotHelper.saveScreenshot(
+                    new File("."),
+                    "circuit-pattern.png",
+                    mc.displayWidth,
+                    mc.displayHeight,
+                    mc.getFramebuffer());
+                var mirror = GTNRItemList.CrossRecipeMEPatternMirror.get(1);
+                require(
+                    mirror.getDisplayName()
+                        .contains("超级跨配方类型样板输入镜像"),
+                    "dedicated mirror localized name");
+                List<String> tooltip = mirror.getTooltip(mc.thePlayer, false);
+                require(
+                    tooltip.stream()
+                        .anyMatch(line -> line.contains("仅可连接超级跨配方类型")),
+                    "dedicated mirror tooltip explains compatible master");
+                require(
+                    tooltip.stream()
+                        .anyMatch(line -> line.contains("同一多方块仅可安装")),
+                    "dedicated mirror tooltip explains family restriction");
+                mc.displayGuiScreen(new PreviewScreen(tooltip));
+                return;
+            }
+            if (frames < 24) return;
             ScreenShotHelper.saveScreenshot(
                 new File("."),
-                "circuit-pattern.png",
+                "cross-recipe-mirror.png",
                 mc.displayWidth,
                 mc.displayHeight,
                 mc.getFramebuffer());
@@ -338,7 +369,223 @@ public final class CircuitPatternChecks {
         verifyWildcard(player, map);
         verifySingleblock(player);
         verifyCrossRecipe(player);
+        verifyMirrors(player);
         return saved;
+    }
+
+    private static void verifyMirrors(EntityPlayerMP player) throws Exception {
+        require(GTNRItemList.CrossRecipeMEPatternMirror.get(1) != null, "cross-recipe mirror registered");
+        require(
+            RecipeMaps.assemblerRecipes.getAllRecipes()
+                .stream()
+                .anyMatch(
+                    recipe -> java.util.Arrays.stream(recipe.mOutputs)
+                        .anyMatch(output -> GTNRItemList.CrossRecipeMEPatternMirror.isStackEqual(output))),
+            "cross-recipe mirror recipe registered");
+        int[] masterIds = { GTNRMachineID.SuperCraftingInputME.id, GTNRMachineID.CircuitMEPatternBuffer.id,
+            GTNRMachineID.CrossRecipeMEPatternBuffer.id };
+        int[] mirrorIds = { GTNRMachineID.SuperCraftingInputSlave.id, GTNRMachineID.CircuitMEPatternMirror.id,
+            GTNRMachineID.CrossRecipeMEPatternMirror.id };
+        var masters = new SuperMTEHatchCraftingInputME[3];
+        var mirrors = new SuperMTEHatchCraftingInputSlave[3];
+        int originX = (int) player.posX + 3;
+        int originZ = (int) player.posZ + 3;
+        ItemStack held = player.inventory.getCurrentItem();
+        try {
+            for (int i = 0; i < 3; i++) {
+                masters[i] = (SuperMTEHatchCraftingInputME) placedMachine(player, masterIds[i], originX + i, originZ)
+                    .getMetaTileEntity();
+                mirrors[i] = (SuperMTEHatchCraftingInputSlave) placedMachine(
+                    player,
+                    mirrorIds[i],
+                    originX + i,
+                    originZ + 1).getMetaTileEntity();
+            }
+            for (int i = 0; i < 3; i++) {
+                var mirror = mirrors[i];
+                for (int j = 0; j < 3; j++) {
+                    boolean match = i == j;
+                    String pair = "mirror family " + i + " -> master " + j;
+                    var master = masters[j];
+                    var base = master.getBaseMetaTileEntity();
+                    mirror.loadNBTData(new NBTTagCompound());
+                    require(
+                        (mirror.trySetMasterFromCoord(base.getXCoord(), base.getYCoord(), base.getZCoord()) == master)
+                            == match,
+                        pair + " coordinate binding");
+                    require((mirror.getMaster() == master) == match, pair + " coordinate access");
+                    var saved = new NBTTagCompound();
+                    var coordinates = new NBTTagCompound();
+                    coordinates.setInteger("x", base.getXCoord());
+                    coordinates.setInteger("y", base.getYCoord());
+                    coordinates.setInteger("z", base.getZCoord());
+                    saved.setTag("master", coordinates);
+                    saved.setString("type", SuperMTEHatchCraftingInputSlave.COPIED_DATA_IDENTIFIER);
+                    mirror.loadNBTData(new NBTTagCompound());
+                    require(mirror.pasteCopiedData(player, saved) == match, pair + " copied binding");
+                    require((mirror.getMaster() == master) == match, pair + " copied access");
+                    mirror.loadNBTData(saved);
+                    mirror.onPostTick(mirror.getBaseMetaTileEntity(), 100);
+                    require((mirror.getMaster() == master) == match, pair + " saved binding after tick");
+                    mirror.loadNBTData(new NBTTagCompound());
+                    var stick = ItemList.Tool_DataStick.get(1);
+                    master.saveToDataStick(player, stick);
+                    player.inventory.setInventorySlotContents(player.inventory.currentItem, stick);
+                    require(mirror.onRightclick(mirror.getBaseMetaTileEntity(), player), pair + " data stick handled");
+                    require((mirror.getMaster() == master) == match, pair + " data stick binding");
+                    if (!match) {
+                        Field cached = SuperMTEHatchCraftingInputSlave.class.getDeclaredField("master");
+                        cached.setAccessible(true);
+                        cached.set(mirror, master);
+                        master.addProxyHatch(mirror);
+                        require(
+                            mirror.getMaster() == null && !mirror.inventories()
+                                .hasNext(),
+                            pair + " stale mixed cache rejected");
+                        master.getProxyHatches();
+                        master.removeProxyHatch(mirror);
+                        var ownBase = masters[i].getBaseMetaTileEntity();
+                        mirror.trySetMasterFromCoord(ownBase.getXCoord(), ownBase.getYCoord(), ownBase.getZCoord());
+                        require(
+                            !mirror.pasteCopiedData(player, saved) && mirror.getMaster() == masters[i],
+                            pair + " rejected paste preserves valid binding");
+                        mirror.onRightclick(mirror.getBaseMetaTileEntity(), player);
+                        require(
+                            mirror.getMaster() == masters[i],
+                            pair + " rejected data stick preserves valid binding");
+                    }
+                }
+            }
+            var hatch = (CrossRecipeMEPatternBuffer) masters[2];
+            verifyPatternFamilies(player, masters, mirrors);
+            var mirror = mirrors[2];
+            var base = hatch.getBaseMetaTileEntity();
+            require(
+                mirror.trySetMasterFromCoord(base.getXCoord(), base.getYCoord(), base.getZCoord()) == hatch,
+                "dedicated mirror linked to cross-recipe assembly");
+            hatch.onPatternChange(
+                0,
+                metadata(
+                    mapPattern(
+                        RecipeMaps.packagerRecipes,
+                        new ItemStack(Items.clay_ball, 3),
+                        new ItemStack(Items.paper)),
+                    4,
+                    null));
+            hatch.onPatternChange(
+                1,
+                metadata(
+                    mapPattern(
+                        RecipeMaps.unpackagerRecipes,
+                        new ItemStack(Items.clay_ball, 3),
+                        new ItemStack(Items.book)),
+                    4,
+                    null));
+            var slots = new ArrayList<CircuitSlot>();
+            mirror.inventories()
+                .forEachRemaining(slot -> {
+                    require(
+                        slot instanceof RecipeMapPatternInventory,
+                        "mirror retains per-pattern recipe map contract");
+                    slots.add((CircuitSlot) slot);
+                    require(
+                        slot.insertItemsAndFluids(delivery(slot.getPatternDetails())),
+                        "mirrored delivery accepted");
+                });
+            var packager = controller(player, "gregtech.common.tileentities.machines.multi.MTEIndustrialPackager");
+            Field pipeTier = packager.getClass()
+                .getDeclaredField("itemPipeTier");
+            pipeTier.setAccessible(true);
+            pipeTier.setInt(packager, 0);
+            packager.setMachineMode(0);
+            packager.mDualInputHatches.add(mirror);
+            mirror.addWatcher(packager);
+            require(
+                hatch.getControllerRecipeMaps()
+                    .equals(
+                        List.of(
+                            RecipeMaps.packagerRecipes.unlocalizedName,
+                            RecipeMaps.unpackagerRecipes.unlocalizedName)),
+                "dropdown discovers controller through dedicated mirror");
+            hatch.setTerminalRecipeMap(RecipeMaps.unpackagerRecipes.unlocalizedName);
+            require(
+                hatch.getTerminalRecipeMap()
+                    .equals(RecipeMaps.unpackagerRecipes.unlocalizedName),
+                "mirrored controller recipe map selectable for terminal name");
+            packager.mDualInputHatches.add(masters[1]);
+            var mixed = runController(packager);
+            require(
+                !mixed.wasSuccessful() && slots.stream()
+                    .noneMatch(CircuitSlot::isEmpty),
+                "mixed circuit assembly and cross-recipe mirror cannot consume buffered inputs");
+            require(
+                mixed.getDisplayString()
+                    .contains("不可混装"),
+                "mixed-input error has localized player feedback");
+            packager.mDualInputHatches.remove(masters[1]);
+            require(
+                runController(packager).wasSuccessful() && logic(packager).getOutputItems()[0].getItem() == Items.paper,
+                "native controller consumes packing through mirror only");
+            require(
+                runController(packager).wasSuccessful() && logic(packager).getOutputItems()[0].getItem() == Items.book,
+                "native controller consumes unpacking through same mirror");
+            require(
+                packager.getMachineMode() == 0 && slots.size() == 2
+                    && slots.stream()
+                        .allMatch(CircuitSlot::isEmpty),
+                "mirrored deliveries consumed once and controller mode restored");
+            packager.mDualInputHatches.clear();
+            require(
+                hatch.getControllerRecipeMaps()
+                    .isEmpty(),
+                "detached mirrored controller leaves no stale map choices");
+        } finally {
+            player.inventory.setInventorySlotContents(player.inventory.currentItem, held);
+            for (int i = 0; i < 3; i++) {
+                player.worldObj.setBlockToAir(originX + i, 100, originZ + 1);
+                player.worldObj.setBlockToAir(originX + i, 100, originZ);
+            }
+        }
+    }
+
+    private static BaseMetaTileEntity placedMachine(EntityPlayerMP player, int id, int x, int z) {
+        player.worldObj.setBlock(x, 100, z, GregTechAPI.sBlockMachines, 0, 3);
+        var tile = (BaseMetaTileEntity) player.worldObj.getTileEntity(x, 100, z);
+        tile.setInitialValuesAsNBT(null, (short) id);
+        return tile;
+    }
+
+    private static void verifyPatternFamilies(EntityPlayerMP player, SuperMTEHatchCraftingInputME[] masters,
+        SuperMTEHatchCraftingInputSlave[] mirrors) throws Exception {
+        var controller = new PatternStructureController();
+        var tile = new BaseMetaTileEntity();
+        tile.setWorldObj(player.worldObj);
+        tile.setMetaTileEntity(controller);
+        controller.setBaseMetaTileEntity(tile);
+        var inputs = new IDualInputHatch[] { masters[0], masters[1], masters[2], mirrors[0], mirrors[1], mirrors[2] };
+        Method ttCheck = MTEMultiBlockBase.class.getDeclaredMethod("checkMachine_TT", IGregTechTileEntity.class);
+        ttCheck.setAccessible(true);
+        Field errors = MTEMultiBlockBase.class.getDeclaredField("structureErrors");
+        errors.setAccessible(true);
+        for (int i = 0; i < inputs.length; i++) {
+            for (int j = 0; j < inputs.length; j++) {
+                controller.inputs = List.of(inputs[i], inputs[j]);
+                boolean compatible = i % 3 == j % 3;
+                require(
+                    controller.checkStructure(true, tile) == compatible,
+                    "native structure check respects input families " + i + "/" + j);
+                require(
+                    ((List<?>) errors.get(controller)).isEmpty() == compatible,
+                    "mixed structure exposes native error " + i + "/" + j);
+                controller.mDualInputHatches.clear();
+                require(
+                    (boolean) ttCheck.invoke(controller, tile) == compatible,
+                    "TT structure check respects input families " + i + "/" + j);
+            }
+        }
+        for (var mirror : mirrors) mirror.loadNBTData(new NBTTagCompound());
+        controller.inputs = List.of(mirrors[1], mirrors[2]);
+        require(!controller.checkStructure(true, tile), "unlinked mirrors still retain their family restriction");
     }
 
     private static void verifyCrossRecipe(EntityPlayerMP player) throws Exception {
@@ -1243,6 +1490,20 @@ public final class CircuitPatternChecks {
         exit.start();
         Minecraft.getMinecraft()
             .shutdown();
+    }
+
+    private static final class PatternStructureController extends MTEIndustrialPackager {
+
+        private List<IDualInputHatch> inputs = List.of();
+
+        private PatternStructureController() {
+            super("qa.pattern_families");
+        }
+
+        @Override
+        public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
+            mDualInputHatches.addAll(inputs);
+        }
     }
 
     private static final class PreviewScreen extends GuiScreen {

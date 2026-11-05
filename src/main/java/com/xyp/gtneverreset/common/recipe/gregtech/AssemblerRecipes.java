@@ -201,6 +201,17 @@ public final class AssemblerRecipes {
             .duration(5 * SECONDS)
             .eut(32)
             .addTo(assemblerRecipes);
+
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                GTNRItemList.CircuitMEPatternMirror.get(1),
+                new Object[] { OrePrefixes.circuit.get(Materials.LV), 2 },
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Aluminium, 2))
+            .circuit(24)
+            .itemOutputs(GTNRItemList.CrossRecipeMEPatternMirror.get(1))
+            .duration(5 * SECONDS)
+            .eut(32)
+            .addTo(assemblerRecipes);
     }
 
     /** Adds upgrades that retain the ordinary ME output bus and hatch as crafting prerequisites. */
