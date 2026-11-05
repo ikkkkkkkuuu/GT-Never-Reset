@@ -10,4 +10,52 @@ on:
 jobs:
   build-and-test:
     uses: GTNewHorizons/GTNH-Actions-Workflows/.github/workflows/build-and-test.yml@master
+    with:
+      # The shared runServer command selects both projects but prepares only the root server.
+      # Test each server explicitly below, with its own input and startup checks.
+      client-only: true
     secrets: inherit
+
+  server-tests:
+    name: Server startup (${{ matrix.project }})
+    needs: build-and-test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: GT-Never-Reset
+            task: :runServer
+          - project: GTNRLib
+            task: :gtnrlib:runServer
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-java@v5
+        with:
+          distribution: zulu
+          java-version: |
+            8
+            17
+            21
+            25
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Start and stop the server
+        env:
+          SERVER_TASK: ${{ matrix.task }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --build-cache --no-configuration-cache --console=plain --stacktrace -PciServerTest=true "$SERVER_TASK"
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-logs-${{ matrix.project }}
+          path: |
+            **/build/ci-server/**/logs/
+            **/build/ci-server/**/crash-reports/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -273,6 +273,47 @@ afterEvaluate {
     }
 }
 
+// CI selects each project's server explicitly and gives it independent input and startup validation.
+if (providers.gradleProperty('ciServerTest').getOrElse('false').toBoolean()) {
+    gradle.projectsEvaluated {
+        allprojects { serverProject ->
+            serverProject.tasks.named('runServer', JavaExec) {
+                timeout = java.time.Duration.ofMinutes(5)
+                notCompatibleWithConfigurationCache('server smoke tests allocate and inspect a fresh runtime directory')
+                doFirst {
+                    def testRoot = serverProject.layout.buildDirectory.dir('ci-server').get().asFile.toPath()
+                    java.nio.file.Files.createDirectories(testRoot)
+                    workingDir = java.nio.file.Files.createTempDirectory(testRoot, 'run-').toFile()
+                    new File(workingDir, 'eula.txt').setText('eula=true\n', 'UTF-8')
+                    new File(workingDir, 'server.properties').setText(
+                        'server-ip=127.0.0.1\nserver-port=0\nonline-mode=false\n' +
+                        'level-seed=-6202107849386030209\nview-distance=2\n', 'UTF-8')
+                    standardInput = new ByteArrayInputStream('stop\n'.getBytes('UTF-8'))
+                    logger.lifecycle('[server smoke test] {} uses {}', path, workingDir)
+                }
+                doLast {
+                    def serverLog = new File(workingDir, 'logs/latest.log')
+                    String log = serverLog.isFile() ? serverLog.getText('UTF-8') : ''
+                    if (!(log =~ /Done \([^)]+\)! For help, type/).find()) {
+                        throw new GradleException("${path}: server did not finish startup; see ${workingDir}")
+                    }
+                    def crashReports = new File(workingDir, 'crash-reports').listFiles()
+                    if (crashReports?.any { it.name.endsWith('.txt') } ||
+                        log.contains('Fatal errors were detected') ||
+                        log.contains('The state engine was in incorrect state ERRORED') ||
+                        log.contains('Exception stopping the server')) {
+                        throw new GradleException("${path}: server reported a failure; see ${workingDir}")
+                    }
+                    if (!log.contains('Stopping server')) {
+                        throw new GradleException("${path}: server did not stop normally; see ${workingDir}")
+                    }
+                    logger.lifecycle('[server smoke test] {} started and stopped successfully', path)
+                }
+            }
+        }
+    }
+}
+
 // Keep Windows NIO socket files outside redirected user temporary directories.
 // Apply this to compiler workers and the Minecraft launch configurations generated for the IDE.
 if (providers.systemProperty('os.name').get().startsWith('Windows')) {
