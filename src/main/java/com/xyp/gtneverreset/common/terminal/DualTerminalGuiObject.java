@@ -8,6 +8,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
 import com.xyp.gtneverreset.compat.ae2fc.FluidDropCompat;
 import com.xyp.gtneverreset.compat.thaumcraft.ArcaneWorkbenchPatterns;
 
@@ -22,6 +23,7 @@ import appeng.api.storage.StorageName;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IAEStack;
 import appeng.items.contents.WirelessPatternTerminalGuiObject;
+import appeng.tile.inventory.IAEStackInventory;
 import appeng.tile.inventory.InvOperation;
 import appeng.util.Platform;
 import appeng.util.item.AEFluidStack;
@@ -127,8 +129,14 @@ public final class DualTerminalGuiObject extends WirelessPatternTerminalGuiObjec
         }
     }
 
+    @Override
+    public void loadPatternFromItem(ItemStack pattern, World world, IAEStackInventory inputs,
+        IAEStackInventory outputs) {
+        super.loadPatternFromItem(CircuitPatternCodec.editablePattern(pattern), world, inputs, outputs);
+    }
+
     /**
-     * Adds the workbench layout inside AE's native encoding transaction, before container synchronization or
+     * Adds workbench layout or virtual tool metadata to AE's encoded result, before container synchronization or
      * automatic placement. All native blank-pattern consumption and output handling remain authoritative.
      * A changed bill cannot be encoded with stale layout metadata.
      */
@@ -151,6 +159,17 @@ public final class DualTerminalGuiObject extends WirelessPatternTerminalGuiObjec
                 encoded.setTag(ArcaneWorkbenchPatterns.GRID, layout);
                 encoded.setBoolean("substitute", false);
                 patterns.markDirty();
+            } else if (!isCraftingRecipe() && shouldKeepNonConsumables()) {
+                IInventory patterns = getInventoryByName("pattern");
+                ItemStack encoded = patterns.getStackInSlot(1);
+                var runtime = CircuitPatternCodec.runtime(encoded, world);
+                if (runtime != null) {
+                    encoded.setTagCompound(
+                        (NBTTagCompound) runtime.getPattern()
+                            .getTagCompound()
+                            .copy());
+                    writeInventory();
+                }
             }
             return true;
         } finally {
@@ -243,8 +262,8 @@ public final class DualTerminalGuiObject extends WirelessPatternTerminalGuiObjec
     }
 
     public boolean shouldKeepNonConsumables() {
-        return Platform.openNbtData(getItemStack())
-            .getBoolean(QUICK_KEEP_NON_CONSUMABLES);
+        NBTTagCompound data = Platform.openNbtData(getItemStack());
+        return !data.hasKey(QUICK_KEEP_NON_CONSUMABLES) || data.getBoolean(QUICK_KEEP_NON_CONSUMABLES);
     }
 
     public void setKeepNonConsumables(boolean keep) {

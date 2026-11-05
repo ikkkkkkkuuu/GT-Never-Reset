@@ -14,6 +14,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 
 import com.xyp.gtneverreset.common.item.items.WildcardPatternItem;
+import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
 import com.xyp.gtneverreset.common.me.wildcard.model.IWildcardFilterComponent;
 import com.xyp.gtneverreset.common.me.wildcard.model.IWildcardIOComponent;
 import com.xyp.gtneverreset.common.me.wildcard.model.WildcardExpansion;
@@ -144,7 +145,12 @@ public final class WildcardPatternGenerator {
 
     public static String getGeneratedPatternId(ItemStack stack) {
         NBTTagCompound tag = stack == null ? null : stack.getTagCompound();
-        return tag == null || !tag.hasKey(KEY_GENERATED_PATTERN_ID) ? "" : tag.getString(KEY_GENERATED_PATTERN_ID);
+        String id = tag == null ? "" : tag.getString(KEY_GENERATED_PATTERN_ID);
+        if (id.isEmpty()) return id;
+        // Identical consumables can use different tool configurations; AE must retain both crafting options.
+        if (tag.hasKey(CircuitPatternCodec.CIRCUIT)) id += "|circuit=" + tag.getTag(CircuitPatternCodec.CIRCUIT);
+        if (tag.hasKey(CircuitPatternCodec.MOLDS)) id += "|molds=" + tag.getTag(CircuitPatternCodec.MOLDS);
+        return id;
     }
 
     public static String getPatternIdentity(ItemStack stack) {
