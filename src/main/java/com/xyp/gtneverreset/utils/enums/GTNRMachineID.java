@@ -11,7 +11,8 @@ public enum GTNRMachineID {
     SingularityDataHub(29404),
     LargeBeeBreeder(29405),
     LargeCropBreeder(29406),
-    // 预留：29407–29499（93 个）。
+    UniversalJointFactory(29407),
+    // 预留：29408–29499（92 个）。
     // endregion
 
     // region 舱室

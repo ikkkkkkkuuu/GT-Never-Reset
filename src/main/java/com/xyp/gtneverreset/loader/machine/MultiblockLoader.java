@@ -13,6 +13,7 @@ import com.xyp.gtneverreset.common.machine.multiblock.LargeFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeOreProcessor;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
+import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.text.AnimatedText;
@@ -43,6 +44,15 @@ public final class MultiblockLoader {
                 "gtneverreset.large_furnace",
                 StatCollector.translateToLocal("gtnr.machine.large_furnace.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.LargeFurnace.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.universal_joint_factory.name
+        // # Universal Joint Factory
+        // # zh_CN 通用联合工厂
+        GTNRItemList.UniversalJointFactory.set(
+            new UniversalJointFactory(
+                GTNRMachineID.UniversalJointFactory.id,
+                "gtneverreset.universal_joint_factory",
+                StatCollector.translateToLocal("gtnr.machine.universal_joint_factory.name")));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.UniversalJointFactory.get(1), AnimatedText.GT_NEVER_RESET);
         // #tr gtnr.QuantumComputer.name
         // # Quantum Computer
         // # zh_CN 量子计算机

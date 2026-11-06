@@ -1,0 +1,37 @@
+{
+  "sourceJar": "GTL-Enhancedcore-3.8.0.jar",
+  "sourceJarSHA256": "555a9514c4d2fd11a029c091ac053d5cf7c52fba62411f2f043e04454094f7aa",
+  "sourceEntry": "data/gtl_enhancedcore/structures/integrated_universal_factory.pattern.gz",
+  "sourceSHA256": "0638a274ed4fc862bfdb4f6b2c9371307ea374f4a9bd6208f82ec8ccb60735cc",
+  "sizeXYZ": [
+    49,
+    31,
+    49
+  ],
+  "sourceControllerXYZ": [
+    24,
+    15,
+    48
+  ],
+  "gtnrControllerOffsetXYZ": [
+    24,
+    15,
+    0
+  ],
+  "transform": "MBS1[y][z] = source[depth - 1 - z][y]; C -> ~; StructureLib transpose at load; spaces preserved",
+  "counts": {
+    "A": 18020,
+    " ": 53810,
+    "D": 244,
+    "J": 4,
+    "B": 824,
+    "I": 924,
+    "E": 416,
+    "F": 32,
+    "G": 14,
+    "Q": 118,
+    "X": 24,
+    "C": 1
+  },
+  "mbsSHA256": "9a04d2e6e44d630606b90ee77c228b37639501215dba10e7b337e998aff1406c"
+}
