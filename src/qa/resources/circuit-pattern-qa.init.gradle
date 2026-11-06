@@ -1,10 +1,12 @@
 // Run with: gradlew.bat -I src/qa/resources/circuit-pattern-qa.init.gradle :runClient17 --no-configuration-cache
+// Add -PpatternStressTest=true to run the multi-controller stress fixture instead.
 gradle.projectsEvaluated {
     def root = gradle.rootProject
     root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
-    def fixture = 'CircuitPatternChecks'
-    def directoryName = 'circuit-pattern-qa'
-    def marker = 'gtnr.circuit.pattern.qa'
+    def stress = root.providers.gradleProperty('patternStressTest').isPresent()
+    def fixture = stress ? 'PatternRecipeStressChecks' : 'CircuitPatternChecks'
+    def directoryName = stress ? 'pattern-recipe-stress-qa' : 'circuit-pattern-qa'
+    def marker = stress ? 'gtnr.pattern.stress.qa' : 'gtnr.circuit.pattern.qa'
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
 
     root.tasks.named('compileTestJava').configure {

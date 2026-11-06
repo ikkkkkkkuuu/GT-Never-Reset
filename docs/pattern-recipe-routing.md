@@ -63,3 +63,15 @@
 第二个夹具使用独立的客户端和服务端总成实例打开真实 GUI，通过控件事件选择选项并验证 C2S/S2C 同步。
 覆盖候选数量、接口终端命名、保存重载、控制器更换与断开、重新打开、长文字裁剪及 GUI 缩放 1/2/3。
 结果及截图位于 `build/cross-recipe-selector-qa/run`。
+
+压力测试使用同一隔离启动脚本，加上 `-PpatternStressTest=true`：
+
+```powershell
+.\gradlew.bat -I src/qa/resources/circuit-pattern-qa.init.gradle -PpatternStressTest=true :runClient17 --no-configuration-cache --console=plain
+```
+
+覆盖 8 类原生控制器的 16 组机器/配方池组合，24 个消费者共用 8 个满装 540 张样板的总成。
+每组运行 6 轮重复投料、交替配方池、双镜像共享和中途 NBT 重载，另验证超过 32 位数量的缓存。
+输出在 `build/pattern-recipe-stress-qa/run`：`result.txt`、`stress-summary.txt`、`stress-metrics.csv`、
+`stress-operations.csv` 及 `screenshots/pattern-stress.png`。
+实测数据、峰值来源和覆盖边界见[压力测试报告](pattern-recipe-stress.md)。
