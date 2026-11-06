@@ -458,10 +458,11 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
         setPinsRows(nativeCraftingPinRows, nativePlayerPinRows);
     }
 
-    /** Clearing the visible recipe also discards any pending workbench layout. */
+    /** Clearing the visible recipe also discards its workbench layout and recipe type. */
     @Override
     public void clear() {
         getDualTerminal().setArcaneLayout(null);
+        getDualTerminal().setRecipeMapName(null);
         super.clear();
     }
 
