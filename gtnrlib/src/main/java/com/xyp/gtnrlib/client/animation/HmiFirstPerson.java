@@ -38,6 +38,7 @@ import org.lwjgl.input.Keyboard;
 import com.xyp.gtnrlib.GTNRLib;
 import com.xyp.gtnrlib.client.render.animation.DefaultItemModels;
 import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
+import com.xyp.gtnrlib.config.GTNRLibConfig;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -95,7 +96,7 @@ public final class HmiFirstPerson {
     }
 
     public boolean enabled() {
-        return program != null;
+        return GTNRLibConfig.enableFirstPersonAnimations && program != null;
     }
 
     public void detach() {
@@ -148,7 +149,7 @@ public final class HmiFirstPerson {
 
     /** A server-confirmed tool action has its own trigger, independent of a predicted left click. */
     public void swing(String confirmedAction) {
-        if (program == null) return;
+        if (!enabled()) return;
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
         if (p == null || mc.gameSettings.thirdPersonView != 0) return;
@@ -215,7 +216,7 @@ public final class HmiFirstPerson {
     }
 
     public boolean sample(ItemStack stack, float partial, float dip) {
-        if (program == null) return false;
+        if (!enabled()) return false;
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
         if (p == null || mc.gameSettings.thirdPersonView != 0 || p.isInvisible()) return false;

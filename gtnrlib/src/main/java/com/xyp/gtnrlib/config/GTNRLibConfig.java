@@ -42,6 +42,17 @@ public class GTNRLibConfig {
     @Config.Ignore
     private static String[] themes = {};
 
+    @Comment("Enable custom first-person hand and item animations. Disable to use vanilla rendering immediately.")
+    // #tr gtnrlib.gui.config.client.enable_first_person_animations
+    // # First-person hand animations
+    // # zh_CN 第一人称手臂动画
+    // #tr gtnrlib.gui.config.client.enable_first_person_animations.tooltip
+    // # Disable all custom hand and item animations and use vanilla rendering. Takes effect immediately.
+    // # zh_CN 关闭后停用所有自定义手臂和持物动画，恢复原版表现。立即生效。
+    @LangKey("gtnrlib.gui.config.client.enable_first_person_animations")
+    @DefaultBoolean(true)
+    public static boolean enableFirstPersonAnimations = true;
+
     @Comment("Enable the built-in first-person poses and item actions")
     // #tr gtnrlib.gui.config.client.built_in_first_person
     // # Built-in first-person animations
