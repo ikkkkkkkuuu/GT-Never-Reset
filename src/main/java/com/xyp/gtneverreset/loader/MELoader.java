@@ -4,6 +4,7 @@ import com.gtnewhorizon.gtnhlib.chat.ChatComponentCustomRegistry;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
+import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
 import com.xyp.gtneverreset.common.me.ChatComponentInterfaceNameSuffix;
@@ -20,6 +21,7 @@ public final class MELoader implements IContentLoader {
         interfaceTerminal.register(AssemblerMatrix.class);
         interfaceTerminal.register(SuperMTEHatchCraftingInputME.class);
         interfaceTerminal.register(CircuitMEPatternBuffer.class);
+        interfaceTerminal.register(CrossRecipeMEPatternBuffer.class);
         interfaceTerminal.register(TileEntityOverloadedProvider.class);
         interfaceTerminal.register(TileEntityPackagedProvider.class);
         ChatComponentCustomRegistry.register(ChatComponentInterfaceNameSuffix::new);

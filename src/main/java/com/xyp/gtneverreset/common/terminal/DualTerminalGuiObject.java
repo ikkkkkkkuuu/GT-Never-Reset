@@ -135,10 +135,10 @@ public final class DualTerminalGuiObject extends WirelessPatternTerminalGuiObjec
     public void loadPatternFromItem(ItemStack pattern, World world, IAEStackInventory inputs,
         IAEStackInventory outputs) {
         super.loadPatternFromItem(CircuitPatternCodec.editablePattern(pattern), world, inputs, outputs);
-        if (!encodingPattern) setRecipeMapName(PatternRecipeMap.name(pattern));
+        if (!encodingPattern && pattern != null) setRecipeMapName(PatternRecipeMap.name(pattern));
     }
 
-    /** Remembers the NEI recipe type with its item/fluid identities, allowing quantity edits and multipliers. */
+    /** Remembers the recipe type while quantities change or unwanted byproducts are removed. */
     public void setRecipeMapName(String name) {
         NBTTagCompound data = Platform.openNbtData(getItemStack());
         if (name == null) {
@@ -157,8 +157,27 @@ public final class DualTerminalGuiObject extends WirelessPatternTerminalGuiObjec
         if (!data.hasKey(QUICK_RECIPE_MAP, 10)) return null;
         NBTTagCompound draft = data.getCompoundTag(QUICK_RECIPE_MAP);
         if (!recipeMapSnapshot(StorageName.CRAFTING_INPUT).equals(draft.getTag("Inputs"))
-            || !recipeMapSnapshot(StorageName.CRAFTING_OUTPUT).equals(draft.getTag("Outputs"))) return null;
+            || !matchesRecipeMapOutputs(draft.getTagList("Outputs", 10))) return null;
         return draft.getString("Name");
+    }
+
+    private boolean matchesRecipeMapOutputs(NBTTagList original) {
+        NBTTagList current = recipeMapSnapshot(StorageName.CRAFTING_OUTPUT);
+        if (current.tagCount() == 0 || current.tagCount() > original.tagCount()) return false;
+        boolean[] matched = new boolean[original.tagCount()];
+        for (int slot = 0; slot < current.tagCount(); slot++) {
+            boolean found = false;
+            for (int candidate = 0; candidate < original.tagCount(); candidate++) {
+                if (!matched[candidate] && current.getCompoundTagAt(slot)
+                    .equals(original.getCompoundTagAt(candidate))) {
+                    matched[candidate] = true;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
     }
 
     private NBTTagList recipeMapSnapshot(StorageName storage) {
