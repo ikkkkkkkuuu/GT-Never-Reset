@@ -1017,7 +1017,6 @@ Info_SingularityDataHub_RunningCost=运行成本: %dEU/t
 Info_SingularityDataHub_AutoVoiding=自动销毁溢出: %b
 Waila_WirelessMode=无线模式
 gtnr.machine.universal_joint_factory.type=通用加工 / 跨配方线程
-gtnr.machine.universal_joint_factory.recipes=可用配方类型：%s
 gtnr.multiblock.threads.capacity=跨配方线程数：§b%s§r
 gtnr.tooltip.structure.module_limit=%s：每台机器最多 %s 个
 gtnr.tooltip.structure.channel.master=投影器物品堆叠数量决定：%s

@@ -24,11 +24,14 @@ The upstream geometry is retained, converted to MBS1 and mapped to existing GTNH
 | E | Steel gearbox | Steel Gearbox Casing |
 | F | Steel pipe casing | Steel Pipe Casing |
 | G | Cupronickel coil | Cupronickel Coil Block |
-| I | AE quartz glass | AE Quartz Glass |
+| I | AE quartz glass | GTNH tiered glass (including ordinary glass at HV) |
 | J | White lamp | Glowstone |
 
 No new decorative blocks or textures are introduced. The controller uses GregTech's assembly-line overlay.
 The source's 24 recipe types are mapped to their GTNH counterparts, including the single-block chemical dehydrator pool.
 Balance changes requested by the user: 64 parallels per thread and 32 cross-recipe threads at LV;
 each additional voltage tier doubles parallels and adds eight threads. Ordinary inputs run one selected recipe type.
+Parameter modules use GTNR's standard effects, with at most one module of each type in the Q/X hatch positions.
+Glass above the HV baseline adds 20 percentage points of speed and multiplies EU usage by 0.9 per tier;
+All glass positions must have the same GTNH glass tier. Overclocking upgrades are provided by parameter modules.
 Power, input transactions, output protection and persistence use the existing GTNR multiblock framework.

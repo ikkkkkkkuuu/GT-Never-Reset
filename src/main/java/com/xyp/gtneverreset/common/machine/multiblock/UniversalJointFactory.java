@@ -1,6 +1,7 @@
 package com.xyp.gtneverreset.common.machine.multiblock;
 
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofBlock;
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofChain;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
 import static gregtech.api.enums.HatchElement.Energy;
 import static gregtech.api.enums.HatchElement.ExoticEnergy;
@@ -10,9 +11,10 @@ import static gregtech.api.enums.HatchElement.Maintenance;
 import static gregtech.api.enums.HatchElement.OutputBus;
 import static gregtech.api.enums.HatchElement.OutputHatch;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
+import static gregtech.api.util.GTStructureUtility.chainAllGlasses;
+import static gregtech.api.util.GTStructureUtility.ofHatchAdder;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
@@ -24,12 +26,12 @@ import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.UniversalJointFactoryGui;
+import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.GTNRMultiBlockBase;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
-import com.xyp.gtneverreset.utils.enums.MachineModuleType;
+import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
-import appeng.api.AEApi;
 import gregtech.api.GregTechAPI;
 import gregtech.api.enums.Textures;
 import gregtech.api.enums.VoltageIndex;
@@ -49,6 +51,9 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
     private static final int BASE_PARALLELS = 64;
     private static final int BASE_THREADS = 32;
     private static final int THREADS_PER_TIER = 8;
+    private static final int BASE_GLASS_TIER = VoltageIndex.HV;
+    private static final double SPEED_PER_GLASS_TIER = 0.2;
+    private static final double EU_MULTIPLIER_PER_GLASS_TIER = 0.9;
     private static final int CASING_TEXTURE_ID = 16;
     private static final String STRUCTURE_PIECE = "main";
     private static final int OFFSET_X = 24, OFFSET_Y = 15, OFFSET_Z = 0;
@@ -107,11 +112,15 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
     @Override
     public IStructureDefinition<UniversalJointFactory> getStructureDefinition() {
         if (definition == null) {
-            var ports = buildHatchAdder(UniversalJointFactory.class)
-                .atLeast(InputBus, InputHatch, OutputBus, OutputHatch, Energy.or(ExoticEnergy), Maintenance)
-                .casingIndex(CASING_TEXTURE_ID)
-                .hint(1)
-                .buildAndChain(ofBlock(GregTechAPI.sBlockCasings2, 0));
+            var ports = ofChain(
+                StructureTooltipHooks.describeAsHatch(
+                    ofHatchAdder(UniversalJointFactory::addParameterModuleToMachineList, CASING_TEXTURE_ID, 1),
+                    ParameterModuleHatch.NAME_KEY),
+                buildHatchAdder(UniversalJointFactory.class)
+                    .atLeast(InputBus, InputHatch, OutputBus, OutputHatch, Energy.or(ExoticEnergy), Maintenance)
+                    .casingIndex(CASING_TEXTURE_ID)
+                    .hint(1)
+                    .buildAndChain(ofBlock(GregTechAPI.sBlockCasings2, 0)));
             definition = StructureDefinition.<UniversalJointFactory>builder()
                 .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load("universal_joint_factory")))
                 .addElement('X', ports)
@@ -124,14 +133,7 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
                 .addElement('G', ofBlock(GregTechAPI.sBlockCasings5, 0))
                 .addElement(
                     'I',
-                    ofBlock(
-                        AEApi.instance()
-                            .definitions()
-                            .blocks()
-                            .quartzGlass()
-                            .maybeBlock()
-                            .get(),
-                        0))
+                    chainAllGlasses(-1, (machine, tier) -> machine.mGlassTier = tier, machine -> machine.mGlassTier))
                 .addElement('J', ofBlock(Blocks.glowstone, 0))
                 .build();
         }
@@ -219,21 +221,6 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
     }
 
     @Override
-    public List<String> getTooltipFeatureLines() {
-        List<String> lines = super.getTooltipFeatureLines();
-        // #tr gtnr.machine.universal_joint_factory.recipes
-        // # Recipe types: %s
-        // # zh_CN 可用配方类型：%s
-        lines.add(
-            StatCollector.translateToLocalFormatted(
-                "gtnr.machine.universal_joint_factory.recipes",
-                RECIPE_MAPS.stream()
-                    .map(map -> StatCollector.translateToLocal(map.unlocalizedName))
-                    .collect(Collectors.joining(", "))));
-        return lines;
-    }
-
-    @Override
     protected UniversalJointFactoryGui getGui() {
         return new UniversalJointFactoryGui(this);
     }
@@ -270,7 +257,16 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
     }
 
     @Override
-    public int getParameterModuleLimit(MachineModuleType type) {
-        return 0;
+    protected double getBaseSpeedMultiplier() {
+        return 1 + SPEED_PER_GLASS_TIER * getGlassUpgrades();
+    }
+
+    @Override
+    protected double getBaseEUtMultiplier() {
+        return Math.pow(EU_MULTIPLIER_PER_GLASS_TIER, getGlassUpgrades());
+    }
+
+    private int getGlassUpgrades() {
+        return Math.max(0, mGlassTier - BASE_GLASS_TIER);
     }
 }

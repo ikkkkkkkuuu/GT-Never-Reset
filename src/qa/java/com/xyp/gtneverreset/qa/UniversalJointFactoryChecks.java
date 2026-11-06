@@ -8,7 +8,9 @@ import java.util.List;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -25,9 +27,11 @@ import com.cleanroommc.modularui.screen.GuiContainerWrapper;
 import com.cleanroommc.modularui.widgets.CycleButtonWidget;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource.TieredPart;
 import com.xyp.gtneverreset.api.me.RecipeMapPatternInventory;
+import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactoryProcessingLogic;
+import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
@@ -44,6 +48,7 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.GregTechAPI;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;
+import gregtech.api.enums.VoltageIndex;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.recipe.check.SingleRecipeCheck;
@@ -127,6 +132,20 @@ public final class UniversalJointFactoryChecks {
         try {
             if (stage == 4 && ++frames >= 100) {
                 capture("factory-structure.png");
+                mc.displayGuiScreen(new FactoryTooltipScreen(false));
+                stage = 5;
+                frames = 0;
+                return;
+            }
+            if (stage == 5 && ++frames >= 40) {
+                capture("factory-tooltip.png");
+                mc.displayGuiScreen(new FactoryTooltipScreen(true));
+                stage = 6;
+                frames = 0;
+                return;
+            }
+            if (stage == 6 && ++frames >= 40) {
+                capture("factory-structure-tooltip.png");
                 finish(null);
                 return;
             }
@@ -140,6 +159,21 @@ public final class UniversalJointFactoryChecks {
                 require(
                     text.contains("32") && text.contains("64") && !text.contains("{var:"),
                     "automatic tooltip values resolved");
+                require(
+                    !text.contains("可用配方类型") && !text.contains("Recipe types:")
+                        && !text.contains("不接受参数")
+                        && !text.contains("Does not accept parameter"),
+                    "tooltip omits recipe list and obsolete module restriction");
+                require(
+                    text.contains("20%") && text.contains("0.9")
+                        && !text.contains("无损超频")
+                        && !text.contains("Perfect overclock"),
+                    "tooltip derives glass bonuses without an automatic perfect overclock");
+                String structureText = String.join("\n", new FactoryTooltipScreen(true).lines);
+                Files.writeString(Path.of("factory-structure-tooltip.txt"), structureText);
+                require(
+                    structureText.contains("参数模块") && structureText.contains("每台机器最多 1 个"),
+                    "structure tooltip includes parameter ports and limits");
                 capture("factory-gui.png");
                 CycleButtonWidget button = findModeButton(
                     gui.getScreen()
@@ -169,7 +203,14 @@ public final class UniversalJointFactoryChecks {
             UniversalJointFactory.threadsForTier(Integer.MAX_VALUE) == Integer.MAX_VALUE,
             "thread overflow saturates");
         for (MachineModuleType type : MachineModuleType.values())
-            require(detached.getParameterModuleLimit(type) == 0, "no module " + type);
+            require(detached.getParameterModuleLimit(type) == 1, "one module per type " + type);
+        for (int tier = VoltageIndex.HV; tier <= VoltageIndex.UXV; tier++) {
+            var stats = detached.getTooltipStatsAtTier(TieredPart.GLASS, tier);
+            int upgrades = tier - VoltageIndex.HV;
+            require(Math.abs(stats.speed() - (1 + 0.2 * upgrades)) < 1e-9, "glass speed tier " + tier);
+            require(Math.abs(stats.energyUsage() - Math.pow(0.9, upgrades)) < 1e-9, "glass EU tier " + tier);
+            require(!stats.perfectOverclock(), "glass does not grant perfect overclock at tier " + tier);
+        }
         require(UniversalJointFactory.RECIPE_MAPS.size() == 24, "all 24 recipe maps available");
         World world = player.worldObj;
         tile = place(world, 0, 80, 0, GTNRMachineID.UniversalJointFactory.id);
@@ -215,10 +256,124 @@ public final class UniversalJointFactoryChecks {
         require(factory.getTotalRecipeThreads() == 32, "pattern hatch enables 32 LV threads");
         verifyMatching(world, hatch);
         verifyThreads(world, hatch);
+        verifyGlassAndModules(world);
         player.capabilities.allowFlying = true;
         player.capabilities.isFlying = true;
         player.sendPlayerAbilities();
         player.playerNetServerHandler.setPlayerLocation(0.5, 80, -4, 0, 0);
+    }
+
+    private void verifyGlassAndModules(World world) {
+        replaceGlass(world, Blocks.glass, 0);
+        require(factory.checkStructure(true, tile), "ordinary glass forms factory at HV glass tier");
+        require(
+            factory.getSpeedMultiplier() == 1 && factory.getEUtMultiplier() == 1
+                && factory.getOverclockTimeReduction() == 2,
+            "ordinary glass has baseline processing parameters");
+        replaceGlass(world, GregTechAPI.sBlockGlass1, 0);
+        require(factory.checkStructure(true, tile), "EV glass forms factory");
+        require(
+            Math.abs(factory.getSpeedMultiplier() - 1.2) < 1e-9 && Math.abs(factory.getEUtMultiplier() - 0.9) < 1e-9
+                && factory.getOverclockTimeReduction() == 2,
+            "EV glass gains speed and EU efficiency without perfect OC");
+        String[][] shape = MultiblockStructureLoader.load("universal_joint_factory");
+        boolean changed = false;
+        for (int y = 0; y < shape.length && !changed; y++) {
+            for (int z = 0; z < shape[y].length && !changed; z++) {
+                int x = shape[y][z].indexOf('I');
+                if (x >= 0) {
+                    int[] position = glassPosition(x, y, z);
+                    world.setBlock(position[0], position[1], position[2], GregTechAPI.sBlockGlass1, 1, 3);
+                    changed = true;
+                }
+            }
+        }
+        require(changed && !factory.checkStructure(true, tile), "mixed glass tiers cannot form factory");
+        replaceGlass(world, GregTechAPI.sBlockGlass1, 1);
+        require(factory.checkStructure(true, tile), "UHV glass forms factory");
+        double uhvEu = Math.pow(0.9, 6);
+        require(
+            Math.abs(factory.getSpeedMultiplier() - 2.2) < 1e-9 && Math.abs(factory.getEUtMultiplier() - uhvEu) < 1e-9
+                && factory.getOverclockTimeReduction() == 2
+                && factory.getOverclockPowerIncrease() == 4,
+            "UHV glass gives 220 percent speed and 53.1441 percent EU without perfect OC");
+        var parallel = (ParameterModuleHatch) place(world, -3, 82, 0, GTNRMachineID.DynamicParallelControllerT1.id)
+            .getMetaTileEntity();
+        var speed = (ParameterModuleHatch) place(world, -2, 82, 0, GTNRMachineID.DynamicSpeedControllerT1.id)
+            .getMetaTileEntity();
+        place(world, -1, 82, 0, GTNRMachineID.PowerConsumptionControllerT1.id);
+        place(world, 0, 82, 0, GTNRMachineID.PerfectOverclockController.id);
+        parallel.setParameter(3);
+        speed.setParameter(2);
+        require(
+            factory.checkStructure(true, tile) && factory.getParameterModules()
+                .size() == 4,
+            "all four module types form in both Q and X positions");
+        require(
+            factory.getMaxParallelRecipes() == 256 && factory.getTotalRecipeThreads() == 32,
+            "parallel module scales LV parallels without changing cross-recipe capacity");
+        require(
+            Math.abs(factory.getSpeedMultiplier() - 4.4) < 1e-9
+                && Math.abs(factory.getEUtMultiplier() - uhvEu * 0.95) < 1e-9,
+            "speed and EU modules multiply glass bonuses");
+        require(
+            factory.getOverclockTimeReduction() == 8 && factory.getOverclockPowerIncrease() == 4,
+            "overclock module keeps its stronger overclock effect");
+        parallel.setParameter(5);
+        require(factory.getMaxParallelRecipes() == 384, "dynamic module parameter updates effective parallels");
+        place(world, 1, 82, 0, GTNRMachineID.StaticParallelControllerT1.id);
+        require(!factory.checkStructure(true, tile), "duplicate parallel module blocks formation");
+        world.setBlock(1, 82, 0, GregTechAPI.sBlockCasings2, 0, 3);
+        require(factory.checkStructure(true, tile), "removing duplicate module restores formation");
+        place(
+            world,
+            -4,
+            80,
+            0,
+            ItemList.Hatch_Energy_MV.get(1)
+                .getItemDamage());
+        require(
+            factory.checkStructure(true, tile) && factory.getMaxParallelRecipes() == 768
+                && factory.getTotalRecipeThreads() == 40,
+            "MV voltage scaling combines with parameter module");
+        place(
+            world,
+            -4,
+            80,
+            0,
+            ItemList.Hatch_Energy_LV.get(1)
+                .getItemDamage());
+        for (int x = -3; x <= 0; x++) world.setBlock(x, 82, 0, GregTechAPI.sBlockCasings2, 0, 3);
+        require(
+            factory.checkStructure(true, tile) && factory.getParameterModules()
+                .isEmpty() && factory.getMaxParallelRecipes() == 64 && factory.getTotalRecipeThreads() == 32,
+            "removed modules do not leave stale multipliers");
+        require(
+            Math.abs(factory.getSpeedMultiplier() - 2.2) < 1e-9 && Math.abs(factory.getEUtMultiplier() - uhvEu) < 1e-9
+                && factory.getOverclockTimeReduction() == 2,
+            "module removal preserves glass bonuses and restores ordinary overclocking");
+    }
+
+    private void replaceGlass(World world, net.minecraft.block.Block block, int meta) {
+        String[][] shape = MultiblockStructureLoader.load("universal_joint_factory");
+        for (int y = 0; y < shape.length; y++) {
+            for (int z = 0; z < shape[y].length; z++) {
+                for (int x = 0; x < shape[y][z].length(); x++) {
+                    if (shape[y][z].charAt(x) == 'I') {
+                        int[] position = glassPosition(x, y, z);
+                        world.setBlock(position[0], position[1], position[2], block, meta, 3);
+                    }
+                }
+            }
+        }
+    }
+
+    private int[] glassPosition(int x, int y, int z) {
+        int[] position = new int[3];
+        factory.getExtendedFacing()
+            .getWorldOffset(new int[] { x - 24, y - 15, z }, position);
+        position[1] += 80;
+        return position;
     }
 
     private void verifyMatching(World world, SuperMTEHatchCraftingInputME hatch) {
@@ -484,6 +639,27 @@ public final class UniversalJointFactoryChecks {
         exit.start();
         Minecraft.getMinecraft()
             .shutdown();
+    }
+
+    private static final class FactoryTooltipScreen extends GuiScreen {
+
+        private final List<String> lines;
+
+        private FactoryTooltipScreen(boolean structure) {
+            lines = structure
+                ? List.of(
+                    new AutoMultiblockTooltipBuilder().addAutoTooltip(new UniversalJointFactory("qa-tooltip"))
+                        .toolTipFinisher()
+                        .getStructureInformation())
+                : GTNRItemList.UniversalJointFactory.get(1)
+                    .getTooltip(Minecraft.getMinecraft().thePlayer, false);
+        }
+
+        @Override
+        public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+            drawDefaultBackground();
+            drawHoveringText(lines, 20, 20, fontRendererObj);
+        }
     }
 
     private static final class QaSlot extends SuperMTEHatchCraftingInputME.PatternSlot<SuperMTEHatchCraftingInputME>

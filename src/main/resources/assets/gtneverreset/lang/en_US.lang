@@ -1017,7 +1017,6 @@ Info_SingularityDataHub_RunningCost=Running Cost: %dEU/t
 Info_SingularityDataHub_AutoVoiding=Auto-voiding: %b
 Waila_WirelessMode=Wireless Mode
 gtnr.machine.universal_joint_factory.type=Universal processing / cross-recipe threads
-gtnr.machine.universal_joint_factory.recipes=Recipe types: %s
 gtnr.multiblock.threads.capacity=Concurrent recipe threads: §b%s§r
 gtnr.tooltip.structure.module_limit=%s: at most %s per machine
 gtnr.tooltip.structure.channel.master=Projector stack size determines: %s
