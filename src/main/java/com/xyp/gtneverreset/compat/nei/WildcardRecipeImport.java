@@ -95,7 +95,8 @@ public final class WildcardRecipeImport {
             if (recipe.rejection != null || !target.isValid() || target(firstGui) != target) return;
             Minecraft.getMinecraft()
                 .displayGuiScreen(firstGui);
-            if (target.isValid() && target(firstGui) == target) target.importRecipe(recipe.inputs, recipe.outputs);
+            if (target.isValid() && target(firstGui) == target)
+                target.importRecipe(recipe.inputs, recipe.outputs, recipe.recipeMapName);
         }
     }
 
@@ -136,7 +137,11 @@ public final class WildcardRecipeImport {
             if (inputs.size() > MAX_COMPONENTS || outputs.size() > MAX_COMPONENTS) {
                 return RecipeData.rejected(Rejection.Slots);
             }
-            return new RecipeData(inputs, outputs, null);
+            return new RecipeData(
+                inputs,
+                outputs,
+                null,
+                handler instanceof GTNEIDefaultHandler gt ? gt.getRecipeMap().unlocalizedName : null);
         } catch (RuntimeException failure) {
             return RecipeData.rejected(Rejection.Unsupported);
         }
@@ -165,11 +170,17 @@ public final class WildcardRecipeImport {
         private final List<ItemStack> inputs;
         private final List<ItemStack> outputs;
         private final Rejection rejection;
+        private final String recipeMapName;
 
         private RecipeData(List<ItemStack> inputs, List<ItemStack> outputs, Rejection rejection) {
+            this(inputs, outputs, rejection, null);
+        }
+
+        private RecipeData(List<ItemStack> inputs, List<ItemStack> outputs, Rejection rejection, String recipeMapName) {
             this.inputs = inputs;
             this.outputs = outputs;
             this.rejection = rejection;
+            this.recipeMapName = recipeMapName;
         }
 
         private static RecipeData rejected(Rejection rejection) {

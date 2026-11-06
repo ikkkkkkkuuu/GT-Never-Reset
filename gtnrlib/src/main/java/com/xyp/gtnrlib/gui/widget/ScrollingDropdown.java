@@ -13,22 +13,25 @@ import net.minecraft.client.Minecraft;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
+import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.drawable.text.TextRenderer;
 import com.cleanroommc.modularui.screen.viewport.GuiContext;
 import com.cleanroommc.modularui.theme.WidgetTheme;
 import com.cleanroommc.modularui.utils.Alignment;
+import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widget.scroll.VerticalScrollData;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.menu.AbstractMenuButton;
 import com.cleanroommc.modularui.widgets.menu.Menu;
-import com.xyp.gtnrlib.gui.theme.AE2Theme;
 
 /** A floating string selector with silent programmatic updates and scrolling single-line captions. */
 public class ScrollingDropdown extends AbstractMenuButton<ScrollingDropdown> {
 
     /** MUI caches panel handlers by name for the screen lifetime, including removed filter rows. */
     private static final AtomicLong NEXT_MENU_ID = new AtomicLong();
+    private static final int OPTION_HEIGHT = 15;
+    private static final int SEPARATOR_HEIGHT = 1;
     private final List<String> candidates = new ArrayList<>();
     private String value = "";
     private Consumer<String> onChanged = ignored -> {};
@@ -120,12 +123,19 @@ public class ScrollingDropdown extends AbstractMenuButton<ScrollingDropdown> {
     @Override
     protected Menu<?> createMenu() {
         ListWidget<IWidget, ?> list = new ListWidget<>().widthRel(1f)
-            .maxSize(maxCount * 15)
+            .maxSize(maxCount * (OPTION_HEIGHT + SEPARATOR_HEIGHT) - SEPARATOR_HEIGHT)
             .scrollDirection(new VerticalScrollData(false, 4));
-        for (String candidate : candidates) {
+        for (int index = 0; index < candidates.size(); index++) {
+            String candidate = candidates.get(index);
+            if (index > 0) list.child(
+                new Widget<>().widthRel(1f)
+                    .height(SEPARATOR_HEIGHT)
+                    .background(
+                        (context, x, y, width, height, theme) -> GuiDraw
+                            .drawRect(x, y, width, height, 0x70000000 | theme.getTextColor() & 0xFFFFFF)));
             list.child(
                 new ButtonWidget<>().widthRel(1f)
-                    .height(15)
+                    .height(OPTION_HEIGHT)
                     .padding(0)
                     .overlay(new ScrollingTextDrawable(() -> candidate.equals(value) ? "> " + candidate : candidate))
                     .tooltipBuilder(tooltip -> tooltip.addLine(IKey.str(candidate)))
@@ -154,11 +164,10 @@ public class ScrollingDropdown extends AbstractMenuButton<ScrollingDropdown> {
         @Override
         public void onInit() {
             super.onInit();
-            AE2Theme.Variant variant = AE2Theme.variant(
+            getPanel().themeOverride(
                 ScrollingDropdown.this.getPanel()
                     .getTheme()
                     .getId());
-            if (variant != null) getPanel().themeOverride(variant.menuId);
         }
     }
 

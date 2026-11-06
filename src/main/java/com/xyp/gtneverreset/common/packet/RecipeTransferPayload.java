@@ -37,6 +37,8 @@ public final class RecipeTransferPayload {
     private final IAEStack<?>[] inputs;
     private final IAEStack<?>[] outputs;
     private final NBTTagList arcaneLayout;
+    @Getter
+    private final String recipeMapName;
 
     public RecipeTransferPayload(boolean crafting, boolean encode, int processingGridSize, boolean inverted,
         IAEStack<?>[] inputs, IAEStack<?>[] outputs) {
@@ -45,6 +47,11 @@ public final class RecipeTransferPayload {
 
     public RecipeTransferPayload(boolean crafting, boolean encode, int processingGridSize, boolean inverted,
         IAEStack<?>[] inputs, IAEStack<?>[] outputs, NBTTagList arcaneLayout) {
+        this(crafting, encode, processingGridSize, inverted, inputs, outputs, arcaneLayout, null);
+    }
+
+    public RecipeTransferPayload(boolean crafting, boolean encode, int processingGridSize, boolean inverted,
+        IAEStack<?>[] inputs, IAEStack<?>[] outputs, NBTTagList arcaneLayout, String recipeMapName) {
         this.crafting = crafting;
         this.encode = encode;
         this.processingGridSize = 4;
@@ -54,6 +61,7 @@ public final class RecipeTransferPayload {
         this.arcaneLayout = !crafting && arcaneLayout != null && arcaneLayout.tagCount() == 9
             ? (NBTTagList) arcaneLayout.copy()
             : new NBTTagList();
+        this.recipeMapName = !crafting && recipeMapName != null && recipeMapName.length() <= 256 ? recipeMapName : null;
     }
 
     public NBTTagList getArcaneLayout() {
@@ -99,6 +107,7 @@ public final class RecipeTransferPayload {
         }
         NBTTagCompound layout = new NBTTagCompound();
         layout.setTag("Grid", payload.arcaneLayout);
+        if (payload.recipeMapName != null) layout.setString("RecipeMap", payload.recipeMapName);
         ByteBufUtils.writeTag(buffer, layout);
     }
 
@@ -123,6 +132,7 @@ public final class RecipeTransferPayload {
             inverted,
             inputs,
             outputs,
-            layout == null ? null : layout.getTagList("Grid", 10));
+            layout == null ? null : layout.getTagList("Grid", 10),
+            layout != null && layout.hasKey("RecipeMap", 8) ? layout.getString("RecipeMap") : null);
     }
 }

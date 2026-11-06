@@ -47,6 +47,7 @@ import com.cleanroommc.modularui.widgets.SlotGroupWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 import com.xyp.gtneverreset.common.me.wildcard.model.IWildcardFilterComponent;
 import com.xyp.gtneverreset.common.me.wildcard.model.IWildcardIOComponent;
@@ -101,6 +102,7 @@ public class WildcardPatternGui {
     private final List<IWildcardFilterComponent> filters = new ArrayList<>();
 
     private ItemStack backingStack;
+    private String recipeMapName;
     private StringSyncValue configSync;
 
     private PreviewPage previewPage;
@@ -211,6 +213,10 @@ public class WildcardPatternGui {
     }
 
     public boolean importRecipe(List<ItemStack> recipeInputs, List<ItemStack> recipeOutputs) {
+        return importRecipe(recipeInputs, recipeOutputs, null);
+    }
+
+    public boolean importRecipe(List<ItemStack> recipeInputs, List<ItemStack> recipeOutputs, String recipeMapName) {
         WildcardRecipeTemplate template;
         try {
             template = WildcardRecipeTemplate.create(recipeInputs, recipeOutputs);
@@ -221,6 +227,7 @@ public class WildcardPatternGui {
         inputs.addAll(template.getInputs());
         outputs.clear();
         outputs.addAll(template.getOutputs());
+        this.recipeMapName = recipeMapName;
         rebuildIOCards(inputCards, inputs);
         rebuildIOCards(outputCards, outputs);
         previewPage.refresh(WildcardExpansion.expand(inputs, outputs, filters));
@@ -669,6 +676,7 @@ public class WildcardPatternGui {
         WildcardModelState.setOutputs(backingStack, outputs);
         WildcardModelState.setFilters(backingStack, filters);
         WildcardModelState.setExpandedCount(backingStack, expandedCount);
+        PatternRecipeMap.write(backingStack, recipeMapName);
     }
 
     private String serializeConfig() {
@@ -676,6 +684,7 @@ public class WildcardPatternGui {
         tag.setTag(WildcardModelState.KEY_INPUT, WildcardComponentCodec.writeIO(inputs));
         tag.setTag(WildcardModelState.KEY_OUTPUT, WildcardComponentCodec.writeIO(outputs));
         tag.setTag(WildcardModelState.KEY_FILTER, WildcardComponentCodec.writeFilters(filters));
+        if (recipeMapName != null) tag.setString(PatternRecipeMap.KEY, recipeMapName);
         return tag.toString();
     }
 
@@ -699,6 +708,9 @@ public class WildcardPatternGui {
         WildcardModelState.setOutputs(stack, out);
         WildcardModelState.setFilters(stack, fil);
         WildcardModelState.setExpandedCount(stack, WildcardExpansion.countExpanded(in, out, fil));
+        String recipeMap = parsed.hasKey(PatternRecipeMap.KEY, 8) ? parsed.getString(PatternRecipeMap.KEY) : null;
+        if (recipeMap != null && recipeMap.length() > 256) recipeMap = "";
+        PatternRecipeMap.write(stack, recipeMap);
         data.getPlayer().inventory.markDirty();
     }
 
@@ -711,6 +723,7 @@ public class WildcardPatternGui {
         inputs.addAll(WildcardModelState.getInputs(backingStack));
         outputs.addAll(WildcardModelState.getOutputs(backingStack));
         filters.addAll(WildcardModelState.getFilters(backingStack));
+        recipeMapName = PatternRecipeMap.name(backingStack);
     }
 
     public static final class RecipeImportSyncHandler extends SyncHandler<RecipeImportSyncHandler> {
@@ -723,6 +736,10 @@ public class WildcardPatternGui {
 
         public boolean importRecipe(List<ItemStack> inputs, List<ItemStack> outputs) {
             return isValid() && getSyncManager().isClient() && gui.importRecipe(inputs, outputs);
+        }
+
+        public boolean importRecipe(List<ItemStack> inputs, List<ItemStack> outputs, String recipeMapName) {
+            return isValid() && getSyncManager().isClient() && gui.importRecipe(inputs, outputs, recipeMapName);
         }
 
         @Override

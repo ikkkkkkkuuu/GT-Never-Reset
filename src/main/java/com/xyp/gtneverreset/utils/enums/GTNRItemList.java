@@ -58,8 +58,10 @@ public enum GTNRItemList implements IItemContainer {
     // region 舱室
     SuperMTEHatchCraftingInputME,
     CircuitMEPatternBuffer,
+    CrossRecipeMEPatternBuffer,
     SuperMTEHatchCraftingInputSlave,
     CircuitMEPatternMirror,
+    CrossRecipeMEPatternMirror,
     MaxCapacityMEOutputBus,
     SuperAdvancedMEInputBus,
     SuperAdvancedMEInputHatch,

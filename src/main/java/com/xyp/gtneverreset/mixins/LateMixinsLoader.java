@@ -83,6 +83,9 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("gregtech.OverclockCalculatorAccessorMixin");
             mixins.add("gregtech.AutoStructureTooltipMixin");
             mixins.add("gregtech.PatternInputHatchElementMixin");
+            mixins.add("gregtech.PatternRecipeProcessingMixin");
+            mixins.add("gregtech.MultiblockProcessingAccessor");
+            mixins.add("gregtech.CircuitAssemblyLinePatternModeMixin");
             mixins.add("gregtech.PatternMEOutputMultiblockMixin");
             mixins.add("gregtech.PatternAssemblyControllerNameMixin");
             mixins.add("gregtech.wireless.MixinWirelessControllerVersion");

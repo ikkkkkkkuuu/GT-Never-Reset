@@ -9,6 +9,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
+import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.compat.ae2fc.FluidDropCompat;
 import com.xyp.gtneverreset.compat.thaumcraft.ArcaneWorkbenchPatterns;
 
@@ -43,6 +44,7 @@ public final class DualTerminalGuiObject extends WirelessPatternTerminalGuiObjec
     private static final String QUICK_COMBINE = "gtnotgoodQuickCombine";
     private static final String QUICK_PRIORITIZE_FLUIDS = "gtnotgoodQuickPrioritize";
     private static final String QUICK_KEEP_NON_CONSUMABLES = "gtnotgoodQuickKeepNonConsumables";
+    private static final String QUICK_RECIPE_MAP = "gtnrQuickRecipeMap";
     private static final String QUICK_PROCESSING_FLUID_INPUTS = "gtnhQolQuickProcessingFluidInputs";
     private static final String QUICK_CRAFTING_SNAPSHOT = "gtnhQolQuickCraftingSnapshot";
     private static final String QUICK_PROCESSING_SNAPSHOT = "gtnhQolQuickProcessingSnapshot";
@@ -133,6 +135,43 @@ public final class DualTerminalGuiObject extends WirelessPatternTerminalGuiObjec
     public void loadPatternFromItem(ItemStack pattern, World world, IAEStackInventory inputs,
         IAEStackInventory outputs) {
         super.loadPatternFromItem(CircuitPatternCodec.editablePattern(pattern), world, inputs, outputs);
+        if (!encodingPattern) setRecipeMapName(PatternRecipeMap.name(pattern));
+    }
+
+    /** Remembers the NEI recipe type with its item/fluid identities, allowing quantity edits and multipliers. */
+    public void setRecipeMapName(String name) {
+        NBTTagCompound data = Platform.openNbtData(getItemStack());
+        if (name == null) {
+            data.removeTag(QUICK_RECIPE_MAP);
+            return;
+        }
+        NBTTagCompound draft = new NBTTagCompound();
+        draft.setString("Name", name);
+        draft.setTag("Inputs", recipeMapSnapshot(StorageName.CRAFTING_INPUT));
+        draft.setTag("Outputs", recipeMapSnapshot(StorageName.CRAFTING_OUTPUT));
+        data.setTag(QUICK_RECIPE_MAP, draft);
+    }
+
+    public String getRecipeMapName() {
+        NBTTagCompound data = Platform.openNbtData(getItemStack());
+        if (!data.hasKey(QUICK_RECIPE_MAP, 10)) return null;
+        NBTTagCompound draft = data.getCompoundTag(QUICK_RECIPE_MAP);
+        if (!recipeMapSnapshot(StorageName.CRAFTING_INPUT).equals(draft.getTag("Inputs"))
+            || !recipeMapSnapshot(StorageName.CRAFTING_OUTPUT).equals(draft.getTag("Outputs"))) return null;
+        return draft.getString("Name");
+    }
+
+    private NBTTagList recipeMapSnapshot(StorageName storage) {
+        NBTTagList result = new NBTTagList();
+        IAEStackInventory inventory = getAEInventoryByName(storage);
+        if (inventory != null) for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
+            IAEStack<?> stack = inventory.getAEStackInSlot(slot);
+            if (stack != null) result.appendTag(
+                stack.copy()
+                    .setStackSize(1)
+                    .toNBTGeneric());
+        }
+        return result;
     }
 
     /**
@@ -145,6 +184,7 @@ public final class DualTerminalGuiObject extends WirelessPatternTerminalGuiObjec
         BaseActionSource actionSource, String author, World world) {
         NBTTagList layout = getArcaneLayout();
         boolean arcane = !isCraftingRecipe() && layout.tagCount() == 9;
+        String recipeMapName = getRecipeMapName();
         if (arcane
             && !ArcaneWorkbenchPatterns.matchesInputs(layout, getAEInventoryByName(StorageName.CRAFTING_INPUT))) {
             return false;
@@ -159,17 +199,18 @@ public final class DualTerminalGuiObject extends WirelessPatternTerminalGuiObjec
                 encoded.setTag(ArcaneWorkbenchPatterns.GRID, layout);
                 encoded.setBoolean("substitute", false);
                 patterns.markDirty();
-            } else if (!isCraftingRecipe() && shouldKeepNonConsumables()) {
+            } else if (!isCraftingRecipe()) {
                 IInventory patterns = getInventoryByName("pattern");
                 ItemStack encoded = patterns.getStackInSlot(1);
-                var runtime = CircuitPatternCodec.runtime(encoded, world);
+                PatternRecipeMap.write(encoded, recipeMapName);
+                var runtime = shouldKeepNonConsumables() ? CircuitPatternCodec.runtime(encoded, world) : null;
                 if (runtime != null) {
                     encoded.setTagCompound(
                         (NBTTagCompound) runtime.getPattern()
                             .getTagCompound()
                             .copy());
-                    writeInventory();
                 }
+                writeInventory();
             }
             return true;
         } finally {

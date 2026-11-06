@@ -15,6 +15,7 @@ import net.minecraft.world.World;
 
 import com.xyp.gtneverreset.common.item.items.WildcardPatternItem;
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
+import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.common.me.wildcard.model.IWildcardFilterComponent;
 import com.xyp.gtneverreset.common.me.wildcard.model.IWildcardIOComponent;
 import com.xyp.gtneverreset.common.me.wildcard.model.WildcardExpansion;
@@ -150,6 +151,7 @@ public final class WildcardPatternGenerator {
         // Identical consumables can use different tool configurations; AE must retain both crafting options.
         if (tag.hasKey(CircuitPatternCodec.CIRCUIT)) id += "|circuit=" + tag.getTag(CircuitPatternCodec.CIRCUIT);
         if (tag.hasKey(CircuitPatternCodec.MOLDS)) id += "|molds=" + tag.getTag(CircuitPatternCodec.MOLDS);
+        if (tag.hasKey(PatternRecipeMap.KEY)) id += "|recipeMap=" + tag.getTag(PatternRecipeMap.KEY);
         return id;
     }
 
