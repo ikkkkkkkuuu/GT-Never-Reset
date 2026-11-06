@@ -24,7 +24,6 @@ import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.menu.AbstractMenuButton;
 import com.cleanroommc.modularui.widgets.menu.Menu;
-import com.xyp.gtnrlib.gui.theme.AE2Theme;
 
 /** A floating string selector with silent programmatic updates and scrolling single-line captions. */
 public class ScrollingDropdown extends AbstractMenuButton<ScrollingDropdown> {
@@ -165,11 +164,10 @@ public class ScrollingDropdown extends AbstractMenuButton<ScrollingDropdown> {
         @Override
         public void onInit() {
             super.onInit();
-            AE2Theme.Variant variant = AE2Theme.variant(
+            getPanel().themeOverride(
                 ScrollingDropdown.this.getPanel()
                     .getTheme()
                     .getId());
-            if (variant != null) getPanel().themeOverride(variant.menuId);
         }
     }
 
