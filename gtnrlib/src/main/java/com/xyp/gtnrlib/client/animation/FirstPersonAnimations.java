@@ -172,6 +172,12 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
             return;
         }
         var mc = Minecraft.getMinecraft();
+        if (!GTNRLibConfig.enableFirstPersonAnimations) {
+            reset();
+            HmiFirstPerson.INSTANCE.detach();
+            FirstPersonItemActions.INSTANCE.tick();
+            return;
+        }
         if (HmiFirstPerson.INSTANCE.enabled() && (mc.thePlayer == null || mc.gameSettings.thirdPersonView != 0))
             HmiFirstPerson.INSTANCE.detach();
         FirstPersonItemActions.INSTANCE.tick();
@@ -371,7 +377,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     }
 
     public boolean enabled() {
-        return packs.hasMotions() || !bindings.isEmpty();
+        return GTNRLibConfig.enableFirstPersonAnimations && (packs.hasMotions() || !bindings.isEmpty());
     }
 
     public boolean applies(ItemStack rendered) {
@@ -422,7 +428,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     }
 
     public boolean replacesSwing(ItemStack rendered) {
-        return replacesSwing && matchesTarget(rendered);
+        return enabled() && replacesSwing && matchesTarget(rendered);
     }
 
     public boolean replacesPlacementDip(ItemStack rendered) {

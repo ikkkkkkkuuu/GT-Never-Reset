@@ -2,7 +2,9 @@
 
 ## 第一人称默认动作
 
-在已有 GTNH 常规前置（GTNHLib、ModularUI2、Baubles）的 1.7.10 实例中，只需安装 GTNRLib。首次进入世界即启用内置动作，不需要 GT-Never-Reset、HMI JAR、Punchy! 资源包或手动重载。装有 GregTech 时，库会启用 GT 手动扳手、剪线钳和螺丝刀。多人游戏的服务端也装 GTNRLib 后，会在操作成功时通知玩家播放。可在客户端配置中关闭 `builtInFirstPerson`。
+在已有 GTNH 常规前置（GTNHLib、ModularUI2、Baubles）的 1.7.10 实例中，只需安装 GTNRLib。首次进入世界即启用内置动作，不需要 GT-Never-Reset、HMI JAR、Punchy! 资源包或手动重载。装有 GregTech 时，库会启用 GT 手动扳手、剪线钳和螺丝刀。多人游戏的服务端也装 GTNRLib 后，会在操作成功时通知玩家播放。
+
+从 Mods → GTNRLib → Config 关闭“第一人称手臂动画”，立即恢复原版手臂和持物表现，无需重启或重载资源。对应 `config/GTNeverReset/GTNRLib/gtnrlib.cfg` 的 `client.enableFirstPersonAnimations`，默认为 `true`，只影响本机。它同时控制内置动作、导入的动画包和物品动作绑定；重新开启后继续使用已加载的动画资源。原有 `builtInFirstPerson` 仅决定资源重载时是否加载内置动作。
 
 空手出拳、剑的地面连击和空中挥砍、镐和其他采掘工具、双手拉弓与松弦、进食、饮用和换物都使用同一个播放器。它分别求主手、物品和辅助手的姿势，再按当前握点合成呼吸、步态、转头滞后和垂直惯性。起跳后仍能挥剑、挖掘或拉弓，收招时回到角色当时的移动姿势。同一帧重复绘制不会重复推进运动。副手可参与持弓及双手工具动作，物品仍使用 1.7.10 的主手槽。
 

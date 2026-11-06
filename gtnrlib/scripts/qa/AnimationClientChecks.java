@@ -140,6 +140,7 @@ public final class AnimationClientChecks {
                     HmiFirstPerson.INSTANCE.enabled() && HmiFirstPerson.INSTANCE.program()
                         .builtIn(),
                     "built-in player active on the first ordinary world frame");
+                checkAnimationToggle(mc, "built-in");
                 AnimationBlockUseChecks.verify(mc);
                 checkHmi(mc);
                 Item chest = (Item) Item.itemRegistry.getObject("DraconicEvolution:draconicChest");
@@ -159,6 +160,7 @@ public final class AnimationClientChecks {
             if (frames == WORLD_WARMUP_FRAMES) {
                 mc.gameSettings.heldItemTooltips = false;
                 reload(mc, "animation-qa");
+                checkAnimationToggle(mc, "punchy");
                 equip(mc, sword);
                 tickPlayer();
                 return;
@@ -313,6 +315,77 @@ public final class AnimationClientChecks {
             finish(mc, null);
         } catch (Throwable e) {
             finish(mc, e);
+        }
+    }
+
+    private void checkAnimationToggle(Minecraft mc, String source) throws Exception {
+        boolean builtIn = GTNRLibConfig.builtInFirstPerson;
+        String pack = GTNRLibConfig.animationPack;
+        var local = mc.thePlayer;
+        ItemStack held = local.getHeldItem();
+        float swing = local.swingProgress, previousSwing = local.prevSwingProgress;
+        var hmi = HmiFirstPerson.INSTANCE;
+        var actions = com.xyp.gtnrlib.client.animation.FirstPersonItemActions.INSTANCE;
+        var items = new ItemStack[] { null, new ItemStack(Items.diamond_sword), new ItemStack(Blocks.stone),
+            new ItemStack(Items.dye, 1, 13) };
+        var baseline = new ArrayList<int[]>();
+        try {
+            require(GTNRLibConfig.enableFirstPersonAnimations, "first-person animations default to enabled");
+            local.swingProgress = .35f;
+            local.prevSwingProgress = .2f;
+            reload(mc, "");
+            for (int i = 0; i < items.length; i++) {
+                equip(mc, items[i]);
+                baseline.add(draw(mc, "toggle-" + source + "-" + i + "-vanilla"));
+            }
+            GTNRLibConfig.builtInFirstPerson = builtIn;
+            GTNRLibConfig.animationPack = pack;
+            target.onResourceManagerReload(mc.getResourceManager());
+            for (int i = 0; i < items.length; i++) {
+                var stack = items[i];
+                String name = "toggle-" + source + "-" + i;
+                equip(mc, stack);
+                tickPlayer();
+                require(
+                    !Arrays.equals(baseline.get(i), draw(mc, name + "-enabled")),
+                    name + " custom rendering enabled");
+                target.trigger(i == 2 ? "useitem" : "attack");
+                hmi.swing();
+                if (builtIn && i == 3) require(actions.playing("attack"), "bound item action active before disabling");
+                if (!builtIn && i == 2)
+                    require(target.replacesPlacementDip(stack), "placement animation active before disabling");
+                GTNRLibConfig.enableFirstPersonAnimations = false;
+                require(
+                    !target.enabled() && !hmi.enabled()
+                        && !target.applies(stack)
+                        && !hmi.sample(stack, .5f, 0)
+                        && !target.replacesSwing(stack)
+                        && !target.replacesPlacementDip(stack)
+                        && !actions.trigger("attack"),
+                    name + " immediately releases render, swing, equip and action hooks");
+                target.trigger("attack");
+                hmi.swing("gtnrlib:wrench_turn");
+                require(
+                    Arrays.equals(baseline.get(i), draw(mc, name + "-disabled")),
+                    name + " disabled pixels match vanilla before the next tick");
+                tickPlayer();
+                GTNRLibConfig.enableFirstPersonAnimations = true;
+                tickPlayer();
+                require(
+                    !target.replacesSwing(stack) && !actions.playing("attack") && hmi.strokeSeconds() == 0,
+                    name + " discarded the interrupted action");
+                require(
+                    !Arrays.equals(baseline.get(i), draw(mc, name + "-reenabled")),
+                    name + " re-enabled without resource reload");
+            }
+        } finally {
+            GTNRLibConfig.enableFirstPersonAnimations = true;
+            GTNRLibConfig.builtInFirstPerson = builtIn;
+            GTNRLibConfig.animationPack = pack;
+            target.onResourceManagerReload(mc.getResourceManager());
+            local.swingProgress = swing;
+            local.prevSwingProgress = previousSwing;
+            equip(mc, held);
         }
     }
 
