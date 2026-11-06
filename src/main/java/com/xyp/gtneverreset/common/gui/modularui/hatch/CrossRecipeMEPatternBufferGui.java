@@ -6,12 +6,16 @@ import java.util.List;
 
 import net.minecraft.util.StatCollector;
 
+import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.network.NetworkUtils;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.GenericListSyncHandler;
+import com.cleanroommc.modularui.value.sync.InteractionSyncHandler;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.value.sync.StringSyncValue;
 import com.cleanroommc.modularui.widget.ParentWidget;
+import com.cleanroommc.modularui.widgets.ButtonWidget;
+import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtnrlib.gui.widget.ScrollingDropdown;
@@ -28,6 +32,25 @@ public final class CrossRecipeMEPatternBufferGui extends SuperMTEHatchCraftingIn
     @Override
     protected int getBasePanelHeight() {
         return super.getBasePanelHeight() + 20;
+    }
+
+    @Override
+    protected Flow createBottomLeftCornerFlow(ModularPanel panel, PanelSyncManager syncManager) {
+        InteractionSyncHandler assign = new InteractionSyncHandler().setOnMousePressed(
+            mouse -> { if (!mouse.isClient() && mouse.mouseButton == 0) hatch.autoAssignRecipeMapNames(); });
+        ButtonWidget<?> button = new ButtonWidget<>().name("auto_assign_recipe_names")
+            .syncHandler(assign)
+            .overlay(GuiTextures.EDIT);
+        // #tr gui.gtneverreset.cross_recipe_buffer.auto_names
+        // # Automatically assign names
+        // # zh_CN 自动分配名字
+        button.addTooltipLine(StatCollector.translateToLocal("gui.gtneverreset.cross_recipe_buffer.auto_names"));
+        // #tr gui.gtneverreset.cross_recipe_buffer.auto_names.description
+        // # Cycle recipe names across connected buffers; mirrors share a name. Only terminal names change.
+        // # zh_CN 按坐标顺序为同一控制器上的跨配方池总成分配配方池名称，数量超出时循环分配。镜像共用主仓名称；只更改接口终端显示名。
+        button.addTooltipLine(
+            StatCollector.translateToLocal("gui.gtneverreset.cross_recipe_buffer.auto_names.description"));
+        return super.createBottomLeftCornerFlow(panel, syncManager).child(button);
     }
 
     @Override

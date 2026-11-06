@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
@@ -26,6 +27,8 @@ import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.menu.AbstractMenuButton;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
+import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternMirror;
+import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtnrlib.gui.widget.ScrollingDropdown;
 
@@ -36,6 +39,7 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.GregTechAPI;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
+import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.implementations.MTEMultiBlockBase;
 import gregtech.api.recipe.RecipeMap;
 import gregtech.api.recipe.RecipeMapBuilder;
@@ -55,6 +59,7 @@ public final class CrossRecipeSelectorChecks {
     private CrossRecipeMEPatternBuffer serverHatch;
     private MTEMultiBlockBase controller;
     private RecipeMap<?> longMap;
+    private final List<CrossRecipeMEPatternBuffer> namePeers = new ArrayList<>();
     private boolean launched, initialized, opened, finished;
     private int serverTicks, ticks, stage, frames;
     private volatile int request;
@@ -96,6 +101,15 @@ public final class CrossRecipeSelectorChecks {
                         .equals(RecipeMaps.packagerRecipes.getDefaultRecipeCategory().unlocalizedName),
                     "client selection changes Interface Terminal raw name");
                 require(controller.getMachineMode() == 0, "display-name selection does not change controller mode");
+                for (int index = 0; index < namePeers.size(); index++) {
+                    require(
+                        namePeers.get(index)
+                            .getTerminalRecipeMap()
+                            .equals(
+                                index % 2 == 0 ? RecipeMaps.unpackagerRecipes.unlocalizedName
+                                    : RecipeMaps.packagerRecipes.unlocalizedName),
+                        "GUI auto-name click updates server peer " + index);
+                }
                 acknowledged = 1;
             } else if (request == 2 && acknowledged < 2) {
                 serverHatch.removeWatcher(controller);
@@ -184,6 +198,163 @@ public final class CrossRecipeSelectorChecks {
         longMap = RecipeMapBuilder.of(LONG_NAME)
             .maxIO(1, 1, 0, 0)
             .build();
+        verifyAutoNames(player);
+        for (int index = 1; index <= 4; index++) {
+            var peer = hatch(player.worldObj);
+            position(peer, index, 64, 0);
+            attach(peer, controller);
+            peer.setTerminalRecipeMap(RecipeMaps.unpackagerRecipes.unlocalizedName);
+            peer.setCustomName("previous peer name");
+            namePeers.add(peer);
+        }
+    }
+
+    private void verifyAutoNames(EntityPlayerMP player) {
+        MTEMultiBlockBase first = new MTEIndustrialPackager("qa.auto_names.first");
+        MTEMultiBlockBase second = new LongNameController(longMap);
+        for (var testController : List.of(first, second)) {
+            BaseMetaTileEntity base = new BaseMetaTileEntity();
+            base.setWorldObj(player.worldObj);
+            base.setMetaTileEntity(testController);
+            testController.setBaseMetaTileEntity(base);
+        }
+        position(first, 0, 64, 0);
+        position(second, 1, 64, 0);
+        first.setMachineMode(1);
+        var masters = new ArrayList<CrossRecipeMEPatternBuffer>();
+        int x = (int) player.posX + 20, z = (int) player.posZ + 20;
+        for (int index = 0; index < 6; index++) {
+            var master = (CrossRecipeMEPatternBuffer) placedMachine(
+                player,
+                GTNRMachineID.CrossRecipeMEPatternBuffer.id,
+                x + index,
+                z).getMetaTileEntity();
+            masters.add(master);
+            if (index < 4) attach(master, first);
+            else attach(master, second);
+            master.setTerminalRecipeMap(RecipeMaps.unpackagerRecipes.unlocalizedName);
+            master.setCustomName("previous name " + index);
+        }
+        for (int index = 0; index < 2; index++) {
+            var mirror = (CrossRecipeMEPatternMirror) placedMachine(
+                player,
+                GTNRMachineID.CrossRecipeMEPatternMirror.id,
+                x + index,
+                z + 1).getMetaTileEntity();
+            require(mirror.trySetMasterFromCoord(x + 4, 100, z) == masters.get(4), "auto-name mirror bound");
+            first.mDualInputHatches.add(mirror);
+            mirror.addWatcher(first);
+        }
+        first.mDualInputHatches.add(masters.get(0));
+        var excluded = new ArrayList<SuperMTEHatchCraftingInputME>();
+        for (int id : new int[] { GTNRMachineID.SuperCraftingInputME.id, GTNRMachineID.CircuitMEPatternBuffer.id }) {
+            var base = new BaseMetaTileEntity();
+            base.setWorldObj(player.worldObj);
+            base.setInitialValuesAsNBT(null, (short) id);
+            var other = (SuperMTEHatchCraftingInputME) base.getMetaTileEntity();
+            other.setCustomName("leave unchanged");
+            first.mDualInputHatches.add(other);
+            other.addWatcher(first);
+            excluded.add(other);
+        }
+        var stale = hatch(player.worldObj);
+        stale.addWatcher(first);
+        stale.setCustomName("stale watcher");
+        require(stale.autoAssignRecipeMapNames() == 0, "stale watcher cannot rename a controller");
+        var disconnected = hatch(player.worldObj);
+        require(disconnected.autoAssignRecipeMapNames() == 0, "disconnected button is a no-op");
+        require(
+            masters.get(0)
+                .autoAssignRecipeMapNames() == 5,
+            "five providers assigned once despite duplicate membership and two mirrors of one remote master");
+        for (int index = 0; index < 5; index++) {
+            String expected = index % 2 == 0 ? RecipeMaps.packagerRecipes.unlocalizedName
+                : RecipeMaps.unpackagerRecipes.unlocalizedName;
+            require(
+                masters.get(index)
+                    .getTerminalRecipeMap()
+                    .equals(expected)
+                    && !masters.get(index)
+                        .hasCustomName(),
+                "coordinate-ordered cyclic assignment " + index);
+            NBTTagCompound saved = new NBTTagCompound();
+            masters.get(index)
+                .saveNBTData(saved);
+            require(
+                saved.getString("gtnrTerminalRecipeMap")
+                    .equals(expected),
+                "assigned name persists as map ID");
+        }
+        require(
+            masters.get(5)
+                .getCustomName()
+                .equals("previous name 5"),
+            "does not follow another provider to rename an unrelated controller");
+        require(
+            excluded.stream()
+                .allMatch(input -> "leave unchanged".equals(input.getCustomName())),
+            "ordinary and circuit buffers retain their names");
+        require(
+            stale.getCustomName()
+                .equals("stale watcher"),
+            "stale watcher retains name");
+        Collections.reverse(first.mDualInputHatches);
+        require(
+            masters.get(4)
+                .autoAssignRecipeMapNames() == 6,
+            "mirror-only source handles both directly and indirectly connected controllers");
+        require(
+            masters.get(5)
+                .getTerminalRecipeMap()
+                .equals(LONG_NAME),
+            "second controller fills its next recipe type without overwriting a shared master");
+        List<String> previous = masters.stream()
+            .map(CrossRecipeMEPatternBuffer::getTerminalRecipeMap)
+            .toList();
+        require(
+            masters.get(4)
+                .autoAssignRecipeMapNames() == 6 && previous.equals(
+                    masters.stream()
+                        .map(CrossRecipeMEPatternBuffer::getTerminalRecipeMap)
+                        .toList()),
+            "repeated assignment remains stable after controller input order changes");
+        require(first.getMachineMode() == 1 && second.getMachineMode() == 0, "auto-naming preserves machine modes");
+        var dense = new ArrayList<CrossRecipeMEPatternBuffer>();
+        for (int index = 0; index < 128; index++) {
+            var extra = hatch(player.worldObj);
+            position(extra, x + index + 100, 64, z);
+            attach(extra, first);
+            dense.add(extra);
+        }
+        for (int repeat = 0; repeat < 32; repeat++) {
+            require(
+                masters.get(0)
+                    .autoAssignRecipeMapNames() == 133,
+                "dense naming round " + repeat);
+        }
+        for (int index = 0; index < dense.size(); index++) {
+            require(
+                dense.get(index)
+                    .getTerminalRecipeMap()
+                    .equals(
+                        index % 2 == 0 ? RecipeMaps.unpackagerRecipes.unlocalizedName
+                            : RecipeMaps.packagerRecipes.unlocalizedName),
+                "dense cyclic assignment " + index);
+        }
+    }
+
+    private static BaseMetaTileEntity placedMachine(EntityPlayerMP player, int id, int x, int z) {
+        player.worldObj.setBlock(x, 100, z, GregTechAPI.sBlockMachines, 0, 3);
+        var tile = (BaseMetaTileEntity) player.worldObj.getTileEntity(x, 100, z);
+        tile.setInitialValuesAsNBT(null, (short) id);
+        return tile;
+    }
+
+    private static void position(MetaTileEntity machine, int x, int y, int z) {
+        var tile = (BaseMetaTileEntity) machine.getBaseMetaTileEntity();
+        tile.xCoord = x;
+        tile.yCoord = y;
+        tile.zCoord = z;
     }
 
     @SubscribeEvent
@@ -222,8 +393,18 @@ public final class CrossRecipeSelectorChecks {
             } else if (stage == 1 && ++frames > 10) {
                 require(selector.isOpen(), "native dropdown mouse event opens menu");
                 shot("selector-open.png");
-                buttons(selector).get(0)
-                    .onMousePressed(0);
+                selector.closeMenu(false);
+                ButtonWidget<?> autoNames = findAutoNames(screen.getMainPanel());
+                require(autoNames != null, "auto-name toolbar button exists");
+                require(
+                    autoNames.getArea().x >= screen.getMainPanel()
+                        .getArea().x && autoNames.getArea().x + autoNames.getArea().width
+                            <= screen.getMainPanel()
+                                .getArea().x
+                                + screen.getMainPanel()
+                                    .getArea().width,
+                    "auto-name button fits inside the toolbar");
+                autoNames.onMousePressed(0);
                 request = 1;
                 next();
             } else if (stage == 2 && acknowledged == 1
@@ -350,6 +531,16 @@ public final class CrossRecipeSelectorChecks {
             return dropdown;
         for (IWidget child : widget.getChildren()) {
             ScrollingDropdown found = findSelector(child);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private static ButtonWidget<?> findAutoNames(IWidget widget) {
+        if (widget instanceof ButtonWidget<?>button && "auto_assign_recipe_names".equals(widget.getName()))
+            return button;
+        for (IWidget child : widget.getChildren()) {
+            ButtonWidget<?> found = findAutoNames(child);
             if (found != null) return found;
         }
         return null;

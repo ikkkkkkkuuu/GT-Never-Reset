@@ -1,5 +1,7 @@
 package com.xyp.gtneverreset.common.machine.hatch;
 
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -23,11 +25,25 @@ import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.MetaTileEntity;
 import gregtech.api.metatileentity.implementations.MTEMultiBlockBase;
 import gregtech.api.recipe.RecipeMap;
+import gregtech.common.tileentities.machines.IDualInputHatch;
 
 /** Isolated pattern buffers that select one of the receiving controller's native recipe modes. */
 public final class CrossRecipeMEPatternBuffer extends CircuitMEPatternBuffer {
 
     private static final String TERMINAL_RECIPE_MAP = "gtnrTerminalRecipeMap";
+    private static final Comparator<MetaTileEntity> POSITION_ORDER = Comparator
+        .comparingInt(
+            (MetaTileEntity machine) -> machine.getBaseMetaTileEntity()
+                .getWorld().provider.dimensionId)
+        .thenComparingInt(
+            machine -> machine.getBaseMetaTileEntity()
+                .getXCoord())
+        .thenComparingInt(
+            machine -> machine.getBaseMetaTileEntity()
+                .getYCoord())
+        .thenComparingInt(
+            machine -> machine.getBaseMetaTileEntity()
+                .getZCoord());
     private String terminalRecipeMap = "";
 
     public CrossRecipeMEPatternBuffer(int id, String name, String regionalName) {
@@ -49,22 +65,29 @@ public final class CrossRecipeMEPatternBuffer extends CircuitMEPatternBuffer {
     }
 
     public List<String> getControllerRecipeMaps() {
-        var maps = new LinkedHashSet<String>();
+        return getConnectedControllers().stream()
+            .flatMap(
+                controller -> controller.getAvailableRecipeMaps()
+                    .stream())
+            .filter(Objects::nonNull)
+            .map(map -> map.unlocalizedName)
+            .distinct()
+            .toList();
+    }
+
+    private List<MTEMultiBlockBase> getConnectedControllers() {
+        var controllers = new LinkedHashSet<MTEMultiBlockBase>();
         for (var watcher : watchers) {
             if (watcher instanceof MTEMultiBlockBase controller && controller.isValid()
                 && controller.mDualInputHatches.contains(this)) {
-                controller.getAvailableRecipeMaps()
-                    .stream()
-                    .filter(Objects::nonNull)
-                    .map(map -> map.unlocalizedName)
-                    .forEach(maps::add);
+                controllers.add(controller);
             }
         }
         for (var proxy : getProxyHatches()) {
             if (proxy instanceof CrossRecipeMEPatternMirror mirror && mirror.isValid() && mirror.getMaster() == this)
-                maps.addAll(mirror.getControllerRecipeMaps());
+                controllers.addAll(mirror.getConnectedControllers());
         }
-        return List.copyOf(maps);
+        return List.copyOf(controllers);
     }
 
     public String getTerminalRecipeMap() {
@@ -85,6 +108,54 @@ public final class CrossRecipeMEPatternBuffer extends CircuitMEPatternBuffer {
         terminalRecipeMap = name;
         setCustomName(null);
         getBaseMetaTileEntity().markDirty();
+    }
+
+    /** Names each distinct ME provider once, even when several attached mirrors share it. */
+    public int autoAssignRecipeMapNames() {
+        if (!isValid() || !getBaseMetaTileEntity().isServerSide()) return 0;
+        var assigned = new HashSet<CrossRecipeMEPatternBuffer>();
+        for (var controller : getConnectedControllers().stream()
+            .sorted(POSITION_ORDER)
+            .toList()) {
+            List<String> maps = controller.getAvailableRecipeMaps()
+                .stream()
+                .filter(Objects::nonNull)
+                .map(map -> map.unlocalizedName)
+                .distinct()
+                .toList();
+            if (maps.isEmpty()) continue;
+            List<CrossRecipeMEPatternBuffer> targets = controller.mDualInputHatches.stream()
+                .map(CrossRecipeMEPatternBuffer::namingTarget)
+                .filter(Objects::nonNull)
+                .filter(
+                    target -> target.isValid() && target.getConnectedControllers()
+                        .contains(controller))
+                .distinct()
+                .sorted(POSITION_ORDER)
+                .toList();
+            int[] usage = new int[maps.size()];
+            for (var target : targets) {
+                int index = maps.indexOf(target.getTerminalRecipeMap());
+                if (assigned.contains(target) && index >= 0) usage[index]++;
+            }
+            for (var target : targets) {
+                if (!assigned.add(target)) continue;
+                int next = 0;
+                for (int index = 1; index < usage.length; index++) {
+                    if (usage[index] < usage[next]) next = index;
+                }
+                target.setTerminalRecipeMap(maps.get(next));
+                usage[next]++;
+            }
+        }
+        return assigned.size();
+    }
+
+    private static CrossRecipeMEPatternBuffer namingTarget(IDualInputHatch input) {
+        if (input instanceof CrossRecipeMEPatternBuffer buffer) return buffer;
+        if (input instanceof CrossRecipeMEPatternMirror mirror && mirror.isValid()
+            && mirror.getMaster() instanceof CrossRecipeMEPatternBuffer buffer) return buffer;
+        return null;
     }
 
     @Override

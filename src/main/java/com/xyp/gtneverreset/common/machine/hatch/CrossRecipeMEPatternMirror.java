@@ -33,16 +33,22 @@ public final class CrossRecipeMEPatternMirror extends SuperMTEHatchCraftingInput
     }
 
     public List<String> getControllerRecipeMaps() {
-        return watchers.stream()
-            .filter(
-                watcher -> watcher instanceof MTEMultiBlockBase controller && controller.isValid()
-                    && controller.mDualInputHatches.contains(this))
+        return getConnectedControllers().stream()
             .flatMap(
-                watcher -> ((MTEMultiBlockBase) watcher).getAvailableRecipeMaps()
+                controller -> controller.getAvailableRecipeMaps()
                     .stream())
             .filter(Objects::nonNull)
             .map(map -> map.unlocalizedName)
             .distinct()
+            .toList();
+    }
+
+    List<MTEMultiBlockBase> getConnectedControllers() {
+        return watchers.stream()
+            .filter(
+                watcher -> watcher instanceof MTEMultiBlockBase controller && controller.isValid()
+                    && controller.mDualInputHatches.contains(this))
+            .map(watcher -> (MTEMultiBlockBase) watcher)
             .toList();
     }
 
