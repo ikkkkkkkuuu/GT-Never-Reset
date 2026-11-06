@@ -27,11 +27,13 @@ import com.cleanroommc.modularui.screen.GuiContainerWrapper;
 import com.cleanroommc.modularui.widgets.CycleButtonWidget;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource.TieredPart;
 import com.xyp.gtneverreset.api.me.RecipeMapPatternInventory;
+import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactoryProcessingLogic;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
@@ -50,6 +52,7 @@ import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;
 import gregtech.api.enums.VoltageIndex;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
+import gregtech.api.recipe.RecipeMap;
 import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.recipe.check.SingleRecipeCheck;
 import gregtech.api.structure.error.StructureError;
@@ -248,14 +251,25 @@ public final class UniversalJointFactoryChecks {
         require(errors.isEmpty(), "native hatches form factory: " + errors);
         factory.mMachine = true;
         require(
-            factory.getMaxParallelRecipes() == 64 && factory.getTotalRecipeThreads() == 1,
-            "ordinary LV mode is 64 parallel / one thread");
+            factory.getMaxParallelRecipes() == 64 && factory.getTotalRecipeThreads() == 32,
+            "ordinary LV hatches have 64 parallels and 32 threads");
+        verifyThreads(world, null);
         BaseMetaTileEntity patternTile = place(world, 3, 80, 0, GTNRMachineID.SuperCraftingInputME.id);
         var hatch = (SuperMTEHatchCraftingInputME) patternTile.getMetaTileEntity();
         require(factory.checkStructure(true, tile), "factory reforms with pattern hatch");
         require(factory.getTotalRecipeThreads() == 32, "pattern hatch enables 32 LV threads");
         verifyMatching(world, hatch);
         verifyThreads(world, hatch);
+        var crossHatch = (CrossRecipeMEPatternBuffer) place(
+            world,
+            3,
+            80,
+            0,
+            GTNRMachineID.CrossRecipeMEPatternBuffer.id).getMetaTileEntity();
+        require(
+            factory.checkStructure(true, tile) && factory.getTotalRecipeThreads() == 32,
+            "cross-recipe assembly has the same 32 LV threads");
+        verifyThreads(world, crossHatch);
         verifyGlassAndModules(world);
         player.capabilities.allowFlying = true;
         player.capabilities.isFlying = true;
@@ -376,7 +390,7 @@ public final class UniversalJointFactoryChecks {
         return position;
     }
 
-    private void verifyMatching(World world, SuperMTEHatchCraftingInputME hatch) {
+    private void verifyMatching(World world, SuperMTEHatchCraftingInputME hatch) throws Exception {
         ItemStack input = new ItemStack(Items.firework_charge);
         GTValues.RA.stdBuilder()
             .itemInputs(input.copy())
@@ -400,7 +414,40 @@ public final class UniversalJointFactoryChecks {
         factory.setMachineMode(18);
         ItemStack material = input.copy();
         material.stackSize = 64;
+        var ordinary = liveSlot(
+            hatch,
+            pattern(input, new ItemStack(Items.emerald)),
+            material,
+            RecipeMaps.compressorRecipes);
+        logic.prepareRecipe(16384);
+        require(logic.tryCachePossibleRecipesFromPattern(ordinary), "ordinary assembly pattern accepted");
+        logic.setInputItems(ordinary.getItemInputs())
+            .setInputFluids();
+        require(
+            !logic.process()
+                .wasSuccessful() && material.stackSize == 64,
+            "ordinary assembly cannot override selected mode even with recipe-map metadata");
+        logic.finishRecipe();
+        factory.setMachineMode(1);
+        logic.prepareRecipe(16384);
+        logic.tryCachePossibleRecipesFromPattern(ordinary);
+        logic.setInputItems(ordinary.getItemInputs());
+        require(
+            logic.process()
+                .wasSuccessful() && logic.getOutputItems()[0].getItem() == Items.emerald,
+            "ordinary assembly follows controller mode switch");
+        logic.finishRecipe();
+        factory.setMachineMode(18);
         QaSlot slot = new QaSlot(pattern(input, new ItemStack(Items.emerald)), hatch, world, material);
+        logic.prepareRecipe(16384);
+        logic.tryCachePossibleRecipesFromPattern(slot);
+        logic.setInputItems(material);
+        require(
+            !logic.process()
+                .wasSuccessful() && material.stackSize == 64,
+            "unannotated cross-recipe pattern stays in selected mode");
+        logic.finishRecipe();
+        slot.recipeMapName = RecipeMaps.compressorRecipes.unlocalizedName;
         logic.prepareRecipe(16384);
         logic.tryCachePossibleRecipesFromPattern(slot);
         logic.setInputItems(slot.getItemInputs())
@@ -434,6 +481,7 @@ public final class UniversalJointFactoryChecks {
             "wrong requested output cannot consume inputs");
         logic.finishRecipe();
         slot = new QaSlot(pattern(input, new ItemStack(Items.emerald)), hatch, world, material);
+        slot.recipeMapName = RecipeMaps.compressorRecipes.unlocalizedName;
         logic.setRecipeLocking(factory, true);
         logic.prepareRecipe(16384);
         logic.tryCachePossibleRecipesFromPattern(slot);
@@ -451,6 +499,19 @@ public final class UniversalJointFactoryChecks {
         require(
             SingleRecipeCheck.tryLoad(RecipeMaps.benderRecipes, saved) != null,
             "cross-map recipe lock survives NBT");
+        logic.finishRecipe();
+        ordinary = liveSlot(
+            hatch,
+            pattern(input, new ItemStack(Items.emerald)),
+            material,
+            RecipeMaps.compressorRecipes);
+        logic.prepareRecipe(16384);
+        logic.tryCachePossibleRecipesFromPattern(ordinary);
+        logic.setInputItems(material);
+        require(
+            !logic.process()
+                .wasSuccessful() && material.stackSize == 1,
+            "cross-map recipe lock cannot bypass ordinary assembly selected mode");
         logic.finishRecipe();
         factory.setSingleRecipeCheck(null);
         logic.setRecipeLocking(factory, false);
@@ -500,7 +561,11 @@ public final class UniversalJointFactoryChecks {
     }
 
     private void verifyThreads(World world, SuperMTEHatchCraftingInputME hatch) throws Exception {
-        ItemStack ingredient = new ItemStack(Items.ghast_tear);
+        boolean crossRecipe = hatch instanceof CrossRecipeMEPatternBuffer;
+        String inputs = hatch == null ? "ordinary hatches"
+            : crossRecipe ? "cross-recipe assembly" : "ordinary assembly";
+        ItemStack ingredient = new ItemStack(
+            hatch == null ? Items.record_13 : crossRecipe ? Items.record_cat : Items.ghast_tear);
         GTValues.RA.stdBuilder()
             .itemInputs(ingredient.copy())
             .itemOutputs(new ItemStack(Items.stick))
@@ -513,30 +578,48 @@ public final class UniversalJointFactoryChecks {
             .duration(200)
             .eut(1)
             .addTo(RecipeMaps.compressorRecipes);
-        java.lang.reflect.Field field = SuperMTEHatchCraftingInputME.class.getDeclaredField("internalInventory");
-        field.setAccessible(true);
-        var slots = (SuperMTEHatchCraftingInputME.PatternSlot<?>[]) field.get(hatch);
+        SuperMTEHatchCraftingInputME.PatternSlot<?>[] slots = null;
+        if (hatch != null) {
+            java.lang.reflect.Field field = SuperMTEHatchCraftingInputME.class.getDeclaredField("internalInventory");
+            field.setAccessible(true);
+            slots = (SuperMTEHatchCraftingInputME.PatternSlot<?>[]) field.get(hatch);
+        }
         ItemStack first = ingredient.copy(), second = ingredient.copy();
         first.stackSize = 64;
         second.stackSize = 64;
-        slots[0] = new QaSlot(pattern(ingredient, new ItemStack(Items.stick)), hatch, world, first);
-        slots[1] = new QaSlot(pattern(ingredient, new ItemStack(Items.gold_nugget)), hatch, world, second);
+        var inputBus = ((BaseMetaTileEntity) world.getTileEntity(-3, 80, 0)).getMetaTileEntity();
+        if (slots == null) {
+            inputBus.setInventorySlotContents(0, first);
+            inputBus.setInventorySlotContents(1, second);
+        } else {
+            slots[0] = liveSlot(
+                hatch,
+                pattern(ingredient, new ItemStack(Items.stick)),
+                first,
+                RecipeMaps.extractorRecipes);
+            slots[1] = liveSlot(
+                hatch,
+                pattern(ingredient, new ItemStack(crossRecipe ? Items.gold_nugget : Items.stick)),
+                second,
+                RecipeMaps.compressorRecipes);
+        }
         NBTTagCompound before = new NBTTagCompound();
         factory.saveNBTData(before);
+        factory.setMachineMode(18);
         factory.setBatchMode(false);
         for (int i = 0; i < 32; i++) require(
             factory.checkProcessing()
                 .wasSuccessful(),
-            "start live thread " + (i + 1));
+            inputs + ": start live thread " + (i + 1));
         require(
             factory.getRecipeThreadTasks()
                 .size() == 32,
-            "32 independent jobs remain active together");
+            inputs + ": 32 independent jobs remain active together");
         int remaining = first.stackSize + second.stackSize;
         require(
             !factory.checkProcessing()
                 .wasSuccessful() && remaining == first.stackSize + second.stackSize,
-            "33rd job rejected without consuming inputs");
+            inputs + ": 33rd job rejected without consuming inputs");
         List<ItemStack> products = new ArrayList<>();
         factory.getRecipeThreadTasks()
             .forEach(
@@ -546,8 +629,8 @@ public final class UniversalJointFactoryChecks {
             products.stream()
                 .anyMatch(stack -> stack.getItem() == Items.stick)
                 && products.stream()
-                    .anyMatch(stack -> stack.getItem() == Items.gold_nugget),
-            "different recipe maps run concurrently");
+                    .anyMatch(stack -> stack.getItem() == Items.gold_nugget) == crossRecipe,
+            inputs + ": only cross-recipe assembly runs different recipe types together");
         NBTTagCompound saved = new NBTTagCompound();
         factory.saveNBTData(saved);
         UniversalJointFactory restored = (UniversalJointFactory) place(
@@ -560,10 +643,29 @@ public final class UniversalJointFactoryChecks {
         require(
             restored.getRecipeThreadTasks()
                 .size() == 32,
-            "all 32 jobs survive NBT reload");
+            inputs + ": all 32 jobs survive NBT reload");
         factory.loadNBTData(before);
-        slots[0] = null;
-        slots[1] = null;
+        if (slots == null) {
+            inputBus.setInventorySlotContents(0, null);
+            inputBus.setInventorySlotContents(1, null);
+        } else {
+            slots[0] = null;
+            slots[1] = null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private SuperMTEHatchCraftingInputME.PatternSlot<?> liveSlot(SuperMTEHatchCraftingInputME hatch, ItemStack encoded,
+        ItemStack material, RecipeMap<?> map) throws Exception {
+        PatternRecipeMap.write(encoded, map == null ? null : map.unlocalizedName);
+        var create = hatch.getClass()
+            .getDeclaredMethod("createPatternSlot", ItemStack.class, NBTTagCompound.class);
+        create.setAccessible(true);
+        var slot = (SuperMTEHatchCraftingInputME.PatternSlot<?>) create.invoke(hatch, encoded, null);
+        var inventory = SuperMTEHatchCraftingInputME.PatternSlot.class.getDeclaredField("itemInventory");
+        inventory.setAccessible(true);
+        ((List<ItemStack>) inventory.get(slot)).add(material);
+        return slot;
     }
 
     private static ItemStack pattern(ItemStack input, ItemStack output) {

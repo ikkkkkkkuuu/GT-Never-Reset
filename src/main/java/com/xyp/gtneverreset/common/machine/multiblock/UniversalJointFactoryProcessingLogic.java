@@ -67,15 +67,14 @@ public final class UniversalJointFactoryProcessingLogic extends RecipeThreadProc
     @Override
     @Nonnull
     protected Stream<GTRecipe> findRecipeMatches(@Nullable RecipeMap<?> selected) {
-        Stream<RecipeMap<?>> maps = patternRecipeMap != null ? Stream.of(patternRecipeMap)
-            : pattern == null ? Stream.ofNullable(selected) : UniversalJointFactory.RECIPE_MAPS.stream();
-        return maps.flatMap(
-            map -> map.findRecipeQuery()
-                .items(inputItems)
-                .fluids(inputFluids)
-                .specialSlot(specialSlotItem)
-                .findAll()
-                .peek(recipe -> controller.setProcessingRecipeMap(map)))
+        return Stream.ofNullable(patternRecipeMap == null ? selected : patternRecipeMap)
+            .flatMap(
+                map -> map.findRecipeQuery()
+                    .items(inputItems)
+                    .fluids(inputFluids)
+                    .specialSlot(specialSlotItem)
+                    .findAll()
+                    .peek(recipe -> controller.setProcessingRecipeMap(map)))
             .filter(this::matchesPatternOutputs);
     }
 
@@ -84,7 +83,8 @@ public final class UniversalJointFactoryProcessingLogic extends RecipeThreadProc
     protected CheckRecipeResult validateRecipe(@Nonnull GTRecipe recipe) {
         // Also guard the native single-recipe-lock path, which bypasses findRecipeMatches.
         if (isRecipeLocked && recipeLockableMachine != null && recipeLockableMachine.getSingleRecipeCheck() != null) {
-            if (patternRecipeMap != null && patternRecipeMap != recipeLockableMachine.getSingleRecipeCheck()
+            RecipeMap<?> requested = patternRecipeMap == null ? controller.getRecipeMap() : patternRecipeMap;
+            if (requested != recipeLockableMachine.getSingleRecipeCheck()
                 .getRecipeMap()) {
                 return CheckRecipeResultRegistry.NO_RECIPE;
             }

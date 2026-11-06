@@ -247,7 +247,6 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
 
     @Override
     public int getMaxRecipeThreads() {
-        if (getBaseMetaTileEntity() != null && mDualInputHatches.isEmpty()) return 1;
         return threadsForTier(GTUtility.getTier(getMaxInputVoltage()));
     }
 

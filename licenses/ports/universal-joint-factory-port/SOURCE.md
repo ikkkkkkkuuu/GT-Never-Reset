@@ -30,7 +30,10 @@ The upstream geometry is retained, converted to MBS1 and mapped to existing GTNH
 No new decorative blocks or textures are introduced. The controller uses GregTech's assembly-line overlay.
 The source's 24 recipe types are mapped to their GTNH counterparts, including the single-block chemical dehydrator pool.
 Balance changes requested by the user: 64 parallels per thread and 32 cross-recipe threads at LV;
-each additional voltage tier doubles parallels and adds eight threads. Ordinary inputs run one selected recipe type.
+each additional voltage tier doubles parallels and adds eight threads. Ordinary hatches and pattern assemblies
+use the controller's selected recipe type. Cross-recipe assemblies use each pattern's explicit recipe type;
+unannotated patterns use the controller's selected mode.
+Every input type receives the same voltage-scaled thread capacity.
 Parameter modules use GTNR's standard effects, with at most one module of each type in the Q/X hatch positions.
 Glass above the HV baseline adds 20 percentage points of speed and multiplies EU usage by 0.9 per tier;
 All glass positions must have the same GTNH glass tier. Overclocking upgrades are provided by parameter modules.
