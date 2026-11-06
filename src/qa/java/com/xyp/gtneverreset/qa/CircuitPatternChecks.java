@@ -168,8 +168,8 @@ public final class CircuitPatternChecks {
                     "dedicated mirror tooltip explains compatible master");
                 require(
                     tooltip.stream()
-                        .anyMatch(line -> line.contains("同一多方块仅可安装")),
-                    "dedicated mirror tooltip explains family restriction");
+                        .noneMatch(line -> line.contains("同一多方块仅可安装")),
+                    "dedicated mirror tooltip does not forbid mixed structures");
                 mc.displayGuiScreen(new PreviewScreen(tooltip));
                 return;
             }
@@ -457,7 +457,7 @@ public final class CircuitPatternChecks {
                 }
             }
             var hatch = (CrossRecipeMEPatternBuffer) masters[2];
-            verifyPatternFamilies(player, masters, mirrors);
+            verifyMixedPatternStructures(player, masters, mirrors);
             var mirror = mirrors[2];
             var base = hatch.getBaseMetaTileEntity();
             require(
@@ -512,28 +512,69 @@ public final class CircuitPatternChecks {
                 hatch.getTerminalRecipeMap()
                     .equals(RecipeMaps.unpackagerRecipes.unlocalizedName),
                 "mirrored controller recipe map selectable for terminal name");
+            var ordinaryRecipes = GTValues.RA.stdBuilder()
+                .itemInputs(new ItemStack(Items.clay_ball, 2), new ItemStack(Items.snowball))
+                .itemOutputs(new ItemStack(Items.feather))
+                .duration(20)
+                .eut(8)
+                .addTo(RecipeMaps.packagerRecipes);
+            require(!ordinaryRecipes.isEmpty(), "ordinary mixed-input test recipe registered");
+            var circuitRecipes = GTValues.RA.stdBuilder()
+                .itemInputs(new ItemStack(Items.apple, 2), GTUtility.getIntegratedCircuit(4))
+                .itemOutputs(new ItemStack(Items.bread))
+                .duration(20)
+                .eut(8)
+                .addTo(RecipeMaps.packagerRecipes);
+            require(!circuitRecipes.isEmpty(), "circuit mixed-input test recipe registered");
+            masters[0].onPatternChange(
+                0,
+                pattern(
+                    new IAEStack<?>[] { AEItemStack.create(new ItemStack(Items.clay_ball, 2)),
+                        AEItemStack.create(new ItemStack(Items.snowball)) },
+                    new ItemStack(Items.feather)));
+            masters[1].onPatternChange(
+                0,
+                metadata(
+                    pattern(
+                        new IAEStack<?>[] { AEItemStack.create(new ItemStack(Items.apple, 2)) },
+                        new ItemStack(Items.bread)),
+                    4,
+                    null));
+            var ordinarySlot = masters[0].inventories()
+                .next();
+            var circuitSlot = (CircuitSlot) masters[1].inventories()
+                .next();
+            require(
+                ordinarySlot.insertItemsAndFluids(delivery(ordinarySlot.getPatternDetails())),
+                "mixed ordinary delivery accepted");
+            require(
+                circuitSlot.insertItemsAndFluids(delivery(circuitSlot.getPatternDetails())),
+                "mixed circuit delivery accepted");
+            packager.mDualInputHatches.clear();
+            packager.mDualInputHatches.add(masters[0]);
             packager.mDualInputHatches.add(masters[1]);
-            var mixed = runController(packager);
+            packager.mDualInputHatches.add(mirror);
             require(
-                !mixed.wasSuccessful() && slots.stream()
-                    .noneMatch(CircuitSlot::isEmpty),
-                "mixed circuit assembly and cross-recipe mirror cannot consume buffered inputs");
+                runController(packager).wasSuccessful()
+                    && logic(packager).getOutputItems()[0].getItem() == Items.feather,
+                "ordinary assembly processes alongside circuit assembly and cross-recipe mirror");
             require(
-                mixed.getDisplayString()
-                    .contains("不可混装"),
-                "mixed-input error has localized player feedback");
-            packager.mDualInputHatches.remove(masters[1]);
+                runController(packager).wasSuccessful() && logic(packager).getOutputItems()[0].getItem() == Items.bread,
+                "circuit assembly processes alongside ordinary assembly and cross-recipe mirror");
             require(
                 runController(packager).wasSuccessful() && logic(packager).getOutputItems()[0].getItem() == Items.paper,
-                "native controller consumes packing through mirror only");
+                "mixed controller consumes packing through cross-recipe mirror");
             require(
                 runController(packager).wasSuccessful() && logic(packager).getOutputItems()[0].getItem() == Items.book,
-                "native controller consumes unpacking through same mirror");
+                "mixed controller consumes unpacking through same mirror");
             require(
                 packager.getMachineMode() == 0 && slots.size() == 2
                     && slots.stream()
                         .allMatch(CircuitSlot::isEmpty),
                 "mirrored deliveries consumed once and controller mode restored");
+            require(
+                circuitSlot.isEmpty() && !runController(packager).wasSuccessful(),
+                "all four mixed-input deliveries consumed exactly once");
             packager.mDualInputHatches.clear();
             require(
                 hatch.getControllerRecipeMaps()
@@ -555,7 +596,7 @@ public final class CircuitPatternChecks {
         return tile;
     }
 
-    private static void verifyPatternFamilies(EntityPlayerMP player, SuperMTEHatchCraftingInputME[] masters,
+    private static void verifyMixedPatternStructures(EntityPlayerMP player, SuperMTEHatchCraftingInputME[] masters,
         SuperMTEHatchCraftingInputSlave[] mirrors) throws Exception {
         var controller = new PatternStructureController();
         var tile = new BaseMetaTileEntity();
@@ -570,22 +611,21 @@ public final class CircuitPatternChecks {
         for (int i = 0; i < inputs.length; i++) {
             for (int j = 0; j < inputs.length; j++) {
                 controller.inputs = List.of(inputs[i], inputs[j]);
-                boolean compatible = i % 3 == j % 3;
                 require(
-                    controller.checkStructure(true, tile) == compatible,
-                    "native structure check respects input families " + i + "/" + j);
+                    controller.checkStructure(true, tile),
+                    "native structure check accepts mixed input types " + i + "/" + j);
                 require(
-                    ((List<?>) errors.get(controller)).isEmpty() == compatible,
-                    "mixed structure exposes native error " + i + "/" + j);
+                    ((List<?>) errors.get(controller)).isEmpty(),
+                    "mixed structure has no family error " + i + "/" + j);
                 controller.mDualInputHatches.clear();
                 require(
-                    (boolean) ttCheck.invoke(controller, tile) == compatible,
-                    "TT structure check respects input families " + i + "/" + j);
+                    (boolean) ttCheck.invoke(controller, tile),
+                    "TT structure check accepts mixed input types " + i + "/" + j);
             }
         }
         for (var mirror : mirrors) mirror.loadNBTData(new NBTTagCompound());
         controller.inputs = List.of(mirrors[1], mirrors[2]);
-        require(!controller.checkStructure(true, tile), "unlinked mirrors still retain their family restriction");
+        require(controller.checkStructure(true, tile), "unlinked mirrors of different types can share a structure");
     }
 
     private static void verifyCrossRecipe(EntityPlayerMP player) throws Exception {

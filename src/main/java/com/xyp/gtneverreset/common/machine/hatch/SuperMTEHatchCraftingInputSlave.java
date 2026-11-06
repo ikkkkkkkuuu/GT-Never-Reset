@@ -442,7 +442,6 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
         // # Data Stick: left-click the master, then right-click this hatch in the same dimension
         // # zh_CN 手持数据棒左键点击主仓，再右键点击同维度内的此仓完成连接
         String link = StatCollector.translateToLocal("tooltip.gtnr.crafting_input_mirror.link");
-        String family = StatCollector.translateToLocal("tooltip.gtnr.pattern_input.family");
-        return PatternMEOutput.describe(new String[] { proxy, tier, share, link, family });
+        return PatternMEOutput.describe(new String[] { proxy, tier, share, link });
     }
 }

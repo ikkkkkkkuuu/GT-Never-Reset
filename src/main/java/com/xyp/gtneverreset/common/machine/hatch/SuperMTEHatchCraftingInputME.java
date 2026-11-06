@@ -1307,10 +1307,6 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
         // # Patterns keep separate ingredients; manual input slots are shared
         // # zh_CN 不同样板的原料互不混用；手动物品槽由所有样板共用
         String ignoresPatterns = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.ignores_patterns");
-        // #tr tooltip.gtnr.pattern_input.family
-        // # Use only one pattern-input family per multiblock: ordinary, circuit or cross-recipe, including mirrors
-        // # zh_CN 同一多方块仅可安装普通、电路、跨配方类型中的一种总成及其对应镜像
-        String family = StatCollector.translateToLocal("tooltip.gtnr.pattern_input.family");
         // #tr tooltip.gtneverreset.crafting_input.capacity
         // # Pattern slots: %s; requires ME power and one channel
         // # zh_CN 样板槽：%s 个；需要 ME 供电和一个频道
@@ -1318,7 +1314,7 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
             .translateToLocalFormatted("tooltip.gtneverreset.crafting_input.capacity", getPatternCount());
         return PatternMEOutput.describe(
             new String[] { type, itemInput, tier, processes, capacity, supportFluids ? supportsFluids : noFluids,
-                ignoresHatches, ignoresPatterns, family, connection });
+                ignoresHatches, ignoresPatterns, connection });
     }
 
     /** Specialized inventories can supply their own persistent refund mechanism. */
