@@ -80,7 +80,6 @@ public final class UniversalWandMiningHandler {
     private static final Set<UUID> KEY_HELD = Collections.newSetFromMap(new ConcurrentHashMap<UUID, Boolean>());
     private static final long KEY_GRACE_NANOS = 750_000_000L;
     private static final Map<UUID, MiningTask> TASKS = new ConcurrentHashMap<>();
-    private static final Map<UUID, ChainRequest> START_REQUESTS = new ConcurrentHashMap<>();
     private static final String PENDING_DROPS = "gtneverresetUniversalWandPendingDrops";
     private static final ThreadLocal<HarvestScope> HARVEST = new ThreadLocal<>();
     private static final ThreadLocal<LivingDropScope> LIVING_DROPS = new ThreadLocal<>();
@@ -272,23 +271,6 @@ public final class UniversalWandMiningHandler {
         }
     }
 
-    private static final class ChainRequest {
-
-        final EntityPlayerMP player;
-        final World world;
-        final int x;
-        final int y;
-        final int z;
-
-        ChainRequest(EntityPlayerMP player, int x, int y, int z) {
-            this.player = player;
-            this.world = player.worldObj;
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-    }
-
     public static void setKeyHeld(EntityPlayerMP player, boolean held) {
         if (player == null) return;
         UUID id = player.getUniqueID();
@@ -301,13 +283,7 @@ public final class UniversalWandMiningHandler {
         } else {
             KEY_HELD.remove(id);
             KEY_LAST_HELD.remove(id);
-            START_REQUESTS.remove(id);
         }
-    }
-
-    public static void requestChainStart(EntityPlayerMP player, int x, int y, int z) {
-        if (!UniversalWandFeature.CHAIN.allowed()) return;
-        if (player != null) START_REQUESTS.put(player.getUniqueID(), new ChainRequest(player, x, y, z));
     }
 
     @SubscribeEvent
@@ -317,32 +293,6 @@ public final class UniversalWandMiningHandler {
         if (!UniversalWandFeature.CHAIN.allowed()) {
             KEY_HELD.clear();
             KEY_LAST_HELD.clear();
-            START_REQUESTS.clear();
-        }
-        for (Map.Entry<UUID, ChainRequest> entry : START_REQUESTS.entrySet()) {
-            ChainRequest request = entry.getValue();
-            EntityPlayerMP player = request.player;
-            if (KEY_HELD.contains(entry.getKey()) && !TASKS.containsKey(entry.getKey())
-                && !player.isDead
-                && player.worldObj == request.world
-                && request.world.playerEntities.contains(player)
-                && request.world.blockExists(request.x, request.y, request.z)) {
-                ItemStack held = player.getHeldItem();
-                if (held != null && held.getItem() instanceof ItemUniversalWand
-                    && !ItemUniversalWand.isProtectionMode(held)
-                    && player.canPlayerEdit(request.x, request.y, request.z, 1, held)
-                    && isReachable(player, request.x, request.y, request.z)) {
-                    if (!request.world.isAirBlock(request.x, request.y, request.z)
-                        && UniversalWandActions.isTarget(player, request.x, request.y, request.z)
-                        && request.world.getBlock(request.x, request.y, request.z)
-                            .getBlockHardness(request.world, request.x, request.y, request.z) >= 0
-                        && !MinecraftServer.getServer()
-                            .isBlockProtected((WorldServer) request.world, request.x, request.y, request.z, player)) {
-                        player.theItemInWorldManager.tryHarvestBlock(request.x, request.y, request.z);
-                    }
-                }
-            }
-            START_REQUESTS.remove(entry.getKey(), request);
         }
         UniversalWandAutoHarvestHandler.tick();
     }
@@ -636,7 +586,6 @@ public final class UniversalWandMiningHandler {
         for (MiningTask task : TASKS.values()) finishTask(task, false, true);
         KEY_HELD.clear();
         KEY_LAST_HELD.clear();
-        START_REQUESTS.clear();
         UniversalWandActions.clearAll();
         UniversalWandAutoHarvestHandler.clearAll();
     }
@@ -650,9 +599,6 @@ public final class UniversalWandMiningHandler {
                 clearPlayer(entry.getKey());
             }
         }
-        for (Map.Entry<UUID, ChainRequest> entry : START_REQUESTS.entrySet()) {
-            if (entry.getValue().player.worldObj == event.world) clearPlayer(entry.getKey());
-        }
     }
 
     private static void clearPlayer(UUID id) {
@@ -660,17 +606,8 @@ public final class UniversalWandMiningHandler {
         if (task != null) finishTask(task, false, true);
         KEY_HELD.remove(id);
         KEY_LAST_HELD.remove(id);
-        START_REQUESTS.remove(id);
         UniversalWandActions.clear(id);
         UniversalWandAutoHarvestHandler.clear(id);
-    }
-
-    private static boolean isReachable(EntityPlayerMP player, int x, int y, int z) {
-        double dx = player.posX - (x + 0.5D);
-        double dy = player.posY + player.getEyeHeight() - (y + 0.5D);
-        double dz = player.posZ - (z + 0.5D);
-        double reach = player.theItemInWorldManager.getBlockReachDistance() + 1D;
-        return dx * dx + dy * dy + dz * dz <= reach * reach;
     }
 
     private static boolean matchesTarget(World world, int x, int y, int z, Block target, int metadata,

@@ -92,7 +92,11 @@ public final class NetWorkHandler {
         registerServerbound(QuestSkipPacket.class, QuestSkipPacket::handle);
         registerServerbound(UniversalWandNetwork.OpenGuiMessage.class, UniversalWandNetwork::handleOpenGui);
         registerServerbound(UniversalWandNetwork.ForceBedrockMessage.class, UniversalWandNetwork::handleForceBedrock);
-        registerServerbound(UniversalWandNetwork.ChainKeyMessage.class, UniversalWandNetwork::handleChainKey);
+        CHANNEL.registerMessage(
+            UniversalWandNetwork.ChainKeyHandler.class,
+            UniversalWandNetwork.ChainKeyMessage.class,
+            nextPacketId++,
+            Side.SERVER);
         registerServerbound(UniversalWandNetwork.ChainStartMessage.class, UniversalWandNetwork::handleChainStart);
         // IDs 27 through 31 belonged to the removed wand building packets.
         nextPacketId = 32;
