@@ -10,7 +10,6 @@ import com.xyp.gtneverreset.client.wand.UniversalWandTravelFallback;
 import com.xyp.gtneverreset.common.wand.UniversalWandAccelerationHandler;
 import com.xyp.gtneverreset.common.wand.UniversalWandActions;
 import com.xyp.gtneverreset.common.wand.UniversalWandFeaturePolicy;
-import com.xyp.gtneverreset.common.wand.UniversalWandMiningHandler;
 import com.xyp.gtneverreset.common.wand.UniversalWandProtectionHandler;
 import com.xyp.gtneverreset.common.wand.UniversalWandRightClick;
 import com.xyp.gtneverreset.common.wand.UniversalWandUtilityHandler;
@@ -424,8 +423,17 @@ public final class UniversalWandNetwork {
         }
     }
 
-    static void handleChainKey(ChainKeyMessage message, EntityPlayerMP player) {
-        UniversalWandActions.request(player, UniversalWandActions.Action.CHAIN_KEY, message.held ? 1 : 0, 0, 0);
+    public static final class ChainKeyHandler implements IMessageHandler<ChainKeyMessage, IMessage> {
+
+        @Override
+        public IMessage onMessage(ChainKeyMessage message, MessageContext context) {
+            var handler = context.getServerHandler();
+            // Queue the state before the following vanilla digging packet, without another server-tick delay.
+            // UniversalWandActions applies it on the server thread, including at the start of a block break.
+            if (handler.netManager.isChannelOpen()) UniversalWandActions
+                .request(handler.playerEntity, UniversalWandActions.Action.CHAIN_KEY, message.held ? 1 : 0, 0, 0);
+            return null;
+        }
     }
 
     public static final class ChainStartMessage implements IMessage {
@@ -458,8 +466,8 @@ public final class UniversalWandNetwork {
     }
 
     static void handleChainStart(ChainStartMessage message, EntityPlayerMP player) {
-
-        UniversalWandMiningHandler.requestChainStart(player, message.x, message.y, message.z);
+        // Preserve the packet ID and payload for older clients; their vanilla digging packet starts the chain.
+        // A second harvest here would target the stone backfilled after that original harvest.
     }
 
     public static void requestForceBedrock(int x, int y, int z) {

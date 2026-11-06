@@ -117,13 +117,6 @@ public final class UniversalWandKeyHandler {
         ItemStack stack = minecraft.thePlayer.getHeldItem();
         if (isChainKeyHeld() && stack != null && stack.getItem() instanceof ItemUniversalWand) {
             UniversalWandNetwork.requestChainKey(true);
-            if (minecraft.objectMouseOver != null
-                && minecraft.objectMouseOver.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
-                UniversalWandNetwork.requestChainStart(
-                    minecraft.objectMouseOver.blockX,
-                    minecraft.objectMouseOver.blockY,
-                    minecraft.objectMouseOver.blockZ);
-            }
             lastChainHeld = true;
             chainHeartbeat = 0;
         }
