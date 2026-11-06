@@ -62,6 +62,7 @@ public final class AssemblerRecipes {
         registerSuperAdvancedMEInputRecipes();
         registerModuleHatchRecipes();
         registerLargeFurnaceRecipes();
+        registerUniversalJointFactoryRecipe();
         if (ModList.Forestry.isModLoaded()) registerLargeBeeBreederRecipes();
         if (ModList.CropsNH.isModLoaded()) registerLargeCropBreederRecipes();
         registerFluxConnectorRecipes();
@@ -370,6 +371,22 @@ public final class AssemblerRecipes {
             .duration(400)
             .eut(30)
             .addTo(RecipeMaps.assemblerRecipes);
+    }
+
+    private static void registerUniversalJointFactoryRecipe() {
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                ItemList.Machine_LV_Assembler.get(1),
+                ItemList.Machine_LV_Compressor.get(1),
+                ItemList.Casing_SolidSteel.get(4),
+                ItemList.Electric_Motor_LV.get(4),
+                new Object[] { OrePrefixes.circuit.get(Materials.LV), 8 },
+                GTUtility.getIntegratedCircuit(23))
+            .fluidInputs(Materials.Tin.getMolten(576))
+            .itemOutputs(GTNRItemList.UniversalJointFactory.get(1))
+            .duration(30 * SECONDS)
+            .eut(RECIPE_LV)
+            .addTo(assemblerRecipes);
     }
 
     private static void registerLargeBeeBreederRecipes() {

@@ -48,6 +48,7 @@ public enum GTNRItemList implements IItemContainer {
     // region 多方块
     LargeOreProcessor,
     LargeFurnace,
+    UniversalJointFactory,
     QuantumComputer,
     AssemblerMatrix,
     SingularityDataHub,
