@@ -1,13 +1,25 @@
 // Run with: gradlew.bat -I src/qa/resources/circuit-pattern-qa.init.gradle :runClient17 --no-configuration-cache
 // Add -PpatternStressTest=true to run the multi-controller stress fixture instead.
+// Add -PpatternAddonTest=true with addon dev jars in build/addon-pattern-qa/dependencies for real addon checks.
 gradle.projectsEvaluated {
     def root = gradle.rootProject
     root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
-    def stress = root.providers.gradleProperty('patternStressTest').isPresent()
+    def addons = root.providers.gradleProperty('patternAddonTest').isPresent()
+    def stress = addons || root.providers.gradleProperty('patternStressTest').isPresent()
     def fixture = stress ? 'PatternRecipeStressChecks' : 'CircuitPatternChecks'
-    def directoryName = stress ? 'pattern-recipe-stress-qa' : 'circuit-pattern-qa'
+    def directoryName = addons ? 'addon-pattern-qa' : stress ? 'pattern-recipe-stress-qa' : 'circuit-pattern-qa'
     def marker = stress ? 'gtnr.pattern.stress.qa' : 'gtnr.circuit.pattern.qa'
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
+    if (addons) {
+        def modpack = root.extensions.getByName('elytraModpackVersion')
+        ['Galaxy-Space-GTNH', 'ThaumicEnergistics', 'Electro-Magic-Tools', 'supersolarpanels', 'BloodArsenal',
+         'Avaritiaddons', 'Eternal-Singularity', 'Universal-Singularities', 'MagicBees', 'AspectRecipeIndex',
+         'WitcheryExtras', 'twilightforest', 'Natura'].each {
+            root.dependencies.add('runtimeOnlyNonPublishable', modpack.gtnhdev(it) as String)
+        }
+        root.dependencies.add('runtimeOnlyNonPublishable', root.dependencies.rfg.deobf('curse.maven:advsolar-362768:2885953'))
+        root.dependencies.add('runtimeOnlyNonPublishable', root.dependencies.rfg.deobf('curse.maven:witchery-69673:2234410'))
+    }
 
     root.tasks.named('compileTestJava').configure {
         options.release.set(17)
@@ -25,6 +37,10 @@ gradle.projectsEvaluated {
         classpath += root.configurations.testRuntimeClasspath.filter { it.name.startsWith('jvmdowngrader-java-api-') }
         dependsOn snapshot
         classpath += root.files(qaDirectory.map { it.dir('classes') })
+        if (addons) {
+            classpath += root.fileTree('build/addon-pattern-qa/dependencies') { include '*-dev.jar' }
+            systemProperty 'gtnr.pattern.addon.qa', 'true'
+        }
         workingDir root.file("build/${directoryName}/run")
         systemProperty marker, 'true'
         systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
@@ -32,6 +48,19 @@ gradle.projectsEvaluated {
         args '--width', '1100', '--height', '740'
         notCompatibleWithConfigurationCache('isolated live-client verification')
         doFirst {
+            if (addons) {
+                // Gradle's long-command classpath JAR hides mods from the legacy launcher's scanner.
+                def shortClasspath = root.file('.gradle/addon-pattern-cp')
+                shortClasspath.mkdirs()
+                classpath = root.files(classpath.files.collect { entry ->
+                    if (!entry.isFile() || !entry.name.endsWith('.jar') || entry.toPath().startsWith(root.projectDir.toPath())) return entry
+                    def digest = java.security.MessageDigest.getInstance('SHA-256')
+                        .digest(entry.absolutePath.getBytes('UTF-8')).encodeHex().toString()
+                    def target = new File(shortClasspath, digest + '.jar')
+                    if (!target.exists()) java.nio.file.Files.copy(entry.toPath(), target.toPath())
+                    target
+                })
+            }
             def output = root.file("build/${directoryName}")
             output.mkdirs()
             workingDir.mkdirs()

@@ -10,7 +10,7 @@ import com.gtnewhorizon.gtnhmixins.IEarlyMixinLoader;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
 
 @IFMLLoadingPlugin.MCVersion("1.7.10")
-@IFMLLoadingPlugin.TransformerExclusions("com.xyp.gtneverreset.asm.EarlyMixinsLoader")
+@IFMLLoadingPlugin.TransformerExclusions("com.xyp.gtneverreset.asm.")
 public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLoader {
 
     @Override
@@ -60,7 +60,7 @@ public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLo
 
     @Override
     public String[] getASMTransformerClass() {
-        return new String[0];
+        return new String[] { "com.xyp.gtneverreset.asm.PatternRecipeCallTransformer" };
     }
 
     @Override

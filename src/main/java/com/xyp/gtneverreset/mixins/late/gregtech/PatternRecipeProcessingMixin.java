@@ -15,6 +15,7 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.xyp.gtneverreset.api.me.PatternRecipeModePreflight;
 import com.xyp.gtneverreset.api.me.RecipeMapPatternInventory;
+import com.xyp.gtneverreset.api.mixinHelper.PatternRecipeProcessingAccess;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.common.me.PatternRecipeRouting;
 
@@ -27,7 +28,7 @@ import gregtech.api.recipe.check.CheckRecipeResultRegistry;
 import gregtech.common.tileentities.machines.IDualInputInventoryWithPattern;
 
 @Mixin(value = ProcessingLogic.class, remap = false)
-public abstract class PatternRecipeProcessingMixin {
+public abstract class PatternRecipeProcessingMixin implements PatternRecipeProcessingAccess {
 
     @Shadow
     protected IVoidable machine;
@@ -79,12 +80,19 @@ public abstract class PatternRecipeProcessingMixin {
     private Runnable gtnr$restoreConfiguration;
     @Unique
     private boolean gtnr$preparingMode;
+    @Unique
+    private boolean gtnr$callingOriginal;
 
-    @WrapMethod(method = "tryCachePossibleRecipesFromPattern")
-    private boolean gtnr$selectPatternMap(IDualInputInventoryWithPattern inventory, Operation<Boolean> original) {
+    @Override
+    public boolean gtnr$cachePattern(IDualInputInventoryWithPattern inventory) {
+        return gtnr$routeCache(inventory, null);
+    }
+
+    @Unique
+    private boolean gtnr$routeCache(IDualInputInventoryWithPattern inventory, Operation<Boolean> original) {
         gtnr$resetRouting();
         if (!(inventory instanceof RecipeMapPatternInventory mapped) || mapped.getRecipeMapName() == null)
-            return original.call(inventory);
+            return gtnr$callCache(inventory, original);
         activeDualInv = null;
         RecipeMap<?> requested = PatternRecipeMap.resolve(mapped.getRecipeMapName());
         try (var selection = PatternRecipeRouting.select(machine, requested)) {
@@ -99,7 +107,7 @@ public abstract class PatternRecipeProcessingMixin {
                     gtnr$preparingMode = true;
                     ((MultiblockProcessingAccessor) machine).gtnr$setupProcessingLogic((ProcessingLogic) (Object) this);
                 }
-                accepted = original.call(inventory);
+                accepted = gtnr$callCache(inventory, original);
                 if (accepted) gtnr$pendingMap = requested;
                 return accepted;
             } finally {
@@ -109,16 +117,55 @@ public abstract class PatternRecipeProcessingMixin {
         }
     }
 
-    @WrapMethod(method = "process")
-    private CheckRecipeResult gtnr$processPatternMap(Operation<CheckRecipeResult> original) {
+    @Override
+    public CheckRecipeResult gtnr$processPattern() {
+        return gtnr$routeProcess(null);
+    }
+
+    @Unique
+    private CheckRecipeResult gtnr$routeProcess(Operation<CheckRecipeResult> original) {
         RecipeMap<?> requested = gtnr$pendingMap;
-        if (requested == null) return original.call();
+        if (requested == null) return gtnr$callProcess(original);
         try (var selection = PatternRecipeRouting.select(machine, requested)) {
             if (selection == null) return CheckRecipeResultRegistry.NO_RECIPE;
-            return original.call();
+            return gtnr$callProcess(original);
         } finally {
             gtnr$resetRouting();
             activeDualInv = null;
+        }
+    }
+
+    // Keep the original hooks for callers whose bytecode refers to an inherited subclass method.
+    @WrapMethod(method = "tryCachePossibleRecipesFromPattern")
+    private boolean gtnr$cacheFallback(IDualInputInventoryWithPattern inventory, Operation<Boolean> original) {
+        return gtnr$callingOriginal ? original.call(inventory) : gtnr$routeCache(inventory, original);
+    }
+
+    @Unique
+    private boolean gtnr$callCache(IDualInputInventoryWithPattern inventory, Operation<Boolean> original) {
+        boolean previous = gtnr$callingOriginal;
+        gtnr$callingOriginal = true;
+        try {
+            return original == null ? ((ProcessingLogic) (Object) this).tryCachePossibleRecipesFromPattern(inventory)
+                : original.call(inventory);
+        } finally {
+            gtnr$callingOriginal = previous;
+        }
+    }
+
+    @WrapMethod(method = "process")
+    private CheckRecipeResult gtnr$processFallback(Operation<CheckRecipeResult> original) {
+        return gtnr$callingOriginal ? original.call() : gtnr$routeProcess(original);
+    }
+
+    @Unique
+    private CheckRecipeResult gtnr$callProcess(Operation<CheckRecipeResult> original) {
+        boolean previous = gtnr$callingOriginal;
+        gtnr$callingOriginal = true;
+        try {
+            return original == null ? ((ProcessingLogic) (Object) this).process() : original.call();
+        } finally {
+            gtnr$callingOriginal = previous;
         }
     }
 
@@ -127,8 +174,9 @@ public abstract class PatternRecipeProcessingMixin {
         if (!gtnr$preparingMode) gtnr$resetRouting();
     }
 
-    @Unique
-    private void gtnr$resetRouting() {
+    @Override
+    public void gtnr$resetRouting() {
+        if (gtnr$preparingMode) return;
         gtnr$pendingMap = null;
         if (gtnr$restoreConfiguration != null) {
             gtnr$restoreConfiguration.run();

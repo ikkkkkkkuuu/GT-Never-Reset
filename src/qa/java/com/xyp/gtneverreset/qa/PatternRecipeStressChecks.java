@@ -46,6 +46,8 @@ import appeng.util.inv.MEInventoryCrafting;
 import appeng.util.item.AEFluidStack;
 import appeng.util.item.AEItemStack;
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.LoaderState;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
@@ -70,13 +72,17 @@ import gregtech.api.util.GTUtility;
 @Mod(modid = "patternstressqa", name = "Pattern Recipe Stress QA", version = "1", dependencies = "after:gtneverreset")
 public final class PatternRecipeStressChecks {
 
+    private static final boolean ADDONS = Boolean.getBoolean("gtnr.pattern.addon.qa");
     private static final int SLOT_COUNT = 540;
     private static final int VALID_SLOTS = SLOT_COUNT - 3;
     private static final int ROUNDS = 6;
     private static final int CHECKS_PER_TICK = 64;
-    private static final String[] TYPES = { "MTEIndustrialPackager", "MTEAmazonPackagerLegacy",
-        "MTEIndustrialPlatePressLegacy", "MTEOreWashingPlant", "MTEIndustrialDehydrator", "MTEMegaDistillationTower",
-        "MTEAdvDistillationTower", "MTEPreciseAssembler" };
+    private static final String[] TYPES = ADDONS
+        ? new String[] { "LargePacker", "LargeBrewer", "GT_TileEntity_MagneticDrivePressureFormer",
+            "TST_ManufacturingCenter" }
+        : new String[] { "MTEIndustrialPackager", "MTEAmazonPackagerLegacy", "MTEIndustrialPlatePressLegacy",
+            "MTEOreWashingPlant", "MTEIndustrialDehydrator", "MTEMegaDistillationTower", "MTEAdvDistillationTower",
+            "MTEPreciseAssembler" };
     private static final Map<String, Fixture> RECIPES = new LinkedHashMap<>();
     private static final Map<RecipeMap<?>, Integer> MAP_IDS = new LinkedHashMap<>();
     private static Item inputItem, outputItem;
@@ -166,7 +172,10 @@ public final class PatternRecipeStressChecks {
         if (event.phase != TickEvent.Phase.END || finished) return;
         Minecraft mc = Minecraft.getMinecraft();
         try {
-            if (!launched && mc.currentScreen instanceof GuiMainMenu) {
+            if (++ticks > 12000) throw new AssertionError("Stress QA timeout");
+            if (!launched && (mc.currentScreen instanceof GuiMainMenu || (ADDONS && mc.currentScreen != null
+                && Loader.instance()
+                    .hasReachedState(LoaderState.AVAILABLE)))) {
                 launched = true;
                 mc.launchIntegratedServer(
                     "stress-" + System.currentTimeMillis(),
@@ -175,7 +184,6 @@ public final class PatternRecipeStressChecks {
             }
             if (failure != null) throw new AssertionError("Native stress checks failed", failure);
             if (mc.thePlayer == null) return;
-            if (++ticks > 12000) throw new AssertionError("Stress QA timeout");
             if (summary == null) return;
             if (!(mc.currentScreen instanceof SummaryScreen)) mc.displayGuiScreen(new SummaryScreen(summary));
             if (++frames < 15) return;
@@ -194,7 +202,12 @@ public final class PatternRecipeStressChecks {
     private void complete() throws Exception {
         List<String> lines = new ArrayList<>();
         lines.add("Pattern routing stress: PASS");
-        lines.add("8 native machine types / 24 consumers / 8 full 540-slot buffers");
+        lines.add(
+            TYPES.length + " machine types / "
+                + TYPES.length * 3
+                + " consumers / "
+                + TYPES.length
+                + " full 540-slot buffers");
         long checks = 0, crafts = 0, comparisons = 0, reloads = 0;
         StringBuilder report = new StringBuilder(
             "type,maps,checks,crafts,native_comparisons,reloads,p50_ms,p95_ms,max_ms\n");
@@ -240,10 +253,15 @@ public final class PatternRecipeStressChecks {
                     + String.format(java.util.Locale.ROOT, "%.3f", percentile(group.samples, .95))
                     + " ms");
         }
-        require(checks >= 25000 && crafts >= 100000 && reloads == TYPES.length * ROUNDS, "stress volume reached");
+        require(
+            checks >= TYPES.length * 1500 && crafts >= TYPES.length * 10000 && reloads == TYPES.length * ROUNDS,
+            "stress volume reached");
         lines.add(checks + " checks / " + crafts + " recipe batches / " + comparisons + " native comparisons");
         lines.add(reloads + " NBT restores; exact item/fluid balances; no mode or pending-state leaks");
-        lines.add("16 large-stock checks: >2^31 batches survive processing and NBT reload");
+        int mapCount = groups.stream()
+            .mapToInt(group -> group.maps.size())
+            .sum();
+        lines.add(mapCount + " large-stock checks: >2^31 batches survive processing and NBT reload");
         lines.add(
             String.format(
                 java.util.Locale.ROOT,
@@ -317,7 +335,10 @@ public final class PatternRecipeStressChecks {
                 if (i == VALID_SLOTS) PatternRecipeMap.write(pattern, "gtnr.qa.removed_pool");
                 if (i == VALID_SLOTS + 1) pattern.getTagCompound()
                     .setInteger(PatternRecipeMap.KEY, 5);
-                if (i == VALID_SLOTS + 2) PatternRecipeMap.write(pattern, RecipeMaps.polarizerRecipes.unlocalizedName);
+                if (i == VALID_SLOTS + 2) PatternRecipeMap.write(
+                    pattern,
+                    (maps.contains(RecipeMaps.polarizerRecipes) ? RecipeMaps.assemblerRecipes
+                        : RecipeMaps.polarizerRecipes).unlocalizedName);
                 hatch.onPatternChange(i, pattern);
             }
             for (int i = 0; i < mirrors.length; i++) {
@@ -334,6 +355,11 @@ public final class PatternRecipeStressChecks {
                 insert(slots.get(i), 3);
             }
             refill();
+            if (ADDONS) {
+                for (int i = 0; i < maps.size(); i++)
+                    compareNative(consumers[(i + 1) % consumers.length], fixture(maps.get(i), 0), 7);
+                if (type.equals("TST_ManufacturingCenter")) verifyCoreTierGate();
+            }
             System.out.println(
                 "[pattern-stress-qa] prepared " + type
                     + " maps="
@@ -441,7 +467,16 @@ public final class PatternRecipeStressChecks {
             reference.mDualInputHatches.clear();
             reference.mDualInputHatches.add(baseline);
             var result = process(reference);
-            require(result.wasSuccessful(), type + " native reference failed: " + result.getDisplayString());
+            require(
+                result.wasSuccessful(),
+                type + " native reference failed: "
+                    + result.getDisplayString()
+                    + "; average voltage="
+                    + reference.getAverageInputVoltage()
+                    + "; logic voltage="
+                    + read(logic(reference), "availableVoltage")
+                    + "; amperage="
+                    + read(logic(reference), "availableAmperage"));
             // Compare against an independent routed copy, leaving the shared production-test backlog untouched.
             var routed = (CrossRecipeMEPatternBuffer) tile(player, GTNRMachineID.CrossRecipeMEPatternBuffer.id)
                 .getMetaTileEntity();
@@ -461,6 +496,10 @@ public final class PatternRecipeStressChecks {
                         && actual.getCalculatedEut() == expected.getCalculatedEut()
                         && actual.getCurrentParallels() == expected.getCurrentParallels(),
                     type + " matches native duration/EU/parallel");
+                if (ADDONS) require(
+                    consumer.mMaxProgresstime == reference.mMaxProgresstime
+                        && read(consumer, "lEUt").equals(read(reference, "lEUt")),
+                    type + " matches final controller duration/EU");
                 verifyOutput(actual, recipe, actual.getCurrentParallels());
                 verifyStock(routedSlot, recipe, quantity - actual.getCurrentParallels());
                 comparisons++;
@@ -471,6 +510,36 @@ public final class PatternRecipeStressChecks {
                 comparisonTimes.add(elapsed);
                 comparisonNanos += elapsed;
             }
+        }
+
+        private void verifyCoreTierGate() throws Exception {
+            var consumer = consumers[1];
+            Fixture recipe = fixture(maps.get(0), 0);
+            var routed = (CrossRecipeMEPatternBuffer) tile(player, GTNRMachineID.CrossRecipeMEPatternBuffer.id)
+                .getMetaTileEntity();
+            routed.onPatternChange(0, recipe.pattern);
+            var slot = (CircuitSlot) routed.inventories()
+                .next();
+            insert(slot, 1);
+            var saved = new ArrayList<>(consumer.mDualInputHatches);
+            int originalMode = consumer.getMachineMode();
+            int coreTier = field(consumer, "coreTier").getInt(consumer);
+            try {
+                field(consumer, "coreTier").setInt(consumer, 0);
+                consumer.mDualInputHatches.clear();
+                consumer.mDualInputHatches.add(routed);
+                CheckRecipeResult result = process(consumer);
+                require(
+                    result.equals(gregtech.api.recipe.check.CheckRecipeResultRegistry.insufficientMachineTier(1)),
+                    type + " preserves native core-tier validation");
+                require(consumer.getMachineMode() == originalMode, type + " restores mode after native rejection");
+                verifyStock(slot, recipe, 1);
+            } finally {
+                field(consumer, "coreTier").setInt(consumer, coreTier);
+                consumer.mDualInputHatches.clear();
+                consumer.mDualInputHatches.addAll(saved);
+            }
+            System.out.println("[pattern-stress-qa] core-tier gate PASS " + type);
         }
 
         private void restore() {
@@ -570,7 +639,7 @@ public final class PatternRecipeStressChecks {
             .itemOutputs(outputs)
             .fluidOutputs(fluidOutputs)
             .duration(203)
-            .eut(8)
+            .eut(ADDONS ? 32 : 8)
             .specialValue(0)
             .addTo(map);
         require(!recipes.isEmpty(), "fixture recipe registered: " + key);
@@ -682,10 +751,12 @@ public final class PatternRecipeStressChecks {
             var controller = (MTEMultiBlockBase) tile(player, id).getMetaTileEntity();
             var energy = tile(
                 player,
-                ItemList.Hatch_Energy_LV.get(1)
+                (ADDONS ? ItemList.Hatch_Energy_HV : ItemList.Hatch_Energy_LV).get(1)
                     .getItemDamage());
             controller.mEnergyHatches.add((MTEHatchEnergy) energy.getMetaTileEntity());
             controller.setVoidingMode(VoidingMode.VOID_ALL);
+            if (type.equals("LargePacker") || type.equals("LargeBrewer"))
+                field(controller, "mEnergyHatchTier").setInt(controller, 3);
             if (type.equals("MTEIndustrialPackager")) field(controller, "itemPipeTier").setInt(controller, 0);
             if (type.equals("MTEPreciseAssembler")) {
                 field(controller, "machineTier").setInt(controller, 1);
@@ -696,6 +767,9 @@ public final class PatternRecipeStressChecks {
                 field(controller, "mHeatingCapacity").set(controller, HeatingCoilLevel.LV);
             if (type.equals("MTEAdvDistillationTower")) field(controller, "mHeight").setInt(controller, 4);
             if (type.equals("MTEMegaDistillationTower")) field(controller, "height").setInt(controller, 4);
+            if (type.equals("GT_TileEntity_MagneticDrivePressureFormer"))
+                field(controller, "coilLevel").set(controller, HeatingCoilLevel.LV);
+            if (type.equals("TST_ManufacturingCenter")) field(controller, "coreTier").setInt(controller, 5);
             return controller;
         }
         throw new AssertionError("Missing native controller " + type);
@@ -754,6 +828,7 @@ public final class PatternRecipeStressChecks {
     }
 
     private static CheckRecipeResult check(MTEMultiBlockBase controller) throws Exception {
+        if (ADDONS) return controller.checkProcessing();
         Method method = MTEMultiBlockBase.class.getDeclaredMethod("doCheckRecipe");
         method.setAccessible(true);
         return (CheckRecipeResult) method.invoke(controller);

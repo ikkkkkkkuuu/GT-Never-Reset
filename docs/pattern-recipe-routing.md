@@ -38,10 +38,19 @@
 耗电及配方校验。完成或失败后恢复原模式及处理参数。配方锁定期间不自动切换到其他模式。
 电路装配线还执行目标模式的印刻和长度前置检查。
 
-适配范围是使用 GT `ProcessingLogic` 与原生模式接口的机器，并非任意声明多个配方池的控制器。
+路由在机器入口以 GT `ProcessingLogic` 类型调用样板缓存、加工和清理时进入，随后仍调用机器的原有虚方法。
+因此，第三方重写这些方法、或在调用父类加工前读取模式参数，也能共用同一条路由。
+调用桥只按 GT 方法签名匹配，类加载时处理一次；没有模组版本表、机器白名单、逐 tick 反射或私有字段探测。
+ASM API 在初始化时按当前运行环境选择，兼容 Java 8 Forge 的 ASM 5 和现代启动器的新版 ASM。
+原有基类钩子保留，供直接调用继承方法的代码使用；嵌套进入父类不会重复路由。
+
+适配范围是通过 GT `ProcessingLogic` API 加工、并通过模式方法读写状态的机器，并非任意声明多个配方池的控制器。
+模式可以由机器自己的字段保存，只要 `getMachineMode`、`nextMachineMode`、`setMachineMode` 与
+`getRecipeMap` 一致；切换失败或抛出异常后仍恢复原模式。普通输入、普通及电路总成继续调用原逻辑。
 研究站的专用研究流程、由输入电路选择内部流程的机器，以及绕过上述接口的第三方实现，
 不能仅凭配方池列表接入。机器进入处理流程前执行的原有前置检查仍然生效；
 例如电路装配线在当前模式下的印刻或长度要求也需要满足。
+完全隐藏的模式状态、独立加工引擎，以及加工流程外依赖模式的特殊前后处理不作自动兼容保证。
 
 ## 验证
 
@@ -65,6 +74,8 @@
 用专门的结构夹具覆盖六种总成/镜像的 36 对组合，确认 GT 和 TT 公共结构入口允许不同类型共存；
 它验证公共校验流程，不替代每台机器完整结构的逐一搭建测试。
 另遍历测试实例已注册的多模式控制器检查配方池选择和模式恢复；该遍历不是所有机器完整结构加工测试。
+覆盖使用私有模式字段、会修改状态的 `nextMachineMode`、加工前读取模式参数、完全重写缓存/加工/清理方法的夹具。
+核对自动切换与手动切换的耗时、EU/t、耗料、产出，以及清理和异常后的模式、参数恢复。
 
 第二个夹具使用独立的客户端和服务端总成实例打开真实 GUI，通过控件事件选择选项并验证 C2S/S2C 同步。
 覆盖候选数量、接口终端命名、保存重载、控制器更换与断开、重新打开、长文字裁剪及 GUI 缩放 1/2/3。
@@ -83,3 +94,19 @@
 输出在 `build/pattern-recipe-stress-qa/run`：`result.txt`、`stress-summary.txt`、`stress-metrics.csv`、
 `stress-operations.csv` 及 `screenshots/pattern-stress.png`。
 实测数据、峰值来源和覆盖边界见[压力测试报告](pattern-recipe-stress.md)。
+
+真实附属模组测试复用该压力夹具，添加 `-PpatternAddonTest=true`：
+
+```powershell
+.\gradlew.bat -I src/qa/resources/circuit-pattern-qa.init.gradle -PpatternAddonTest=true :runClient17 --no-configuration-cache --console=plain
+```
+
+先在 `build/addon-pattern-qa/dependencies` 放入 GTNL、TST 和 GTNLLib 的开发版 JAR（文件名以 `-dev.jar` 结尾）。
+本次测试样本为 GTNL `0.2.7-rc2.1`、TST `0.8.0`、GTNLLib `1.1.3`；版本只用于记录可复现环境，
+生产适配代码不识别这些版本。启动脚本为测试实例补充运行依赖，不改变主项目发布依赖。
+
+夹具覆盖 `LargePacker`、`LargeBrewer`、`GT_TileEntity_MagneticDrivePressureFormer`、
+`TST_ManufacturingCenter`，调用真实控制器的完整 `checkProcessing` 入口。
+每个配方池均单独比较手动模式和自动模式的耗时、EU/t、并行、扣料和输出；另检查制造中心的核心等级校验。
+仍使用专用测试配方和预置结构参数，不代替完整多方块搭建、逐 tick 完工和 AE 网络回收测试。
+报告和截图位于 `build/addon-pattern-qa/run`，文件名与原生压力测试相同。
