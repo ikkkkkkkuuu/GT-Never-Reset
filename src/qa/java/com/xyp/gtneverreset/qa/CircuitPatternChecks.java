@@ -86,6 +86,7 @@ import gregtech.api.structure.error.StructureError;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTUtility;
 import gregtech.common.tileentities.machines.IDualInputHatch;
+import gregtech.common.tileentities.machines.IDualInputInventoryWithPattern;
 import gregtech.common.tileentities.machines.multi.MTEIndustrialPackager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -781,6 +782,7 @@ public final class CircuitPatternChecks {
         packager.setRecipeLocking(true);
         checkMapDelivery(player, packager, unpacking, false, null, "recipe locking prevents an implicit mode change");
         packager.setRecipeLocking(false);
+        verifyAddonProcessing(player);
         verifyModeParameters(player);
         verifyModeCoverage(player);
         var assemblyLine = controller(player, "bartworks.common.tileentities.multis.MTECircuitAssemblyLine");
@@ -884,6 +886,209 @@ public final class CircuitPatternChecks {
                 + " output="
                 + java.util.Arrays.toString(logic.getOutputItems()));
         return result;
+    }
+
+    private static void verifyAddonProcessing(EntityPlayerMP player) throws Exception {
+        var controller = new OwnModeController();
+        var tile = new BaseMetaTileEntity();
+        tile.setWorldObj(player.worldObj);
+        controller.setBaseMetaTileEntity(tile);
+        var packing = metadata(
+            mapPattern(RecipeMaps.packagerRecipes, new ItemStack(Items.clay_ball, 3), new ItemStack(Items.paper)),
+            4,
+            null);
+        var unpacking = metadata(
+            mapPattern(RecipeMaps.unpackagerRecipes, new ItemStack(Items.clay_ball, 3), new ItemStack(Items.book)),
+            4,
+            null);
+
+        for (boolean replaceImplementation : new boolean[] { false, true }) {
+            var custom = new AddonProcessingLogic(controller, replaceImplementation);
+            controller.useLogic(custom);
+            controller.setMachineMode(1);
+            var unmarked = unpacking.copy();
+            unmarked.getTagCompound()
+                .removeTag(PatternRecipeMap.KEY);
+            checkMapDelivery(player, controller, unmarked, true, Items.book, "manual addon mode baseline");
+            int duration = custom.getDuration();
+            long eut = custom.getCalculatedEut();
+            controller.setMachineMode(0);
+            checkMapDelivery(player, controller, unpacking, true, Items.book, "overridden addon methods are routed");
+            require(
+                custom.observedMode == 1 && custom.getDuration() == duration && custom.getCalculatedEut() == eut,
+                "addon pre-super parameters match manual mode: " + replaceImplementation);
+            require(custom.currentSpeed() == 1D, "addon routing restores original processing settings");
+            checkMapDelivery(player, controller, packing, true, Items.paper, "original addon mode still works");
+
+            var hatch = crossHatch(player);
+            hatch.onPatternChange(0, unpacking);
+            var inventory = (CircuitSlot) hatch.inventories()
+                .next();
+            inventory.insertItemsAndFluids(delivery(inventory.getPatternDetails()));
+            ProcessingLogic logic = custom;
+            controller.prepare();
+            require(logic.tryCachePossibleRecipesFromPattern(inventory), "virtual addon cache selects target map");
+            logic.clear();
+            logic.setInputItems(new ItemStack(Items.clay_ball, 3), GTUtility.getIntegratedCircuit(4));
+            logic.setInputFluids();
+            require(
+                logic.process()
+                    .wasSuccessful() && custom.observedMode == 0,
+                "overridden clear removes a pending target before ordinary processing");
+
+            controller.prepare();
+            logic.setInputItems(new ItemStack(Items.clay_ball, 3), GTUtility.getIntegratedCircuit(4));
+            logic.setInputFluids();
+            int calls = custom.processCalls;
+            require(
+                custom.process()
+                    .wasSuccessful() && custom.processCalls == calls + 1,
+                "direct subclass calls execute the original body exactly once");
+
+            for (boolean cacheFailure : new boolean[] { true, false }) {
+                controller.prepare();
+                custom.failCache = cacheFailure;
+                custom.failProcess = !cacheFailure;
+                try {
+                    require(logic.tryCachePossibleRecipesFromPattern(inventory), "exception fixture cache");
+                    logic.process();
+                    throw new AssertionError("expected addon failure");
+                } catch (IllegalStateException expected) {
+                    require(
+                        controller.getMachineMode() == 0 && custom.currentSpeed() == 1D,
+                        "addon exception restores mode and configuration");
+                } finally {
+                    custom.failCache = false;
+                    custom.failProcess = false;
+                }
+                require(!inventory.isEmpty(), "addon failures leave buffered materials untouched");
+            }
+        }
+        controller.failNext = true;
+        try {
+            PatternRecipeRouting.select(controller, RecipeMaps.unpackagerRecipes);
+            throw new AssertionError("expected mode-switch failure");
+        } catch (IllegalStateException expected) {
+            require(controller.getMachineMode() == 0, "mutating nextMachineMode is restored even when it throws");
+        }
+        System.out.println("[cross-recipe-qa] addon overrides, private mode, parameters, clear and exceptions: PASS");
+    }
+
+    private static final class OwnModeController extends MTEIndustrialPackager {
+
+        private int ownMode;
+        private boolean failNext;
+
+        private OwnModeController() {
+            super("qa.own_recipe_mode");
+        }
+
+        @Override
+        public int getMachineMode() {
+            return ownMode;
+        }
+
+        @Override
+        public void setMachineMode(int mode) {
+            ownMode = mode;
+        }
+
+        @Override
+        public int nextMachineMode() {
+            ownMode = 1 - ownMode;
+            if (failNext) throw new IllegalStateException("mode-switch fixture");
+            return ownMode;
+        }
+
+        @Override
+        public RecipeMap<?> getRecipeMap() {
+            return ownMode == 0 ? RecipeMaps.packagerRecipes : RecipeMaps.unpackagerRecipes;
+        }
+
+        @Override
+        protected void setupProcessingLogic(ProcessingLogic logic) {
+            super.setupProcessingLogic(logic);
+            logic.setAvailableVoltage(32)
+                .setAvailableAmperage(1)
+                .setSpeedBonus(1D)
+                .setMaxParallel(1);
+        }
+
+        private void useLogic(ProcessingLogic logic) throws Exception {
+            Field field = MTEMultiBlockBase.class.getDeclaredField("processingLogic");
+            field.setAccessible(true);
+            field.set(this, logic);
+        }
+
+        private void prepare() {
+            setupProcessingLogic(processingLogic);
+        }
+    }
+
+    private static final class AddonProcessingLogic extends ProcessingLogic {
+
+        private final OwnModeController controller;
+        private final boolean replaceImplementation;
+        private final ProcessingLogic delegate = new ProcessingLogic();
+        private int observedMode;
+        private int processCalls;
+        private boolean failCache, failProcess;
+
+        private AddonProcessingLogic(OwnModeController controller, boolean replaceImplementation) {
+            this.controller = controller;
+            this.replaceImplementation = replaceImplementation;
+        }
+
+        @Override
+        public boolean tryCachePossibleRecipesFromPattern(IDualInputInventoryWithPattern inventory) {
+            if (failCache) throw new IllegalStateException("addon cache fixture");
+            if (!replaceImplementation) return super.tryCachePossibleRecipesFromPattern(inventory);
+            return getCurrentRecipeMap()
+                == PatternRecipeMap.resolve(((RecipeMapPatternInventory) inventory).getRecipeMapName())
+                || ((RecipeMapPatternInventory) inventory).getRecipeMapName() == null;
+        }
+
+        @Override
+        public CheckRecipeResult process() {
+            processCalls++;
+            observedMode = controller.getMachineMode();
+            setSpeedBonus(observedMode == 1 ? 0.5D : 1D);
+            if (failProcess) throw new IllegalStateException("addon process fixture");
+            if (!replaceImplementation) return super.process();
+            // A separate native matcher exercises a complete override without calling super.process().
+            delegate.clear()
+                .setMachine(controller)
+                .setRecipeMapSupplier(controller::getRecipeMap)
+                .setAvailableVoltage(availableVoltage)
+                .setAvailableAmperage(availableAmperage)
+                .setMaxParallel(1)
+                .setSpeedBonus(speedBoost)
+                .setInputItems(inputItems)
+                .setInputFluids(inputFluids);
+            CheckRecipeResult result = delegate.process();
+            outputItems = delegate.getOutputItems();
+            outputFluids = delegate.getOutputFluids();
+            duration = delegate.getDuration();
+            calculatedEut = delegate.getCalculatedEut();
+            return result;
+        }
+
+        @Override
+        public ProcessingLogic clear() {
+            if (!replaceImplementation) return super.clear();
+            inputItems = null;
+            inputFluids = null;
+            outputItems = null;
+            outputFluids = null;
+            activeDualInv = null;
+            duration = 0;
+            calculatedEut = 0;
+            return this;
+        }
+
+        private double currentSpeed() {
+            return speedBoost;
+        }
     }
 
     private static void verifyModeParameters(EntityPlayerMP player) throws Exception {
