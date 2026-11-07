@@ -97,4 +97,5 @@ GTNL 同时设置成型时记录的能源等级；只添加 HV 能源仓而保�
 另在不加载这些附属模组的独立客户端复跑 `CircuitPatternChecks`，普通总成、电路总成、原生多模式机器、
 配方锁定、拒绝配方不扣料、异常恢复及子类方法不重复执行等回归通过。
 `spotlessCheck`、`compileJava`、`processResources` 和 `git diff --check` 均通过。
+另通过 `-PciServerTest=true :runServer` 验证 Java 8 独立服务端正常启动、退出，覆盖旧 ASM 运行环境。
 复现命令见[功能说明](pattern-recipe-routing.md#验证)，原始结果保存在 `build/addon-pattern-qa/run`。

@@ -13,8 +13,7 @@ import org.objectweb.asm.Opcodes;
 /** Keeps calls through GT's processing API routed even when addons replace its implementation. */
 public final class PatternRecipeCallTransformer implements IClassTransformer {
 
-    // Forge exposes old ASM constants at compile time; UniMixins supplies ASM 9 at runtime.
-    private static final int ASM_API = 9 << 16;
+    private static final int ASM_API = resolveAsmApi();
     private static final String LOGIC = "gregtech/api/logic/ProcessingLogic";
     private static final String ROUTING = "com/xyp/gtneverreset/common/me/PatternRecipeRouting";
     private static final String CACHE = "(Lgregtech/common/tileentities/machines/IDualInputInventoryWithPattern;)Z";
@@ -69,6 +68,17 @@ public final class PatternRecipeCallTransformer implements IClassTransformer {
             }
         }, 0);
         return changed[0] ? writer.toByteArray() : bytes;
+    }
+
+    private static int resolveAsmApi() {
+        // Java 8 Forge uses ASM 5; modern launchers expose newer class-file attributes.
+        for (int version = 9; version >= 5; version--) {
+            try {
+                new ClassVisitor(version << 16) {};
+                return version << 16;
+            } catch (IllegalArgumentException ignored) {}
+        }
+        throw new IllegalStateException("ASM 5 or newer is required");
     }
 
     private static boolean referencesLogic(byte[] bytes) {
