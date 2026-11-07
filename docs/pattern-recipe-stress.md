@@ -99,3 +99,20 @@ GTNL 同时设置成型时记录的能源等级；只添加 HV 能源仓而保�
 `spotlessCheck`、`compileJava`、`processResources` 和 `git diff --check` 均通过。
 另通过 `-PciServerTest=true :runServer` 验证 Java 8 独立服务端正常启动、退出，覆盖旧 ASM 运行环境。
 复现命令见[功能说明](pattern-recipe-routing.md#验证)，原始结果保存在 `build/addon-pattern-qa/run`。
+
+## 可编程舱室共存回归（2026-11-07）
+
+加入 ProgrammableHatches `0.2.1p7` 后，在修改前复现 `MixinChanceTrack.ph$trackDual` 注入失败：
+`ProcessingLogic.process()` 调用先被 GTNR 的早期 transformer 改写，其必要注入点计数为 `0/1`，
+随后 `MTEMultiBlockBase` 类加载失败，客户端不能启动。
+
+修复仅将调用桥注册移到 late loader，并排除 Mixin 元数据预转换；保留其他模组注入后再改写实际调用。
+没有可编程舱室专用的类名、版本判断或关闭概率追踪的逻辑。
+
+修复后，加载该发行版的独立客户端进入世界，`CircuitPatternChecks` 全部通过；
+同时加载前述 GTNL/TST 样本的压力测试也全部通过，仍为 12,888 次检查、51,552 批配方、122 次对照、
+24 次 NBT 重载和 18 次大数量检查。Java 8 独立服务端完成启动与退出检查。
+这里验证启动共存和既有配方处理断言，不代表可编程舱室全部功能或所有版本均已逐项验证。
+
+复现命令见功能说明；日志保存在 `build/proghatches-qa/`，客户端结果及截图分别位于
+`build/programmable-hatches-pattern-qa/run` 和 `build/addon-pattern-qa/run`。

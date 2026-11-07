@@ -3,12 +3,14 @@ package com.xyp.gtneverreset.asm;
 import java.nio.charset.StandardCharsets;
 
 import net.minecraft.launchwrapper.IClassTransformer;
+import net.minecraft.launchwrapper.Launch;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.spongepowered.asm.service.MixinService;
 
 /** Keeps calls through GT's processing API routed even when addons replace its implementation. */
 public final class PatternRecipeCallTransformer implements IClassTransformer {
@@ -20,6 +22,15 @@ public final class PatternRecipeCallTransformer implements IClassTransformer {
     private static final String PROCESS = "()Lgregtech/api/recipe/check/CheckRecipeResult;";
     private static final String CLEAR = "()L" + LOGIC + ";";
     private static final byte[] LOGIC_REFERENCE = LOGIC.getBytes(StandardCharsets.US_ASCII);
+
+    public static void register() {
+        String transformer = PatternRecipeCallTransformer.class.getName();
+        // Preserve invocation targets until every Mixin has applied, including metadata reads.
+        MixinService.getService()
+            .getTransformerProvider()
+            .addTransformerExclusion(transformer);
+        Launch.classLoader.registerTransformer(transformer);
+    }
 
     @Override
     public byte[] transform(String name, String transformedName, byte[] bytes) {

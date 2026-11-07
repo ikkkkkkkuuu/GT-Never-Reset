@@ -7,6 +7,7 @@ import java.util.Set;
 
 import com.gtnewhorizon.gtnhmixins.ILateMixinLoader;
 import com.gtnewhorizon.gtnhmixins.LateMixin;
+import com.xyp.gtneverreset.asm.PatternRecipeCallTransformer;
 import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.relauncher.FMLLaunchHandler;
@@ -49,6 +50,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("thaumcraft.MixinPackagedCrucible");
         }
         if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
+            PatternRecipeCallTransformer.register();
             mixins.add("gregtech.UniversalWandAssemblyAccelerationMixin");
             mixins.add("gregtech.UniversalWandBasicAccelerationEnergyMixin");
             mixins.add("gregtech.UniversalWandMultiAccelerationEnergyMixin");

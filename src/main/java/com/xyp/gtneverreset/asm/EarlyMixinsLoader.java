@@ -60,7 +60,7 @@ public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLo
 
     @Override
     public String[] getASMTransformerClass() {
-        return new String[] { "com.xyp.gtneverreset.asm.PatternRecipeCallTransformer" };
+        return null;
     }
 
     @Override

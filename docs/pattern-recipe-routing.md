@@ -110,3 +110,17 @@ ASM API 在初始化时按当前运行环境选择，兼容 Java 8 Forge 的 ASM
 每个配方池均单独比较手动模式和自动模式的耗时、EU/t、并行、扣料和输出；另检查制造中心的核心等级校验。
 仍使用专用测试配方和预置结构参数，不代替完整多方块搭建、逐 tick 完工和 AE 网络回收测试。
 报告和截图位于 `build/addon-pattern-qa/run`，文件名与原生压力测试相同。
+
+可编程舱室共存回归在 `build/proghatches-qa/dependencies` 放入一个 `programmablehatches-*-dev.jar`，运行：
+
+```powershell
+.\gradlew.bat -I src/qa/resources/circuit-pattern-qa.init.gradle -PpatternProgrammableHatchesTest=true :runClient17 --no-configuration-cache --console=plain
+.\gradlew.bat -I src/qa/resources/circuit-pattern-qa.init.gradle -PpatternProgrammableHatchesTest=true -PpatternAddonTest=true :runClient17 --no-configuration-cache --console=plain
+.\gradlew.bat -I src/qa/resources/circuit-pattern-qa.init.gradle -PpatternProgrammableHatchesTest=true -PciServerTest=true :runServer --no-configuration-cache --console=plain
+```
+
+第一条命令使用 `build/programmable-hatches-pattern-qa/run` 独立实例；第二条同时加载 GTNL/TST，
+使用前述附属模组压力夹具。第三条验证 Java 8 独立服务端启动及退出。
+测试依赖只进入隔离实例，不加入发行依赖。
+调用桥在 late loader 中注册，并从 Mixin 的元数据预转换中排除，保证其他模组先完成原调用点的注入。
+它不按可编程舱室的版本或类名分支，也不关闭其概率追踪注入。
