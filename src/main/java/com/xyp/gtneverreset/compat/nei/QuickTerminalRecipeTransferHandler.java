@@ -16,6 +16,7 @@ import com.glodblock.github.common.item.ItemFluidDrop;
 import com.glodblock.github.common.item.ItemFluidPacket;
 import com.glodblock.github.util.Util;
 import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
+import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.common.packet.RecipeTransferPayload;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
 import com.xyp.gtneverreset.compat.nei.TerminalRecipeIngredients.Ingredient;
@@ -117,7 +118,8 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
                     inputs,
                     outputs,
                     arcaneLayout,
-                    recipe instanceof GTNEIDefaultHandler gt ? gt.getRecipeMap().unlocalizedName : null),
+                    recipe instanceof GTNEIDefaultHandler gt ? PatternRecipeMap.nameForImport(gt.getRecipeMap())
+                        : null),
                 interfaceSearch);
         } catch (RuntimeException | LinkageError failure) {
             AELog.warn(failure, "Failed to transfer an NEI recipe to the GT-Never-Reset quick terminal");

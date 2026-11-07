@@ -12,6 +12,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.cleanroommc.modularui.api.IMuiScreen;
 import com.xyp.gtneverreset.common.gui.WildcardPatternGui.RecipeImportSyncHandler;
+import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.compat.ae2fc.FluidDropCompat;
 
 import codechicken.nei.PositionedStack;
@@ -141,7 +142,7 @@ public final class WildcardRecipeImport {
                 inputs,
                 outputs,
                 null,
-                handler instanceof GTNEIDefaultHandler gt ? gt.getRecipeMap().unlocalizedName : null);
+                handler instanceof GTNEIDefaultHandler gt ? PatternRecipeMap.nameForImport(gt.getRecipeMap()) : null);
         } catch (RuntimeException failure) {
             return RecipeData.rejected(Rejection.Unsupported);
         }
