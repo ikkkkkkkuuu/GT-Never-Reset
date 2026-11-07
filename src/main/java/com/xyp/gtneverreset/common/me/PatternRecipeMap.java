@@ -5,6 +5,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.util.Constants;
 
 import gregtech.api.recipe.RecipeMap;
+import gregtech.api.recipe.RecipeMaps;
 
 /** Stable recipe-map identifiers shared by encoded patterns, NEI imports and input assemblies. */
 public final class PatternRecipeMap {
@@ -22,6 +23,11 @@ public final class PatternRecipeMap {
 
     public static RecipeMap<?> resolve(String name) {
         return name == null ? null : RecipeMap.ALL_RECIPE_MAPS.get(name);
+    }
+
+    public static String nameForImport(RecipeMap<?> map) {
+        // NEI combines coolant variants in a display-only map; new patterns need the executable recipes.
+        return (map == RecipeMaps.cutterFakeRecipes ? RecipeMaps.cutterRecipes : map).unlocalizedName;
     }
 
     public static void write(ItemStack pattern, String name) {
