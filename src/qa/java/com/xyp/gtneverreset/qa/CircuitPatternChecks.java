@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
@@ -971,16 +972,51 @@ public final class CircuitPatternChecks {
         } catch (IllegalStateException expected) {
             require(controller.getMachineMode() == 0, "mutating nextMachineMode is restored even when it throws");
         }
+        verifyIndependentAvailableMapReport(player, unpacking);
         System.out.println("[cross-recipe-qa] addon overrides, private mode, parameters, clear and exceptions: PASS");
+    }
+
+    /**
+     * External controllers often switch their recipe map without overriding the NEI catalyst list, so
+     * {@code getAvailableRecipeMaps} still reports only the current mode. Selection must probe the native mode API
+     * instead of trusting that list.
+     */
+    private static void verifyIndependentAvailableMapReport(EntityPlayerMP player, ItemStack unpacking)
+        throws Exception {
+        var controller = new OwnModeController();
+        var tile = new BaseMetaTileEntity();
+        tile.setWorldObj(player.worldObj);
+        controller.setBaseMetaTileEntity(tile);
+        controller.useLogic(new ProcessingLogic());
+        controller.reportCurrentMapOnly = true;
+        controller.setMachineMode(0);
+        try (var selection = PatternRecipeRouting.select(controller, RecipeMaps.unpackagerRecipes)) {
+            require(selection != null && controller.getMachineMode() == 1, "mode is probed without the NEI map list");
+        }
+        require(controller.getMachineMode() == 0, "probed mode is restored after selection");
+        require(
+            PatternRecipeRouting.select(controller, RecipeMaps.maceratorRecipes) == null
+                && controller.getMachineMode() == 0,
+            "unknown modes leave the controller untouched");
+        checkMapDelivery(player, controller, unpacking, true, Items.book, "probing routes an unlisted recipe map");
+        System.out.println("[cross-recipe-qa] controller with incomplete available map list: PASS");
     }
 
     private static final class OwnModeController extends MTEIndustrialPackager {
 
         private int ownMode;
         private boolean failNext;
+        private boolean reportCurrentMapOnly;
 
         private OwnModeController() {
             super("qa.own_recipe_mode");
+        }
+
+        @Override
+        public Collection<RecipeMap<?>> getAvailableRecipeMaps() {
+            if (!reportCurrentMapOnly) return super.getAvailableRecipeMaps();
+            RecipeMap<?> current = getRecipeMap();
+            return current == null ? List.of() : List.of(current);
         }
 
         @Override
