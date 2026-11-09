@@ -103,7 +103,8 @@ public class SuperAdvancedMEInputBusGui extends MTEHatchBaseGui<SuperAdvancedMEI
 
             @Override
             public @Nullable ItemStack insertItem(int slot, @Nullable ItemStack stack, boolean simulate) {
-                return stack;
+                // Phantom slots validate their click and recipe-viewer drag through this simulation.
+                return null;
             }
 
             @Override
