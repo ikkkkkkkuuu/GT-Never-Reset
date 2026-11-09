@@ -1269,52 +1269,56 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
 
     @Override
     public String[] getDescription() {
+        return PatternMEOutput.describe(getBaseDescription());
+    }
+
+    /** Base lines shared by every pattern input assembly; product output is appended by {@link #getDescription()}. */
+    protected String[] getBaseDescription() {
         // #tr tooltip.gtneverreset.crafting_input.type
         // # Machine Type: {\\YELLOW}CRIB{\\RESET}
         // # zh_CN 机器类型：{\\YELLOW}CRIB{\\RESET}
         String type = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.type");
         // #tr tooltip.gtneverreset.crafting_input.item_input
-        // # Supplies multiblocks with ingredients from ME crafting jobs
-        // # zh_CN 为多方块机器接收 ME 合成任务的配方原料
+        // # Feeds the multiblock with ingredients from ME crafting jobs
+        // # zh_CN 把 ME 合成任务要用的原料送进多方块机器
         String itemInput = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.item_input");
         // #tr tooltip.gtneverreset.crafting_input.tier
-        // # Hatch tier: %s
+        // # Hatch Tier: %s
         // # zh_CN 仓室等级：%s
         String tier = StatCollector.translateToLocalFormatted(
             "tooltip.gtneverreset.crafting_input.tier",
             TIER_COLORS[supportFluids ? 10 : 6] + VN[supportFluids ? 10 : 6]);
         // #tr tooltip.gtneverreset.crafting_input.processes
-        // # The Quantum Computer batches exact processing patterns and buffers ingredients per pattern
-        // # zh_CN 量子计算机可按库存向处理样板批量发料，每个样板独立缓存
+        // # The Quantum Computer batches deliveries for processing patterns and buffers each one separately
+        // # zh_CN 量子计算机可以把处理样板的发料合并成批，每张样板单独缓存
         String processes = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.processes");
         // #tr tooltip.gtneverreset.crafting_input.supports_fluids
-        // # Supports fluid ingredients; use Ultimate Encoded Patterns for fluid recipes
-        // # zh_CN 支持流体原料；流体配方使用终极编码样板
+        // # Handles fluid ingredients; use Ultimate Encoded Patterns for fluid recipes
+        // # zh_CN 支持流体原料；流体配方要用终极编码样板
         String supportsFluids = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.supports_fluids");
         // #tr tooltip.gtneverreset.crafting_input.no_fluids
         // # Item ingredients only; fluid patterns are not supported
-        // # zh_CN 仅接收物品原料，不支持流体样板
+        // # zh_CN 只收物品原料，不支持流体样板
         String noFluids = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.no_fluids");
         // #tr tooltip.gtneverreset.crafting_input.connection
-        // # Wire cutters: switch between front-only and all-side ME connections
-        // # zh_CN 剪线钳右键：切换仅正面或所有面的 ME 连接
+        // # Right-click with wire cutters to switch between front-only and all-side ME connections
+        // # zh_CN 拿剪线钳右键，切换只连正面还是连所有面
         String connection = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.connection");
         // #tr tooltip.gtneverreset.crafting_input.ignores_hatches
-        // # Pattern recipes do not draw ingredients from other input buses or hatches
-        // # zh_CN 样板配方不会使用其他输入总线或输入仓的原料
+        // # Pattern recipes use only their own buffered ingredients, not other input buses or hatches
+        // # zh_CN 样板配方只用自己缓存的原料，不碰其他输入总线或输入仓的原料
         String ignoresHatches = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.ignores_hatches");
         // #tr tooltip.gtneverreset.crafting_input.ignores_patterns
-        // # Patterns keep separate ingredients; manual input slots are shared
-        // # zh_CN 不同样板的原料互不混用；手动物品槽由所有样板共用
+        // # Each pattern keeps its own ingredients; manual slots are shared by all patterns
+        // # zh_CN 各张样板的原料分开存；手动槽由所有样板共用
         String ignoresPatterns = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.ignores_patterns");
         // #tr tooltip.gtneverreset.crafting_input.capacity
-        // # Pattern slots: %s; requires ME power and one channel
-        // # zh_CN 样板槽：%s 个；需要 ME 供电和一个频道
+        // # %s pattern slots; requires ME power and one channel
+        // # zh_CN 共 %s 个样板槽；需要 ME 供电和一个频道
         String capacity = StatCollector
             .translateToLocalFormatted("tooltip.gtneverreset.crafting_input.capacity", getPatternCount());
-        return PatternMEOutput.describe(
-            new String[] { type, itemInput, tier, processes, capacity, supportFluids ? supportsFluids : noFluids,
-                ignoresHatches, ignoresPatterns, connection });
+        return new String[] { type, itemInput, tier, processes, capacity, supportFluids ? supportsFluids : noFluids,
+            ignoresHatches, ignoresPatterns, connection };
     }
 
     /** Specialized inventories can supply their own persistent refund mechanism. */

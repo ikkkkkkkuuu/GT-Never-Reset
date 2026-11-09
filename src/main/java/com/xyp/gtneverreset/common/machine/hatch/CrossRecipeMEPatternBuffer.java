@@ -18,6 +18,7 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.api.me.RecipeMapPatternInventory;
 import com.xyp.gtneverreset.common.gui.modularui.hatch.CrossRecipeMEPatternBufferGui;
+import com.xyp.gtneverreset.common.me.PatternMEOutput;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 
 import gregtech.api.interfaces.ITexture;
@@ -184,25 +185,26 @@ public final class CrossRecipeMEPatternBuffer extends CircuitMEPatternBuffer {
     @Override
     public String[] getDescription() {
         // #tr tooltip.gtneverreset.cross_recipe_buffer.routing
-        // # Uses the recipe type stored by NEI imports to select the controller's mode for each pattern
-        // # zh_CN 根据 NEI 导入时保存的配方池，为每份样板自动选择控制器模式
+        // # Uses the recipe type saved during NEI import to switch the controller to the matching mode
+        // # zh_CN 按 NEI 导入时记下的配方类型，自动把控制器切到对应模式
         String routing = StatCollector.translateToLocal("tooltip.gtneverreset.cross_recipe_buffer.routing");
         // #tr tooltip.gtneverreset.cross_recipe_buffer.support
-        // # Uses the controller's supported recipe maps and native mode API; machine requirements still apply
-        // # zh_CN 使用控制器支持的配方池及原生模式接口，仍需满足机器加工条件
+        // # Only recipe types the controller supports are used; normal machine requirements still apply
+        // # zh_CN 只用控制器支持的配方类型；机器原本的加工条件仍然有效
         String support = StatCollector.translateToLocal("tooltip.gtneverreset.cross_recipe_buffer.support");
         // #tr tooltip.gtneverreset.cross_recipe_buffer.fallback
-        // # Unannotated patterns use the current mode; unsupported recipe types stay buffered
-        // # zh_CN 未标注配方池的样板使用当前模式；不支持的配方池不会消耗缓存原料
+        // # Patterns without a saved type use the current mode; unsupported types leave ingredients buffered
+        // # zh_CN 没记配方类型的样板按当前模式处理；不支持的类型不会动缓存里的原料
         String fallback = StatCollector.translateToLocal("tooltip.gtneverreset.cross_recipe_buffer.fallback");
-        return ArrayUtils.addAll(super.getDescription(), routing, support, fallback);
+        String[] lines = ArrayUtils.addAll(getBaseDescription(), getCircuitDescription());
+        return PatternMEOutput.describe(ArrayUtils.addAll(lines, routing, support, fallback));
     }
 
     @Override
     protected String getMirrorDescription() {
         // #tr gtnr.tooltip.cross_recipe_buffer.mirror
-        // # Only supports Super Cross-Recipe Pattern Input Mirrors (ME)
-        // # zh_CN 仅可连接超级跨配方类型样板输入镜像 (ME)
+        // # Only links to Super Cross-Recipe Pattern Input Mirrors (ME)
+        // # zh_CN 只能连接超级跨配方类型样板输入镜像 (ME)
         return StatCollector.translateToLocal("gtnr.tooltip.cross_recipe_buffer.mirror");
     }
 

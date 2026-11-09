@@ -23,6 +23,7 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
 import com.xyp.gtneverreset.common.me.LongCircuitBuffer;
+import com.xyp.gtneverreset.common.me.PatternMEOutput;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternCache;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 
@@ -207,30 +208,35 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
 
     @Override
     public String[] getDescription() {
+        return PatternMEOutput.describe(ArrayUtils.addAll(getBaseDescription(), getCircuitDescription()));
+    }
+
+    /** Circuit-specific lines; base lines come first and product output is appended last. */
+    protected String[] getCircuitDescription() {
         // #tr tooltip.gtneverreset.circuit_buffer.virtual
-        // # Supplies each pattern's circuit and reusable molds without requesting them from ME
-        // # zh_CN 自动提供各样板的电路和不消耗模具，无需 ME 合成任务索取
+        // # Provides each pattern's circuit and reusable molds on its own, without asking ME
+        // # zh_CN 每张样板的电路和可重复使用的模具都由它自己提供，不用向 ME 要
         String circuit = StatCollector.translateToLocal("tooltip.gtneverreset.circuit_buffer.virtual");
         // #tr tooltip.gtneverreset.circuit_buffer.capacity
-        // # 540 patterns; each holds 64 item types and 64 fluid types, up to 2^63 - 1 per type
-        // # zh_CN 540 个样板槽；每份缓存最多 64 种物品和 64 种流体，每种上限 2^63 - 1
+        // # Each pattern slot holds up to 64 item types and 64 fluid types, 2^63 - 1 of each
+        // # zh_CN 每个样板槽最多存 64 种物品和 64 种流体，每种最多 2^63 - 1
         String capacity = StatCollector.translateToLocal("tooltip.gtneverreset.circuit_buffer.capacity");
         // #tr tooltip.gtneverreset.circuit_buffer.recipe_view
-        // # Each recipe check can use up to 2^31 - 1 per type; remaining stock stays buffered
-        // # zh_CN 每次配方检查每种原料最多提供 2^31 - 1，剩余原料继续保留在缓存中
+        // # A recipe check can draw up to 2^31 - 1 of each ingredient; the rest stays buffered
+        // # zh_CN 配方检查时每种原料最多取出 2^31 - 1，剩下的继续留在缓存里
         String recipeView = StatCollector.translateToLocal("tooltip.gtneverreset.circuit_buffer.recipe_view");
         String mirror = getMirrorDescription();
         // #tr tooltip.gtneverreset.circuit_buffer.wildcard
-        // # Expands wildcard patterns; each slot switches recipes only after its buffer is empty
-        // # zh_CN 自动展开通配样板；每个槽位的缓存清空后才能切换展开配方
+        // # Wildcard patterns expand automatically; a slot only switches recipes after its buffer is empty
+        // # zh_CN 通配样板会自动展开；某个槽的缓存清空后，才会换到下一条配方
         String wildcard = StatCollector.translateToLocal("tooltip.gtneverreset.circuit_buffer.wildcard");
-        return ArrayUtils.addAll(super.getDescription(), circuit, capacity, recipeView, mirror, wildcard);
+        return new String[] { circuit, capacity, recipeView, mirror, wildcard };
     }
 
     protected String getMirrorDescription() {
         // #tr gtnr.tooltip.circuit_buffer.mirror
-        // # Only supports Circuit Pattern Input Mirrors (ME)
-        // # zh_CN 仅可连接电路样板输入镜像 (ME)
+        // # Only links to Circuit Pattern Input Mirrors (ME)
+        // # zh_CN 只能连接电路样板输入镜像 (ME)
         return StatCollector.translateToLocal("gtnr.tooltip.circuit_buffer.mirror");
     }
 

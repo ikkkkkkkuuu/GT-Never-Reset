@@ -159,12 +159,12 @@ public final class PatternMEOutput {
     public static String[] describe(String[] original) {
         List<String> lines = new ArrayList<>(Arrays.asList(original));
         // #tr tooltip.gtneverreset.pattern_me_output
-        // # Also transfers item and fluid products to the same ME network
-        // # zh_CN 同时将物品和流体产物存入同一 ME 网络
+        // # Products are also stored in the same ME network
+        // # zh_CN 产物也会存进同一个 ME 网络
         lines.add(StatCollector.translateToLocal("tooltip.gtneverreset.pattern_me_output"));
         // #tr tooltip.gtneverreset.pattern_me_output_cache
-        // # Separate output caches: 2^63 - 1 items and 2^63 - 1 L of fluid
-        // # zh_CN 物品和流体输出各有独立缓存，容量为 2^63 - 1 个和 2^63 - 1 L
+        // # Items and fluids have separate output caches, up to 2^63 - 1 items / 2^63 - 1 L
+        // # zh_CN 物品和流体各有独立输出缓存，最多 2^63 - 1 个 / 2^63 - 1 L
         lines.add(StatCollector.translateToLocal("tooltip.gtneverreset.pattern_me_output_cache"));
         return lines.toArray(new String[0]);
     }
