@@ -1400,6 +1400,26 @@ public final class CircuitPatternChecks {
                 "provider keeps unannotated wildcard inputs without inferring tools");
         }
 
+        TileEntityOverloadedProvider configured = new TileEntityOverloadedProvider();
+        configured.setWorldObj(player.worldObj);
+        Field wildcardTools = TileEntityOverloadedProvider.class.getDeclaredField("wildcardToolsAsConfiguration");
+        wildcardTools.setAccessible(true);
+        wildcardTools.setBoolean(configured, true);
+        Method decodeConfigured = TileEntityOverloadedProvider.class
+            .getDeclaredMethod("decodePatterns", ItemStack.class);
+        decodeConfigured.setAccessible(true);
+        var configuredPatterns = (List<?>) decodeConfigured.invoke(configured, wildcard.copy());
+        require(configuredPatterns.size() == 2, "configurable provider expands wildcard");
+        for (Object option : configuredPatterns) {
+            var details = (ICraftingPatternDetails) option;
+            require(
+                CircuitPatternCodec.storedCircuit(details.getPattern()) == circuit,
+                "configurable provider stores wildcard circuit as machine configuration");
+            for (IAEStack<?> input : details.getAEInputs()) require(
+                !CircuitPatternCodec.isCircuit(input),
+                "configurable provider excludes wildcard circuit from AE demand");
+        }
+
         BaseMetaTileEntity tile = new BaseMetaTileEntity();
         tile.setWorldObj(player.worldObj);
         tile.xCoord = (int) player.posX;

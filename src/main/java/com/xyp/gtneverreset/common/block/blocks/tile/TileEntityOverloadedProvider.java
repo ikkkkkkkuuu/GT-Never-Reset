@@ -89,6 +89,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     private final List<FluidStack> returnedFluids = new ArrayList<>();
     private final List<ItemStack> recoveredItems = new ArrayList<>();
     private boolean patternsDirty = true;
+    private boolean wildcardToolsAsConfiguration;
     private boolean autoReturn = true;
     private boolean roundRobin = true;
     private boolean patternOptimization = true;
@@ -375,6 +376,13 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     @Override
     public void provideCrafting(ICraftingProviderHelper helper) {
         patterns.clear();
+        boolean wildcardTools = connectsToConfigurableMachine();
+        if (wildcardTools != wildcardToolsAsConfiguration) {
+            wildcardToolsAsConfiguration = wildcardTools;
+            for (int slot = 0; slot < PATTERNS; slot++) {
+                if (WildcardPatternGenerator.isWildcardPattern(inventory[slot])) patternCaches.remove(slot);
+            }
+        }
         for (int slot = 0; slot < PATTERNS; slot++) {
             ItemStack stack = inventory[slot];
             if (stack == null || !(stack.getItem() instanceof ICraftingPatternItem)) {
@@ -391,8 +399,10 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     }
 
     private List<ICraftingPatternDetails> decodePatterns(ItemStack stack) {
+        boolean wildcard = WildcardPatternGenerator.isWildcardPattern(stack)
+            && !WildcardPatternGenerator.isGeneratedPattern(stack);
         List<ICraftingPatternDetails> decoded;
-        if (WildcardPatternGenerator.isWildcardPattern(stack) && !WildcardPatternGenerator.isGeneratedPattern(stack)) {
+        if (wildcard) {
             decoded = WildcardPatternGenerator.generateAllDetails(stack, worldObj);
         } else {
             decoded = Collections.singletonList(CircuitPatternCodec.decode(stack, worldObj));
@@ -400,9 +410,31 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
         List<ICraftingPatternDetails> result = new ArrayList<>();
         for (ICraftingPatternDetails details : decoded) {
             if (details == null || details.isCraftable()) continue;
-            result.add(details);
+            result.add(wildcardToolsAsConfiguration && wildcard ? withVirtualTools(details) : details);
         }
         return result;
+    }
+
+    /** Only a connected GT singleblock can receive wildcard circuits and molds as configuration. */
+    private boolean connectsToConfigurableMachine() {
+        if (worldObj == null) return false;
+        for (Lane lane : lanes) {
+            if (lane.target.resolve(worldObj) instanceof BaseMetaTileEntity gt && OverloadedMachineInput.supports(gt))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Wildcard templates keep circuits and reusable molds in their ordinary input list. A connected GT singleblock
+     * applies them as configuration, so AE must not demand them as ingredients from the network.
+     */
+    private ICraftingPatternDetails withVirtualTools(ICraftingPatternDetails details) {
+        int circuit = CircuitPatternCodec.circuit(details);
+        ItemStack[] molds = CircuitPatternCodec.molds(details);
+        if (circuit < 0 && (molds == null || molds.length == 0)) return details;
+        ICraftingPatternDetails runtime = CircuitPatternCodec.runtime(details.getPattern(), worldObj, details, molds);
+        return runtime == null ? details : runtime;
     }
 
     public boolean supportsBatchCrafting(ICraftingPatternDetails details) {
