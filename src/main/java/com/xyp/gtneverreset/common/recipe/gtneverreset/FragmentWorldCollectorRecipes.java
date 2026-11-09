@@ -277,7 +277,8 @@ public final class FragmentWorldCollectorRecipes {
             .fluidOutputChances(2000);
         plants.addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
 
-        base(3, 9).itemInputs(DIMENSIONS[3].get(0), Materials.Steel.getDust(1), circuit(9))
+        // Twilight now has nine ore circuits; keep the Damascus steel conversion on its own circuit.
+        base(3, 10).itemInputs(DIMENSIONS[3].get(0), Materials.Steel.getDust(1), circuit(10))
             .fluidInputs(Materials.Lubricant.getFluid(100))
             .itemOutputs(Materials.DamascusSteel.getDust(1))
             .addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
