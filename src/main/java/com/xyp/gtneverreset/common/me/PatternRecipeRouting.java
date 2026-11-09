@@ -34,27 +34,26 @@ public final class PatternRecipeRouting {
     }
 
     public static Selection select(IVoidable machine, RecipeMap<?> requested) {
-        if (!(machine instanceof MTEMultiBlockBase controller) || requested == null
-            || !controller.getAvailableRecipeMaps()
-                .contains(requested))
-            return null;
-        Selection selection = new Selection(controller);
-        if (controller.getRecipeMap() == requested) return selection;
+        if (!(machine instanceof MTEMultiBlockBase controller) || requested == null) return null;
+        if (controller.getRecipeMap() == requested) return new Selection(controller);
         if (!controller.supportsMachineModeSwitch() || controller.isRecipeLockingEnabled()) return null;
+        Selection selection = new Selection(controller);
         boolean selected = false;
         try {
             Set<Integer> visited = new HashSet<>();
             visited.add(controller.getMachineMode());
             for (int probe = 0; probe < MAX_MODE_PROBES; probe++) {
-                // Some controllers advance their own mode inside nextMachineMode(). Restore even on failure.
+                // Some controllers advance their own mode inside nextMachineMode() and ignore the argument.
                 selection.changed = true;
+                int before = controller.getMachineMode();
                 int next = controller.nextMachineMode();
-                controller.setMachineMode(next);
+                if (controller.getMachineMode() == before) controller.setMachineMode(next);
+                int mode = controller.getMachineMode();
+                if (!visited.add(mode)) break;
                 if (controller.getRecipeMap() == requested) {
                     selected = true;
                     return selection;
                 }
-                if (!visited.add(controller.getMachineMode())) break;
             }
             return null;
         } finally {
