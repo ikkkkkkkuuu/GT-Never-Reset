@@ -42,7 +42,7 @@ public abstract class MixinTileEntityCropSticks {
 
     @ModifyConstant(method = "updateEntity", constant = @Constant(intValue = 256), remap = true)
     private int gtneverreset$modifyTickRateInUpdateEntity(int original) {
-        return 1;
+        return CropsNHConfig.enableFastGrowthTickRate ? 1 : original;
     }
 
     @Inject(method = "doGrowth", at = @At("HEAD"), cancellable = true, remap = false)
