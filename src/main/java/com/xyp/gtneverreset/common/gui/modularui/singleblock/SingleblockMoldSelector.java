@@ -15,6 +15,7 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.layout.Grid;
 import com.xyp.gtneverreset.common.me.MoldDataManager;
+import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineInput;
 import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineMolds;
 
 import gregtech.api.metatileentity.implementations.MTEBasicMachine;
@@ -34,14 +35,8 @@ public final class SingleblockMoldSelector {
             index -> {
                 if (syncManager.isClient() || index < -1 || index >= MoldDataManager.getMoldCount()) return;
                 // Manual selection obeys the same empty/idle boundary as automatic configuration changes.
-                if (machine.mMaxProgresstime > 0
-                    || ((com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration) machine).gtnr$hasPending())
-                    return;
-                for (int i = 0; i < machine.mInputSlotCount; i++) {
-                    ItemStack input = machine.getStackInSlot(machine.getInputSlot() + i);
-                    if (input != null && input.stackSize > 0) return;
-                }
-                if (machine.getFillableStack() != null && machine.getFillableStack().amount > 0) return;
+                if (((com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration) machine).gtnr$hasPending()
+                    || !OverloadedMachineInput.isIdle(machine)) return;
                 OverloadedMachineMolds.set(machine, OverloadedMachineMolds.at(index));
                 machine.getBaseMetaTileEntity()
                     .markInventoryBeenModified();

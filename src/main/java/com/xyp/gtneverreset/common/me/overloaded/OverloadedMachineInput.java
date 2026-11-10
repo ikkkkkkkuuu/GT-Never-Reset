@@ -25,7 +25,11 @@ import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.metatileentity.implementations.MTEBasicMachine;
 import gregtech.api.util.GTUtility;
 
-/** Inserts AE deliveries using machine slot/tank rules, applying only explicitly stored tool configuration. */
+/**
+ * Inserts AE deliveries using machine slot/tank rules, applying only explicitly stored tool configuration.
+ * A singleblock takes one delivery at a time: the next pattern waits until the previous recipe and every
+ * delivered input are consumed, so a later task can never change the circuit or mold of a running recipe.
+ */
 public final class OverloadedMachineInput {
 
     private OverloadedMachineInput() {}
@@ -36,6 +40,20 @@ public final class OverloadedMachineInput {
             && machine instanceof OverloadedMachineConfiguration
             && !machine.isSteampowered()
             && machine.getRecipeMap() != null;
+    }
+
+    /**
+     * A delivery may start only on a stopped machine without input items or fluids. GT consumes inputs when a
+     * recipe starts, so leftovers from another pattern could otherwise be read under a newly applied circuit.
+     */
+    public static boolean isIdle(MTEBasicMachine machine) {
+        if (machine.mMaxProgresstime > 0) return false;
+        int first = machine.getInputSlot();
+        for (int slot = first; slot < first + machine.mInputSlotCount; slot++) {
+            ItemStack stack = machine.getStackInSlot(slot);
+            if (stack != null && stack.stackSize > 0) return false;
+        }
+        return !hasInputFluids(machine);
     }
 
     /** Accepts the whole delivery into machine inputs and persistent overflow, or leaves all state untouched. */
@@ -57,8 +75,14 @@ public final class OverloadedMachineInput {
             || !(table instanceof MEInventoryCrafting aeTable)
             || !overflow.isEmpty()) return null;
         MTEBasicMachine machine = (MTEBasicMachine) tile.getMetaTileEntity();
+        OverloadedMachineConfiguration configuration = (OverloadedMachineConfiguration) machine;
         // A pending delivery owns the provider's overflow until it reaches the machine's physical inputs.
-        if (((OverloadedMachineConfiguration) machine).gtnr$hasPending()) return null;
+        if (configuration.gtnr$hasPending()) return null;
+        // The next task must wait for this machine instead of mixing its items or tool configuration into a run.
+        if (!isIdle(machine)) return null;
+        // A delivery that finished before a reload may still show its tools; every delivery starts from the
+        // user's tools.
+        configuration.gtnr$releaseConfiguration();
         ItemStack encoded = pattern.getPattern();
         NBTTagCompound tag = encoded == null ? null : encoded.getTagCompound();
         boolean hasCircuit = tag != null && tag.hasKey(CircuitPatternCodec.CIRCUIT);
@@ -234,6 +258,15 @@ public final class OverloadedMachineInput {
         overflow.clearIfEmpty();
         ((OverloadedMachineConfiguration) machine).gtnr$setPending(!overflow.isEmpty());
         if (changed) tile.markDirty();
+    }
+
+    private static boolean hasInputFluids(MTEBasicMachine machine) {
+        if (machine instanceof ModernFluidMachine modern) {
+            for (var tank : modern.getInputTanks()) if (tank.getFluidAmount() > 0) return true;
+            return false;
+        }
+        FluidStack fluid = machine.getFillableStack();
+        return fluid != null && fluid.amount > 0;
     }
 
     private static FluidStack[] copyInputFluids(MTEBasicMachine machine) {

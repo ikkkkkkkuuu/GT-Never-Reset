@@ -472,10 +472,20 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
 
     @Override
     public boolean isBusy() {
-        return !isServerSide() || !getProxy().isActive()
-            || lanes.isEmpty()
-            || lanes.stream()
-                .allMatch(lane -> !lane.pending.isEmpty() || !lane.machineBuffer.isEmpty());
+        if (!isServerSide() || !getProxy().isActive() || lanes.isEmpty()) return true;
+        for (int offset = 0; offset < lanes.size(); offset++) {
+            if (acceptsDelivery(lanes.get(Math.floorMod(dispatchCursor + offset, lanes.size())))) return false;
+        }
+        return true;
+    }
+
+    /** A lane can take new work only after its previous delivery reached an idle, empty target. */
+    private boolean acceptsDelivery(Lane lane) {
+        if (!lane.pending.isEmpty() || !lane.machineBuffer.isEmpty()) return false;
+        TileEntity target = lane.target.resolve(worldObj);
+        if (!(target instanceof IInventory)) return false;
+        return !(target instanceof BaseMetaTileEntity gt && OverloadedMachineInput.supports(gt))
+            || OverloadedMachineInput.isIdle((MTEBasicMachine) gt.getMetaTileEntity());
     }
 
     @Override
