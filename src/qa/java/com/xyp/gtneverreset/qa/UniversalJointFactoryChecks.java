@@ -417,8 +417,8 @@ public final class UniversalJointFactoryChecks {
         var ordinary = liveSlot(
             hatch,
             pattern(input, new ItemStack(Items.emerald)),
-            material,
-            RecipeMaps.compressorRecipes);
+            RecipeMaps.compressorRecipes,
+            material);
         logic.prepareRecipe(16384);
         require(logic.tryCachePossibleRecipesFromPattern(ordinary), "ordinary assembly pattern accepted");
         logic.setInputItems(ordinary.getItemInputs())
@@ -471,6 +471,70 @@ public final class UniversalJointFactoryChecks {
                 .wasSuccessful() && logic.getOutputItems()[0].getItem() == Items.paper,
             "ordinary inputs stay in selected map after pattern processing");
         logic.finishRecipe();
+        // A pattern listing two ingredients must not settle for an output-identical recipe using only one of them.
+        factory.setMachineMode(1);
+        ItemStack base = new ItemStack(Items.firework_charge);
+        ItemStack extra = new ItemStack(Items.gunpowder);
+        ItemStack product = new ItemStack(Items.gold_ingot);
+        GTValues.RA.stdBuilder()
+            .itemInputs(base.copy())
+            .itemOutputs(product.copy())
+            .duration(200)
+            .eut(8)
+            .addTo(RecipeMaps.compressorRecipes);
+        GTValues.RA.stdBuilder()
+            .itemInputs(base.copy(), extra.copy())
+            .itemOutputs(product.copy())
+            .duration(200)
+            .eut(8)
+            .addTo(RecipeMaps.compressorRecipes);
+        ItemStack baseStock = base.copy(), extraStock = extra.copy();
+        baseStock.stackSize = 4;
+        extraStock.stackSize = 4;
+        var combined = liveSlot(
+            hatch,
+            pattern(new ItemStack[] { base, extra }, product),
+            RecipeMaps.compressorRecipes,
+            baseStock,
+            extraStock);
+        logic.prepareRecipe(16384);
+        require(logic.tryCachePossibleRecipesFromPattern(combined), "two-ingredient pattern accepted");
+        logic.setInputItems(combined.getItemInputs())
+            .setInputFluids();
+        require(
+            logic.process()
+                .wasSuccessful(),
+            "two-ingredient pattern finds a recipe");
+        require(
+            logic.getPlannedConsumption(baseStock) > 0 && logic.getPlannedConsumption(extraStock) > 0,
+            "pattern never uses an output-identical recipe that skips a listed ingredient");
+        require(logic.commitInputs(), "two-ingredient pattern commits inputs");
+        logic.finishRecipe();
+        // A stale pattern whose extra ingredient no recipe consumes must not produce through a partial recipe.
+        ItemStack unused = new ItemStack(Items.record_11);
+        ItemStack baseStock2 = base.copy(), extraStock2 = extra.copy(), unusedStock = unused.copy();
+        baseStock2.stackSize = 4;
+        extraStock2.stackSize = 4;
+        unusedStock.stackSize = 1;
+        var stale = liveSlot(
+            hatch,
+            pattern(new ItemStack[] { base, extra, unused }, product),
+            RecipeMaps.compressorRecipes,
+            baseStock2,
+            extraStock2,
+            unusedStock);
+        logic.prepareRecipe(16384);
+        require(logic.tryCachePossibleRecipesFromPattern(stale), "stale pattern with an unused ingredient accepted");
+        logic.setInputItems(stale.getItemInputs())
+            .setInputFluids();
+        require(
+            !logic.process()
+                .wasSuccessful() && baseStock2.stackSize == 4
+                && extraStock2.stackSize == 4
+                && unusedStock.stackSize == 1,
+            "pattern with an unused ingredient keeps inputs and produces nothing");
+        logic.finishRecipe();
+        factory.setMachineMode(18);
         slot = new QaSlot(pattern(input, new ItemStack(Items.diamond)), hatch, world, material);
         logic.prepareRecipe(16384);
         logic.tryCachePossibleRecipesFromPattern(slot);
@@ -503,8 +567,8 @@ public final class UniversalJointFactoryChecks {
         ordinary = liveSlot(
             hatch,
             pattern(input, new ItemStack(Items.emerald)),
-            material,
-            RecipeMaps.compressorRecipes);
+            RecipeMaps.compressorRecipes,
+            material);
         logic.prepareRecipe(16384);
         logic.tryCachePossibleRecipesFromPattern(ordinary);
         logic.setInputItems(material);
@@ -595,13 +659,13 @@ public final class UniversalJointFactoryChecks {
             slots[0] = liveSlot(
                 hatch,
                 pattern(ingredient, new ItemStack(Items.stick)),
-                first,
-                RecipeMaps.extractorRecipes);
+                RecipeMaps.extractorRecipes,
+                first);
             slots[1] = liveSlot(
                 hatch,
                 pattern(ingredient, new ItemStack(crossRecipe ? Items.gold_nugget : Items.stick)),
-                second,
-                RecipeMaps.compressorRecipes);
+                RecipeMaps.compressorRecipes,
+                second);
         }
         NBTTagCompound before = new NBTTagCompound();
         factory.saveNBTData(before);
@@ -656,7 +720,7 @@ public final class UniversalJointFactoryChecks {
 
     @SuppressWarnings("unchecked")
     private SuperMTEHatchCraftingInputME.PatternSlot<?> liveSlot(SuperMTEHatchCraftingInputME hatch, ItemStack encoded,
-        ItemStack material, RecipeMap<?> map) throws Exception {
+        RecipeMap<?> map, ItemStack... materials) throws Exception {
         PatternRecipeMap.write(encoded, map == null ? null : map.unlocalizedName);
         var create = hatch.getClass()
             .getDeclaredMethod("createPatternSlot", ItemStack.class, NBTTagCompound.class);
@@ -664,11 +728,15 @@ public final class UniversalJointFactoryChecks {
         var slot = (SuperMTEHatchCraftingInputME.PatternSlot<?>) create.invoke(hatch, encoded, null);
         var inventory = SuperMTEHatchCraftingInputME.PatternSlot.class.getDeclaredField("itemInventory");
         inventory.setAccessible(true);
-        ((List<ItemStack>) inventory.get(slot)).add(material);
+        for (ItemStack material : materials) ((List<ItemStack>) inventory.get(slot)).add(material);
         return slot;
     }
 
     private static ItemStack pattern(ItemStack input, ItemStack output) {
+        return pattern(new ItemStack[] { input }, output);
+    }
+
+    private static ItemStack pattern(ItemStack[] inputs, ItemStack output) {
         ItemStack encoded = AEApi.instance()
             .definitions()
             .items()
@@ -677,7 +745,7 @@ public final class UniversalJointFactoryChecks {
             .get();
         NBTTagCompound tag = new NBTTagCompound();
         NBTTagList in = new NBTTagList(), out = new NBTTagList();
-        in.appendTag(
+        for (ItemStack input : inputs) in.appendTag(
             AEItemStack.create(input)
                 .toNBTGeneric());
         out.appendTag(
