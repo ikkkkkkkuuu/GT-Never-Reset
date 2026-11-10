@@ -46,12 +46,14 @@ import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.mod.ModList;
 
+import appeng.api.config.SecurityPermissions;
 import appeng.api.implementations.ICraftingPatternItem;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.networking.crafting.ICraftingProviderHelper;
 import appeng.api.networking.events.MENetworkCraftingPatternChange;
+import appeng.api.networking.security.ISecurityGrid;
 import appeng.api.networking.security.MachineSource;
 import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.storage.data.IAEItemStack;
@@ -111,8 +113,22 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
         return proxy;
     }
 
+    /**
+     * The placing player and any player the connected AE network allows to build may configure the provider. ME
+     * interface terminals expose the same pattern inventory under {@link SecurityPermissions#BUILD}, so checking only
+     * the owner would lock permitted teammates out of the block GUI.
+     */
     public boolean canConfigure(EntityPlayer player) {
-        return player != null && ownerName.equals(player.getCommandSenderName());
+        if (player == null) return false;
+        if (worldObj != null && worldObj.isRemote) return true;
+        if (ownerName.equals(player.getCommandSenderName())) return true;
+        try {
+            ISecurityGrid security = getProxy().getGrid()
+                .getCache(ISecurityGrid.class);
+            return security != null && security.hasPermission(player, SecurityPermissions.BUILD);
+        } catch (GridAccessException e) {
+            return false;
+        }
     }
 
     public List<Lane> connections() {
