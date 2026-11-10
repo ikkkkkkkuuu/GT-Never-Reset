@@ -1463,7 +1463,6 @@ public final class CircuitPatternChecks {
     private static void verifySingleblock(EntityPlayerMP player) throws Exception {
         BaseMetaTileEntity tile = testMachine(player, new BaseMetaTileEntity());
         MTEBasicMachine machine = (MTEBasicMachine) tile.getMetaTileEntity();
-        OverloadedMachineConfiguration configuration = (OverloadedMachineConfiguration) machine;
         ItemStack manual = GTUtility.getIntegratedCircuit(17);
         manual.stackSize = 1;
         tile.setInventorySlotContents(machine.getCircuitSlot(), manual);
@@ -1481,51 +1480,102 @@ public final class CircuitPatternChecks {
             machine.getStackInSlot(machine.getCircuitSlot()) == manual
                 && GTUtility.areStacksEqual(OverloadedMachineMolds.get(machine), ItemList.Shape_Mold_Ingot.get(0)),
             "ordinary delivery preserves manual circuit and mold");
-        machine.mMaxProgresstime = 100;
-        tile.disableWorking();
         require(
-            OverloadedMachineInput.push(tile, details, delivery(details), ForgeDirection.UP, buffer)
-                && machine.getStackInSlot(machine.getInputSlot()).stackSize == 2,
-            "ordinary delivery merges while running and disabled without same-recipe gate");
+            !OverloadedMachineInput.push(tile, details, delivery(details), ForgeDirection.UP, buffer)
+                && machine.getStackInSlot(machine.getInputSlot()).stackSize == 1
+                && machine.getStackInSlot(machine.getCircuitSlot()) == manual,
+            "a second delivery waits while the first one still occupies the machine");
+        machine.mMaxProgresstime = 100;
+        require(
+            !OverloadedMachineInput.push(tile, details, delivery(details), ForgeDirection.UP, buffer)
+                && machine.getStackInSlot(machine.getCircuitSlot()) == manual
+                && GTUtility.areStacksEqual(OverloadedMachineMolds.get(machine), ItemList.Shape_Mold_Ingot.get(0)),
+            "no delivery starts while the machine is running");
+        machine.mMaxProgresstime = 0;
 
         ItemStack configured = metadata(plain, 4, ItemList.Shape_Mold_Plate.get(0));
         details = CircuitPatternCodec.decode(configured, player.worldObj);
+        require(
+            !OverloadedMachineInput.push(tile, details, delivery(details), ForgeDirection.UP, buffer)
+                && machine.getStackInSlot(machine.getCircuitSlot()) == manual
+                && GTUtility.areStacksEqual(OverloadedMachineMolds.get(machine), ItemList.Shape_Mold_Ingot.get(0)),
+            "tool configuration waits while a previous delivery remains in the machine");
+        tile.setInventorySlotContents(machine.getInputSlot(), null);
         require(
             OverloadedMachineInput.push(tile, details, delivery(details), ForgeDirection.UP, buffer)
                 && machine.getStackInSlot(machine.getCircuitSlot())
                     .getItemDamage() == 4
                 && GTUtility.areStacksEqual(OverloadedMachineMolds.get(machine), ItemList.Shape_Mold_Plate.get(0)),
-            "metadata changes circuit and mold on occupied running singleblock");
+            "metadata changes circuit and mold on an idle empty singleblock");
+        tile.setInventorySlotContents(machine.getInputSlot(), null);
+        machine.onPostTick(tile, 100);
+        require(
+            machine.getStackInSlot(machine.getCircuitSlot())
+                .getItemDamage() == 17
+                && GTUtility.areStacksEqual(OverloadedMachineMolds.get(machine), ItemList.Shape_Mold_Ingot.get(0)),
+            "a finished delivery restores the user's original circuit and mold");
+
         details = CircuitPatternCodec.decode(metadata(plain, 9, null), player.worldObj);
         require(
             OverloadedMachineInput.push(tile, details, delivery(details), ForgeDirection.UP, buffer)
                 && machine.getStackInSlot(machine.getCircuitSlot())
                     .getItemDamage() == 9
-                && GTUtility.areStacksEqual(OverloadedMachineMolds.get(machine), ItemList.Shape_Mold_Plate.get(0)),
-            "circuit-only metadata preserves mold");
+                && GTUtility.areStacksEqual(OverloadedMachineMolds.get(machine), ItemList.Shape_Mold_Ingot.get(0)),
+            "circuit-only metadata starts from the user's mold");
+        require(
+            !OverloadedMachineInput.push(tile, details, delivery(details), ForgeDirection.UP, buffer)
+                && machine.getStackInSlot(machine.getCircuitSlot())
+                    .getItemDamage() == 9,
+            "the same pattern still waits while the machine occupies it");
+
+        tile.setInventorySlotContents(machine.getInputSlot(), null);
+        machine.onPostTick(tile, 100);
         details = CircuitPatternCodec.decode(metadata(plain, -1, ItemList.Shape_Mold_Ingot.get(0)), player.worldObj);
         require(
             OverloadedMachineInput.push(tile, details, delivery(details), ForgeDirection.UP, buffer)
                 && machine.getStackInSlot(machine.getCircuitSlot())
-                    .getItemDamage() == 9
+                    .getItemDamage() == 17
                 && GTUtility.areStacksEqual(OverloadedMachineMolds.get(machine), ItemList.Shape_Mold_Ingot.get(0)),
-            "mold-only metadata preserves circuit");
-        int before = machine.getStackInSlot(machine.getInputSlot()).stackSize;
+            "mold-only metadata keeps the user's circuit");
+        tile.setInventorySlotContents(machine.getInputSlot(), null);
         details = CircuitPatternCodec.decode(configured, player.worldObj);
         require(
             !OverloadedMachineInput.push(tile, details, delivery(details), machine.mMainFacing, buffer)
-                && machine.getStackInSlot(machine.getInputSlot()).stackSize == before
+                && machine.getStackInSlot(machine.getInputSlot()) == null
                 && machine.getStackInSlot(machine.getCircuitSlot())
-                    .getItemDamage() == 9
+                    .getItemDamage() == 17
                 && GTUtility.areStacksEqual(OverloadedMachineMolds.get(machine), ItemList.Shape_Mold_Ingot.get(0)),
             "blocked native insertion side leaves inventory and configuration untouched");
         details = CircuitPatternCodec.decode(metadata(plain, 25, null), player.worldObj);
         require(
             !OverloadedMachineInput.push(tile, details, delivery(details), ForgeDirection.UP, buffer)
-                && machine.getStackInSlot(machine.getInputSlot()).stackSize == before
+                && machine.getStackInSlot(machine.getInputSlot()) == null
                 && machine.getStackInSlot(machine.getCircuitSlot())
-                    .getItemDamage() == 9,
+                    .getItemDamage() == 17,
             "malformed metadata rejects atomically");
+
+        BaseMetaTileEntity staleTile = testMachine(player, new BaseMetaTileEntity());
+        MTEBasicMachine staleMachine = (MTEBasicMachine) staleTile.getMetaTileEntity();
+        staleTile.setInventorySlotContents(staleMachine.getCircuitSlot(), manual.copy());
+        OverloadedMachineMolds.set(staleMachine, ItemList.Shape_Mold_Ingot.get(0));
+        details = CircuitPatternCodec.decode(configured, player.worldObj);
+        require(
+            OverloadedMachineInput
+                .push(staleTile, details, delivery(details), ForgeDirection.UP, new OverloadedMachineBuffer())
+                && staleMachine.getStackInSlot(staleMachine.getCircuitSlot())
+                    .getItemDamage() == 4
+                && GTUtility.areStacksEqual(OverloadedMachineMolds.get(staleMachine), ItemList.Shape_Mold_Plate.get(0)),
+            "a fresh machine accepts the configured delivery");
+        // Simulates a save loaded after the recipe ended but before its release tick: tools are still applied.
+        staleTile.setInventorySlotContents(staleMachine.getInputSlot(), null);
+        details = CircuitPatternCodec.decode(plain, player.worldObj);
+        require(
+            OverloadedMachineInput
+                .push(staleTile, details, delivery(details), ForgeDirection.UP, new OverloadedMachineBuffer())
+                && staleMachine.getStackInSlot(staleMachine.getCircuitSlot())
+                    .getItemDamage() == 17
+                && GTUtility.areStacksEqual(OverloadedMachineMolds.get(staleMachine), ItemList.Shape_Mold_Ingot.get(0)),
+            "a new ordinary delivery starts from the user's tools instead of a finished delivery's tools");
 
         BaseMetaTileEntity bulkTile = testMachine(player, new BaseMetaTileEntity());
         MTEBasicMachine bulkMachine = (MTEBasicMachine) bulkTile.getMetaTileEntity();

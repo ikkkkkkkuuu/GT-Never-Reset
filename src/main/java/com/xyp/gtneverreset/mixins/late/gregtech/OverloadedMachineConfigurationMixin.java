@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration;
+import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineInput;
 import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineMolds;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
@@ -49,6 +50,21 @@ public abstract class OverloadedMachineConfigurationMixin implements OverloadedM
             gtnr$previousMold = gtnr$getVirtualMold();
         }
         gtnr$configured = true;
+    }
+
+    @Override
+    public void gtnr$releaseConfiguration() {
+        if (!gtnr$configured) return;
+        MTEBasicMachine machine = (MTEBasicMachine) (Object) this;
+        IGregTechTileEntity tile = machine.getBaseMetaTileEntity();
+        if (tile == null) return;
+        tile.setInventorySlotContents(machine.getCircuitSlot(), gtnr$previousCircuit);
+        gtnr$previousCircuit = null;
+        gtnr$mold = gtnr$previousMold;
+        gtnr$previousMold = null;
+        gtnr$configured = false;
+        gtnr$provider = null;
+        tile.markDirty();
     }
 
     @Override
@@ -116,20 +132,8 @@ public abstract class OverloadedMachineConfigurationMixin implements OverloadedM
             }
         }
         if (gtnr$pending || !gtnr$configured) return;
-        MTEBasicMachine machine = (MTEBasicMachine) (Object) this;
-        if (machine.mMaxProgresstime > 0) return;
-        for (int slot = machine.getInputSlot(); slot < machine.getInputSlot() + machine.mInputSlotCount; slot++) {
-            ItemStack stack = machine.getStackInSlot(slot);
-            if (stack != null && stack.stackSize > 0) return;
-        }
-        if (machine.getFillableStack() != null && machine.getFillableStack().amount > 0) return;
-        tile.setInventorySlotContents(machine.getCircuitSlot(), gtnr$previousCircuit);
-        gtnr$previousCircuit = null;
-        gtnr$mold = gtnr$previousMold;
-        gtnr$previousMold = null;
-        gtnr$configured = false;
-        gtnr$provider = null;
-        tile.markDirty();
+        if (!OverloadedMachineInput.isIdle((MTEBasicMachine) (Object) this)) return;
+        gtnr$releaseConfiguration();
     }
 
     @Inject(method = { "getAllInputs", "appendSelectedCircuit" }, at = @At("RETURN"), cancellable = true)

@@ -10,6 +10,9 @@ public interface OverloadedMachineConfiguration {
 
     void gtnr$beginConfiguration(ItemStack previousCircuit);
 
+    /** Restores the user's circuit and mold after a delivery stops owning the machine; safe to call when idle. */
+    void gtnr$releaseConfiguration();
+
     void gtnr$setPending(boolean pending);
 
     boolean gtnr$hasPending();
