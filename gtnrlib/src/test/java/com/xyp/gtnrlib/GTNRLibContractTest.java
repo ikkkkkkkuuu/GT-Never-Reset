@@ -31,6 +31,7 @@ public class GTNRLibContractTest {
         WheelContracts.run();
         LayoutContracts.run();
         ThemeContracts.run();
+        AE2ThemeContracts.run();
         FxContracts.run();
         RegistryContracts.run();
     }

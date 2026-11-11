@@ -16,7 +16,7 @@ import com.xyp.gtnrlib.gui.theme.ScreenTheme;
 @Config.LangKeyPattern(pattern = "gtneverreset.gui.config.general.%cat.%field", fullyQualified = true)
 public class ScreenThemeConfig {
 
-    @Config.Comment("DEFAULT: ModularUI 2 default, AE2_LIGHT: AE2 light, AE2_DARK: AE2 dark")
+    @Config.Comment("DEFAULT: ModularUI 2 default, AE2_LIGHT: AE2 light, AE2_DARK: AE2 dark, AE2_DARK_PURPLE: AE2 dark with purple highlights")
     @Config.DefaultEnum("AE2_LIGHT")
     // #tr gtneverreset.gui.config.general.screen_theme.wirelessCard
     // # Wireless frequency card
@@ -24,7 +24,7 @@ public class ScreenThemeConfig {
     @Config.LangKey("gtneverreset.gui.config.general.screen_theme.wirelessCard")
     public static ScreenTheme wirelessCard = ScreenTheme.AE2_LIGHT;
 
-    @Config.Comment("DEFAULT: ModularUI 2 default, AE2_LIGHT: AE2 light, AE2_DARK: AE2 dark")
+    @Config.Comment("DEFAULT: ModularUI 2 default, AE2_LIGHT: AE2 light, AE2_DARK: AE2 dark, AE2_DARK_PURPLE: AE2 dark with purple highlights")
     @Config.DefaultEnum("AE2_LIGHT")
     // #tr gtneverreset.gui.config.general.screen_theme.wirelessPowerCard
     // # Wireless power card
@@ -32,7 +32,7 @@ public class ScreenThemeConfig {
     @Config.LangKey("gtneverreset.gui.config.general.screen_theme.wirelessPowerCard")
     public static ScreenTheme wirelessPowerCard = ScreenTheme.AE2_LIGHT;
 
-    @Config.Comment("DEFAULT: ModularUI 2 default, AE2_LIGHT: AE2 light, AE2_DARK: AE2 dark")
+    @Config.Comment("DEFAULT: ModularUI 2 default, AE2_LIGHT: AE2 light, AE2_DARK: AE2 dark, AE2_DARK_PURPLE: AE2 dark with purple highlights")
     @Config.DefaultEnum("AE2_LIGHT")
     // #tr gtneverreset.gui.config.general.screen_theme.wildcardPattern
     // # Wildcard pattern
@@ -40,7 +40,7 @@ public class ScreenThemeConfig {
     @Config.LangKey("gtneverreset.gui.config.general.screen_theme.wildcardPattern")
     public static ScreenTheme wildcardPattern = ScreenTheme.AE2_LIGHT;
 
-    @Config.Comment("DEFAULT: ModularUI 2 default, AE2_LIGHT: AE2 light, AE2_DARK: AE2 dark")
+    @Config.Comment("DEFAULT: ModularUI 2 default, AE2_LIGHT: AE2 light, AE2_DARK: AE2 dark, AE2_DARK_PURPLE: AE2 dark with purple highlights")
     @Config.DefaultEnum("AE2_LIGHT")
     // #tr gtneverreset.gui.config.general.screen_theme.advancedIOBus
     // # ME advanced IO bus
@@ -48,7 +48,7 @@ public class ScreenThemeConfig {
     @Config.LangKey("gtneverreset.gui.config.general.screen_theme.advancedIOBus")
     public static ScreenTheme advancedIOBus = ScreenTheme.AE2_LIGHT;
 
-    @Config.Comment("DEFAULT: ModularUI 2 default, AE2_LIGHT: AE2 light, AE2_DARK: AE2 dark")
+    @Config.Comment("DEFAULT: ModularUI 2 default, AE2_LIGHT: AE2 light, AE2_DARK: AE2 dark, AE2_DARK_PURPLE: AE2 dark with purple highlights")
     @Config.DefaultEnum("AE2_LIGHT")
     // #tr gtneverreset.gui.config.general.screen_theme.universalWand
     // # Useless Tools

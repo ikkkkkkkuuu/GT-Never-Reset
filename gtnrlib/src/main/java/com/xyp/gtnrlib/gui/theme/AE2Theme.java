@@ -47,16 +47,23 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class AE2Theme {
 
-    public static final String LIGHT_ID = "gtnrlib:ae2_light", LIGHT_MENU_ID = "gtnrlib:ae2_light_menu",
-        DARK_ID = "gtnrlib:ae2_dark", DARK_MENU_ID = "gtnrlib:ae2_dark_menu",
-        CONTEXT_MENU_ID = "modularui.context_menu";
-    public static final int HIGHLIGHT = 0xFF9CD3FF, HIGHLIGHT_SHADOW = 0xFF708CBA, FIELD_SELECTION = 0xFF0000FF;
+    public static final String LIGHT_ID = "gtnrlib:ae2_light";
+    public static final String LIGHT_MENU_ID = "gtnrlib:ae2_light_menu";
+    public static final String DARK_ID = "gtnrlib:ae2_dark";
+    public static final String DARK_MENU_ID = "gtnrlib:ae2_dark_menu";
+    public static final String DARK_PURPLE_ID = "gtnrlib:ae2_dark_purple";
+    public static final String DARK_PURPLE_MENU_ID = "gtnrlib:ae2_dark_purple_menu";
+    public static final String CONTEXT_MENU_ID = "modularui.context_menu";
+    public static final int HIGHLIGHT = 0xFF9CD3FF, HIGHLIGHT_TOP = 0xFFDAFFFF, HIGHLIGHT_SHADOW = 0xFF708CBA,
+        FIELD_SELECTION = 0xFF0000FF;
+    public static final int PURPLE_HIGHLIGHT = 0xFF644595, PURPLE_HIGHLIGHT_TOP = 0xFFE2A3E3,
+        PURPLE_HIGHLIGHT_SHADOW = 0xFF212040;
     public static final int BUTTON_HEIGHT = 20, TEXT_FIELD_HEIGHT = 12, ICON_SIZE = 16, ICON_BUTTON_WIDTH = 18,
         ICON_BUTTON_HEIGHT = 20, TAB_BUTTON_SIZE = 20, SWITCH_WIDTH = 22, SWITCH_HEIGHT = 12, SWITCH_LABEL_X = 26,
         SWITCH_LABEL_Y = 2, SCROLLBAR_WIDTH = 7, INSET_TOP = 3, INSET_EDGE = 1, BIG_SCROLLER_WIDTH = 12,
         SCROLLER_HEIGHT = 15, RADIO_SIZE = 14, RADIO_LABEL_X = 16, RADIO_LABEL_Y = 3, LIST_ROW_HEIGHT = 22,
         PROGRESS_WIDTH = 6, PROGRESS_HEIGHT = 18, BUTTON_BAR_MARGIN = 2, BUTTON_BAR_SPACING = 6, UPGRADE_PADDING = 5,
-        UPGRADE_ROWS = 8, VALIDATION_ICON_SIZE = 8;
+        UPGRADE_ROWS = 8, VALIDATION_ICON_SIZE = 8, PANEL_EDGE = 2, PANEL_BOTTOM_EDGE = 4;
     private static final String ROOT = "textures/gui/skin/";
     private static final ResourceLocation AE2_LEGACY_STATES = new ResourceLocation(
         "appliedenergistics2",
@@ -73,6 +80,9 @@ public class AE2Theme {
         VANILLA_TRACK_SHADOW = 0xFF373737, VANILLA_TRACK_LIGHT = 0xFFFFFFFF;
     private static final UITexture VANILLA_SCROLLER = vanillaScroller(VANILLA_SCROLLER_U),
         VANILLA_SCROLLER_DISABLED = vanillaScroller(VANILLA_SCROLLER_DISABLED_U);
+    // IDrawable.EMPTY is saved as JSON null, which the theme loader reads as unset and replaces with the parent
+    // theme's framed button; a transparent rectangle keeps menu options flat.
+    private static final IDrawable FLAT_OPTION = new Rectangle().color(0);
     private static final float INACTIVE_ALPHA = 0.5F;
     public static final ThemeStyle STYLE = new ThemeStyle(
         ThemeStyle.DEFAULT.cornerLength(),
@@ -246,9 +256,9 @@ public class AE2Theme {
             if (variant != null) {
                 Colors colors = variant.colors;
                 textColor = colors.text;
-                ring = lit ? HIGHLIGHT : colors.text;
+                ring = lit ? variant.highlight : colors.text;
                 center = colors.well;
-                dot = variant == Variant.LIGHT ? colors.info : HIGHLIGHT;
+                dot = variant == Variant.LIGHT ? colors.info : variant.highlight;
             }
             if (!usable) ring = dot = textColor = variant == null ? DISABLED_TEXT : variant.colors.muted;
             GuiDraw.drawCircle(x + 1, y + 1, 12, ring, 20);
@@ -441,6 +451,29 @@ public class AE2Theme {
             .build();
     }
 
+    private static Colors darkColors(int hoverText) {
+        return new Colors(
+            0xFFAAAAAA,
+            0xFF7E808E,
+            0xFF9496A4,
+            0xFFE0E0E0,
+            hoverText,
+            0xFF5E6070,
+            0xFFE0E0E0,
+            0xFF6B6E7E,
+            0xFF14151D,
+            0xFF8E8E8E,
+            0xFF42434B,
+            0xFF242631,
+            0xFF0A090E,
+            0xFF2D2F3C,
+            0xFF5FCB79,
+            0xFFE06A60,
+            0xFF6CB4F0,
+            0xFFE0A54A,
+            0xFFFF5A3C);
+    }
+
     private static UITexture frame(String folder, String name, int x, int y) {
         return UITexture.builder()
             .location(texture(folder, "states"))
@@ -514,31 +547,15 @@ public class AE2Theme {
                 0xFF8F2B23,
                 0xFF144673,
                 0xFF7A4A00,
-                0xFFCE2401)),
-        DARK(DARK_ID, DARK_MENU_ID, "ae2_dark",
-            new Colors(
-                0xFFAAAAAA,
-                0xFF7E808E,
-                0xFF9496A4,
-                0xFFE0E0E0,
-                0xFF517497,
-                0xFF5E6070,
-                0xFFE0E0E0,
-                0xFF6B6E7E,
-                0xFF14151D,
-                0xFF8E8E8E,
-                0xFF42434B,
-                0xFF242631,
-                0xFF0A090E,
-                0xFF2D2F3C,
-                0xFF5FCB79,
-                0xFFE06A60,
-                0xFF6CB4F0,
-                0xFFE0A54A,
-                0xFFFF5A3C));
+                0xFFCE2401),
+            HIGHLIGHT, HIGHLIGHT_TOP, HIGHLIGHT_SHADOW),
+        DARK(DARK_ID, DARK_MENU_ID, "ae2_dark", darkColors(0xFF517497), HIGHLIGHT, HIGHLIGHT_TOP, HIGHLIGHT_SHADOW),
+        DARK_PURPLE(DARK_PURPLE_ID, DARK_PURPLE_MENU_ID, "ae2_dark_purple", darkColors(0xFFFFFFFF), PURPLE_HIGHLIGHT,
+            PURPLE_HIGHLIGHT_TOP, PURPLE_HIGHLIGHT_SHADOW, 0xFFFFFFFF);
 
         public final String id, menuId, folder;
         public final Colors colors;
+        public final int highlight, highlightTop, highlightShadow, highlightText;
         public final ThemePalette palette;
         public final ThemeSkin skin;
         public final ResourceLocation legacyStates, legacyTerminal;
@@ -547,15 +564,29 @@ public class AE2Theme {
             switchOffHover, switchOn, switchOnHover, radioOff, radioOffHover, radioOn, radioOnHover, listRow,
             listRowSelected, buttonBar, progressEmpty, progressFull, invalid;
 
-        Variant(String id, String menuId, String folder, Colors colors) {
+        Variant(String id, String menuId, String folder, Colors colors, int highlight, int highlightTop,
+            int highlightShadow) {
+            this(id, menuId, folder, colors, highlight, highlightTop, highlightShadow, colors.outline);
+        }
+
+        Variant(String id, String menuId, String folder, Colors colors, int highlight, int highlightTop,
+            int highlightShadow, int highlightText) {
             this.id = id;
             this.menuId = menuId;
             this.folder = folder;
             this.colors = colors;
-            palette = palette(colors);
+            this.highlight = highlight;
+            this.highlightTop = highlightTop;
+            this.highlightShadow = highlightShadow;
+            this.highlightText = highlightText;
+            palette = palette(colors, highlight, highlightShadow, highlightText);
             legacyStates = texture(folder, "legacy_states");
             legacyTerminal = texture(folder, "legacy_terminal");
-            skin = ThemeSkin.NONE.with(Part.PANEL, skin(folder, "panel", PANEL_SIZE, PANEL_SIZE).border(2, 2, 2, 4))
+            skin = ThemeSkin.NONE
+                .with(
+                    Part.PANEL,
+                    skin(folder, "panel", PANEL_SIZE, PANEL_SIZE)
+                        .border(PANEL_EDGE, PANEL_EDGE, PANEL_EDGE, PANEL_BOTTOM_EDGE))
                 .with(
                     Part.CARD,
                     skin(folder, "inset", INSET_WIDTH, INSET_HEIGHT)
@@ -565,7 +596,15 @@ public class AE2Theme {
                 .with(Part.SLIDER_FILL, skin(folder, "slider_fill", FILL_SIZE, FILL_SIZE).border(0, 1, 0, 0))
                 .with(Part.SLIDER_TAG, skin(folder, "slider_tag", TAG_WIDTH, TAG_HEIGHT).border(1, 2, 1, 2))
                 .with(Part.DIVIDER, skin(folder, "divider", DIVIDER_WIDTH, DIVIDER_HEIGHT));
-            panel = adaptable(folder, "panel", PANEL_SIZE, PANEL_SIZE, 2, 2, 2, 4);
+            panel = adaptable(
+                folder,
+                "panel",
+                PANEL_SIZE,
+                PANEL_SIZE,
+                PANEL_EDGE,
+                PANEL_EDGE,
+                PANEL_EDGE,
+                PANEL_BOTTOM_EDGE);
             inset = adaptable(
                 folder,
                 "inset",
@@ -647,7 +686,7 @@ public class AE2Theme {
                 .lineColor(colors.line)
                 .textColor(colors.text)
                 .textShadow(false)
-                .highlightColor(HIGHLIGHT);
+                .highlightColor(highlight);
         }
 
         private static UITexture checkbox(String folder, String name, int x, int y) {
@@ -660,10 +699,10 @@ public class AE2Theme {
                 .build();
         }
 
-        private static ThemePalette palette(Colors colors) {
+        private static ThemePalette palette(Colors colors, int highlight, int highlightShadow, int highlightText) {
             return new ThemePalette(
-                HIGHLIGHT,
-                HIGHLIGHT_SHADOW,
+                highlight,
+                highlightShadow,
                 0x40FFFFFF,
                 colors.text,
                 colors.muted,
@@ -672,8 +711,8 @@ public class AE2Theme {
                 colors.well,
                 colors.edge,
                 colors.well,
-                HIGHLIGHT,
-                0x80000000 | HIGHLIGHT & 0xFFFFFF,
+                highlight,
+                0x80000000 | highlight & 0xFFFFFF,
                 colors.well,
                 colors.edge,
                 0x80FFFFFF,
@@ -685,31 +724,30 @@ public class AE2Theme {
                 colors.muted,
                 colors.secondary,
                 colors.hoverText,
-                colors.outline,
+                highlightText,
                 0x40000000 | colors.text & 0xFFFFFF,
                 0x99000000 | colors.text & 0xFFFFFF,
                 colors.error);
         }
 
         private ThemeBuilder<?> menu() {
-            IDrawable row = new Rectangle().color(HIGHLIGHT);
             return new ThemeBuilder<>(menuId).parent(id)
                 .background(IThemeApi.PANEL, panel)
-                .background(IThemeApi.BUTTON, IDrawable.EMPTY)
-                .hoverBackground(IThemeApi.BUTTON, row)
+                .background(IThemeApi.BUTTON, FLAT_OPTION)
+                .hoverBackground(IThemeApi.BUTTON, listRowSelected)
                 .textColor(IThemeApi.BUTTON, colors.text)
                 .textHoverColor(IThemeApi.BUTTON, colors.hoverText)
                 .widgetTheme(
                     IThemeApi.TOGGLE_BUTTON,
-                    new SelectableTheme.Builder<>().background(IDrawable.EMPTY)
+                    new SelectableTheme.Builder<>().background(FLAT_OPTION)
                         .textColor(colors.text)
-                        .selectedBackground(row)
+                        .selectedBackground(listRowSelected)
                         .selectedTextColor(colors.hoverText))
                 .widgetThemeHover(
                     IThemeApi.TOGGLE_BUTTON,
-                    new SelectableTheme.Builder<>().background(row)
+                    new SelectableTheme.Builder<>().background(listRowSelected)
                         .textColor(colors.hoverText)
-                        .selectedBackground(row)
+                        .selectedBackground(listRowSelected)
                         .selectedTextColor(colors.hoverText));
         }
 

@@ -72,4 +72,6 @@ Minecraft 1.7.10 的通用支持库，Mod ID 为 `gtnrlib`，Java 包为 `com.xy
 
 样板通配符界面复用库的 `ScrollingDropdown`、`ItemStackSlot` 和 `ModernGuiSkin`：下拉框保留静默赋值、浮层关闭与长文字滚动；物品槽支持只读预览、动态物品提示和保留 NBT 的单个物品副本回调；皮肤由调用方提供资源命名空间和目录。原有现代皮肤贴图仍在宿主，布局、材料／流体转换、样板预览、NEI 配方导入和服务端保存也留在宿主。`GhostItemSlot` 的无 NBT 物品标识语义和 `CycleDropdown` 的滚轮切换语义保持不变。
 
-[AE2 主题组件指南](../AE2_THEME.md) 保留上游原文。在本项目使用示例时，Java 包前缀为 `com.xyp.gtnrlib`，资源域为 `gtnrlib`，列表类名为 `GTNRListWidget`。数量输入框使用 `value()` 或 `isValueValid()` 判断输入是否有效，MUI2 的 `isValid()` 表示控件是否已完成初始化。贴图来源见 [AE2 许可记录](../licenses/gtnrlib/AE2-gui-theme-NOTICE.txt)。
+[AE2 主题组件指南](../AE2_THEME.md) 已同步至 GTNLLib PR #6，并适配本项目包名和路径。在本项目使用示例时，Java 包前缀为 `com.xyp.gtnrlib`，资源域为 `gtnrlib`，列表类名为 `GTNRListWidget`。数量输入框使用 `value()` 或 `isValueValid()` 判断输入是否有效，MUI2 的 `isValid()` 表示控件是否已完成初始化。贴图来源见 [AE2 许可记录](../licenses/gtnrlib/AE2-gui-theme-NOTICE.txt)。
+
+GTNRLib 0.1.32 补齐紫色高亮暗色主题 `ScreenTheme.AE2_DARK_PURPLE`，修复长列表滑块拖动回跳、空列表滚动布局和下拉菜单边框／内边距。数量输入框支持完整 long 范围和 64 字符输入，修正无效表达式与重复回调；`isValueValid()` 保留，新增与上游一致的 `isInputValid()`。独立后台客户端验证入口见主题指南。

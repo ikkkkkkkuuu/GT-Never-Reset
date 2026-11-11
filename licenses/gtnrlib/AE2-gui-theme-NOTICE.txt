@@ -17,6 +17,7 @@ Local assets:
   assets/gtnrlib/textures/gui/skin/ae2_light/list_row.png
   assets/gtnrlib/textures/gui/skin/ae2_light/progress.png
   assets/gtnrlib/textures/gui/skin/ae2_dark/ (the same fifteen files, recoloured)
+  assets/gtnrlib/textures/gui/skin/ae2_dark_purple/ (the ae2_dark files, selection recoloured)
 Original assets:
   assets/ae2/textures/guis/background.png
   assets/ae2/textures/gui/sprites/button.png
@@ -48,12 +49,30 @@ list well in networkstatus.png (columns 8-11 and 166-169, rows 38-42 and
 sprite pair in cpu_selector.png (x 100-166, y 0-43). progress.png places the
 empty progress well of inscriber.png (x 135-140, y 39-56) next to its full bar
 (x 176-181, y 0-17).
-The files in skin/ae2_dark are adaptations: every pixel of the light file is
-recoloured with the light-to-dark colour pairs that Modernity-GTNH-Dark-UI uses
-for the same AE2 palette (see Modernity-GTNH-Dark-UI-gui-theme-NOTICE.txt);
-#4D4D67, which has no pair there, becomes #0D0D12, and the selection blues and
-the purple progress bar keep their colours.
-slider_track.png, slider_fill.png, slider_tag.png and divider.png in both skin
+The files in skin/ae2_dark are adaptations using the light-to-dark AE2 palette
+of Modernity-GTNH-Dark-UI. The shared RGB mappings for nontransparent pixels are:
+  #413F54 -> #0A090E
+  #696D88 -> #14151D
+  #878FA5 -> #1D2029
+  #9A9FB4 -> #242631
+  #ADB0C4 -> #2D2F3C
+  #CBCCD4 -> #42434B
+  #F2F2F2 -> #8E8E8E
+The additional colour #4D4D67 becomes #0D0D13 in text_field.png and states.png,
+and #0D0D12 in list_row.png and progress.png. Other colours, including the
+selection blues and purple progress bar, and all alpha values are preserved.
+The files in skin/ae2_dark_purple are copies of skin/ae2_dark with the selection
+blues mapped to fluix purple:
+  #9CD3FF -> #644595
+  #DAFFFF -> #E2A3E3
+  #708CBA -> #212040
+  #517497 -> #212040 (checkbox.png only)
+The mapping covers button_highlighted.png, checkbox.png, list_row.png,
+slider_fill.png and slider_tag.png, the hovered button and tab frames of
+states.png (x 192-231, y 128-148 and x 160-182, y 224-246) and two selected
+cells of legacy_states.png (x 112-127, y 208-223 and x 208-223, y 240-255).
+Icon pixels in the same blues are preserved.
+slider_track.png, slider_fill.png, slider_tag.png and divider.png in all skin
 folders are not AE2 files; they are small sprites drawn for GTNLLib in the AE2
 palette.
 No endorsement by the original authors is implied.
