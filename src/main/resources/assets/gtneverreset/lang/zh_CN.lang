@@ -1230,6 +1230,7 @@ gui.packaged.arcane_captured=配方已录入。请清空示例材料，保留法
 item.tc4_crucible_packaged_core.name=神秘时代坩埚封包核心
 item.arcane_workbench_packaged_core.name=奥术工作台封包核心
 gtneverreset.gui.config.bee_breeder=大型蜜蜂杂交机
+gtneverreset.gui.config.bee_breeder.require_mutation_foundations=启用杂交基石需求
 gtneverreset.gui.config.bee_breeder.species_voltage_overrides=蜂种电压等级覆盖
 gtneverreset.gui.config.general.client=客户端
 gtneverreset.gui.config.general.client.enableAlwaysDisplayRecipeOwner=始终显示配方所属模组

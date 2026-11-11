@@ -71,6 +71,7 @@ import com.xyp.gtneverreset.common.machine.multiblock.LargeBeeBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.bee.BeeBreedingHelper;
 import com.xyp.gtneverreset.common.machine.multiblock.bee.BeeBreedingHelper.FoundationRequirement;
 import com.xyp.gtneverreset.common.machine.multiblock.bee.BeeBreedingPlanner;
+import com.xyp.gtneverreset.config.BeeBreederConfig;
 
 import codechicken.nei.PositionedStack;
 import cpw.mods.fml.common.network.ByteBufUtils;
@@ -281,11 +282,13 @@ public final class LargeBeeBreederGui extends GTNRMultiBlockBaseGui<LargeBeeBree
             tag.setDouble("chance", Math.min(100.0D, step.chance + multiblock.getMutationChanceBonus()));
             tag.setInteger("requiredVoltageTier", LargeBeeBreeder.getSpeciesVoltageTier(step.result));
             NBTTagList foundations = new NBTTagList();
-            for (FoundationRequirement requirement : step.foundations) {
-                NBTTagCompound foundation = requirement.toNBT();
-                ItemStack present = multiblock.findFoundation(requirement);
-                if (present != null) foundation.setTag("present", present.writeToNBT(new NBTTagCompound()));
-                foundations.appendTag(foundation);
+            if (BeeBreederConfig.requireMutationFoundations) {
+                for (FoundationRequirement requirement : step.foundations) {
+                    NBTTagCompound foundation = requirement.toNBT();
+                    ItemStack present = multiblock.findFoundation(requirement);
+                    if (present != null) foundation.setTag("present", present.writeToNBT(new NBTTagCompound()));
+                    foundations.appendTag(foundation);
+                }
             }
             tag.setTag("foundations", foundations);
             serverSteps.add(tag);
