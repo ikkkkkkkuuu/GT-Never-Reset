@@ -9,6 +9,7 @@ import com.glodblock.github.client.gui.GuiMagnetFilter;
 import com.glodblock.github.inventory.item.WirelessMagnetCardFilterInventory;
 import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
 import com.xyp.gtneverreset.client.render.VaultConnectedTextureRender;
+import com.xyp.gtneverreset.client.terminal.WirelessTerminalSorting;
 import com.xyp.gtneverreset.client.wand.UniversalWandTravelFallback;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalGuiHandler;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
@@ -53,6 +54,7 @@ public class ClientProxy extends CommonProxy {
                 player.inventory,
                 new WirelessMagnetCardFilterInventory(host.getItemStack(), host.getInventorySlot(), null, player));
         }
+        WirelessTerminalSorting.initialize();
         return host instanceof DualTerminalGuiObject dual ? new GuiQuickEncodingTerminal(player.inventory, dual)
             : new GuiCraftingTerm(player.inventory, (WirelessCraftingTerminalGuiObject) host);
     }
