@@ -1,0 +1,891 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<stuff>
+    <equipment>
+        <weapon>
+            <sword>
+                <ironSword id="minecraft:iron_sword"/>
+                <diamondSword id="minecraft:diamond_sword"/>
+                <stoneSword id="minecraft:stone_sword"/>
+                <goldSword id="minecraft:golden_sword"/>
+                <woodSword id="minecraft:wooden_sword"/>
+            </sword>
+            <munition>
+                <bow id="minecraft:bow"/>
+                <arrow id="minecraft:arrow"/>
+                <snowball id="minecraft:snowball"/>
+            </munition>
+        </weapon>
+        <tool>
+            <pickaxe>
+                <diamondPickaxe id="minecraft:diamond_pickaxe"/>
+                <goldPickaxe id="minecraft:golden_pickaxe"/>
+                <ironPickaxe id="minecraft:iron_pickaxe"/>
+                <stonePickaxe id="minecraft:stone_pickaxe"/>
+                <woodPickaxe id="minecraft:wooden_pickaxe"/>
+            </pickaxe>
+            <shovel>
+                <goldShovel id="minecraft:golden_shovel"/>
+                <diamondShovel id="minecraft:diamond_shovel"/>
+                <ironShovel id="minecraft:iron_shovel"/>
+                <stoneShovel id="minecraft:stone_shovel"/>
+                <woodShovel id="minecraft:wooden_shovel"/>
+            </shovel>
+            <axe>
+                <goldAxe id="minecraft:golden_axe"/>
+                <diamondAxe id="minecraft:diamond_axe"/>
+                <ironAxe id="minecraft:iron_axe"/>
+                <stoneAxe id="minecraft:stone_axe"/>
+                <woodAxe id="minecraft:wooden_axe"/>
+            </axe>
+            <hoe>
+                <goldHoe id="minecraft:golden_hoe"/>
+                <diamondHoe id="minecraft:diamond_hoe"/>
+                <ironHoe id="minecraft:stone_hoe"/>
+                <stoneHoe id="minecraft:iron_hoe"/>
+                <woodHoe id="minecraft:wooden_hoe"/>
+            </hoe>
+            <shears id="minecraft:shears"/>
+            <fishingRod id="minecraft:fishing_rod"/>
+            <carrotOnAStick id="minecraft:carrot_on_a_stick"/>
+        </tool>
+        <armor>
+            <helmet>
+                <diamondHelmet id="minecraft:diamond_helmet"/>
+                <chainHelmet id="minecraft:chainmail_helmet"/>
+                <ironHelmet id="minecraft:iron_helmet"/>
+                <goldHelmet id="minecraft:golden_helmet"/>
+                <leatherHelmet id="minecraft:leather_helmet"/>
+            </helmet>
+            <chestplate>
+                <diamondChestplate id="minecraft:diamond_chestplate"/>
+                <chainChestplate id="minecraft:chainmail_chestplate"/>
+                <ironChestplate id="minecraft:iron_chestplate"/>
+                <goldChestplate id="minecraft:golden_chestplate"/>
+                <leatherChestplate id="minecraft:leather_chestplate"/>
+            </chestplate>
+            <leggings>
+                <diamondLeggings id="minecraft:diamond_leggings"/>
+                <chainLeggings id="minecraft:chainmail_leggings"/>
+                <ironLeggings id="minecraft:iron_leggings"/>
+                <goldLeggings id="minecraft:golden_leggings"/>
+                <leatherLeggings id="minecraft:leather_leggings"/>
+            </leggings>
+            <boots>
+                <diamondBoots id="minecraft:diamond_boots"/>
+                <chainBoots id="minecraft:chainmail_boots"/>
+                <ironBoots id="minecraft:iron_boots"/>
+                <goldBoots id="minecraft:golden_boots"/>
+                <leatherBoots id="minecraft:leather_boots"/>
+            </boots>
+        </armor>
+    </equipment>
+    <block>
+        <naturalBlock>
+            <stones>
+                <stone id="minecraft:stone"/>
+                <cobblestone id="minecraft:cobblestone"/>
+                <mossStone id="minecraft:mossy_cobblestone"/>
+                <endStone id="minecraft:end_stone"/>
+                <whiteStone id="minecraft:end_stone"/>
+            </stones>
+            <oreBlock>
+                <coalOreBlock id="minecraft:coal_ore"/>
+                <redstoneOreBlock>
+                    <unlitRedstoneOreBlock id="minecraft:redstone_ore"/>
+                    <litRedstoneOreBlock id="minecraft:lit_redstone_ore"/>
+                </redstoneOreBlock>
+                <lapisLazuliOreBlock id="minecraft:lapis_ore"/>
+                <diamondOreBlock id="minecraft:diamond_ore"/>
+                <emeraldOreBlock id="minecraft:emerald_ore"/>
+            </oreBlock>
+            <dirts>
+                <dirt id="minecraft:dirt" damage="0"/>
+                <grasslessDirt id="minecraft:dirt" damage="1"/>
+                <podzol id="minecraft:dirt" damage="2"/>
+            </dirts>
+            <wood>
+                <oakWood id="minecraft:log" damage="0"/>
+                <birchWood id="minecraft:log" damage="1"/>
+                <spruceWood id="minecraft:log" damage="2"/>
+                <jungleWood id="minecraft:log" damage="3"/>
+                <acaciaWood id="minecraft:log2" damage="0"/>
+                <darkOakWood id="minecraft:log2" damage="1"/>
+                <woodDict oreDictName="logWood"/>
+            </wood>
+            <sands>
+                <sand id="minecraft:sand">
+                    <plainSand id="minecraft:sand" damage="0"/>
+                    <redSand id="minecraft:sand" damage="1"/>
+                </sand>
+                <sandstone>
+                    <classicSandstone id="minecraft:sandstone" damage="0"/>
+                    <creeperSandstone id="minecraft:sandstone" damage="1"/>
+                    <smoothSandstone id="minecraft:sandstone" damage="2"/>
+                </sandstone>
+            </sands>
+            <gravel id="minecraft:gravel"/>
+            <clayBlock id="minecraft:clay"/>
+            <netherBlock>
+                <glowstoneBlock id="minecraft:glowstone"/>
+                <netherrack id="minecraft:netherrack"/>
+                <soulSand id="minecraft:soul_sand"/>
+                <quartzOreBlock id="minecraft:quartz_ore"/>
+            </netherBlock>
+            <web id="minecraft:web"/>
+            <cobweb id="minecraft:web"/>
+            <monsterSpawner id="minecraft:mob_spawner"/>
+            <bedrock id="minecraft:bedrock"/>
+            <sponge id="minecraft:sponge"/>
+            <grass id="minecraft:grass"/>
+            <mycelium id="minecraft:mycelium"/>
+            <mushroomGrass id="minecraft:mycelium"/>
+            <farmland id="minecraft:farmland"/>
+            <snow id="minecraft:snow"/>
+            <ice id="minecraft:ice"/>
+            <packedIce id="minecraft:packed_ice"/>
+            <liquid>
+                <water id="minecraft:flowing_water"/>
+                <water id="minecraft:water"/>
+                <lava id="minecraft:flowing_lava"/>
+                <lava id="minecraft:lava"/>
+            </liquid>
+            <portal id="minecraft:portal"/>
+            <airPortal id="minecraft:end_portal_frame"/>
+            <endPortal id="minecraft:end_portal"/>
+            <endPortalFrame id="minecraft:end_portal_frame"/>
+            <air id="minecraft:air"/>
+            <fire id="minecraft:fire"/>
+            <obsidian id="minecraft:obsidian"/>
+            <mushroomBlock>
+                <hugeBrownMushroom id="minecraft:brown_mushroom_block"/>
+                <hugeRedMushroom id="minecraft:red_mushroom_block"/>
+            </mushroomBlock>
+            <dragonEgg id="minecraft:dragon_egg"/>
+            <hiddenSilverfish id="minecraft:monster_egg"/>
+        </naturalBlock>
+        <wool>
+            <whiteWool id="minecraft:wool" damage="0"/>
+            <orangeWool id="minecraft:wool" damage="1"/>
+            <magentaWool id="minecraft:wool" damage="2"/>
+            <lightBlueWool id="minecraft:wool" damage="3"/>
+            <yellowWool id="minecraft:wool" damage="4"/>
+            <lightGreenWool id="minecraft:wool" damage="5"/>
+            <limeWool id="minecraft:wool" damage="5"/>
+            <pinkWool id="minecraft:wool" damage="6"/>
+            <grayWool id="minecraft:wool" damage="7"/>
+            <lightGrayWool id="minecraft:wool" damage="8"/>
+            <cyanWool id="minecraft:wool" damage="9"/>
+            <purpleWool id="minecraft:wool" damage="10"/>
+            <blueWool id="minecraft:wool" damage="11"/>
+            <brownWool id="minecraft:wool" damage="12"/>
+            <greenWool id="minecraft:wool" damage="13"/>
+            <darkGreenWool id="minecraft:wool" damage="13"/>
+            <redWool id="minecraft:wool" damage="14"/>
+            <blackWool id="minecraft:wool" damage="15"/>
+        </wool>
+        <manufacturedBlock>
+            <ladder id="minecraft:ladder"/>
+            <fence>
+                <woodenFence id="minecraft:fence"/>
+                <netherFence id="minecraft:nether_brick_fence"/>
+                <netherBrickFence id="minecraft:nether_brick_fence"/>
+                <fenceGate id="minecraft:fence_gate"/>
+            </fence>
+            <carpet>
+                <whiteCarpet id="minecraft:carpet" damage="0"/>
+                <orangeCarpet id="minecraft:carpet" damage="1"/>
+                <magentaCarpet id="minecraft:carpet" damage="2"/>
+                <lightBlueCarpet id="minecraft:carpet" damage="3"/>
+                <yellowCarpet id="minecraft:carpet" damage="4"/>
+                <lightGreenCarpet id="minecraft:carpet" damage="5"/>
+                <limeCarpet id="minecraft:carpet" damage="5"/>
+                <pinkCarpet id="minecraft:carpet" damage="6"/>
+                <grayCarpet id="minecraft:carpet" damage="7"/>
+                <lightGrayCarpet id="minecraft:carpet" damage="8"/>
+                <cyanCarpet id="minecraft:carpet" damage="9"/>
+                <purpleCarpet id="minecraft:carpet" damage="10"/>
+                <blueCarpet id="minecraft:carpet" damage="11"/>
+                <brownCarpet id="minecraft:carpet" damage="12"/>
+                <greenCarpet id="minecraft:carpet" damage="13"/>
+                <darkGreenCarpet id="minecraft:carpet" damage="13"/>
+                <redCarpet id="minecraft:carpet" damage="14"/>
+                <blackCarpet id="minecraft:carpet" damage="15"/>
+            </carpet>
+            <stoneWall>
+                <cobblestoneWall id="minecraft:cobblestone_wall" damage="0"/>
+                <mossyCobblestoneWall id="minecraft:cobblestone_wall" damage="1"/>
+            </stoneWall>
+            <sign id="minecraft:standing_sign"/>
+            <jackOLantern id="minecraft:lit_pumpkin"/>
+            <constructionBlock>
+                <woodenPlank>
+                    <oakPlank id="minecraft:planks" damage="0"/>
+                    <sprucePlank id="minecraft:planks" damage="1"/>
+                    <birchPlank id="minecraft:planks" damage="2"/>
+                    <junglePlank id="minecraft:planks" damage="3"/>
+                    <acaciaPlank id="minecraft:planks" damage="4"/>
+                    <darkOakPlank id="minecraft:planks" damage="5"/>
+                    <woodenPlankDict oreDictName="plankWood"/>
+                </woodenPlank>
+                <bricks>
+                    <brick id="minecraft:brick_block"/>
+                    <brickBlock id="minecraft:brick_block"/>
+                    <stoneBricks>
+                        <normalStoneBrick id="minecraft:stonebrick" damage="0"/>
+                        <mossyStoneBrick id="minecraft:stonebrick" damage="1"/>
+                        <crackedStoneBrick id="minecraft:stonebrick" damage="2"/>
+                        <circleStoneBrick id="minecraft:stonebrick" damage="3"/>
+                        <chiseledStoneBrick id="minecraft:stonebrick" damage="3"/>
+                    </stoneBricks>
+                    <netherBrick id="minecraft:nether_brick"/>
+                </bricks>
+                <hardenedClay id="minecraft:hardened_clay"/>
+                <stainedClay>
+                    <whiteStainedClay id="minecraft:stained_hardened_clay" damage="0"/>
+                    <orangeStainedClay id="minecraft:stained_hardened_clay" damage="1"/>
+                    <magentaStainedClay id="minecraft:stained_hardened_clay" damage="2"/>
+                    <lightBlueStainedClay id="minecraft:stained_hardened_clay" damage="3"/>
+                    <yellowStainedClay id="minecraft:stained_hardened_clay" damage="4"/>
+                    <lightGreenStainedClay id="minecraft:stained_hardened_clay" damage="5"/>
+                    <limeStainedClay id="minecraft:stained_hardened_clay" damage="5"/>
+                    <pinkStainedClay id="minecraft:stained_hardened_clay" damage="6"/>
+                    <grayStainedClay id="minecraft:stained_hardened_clay" damage="7"/>
+                    <lightGrayStainedClay id="minecraft:stained_hardened_clay" damage="8"/>
+                    <cyanStainedClay id="minecraft:stained_hardened_clay" damage="9"/>
+                    <purpleStainedClay id="minecraft:stained_hardened_clay" damage="10"/>
+                    <blueStainedClay id="minecraft:stained_hardened_clay" damage="11"/>
+                    <brownStainedClay id="minecraft:stained_hardened_clay" damage="12"/>
+                    <greenStainedClay id="minecraft:stained_hardened_clay" damage="13"/>
+                    <darkGreenStainedClay id="minecraft:stained_hardened_clay" damage="13"/>
+                    <redStainedClay id="minecraft:stained_hardened_clay" damage="14"/>
+                    <blackStainedClay id="minecraft:stained_hardened_clay" damage="15"/>
+                </stainedClay>
+                <glass>
+                    <glassBlock id="minecraft:glass"/>
+                    <glassPane id="minecraft:glass_pane"/>
+                </glass>
+                <stainedGlass>
+                    <stainedGlassBlock id="minecraft:stained_glass">
+                        <whiteStainedGlassBlock id="minecraft:stained_glass" damage="0"/>
+                        <orangeStainedGlassBlock id="minecraft:stained_glass" damage="1"/>
+                        <magentaStainedGlassBlock id="minecraft:stained_glass" damage="2"/>
+                        <lightBlueStainedGlassBlock id="minecraft:stained_glass" damage="3"/>
+                        <yellowStainedGlassBlock id="minecraft:stained_glass" damage="4"/>
+                        <lightGreenStainedGlassBlock id="minecraft:stained_glass" damage="5"/>
+                        <limeStainedGlassBlock id="minecraft:stained_glass" damage="5"/>
+                        <pinkStainedGlassBlock id="minecraft:stained_glass" damage="6"/>
+                        <grayStainedGlassBlock id="minecraft:stained_glass" damage="7"/>
+                        <lightGrayStainedGlassBlock id="minecraft:stained_glass" damage="8"/>
+                        <cyanStainedGlassBlock id="minecraft:stained_glass" damage="9"/>
+                        <purpleStainedGlassBlock id="minecraft:stained_glass" damage="10"/>
+                        <blueStainedGlassBlock id="minecraft:stained_glass" damage="11"/>
+                        <brownStainedGlassBlock id="minecraft:stained_glass" damage="12"/>
+                        <greenStainedGlassBlock id="minecraft:stained_glass" damage="13"/>
+                        <darkGreenStainedGlassBlock id="minecraft:stained_glass" damage="13"/>
+                        <redStainedGlassBlock id="minecraft:stained_glass" damage="14"/>
+                        <blackStainedGlassBlock id="minecraft:stained_glass" damage="15"/>
+                    </stainedGlassBlock>
+                    <stainedGlassPane id="minecraft:stained_glass_pane">
+                        <whiteStainedGlassPane id="minecraft:stained_glass_pane" damage="0"/>
+                        <orangeStainedGlassPane id="minecraft:stained_glass_pane" damage="1"/>
+                        <magentaStainedGlassPane id="minecraft:stained_glass_pane" damage="2"/>
+                        <lightBlueStainedGlassPane id="minecraft:stained_glass_pane" damage="3"/>
+                        <yellowStainedGlassPane id="minecraft:stained_glass_pane" damage="4"/>
+                        <lightGreenStainedGlassPane id="minecraft:stained_glass_pane" damage="5"/>
+                        <limeStainedGlassPane id="minecraft:stained_glass_pane" damage="5"/>
+                        <pinkStainedGlassPane id="minecraft:stained_glass_pane" damage="6"/>
+                        <grayStainedGlassPane id="minecraft:stained_glass_pane" damage="7"/>
+                        <lightGrayStainedGlassPane id="minecraft:stained_glass_pane" damage="8"/>
+                        <cyanStainedGlassPane id="minecraft:stained_glass_pane" damage="9"/>
+                        <purpleStainedGlassPane id="minecraft:stained_glass_pane" damage="10"/>
+                        <blueStainedGlassPane id="minecraft:stained_glass_pane" damage="11"/>
+                        <brownStainedGlassPane id="minecraft:stained_glass_pane" damage="12"/>
+                        <greenStainedGlassPane id="minecraft:stained_glass_pane" damage="13"/>
+                        <darkGreenStainedGlassPane id="minecraft:stained_glass_pane" damage="13"/>
+                        <redStainedGlassPane id="minecraft:stained_glass_pane" damage="14"/>
+                        <blackStainedGlassPane id="minecraft:stained_glass_pane" damage="15"/>
+                    </stainedGlassPane>
+                </stainedGlass>
+                <ironBars id="minecraft:iron_bars"/>
+                <stairs>
+                    <woodenStairs>
+                        <oakWoodStairs id="minecraft:oak_stairs"/>
+                        <spruceWoodStairs id="minecraft:spruce_stairs"/>
+                        <birchWoodStairs id="minecraft:birch_stairs"/>
+                        <jungleWoodStairs id="minecraft:jungle_stairs"/>
+                        <acaciaWoodStairs id="minecraft:acacia_stairs"/>
+                        <darkOakWoodStairs id="minecraft:dark_oak_stairs"/>
+                        <woodenStairsDict oreDictName="stairWood"/>
+                    </woodenStairs>
+                    <cobblestoneStairs id="minecraft:stone_stairs"/>
+                    <stoneStairs id="minecraft:stone_brick_stairs"/>
+                    <brickStairs id="minecraft:brick_stairs"/>
+                    <netherStairs id="minecraft:nether_brick_stairs"/>
+                    <netherBrickStairs id="minecraft:nether_brick_stairs"/>
+                    <sandstoneStairs id="minecraft:sandstone_stairs"/>
+                    <quartzStairs id="minecraft:quartz_stairs"/>
+                </stairs>
+                <slabs>
+                    <woodenSlabs>
+                        <woodenStoneSlab id="minecraft:stone_slab" damage="2"/>
+                        <oakWoodSlab id="minecraft:wooden_slab" damage="0"/>
+                        <spruceWoodSlab id="minecraft:wooden_slab" damage="1"/>
+                        <birchWoodSlab id="minecraft:wooden_slab" damage="2"/>
+                        <jungleWoodSlab id="minecraft:wooden_slab" damage="3"/>
+                        <woodenSlabsDict oreDictName="slabWood"/>
+                    </woodenSlabs>
+                    <stoneSlab id="minecraft:stone_slab" damage="0"/>
+                    <sandstoneSlab id="minecraft:stone_slab" damage="1"/>
+                    <cobblestoneSlab id="minecraft:stone_slab" damage="3"/>
+                    <brickSlab id="minecraft:stone_slab" damage="4"/>
+                    <stoneBrickSlab id="minecraft:stone_slab" damage="5"/>
+                    <netherBrickSlab id="minecraft:stone_slab" damage="6"/>
+                    <quartzSlab id="minecraft:stone_slab" damage="7"/>
+                    <doubleSlab>
+                        <woodenDoubleSlabs>
+                            <woodenStoneDoubleSlab id="minecraft:double_stone_slab" damage="2"/>
+                            <oakWoodDoubleSlab id="minecraft:double_wooden_slab" damage="0"/>
+                            <spruceWoodDoubleSlab id="minecraft:double_wooden_slab" damage="1"/>
+                            <birchWoodDoubleSlab id="minecraft:double_wooden_slab" damage="2"/>
+                            <jungleWoodDoubleSlab id="minecraft:double_wooden_slab" damage="3"/>
+                        </woodenDoubleSlabs>
+                        <stoneDoubleSlab id="minecraft:double_stone_slab" damage="0"/>
+                        <sandstoneDoubleSlab id="minecraft:double_stone_slab" damage="1"/>
+                        <cobblestoneDoubleSlab id="minecraft:double_stone_slab" damage="3"/>
+                        <brickDoubleSlab id="minecraft:double_stone_slab" damage="4"/>
+                        <stoneBrickDoubleSlab id="minecraft:double_stone_slab" damage="5"/>
+                        <netherBrickDoubleSlab id="minecraft:double_stone_slab" damage="6"/>
+                        <quartzDoubleSlab id="minecraft:double_stone_slab" damage="7"/>
+                        <smoothStoneDoubleSlab id="minecraft:double_stone_slab" damage="8"/>
+                        <smoothSandstoneDoubleSlab id="minecraft:double_stone_slab" damage="9"/>
+                        <quartzTileDoubleSlab id="minecraft:double_stone_slab" damage="10"/>
+                    </doubleSlab>
+                </slabs>
+                <oreBlock>
+                    <coalBlock id="minecraft:coal_block"/>
+                    <ironBlock id="minecraft:iron_block"/>
+                    <goldBlock id="minecraft:gold_block"/>
+                    <redstoneBlock id="minecraft:redstone_block"/>
+                    <lapisLazuliBlock id="minecraft:lapis_block"/>
+                    <diamondBlock id="minecraft:diamond_block"/>
+                    <emeraldBlock id="minecraft:emerald_block"/>
+                    <quartzBlock id="minecraft:quartz_block"/>
+                </oreBlock>
+                <hayBale id="minecraft:hay_block"/>
+                <stick id="minecraft:stick"/>
+                <stickDict oreDictName="stickWood"/>
+            </constructionBlock>
+            <itemBlock>
+                <cauldronBlock id="minecraft:cauldron"/>
+                <brewingStandBlock id="minecraft:brewing_stand"/>
+            </itemBlock>
+        </manufacturedBlock>
+        <mechanism>
+            <rails>
+                <simpleRails id="minecraft:rail"/>
+                <poweredRails id="minecraft:golden_rail"/>
+                <detectorRails id="minecraft:detector_rail"/>
+                <activatorRails id="minecraft:activator_rail"/>
+            </rails>
+            <lighting>
+                <torch id="minecraft:torch"/>
+                <lamp id="minecraft:redstone_lamp"/>
+                <redstoneLamp id="minecraft:redstone_lamp"/>
+                <lamp id="minecraft:lit_redstone_lamp"/>
+                <redstoneLamp id="minecraft:lit_redstone_lamp"/>
+            </lighting>
+            <pistons>
+                <piston id="minecraft:piston"/>
+                <stickyPiston id="minecraft:sticky_piston"/>
+                <pistonHead id="minecraft:piston_head"/>
+            </pistons>
+            <lever id="minecraft:lever"/>
+            <pressurePlates>
+                <pressurePlateWood id="minecraft:wooden_pressure_plate"/>
+                <pressurePlateStone id="minecraft:stone_pressure_plate"/>
+                <weightedPressurePlates>
+                    <weightedPressurePlateLight id="minecraft:light_weighted_pressure_plate"/>
+                    <weightedPressurePlateHeavy id="minecraft:heavy_weighted_pressure_plate"/>
+                </weightedPressurePlates>
+            </pressurePlates>
+            <buttons>
+                <stoneButton id="minecraft:stone_button"/>
+                <woodenButton id="minecraft:wooden_button"/>
+            </buttons>
+            <doors>
+                <doorWood id="minecraft:wooden_door"/>
+                <woodenDoor id="minecraft:wooden_door"/>
+                <doorIron id="minecraft:iron_door"/>
+                <ironDoor id="minecraft:iron_door"/>
+                <trapdoor id="minecraft:trapdoor"/>
+                <woodenDoorBlock id="minecraft:wooden_door"/>
+                <ironDoorBlock id="minecraft:wooden_door"/>
+            </doors>
+            <redstoneWire id="minecraft:redstone_wire"/>
+            <redstoneTorch id="minecraft:unlit_redstone_torch"/>
+            <redstoneTorch id="minecraft:redstone_torch"/>
+            <redstoneRepeater id="minecraft:repeater"/>
+            <redstoneRepeater id="minecraft:unpowered_repeater"/>
+            <redstoneRepeater id="minecraft:powered_repeater"/>
+            <dispenser id="minecraft:dispenser"/>
+            <noteBlock id="minecraft:noteblock"/>
+            <commandBlock id="minecraft:command_block"/>
+            <daylightSensor id="minecraft:daylight_detector"/>
+            <redstoneBlock id="minecraft:redstone_block"/>
+            <hopper id="minecraft:hopper"/>
+            <dropper id="minecraft:dropper"/>
+            <redstoneComparator id="minecraft:comparator"/>
+            <redstoneComparator id="minecraft:unpowered_comparator"/>
+            <redstoneComparator id="minecraft:powered_comparator"/>
+        </mechanism>
+    </block>
+    <resources>
+        <miningResources>
+            <goldOreBlock id="minecraft:gold_ore"/>
+            <goldOreBlockDict oreDictName="oreGold"/>
+            <silverOreBlockDict oreDictName="oreSilver"/>
+            <leadOreBlockDict oreDictName="oreLead"/>
+            <ironOreBlock id="minecraft:iron_ore"/>
+            <ironOreBlockDict oreDictName="oreIron"/>
+            <copperOreBlockDict oreDictName="oreCopper"/>
+            <tinOreBlockDict oreDictName="oreTin"/>
+            <goldDustDict oreDictName="dustGold"/>
+            <silverDustDict oreDictName="dustSilver"/>
+            <leadDustDict oreDictName="dustLead"/>
+            <bronzeDustDict oreDictName="dustBronze"/>
+            <brassDustDict oreDictName="dustBrass"/>
+            <ironDustDict oreDictName="dustIron"/>
+            <tinDustDict oreDictName="dustTin"/>
+            <copperDustDict oreDictName="dustCopper"/>
+            <coal id="minecraft:coal" damage="0"/>
+            <charcoal id="minecraft:coal" damage="1"/>
+            <gold id="minecraft:gold_ingot"/>
+            <goldDict oreDictName="ingotGold"/>
+            <silverDict oreDictName="ingotSilver"/>
+            <leadDict oreDictName="ingotLead"/>
+            <bronzeDict oreDictName="ingotBronze"/>
+            <brassDict oreDictName="ingotBrass"/>
+            <iron id="minecraft:iron_ingot"/>
+            <ironDict oreDictName="ingotIron"/>
+            <tinDict oreDictName="ingotTin"/>
+            <copperDict oreDictName="ingotCopper"/>
+            <diamond id="minecraft:diamond"/>
+            <emerald id="minecraft:emerald"/>
+            <redstone id="minecraft:redstone"/>
+            <glowstoneDust id="minecraft:glowstone_dust"/>
+            <clayBrick id="minecraft:brick"/>
+            <clay id="minecraft:clay_ball"/>
+            <flint id="minecraft:flint"/>
+            <netherQuartz id="minecraft:quartz"/>
+        </miningResources>
+        <huntingResources>
+            <egg id="minecraft:egg"/>
+            <bone id="minecraft:bone"/>
+            <leather id="minecraft:leather"/>
+            <string id="minecraft:string"/>
+            <feather id="minecraft:feather"/>
+            <gunpowder id="minecraft:gunpowder"/>
+            <slimeball id="minecraft:slime_ball"/>
+            <enderPearl id="minecraft:ender_pearl"/>
+            <blazeRod id="minecraft:blaze_rod"/>
+            <ghastTear id="minecraft:ghast_tear"/>
+            <goldNugget id="minecraft:gold_nugget"/>
+            <netherStar id="minecraft:nether_star"/>
+        </huntingResources>
+        <farmingResources>
+            <milk id="minecraft:milk_bucket"/>
+            <wheat id="minecraft:wheat"/>
+            <paper id="minecraft:paper"/>
+            <book id="minecraft:book"/>
+            <sugarCane id="minecraft:reeds"/>
+        </farmingResources>
+        <dye>
+            <boneMeal id="minecraft:dye" damage="15"/>
+            <whiteDye oreDictName="dyeWhite"/>
+            <inkSac id="minecraft:dye" damage="0"/>
+            <blackDye oreDictName="dyeBlack"/>
+            <roseRed id="minecraft:dye" damage="1"/>
+            <redDye oreDictName="dyeRed"/>
+            <cactusGreen id="minecraft:dye" damage="2"/>
+            <greenDye oreDictName="dyeGreen"/>
+            <cocoaBeans id="minecraft:dye" damage="3"/>
+            <brownDye oreDictName="dyeBrown"/>
+            <lapisLazuli id="minecraft:dye" damage="4"/>
+            <lapisLazuliDye oreDictName="dyeBlue"/>
+            <blueDye oreDictName="dyeBlue"/>
+            <purpleDye oreDictName="dyePurple"/>
+            <cyanDye oreDictName="dyeCyan"/>
+            <lightGrayDye oreDictName="dyeLightGray"/>
+            <grayDye oreDictName="dyeGray"/>
+            <pinkDye oreDictName="dyePink"/>
+            <limeDye oreDictName="dyeLime"/>
+            <dandelionYellow id="minecraft:dye" damage="11"/>
+            <yellowDye oreDictName="dyeYellow"/>
+            <lightBlueDye oreDictName="dyeLightBlue"/>
+            <magentaDye oreDictName="dyeMagenta"/>
+            <orangeDye oreDictName="dyeOrange"/>
+        </dye>
+    </resources>
+    <item>
+        <utility>
+            <torch id="minecraft:torch"/>
+            <flintAndSteel id="minecraft:flint_and_steel"/>
+            <craftingTable id="minecraft:crafting_table"/>
+            <furnace id="minecraft:furnace"/>
+            <furnaceBurning id="minecraft:lit_furnace"/>
+            <chests>
+                <chest id="minecraft:chest"/>
+                <enderChest id="minecraft:ender_chest"/>
+            </chests>
+            <beacon id="minecraft:beacon"/>
+            <anvil id="minecraft:anvil"/>
+            <jukebox id="minecraft:jukebox"/>
+            <bed id="minecraft:bed"/>
+            <readableBooks>
+                <bookAndQuill id="minecraft:writable_book"/>
+                <writtenBook id="minecraft:written_book"/>
+            </readableBooks>
+            <enchantedBook id="minecraft:enchanted_book"/>
+            <tnt id="minecraft:tnt"/>
+            <tripwireHook id="minecraft:tripwire_hook"/>
+            <bowl id="minecraft:bowl"/>
+            <cauldron id="minecraft:cauldron"/>
+            <brewingStand id="minecraft:brewing_stand"/>
+            <enchantmentTable id="minecraft:enchanting_table"/>
+            <eyeOfEnder id="minecraft:ender_eye"/>
+            <enderEye id="minecraft:ender_eye"/>
+            <spawnerEgg id="minecraft:spawn_egg"/>
+            <tripwire id="minecraft:tripwire"/>
+            <nameTag id="minecraft:name_tag"/>
+            <animalLead id="minecraft:lead"/>
+            <horseArmor>
+                <ironHorseArmor id="minecraft:iron_horse_armor"/>
+                <goldHorseArmor id="minecraft:golden_horse_armor"/>
+                <diamondHorseArmor id="minecraft:diamond_horse_armor"/>
+            </horseArmor>
+        </utility>
+        <bucket>
+            <emptyBucket id="minecraft:bucket"/>
+            <waterBucket id="minecraft:water_bucket"/>
+            <lavaBucket id="minecraft:lava_bucket"/>
+        </bucket>
+        <instrument>
+            <clock id="minecraft:clock"/>
+            <compass id="minecraft:compass"/>
+            <emptyMap id="minecraft:map"/>
+            <map id="minecraft:filled_map"/>
+        </instrument>
+        <vehicle>
+            <boat id="minecraft:boat"/>
+            <minecarts>
+                <minecart id="minecraft:minecart"/>
+                <poweredMinecart id="minecraft:furnace_minecart"/>
+                <storageMinecart id="minecraft:chest_minecart"/>
+                <tntMinecart id="minecraft:tnt_minecart"/>
+                <hopperMinecart id="minecraft:hopper_minecart"/>
+                <commandBlockMinecart id="minecraft:command_block_minecart"/>
+            </minecarts>
+            <saddle id="minecraft:saddle"/>
+        </vehicle>
+        <decoration>
+            <bed id="minecraft:bed"/>
+            <door>
+                <doorIron id="minecraft:iron_door"/>
+                <doorWood id="minecraft:wooden_door"/>
+            </door>
+            <painting id="minecraft:painting"/>
+            <sign id="minecraft:sign"/>
+            <bookShelf id="minecraft:bookshelf"/>
+            <flowerPot id="minecraft:flower_pot"/>
+            <itemFrame id="minecraft:item_frame"/>
+            <frame id="minecraft:item_frame"/>
+            <head id="minecraft:skull"/>
+            <musicDisc>
+                <musicDisc13 id="minecraft:record_13"/>
+                <musicDiscCat id="minecraft:record_cat"/>
+                <musicDiscBlocks id="minecraft:record_blocks"/>
+                <musicDiscChirp id="minecraft:record_chirp"/>
+                <musicDiscFar id="minecraft:record_far"/>
+                <musicDiscMall id="minecraft:record_mall"/>
+                <musicDiscMellohi id="minecraft:record_mellohi"/>
+                <musicDiscStal id="minecraft:record_stal"/>
+                <musicDiscStrad id="minecraft:record_strad"/>
+                <musicDiscWard id="minecraft:record_ward"/>
+                <musicDisc11 id="minecraft:record_11"/>
+                <musicDiskWait id="minecraft:record_wait"/>
+            </musicDisc>
+            <flowerPotBlock id="minecraft:flower_pot"/>
+            <headBlock id="minecraft:skull"/>
+        </decoration>
+        <food>
+            <edibleFood>
+                <mushroomStew id="minecraft:mushroom_stew"/>
+                <cookedFood>
+                    <cookedPorkchop id="minecraft:cooked_porkchop"/>
+                    <cookedFish id="minecraft:cooked_fished" damage="0"/>
+                    <cookedSalmon id="minecraft:cooked_fished" damage="1"/>
+                    <steak id="minecraft:cooked_beef"/>
+                    <cookedChicken id="minecraft:cooked_chicken"/>
+                    <bakedPotato id="minecraft:baked_potato"/>
+                </cookedFood>
+                <bread id="minecraft:bread"/>
+                <pumpkinPie id="minecraft:pumpkin_pie"/>
+                <melonSlice id="minecraft:melon"/>
+                <carrot>
+                    <carrot id="minecraft:carrot"/>
+                    <goldenCarrot id="minecraft:golden_carrot"/>
+                </carrot>
+                <apple>
+                    <appleRed id="minecraft:apple"/>
+                    <appleGolden id="minecraft:golden_apple"/>
+                </apple>
+                <cookie id="minecraft:cookie"/>
+                <rawFood>
+                    <rawPorkchop id="minecraft:porkchop"/>
+                    <rawFish id="minecraft:fish" damage="0"/>
+                    <rawSalmon id="minecraft:fish" damage="1"/>
+                    <clownfish id="minecraft:fish" damage="2"/>
+                    <rawBeef id="minecraft:beef"/>
+                    <rawChicken id="minecraft:chicken"/>
+                    <potato id="minecraft:potato"/>
+                </rawFood>
+            </edibleFood>
+            <poisonedFood>
+                <rottenFlesh id="minecraft:rotten_flesh"/>
+                <spiderEye id="minecraft:spider_eye"/>
+                <poisonedPotato id="minecraft:poisonous_potato"/>
+                <poisonousPotato id="minecraft:poisonous_potato"/>
+                <pufferfish id="minecraft:fish" damage="3"/>
+            </poisonedFood>
+            <unedibleFood>
+                <cake id="minecraft:cake"/>
+                <sugar id="minecraft:sugar"/>
+                <cakeBlock id="minecraft:cake"/>
+            </unedibleFood>
+        </food>
+        <plant>
+            <flower>
+                <flowerYellow id="minecraft:yellow_flower"/>
+                <dandelion id="minecraft:yellow_flower"/>
+                <flowerRed>
+                    <poppy id="minecraft:red_flower" damage="0"/>
+                    <tulipRed id="minecraft:red_flower" damage="4"/>
+                </flowerRed>
+                <flowerLightBlue id="minecraft:red_flower" damage="1"/>
+                <blueOrchid id="minecraft:red_flower" damage="1"/>
+                <flowerMagenta id="minecraft:red_flower" damage="2"/>
+                <allium id="minecraft:red_flower" damage="2"/>
+                <flowerLightGray>
+                    <azureBluet id="minecraft:red_flower" damage="3"/>
+                    <tulipWhite id="minecraft:red_flower" damage="6"/>
+                </flowerLightGray>
+                <flowerOrange id="minecraft:red_flower" damage="5"/>
+                <flowerPink id="minecraft:red_flower" damage="7"/>
+                <tulip>
+                    <tulipRed id="minecraft:red_flower" damage="4"/>
+                    <tulipWhite id="minecraft:red_flower" damage="6"/>
+                    <tulipOrange id="minecraft:red_flower" damage="5"/>
+                    <tulipPink id="minecraft:red_flower" damage="7"/>
+                </tulip>
+                <doublePlant id="minecraft:double_plant">
+                    <sunflower id="minecraft:double_plant" damage="0"/>
+                    <lilac id="minecraft:double_plant" damage="1"/>
+                    <roseBush id="minecraft:double_plant" damage="4"/>
+                    <peony id="minecraft:double_plant" damage="5"/>
+                </doublePlant>
+            </flower>
+            <mushroom>
+                <mushroomBrown id="minecraft:brown_mushroom"/>
+                <mushroomRed id="minecraft:red_mushroom"/>
+            </mushroom>
+            <sapling>
+                <oakSapling id="minecraft:sapling" damage="0"/>
+                <spruceSapling id="minecraft:sapling" damage="1"/>
+                <birchSapling id="minecraft:sapling" damage="2"/>
+                <jungleSapling id="minecraft:sapling" damage="3"/>
+                <acaciaSapling id="minecraft:sapling" damage="4"/>
+                <darkOakSapling id="minecraft:sapling" damage="5"/>
+                <saplingDict oreDictName="treeSapling"/>
+            </sapling>
+            <leaves id="minecraft:leaves">
+                <oakLeaves id="minecraft:leaves" damage="0"/>
+                <spruceLeaves id="minecraft:leaves" damage="1"/>
+                <birchLeaves id="minecraft:leaves" damage="2"/>
+                <jungleLeaves id="minecraft:leaves" damage="3"/>
+                <acaciaLeaves id="minecraft:leaves2" damage="0"/>
+                <darkOakLeaves id="minecraft:leaves2" damage="1"/>
+                <leavesDict oreDictName="treeLeaves"/>
+            </leaves>
+            <seed>
+                <wheatSeed id="minecraft:wheat_seeds"/>
+                <pumpkinSeed id="minecraft:pumpkin_seeds"/>
+                <melonSeed id="minecraft:melon_seeds"/>
+            </seed>
+            <netherWart id="minecraft:nether_wart"/>
+            <netherWart id="minecraft:nether_wart"/>
+            <sugarCane id="minecraft:reeds"/>
+            <sugarCane id="minecraft:reeds"/>
+            <vines id="minecraft:vine"/>
+            <cactus id="minecraft:cactus"/>
+            <reed id="minecraft:reeds"/>
+            <melon id="minecraft:melon_block"/>
+            <pumpkin id="minecraft:pumpkin"/>
+            <cocoaPod id="minecraft:cocoa"/>
+            <cocoaPlant id="minecraft:cocoa"/>
+            <tallGrass id="minecraft:tallgrass"/>
+            <deadShrub id="minecraft:deadbush"/>
+            <deadBush id="minecraft:deadbush"/>
+            <seedBlock id="minecraft:wheat"/>
+            <pumpkinStem id="minecraft:pumpkin_stem"/>
+            <melonStem id="minecraft:melon_stem"/>
+            <carrotBlock id="minecraft:carrots"/>
+            <potatoBlock id="minecraft:potatoes"/>
+            <potatoesBlock id="minecraft:potatoes"/>
+            <lilyPad id="minecraft:waterlily"/>
+        </plant>
+        <fireworks id="minecraft:firework_charge"/>
+        <potion>
+            <drinkablePotion>
+                <neutralPotion>
+                    <waterBottle id="minecraft:potion" damage="0"/>
+                    <awkwardPotion id="minecraft:potion" damage="16"/>
+                    <thickPotion id="minecraft:potion" damage="32"/>
+                    <mundanePotionExtended id="minecraft:potion" damage="64"/>
+                    <mundanePotion id="minecraft:potion" damage="8192"/>
+                </neutralPotion>
+                <positivePotion>
+                    <regenerationPotion>
+                        <potionRegeneration id="minecraft:potion" damage="8193"/>
+                        <potionRegenerationEx id="minecraft:potion" damage="8257"/>
+                        <potionRegenerationII id="minecraft:potion" damage="8225"/>
+                    </regenerationPotion>
+                    <swiftnessPotion>
+                        <potionSwiftness id="minecraft:potion" damage="8194"/>
+                        <potionSwiftnessEx id="minecraft:potion" damage="8258"/>
+                        <potionSwiftnessII id="minecraft:potion" damage="8226"/>
+                    </swiftnessPotion>
+                    <fireResistancePotion>
+                        <potionFireResistance id="minecraft:potion" damage="8195"/>
+                        <potionFireResistanceEx id="minecraft:potion" damage="8259"/>
+                        <potionFireResistanceII id="minecraft:potion" damage="8227"/>
+                    </fireResistancePotion>
+                    <healingPotion>
+                        <potionHealing id="minecraft:potion" damage="8197"/>
+                        <potionHealingEx id="minecraft:potion" damage="8261"/>
+                        <potionHealingII id="minecraft:potion" damage="8229"/>
+                    </healingPotion>
+                    <strengthPotion>
+                        <potionStrength id="minecraft:potion" damage="8201"/>
+                        <potionStrengthEx id="minecraft:potion" damage="8265"/>
+                        <potionStrengthII id="minecraft:potion" damage="8233"/>
+                    </strengthPotion>
+                    <nightVisionPotion>
+                        <potionNightVision id="minecraft:potion" damage="8230"/>
+                        <potionNightVisionEx id="minecraft:potion" damage="8262"/>
+                    </nightVisionPotion>
+                    <invisibilityPotion>
+                        <potionInvisibility id="minecraft:potion" damage="8238"/>
+                        <potionInvisibilityEx id="minecraft:potion" damage="8270"/>
+                    </invisibilityPotion>
+                </positivePotion>
+                <negativePotion>
+                    <poisonPotion>
+                        <potionPoison id="minecraft:potion" damage="8196"/>
+                        <potionPoisonEx id="minecraft:potion" damage="8260"/>
+                        <potionPoisonII id="minecraft:potion" damage="8228"/>
+                    </poisonPotion>
+                    <weaknessPotion>
+                        <potionWeakness id="minecraft:potion" damage="8200"/>
+                        <potionWeaknessEx id="minecraft:potion" damage="8264"/>
+                        <potionWeaknessII id="minecraft:potion" damage="8232"/>
+                    </weaknessPotion>
+                    <slownessPotion>
+                        <potionSlowness id="minecraft:potion" damage="8202"/>
+                        <potionSlownessEx id="minecraft:potion" damage="8266"/>
+                        <potionSlownessII id="minecraft:potion" damage="8234"/>
+                    </slownessPotion>
+                    <harmingPotion>
+                        <potionHarming id="minecraft:potion" damage="8204"/>
+                        <potionHarmingEx id="minecraft:potion" damage="8268"/>
+                        <potionHarmingII id="minecraft:potion" damage="8236"/>
+                    </harmingPotion>
+                </negativePotion>
+            </drinkablePotion>
+            <splashPotion>
+                <splashMundanePotion id="minecraft:potion" damage="16384"/>
+                <positiveSplashPotion>
+                    <regenerationSplashPotion>
+                        <splashPotionRegeneration id="minecraft:potion" damage="16385"/>
+                        <splashPotionRegenerationEx id="minecraft:potion" damage="16449"/>
+                        <splashPotionRegenerationII id="minecraft:potion" damage="16417"/>
+                    </regenerationSplashPotion>
+                    <swiftnessSplashPotion>
+                        <splashPotionSwiftness id="minecraft:potion" damage="16386"/>
+                        <splashPotionSwiftnessEx id="minecraft:potion" damage="16450"/>
+                        <splashPotionSwiftnessII id="minecraft:potion" damage="16418"/>
+                    </swiftnessSplashPotion>
+                    <fireResistanceSplashPotion>
+                        <splashPotionFireResistance id="minecraft:potion" damage="16387"/>
+                        <splashPotionFireResistanceEx id="minecraft:potion" damage="16451"/>
+                        <splashPotionFireResistanceII id="minecraft:potion" damage="16419"/>
+                    </fireResistanceSplashPotion>
+                    <healingSplashPotion>
+                        <splashPotionHealing id="minecraft:potion" damage="16389"/>
+                        <splashPotionHealingEx id="minecraft:potion" damage="16453"/>
+                        <splashPotionHealingII id="minecraft:potion" damage="16421"/>
+                    </healingSplashPotion>
+                    <strengthSplashPotion>
+                        <splashPotionStrength id="minecraft:potion" damage="16393"/>
+                        <splashPotionStrengthEx id="minecraft:potion" damage="16457"/>
+                        <splashPotionStrengthII id="minecraft:potion" damage="16425"/>
+                    </strengthSplashPotion>
+                    <nightVisionSplashPotion>
+                        <splashPotionNightVision id="minecraft:potion" damage="16422"/>
+                        <splashPotionNightVisionEx id="minecraft:potion" damage="16454"/>
+                    </nightVisionSplashPotion>
+                    <invisibilitySplashPotion>
+                        <splashPotionInvisibility id="minecraft:potion" damage="16430"/>
+                        <splashPotionInvisibilityEx id="minecraft:potion" damage="16462"/>
+                    </invisibilitySplashPotion>
+                </positiveSplashPotion>
+                <negativeSplashPotion>
+                    <poisonSplashPotion>
+                        <splashPotionPoison id="minecraft:potion" damage="16388"/>
+                        <splashPotionPoisonEx id="minecraft:potion" damage="16452"/>
+                        <splashPotionPoisonII id="minecraft:potion" damage="16420"/>
+                    </poisonSplashPotion>
+                    <weaknessSplashPotion>
+                        <splashPotionWeakness id="minecraft:potion" damage="16392"/>
+                        <splashPotionWeaknessEx id="minecraft:potion" damage="16456"/>
+                        <splashPotionWeaknessII id="minecraft:potion" damage="16424"/>
+                    </weaknessSplashPotion>
+                    <slownessSplashPotion>
+                        <splashPotionSlowness id="minecraft:potion" damage="16394"/>
+                        <splashPotionSlownessEx id="minecraft:potion" damage="16458"/>
+                        <splashPotionSlownessII id="minecraft:potion" damage="16426"/>
+                    </slownessSplashPotion>
+                    <harmingSplashPotion>
+                        <splashPotionHarming id="minecraft:potion" damage="16396"/>
+                        <splashPotionHarmingEx id="minecraft:potion" damage="16460"/>
+                        <splashPotionHarmingII id="minecraft:potion" damage="16428"/>
+                    </harmingSplashPotion>
+                </negativeSplashPotion>
+            </splashPotion>
+            <bottleOEnchanting id="minecraft:experience_bottle"/>
+            <bottleEnchanting id="minecraft:experience_bottle"/>
+        </potion>
+        <glassBottle id="minecraft:glass_bottle"/>
+        <potionIngredient>
+            <netherWart id="minecraft:nether_wart"/>
+            <redstone id="minecraft:redstone"/>
+            <glowstoneDust id="minecraft:glowstone_dust"/>
+            <sugar id="minecraft:sugar"/>
+            <ghastTear id="minecraft:ghast_tear"/>
+            <spiderEye id="minecraft:spider_eye"/>
+            <fermentedSpiderEye id="minecraft:fermented_spider_eye"/>
+            <blazePowder id="minecraft:blaze_powder"/>
+            <magmaCream id="minecraft:magma_cream"/>
+            <glisteringMelon id="minecraft:speckled_melon"/>
+        </potionIngredient>
+    </item>
+</stuff>
