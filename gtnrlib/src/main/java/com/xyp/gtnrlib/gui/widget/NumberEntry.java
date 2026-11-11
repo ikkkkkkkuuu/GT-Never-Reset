@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.function.LongConsumer;
+import java.util.regex.Pattern;
 
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.StatCollector;
@@ -34,7 +35,8 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
     private static final long[] STEPS = { 1, 10, 100, 1000 }, SHIFT_STEPS = { 1, 16, 32, 64 };
     private static final int[] BUTTON_X = { 0, 28, 62, 100 }, BUTTON_WIDTH = { 22, 28, 32, 38 };
     private static final int MINUS_Y = 42, FIELD_X = 28, FIELD_Y = 25, FIELD_WIDTH = 66, ICON_X = 104, ICON_Y = 27,
-        MAX_LENGTH = 16, PLAIN_ERROR = 0xFFFF5555;
+        MAX_LENGTH = 64, PLAIN_ERROR = 0xFFFF5555;
+    private static final Pattern INTEGER = Pattern.compile("-?\\d+");
 
     private final @Nullable Variant variant;
     private final Field field = new Field();
@@ -100,6 +102,10 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
         return valid;
     }
 
+    public boolean isInputValid() {
+        return isValueValid();
+    }
+
     private ButtonWidget<?> step(int index, int sign) {
         ButtonWidget<?> button = new ButtonWidget<>();
         IDrawable background = AE2Theme.button(button, () -> true, () -> false);
@@ -118,13 +124,13 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
     }
 
     private void add(long delta) {
-        BigDecimal current = parse(text);
-        if (current == null) current = BigDecimal.ZERO;
-        BigDecimal next = current.add(BigDecimal.valueOf(delta));
-        if (next.compareTo(BigDecimal.valueOf(min)) < 0) next = BigDecimal.valueOf(min);
-        else if (next.compareTo(BigDecimal.valueOf(max)) > 0) next = BigDecimal.valueOf(max);
-        else if (current.compareTo(BigDecimal.ONE) == 0 && delta > 1) next = next.subtract(BigDecimal.ONE);
-        setText(next.toPlainString());
+        BigDecimal current = valid ? BigDecimal.valueOf(value) : BigDecimal.ZERO;
+        BigDecimal next = current.compareTo(BigDecimal.ONE) == 0 && delta > 1 ? BigDecimal.valueOf(delta)
+            : current.add(BigDecimal.valueOf(delta));
+        setText(
+            next.max(BigDecimal.valueOf(min))
+                .min(BigDecimal.valueOf(max))
+                .toPlainString());
         validate(true);
     }
 
@@ -134,6 +140,8 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
     }
 
     private void validate(boolean notify) {
+        boolean wasValid = valid;
+        long previous = value;
         messages.clear();
         BigDecimal number = parse(text);
         if (number == null) {
@@ -163,21 +171,37 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
         warning.setEnabled(!valid);
         if (!valid) return;
         value = number.longValueExact();
-        if (!text.strip()
-            .matches("-?\\d+")) messages.add("= " + value);
-        if (notify) listener.accept(value);
+        if (!INTEGER.matcher(text.strip())
+            .matches()) messages.add("= " + value);
+        if (notify && (!wasValid || previous != value)) listener.accept(value);
     }
 
     private static @Nullable BigDecimal parse(String text) {
         String trimmed = text.strip();
         if (trimmed.isEmpty()) return null;
-        ParseResult result = MathUtils.parseExpression(trimmed, 0);
-        if (result.isFailure() || !result.hasValue()) return null;
-        return result.getResult()
-            .getNumberValue();
+        if (INTEGER.matcher(trimmed)
+            .matches()) return new BigDecimal(trimmed);
+        try {
+            ParseResult result = MathUtils.parseExpression(trimmed, 0);
+            if (result.isFailure() || !result.hasValue()
+                || !result.getResult()
+                    .isNumberValue())
+                return null;
+            return result.getResult()
+                .getNumberValue();
+        } catch (ArithmeticException | NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private static class Field extends TextFieldWidget {
+
+        @Override
+        public void setText(String text) {
+            super.setText(text);
+            handler.clampCursors();
+            getScrollData().scrollTo(getScrollArea(), 0);
+        }
 
         private void error(@Nullable Integer color) {
             textColor = color;

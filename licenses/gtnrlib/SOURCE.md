@@ -110,6 +110,17 @@ Adapted namespaces, resource paths and registration to the GTNRLib client lifecy
 
 The additional AE2 widgets, scrollbar and theme guide come from [GTNLLib PR 3](https://github.com/GTNotLeisure/GTNLLib/pull/3) at d5c43b46380948c0b043b483823c99b7b3751288. The guide is reproduced verbatim. The library uses its own namespace and generates the quantity validation messages from Java translation declarations.
 
+Updated on 2026-11-11 to GTNLLib commit c1e431dbcabf33dfbba7955a28267827725c4574:
+[PR 4](https://github.com/GTNotLeisure/GTNLLib/pull/4) anchors scrollbar dragging,
+[PR 5](https://github.com/GTNotLeisure/GTNLLib/pull/5) adds the dark purple theme,
+and [PR 6](https://github.com/GTNotLeisure/GTNLLib/pull/6) fixes flat dropdown options
+and menu padding. Also includes the persistent scrollbar, empty-list layout and
+number-entry corrections in 4f6ee31aeff8d92e24b179e6786c5a2dca51e5a6.
+The theme guide is adapted to local package paths and runtime screenshots; purple skin assets follow that revision. GTNRLib retains its
+local radio drawing, adjacent translation declarations and isValueValid() API;
+isInputValid() is an alias for compatibility with upstream examples. Radio
+highlights now follow the selected variant. Code and asset licenses are unchanged.
+
 ## First-person hand motion
 
 The example uses 1.7.10 action keyframes, converted neutral held-item poses and a client motion sampler. The releases and the separate Forge source port below were inspected for behavior. Upstream code, scripts and assets are not bundled.

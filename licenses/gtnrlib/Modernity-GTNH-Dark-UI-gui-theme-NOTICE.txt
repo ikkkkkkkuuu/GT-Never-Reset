@@ -6,6 +6,7 @@ Local assets:
   assets/gtnrlib/textures/gui/skin/ae2_dark/icons.png
   assets/gtnrlib/textures/gui/skin/ae2_dark/legacy_states.png
   assets/gtnrlib/textures/gui/skin/ae2_dark/legacy_terminal.png
+  assets/gtnrlib/textures/gui/skin/ae2_dark_purple/ (the same five files)
 Original assets:
   assets/modularui2/textures/gui/slot/item.png
   assets/modularui2/textures/gui/slot/fluid.png
@@ -26,6 +27,12 @@ recoloured with the colour pairs between Modernity-GTNH-UI and
 Modernity-GTNH-Dark-UI (each light colour mapped to the dark colour the dark
 pack uses for it in the same place).
 No endorsement by the original authors is implied.
+
+The purple variant copies these dark files unchanged except for the selection
+backgrounds of two legacy_states.png cells (x 112-127, y 208-223 and
+x 208-223, y 240-255). GTNLLib revision c1e431dbcabf33dfbba7955a28267827725c4574
+maps #9CD3FF to #644595, #DAFFFF to #E2A3E3 and #708CBA to #212040 there;
+icon pixels are preserved. These copies and adaptations retain the license below.
 
 These assets are licensed separately from this project's source code. The
 upstream LICENSE.txt is the Creative Commons Attribution-NonCommercial-ShareAlike
