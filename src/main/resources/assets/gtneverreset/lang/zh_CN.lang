@@ -1245,6 +1245,7 @@ nei.options.gtneverreset.dual_interface_terminal_append_circuit_damage=在接口
 gtneverreset.gui.config.general.client.wireless_terminal.prefer_own_interface_names=接口名称优先使用样板总成自身的电路和不消耗物品编号
 gtneverreset.gui.config.general.client.wireless_terminal.button_theme=按钮主题
 gtneverreset.gui.config.crop_breeder=大型作物杂交机
+gtneverreset.gui.config.crop_breeder.require_substrates=启用杂交底土需求
 gtneverreset.gui.config.crop_breeder.tier_chances=杂交等级默认成功率（%%）
 gtneverreset.gui.config.crop_breeder.crop_overrides=按作物 ID 覆盖成功率
 gtneverreset.gui.config.general.cropsnh=CropsNH 作物
