@@ -2087,9 +2087,6 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         private static Field entryRenameButton;
         private static Field entrySection;
         private static Field sectionVisible;
-        private static Field entryBrokenRecipes;
-        private static Field entryFilteredRecipes;
-        private static Field entryUseSubstitute;
 
         private Object highlightedEntry;
         private InterfacePatternTarget highlightedTarget;
@@ -2127,7 +2124,6 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
             }
             super.postUpdate(updates, statusFlags);
             if (restore && frozenSearchResults != null) frozenSearchResults.restore(this);
-            repairEntrySlotArrays();
             entryHitBoxesDirty = true;
         }
 
@@ -2270,26 +2266,6 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
                 lastEntrySearchTexts = searchTexts;
             }
             super.drawBG(x, y, mouseX, mouseY);
-        }
-
-        /**
-         * AE2 recreates an interface entry's inventory when GT expands its pattern slots, but leaves two parallel
-         * recipe-state arrays at their previous length. Drawing the first slot past the old size then crashes the
-         * client GUI. Interface inventories arrive through postUpdate, so align the caches there before the next draw.
-         */
-        private void repairEntrySlotArrays() {
-            Object masterList = objectField(this, MASTER_LIST);
-            Object value = objectField(masterList, ENTRIES_BY_ID);
-            if (!(value instanceof Map<?, ?>entries)) return;
-            for (Object entry : entries.values()) {
-                IInventory inventory = entryInventory(entry);
-                if (inventory == null) continue;
-                cacheEntrySlotArrayFields(entry);
-                int size = inventory.getSizeInventory();
-                resizeBooleanArray(entry, entryFilteredRecipes, size);
-                resizeBoxedBooleanArray(entry, entryBrokenRecipes, size);
-                resizeBoxedBooleanArray(entry, entryUseSubstitute, size);
-            }
         }
 
         /**
@@ -2839,31 +2815,6 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
             entrySection = findField(entryClass, "section");
             Object section = objectField(entry, entrySection);
             if (section != null) sectionVisible = findField(section.getClass(), "visible");
-        }
-
-        private static void cacheEntrySlotArrayFields(Object entry) {
-            if (entry == null
-                || entryBrokenRecipes != null && entryFilteredRecipes != null && entryUseSubstitute != null) return;
-            Class<?> entryClass = entry.getClass();
-            entryBrokenRecipes = findField(entryClass, "brokenRecipes");
-            entryFilteredRecipes = findField(entryClass, "filteredRecipes");
-            entryUseSubstitute = findField(entryClass, "useSubstitute");
-        }
-
-        private static void resizeBooleanArray(Object entry, Field field, int size) {
-            Object value = objectField(entry, field);
-            if (!(value instanceof boolean[]values) || values.length == size) return;
-            try {
-                field.set(entry, Arrays.copyOf(values, size));
-            } catch (IllegalAccessException ignored) {}
-        }
-
-        private static void resizeBoxedBooleanArray(Object entry, Field field, int size) {
-            Object value = objectField(entry, field);
-            if (!(value instanceof Boolean[]values) || values.length == size) return;
-            try {
-                field.set(entry, Arrays.copyOf(values, size));
-            } catch (IllegalAccessException ignored) {}
         }
 
         private static void invalidateButtonY(Object entry, Field buttonField) {
