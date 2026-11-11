@@ -2,7 +2,7 @@
 Select a breeding target in the controller; the machine automatically breeds recorded species to unlock it.
 The default success chance is the species' base mutation chance.
 Insert a princess or drone to record its species directly.
-Place the required bee foundation blocks in an {white:input bus}; they are {green:not consumed}
+Bee foundations are disabled by default; when enabled in config, place them in an {white:input bus}; they are {green:not consumed}
 Bee species have seven tiers from HV to UHV; the GUI shows the required voltage
 
 Each cycle takes {white:{var:attemptSeconds} seconds} by default

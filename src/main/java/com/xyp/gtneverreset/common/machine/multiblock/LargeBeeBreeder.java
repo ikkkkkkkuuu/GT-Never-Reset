@@ -55,6 +55,7 @@ import com.xyp.gtneverreset.common.machine.multiblock.bee.BeeBreedingTiers;
 import com.xyp.gtneverreset.common.machine.multiblock.bee.DronePool;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
 import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
+import com.xyp.gtneverreset.config.BeeBreederConfig;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
@@ -690,8 +691,8 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     }
 
     private boolean isFoundationScanDue() {
-        return lastFoundationScanTick == Long.MIN_VALUE
-            || mTotalRunTime - lastFoundationScanTick >= FOUNDATION_SCAN_INTERVAL;
+        return BeeBreederConfig.requireMutationFoundations && (lastFoundationScanTick == Long.MIN_VALUE
+            || mTotalRunTime - lastFoundationScanTick >= FOUNDATION_SCAN_INTERVAL);
     }
 
     private void refreshFoundationInputs(List<ItemStack> inputs) {
@@ -725,9 +726,11 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
 
     private void updateMissingFoundations(List<BeeBreedingHelper.BreedingStep> steps) {
         Map<String, FoundationRequirement> missing = new LinkedHashMap<>();
-        for (BeeBreedingHelper.BreedingStep step : steps) {
-            for (FoundationRequirement requirement : step.foundations) {
-                if (findFoundation(requirement) == null) missing.putIfAbsent(requirement.key(), requirement);
+        if (BeeBreederConfig.requireMutationFoundations) {
+            for (BeeBreedingHelper.BreedingStep step : steps) {
+                for (FoundationRequirement requirement : step.foundations) {
+                    if (findFoundation(requirement) == null) missing.putIfAbsent(requirement.key(), requirement);
+                }
             }
         }
         List<FoundationRequirement> next = new ArrayList<>(missing.values());

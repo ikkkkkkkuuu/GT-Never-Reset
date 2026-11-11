@@ -1230,6 +1230,7 @@ gui.packaged.arcane_captured=Recipe recorded. Clear the example ingredients, lea
 item.tc4_crucible_packaged_core.name=Thaumcraft Crucible Packaged Core
 item.arcane_workbench_packaged_core.name=Arcane Workbench Packaged Core
 gtneverreset.gui.config.bee_breeder=Large Bee Breeder
+gtneverreset.gui.config.bee_breeder.require_mutation_foundations=Require mutation foundations
 gtneverreset.gui.config.bee_breeder.species_voltage_overrides=Species voltage overrides
 gtneverreset.gui.config.general.client=Client
 gtneverreset.gui.config.general.client.enableAlwaysDisplayRecipeOwner=Always display recipe owner

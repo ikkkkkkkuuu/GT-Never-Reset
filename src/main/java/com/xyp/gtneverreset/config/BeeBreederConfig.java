@@ -16,6 +16,15 @@ import com.gtnewhorizon.gtnhlib.config.Config;
     categoryCulling = false)
 public class BeeBreederConfig {
 
+    @Config.Comment({ "Require mutation foundation blocks in input buses. The blocks are not consumed.",
+        "When disabled, breeding ignores foundations and the breeding route hides them. Restart to apply." })
+    @Config.DefaultBoolean(false)
+    // #tr gtneverreset.gui.config.bee_breeder.require_mutation_foundations
+    // # Require mutation foundations
+    // # zh_CN 启用杂交基石需求
+    @Config.LangKey("gtneverreset.gui.config.bee_breeder.require_mutation_foundations")
+    public static boolean requireMutationFoundations = false;
+
     @Config.Comment({ "Optional automatic bee tier overrides: species UID=HV, EV, IV, LuV, ZPM, UV or UHV.",
         "Defaults use breeding depth, parent tiers, foundation materials and GT comb processing tiers.",
         "Each three breeding generations adds one tier. Overrides also affect descendants. Restart to apply." })
