@@ -1,6 +1,7 @@
 Insert an analyzed seed into an input bus to archive its species and stats. Each new species consumes one seed
 Select a target in the controller to breed it from archived parents through any required intermediate generations
 Newly bred species start at 1/1/1. Subsequent production uses their archived stats
+Archived targets produce directly in breeding mode without parent routes, substrates or catalysts; their current stats and archive are retained
 Seed improvement uses {white:{var:baseEu} EU/t}
 Every {white:{var:washSeconds} seconds}, it attempts to raise one stat below 31 by one point
 Substrate requirements are disabled by default and hidden from the breeding route; enable them in config if desired
@@ -10,6 +11,7 @@ Breeding grades 1–5 require {yellow:HV} / {dark_gray:EV} / {blue:IV} / {light_
 Grade 1 takes {white:{var:firstSeconds} seconds}; each grade doubles the time. Higher voltage applies lossy overclocks
 Starts with 1 parallel at {yellow:HV}; every {gold:two voltage tiers} doubles the parallel limit
 Each parallel starts at {white:{var:baseEu} EU/t} and consumes {white:{var:fertilizer} L enriched fertilizer} per attempt
+Breeding an unarchived species also requires its recipe catalysts
 
 Default chances for grades 1–5 are 100% / 80% / 60% / 40% / 20%; each parallel rolls independently
 Failed attempts still consume fertilizer and catalysts; substrates are always retained
