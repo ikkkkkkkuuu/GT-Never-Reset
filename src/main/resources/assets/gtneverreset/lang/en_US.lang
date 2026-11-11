@@ -1245,6 +1245,7 @@ nei.options.gtneverreset.dual_interface_terminal_append_circuit_damage=Append no
 gtneverreset.gui.config.general.client.wireless_terminal.prefer_own_interface_names=Prefer assembly's own circuit and non-consumed item numbers
 gtneverreset.gui.config.general.client.wireless_terminal.button_theme=Button theme
 gtneverreset.gui.config.crop_breeder=Large Crop Breeder
+gtneverreset.gui.config.crop_breeder.require_substrates=Require breeding substrates
 gtneverreset.gui.config.crop_breeder.tier_chances=Default success chances by breeding grade (%%)
 gtneverreset.gui.config.crop_breeder.crop_overrides=Per-crop success chance overrides
 gtneverreset.gui.config.general.cropsnh=CropsNH

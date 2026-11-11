@@ -117,6 +117,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     private String substrateTarget = "";
     private List<String> archive = Collections.emptyList(), reachable = Collections.emptyList();
     private List<NBTTagCompound> route = Collections.emptyList();
+    private final NBTTagCompound productionStep = new NBTTagCompound();
     private final SpeciesView archiveView = new SpeciesView(() -> archive);
     private final SpeciesView reachableView = new SpeciesView(() -> reachable);
     private String draftText;
@@ -492,7 +493,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         ParentWidget<?> breeding = new ParentWidget<>().pos(0, 38)
             .size(WIDTH, 20)
             .setEnabledIf(widget -> !washingOperation.getBoolValue());
-        addStep(breeding, () -> route.isEmpty() ? new NBTTagCompound() : route.get(0), 0);
+        addStep(breeding, this::breedingStep, 0);
         page.child(breeding);
         ParentWidget<?> washing = new ParentWidget<>().pos(0, 38)
             .size(WIDTH, 20)
@@ -534,6 +535,25 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         page.child(label(() -> tr("gtnr.crop_breeder.parallel", parallel.getIntValue()), 0, 69, WIDTH));
         page.child(createTerminalRow(panel, sync).pos(0, 78));
         return page;
+    }
+
+    private NBTTagCompound breedingStep() {
+        String activeId = duration.getIntValue() > 0 ? activeBreedingCrop() : "";
+        if (!route.isEmpty() && (activeId.isEmpty() || activeId.equals(
+            route.get(0)
+                .getString("result"))))
+            return route.get(0);
+        String id = activeId.isEmpty() ? target.getStringValue() : activeId;
+        boolean archived = archive.contains(id);
+        if (!archived && activeId.isEmpty()) id = "";
+        String parent = archived ? id : "";
+        if (!id.equals(productionStep.getString("result")) || !parent.equals(productionStep.getString("parent0"))) {
+            ICropCard crop = CropRegistry.instance.get(id);
+            productionStep.setString("parent0", parent);
+            productionStep.setString("result", id);
+            productionStep.setLong("eu", crop == null ? 0 : CropBreedingRecipeRules.requiredVoltage(crop));
+        }
+        return productionStep;
     }
 
     @Override
@@ -671,7 +691,9 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
                     "gtnr.crop_breeder.no_route"),
                 0,
                 30,
-                WIDTH).setEnabledIf(widget -> route.isEmpty() && routeWidget.history.isEmpty()));
+                WIDTH).setEnabledIf(
+                    widget -> route.isEmpty() && routeWidget.history.isEmpty()
+                        && !archive.contains(target.getStringValue())));
         return page;
     }
 
@@ -971,6 +993,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         private final HorizontalScrollData horizontal;
         private List<NBTTagCompound> lastSteps;
         private String lastTarget = "";
+        private boolean lastTargetArchived;
         private final Map<String, NBTTagCompound> history = new LinkedHashMap<>();
         private RouteLayout layout = new RouteLayout(Collections.emptyList(), "");
         private final Animator zoomAnimation = new Animator().duration(160)
@@ -999,17 +1022,21 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         public void onUpdate() {
             super.onUpdate();
             String currentTarget = target.getStringValue();
-            if (lastSteps == route && lastTarget.equals(currentTarget)) return;
+            boolean targetArchived = archive.contains(currentTarget);
+            if (lastSteps == route && lastTarget.equals(currentTarget) && lastTargetArchived == targetArchived) return;
             boolean targetChanged = !lastTarget.equals(currentTarget) || lastSteps == null
                 || (lastSteps.isEmpty() && !route.isEmpty());
             lastSteps = route;
             lastTarget = currentTarget;
+            lastTargetArchived = targetArchived;
             if (targetChanged) {
                 stopZoom();
                 history.clear();
             }
             for (NBTTagCompound step : route) history.put(step.getString("result"), step);
-            layout = new RouteLayout(new ArrayList<>(history.values()), history.isEmpty() ? "" : currentTarget);
+            layout = new RouteLayout(
+                new ArrayList<>(history.values()),
+                history.isEmpty() && !targetArchived ? "" : currentTarget);
             removeAll();
             for (RouteNode node : layout.nodes.values()) {
                 if (!node.parents.isEmpty()) child(routeConnection(node));

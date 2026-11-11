@@ -1,6 +1,7 @@
 package com.xyp.gtneverreset.common.machine.multiblock.crop;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,6 +14,7 @@ import com.gtnewhorizon.cropsnh.api.ICropMutation;
 import com.gtnewhorizon.cropsnh.api.ISoilList;
 import com.gtnewhorizon.cropsnh.farming.requirements.SubSoilRequirement;
 import com.gtnewhorizon.cropsnh.utility.CropsNHUtils;
+import com.xyp.gtneverreset.config.CropBreederConfig;
 
 public final class CropBreedingSubstrate {
 
@@ -56,6 +58,7 @@ public final class CropBreedingSubstrate {
     }
 
     private static List<CropBreedingSubstrate> from(ICropCard crop, Iterable<?> requirements) {
+        if (!CropBreederConfig.requireSubstrates) return Collections.emptyList();
         List<CropBreedingSubstrate> result = new ArrayList<>();
         for (Object requirement : requirements) {
             if (requirement instanceof SubSoilRequirement soil) result.add(new CropBreedingSubstrate(soil, null));

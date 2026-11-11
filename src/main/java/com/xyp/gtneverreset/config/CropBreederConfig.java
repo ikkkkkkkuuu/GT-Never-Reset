@@ -15,6 +15,17 @@ import com.gtnewhorizon.gtnhlib.config.Config;
     categoryCulling = false)
 public class CropBreederConfig {
 
+    @Config.Sync
+    @Config.Comment({ "Require breeding substrates in input buses. Substrates are not consumed.",
+        "When disabled, breeding ignores substrates and the route hides parent and offspring substrates.",
+        "Catalysts, fertilizer and other breeding conditions still apply. Restart to apply." })
+    @Config.DefaultBoolean(false)
+    // #tr gtneverreset.gui.config.crop_breeder.require_substrates
+    // # Require breeding substrates
+    // # zh_CN 启用杂交底土需求
+    @Config.LangKey("gtneverreset.gui.config.crop_breeder.require_substrates")
+    public static boolean requireSubstrates = false;
+
     @Config.Comment("Success percentages for breeding grades 1, 2, 3, 4 and 5. Legacy entries beyond the fifth are ignored. Independent of machine voltage. Restart required.")
     @Config.DefaultIntList({ 100, 80, 60, 40, 20 })
     @Config.RangeInt(min = 0, max = 100)

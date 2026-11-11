@@ -51,15 +51,7 @@ public final class CropBreedingPlanner {
             }
         } while (changed);
 
-        // Even an archived target must run its final mutation again to produce another seed.
-        Candidate best = null;
-        for (ICropMutation mutation : mutations) {
-            if (!mutation.getOutput()
-                .getId()
-                .equals(target)) continue;
-            Candidate next = resolve(mutation, candidates);
-            if (next != null && (best == null || next.cost < best.cost)) best = next;
-        }
+        Candidate best = candidates.get(target);
         List<String> reachable = new ArrayList<>(candidates.keySet());
         reachable.removeAll(archive);
         Collections.sort(reachable);
