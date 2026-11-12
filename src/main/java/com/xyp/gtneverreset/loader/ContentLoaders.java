@@ -27,6 +27,7 @@ public final class ContentLoaders {
         new NetworkLoader(),
         new UniversalWandLoader(),
         new WorldLoader(),
+        new CropLoader(),
         new GuiLoader(),
         new MachineLoader(),
         new CommandLoader(),

@@ -37,6 +37,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("spiceoflife.MixinFoodModifier");
         }
         if (loadedMods.contains(ModList.ModIds.CROPSNH)) {
+            mixins.add("cropsnh.MixinMutationLoader");
             mixins.add("cropsnh.MixinSeedStats");
             mixins.add("cropsnh.MixinTileEntityCropSticks");
         }
