@@ -109,7 +109,8 @@ public class EffectTextRenderer implements IResourceManagerReloadListener {
             if (token.pause() > 0) return true;
             if (token.style() != null && ownsRenderer(
                 token.style()
-                    .rendererId())) return true;
+                    .rendererId()))
+                return true;
         }
         return false;
     }
