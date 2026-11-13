@@ -28,6 +28,17 @@ vec2 position() {
     return vec2(uv.x, 1.0 - uv.y) * maskSize - padding;
 }
 
+// Snaps to the centers of the font's half-pixel grid, so shapes drawn around glyphs stay as crisp as the glyphs.
+vec2 snapToHalfPixel(vec2 point) {
+    return (floor((point + padding) * 2.0) + 0.5) / 2.0 - padding;
+}
+
+float segmentDistance(vec2 point, vec2 a, vec2 b) {
+    vec2 ab = b - a;
+    float t = clamp(dot(point - a, ab) / max(dot(ab, ab), 0.0001), 0.0, 1.0);
+    return length(point - a - ab * t);
+}
+
 vec2 localUV() {
     return position() / textSize;
 }

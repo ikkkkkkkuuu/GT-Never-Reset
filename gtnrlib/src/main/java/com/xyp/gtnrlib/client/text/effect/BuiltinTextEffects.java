@@ -136,6 +136,42 @@ public class BuiltinTextEffects {
             TextEffectColors.rgb(TextEffectColors.effectFrostNavy),
             TextEffectColors.rgb(TextEffectColors.effectFrostBlue),
             TextEffectColors.rgb(TextEffectColors.effectFrostWhite));
+        TextEffectRegistry.register(
+            TextEffects.NEON_FLICKER.rendererId(),
+            new NeonFlickerTextEffect(
+                fragment(TextEffects.NEON_FLICKER),
+                TextEffectColors.rgb(TextEffectColors.effectNeonPink),
+                TextEffectColors.rgb(TextEffectColors.effectNeonRose)));
+        TextEffectRegistry.register(
+            TextEffects.ARCANE_CIPHER.rendererId(),
+            new ArcaneCipherTextEffect(
+                fragment(TextEffects.ARCANE_CIPHER),
+                TextEffectColors.rgb(TextEffectColors.effectArcaneViolet),
+                TextEffectColors.rgb(TextEffectColors.effectArcaneIndigo),
+                TextEffectColors.rgb(TextEffectColors.effectArcaneLight)));
+        register(
+            TextEffects.GRAVITY_LENS,
+            TextEffectColors.rgb(TextEffectColors.effectLensWhite),
+            TextEffectColors.rgb(TextEffectColors.effectLensAmber),
+            TextEffectColors.rgb(TextEffectColors.effectLensViolet));
+        register(
+            TextEffects.MELTING,
+            1.6f,
+            false,
+            TextEffectColors.rgb(TextEffectColors.effectMeltingWhite),
+            TextEffectColors.rgb(TextEffectColors.effectMeltingOrange),
+            TextEffectColors.rgb(TextEffectColors.effectMeltingEmber));
+        register(
+            TextEffects.CONSTELLATION,
+            TextEffectColors.rgb(TextEffectColors.effectConstellationText),
+            TextEffectColors.rgb(TextEffectColors.effectConstellationLine),
+            TextEffectColors.rgb(TextEffectColors.effectConstellationGlow));
+        register(
+            TextEffects.CORRUPTION,
+            TextEffectColors.rgb(TextEffectColors.effectCorruptionCore),
+            TextEffectColors.rgb(TextEffectColors.effectCorruptionGlow),
+            TextEffectColors.rgb(TextEffectColors.effectCorruptionHalo),
+            TextEffectColors.rgb(TextEffectColors.effectCorruptionFlux));
         TextEffectRegistry.registerAlias("gtnrlib:exotic_rainbow", TextEffects.EXOTIC_RAINBOW.rendererId());
     }
 

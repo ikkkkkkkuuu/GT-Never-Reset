@@ -6,7 +6,7 @@ buildscript {
 }
 
 // Library version changes only when its implementation or resources change.
-ext.modVersion = '0.1.32'
+ext.modVersion = '0.1.33'
 ext.modName = 'GTNRLib'
 ext.modId = 'gtnrlib'
 ext.modGroup = 'com.xyp.gtnrlib'
@@ -50,9 +50,13 @@ dependencies {
     compileOnly('curse.maven:neverenoughanimation-1062347:7664003-sources-7663978') { transitive = false }
     compileOnly('org.projectlombok:lombok:1.18.42')
     annotationProcessor('org.projectlombok:lombok:1.18.42')
+
+    testImplementation('org.junit.jupiter:junit-jupiter:5.11.4')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.11.4')
 }
 
 sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.main.compileClasspath - configurations.animationCompat
 tasks.register('checkLibraryContracts', JavaExec) {
     group = 'verification'
     dependsOn tasks.testClasses
@@ -63,7 +67,10 @@ tasks.register('checkLibraryContracts', JavaExec) {
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
 }
 tasks.named('check') { dependsOn 'checkLibraryContracts' }
-tasks.named('test', Test) { failOnNoDiscoveredTests = false }
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    failOnNoDiscoveredTests = false
+}
 
 configurations.create('distribution') {
     canBeConsumed = true

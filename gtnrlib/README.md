@@ -40,7 +40,7 @@ Minecraft 1.7.10 的通用支持库，Mod ID 为 `gtnrlib`，Java 包为 `com.xy
 | `client/fx`、`client/shader` | 缓动、2D 图形、模糊、GLSL、世界电弧、冲击波、粒子与可见性管理 |
 | `gui/theme`、`gui/layout` | 配色、实时主题、金属皮肤、尺寸与布局计算 |
 | `gui/widget`、`gui/settings`、`gui/wheel` | 滑块、开关、卡片、虚拟物品槽、设置表单、坐标输入和通用轮盘 |
-| `client/text`、`text` | 24 种文字特效、参数化格式、别名、预览、输入框与换行支持 |
+| `client/text`、`text` | 30 种文字特效，打字机、入场、数字滚动与抖动，参数化格式、别名、预览、输入框与换行支持；格式见 [TEXT_EFFECTS.md](TEXT_EFFECTS.md) |
 | `client/tooltip` | Shift/Ctrl 提示与动态文字、物品替身解析 |
 | `registry`、`network` | 物品方块注册器、双向数据包基类；频道与包 ID 仍由使用方管理 |
 | `command`、`utils` | 物品信息、实体选择器、传送、数学、向量、MBS1 编解码等 |

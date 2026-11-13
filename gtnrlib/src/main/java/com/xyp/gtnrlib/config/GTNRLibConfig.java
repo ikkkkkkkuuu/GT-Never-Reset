@@ -134,6 +134,17 @@ public class GTNRLibConfig {
     @DefaultBoolean(true)
     public static boolean enableTextEffects = true;
 
+    @Comment("Type marked text one character at a time when it appears; when disabled, it shows in full at once")
+    // #tr gtnrlib.gui.config.general.client.enable_typewriter
+    // # Typewriter Text
+    // # zh_CN 打字机文字
+    // #tr gtnrlib.gui.config.general.client.enable_typewriter.tooltip
+    // # Type marked text one character at a time when it appears. When disabled, it shows in full at once.
+    // # zh_CN 标了打字机的文字出现时逐字打出。关闭后直接整段显示
+    @LangKey("gtnrlib.gui.config.general.client.enable_typewriter")
+    @DefaultBoolean(true)
+    public static boolean enableTypewriter = true;
+
     public static void register() {
         try {
             ConfigurationManager.registerConfig(GTNRLibConfig.class);
