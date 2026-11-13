@@ -491,7 +491,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     @Override
     public boolean pushPattern(ICraftingPatternDetails details, InventoryCrafting table) {
         if (isBusy() || !patterns.contains(details)) return false;
-        long crafts = table instanceof LargeInventoryCrafting large ? large.getAssemblerSize() : 1;
+        long crafts = table instanceof LargeInventoryCrafting large ? large.gtnr$getAssemblerSize() : 1;
         if (crafts <= 0 || crafts > 1 && !supportsBatchCrafting(details)) return false;
         if (roundRobin && crafts > 1) return pushRoundRobinBatch(details, table, crafts);
         List<ItemStack> inputs = new ArrayList<>();
@@ -583,7 +583,7 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
     private static MEInventoryCrafting splitBatch(MEInventoryCrafting source, long total, long crafts) {
         MEInventoryCrafting result = new MEInventoryCrafting(new ContainerNull(), source.getSizeInventory(), 1);
         if (!(result instanceof LargeInventoryCrafting large)) return null;
-        large.setAssemblerSize(crafts);
+        large.gtnr$setAssemblerSize(crafts);
         for (int slot = 0; slot < source.getSizeInventory(); slot++) {
             var stack = source.getAEStackInSlot(slot);
             if (stack == null) continue;
