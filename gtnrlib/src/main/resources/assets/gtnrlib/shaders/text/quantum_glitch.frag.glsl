@@ -15,7 +15,7 @@ void main() {
     float scanline = 0.82 + 0.18 * sin(local.y * 140.0);
     float digitalBand = step(0.82, hash(vec2(floor(local.x * 11.0), row + block)));
     vec3 color = vec3(red, green, blue) * scanline;
-    color += palette[min(paletteCount - 1, 2)] * digitalBand * ink * 0.38;
+    color += palette[paletteCount > 2 ? 2 : paletteCount - 1] * digitalBand * ink * 0.38;
     float edge = outline(point + vec2(jitter, 0.0), textSize.y * 0.035);
     outputColor(clamp(color, 0.0, 1.0), max(ink, edge * 0.65));
 }

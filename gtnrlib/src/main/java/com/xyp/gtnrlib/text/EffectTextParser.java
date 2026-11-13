@@ -214,6 +214,7 @@ public class EffectTextParser {
 
     private record Scope(TextEffectStyle saved, TextEffectStyle opened) {}
 
+    /** {@code pause} is the typewriter hold in seconds of an empty pause token, otherwise zero. */
     public record Token(String text, TextEffectStyle style, String formatting, int start, int end,
         boolean formattingCode, float pause) {
 
@@ -226,7 +227,7 @@ public class EffectTextParser {
     private static TextEffectStyle readStyle(String header) {
         if (header.equals("exotic_rainbow")) return TextEffects.EXOTIC_RAINBOW;
         String[] fields = header.split(";", -1);
-        if (fields.length != 3 && fields.length != 4) return null;
+        if (fields.length < 3 || fields.length > 8) return null;
         try {
             IntArrayList colors = new IntArrayList();
             if (!fields[2].isEmpty()) {
@@ -237,8 +238,14 @@ public class EffectTextParser {
                     colors.add(Integer.parseInt(value, 16));
                 }
             }
-            float typing = fields.length == 4 ? Float.parseFloat(fields[3]) : 0;
-            return new TextEffectStyle(fields[0], colors, Float.parseFloat(fields[1]), typing);
+            float typing = fields.length >= 4 ? Float.parseFloat(fields[3]) : 0;
+            TextEffectStyle style = new TextEffectStyle(fields[0], colors, Float.parseFloat(fields[1]))
+                .withTyping(typing);
+            if (fields.length >= 5 && !fields[4].isEmpty()) style = TextEffectFormat.readEntrance(style, fields[4]);
+            if (fields.length >= 6 && !fields[5].isEmpty()) style = TextEffectFormat.readRoll(style, fields[5]);
+            if (fields.length >= 7 && !fields[6].isEmpty()) style = TextEffectFormat.readShake(style, fields[6]);
+            if (fields.length == 8 && !fields[7].isEmpty()) style = TextEffectFormat.readOptions(style, fields[7]);
+            return style;
         } catch (IllegalArgumentException ignored) {
             return null;
         }

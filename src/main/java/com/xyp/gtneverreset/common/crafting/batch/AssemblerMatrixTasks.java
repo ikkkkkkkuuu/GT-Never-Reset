@@ -41,7 +41,7 @@ public final class AssemblerMatrixTasks {
             GTNeverReset.LOG.error("Assembler Matrix received a crafting inventory without long batch metadata");
             return false;
         }
-        long assemblerSize = largeInventory.getAssemblerSize();
+        long assemblerSize = largeInventory.gtnr$getAssemblerSize();
         if (assemblerSize < 1) {
             GTNeverReset.LOG.error("Assembler Matrix received an invalid crafting batch size: {}", assemblerSize);
             return false;

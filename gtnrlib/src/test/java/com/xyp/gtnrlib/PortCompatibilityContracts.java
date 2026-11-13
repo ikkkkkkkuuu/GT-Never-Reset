@@ -23,8 +23,8 @@ final class PortCompatibilityContracts {
         BuiltinTextEffects.register();
         check(
             TextEffectRegistry.identifiers()
-                .size() == 24,
-            "Exactly 24 builtins, aliases are not duplicate effects");
+                .size() == 30,
+            "Exactly 30 builtins, aliases are not duplicate effects");
         for (String id : TextEffectRegistry.identifiers()) {
             String name = id.substring(id.indexOf(':') + 1);
             check(

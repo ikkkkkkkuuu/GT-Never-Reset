@@ -98,7 +98,7 @@ public final class TypewriterClientChecks {
 
     private static final class Preview extends GuiScreen {
 
-        private static final String TEXT = "&{tw;10}Typewriter / 中文逐字显示&{p;800} ... done";
+        private static final String TEXT = "&{tw;t=10}Typewriter / 中文逐字显示&{p;0.8} ... done";
         private final long started = System.nanoTime();
         private GuiTextField input;
         private int measured = -1;
@@ -121,7 +121,7 @@ public final class TypewriterClientChecks {
             fontRendererObj.drawString(TEXT, 24, 42, 0xFFFFFF);
             fontRendererObj.drawString("&{tw;15}Second tooltip line / 第二行", 24, 56, 0xFFFFFF);
             fontRendererObj.drawString("&{ba;t=10}Golden typing / 熠金文字", 25, 84, 0xFFFFFF);
-            fontRendererObj.drawString("&{nr;t=10}Nebula / 星云&{p;800} pause", 26, 110, 0xFFFFFF);
+            fontRendererObj.drawString("&{nr;t=10}Nebula / 星云&{p;0.8} pause", 26, 110, 0xFFFFFF);
             fontRendererObj.drawString("&{tw;10}Multiline / 多行\nNext line / 下一行", 27, 138, 0xFFFFFF);
             input.drawTextBox();
             if (!EffectTextRenderer.handles(TEXT)) failure = "text mixin renderer does not handle markers";

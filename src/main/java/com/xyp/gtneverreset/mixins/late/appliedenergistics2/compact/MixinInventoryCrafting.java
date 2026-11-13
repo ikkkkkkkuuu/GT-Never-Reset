@@ -1,6 +1,5 @@
 package com.xyp.gtneverreset.mixins.late.appliedenergistics2.compact;
 
-import org.spongepowered.asm.mixin.Intrinsic;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
@@ -14,13 +13,13 @@ public class MixinInventoryCrafting implements LargeInventoryCrafting {
     @Unique
     private long gtnr$assembler = 1L;
 
-    @Intrinsic
-    public void setAssemblerSize(long value) {
+    @Override
+    public void gtnr$setAssemblerSize(long value) {
         gtnr$assembler = value;
     }
 
-    @Intrinsic
-    public long getAssemblerSize() {
+    @Override
+    public long gtnr$getAssemblerSize() {
         return gtnr$assembler;
     }
 }

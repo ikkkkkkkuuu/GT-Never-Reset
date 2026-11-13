@@ -2,10 +2,11 @@
 
 [动画 API、示例包、兼容矩阵和验证说明](ANIMATION.md)
 
-打字机文字使用 `&{tw}逐字显示`（默认每秒 20 字）、`&{tw;40}`（每秒 40 字），
-或在已有特效中加 `t=20`，例如 `&{ba;t=20}熠金文字`。`&{p}` 停顿半秒，
-`&{p;800}` 停顿 800 毫秒，最多 10 秒；`§r` 恢复普通文字。
-Java API：`TextEffects.TYPEWRITER`、`style.withTyping(rate)`、`TextEffects.pause(millis)`；
+打字机文字使用 `&{tw}逐字显示`（默认每秒 20 字）、`&{tw;t=40}`（每秒 40 字），
+或在已有特效中加 `t=20`，例如 `&{ba;t=20}熠金文字`；`r=decode:0.6` 给每个字加入场效果，
+`&{roll=1.5}` 让数字滚动，`&{shake}` 让文字抖动。`&{p}` 停顿半秒，`&{p;0.8}` 停顿 0.8 秒，
+最多 10 秒；`§r` 恢复普通文字。所有时间单位都是秒，完整格式见 [TEXT_EFFECTS.md](TEXT_EFFECTS.md)。
+Java API：`TextEffects.TYPEWRITER`、`style.withTyping(rate)`、`TextEffects.pause(seconds)`；
 用 `TextEffects.apply(text, style)` 或 `TextEffects.format(style)` 生成标记。
 客户端配置 `enableTypewriter` 可关闭逐字显示。排版始终按全文宽度计算，输入框显示全文。
 同一字符串的多行和同一帧同一 x 坐标向下绘制的提示行依次显示；隐藏一帧后重播。
@@ -49,7 +50,7 @@ Minecraft 1.7.10 的通用支持库，Mod ID 为 `gtnrlib`，Java 包为 `com.xy
 | `client/fx`、`client/shader` | 缓动、2D 图形、模糊、GLSL、世界电弧、冲击波、粒子与可见性管理 |
 | `gui/theme`、`gui/layout` | 配色、实时主题、金属皮肤、尺寸与布局计算 |
 | `gui/widget`、`gui/settings`、`gui/wheel` | 滑块、开关、卡片、虚拟物品槽、设置表单、坐标输入和通用轮盘 |
-| `client/text`、`text` | 24 种文字特效、参数化格式、别名、预览、输入框与换行支持 |
+| `client/text`、`text` | 30 种文字特效，打字机、入场、数字滚动与抖动，参数化格式、别名、预览、输入框与换行支持；格式见 [TEXT_EFFECTS.md](TEXT_EFFECTS.md) |
 | `client/tooltip` | Shift/Ctrl 提示与动态文字、物品替身解析 |
 | `registry`、`network` | 物品方块注册器、双向数据包基类；频道与包 ID 仍由使用方管理 |
 | `command`、`utils` | 物品信息、实体选择器、传送、数学、向量、MBS1 编解码等 |

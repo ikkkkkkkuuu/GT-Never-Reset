@@ -203,7 +203,8 @@ public abstract class MixinCraftingCPUCluster {
         @Share("gtnr$batchDispatch") LocalRef<BatchDispatchState> contextRef) {
         BatchDispatchState context = contextRef.get();
         if (context == null || !context.isPlannedBatch()) {
-            if (craftingInventory instanceof LargeInventoryCrafting largeInventory) largeInventory.setAssemblerSize(1);
+            if (craftingInventory instanceof LargeInventoryCrafting largeInventory)
+                largeInventory.gtnr$setAssemblerSize(1);
             return original.call(medium, details, craftingInventory);
         }
         if (context.isRejected()) return false;
@@ -223,14 +224,14 @@ public abstract class MixinCraftingCPUCluster {
             return false;
         }
 
-        largeInventory.setAssemblerSize(
+        largeInventory.gtnr$setAssemblerSize(
             context.plan()
                 .getCrafts());
         boolean accepted;
         try {
             accepted = original.call(medium, details, craftingInventory);
         } finally {
-            largeInventory.setAssemblerSize(1);
+            largeInventory.gtnr$setAssemblerSize(1);
         }
         if (!accepted) return false;
 

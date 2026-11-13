@@ -68,7 +68,7 @@ public class EffectTextLayout {
             text,
             FontRendering::preprocessText,
             FontRendering.hexColorResetsStyles(),
-            identifier -> TextEffectRegistry.get(identifier) != null || TextEffectFormat.isTypewriter(identifier));
+            identifier -> TextEffectRegistry.get(identifier) != null || TextEffectFormat.isPlainRenderer(identifier));
     }
 
     public static String continuation(String text) {
@@ -203,7 +203,7 @@ public class EffectTextLayout {
                 if (active != null) result.append(TextEffects.opening(active));
             }
             result.append(
-                glyph.pause() > 0 ? TextEffectFormat.pauseMarker(Math.round(glyph.pause() * 1000))
+                glyph.pause() > 0 ? TextEffectFormat.pauseMarker(glyph.pause())
                     : TextEffects.escapeLiteral(glyph.text()));
         }
         if (active != null) result.append(EffectTextParser.CLOSE);
@@ -270,12 +270,15 @@ public class EffectTextLayout {
             this(text, style, x, y, width, List.of());
         }
 
+        public String formatting() {
+            return glyphs.isEmpty() ? ""
+                : glyphs.get(0)
+                    .formatting();
+        }
+
         public String typedText(int count) {
             if (count >= glyphs.size()) return text;
-            StringBuilder result = new StringBuilder(
-                glyphs.isEmpty() ? ""
-                    : glyphs.get(0)
-                        .formatting());
+            StringBuilder result = new StringBuilder(formatting());
             for (int i = 0; i < count; i++) result.append(
                 glyphs.get(i)
                     .text());
