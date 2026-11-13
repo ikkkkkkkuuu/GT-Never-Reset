@@ -3,6 +3,8 @@ package com.xyp.gtnrlib.text;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.xyp.gtnrlib.GTNRLib;
 
@@ -17,6 +19,12 @@ public class TextEffectFormat {
     public static final String INLINE_OPEN = "\u00a7{";
     public static final String AMP_INLINE_OPEN = "&{";
     public static final int MAX_HEADER_LENGTH = 512;
+    public static final String TYPEWRITER = "typewriter";
+    public static final float DEFAULT_TYPING_RATE = 20;
+    public static final int DEFAULT_PAUSE_MILLIS = 500;
+    public static final int MAX_PAUSE_MILLIS = 10000;
+    private static final Pattern PAUSE = Pattern
+        .compile("\\s*(?:p|pause)\\s*(?:;\\s*(?:(?:duration|d)\\s*=\\s*)?(\\d{1,5})\\s*)?");
     private static final Map<String, String> ALIASES = new Object2ObjectOpenHashMap<>(
         Map.ofEntries(
             Map.entry("ir", "infernum_red_rarity"),
@@ -42,7 +50,8 @@ public class TextEffectFormat {
             Map.entry("ca", "circuit_awakening"),
             Map.entry("ge", "ghost_echo"),
             Map.entry("pf", "paper_fold"),
-            Map.entry("fc", "frost_crystal")));
+            Map.entry("fc", "frost_crystal"),
+            Map.entry("tw", TYPEWRITER)));
     private static final Set<String> LEGACY_NAMESPACES = new ObjectOpenHashSet<>();
 
     public static void registerAlias(String alias, String rendererId) {
@@ -94,16 +103,36 @@ public class TextEffectFormat {
         return result.toString();
     }
 
+    /** Returns the hold in seconds of a pause marker header such as {@code p;800}, or -1 for any other header. */
+    public static float readPause(String header) {
+        Matcher matcher = PAUSE.matcher(header);
+        if (!matcher.matches()) return -1;
+        int millis = matcher.group(1) == null ? DEFAULT_PAUSE_MILLIS : Integer.parseInt(matcher.group(1));
+        return millis <= MAX_PAUSE_MILLIS ? millis / 1000f : -1;
+    }
+
+    public static String pauseMarker(int millis) {
+        if (millis < 0 || millis > MAX_PAUSE_MILLIS)
+            throw new IllegalArgumentException("Pause must be between zero and " + MAX_PAUSE_MILLIS + " ms");
+        return INLINE_OPEN + "p" + (millis == DEFAULT_PAUSE_MILLIS ? "" : ";" + millis) + "}";
+    }
+
+    public static boolean isTypewriter(String rendererId) {
+        return rendererId.equals(qualify(TYPEWRITER));
+    }
+
     public static TextEffectStyle readInline(String header) {
         String[] fields = header.split(";", -1);
-        if (fields.length > 3) return null;
+        if (fields.length > 4) return null;
         String id = fields[0].trim();
         id = ALIASES.getOrDefault(id, id);
         id = qualify(id);
         IntList colors = IntList.of();
         float speed = 1;
+        float typing = 0;
         boolean hasColors = false;
         boolean hasSpeed = false;
+        boolean hasTyping = false;
         try {
             for (int i = 1; i < fields.length; i++) {
                 String field = fields[i].trim();
@@ -128,9 +157,16 @@ public class TextEffectFormat {
                 } else if ((name.equals("speed") || name.equals("s")) && !hasSpeed) {
                     speed = Float.parseFloat(value);
                     hasSpeed = true;
+                } else if ((name.equals("type") || name.equals("t")) && !hasTyping) {
+                    typing = Float.parseFloat(value);
+                    hasTyping = true;
                 } else return null;
             }
-            return new TextEffectStyle(id, colors, speed);
+            if (isTypewriter(id)) {
+                if (!hasTyping) typing = hasSpeed ? speed : DEFAULT_TYPING_RATE;
+                speed = 1;
+            }
+            return new TextEffectStyle(id, colors, speed, typing);
         } catch (IllegalArgumentException ignored) {
             return null;
         }

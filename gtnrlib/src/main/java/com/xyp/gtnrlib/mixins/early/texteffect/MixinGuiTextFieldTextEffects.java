@@ -14,6 +14,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.xyp.gtnrlib.client.text.EffectTextFieldView;
 import com.xyp.gtnrlib.client.text.EffectTextLayout.Layout;
 import com.xyp.gtnrlib.client.text.EffectTextRenderer;
+import com.xyp.gtnrlib.client.text.TypewriterTimeline;
 
 /** Retains formatting while vanilla scrolls and draws either side of an input cursor. */
 @Mixin(GuiTextField.class)
@@ -78,12 +79,24 @@ public abstract class MixinGuiTextFieldTextEffects {
     private int gtnr$drawBeforeCursor(FontRenderer font, String value, int x, int y, int color,
         Operation<Integer> original) {
         EffectTextFieldView view = gtnr$view();
-        return original.call(
+        return gtnr$drawStill(
+            original,
             font,
             view == null ? value : view.slice(lineScrollOffset, lineScrollOffset + value.length()),
             x,
             y,
             color);
+    }
+
+    @Unique
+    private static int gtnr$drawStill(Operation<Integer> original, FontRenderer font, String value, int x, int y,
+        int color) {
+        TypewriterTimeline.INSTANCE.beginStill();
+        try {
+            return original.call(font, value, x, y, color);
+        } finally {
+            TypewriterTimeline.INSTANCE.endStill();
+        }
     }
 
     @WrapOperation(
@@ -95,7 +108,8 @@ public abstract class MixinGuiTextFieldTextEffects {
     private int gtnr$drawAfterCursor(FontRenderer font, String value, int x, int y, int color,
         Operation<Integer> original) {
         EffectTextFieldView view = gtnr$view();
-        return original.call(
+        return gtnr$drawStill(
+            original,
             font,
             view == null ? value : view.slice(cursorPosition, cursorPosition + value.length()),
             x,

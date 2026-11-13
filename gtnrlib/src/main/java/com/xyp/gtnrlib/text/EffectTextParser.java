@@ -123,6 +123,11 @@ public class EffectTextParser {
                     String terminator = scoped ? END : "}";
                     int end = headerEnd(source, start + prefix.length(), terminator);
                     String header = end < 0 ? "" : source.substring(start + prefix.length(), end);
+                    float pause = inline && end >= 0 ? TextEffectFormat.readPause(header) : -1;
+                    if (pause >= 0) {
+                        position = end + terminator.length();
+                        return new Token("", style, formatting, start, position, false, pause);
+                    }
                     TextEffectStyle declared = end < 0 ? null
                         : scoped ? readStyle(header) : TextEffectFormat.readInline(header);
                     if (declared != null && (!inline || rendererAvailable.test(declared.rendererId()))) {
@@ -210,12 +215,18 @@ public class EffectTextParser {
     private record Scope(TextEffectStyle saved, TextEffectStyle opened) {}
 
     public record Token(String text, TextEffectStyle style, String formatting, int start, int end,
-        boolean formattingCode) {}
+        boolean formattingCode, float pause) {
+
+        public Token(String text, TextEffectStyle style, String formatting, int start, int end,
+            boolean formattingCode) {
+            this(text, style, formatting, start, end, formattingCode, 0);
+        }
+    }
 
     private static TextEffectStyle readStyle(String header) {
         if (header.equals("exotic_rainbow")) return TextEffects.EXOTIC_RAINBOW;
         String[] fields = header.split(";", -1);
-        if (fields.length != 3) return null;
+        if (fields.length != 3 && fields.length != 4) return null;
         try {
             IntArrayList colors = new IntArrayList();
             if (!fields[2].isEmpty()) {
@@ -226,7 +237,8 @@ public class EffectTextParser {
                     colors.add(Integer.parseInt(value, 16));
                 }
             }
-            return new TextEffectStyle(fields[0], colors, Float.parseFloat(fields[1]));
+            float typing = fields.length == 4 ? Float.parseFloat(fields[3]) : 0;
+            return new TextEffectStyle(fields[0], colors, Float.parseFloat(fields[1]), typing);
         } catch (IllegalArgumentException ignored) {
             return null;
         }

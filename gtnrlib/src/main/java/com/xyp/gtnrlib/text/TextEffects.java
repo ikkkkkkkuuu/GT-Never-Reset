@@ -35,6 +35,9 @@ public class TextEffects {
     public static final TextEffectStyle GHOST_ECHO = preset("ghost_echo");
     public static final TextEffectStyle PAPER_FOLD = preset("paper_fold");
     public static final TextEffectStyle FROST_CRYSTAL = preset("frost_crystal");
+    /** Plain text typed one glyph at a time; other effects type the same way through {@code withTyping}. */
+    public static final TextEffectStyle TYPEWRITER = preset(TextEffectFormat.TYPEWRITER)
+        .withTyping(TextEffectFormat.DEFAULT_TYPING_RATE);
 
     private static TextEffectStyle preset(String name) {
         return new TextEffectStyle(GTNRLib.MODID + ":" + name, IntList.of(), 1);
@@ -44,7 +47,8 @@ public class TextEffects {
      * Opens an inline effect until the next declaration or {@code §r}. Native color codes replace its palette;
      * native style codes retain their usual meaning. The same codes also accept an ampersand prefix. Example:
      * {@code §{pulse_upwards;colors=#FFD700;speed=1.2}§oText§r}. Compact input accepts aliases such as
-     * {@code &{pu}}, {@code &{ba;#fc0;2}}, and the parameter names {@code c} and {@code s}.
+     * {@code &{pu}}, {@code &{ba;#fc0;2}}, and the parameter names {@code c} and {@code s}. {@code t=20} types the span
+     * at twenty glyphs per second, and {@code &{tw}} types plain text.
      */
     public static String format(TextEffectStyle style) {
         Objects.requireNonNull(style, "style");
@@ -68,6 +72,8 @@ public class TextEffects {
         }
         if (style.speed() != 1) result.append(";speed=")
             .append(style.speed());
+        if (style.typing() != 0 || TextEffectFormat.isTypewriter(style.rendererId())) result.append(";type=")
+            .append(style.typing());
         return result.append('}')
             .toString();
     }
@@ -100,8 +106,18 @@ public class TextEffects {
                     style.colors()
                         .getInt(i)));
         }
+        if (style.typing() != 0) result.append(';')
+            .append(style.typing());
         return result.append(EffectTextParser.END)
             .toString();
+    }
+
+    /**
+     * Holds a typewriter for {@code millis} (at most {@link TextEffectFormat#MAX_PAUSE_MILLIS}) before the next glyph.
+     * The marker changes no style and is written {@code &{p;800}} in typed text; {@code &{p}} holds half a second.
+     */
+    public static String pause(int millis) {
+        return TextEffectFormat.pauseMarker(millis);
     }
 
     public static String escapeLiteral(String text) {

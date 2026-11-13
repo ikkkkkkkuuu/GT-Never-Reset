@@ -12,12 +12,14 @@ import com.xyp.gtnrlib.client.hud.HudLayout;
 import com.xyp.gtnrlib.client.hud.HudOverlay;
 import com.xyp.gtnrlib.client.shader.ShaderEffect;
 import com.xyp.gtnrlib.client.text.EffectTextRenderer;
+import com.xyp.gtnrlib.client.text.TypewriterTimeline;
 import com.xyp.gtnrlib.client.text.effect.BuiltinTextEffects;
 import com.xyp.gtnrlib.client.text.preview.TextEffectPreviewCommand;
 import com.xyp.gtnrlib.config.GTNRLibConfig;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.PaletteThemes;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -35,6 +37,9 @@ public class GTNRLibClient {
         AE2Theme.register();
         MinecraftForge.EVENT_BUS.register(new AE2Theme.Reloader());
         BuiltinTextEffects.register();
+        FMLCommonHandler.instance()
+            .bus()
+            .register(TypewriterTimeline.INSTANCE);
         ((IReloadableResourceManager) Minecraft.getMinecraft()
             .getResourceManager()).registerReloadListener(EffectTextRenderer.INSTANCE);
         ClientCommandHandler.instance.registerCommand(new TextEffectPreviewCommand());
@@ -46,5 +51,6 @@ public class GTNRLibClient {
         HudLayout.settings(() -> GTNRLibConfig.enableHud, () -> GTNRLibConfig.hudScale);
         FxMoteRenderer.limitWith(() -> GTNRLibConfig.maxWorldMotes);
         EffectTextRenderer.enabledWith(() -> GTNRLibConfig.enableTextEffects);
+        TypewriterTimeline.enabledWith(() -> GTNRLibConfig.enableTypewriter);
     }
 }

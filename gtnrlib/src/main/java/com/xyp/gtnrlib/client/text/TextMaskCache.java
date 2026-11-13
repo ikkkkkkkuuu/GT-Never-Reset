@@ -129,14 +129,15 @@ public class TextMaskCache {
             OpenGlHelper
                 .glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE_MINUS_SRC_ALPHA);
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
+            int advance;
             EffectTextRenderer.beginCapture();
             try {
-                font.drawString(text, 0, 0, TextEffectColors.opaqueWhite.getColor(), false);
+                advance = font.drawString(text, 0, 0, TextEffectColors.opaqueWhite.getColor(), false);
             } finally {
                 EffectTextRenderer.endCapture();
             }
             writeGlyphTextureMetrics(font, text, width, height, padding, resolution);
-            return new Mask(target, width, height, padding, resolution);
+            return new Mask(target, width, height, padding, resolution, advance);
         }
     }
 
@@ -209,7 +210,12 @@ public class TextMaskCache {
         }
     }
 
-    public record Mask(Framebuffer target, float width, float height, float padding, int resolution) {
+    /** {@code advance} is how far the font moved its pen while drawing the text, which may differ from its measure. */
+    public record Mask(Framebuffer target, float width, float height, float padding, int resolution, float advance) {
+
+        public Mask(Framebuffer target, float width, float height, float padding, int resolution) {
+            this(target, width, height, padding, resolution, width);
+        }
 
         public long pixels() {
             return (long) target.framebufferTextureWidth * target.framebufferTextureHeight;

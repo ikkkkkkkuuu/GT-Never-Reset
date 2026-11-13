@@ -2,6 +2,15 @@
 
 [动画 API、示例包、兼容矩阵和验证说明](ANIMATION.md)
 
+打字机文字使用 `&{tw}逐字显示`（默认每秒 20 字）、`&{tw;40}`（每秒 40 字），
+或在已有特效中加 `t=20`，例如 `&{ba;t=20}熠金文字`。`&{p}` 停顿半秒，
+`&{p;800}` 停顿 800 毫秒，最多 10 秒；`§r` 恢复普通文字。
+Java API：`TextEffects.TYPEWRITER`、`style.withTyping(rate)`、`TextEffects.pause(millis)`；
+用 `TextEffects.apply(text, style)` 或 `TextEffects.format(style)` 生成标记。
+客户端配置 `enableTypewriter` 可关闭逐字显示。排版始终按全文宽度计算，输入框显示全文。
+同一字符串的多行和同一帧同一 x 坐标向下绘制的提示行依次显示；隐藏一帧后重播。
+不断变化的文字会重新计时，聊天记录从下往上绘制的自动换行文本不保证逐行衔接。
+
 Minecraft 1.7.10 的通用支持库，Mod ID 为 `gtnrlib`，Java 包为 `com.xyp.gtnrlib`。GT-Never-Reset 通过 Gradle 项目依赖使用本模块；库可独立安装。第一人称动画和 GT 工具动作都随库发行，GT 工具适配在检测到 GregTech 后启用。
 
 - `text`：文字标记解析、样式、原版格式码处理、保留颜色和样式的提示行折行（可指定宽度）。

@@ -10,6 +10,7 @@ import com.gtnewhorizon.gtnhlib.util.font.IFontParameters;
 import com.xyp.gtnrlib.text.EffectTextParser;
 import com.xyp.gtnrlib.text.EffectTextParser.Cursor;
 import com.xyp.gtnrlib.text.EffectTextParser.Token;
+import com.xyp.gtnrlib.text.TextEffectFormat;
 import com.xyp.gtnrlib.text.TextEffectStyle;
 import com.xyp.gtnrlib.text.TextEffects;
 
@@ -47,7 +48,8 @@ public class EffectTextLayout {
                 lineWidth += glyphWidth;
                 spaced = true;
             }
-            glyphs.add(new Glyph(visible, formatting, token.style(), glyphWidth, token.start(), token.end()));
+            glyphs.add(
+                new Glyph(visible, formatting, token.style(), glyphWidth, token.start(), token.end(), token.pause()));
         }
         return new Layout(
             List.copyOf(glyphs),
@@ -66,7 +68,7 @@ public class EffectTextLayout {
             text,
             FontRendering::preprocessText,
             FontRendering.hexColorResetsStyles(),
-            identifier -> TextEffectRegistry.get(identifier) != null);
+            identifier -> TextEffectRegistry.get(identifier) != null || TextEffectFormat.isTypewriter(identifier));
     }
 
     public static String continuation(String text) {
@@ -200,7 +202,9 @@ public class EffectTextLayout {
                 active = glyph.style();
                 if (active != null) result.append(TextEffects.opening(active));
             }
-            result.append(TextEffects.escapeLiteral(glyph.text()));
+            result.append(
+                glyph.pause() > 0 ? TextEffectFormat.pauseMarker(Math.round(glyph.pause() * 1000))
+                    : TextEffects.escapeLiteral(glyph.text()));
         }
         if (active != null) result.append(EffectTextParser.CLOSE);
         return result.toString();
@@ -224,6 +228,7 @@ public class EffectTextLayout {
             int end = start;
             float width = 0;
             StringBuilder text = new StringBuilder(first.formatting());
+            List<Glyph> members = new ObjectArrayList<>();
             while (end < glyphs.size()) {
                 Glyph glyph = glyphs.get(end);
                 if (glyph.text()
@@ -234,10 +239,11 @@ public class EffectTextLayout {
                 if (end > start && glyph.width() > 0) width += spacing;
                 width += glyph.width();
                 text.append(glyph.text());
+                members.add(glyph);
                 end++;
             }
             if (spaced && width > 0) x += spacing;
-            runs.add(new DrawRun(text.toString(), first.style(), x, y, width));
+            runs.add(new DrawRun(text.toString(), first.style(), x, y, width, List.copyOf(members)));
             x += width;
             spaced |= width > 0;
             start = end;
@@ -246,14 +252,36 @@ public class EffectTextLayout {
     }
 
     public record Glyph(String text, String formatting, TextEffectStyle style, float width, int sourceStart,
-        int sourceEnd) {
+        int sourceEnd, float pause) {
+
+        public Glyph(String text, String formatting, TextEffectStyle style, float width, int sourceStart,
+            int sourceEnd) {
+            this(text, formatting, style, width, sourceStart, sourceEnd, 0);
+        }
 
         public Glyph(String text, String formatting, TextEffectStyle style, float width) {
             this(text, formatting, style, width, -1, -1);
         }
     }
 
-    public record DrawRun(String text, TextEffectStyle style, float x, float y, float width) {}
+    public record DrawRun(String text, TextEffectStyle style, float x, float y, float width, List<Glyph> glyphs) {
+
+        public DrawRun(String text, TextEffectStyle style, float x, float y, float width) {
+            this(text, style, x, y, width, List.of());
+        }
+
+        public String typedText(int count) {
+            if (count >= glyphs.size()) return text;
+            StringBuilder result = new StringBuilder(
+                glyphs.isEmpty() ? ""
+                    : glyphs.get(0)
+                        .formatting());
+            for (int i = 0; i < count; i++) result.append(
+                glyphs.get(i)
+                    .text());
+            return result.toString();
+        }
+    }
 
     public record Layout(List<Glyph> glyphs, float width, float height, float spacing, int lines, List<DrawRun> runs) {
 
