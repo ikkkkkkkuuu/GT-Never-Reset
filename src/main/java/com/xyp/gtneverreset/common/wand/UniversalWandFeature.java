@@ -19,12 +19,10 @@ public enum UniversalWandFeature {
     ACCELERATION(7, () -> UniversalWandConfig.enableAcceleration, "timeAcceleration", "time_acceleration",
         "acceleration_engine_normal", "acceleration_engine_gt"),
     CHAIN(8, () -> UniversalWandConfig.enableChain, "enhancedChain", "enhanced_chain", "gt_small_chain", "radius",
-        "max_count"),
+        "max_count", "ore_backfill"),
     CROPS(9, () -> UniversalWandConfig.enableCrops, "cropHarvest", "crop_harvest", "crop_sticks"),
     BEDROCK(10, () -> UniversalWandConfig.enableBedrock, "forceBedrock", "force_bedrock"),
     COLLECTION(11, () -> UniversalWandConfig.enableCollection, "collectToInventory", "collect_items", "ae_priority"),
-    SHEARS(14, () -> UniversalWandConfig.enableShears, "shearsEnabled", "shears"),
-    HOE(15, () -> UniversalWandConfig.enableHoe, "hoeEnabled", "hoe"),
     FLIGHT(16, () -> UniversalWandConfig.enableFlight, "flightSpeedOverride", "flight", "flight_speed_override");
 
     private static final UniversalWandFeature[] FEATURES = values();
@@ -65,6 +63,7 @@ public enum UniversalWandFeature {
         for (UniversalWandFeature feature : FEATURES)
             if (feature.setting != null && feature.setting.equals(key)) return feature;
         switch (key) {
+            case "oreBackfill":
             case "gtSmallChain":
             case "enhancedChainRadius":
             case "maxMiningCount":

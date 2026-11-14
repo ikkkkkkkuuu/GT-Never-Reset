@@ -108,22 +108,6 @@ public final class UniversalWandConfig {
     @Config.DefaultBoolean(true)
     public static boolean enableCollection = true;
 
-    // #tr gtneverreset.config.universalwand.enableshears
-    // # Shears
-    // # zh_CN 剪刀
-    @Config.LangKey("gtneverreset.config.universalwand.enableshears")
-    @Config.Comment("Allow shears.")
-    @Config.DefaultBoolean(true)
-    public static boolean enableShears = true;
-
-    // #tr gtneverreset.config.universalwand.enablehoe
-    // # Hoe
-    // # zh_CN 锄头
-    @Config.LangKey("gtneverreset.config.universalwand.enablehoe")
-    @Config.Comment("Allow hoe use.")
-    @Config.DefaultBoolean(true)
-    public static boolean enableHoe = true;
-
     // #tr gtneverreset.config.universalwand.enableflight
     // # Flight
     // # zh_CN 飞行

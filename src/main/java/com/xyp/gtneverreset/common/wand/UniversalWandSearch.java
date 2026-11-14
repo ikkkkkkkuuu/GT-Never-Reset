@@ -4,7 +4,9 @@ import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Set;
 
-/** Resumable 26-neighbor or concentric sphere search. All world access belongs to the caller's tick. */
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+
+/** Resumable connected or gap-limited search. All world access belongs to the caller's tick. */
 public final class UniversalWandSearch {
 
     @FunctionalInterface
@@ -19,28 +21,33 @@ public final class UniversalWandSearch {
         void accept(int x, int y, int z);
     }
 
-    private final int sx, sy, sz, limit, radius;
+    private static final int[][] NEIGHBORS = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 },
+        { 0, 0, -1 } };
+    private final int limit, maxGap;
     private final boolean enhanced;
     private final Matcher matcher;
+    private final Matcher available;
+    private final Long2IntOpenHashMap bestGap = new Long2IntOpenHashMap();
     private final ArrayDeque<int[]> frontier = new ArrayDeque<>();
     private final Set<Long> visited = new HashSet<>();
     private int[] current;
     private int neighbor;
-    private int distance = 1, dx = -1, dy = -1, dz, outerZ = -1, innerZ;
     private int found;
     private boolean finished;
-    private static final int[] SKIP = new int[0];
 
-    UniversalWandSearch(int sx, int sy, int sz, int limit, boolean enhanced, int radius, Matcher matcher) {
-        this.sx = sx;
-        this.sy = sy;
-        this.sz = sz;
+    UniversalWandSearch(int sx, int sy, int sz, int limit, boolean enhanced, int maxGap, Matcher matcher,
+        Matcher available) {
         this.limit = limit;
         this.enhanced = enhanced;
-        this.radius = radius;
+        this.maxGap = maxGap;
+        this.available = available;
+        bestGap.defaultReturnValue(Integer.MAX_VALUE);
         this.matcher = matcher;
         finished = limit <= 0;
-        if (!enhanced) {
+        if (enhanced) {
+            bestGap.put(key(sx, sy, sz), 0);
+            expand(sx, sy, sz, 0);
+        } else {
             frontier.add(new int[] { sx, sy, sz });
             visited.add(key(sx, sy, sz));
         }
@@ -63,9 +70,10 @@ public final class UniversalWandSearch {
     }
 
     public int advance(int budget, Result result) {
+        if (enhanced) return advanceEnhanced(budget, result);
         int scanned = 0;
         while (!finished && scanned < budget) {
-            int[] position = enhanced ? nextEnhanced() : nextConnected();
+            int[] position = nextConnected();
             if (position == null) {
                 finished = true;
                 break;
@@ -97,37 +105,38 @@ public final class UniversalWandSearch {
         return new int[] { x, y, z };
     }
 
-    private int[] nextEnhanced() {
-        if (distance <= radius) {
-            if (outerZ < 0) {
-                int planar = dx * dx + dy * dy;
-                int outer = distance * distance;
-                int inner = (distance - 1) * (distance - 1);
-                if (planar <= outer) {
-                    outerZ = (int) Math.sqrt(outer - planar);
-                    innerZ = planar > inner ? 0 : (int) Math.sqrt(inner - planar) + 1;
-                    dz = -outerZ;
-                }
-                if (outerZ < 0 || innerZ > outerZ) {
-                    nextRow();
-                    return SKIP;
-                }
+    private int advanceEnhanced(int budget, Result result) {
+        int scanned = 0;
+        while (!finished && scanned < budget) {
+            int[] position = frontier.pollFirst();
+            if (position == null) {
+                finished = true;
+                break;
             }
-            if (dz > -innerZ && dz < innerZ) dz = innerZ;
-            int[] position = new int[] { sx + dx, sy + dy, sz + dz++ };
-            if (dz > outerZ) nextRow();
-            return position;
+            scanned++;
+            int x = position[0], y = position[1], z = position[2], gap = position[3];
+            long positionKey = key(x, y, z);
+            if (gap != bestGap.get(positionKey) || !available.matches(x, y, z)) continue;
+            if (matcher.matches(x, y, z)) {
+                bestGap.put(positionKey, 0);
+                expand(x, y, z, 0);
+                found++;
+                result.accept(x, y, z);
+                if (found >= limit) finished = true;
+            } else if (gap < maxGap) {
+                expand(x, y, z, gap + 1);
+            }
         }
-        return null;
+        return scanned;
     }
 
-    private void nextRow() {
-        outerZ = -1;
-        if (++dy > distance) {
-            dy = -distance;
-            if (++dx > distance) {
-                distance++;
-                dx = dy = -distance;
+    private void expand(int x, int y, int z, int gap) {
+        for (int[] offset : NEIGHBORS) {
+            int nx = x + offset[0], ny = y + offset[1], nz = z + offset[2];
+            long neighborKey = key(nx, ny, nz);
+            if (gap < bestGap.get(neighborKey)) {
+                bestGap.put(neighborKey, gap);
+                frontier.addLast(new int[] { nx, ny, nz, gap });
             }
         }
     }
