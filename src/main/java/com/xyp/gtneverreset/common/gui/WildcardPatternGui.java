@@ -524,18 +524,22 @@ public class WildcardPatternGui {
     private IWidget propertyEditor(PropertyFilterComponent component) {
         ScrollingDropdown selector = new ScrollingDropdown(
             "wildcard_property_" + filters.indexOf(component),
-            propertyNames(component.getExample()))
+            propertyNames(component.getExampleName()))
                 .setValue(
                     component.getProperty() == null ? ""
                         : component.getProperty()
                             .displayName())
                 .setOnChanged(name -> component.setProperty(WildcardMaterials.findProperty(name)));
         DropWidget drop = new DropWidget(
-            () -> component.getExample() == null ? null : dustOf(component.getExample()),
+            () -> component.getExampleName() == null ? null
+                : WildcardMaterials.makePrefixStack(OrePrefixes.dust, component.getExampleName(), 1),
             stack -> {
-                Materials material = WildcardMaterials.parseItem(stack).material;
-                if (!WildcardMaterials.isRealMaterial(material)) return;
-                component.setExample(material);
+                WildcardMaterials.PrefixMaterial parsed = WildcardMaterials.parseItem(stack);
+                if (stack != null
+                    && (parsed.prefix == null || !parsed.prefix.isMaterialBased() || parsed.materialName == null))
+                    return;
+                String material = parsed.materialName;
+                component.setExampleName(material);
                 List<String> names = propertyNames(material);
                 selector.setCandidates(names);
                 selector.setValue(names.get(0));
@@ -544,9 +548,12 @@ public class WildcardPatternGui {
         return filterSelector(drop, selector);
     }
 
-    private static List<String> propertyNames(Materials material) {
+    private static List<String> propertyNames(String material) {
+        if (material == null || material.isEmpty()) return new ArrayList<>(
+            WildcardMaterials.propertyChoices()
+                .keySet());
         List<String> names = new ArrayList<>();
-        if (WildcardMaterials.isRealMaterial(material)) {
+        if (material != null && !material.isEmpty()) {
             for (WildcardMaterials.Property property : WildcardMaterials.propertiesOf(material))
                 names.add(property.displayName());
         }
@@ -558,6 +565,8 @@ public class WildcardPatternGui {
                 IKey.lang("gtnr.gui.wildcardpattern.no_property")
                     .get());
         }
+        String gtPlusPlus = WildcardMaterials.Property.GTPlusPlus.displayName();
+        if (!names.contains(gtPlusPlus)) names.add(gtPlusPlus);
         return names;
     }
 
@@ -570,15 +579,19 @@ public class WildcardPatternGui {
     private IWidget subTagEditor(SubTagFilterComponent component) {
         ScrollingDropdown selector = new ScrollingDropdown(
             "wildcard_subtag_" + filters.indexOf(component),
-            subTagNames(component.getExample()))
+            subTagNames(component.getExampleName()))
                 .setValue(component.getSubTag() == null ? "" : component.getSubTag().mName)
                 .setOnChanged(name -> component.setSubTag(WildcardMaterials.findSubTag(name)));
         DropWidget drop = new DropWidget(
-            () -> component.getExample() == null ? null : dustOf(component.getExample()),
+            () -> component.getExampleName() == null ? null
+                : WildcardMaterials.makePrefixStack(OrePrefixes.dust, component.getExampleName(), 1),
             stack -> {
-                Materials material = WildcardMaterials.parseItem(stack).material;
-                if (!WildcardMaterials.isRealMaterial(material)) return;
-                component.setExample(material);
+                WildcardMaterials.PrefixMaterial parsed = WildcardMaterials.parseItem(stack);
+                if (stack != null
+                    && (parsed.prefix == null || !parsed.prefix.isMaterialBased() || parsed.materialName == null))
+                    return;
+                String material = parsed.materialName;
+                component.setExampleName(material);
                 List<String> names = subTagNames(material);
                 selector.setCandidates(names);
                 selector.setValue(names.get(0));
@@ -596,11 +609,11 @@ public class WildcardPatternGui {
                     .width(80));
     }
 
-    private static List<String> subTagNames(Materials material) {
+    private static List<String> subTagNames(String material) {
         List<String> names = new ArrayList<>();
-        if (WildcardMaterials.isRealMaterial(material)) {
-            for (SubTag tag : WildcardMaterials.subTagsOf(material)) names.add(tag.mName);
-        }
+        List<SubTag> tags = material == null || material.isEmpty() ? WildcardMaterials.subTagChoices()
+            : WildcardMaterials.subTagsOf(material);
+        for (SubTag tag : tags) names.add(tag.mName);
         if (names.isEmpty()) {
             // #tr gtnr.gui.wildcardpattern.no_flag
             // # no flag

@@ -24,11 +24,14 @@ public final class SubTagFilterComponent extends AbstractFilterComponent {
     /** 示例材料（拖入的物品解析出来），仅用于 GUI 列出可选 SubTag，不参与匹配。 */
     @Getter
     private Materials example;
+    @Getter
+    private String exampleName;
 
     public SubTagFilterComponent(SubTag subTag, Materials example, boolean whitelist) {
         super(whitelist);
         this.subTag = subTag;
         this.example = example;
+        this.exampleName = WildcardMaterials.isRealMaterial(example) ? example.mName : null;
     }
 
     public static SubTagFilterComponent empty() {
@@ -37,16 +40,24 @@ public final class SubTagFilterComponent extends AbstractFilterComponent {
 
     public static SubTagFilterComponent readData(NBTTagCompound data) {
         SubTag subTag = WildcardMaterials.findSubTag(data.getString(KEY_SUBTAG));
-        Materials example = data.hasKey(KEY_EXAMPLE) ? WildcardMaterials.findByName(data.getString(KEY_EXAMPLE)) : null;
-        if (!WildcardMaterials.isRealMaterial(example)) example = null;
-        return new SubTagFilterComponent(subTag, example, readWhitelist(data));
+        SubTagFilterComponent component = new SubTagFilterComponent(subTag, null, readWhitelist(data));
+        component.exampleName = data.getString(KEY_EXAMPLE);
+        component.example = WildcardMaterials.findByName(component.exampleName);
+        if (!WildcardMaterials.isRealMaterial(component.example)) component.example = null;
+        return component;
     }
 
     /** 设置示例材料，并把当前 SubTag 对齐到该材料实际拥有的第一个 SubTag（若当前的它没有）。 */
     public void setExample(Materials example) {
-        this.example = WildcardMaterials.isRealMaterial(example) ? example : null;
-        if (this.example != null) {
-            List<SubTag> avail = WildcardMaterials.subTagsOf(this.example);
+        setExampleName(WildcardMaterials.isRealMaterial(example) ? example.mName : null);
+    }
+
+    public void setExampleName(String exampleName) {
+        this.exampleName = exampleName == null || exampleName.isEmpty() ? null : exampleName;
+        Materials material = WildcardMaterials.findByName(this.exampleName);
+        this.example = WildcardMaterials.isRealMaterial(material) ? material : null;
+        if (this.exampleName != null) {
+            List<SubTag> avail = WildcardMaterials.subTagsOf(this.exampleName);
             if (!avail.isEmpty() && (subTag == null || !avail.contains(subTag))) {
                 subTag = avail.get(0);
             }
@@ -60,9 +71,7 @@ public final class SubTagFilterComponent extends AbstractFilterComponent {
 
     @Override
     public boolean test(String materialName) {
-        Materials material = WildcardMaterials.findByName(materialName);
-        return materialName != null && isWhitelist()
-            == (WildcardMaterials.isRealMaterial(material) && WildcardMaterials.hasSubTag(material, subTag));
+        return materialName != null && isWhitelist() == WildcardMaterials.hasSubTag(materialName, subTag);
     }
 
     @Override
@@ -79,7 +88,7 @@ public final class SubTagFilterComponent extends AbstractFilterComponent {
     public NBTTagCompound writeData() {
         NBTTagCompound data = baseData();
         data.setString(KEY_SUBTAG, subTag == null ? "" : subTag.mName);
-        if (example != null) data.setString(KEY_EXAMPLE, example.mName);
+        if (exampleName != null) data.setString(KEY_EXAMPLE, exampleName);
         return data;
     }
 }
