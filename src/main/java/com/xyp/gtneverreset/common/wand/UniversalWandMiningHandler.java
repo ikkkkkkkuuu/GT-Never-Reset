@@ -1,17 +1,22 @@
 package com.xyp.gtneverreset.common.wand;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockOre;
+import net.minecraft.block.BlockRedstoneOre;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
@@ -24,6 +29,7 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.oredict.OreDictionary;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.item.items.ItemUniversalWand;
@@ -37,6 +43,8 @@ import gregtech.common.blocks.GTBlockOre;
 
 /** Server-side bounded chain mining using the vanilla player harvest lifecycle. */
 public final class UniversalWandMiningHandler {
+
+    private static final Map<World, Set<BackfillPosition>> PENDING_BACKFILL = new HashMap<>();
 
     public static final int PREVIEW_MAX_BLOCKS = 65536;
 
@@ -73,7 +81,8 @@ public final class UniversalWandMiningHandler {
             ItemUniversalWand.isEnhancedChain(stack),
             ItemUniversalWand.getEnhancedChainRadius(stack),
             (px, py, pz) -> world.blockExists(px, py, pz)
-                && matchesTarget(world, px, py, pz, target, metadata, gtOreTarget, targetSmall, includeSmall));
+                && matchesTarget(world, px, py, pz, target, metadata, gtOreTarget, targetSmall, includeSmall),
+            world::blockExists);
     }
 
     private static final Map<UUID, Long> KEY_LAST_HELD = new ConcurrentHashMap<>();
@@ -155,7 +164,7 @@ public final class UniversalWandMiningHandler {
         private final ItemStack wand;
         private final boolean blockHarvest;
         private final boolean dropToPlayer;
-        private VanillaToolBackend.HeldTool shears;
+        private final boolean backfillOre;
         private boolean harvested;
         private final UniversalWandStorage.Destination destination;
         private final UniversalWandDropBuffer soloDrops;
@@ -169,6 +178,7 @@ public final class UniversalWandMiningHandler {
             this.z = z;
             this.wand = player.getHeldItem();
             this.blockHarvest = blockHarvest;
+            this.backfillOre = blockHarvest && ItemUniversalWand.isOreBackfillEnabled(wand) && isOre(world, x, y, z);
             this.dropToPlayer = autoHarvest && UniversalWandConfig.universalWandDropToPlayer;
             this.destination = new UniversalWandStorage.Destination(wand);
             this.soloDrops = autoHarvest || destination.collects() ? new UniversalWandDropBuffer() : null;
@@ -180,7 +190,7 @@ public final class UniversalWandMiningHandler {
         }
 
         private boolean ownsHeldTool() {
-            return player.getHeldItem() == wand || shears != null && shears.isHeld();
+            return player.getHeldItem() == wand;
         }
 
         private boolean isOrigin(MiningTask task) {
@@ -189,7 +199,16 @@ public final class UniversalWandMiningHandler {
 
         @Override
         public void close() {
-            if (shears != null) shears.close();
+            MiningTask chain = TASKS.get(player.getUniqueID());
+            if (harvested && backfillOre
+                && chain != null
+                && chain.player == player
+                && chain.world == world
+                && chain.stack == wand
+                && (ACTIVE.get() || isOrigin(chain))) {
+                PENDING_BACKFILL.computeIfAbsent(world, ignored -> new HashSet<>())
+                    .add(new BackfillPosition(x, y, z));
+            }
             if (previous == null) HARVEST.remove();
             else HARVEST.set(previous);
             if (soloDrops != null && !soloDrops.isEmpty()) releaseSoloDrops(
@@ -220,27 +239,6 @@ public final class UniversalWandMiningHandler {
 
     static HarvestScope beginAutoHarvest(EntityPlayerMP player, int x, int y, int z) {
         return new HarvestScope(player, x, y, z, false, true);
-    }
-
-    public static void beginBlockShearing(EntityPlayerMP player, int x, int y, int z) {
-        HarvestScope scope = HARVEST.get();
-        if (scope != null && scope.blockHarvest
-            && scope.player == player
-            && scope.shears == null
-            && scope.x == x
-            && scope.y == y
-            && scope.z == z
-            && scope.ownsHeldTool()) scope.shears = VanillaToolBackend.beginBlockShearing(player, x, y, z);
-    }
-
-    public static boolean hasShearedBlock(EntityPlayer player, int x, int y, int z) {
-        HarvestScope scope = HARVEST.get();
-        return scope != null && scope.player == player
-            && scope.x == x
-            && scope.y == y
-            && scope.z == z
-            && scope.shears != null
-            && scope.shears.shearedBlock();
     }
 
     private static final class MiningTask {
@@ -289,6 +287,7 @@ public final class UniversalWandMiningHandler {
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        flushBackfill();
         UniversalWandActions.tick();
         if (!UniversalWandFeature.CHAIN.allowed()) {
             KEY_HELD.clear();
@@ -582,6 +581,7 @@ public final class UniversalWandMiningHandler {
 
     /** Called before server player/world saves, while the destination chunks are still available. */
     public static void finishAllChains() {
+        flushBackfill();
         for (MiningTask task : TASKS.values()) finishTask(task, false, true);
         KEY_HELD.clear();
         KEY_LAST_HELD.clear();
@@ -591,6 +591,7 @@ public final class UniversalWandMiningHandler {
 
     @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
+        PENDING_BACKFILL.remove(event.world);
         UniversalWandAutoHarvestHandler.unload(event.world);
         for (Map.Entry<UUID, MiningTask> entry : TASKS.entrySet()) {
             if (entry.getValue().world == event.world) {
@@ -630,5 +631,31 @@ public final class UniversalWandMiningHandler {
     private static boolean isGtLargeVeinOre(World world, int x, int y, int z) {
         return isGtOre(world, x, y, z) && !isGtSmallOre(world, x, y, z);
     }
+
+    private static boolean isOre(World world, int x, int y, int z) {
+        Block block = world.getBlock(x, y, z);
+        if (block instanceof GTBlockOre || block instanceof BlockOre || block instanceof BlockRedstoneOre) return true;
+        if (Item.getItemFromBlock(block) == null) return false;
+        ItemStack stack = new ItemStack(block, 1, block.getDamageValue(world, x, y, z));
+        for (int id : OreDictionary.getOreIDs(stack)) {
+            if (OreDictionary.getOreName(id)
+                .startsWith("ore")) return true;
+        }
+        return false;
+    }
+
+    private static void flushBackfill() {
+        PENDING_BACKFILL.forEach((world, positions) -> {
+            for (BackfillPosition position : positions) {
+                if (world.blockExists(position.x, position.y, position.z)
+                    && world.isAirBlock(position.x, position.y, position.z)) {
+                    world.setBlock(position.x, position.y, position.z, Blocks.stone, 0, 3);
+                }
+            }
+        });
+        PENDING_BACKFILL.clear();
+    }
+
+    private record BackfillPosition(int x, int y, int z) {}
 
 }

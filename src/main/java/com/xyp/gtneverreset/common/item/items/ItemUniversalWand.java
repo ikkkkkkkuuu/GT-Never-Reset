@@ -44,9 +44,7 @@ import com.xyp.gtneverreset.common.wand.UniversalWandAccelerationHandler;
 import com.xyp.gtneverreset.common.wand.UniversalWandActions;
 import com.xyp.gtneverreset.common.wand.UniversalWandFeature;
 import com.xyp.gtneverreset.common.wand.UniversalWandMiningHandler;
-import com.xyp.gtneverreset.common.wand.UniversalWandRightClick;
 import com.xyp.gtneverreset.common.wand.UniversalWandStorage;
-import com.xyp.gtneverreset.common.wand.VanillaToolBackend;
 import com.xyp.gtneverreset.compat.backhand.UniversalWandBackhandIntegration;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtneverreset.config.UniversalWandConfig;
@@ -78,8 +76,7 @@ public final class ItemUniversalWand extends Item
     private static final String NBT_AE_BINDING = "aeBinding";
     private static final String NBT_AE_PRIORITY = "aeStoragePriority";
     private static final String NBT_INVENTORY_COLLECTION = "collectToInventory";
-    private static final String NBT_SHEARS = "shearsEnabled";
-    private static final String NBT_HOE = "hoeEnabled";
+    private static final String NBT_ORE_BACKFILL = "oreBackfill";
     private static final String NBT_FORCE_KILL = "forceKill";
     private static final String NBT_AOE_SIZE = "aoeSize";
     private static final String NBT_BEHEADING = "beheading";
@@ -203,24 +200,6 @@ public final class ItemUniversalWand extends Item
     }
 
     @Override
-    public boolean onItemUse(ItemStack stack, EntityPlayer player, World world, int x, int y, int z, int side,
-        float hitX, float hitY, float hitZ) {
-        return UniversalWandRightClick
-            .handled(player, VanillaToolBackend.useHoe(stack, player, world, x, y, z, side, hitX, hitY, hitZ));
-    }
-
-    @Override
-    public boolean itemInteractionForEntity(ItemStack stack, EntityPlayer player, EntityLivingBase target) {
-        // Creative interaction supplies a copy; settings and restoration belong to the actual held wand.
-        if (player == null || !isHeldBy(player)
-            || player.getHeldItem()
-                .getItem() != this)
-            return false;
-        return UniversalWandRightClick
-            .handled(player, VanillaToolBackend.shearEntity(player.getHeldItem(), player, target));
-    }
-
-    @Override
     public void onUpdate(ItemStack stack, World world, Entity entity, int slot, boolean held) {
         if (!world.isRemote && sanitizeDisabledFeatures(stack) && entity instanceof EntityPlayer player)
             player.inventory.markDirty();
@@ -284,6 +263,7 @@ public final class ItemUniversalWand extends Item
         addStateTooltip(tooltip, "protection", isProtectionMode(stack), EnumChatFormatting.BLUE);
         tooltip.add(EnumChatFormatting.DARK_GRAY + "---- Mining ----");
         addStateTooltip(tooltip, "enhanced_chain", isEnhancedChain(stack), EnumChatFormatting.GREEN);
+        addStateTooltip(tooltip, "ore_backfill", isOreBackfillEnabled(stack), EnumChatFormatting.YELLOW);
         addStateTooltip(tooltip, "gt_small_chain", isGtSmallChainEnabled(stack), EnumChatFormatting.GREEN);
         addStateTooltip(tooltip, "crop_harvest", isCropHarvestEnabled(stack), EnumChatFormatting.GREEN);
         addStateTooltip(tooltip, "crop_sticks", isCropSticksEnabled(stack), EnumChatFormatting.GREEN);
@@ -307,9 +287,6 @@ public final class ItemUniversalWand extends Item
         addStateTooltip(tooltip, "teleport", isTeleportEnabled(stack), EnumChatFormatting.LIGHT_PURPLE);
         addStateTooltip(tooltip, "flight_speed_override", isFlightSpeedOverrideEnabled(stack), EnumChatFormatting.AQUA);
         addStateTooltip(tooltip, "time_acceleration", isTimeAccelerationEnabled(stack), EnumChatFormatting.AQUA);
-        tooltip.add(EnumChatFormatting.DARK_GRAY + "---- Vanilla ----");
-        addStateTooltip(tooltip, "shears", isShearsEnabled(stack), EnumChatFormatting.YELLOW);
-        addStateTooltip(tooltip, "hoe", isHoeEnabled(stack), EnumChatFormatting.YELLOW);
     }
 
     private static void addStateTooltip(List<String> tooltip, String key, boolean enabled, EnumChatFormatting color) {
@@ -673,12 +650,12 @@ public final class ItemUniversalWand extends Item
         return getSettings(stack).getBoolean(NBT_INVENTORY_COLLECTION);
     }
 
-    public static boolean isShearsEnabled(ItemStack stack) {
-        return getSettings(stack).getBoolean(NBT_SHEARS);
+    public static boolean isOreBackfillEnabled(ItemStack stack) {
+        return UniversalWandFeature.CHAIN.allowed() && getSettings(stack).getBoolean(NBT_ORE_BACKFILL);
     }
 
-    public static boolean isHoeEnabled(ItemStack stack) {
-        return getSettings(stack).getBoolean(NBT_HOE);
+    public static boolean setOreBackfillEnabled(EntityPlayer player, ItemStack expected, boolean enabled) {
+        return setBooleanSetting(player, expected, NBT_ORE_BACKFILL, enabled);
     }
 
     public static boolean isCropHarvestEnabled(ItemStack stack) {
@@ -695,14 +672,6 @@ public final class ItemUniversalWand extends Item
 
     public static boolean setCropSticksEnabled(EntityPlayer player, ItemStack expected, boolean enabled) {
         return setBooleanSetting(player, expected, "cropSticks", enabled);
-    }
-
-    public static boolean setShearsEnabled(EntityPlayer player, ItemStack expected, boolean enabled) {
-        return setBooleanSetting(player, expected, NBT_SHEARS, enabled);
-    }
-
-    public static boolean setHoeEnabled(EntityPlayer player, ItemStack expected, boolean enabled) {
-        return setBooleanSetting(player, expected, NBT_HOE, enabled);
     }
 
     public static boolean setAePriority(EntityPlayer player, ItemStack expected, boolean enabled) {

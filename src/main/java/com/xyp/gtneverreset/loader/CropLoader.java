@@ -9,6 +9,7 @@ import com.gtnewhorizon.cropsnh.farming.registries.CropRegistry;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.compat.cropsnh.ExplosiveFlowerCrop;
 import com.xyp.gtneverreset.compat.cropsnh.NetherStarFlowerCrop;
+import com.xyp.gtneverreset.compat.cropsnh.SunnariumFlowerCrop;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtnrlib.mod.ModList;
 
@@ -25,6 +26,7 @@ public final class CropLoader implements IContentLoader {
     @Optional.Method(modid = ModList.ModIds.CROPSNH)
     private static void registerCrops() {
         CropRegistry.instance.register(new NetherStarFlowerCrop());
+        CropRegistry.instance.register(new SunnariumFlowerCrop());
         if (!Mods.IndustrialCraft2.isModLoaded()) return;
         ItemStack industrialTnt = ModsItemlist.IndustrialTnt.get(1);
         if (industrialTnt == null) {
@@ -41,6 +43,10 @@ public final class CropLoader implements IContentLoader {
         ICropCard netherStarFlower = CropRegistry.instance.get(NetherStarFlowerCrop.ID);
         if (netherStarFlower != null) {
             new CropMutation(netherStarFlower, CropsNHCrops.Withereed, CropsNHCrops.Blazereed).register();
+        }
+        ICropCard sunnariumFlower = CropRegistry.instance.get(SunnariumFlowerCrop.ID);
+        if (sunnariumFlower != null && netherStarFlower != null) {
+            new CropMutation(sunnariumFlower, netherStarFlower, CropsNHCrops.Glowheat).register();
         }
     }
 }
