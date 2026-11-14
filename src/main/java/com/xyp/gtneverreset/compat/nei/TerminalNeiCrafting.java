@@ -14,9 +14,10 @@ import appeng.client.gui.implementations.GuiMEMonitorable;
 import appeng.client.me.ItemRepo;
 import appeng.container.implementations.ContainerMEMonitorable;
 import appeng.core.sync.network.NetworkHandler;
-import appeng.core.sync.packets.PacketMonitorableAction;
-import appeng.helpers.MonitorableAction;
+import appeng.core.sync.packets.PacketInventoryAction;
+import appeng.helpers.InventoryAction;
 import appeng.util.item.AEItemStack;
+import codechicken.nei.recipe.StackInfo;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -35,7 +36,8 @@ public final class TerminalNeiCrafting {
         IAEItemStack item = AEItemStack.create(stack);
         if (!isCraftable(gui, item)) return false;
         container.setTargetStack(item);
-        NetworkHandler.instance.sendToServer(new PacketMonitorableAction(MonitorableAction.AUTO_CRAFT, -1));
+        NetworkHandler.instance.sendToServer(
+            new PacketInventoryAction(InventoryAction.AUTO_CRAFT, -1, Math.max(1, StackInfo.getAmount(stack))));
         return true;
     }
 
