@@ -30,7 +30,7 @@ public final class FirstPersonPoseRenderer {
         GL11.glTranslated(-.43, .95, -.92);
         root(partial, .4);
         heldArm(false, partial);
-        if (ANIMATIONS.dualHanded()) heldArm(true, partial);
+        if (ANIMATIONS.dualHanded() && !FirstPersonAnimations.offhandOwnsLeftArm(partial)) heldArm(true, partial);
         RIGHT.apply(partial);
         // Vanilla rotates flat item sprites another 50 degrees around Y when drawing them.
         // From the inward grip their broad face would otherwise be nearly edge-on.
@@ -44,7 +44,7 @@ public final class FirstPersonPoseRenderer {
         if (!ANIMATIONS.applies(null)) return;
         root(partial, 1);
         GL11.glRotatef(-VANILLA_HAND_YAW, 0, 1, 0);
-        if (ANIMATIONS.dualHanded()) {
+        if (ANIMATIONS.dualHanded() && !FirstPersonAnimations.offhandOwnsLeftArm(partial)) {
             GL11.glPushMatrix();
             try {
                 GL11.glTranslated(-.88, .43, -.22);

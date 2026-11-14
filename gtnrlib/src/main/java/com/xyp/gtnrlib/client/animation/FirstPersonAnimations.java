@@ -33,12 +33,14 @@ import com.xyp.gtnrlib.api.animation.AnimationClip.Value;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
 import com.xyp.gtnrlib.api.animation.AnimationPlayer;
 import com.xyp.gtnrlib.client.render.animation.HmiPoseRenderer;
+import com.xyp.gtnrlib.compat.backhand.BackhandAnimationCompat;
 import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
 import com.xyp.gtnrlib.compat.punchy.PunchyPack;
 import com.xyp.gtnrlib.compat.punchy.PunchyPack.Motion;
 import com.xyp.gtnrlib.config.GTNRLibConfig;
 
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
@@ -88,6 +90,14 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     }
 
     private FirstPersonAnimations() {}
+
+    public static boolean offhandOwnsLeftArm(float partial) {
+        return Loader.isModLoaded("backhand") && BackhandAnimationCompat.ownsLeftArm(partial);
+    }
+
+    public static boolean usingOffhandItem() {
+        return Loader.isModLoaded("backhand") && BackhandAnimationCompat.usingOffhand();
+    }
 
     public void register() {
         FMLCommonHandler.instance()

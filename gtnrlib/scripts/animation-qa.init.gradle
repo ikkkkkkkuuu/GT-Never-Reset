@@ -1,4 +1,15 @@
 // An isolated client. -PanimationQaStandaloneMods keeps the optional tool mods without loading GT-Never-Reset.
+gradle.beforeProject { project ->
+    if (project.path == ':gtnrlib') {
+        project.afterEvaluate {
+            ['Backhand', 'Angelica'].each { mod ->
+                if (gradle.startParameter.projectProperties.containsKey('animationQa' + mod)) {
+                    project.dependencies.add('runtimeOnly', project.rootProject.extensions.getByName('elytraModpackVersion').gtnhdev(mod)) { transitive = false }
+                }
+            }
+        }
+    }
+}
 gradle.projectsEvaluated {
     def lib = gradle.rootProject.project(':gtnrlib')
     lib.spotless { java { target 'src/*/java/**/*.java', 'scripts/qa/Animation*Checks.java', 'scripts/hmi-grip/CapturePoses.java' } }
@@ -31,13 +42,17 @@ gradle.projectsEvaluated {
     def defaults = gradle.startParameter.projectProperties.containsKey('animationQaDefaults')
     def toolbox = gradle.startParameter.projectProperties.containsKey('animationQaToolbox')
     if (toolbox && host == lib) throw new GradleException('Toolbox QA requires -PanimationQaStandaloneMods or -PanimationQaHost')
-    def mode = (modsOnly ? 'library-mods' : host == lib ? 'library' : 'host') + (defaults ? '-defaults' : '') + (toolbox ? '-toolbox' : '')
+    def offhand = gradle.startParameter.projectProperties.containsKey('animationQaOffhand')
+    def backhand = gradle.startParameter.projectProperties.containsKey('animationQaBackhand')
+    def angelica = gradle.startParameter.projectProperties.containsKey('animationQaAngelica')
+    def mode = (modsOnly ? 'library-mods' : host == lib ? 'library' : 'host') + (defaults ? '-defaults' : '') + (toolbox ? '-toolbox' : '') + (offhand ? (backhand ? '-backhand' : '-no-backhand') : '') + (angelica ? '-angelica' : '')
     def output = lib.file("build/animation-qa/" + mode)
     def classes = new File(output, 'classes')
     def fixture = host.tasks.register('compileAnimationQA', JavaCompile) {
         dependsOn lib.tasks.named('classes')
         source lib.file('scripts/qa/AnimationClientChecks.java')
         source lib.file('scripts/qa/AnimationBlockUseChecks.java')
+        source lib.file('scripts/qa/AnimationOffhandChecks.java')
         source lib.file('scripts/qa/AnimationGripChecks.java')
         source lib.file('scripts/qa/AnimationMovementChecks.java')
         source lib.file('scripts/qa/AnimationModelChecks.java')
@@ -78,6 +93,9 @@ gradle.projectsEvaluated {
         def release = gradle.startParameter.projectProperties['hmiRelease']
         if (defaults && release) throw new GradleException('The built-in acceptance client must not receive an HMI archive')
         systemProperty 'gtnrlib.animation.qa.defaults', defaults
+        systemProperty 'gtnrlib.animation.qa.offhand', offhand
+        systemProperty 'gtnrlib.animation.qa.backhand', backhand
+        systemProperty 'gtnrlib.animation.qa.angelica', angelica
         if (release) systemProperty 'gtnrlib.animation.qa.hmi', 'hmi-fixture.jar'
         doFirst {
             def saves = new File(workingDir, 'saves').toPath()

@@ -1,5 +1,6 @@
 package com.xyp.gtnrlib.mixins.early.animation;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.entity.RenderPlayer;
 import net.minecraft.entity.player.EntityPlayer;
@@ -8,6 +9,7 @@ import net.minecraft.util.IIcon;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Slice;
@@ -20,8 +22,12 @@ import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.render.animation.FirstPersonArmRenderer;
 import com.xyp.gtnrlib.client.render.animation.FirstPersonPoseRenderer;
 import com.xyp.gtnrlib.client.render.animation.HmiPoseRenderer;
+import com.xyp.gtnrlib.compat.backhand.BackhandAnimationCompat;
 
-@Mixin(ItemRenderer.class)
+import cpw.mods.fml.common.Loader;
+
+// Apply after Backhand's RETURN hook so our cancellation always bypasses it; call it explicitly below.
+@Mixin(value = ItemRenderer.class, priority = 900)
 public abstract class ItemRendererMixin implements FirstPersonAnimations.EquippedStack {
 
     @ModifyExpressionValue(
@@ -60,6 +66,7 @@ public abstract class ItemRendererMixin implements FirstPersonAnimations.Equippe
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/EntityClientPlayerMP;getSwingProgress(F)F"),
         require = 0)
     private float gtnrlib$visualSwing(float vanilla) {
+        if (!gtnrlib$mainHand()) return vanilla;
         return FirstPersonAnimations.INSTANCE.replacesSwing(itemToRender) ? 0 : vanilla;
     }
 
@@ -74,8 +81,12 @@ public abstract class ItemRendererMixin implements FirstPersonAnimations.Equippe
         cancellable = true,
         require = 0)
     private void gtnrlib$hmi(float partial, CallbackInfo ci) {
+        if (!gtnrlib$mainHand()) return;
         float dip = 1 - (prevEquippedProgress + (equippedProgress - prevEquippedProgress) * partial);
-        if (HmiPoseRenderer.render((ItemRenderer) (Object) this, itemToRender, partial, dip)) ci.cancel();
+        if (HmiPoseRenderer.render((ItemRenderer) (Object) this, itemToRender, partial, dip)) {
+            if (Loader.isModLoaded("backhand")) BackhandAnimationCompat.render(partial);
+            ci.cancel();
+        }
     }
 
     // Successful block placement resets the equipped height. Sample both interpolation endpoints at rest for that clip.
@@ -85,6 +96,7 @@ public abstract class ItemRendererMixin implements FirstPersonAnimations.Equippe
             @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/ItemRenderer;equippedProgress:F") },
         require = 0)
     private float gtnrlib$placementHeight(float vanilla) {
+        if (!gtnrlib$mainHand()) return vanilla;
         return FirstPersonAnimations.INSTANCE.replacesPlacementDip(itemToRender) ? 1 : vanilla;
     }
 
@@ -93,6 +105,7 @@ public abstract class ItemRendererMixin implements FirstPersonAnimations.Equippe
         at = @At(value = "INVOKE", target = "Lnet/minecraft/item/Item;shouldRotateAroundWhenRendering()Z"),
         require = 0)
     private void gtnrlib$held(float partial, CallbackInfo ci) {
+        if (!gtnrlib$mainHand()) return;
         FirstPersonPoseRenderer.held(itemToRender, partial);
     }
 
@@ -107,6 +120,7 @@ public abstract class ItemRendererMixin implements FirstPersonAnimations.Equippe
             shift = At.Shift.AFTER),
         require = 0)
     private void gtnrlib$empty(float partial, CallbackInfo ci) {
+        if (!gtnrlib$mainHand()) return;
         FirstPersonPoseRenderer.empty(partial);
     }
 
@@ -120,6 +134,12 @@ public abstract class ItemRendererMixin implements FirstPersonAnimations.Equippe
         require = 0)
     private void gtnrlib$emptyArmArmor(RenderPlayer renderer, EntityPlayer player, Operation<Void> original) {
         original.call(renderer, player);
-        if (FirstPersonAnimations.INSTANCE.applies(null)) FirstPersonArmRenderer.renderOverVanillaArm(player, renderer);
+        if (gtnrlib$mainHand() && FirstPersonAnimations.INSTANCE.applies(null))
+            FirstPersonArmRenderer.renderOverVanillaArm(player, renderer);
+    }
+
+    @Unique
+    private boolean gtnrlib$mainHand() {
+        return (Object) this == Minecraft.getMinecraft().entityRenderer.itemRenderer;
     }
 }

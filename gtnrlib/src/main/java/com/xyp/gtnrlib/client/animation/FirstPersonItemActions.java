@@ -198,7 +198,7 @@ public final class FirstPersonItemActions {
     }
 
     boolean observeUse(EntityPlayer p) {
-        var active = p == null ? null : p.getItemInUse();
+        var active = p == null || FirstPersonAnimations.usingOffhandItem() ? null : p.getItemInUse();
         int damage = active == null ? 0 : active.getItemDamage();
         int currentSlot = p == null ? -1 : p.inventory.currentItem;
         if (active != useStack || p != useOwner || currentSlot != useSlot || damage != useDamage) {

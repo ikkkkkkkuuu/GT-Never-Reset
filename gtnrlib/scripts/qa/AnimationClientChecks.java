@@ -109,6 +109,25 @@ public final class AnimationClientChecks {
             || event.phase != TickEvent.Phase.END
             || ++frames < WORLD_WARMUP_FRAMES) return;
         try {
+            if (Boolean.getBoolean("gtnrlib.animation.qa.offhand")) {
+                boolean backhand = cpw.mods.fml.common.Loader.isModLoaded("backhand");
+                require(
+                    backhand == Boolean.getBoolean("gtnrlib.animation.qa.backhand"),
+                    "expected Backhand presence=" + backhand);
+                require(
+                    cpw.mods.fml.common.Loader.isModLoaded("angelica")
+                        == Boolean.getBoolean("gtnrlib.animation.qa.angelica"),
+                    "expected Angelica presence");
+                checkAnimationToggle(mc, "offhand");
+                if (backhand) AnimationOffhandChecks.verify(this, mc);
+                else {
+                    equip(mc, new ItemStack(Items.diamond_sword));
+                    draw(mc, "without-backhand");
+                    require(HmiFirstPerson.INSTANCE.enabled(), "animations work without Backhand");
+                }
+                finish(mc, null);
+                return;
+            }
             if (wrenchChecks != null) {
                 wrenchChecks.run();
                 return;
