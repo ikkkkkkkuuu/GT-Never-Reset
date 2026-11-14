@@ -72,10 +72,10 @@ public final class WirelessPowerCard extends Item implements IBaubleExpanded, IG
         if (world.isRemote) return false;
         if (!(world.getTileEntity(x, y, z) instanceof BaseMetaTileEntity tile)
             || !WirelessPowerTransfer.supports(tile)) {
-            // #tr power.card.unsupported
+            // #tr gtnr.power.card.unsupported
             // # Use on a GT EU machine or energy input hatch. Multiblocks receive power through their energy hatches.
             // # zh_CN 请对 GT EU 机器或能源输入仓使用；多方块通过能源仓接入。
-            player.addChatMessage(new ChatComponentTranslation("power.card.unsupported"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.power.card.unsupported"));
             return true;
         }
         UUID source = source(stack, player, true);
@@ -87,20 +87,20 @@ public final class WirelessPowerCard extends Item implements IBaubleExpanded, IG
             && tile.isUseableByPlayer(player)
             && player.canPlayerEdit(x, y, z, side, stack)) {
             saved.remove(connection.id, player.getUniqueID());
-            // #tr power.card.disconnected
+            // #tr gtnr.power.card.disconnected
             // # Disconnected from wireless power.
             // # zh_CN 已断开无线供电。
-            player.addChatMessage(new ChatComponentTranslation("power.card.disconnected"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.power.card.disconnected"));
         } else if (WirelessPowerTransfer.connect(tile, player, source)) {
-            // #tr power.card.connected
+            // #tr gtnr.power.card.connected
             // # Connected to %s's wireless power network.
             // # zh_CN 已接入 %s 的无线电网。
-            player.addChatMessage(new ChatComponentTranslation("power.card.connected", saved.name(source)));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.power.card.connected", saved.name(source)));
         } else {
-            // #tr power.card.denied
+            // #tr gtnr.power.card.denied
             // # Cannot connect: check machine access and the selected power network.
             // # zh_CN 无法接入：请检查机器操作权限和所选电网是否有效。
-            player.addChatMessage(new ChatComponentTranslation("power.card.denied"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.power.card.denied"));
         }
         return true;
     }
@@ -169,17 +169,17 @@ public final class WirelessPowerCard extends Item implements IBaubleExpanded, IG
     }
 
     public static String autoOnKey() {
-        // #tr power.card.auto_on
+        // #tr gtnr.power.card.auto_on
         // # Auto-connect: ON
         // # zh_CN 自动连接：开启
-        return "power.card.auto_on";
+        return "gtnr.power.card.auto_on";
     }
 
     public static String autoOffKey() {
-        // #tr power.card.auto_off
+        // #tr gtnr.power.card.auto_off
         // # Auto-connect: OFF
         // # zh_CN 自动连接：关闭
-        return "power.card.auto_off";
+        return "gtnr.power.card.auto_off";
     }
 
     @Override
@@ -215,10 +215,10 @@ public final class WirelessPowerCard extends Item implements IBaubleExpanded, IG
     @SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, EntityPlayer player, List<String> lines, boolean advanced) {
         lines.add(StatCollector.translateToLocal(automatic(stack) ? autoOnKey() : autoOffKey()));
-        // #tr power.card.source
+        // #tr gtnr.power.card.source
         // # Power source: %s
         // # zh_CN 供电源：%s
-        // #tr power.card.self
+        // #tr gtnr.power.card.self
         // # Your wireless power network
         // # zh_CN 使用者自己的无线电网
         String name = stack.getTagCompound() == null ? ""
@@ -226,23 +226,23 @@ public final class WirelessPowerCard extends Item implements IBaubleExpanded, IG
                 .getString("powerSourceName");
         lines.add(
             StatCollector.translateToLocalFormatted(
-                "power.card.source",
-                name.isEmpty() ? StatCollector.translateToLocal("power.card.self") : name));
-        // #tr power.card.use
+                "gtnr.power.card.source",
+                name.isEmpty() ? StatCollector.translateToLocal("gtnr.power.card.self") : name));
+        // #tr gtnr.power.card.use
         // # Right-click a GT receiver to connect/disconnect; right-click air to manage networks and devices.
         // # zh_CN 右键 GT 用电设备连接／断开；右键空气选择电网、管理设备。
-        lines.add(StatCollector.translateToLocal("power.card.use"));
-        // #tr power.card.auto
+        lines.add(StatCollector.translateToLocal("gtnr.power.card.use"));
+        // #tr gtnr.power.card.auto
         // # Carry in your inventory or Baubles to connect newly placed GT receivers. Sneak-right-click air to toggle.
         // # zh_CN 放在背包或饰品栏，自动接入新放置的 GT 用电设备；潜行右键空气切换自动连接。
-        lines.add(StatCollector.translateToLocal("power.card.auto"));
-        // #tr power.card.multiple
+        lines.add(StatCollector.translateToLocal("gtnr.power.card.auto"));
+        // #tr gtnr.power.card.multiple
         // # Multiple enabled cards with different sources suspend automatic connection.
         // # zh_CN 同时携带多张已开启自动连接、但选择不同电网的卡时，自动连接暂停。
-        lines.add(StatCollector.translateToLocal("power.card.multiple"));
-        // #tr power.card.limits
+        lines.add(StatCollector.translateToLocal("gtnr.power.card.multiple"));
+        // #tr gtnr.power.card.limits
         // # Uses real EU; respects voltage and amperage limits. Does not load chunks. All listed networks are public.
         // # zh_CN 消耗实际 EU，保留电压与安培限制，不加载区块；列表中的电网均可自由取电。
-        lines.add(StatCollector.translateToLocal("power.card.limits"));
+        lines.add(StatCollector.translateToLocal("gtnr.power.card.limits"));
     }
 }

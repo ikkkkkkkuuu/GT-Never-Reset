@@ -61,17 +61,17 @@ public final class StableEndCrystalItem extends Item {
     @Override
     @SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, EntityPlayer player, List<String> lines, boolean advanced) {
-        // #tr tooltip.gtnr.stable_end_crystal.safe
+        // #tr gtnr.tooltip.stable_end_crystal.safe
         // # Does not explode or ignite blocks
         // # zh_CN 不会爆炸或点燃方块
-        lines.add(StatCollector.translateToLocal("tooltip.gtnr.stable_end_crystal.safe"));
-        // #tr tooltip.gtnr.stable_end_crystal.place
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.stable_end_crystal.safe"));
+        // #tr gtnr.tooltip.stable_end_crystal.place
         // # Place on a solid top face with two air blocks above
         // # zh_CN 放置在坚固顶面上，上方需有两格空气
-        lines.add(StatCollector.translateToLocal("tooltip.gtnr.stable_end_crystal.place"));
-        // #tr tooltip.gtnr.stable_end_crystal.recover
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.stable_end_crystal.place"));
+        // #tr gtnr.tooltip.stable_end_crystal.recover
         // # Break to recover; powers End Crystal Resonators without being consumed
         // # zh_CN 打破可回收；为末晶谐振器供能且不被消耗
-        lines.add(StatCollector.translateToLocal("tooltip.gtnr.stable_end_crystal.recover"));
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.stable_end_crystal.recover"));
     }
 }

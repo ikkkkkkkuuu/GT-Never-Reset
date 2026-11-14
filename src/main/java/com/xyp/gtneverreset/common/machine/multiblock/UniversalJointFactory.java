@@ -55,8 +55,9 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
     private static final double SPEED_PER_GLASS_TIER = 0.2;
     private static final double EU_MULTIPLIER_PER_GLASS_TIER = 0.9;
     private static final int CASING_TEXTURE_ID = 16;
+    private static final String STRUCTURE_NAME = "universal_joint_factory";
     private static final String STRUCTURE_PIECE = "main";
-    private static final int OFFSET_X = 24, OFFSET_Y = 15, OFFSET_Z = 0;
+    private static final int HORIZONTAL_OFFSET = 24, VERTICAL_OFFSET = 15, DEPTH_OFFSET = 0;
     public static final List<RecipeMap<?>> RECIPE_MAPS = List.of(
         RecipeMaps.benderRecipes,
         RecipeMaps.compressorRecipes,
@@ -93,7 +94,7 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
         return (int) Math.min(Integer.MAX_VALUE, BASE_THREADS + upgrades * THREADS_PER_TIER);
     }
 
-    private IStructureDefinition<UniversalJointFactory> definition;
+    private IStructureDefinition<UniversalJointFactory> structureDefinition;
     private RecipeMap<?> processingRecipeMap;
 
     public UniversalJointFactory(int id, String name, String regionalName) {
@@ -111,7 +112,7 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
 
     @Override
     public IStructureDefinition<UniversalJointFactory> getStructureDefinition() {
-        if (definition == null) {
+        if (structureDefinition == null) {
             var ports = ofChain(
                 StructureTooltipHooks.describeAsHatch(
                     ofHatchAdder(UniversalJointFactory::addParameterModuleToMachineList, CASING_TEXTURE_ID, 1),
@@ -121,8 +122,8 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
                     .casingIndex(CASING_TEXTURE_ID)
                     .hint(1)
                     .buildAndChain(ofBlock(GregTechAPI.sBlockCasings2, 0)));
-            definition = StructureDefinition.<UniversalJointFactory>builder()
-                .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load("universal_joint_factory")))
+            structureDefinition = StructureDefinition.<UniversalJointFactory>builder()
+                .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load(STRUCTURE_NAME)))
                 .addElement('X', ports)
                 .addElement('Q', ports)
                 .addElement('A', ofBlock(GregTechAPI.sBlockCasings2, 0))
@@ -137,12 +138,12 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
                 .addElement('J', ofBlock(Blocks.glowstone, 0))
                 .build();
         }
-        return definition;
+        return structureDefinition;
     }
 
     @Override
     public void construct(ItemStack stack, boolean hintsOnly) {
-        buildPiece(STRUCTURE_PIECE, stack, hintsOnly, OFFSET_X, OFFSET_Y, OFFSET_Z);
+        buildPiece(STRUCTURE_PIECE, stack, hintsOnly, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET);
     }
 
     @Override
@@ -151,9 +152,9 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
         return survivalBuildPiece(
             STRUCTURE_PIECE,
             stack,
-            OFFSET_X,
-            OFFSET_Y,
-            OFFSET_Z,
+            HORIZONTAL_OFFSET,
+            VERTICAL_OFFSET,
+            DEPTH_OFFSET,
             elementBudget,
             environment,
             false,
@@ -162,7 +163,7 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
 
     @Override
     protected void checkMachineStructure(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        checkPiece(STRUCTURE_PIECE, OFFSET_X, OFFSET_Y, OFFSET_Z, errors);
+        checkPiece(STRUCTURE_PIECE, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors);
     }
 
     @Override
@@ -208,16 +209,21 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
     }
 
     @Override
+    public String getLocalNameKey() {
+        return "gtnr.machine.universal_joint_factory.name";
+    }
+
+    @Override
     public String getTooltipPath() {
         return "universal-joint-factory";
     }
 
     @Override
     public String getTooltipMachineType() {
-        // #tr gtnr.machine.universal_joint_factory.type
+        // #tr gtnr.machine.universal_joint_factory.recipe_type
         // # Universal processing / cross-recipe threads
         // # zh_CN 通用加工 / 跨配方线程
-        return StatCollector.translateToLocal("gtnr.machine.universal_joint_factory.type");
+        return StatCollector.translateToLocal("gtnr.machine.universal_joint_factory.recipe_type");
     }
 
     @Override

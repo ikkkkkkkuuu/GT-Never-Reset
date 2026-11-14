@@ -53,10 +53,10 @@ public final class ItemWirelessConnector extends Item {
                 .removeTag("SelectedProvider");
             if (stack.getTagCompound()
                 .hasNoTags()) stack.setTagCompound(null);
-            // #tr chat.packaged.deselected
+            // #tr gtnr.chat.packaged.deselected
             // # Provider selection cleared.
             // # zh_CN 已取消选择供应器。
-            player.addChatMessage(new ChatComponentTranslation("chat.packaged.deselected"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.chat.packaged.deselected"));
         }
         return stack;
     }
@@ -79,7 +79,7 @@ public final class ItemWirelessConnector extends Item {
             selected.setString("HostType", "overloaded_provider");
             held.getTagCompound()
                 .setTag("SelectedProvider", selected);
-            player.addChatMessage(new ChatComponentTranslation("chat.packaged.selected", x, y, z));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.chat.packaged.selected", x, y, z));
             return;
         }
         if (world.getTileEntity(x, y, z) instanceof TileEntityPackagedProvider provider) {
@@ -89,10 +89,10 @@ public final class ItemWirelessConnector extends Item {
             selected.setString("HostType", "provider");
             held.getTagCompound()
                 .setTag("SelectedProvider", selected);
-            // #tr chat.packaged.selected
+            // #tr gtnr.chat.packaged.selected
             // # Selected provider at %s, %s, %s.
             // # zh_CN 已选择供应器：%s，%s，%s。
-            player.addChatMessage(new ChatComponentTranslation("chat.packaged.selected", x, y, z));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.chat.packaged.selected", x, y, z));
             return;
         }
         if (!player.isSneaking()) return;
@@ -101,70 +101,75 @@ public final class ItemWirelessConnector extends Item {
             if (!provider.canConfigure(player)) return;
             boolean bound = provider.bind(new PackagedTarget(world.provider.dimensionId, x, y, z, face));
             player.addChatMessage(
-                new ChatComponentTranslation(bound ? "chat.packaged.bound" : "chat.packaged.bind_failed", x, y, z));
+                new ChatComponentTranslation(
+                    bound ? "gtnr.chat.packaged.bound" : "gtnr.chat.packaged.bind_failed",
+                    x,
+                    y,
+                    z));
             return;
         }
         if (selected == null || !(selected.resolve(world) instanceof TileEntityPackagedProvider provider)
             || !provider.canConfigure(player)) {
-            // #tr chat.packaged.no_selection
+            // #tr gtnr.chat.packaged.no_selection
             // # Select an available provider in this dimension first.
             // # zh_CN 请先选择本维度已加载的供应器。
-            player.addChatMessage(new ChatComponentTranslation("chat.packaged.no_selection"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.chat.packaged.no_selection"));
             return;
         }
         if (provider.bind(new PackagedTarget(world.provider.dimensionId, x, y, z, face))) {
-            // #tr chat.packaged.bound
+            // #tr gtnr.chat.packaged.bound
             // # Target connected: %s, %s, %s.
             // # zh_CN 已连接目标：%s，%s，%s。
-            player.addChatMessage(new ChatComponentTranslation("chat.packaged.bound", x, y, z));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.chat.packaged.bound", x, y, z));
         } else {
-            // #tr chat.packaged.bind_failed
+            // #tr gtnr.chat.packaged.bind_failed
             // # Cannot connect: duplicate, invalid target, or connection limit reached.
             // # zh_CN 无法连接：重复、无效目标或连接数量已达上限。
-            player.addChatMessage(new ChatComponentTranslation("chat.packaged.bind_failed"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.chat.packaged.bind_failed"));
         }
     }
 
     @Override
     public void addInformation(ItemStack stack, EntityPlayer player, List lines, boolean advanced) {
-        // #tr tooltip.overloaded.connector
+        // #tr gtnr.tooltip.overloaded.connector
         // # Also links Overloaded Wireless Pattern Providers: same dimension, 128 blocks, up to 1024 machines.
         // # zh_CN 同样支持过载无线样板供应器：同维度，128 格内，最多 1024 台机器。
-        lines.add(StatCollector.translateToLocal("tooltip.overloaded.connector"));
-        // #tr tooltip.packaged.connector_info
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.overloaded.connector"));
+        // #tr gtnr.tooltip.packaged.connector_info
         // # Links a Wireless Packaged Pattern Provider to its machines.
         // # zh_CN 将无线封包样板供应器连接至目标机器。
-        lines.add(StatCollector.translateToLocal("tooltip.packaged.connector_info"));
-        // #tr tooltip.packaged.connector_select
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.packaged.connector_info"));
+        // #tr gtnr.tooltip.packaged.connector_select
         // # Right-click a Wireless Packaged Pattern Provider to select it.
         // # zh_CN 右键无线封包样板供应器，选中发射端。
-        lines.add(StatCollector.translateToLocal("tooltip.packaged.connector_select"));
-        // #tr tooltip.packaged.connector_bind
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.packaged.connector_select"));
+        // #tr gtnr.tooltip.packaged.connector_bind
         // # Shift-right-click a target machine to bind it.
         // # zh_CN Shift 右键目标机器，完成绑定。
-        lines.add(StatCollector.translateToLocal("tooltip.packaged.connector_bind"));
-        // #tr tooltip.packaged.connector_clear
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.packaged.connector_bind"));
+        // #tr gtnr.tooltip.packaged.connector_clear
         // # Right-click air to clear the selection.
         // # zh_CN 右键空气取消选择。
-        lines.add(StatCollector.translateToLocal("tooltip.packaged.connector_clear"));
-        // #tr tooltip.packaged.connector_dimension
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.packaged.connector_clear"));
+        // #tr gtnr.tooltip.packaged.connector_dimension
         // # The selected provider must be loaded in this dimension.
         // # zh_CN 选中的供应器须在当前维度保持加载。
-        lines.add(StatCollector.translateToLocal("tooltip.packaged.connector_dimension"));
-        // #tr tooltip.packaged.connector_limit
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.packaged.connector_dimension"));
+        // #tr gtnr.tooltip.packaged.connector_limit
         // # Each provider supports up to %s distinct targets.
         // # zh_CN 每个供应器最多连接 %s 个不同目标。
         lines.add(
-            StatCollector
-                .translateToLocalFormatted("tooltip.packaged.connector_limit", TileEntityPackagedProvider.MAX_TARGETS));
+            StatCollector.translateToLocalFormatted(
+                "gtnr.tooltip.packaged.connector_limit",
+                TileEntityPackagedProvider.MAX_TARGETS));
         PackagedTarget selected = selection(stack);
         if (selected != null) {
-            // #tr tooltip.packaged.connector_selection
+            // #tr gtnr.tooltip.packaged.connector_selection
             // # Selected provider: dimension %s, %s / %s / %s
             // # zh_CN 已选供应器：维度 %s，%s / %s / %s
             lines.add(
                 StatCollector.translateToLocalFormatted(
-                    "tooltip.packaged.connector_selection",
+                    "gtnr.tooltip.packaged.connector_selection",
                     selected.dimension,
                     selected.x,
                     selected.y,

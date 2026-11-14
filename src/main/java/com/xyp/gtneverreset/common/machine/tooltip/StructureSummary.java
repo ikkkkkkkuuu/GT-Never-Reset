@@ -5,8 +5,18 @@ import java.util.List;
 import gregtech.api.structure.IStructureChannels;
 
 public record StructureSummary(Size size, boolean hollow, ControllerPosition controller, List<BlockLine> blocks,
-    List<HatchLine> hatches, List<IStructureChannels> channels, Size allTiers, List<Section> sections,
-    boolean layered) {
+    List<HatchLine> hatches, List<IStructureChannels> channels, Size allTiers, List<Section> sections, boolean layered,
+    String casingName, List<String> casingTierNames) {
+
+    public StructureSummary {
+        casingTierNames = List.copyOf(casingTierNames);
+    }
+
+    public StructureSummary(Size size, boolean hollow, ControllerPosition controller, List<BlockLine> blocks,
+        List<HatchLine> hatches, List<IStructureChannels> channels, Size allTiers, List<Section> sections,
+        boolean layered) {
+        this(size, hollow, controller, blocks, hatches, channels, allTiers, sections, layered, null, List.of());
+    }
 
     public StructureSummary(Size size, boolean hollow, ControllerPosition controller, List<BlockLine> blocks,
         List<HatchLine> hatches, List<IStructureChannels> channels) {

@@ -43,6 +43,10 @@ public final class WildcardComponentCodec {
         return result;
     }
 
+    public static List<IWildcardIOComponent> readIO(NBTTagCompound tag, String key) {
+        return readIO(tag == null ? null : tag.getTagList(key, Constants.NBT.TAG_COMPOUND));
+    }
+
     private static IWildcardIOComponent readIOComponent(String type, NBTTagCompound data) {
         if (type == null) return null;
         switch (type) {
@@ -79,6 +83,10 @@ public final class WildcardComponentCodec {
         return result;
     }
 
+    public static List<IWildcardFilterComponent> readFilters(NBTTagCompound tag, String key) {
+        return readFilters(tag == null ? null : tag.getTagList(key, Constants.NBT.TAG_COMPOUND));
+    }
+
     private static IWildcardFilterComponent readFilterComponent(String type, NBTTagCompound data) {
         if (type == null) return null;
         switch (type) {
@@ -102,13 +110,5 @@ public final class WildcardComponentCodec {
         entry.setString(KEY_TYPE, type);
         entry.setTag(KEY_DATA, data == null ? new NBTTagCompound() : data);
         return entry;
-    }
-
-    public static List<IWildcardIOComponent> readIO(NBTTagCompound tag, String key) {
-        return readIO(tag == null ? null : tag.getTagList(key, Constants.NBT.TAG_COMPOUND));
-    }
-
-    public static List<IWildcardFilterComponent> readFilters(NBTTagCompound tag, String key) {
-        return readFilters(tag == null ? null : tag.getTagList(key, Constants.NBT.TAG_COMPOUND));
     }
 }

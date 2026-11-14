@@ -60,10 +60,10 @@ public class CommandRadialMenu extends CommandBase {
                     new SimpleGuiConfig(Minecraft.getMinecraft().currentScreen, GTNeverReset.MODID, GTNeverReset.NAME));
             } catch (ConfigException exception) {
                 GTNeverReset.LOG.error("cannot open radial menu settings", exception);
-                // #tr radialmenu.command.settingsFailed
+                // #tr gtnr.radialmenu.command.settings_failed
                 // # Could not open settings. See the game log for details.
                 // # zh_CN 无法打开设置，请查看游戏日志。
-                replyError(sender, I18n.format("radialmenu.command.settingsFailed"));
+                replyError(sender, I18n.format("gtnr.radialmenu.command.settings_failed"));
             }
             return;
         }
@@ -75,43 +75,43 @@ public class CommandRadialMenu extends CommandBase {
 
         if ("profiles".equals(sub)) {
             List<String> names = ProfileStorage.listProfileNames();
-            // #tr radialmenu.command.profiles
+            // #tr gtnr.radialmenu.command.profiles
             // # Profiles: %s
             // # zh_CN 轮盘配置：%s
-            reply(sender, I18n.format("radialmenu.command.profiles", names.isEmpty() ? "-" : join(names)));
-            // #tr radialmenu.command.active
+            reply(sender, I18n.format("gtnr.radialmenu.command.profiles", names.isEmpty() ? "-" : join(names)));
+            // #tr gtnr.radialmenu.command.active
             // # Active profile: %s
             // # zh_CN 当前轮盘配置：%s
-            reply(sender, I18n.format("radialmenu.command.active", ProfileManager.activeName()));
+            reply(sender, I18n.format("gtnr.radialmenu.command.active", ProfileManager.activeName()));
             return;
         }
 
         if ("profile".equals(sub)) {
             if (args.length < 2) {
-                reply(sender, I18n.format("radialmenu.command.active", ProfileManager.activeName()));
+                reply(sender, I18n.format("gtnr.radialmenu.command.active", ProfileManager.activeName()));
                 return;
             }
             String target = args[1];
             if (ProfileManager.switchTo(target)) {
-                // #tr radialmenu.command.switched
+                // #tr gtnr.radialmenu.command.switched
                 // # Switched to profile %s
                 // # zh_CN 已切换到轮盘配置 %s
-                reply(sender, I18n.format("radialmenu.command.switched", target));
+                reply(sender, I18n.format("gtnr.radialmenu.command.switched", target));
             } else {
-                // #tr radialmenu.command.missing
+                // #tr gtnr.radialmenu.command.missing
                 // # Profile not found: %s
                 // # zh_CN 找不到轮盘配置：%s
-                replyError(sender, I18n.format("radialmenu.command.missing", target));
+                replyError(sender, I18n.format("gtnr.radialmenu.command.missing", target));
             }
             return;
         }
 
         if ("reload".equals(sub)) {
             ProfileManager.load();
-            // #tr radialmenu.command.reloaded
+            // #tr gtnr.radialmenu.command.reloaded
             // # Reloaded radial profiles
             // # zh_CN 已重新加载轮盘配置
-            reply(sender, I18n.format("radialmenu.command.reloaded"));
+            reply(sender, I18n.format("gtnr.radialmenu.command.reloaded"));
             return;
         }
 

@@ -9,7 +9,12 @@ import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource.TieredPart;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource.TooltipStats;
 
 public record PerformanceSummary(TooltipStats stats, List<TierBonus> tierBonuses, HeatRules heat,
-    List<TierThreshold> perfectOverclockFrom, OptionalInt tierSkips) {
+    List<TierThreshold> perfectOverclockFrom, OptionalInt tierSkips, String casingName) {
+
+    public PerformanceSummary(TooltipStats stats, List<TierBonus> tierBonuses, HeatRules heat,
+        List<TierThreshold> perfectOverclockFrom, OptionalInt tierSkips) {
+        this(stats, tierBonuses, heat, perfectOverclockFrom, tierSkips, null);
+    }
 
     public PerformanceSummary {
         tierBonuses = List.copyOf(tierBonuses);

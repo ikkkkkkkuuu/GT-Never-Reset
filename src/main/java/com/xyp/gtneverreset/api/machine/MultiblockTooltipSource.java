@@ -94,6 +94,18 @@ public interface MultiblockTooltipSource {
         return List.of();
     }
 
+    default List<String> getTooltipHatchLines(String hatchKey) {
+        return List.of();
+    }
+
+    default List<String> getTooltipUpgradeLines() {
+        return List.of();
+    }
+
+    default boolean usesSteamForTooltip() {
+        return false;
+    }
+
     /** Shared with the real structure check; only pure count requirements belong here. */
     default void collectTooltipStructureRequirements(List<StructureError> errors) {}
 

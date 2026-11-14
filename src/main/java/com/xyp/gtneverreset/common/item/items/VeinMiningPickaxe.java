@@ -91,10 +91,10 @@ public class VeinMiningPickaxe extends ItemPickaxe {
     @SideOnly(Side.CLIENT)
     public void addInformation(ItemStack itemStack, EntityPlayer player, List<String> toolTip,
         boolean advancedToolTips) {
-        // #tr Tooltip_VeinMiningPickaxe_Use
+        // #tr gtnr.item.vein_mining_pickaxe.tooltip.use
         // # Hold Shift while mining to break matching blocks in the vein.
         // # zh_CN 按住 Shift 挖掘，连锁开采矿脉中符合条件的方块。
-        toolTip.add(StatCollector.translateToLocal("Tooltip_VeinMiningPickaxe_Use"));
+        toolTip.add(StatCollector.translateToLocal("gtnr.item.vein_mining_pickaxe.tooltip.use"));
         NBTTagCompound tags = itemStack.getTagCompound();
         int range = Math.min(3, Math.max(0, VeinMinerPickaxeConfig.maxRange));
         int amount = Math.max(0, VeinMinerPickaxeConfig.maxAmount);
@@ -112,44 +112,44 @@ public class VeinMiningPickaxe extends ItemPickaxe {
             }
         }
 
-        // #tr Tooltip_VeinMiningPickaxe_00
+        // #tr gtnr.item.vein_mining_pickaxe.tooltip.00
         // # Maximum gap between matching blocks: %d
         // # zh_CN 符合条件的方块之间最大间隔：%d 格
-        toolTip.add(StatCollector.translateToLocalFormatted("Tooltip_VeinMiningPickaxe_00", range));
+        toolTip.add(StatCollector.translateToLocalFormatted("gtnr.item.vein_mining_pickaxe.tooltip.00", range));
 
-        // #tr Tooltip_VeinMiningPickaxe_01
+        // #tr gtnr.item.vein_mining_pickaxe.tooltip.01
         // # Maximum blocks per vein: %d
         // # zh_CN 单次连锁挖掘上限：%d 个方块
-        toolTip.add(StatCollector.translateToLocalFormatted("Tooltip_VeinMiningPickaxe_01", amount));
+        toolTip.add(StatCollector.translateToLocalFormatted("gtnr.item.vein_mining_pickaxe.tooltip.01", amount));
 
-        // #tr Tooltip_VeinMiningPickaxe_Backfill
+        // #tr gtnr.item.vein_mining_pickaxe.tooltip.backfill
         // # Mined ores are replaced with stone.
         // # zh_CN 挖掘矿石后自动用石头回填。
-        toolTip.add(StatCollector.translateToLocal("Tooltip_VeinMiningPickaxe_Backfill"));
+        toolTip.add(StatCollector.translateToLocal("gtnr.item.vein_mining_pickaxe.tooltip.backfill"));
 
-        // #tr Tooltip_VeinMiningPickaxe_PreciseMode_On
+        // #tr gtnr.item.vein_mining_pickaxe.tooltip.precise_mode_on
         // # §aPrecise matching: ON
         // # zh_CN §a精确匹配：开启
-        // #tr Tooltip_VeinMiningPickaxe_PreciseMode_Off
+        // #tr gtnr.item.vein_mining_pickaxe.tooltip.precise_mode_off
         // # §cPrecise matching: OFF
         // # zh_CN §c精确匹配：关闭
         toolTip.add(
             StatCollector.translateToLocal(
-                preciseMode ? "Tooltip_VeinMiningPickaxe_PreciseMode_On"
-                    : "Tooltip_VeinMiningPickaxe_PreciseMode_Off"));
+                preciseMode ? "gtnr.item.vein_mining_pickaxe.tooltip.precise_mode_on"
+                    : "gtnr.item.vein_mining_pickaxe.tooltip.precise_mode_off"));
 
-        // #tr Tooltip_VeinMiningPickaxe_ShiftScroll
+        // #tr gtnr.item.vein_mining_pickaxe.tooltip.shift_scroll
         // # §7Shift-scroll to change the maximum gap.
         // # zh_CN §7Shift 滚轮调整最大间隔。
-        toolTip.add(StatCollector.translateToLocal("Tooltip_VeinMiningPickaxe_ShiftScroll"));
-        // #tr Tooltip_VeinMiningPickaxe_Toggle
+        toolTip.add(StatCollector.translateToLocal("gtnr.item.vein_mining_pickaxe.tooltip.shift_scroll"));
+        // #tr gtnr.item.vein_mining_pickaxe.tooltip.toggle
         // # Shift-right-click to toggle precise matching.
         // # zh_CN Shift 右键切换精确匹配。
-        toolTip.add(StatCollector.translateToLocal("Tooltip_VeinMiningPickaxe_Toggle"));
-        // #tr Tooltip_VeinMiningPickaxe_Cost
+        toolTip.add(StatCollector.translateToLocal("gtnr.item.vein_mining_pickaxe.tooltip.toggle"));
+        // #tr gtnr.item.vein_mining_pickaxe.tooltip.cost
         // # Vein mining consumes hunger and durability. Unloaded chunks are skipped.
         // # zh_CN 连锁挖掘消耗饥饿值与耐久，不扫描未加载的区块。
-        toolTip.add(StatCollector.translateToLocal("Tooltip_VeinMiningPickaxe_Cost"));
+        toolTip.add(StatCollector.translateToLocal("gtnr.item.vein_mining_pickaxe.tooltip.cost"));
     }
 
     @Override
@@ -211,14 +211,15 @@ public class VeinMiningPickaxe extends ItemPickaxe {
             player.swingItem();
 
             if (world.isRemote) {
-                // #tr Tooltip_VeinMiningPickaxe_PreciseMode_On
+                // #tr gtnr.item.vein_mining_pickaxe.tooltip.precise_mode_on
                 // # §aPrecise matching: ON
                 // # zh_CN §a精确匹配：开启
-                // #tr Tooltip_VeinMiningPickaxe_PreciseMode_Off
+                // #tr gtnr.item.vein_mining_pickaxe.tooltip.precise_mode_off
                 // # §cPrecise matching: OFF
                 // # zh_CN §c精确匹配：关闭
-                String key = isPreciseMode ? StatCollector.translateToLocal("Tooltip_VeinMiningPickaxe_PreciseMode_On")
-                    : StatCollector.translateToLocal("Tooltip_VeinMiningPickaxe_PreciseMode_Off");
+                String key = isPreciseMode
+                    ? StatCollector.translateToLocal("gtnr.item.vein_mining_pickaxe.tooltip.precise_mode_on")
+                    : StatCollector.translateToLocal("gtnr.item.vein_mining_pickaxe.tooltip.precise_mode_off");
                 showSubtitle(key);
             }
         }
@@ -232,10 +233,6 @@ public class VeinMiningPickaxe extends ItemPickaxe {
         if (event.isCanceled() || world.isRemote || !(player instanceof EntityPlayerMP playerMP)) return;
         ItemStack heldItem = playerMP.getCurrentEquippedItem();
         if (heldItem == null) return;
-        if (heldItem.getItem() instanceof ItemUniversalWand) {
-            if (!ItemUniversalWand.isProtectionMode(heldItem)) queueOreBackfill(world, event.x, event.y, event.z);
-            return;
-        }
         if (!(heldItem.getItem() instanceof VeinMiningPickaxe)) return;
         queueOreBackfill(world, event.x, event.y, event.z);
         if (playerMP.isSneaking()) {

@@ -26,10 +26,10 @@ public class ScriptActionExecutor implements IActionExecutor {
         if (!ClientConfig.radialMenu.enableScripts) {
             Minecraft mc = Minecraft.getMinecraft();
             if (mc.thePlayer != null) {
-                // #tr radialmenu.script.disabled
+                // #tr gtnr.radialmenu.script.disabled
                 // # Scripts are disabled in the radial menu settings.
                 // # zh_CN 快捷轮盘设置已禁用脚本。
-                String message = StatCollector.translateToLocal("radialmenu.script.disabled");
+                String message = StatCollector.translateToLocal("gtnr.radialmenu.script.disabled");
                 mc.thePlayer.addChatMessage(new ChatComponentText(EnumChatFormatting.RED + message));
             }
             return false;

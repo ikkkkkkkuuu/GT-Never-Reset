@@ -193,10 +193,10 @@ abstract class WirelessCardPanel extends ModularPanel {
                 .getCompoundTagAt(rowIndex(id));
             GuiScreen.setClipboardString(
                 row.getString("position") + (row.getBoolean("group") ? "" : " / " + row.getString("side")));
-            // #tr gtneverreset.wireless.gui.copied
+            // #tr gtnr.wireless.gui.copied
             // # Copied dimension, coordinates and part side to the clipboard.
             // # zh_CN 已复制目标维度、坐标和部件方向到剪贴板。
-            mc.thePlayer.addChatMessage(new ChatComponentTranslation("gtneverreset.wireless.gui.copied"));
+            mc.thePlayer.addChatMessage(new ChatComponentTranslation("gtnr.wireless.gui.copied"));
             if (type(id) == COPY_POSITION) return;
         }
         sendAction(id);
@@ -454,13 +454,13 @@ abstract class WirelessCardPanel extends ModularPanel {
 
     private void drawDeviceRow(NBTTagCompound row, ItemStack icon, int y) {
         String state = row.getString("deviceState");
-        // #tr gtneverreset.wireless.gui.device_state.online
+        // #tr gtnr.wireless.gui.device_state.online
         // # Online
         // # zh_CN 在线
-        // #tr gtneverreset.wireless.gui.device_state.offline
+        // #tr gtnr.wireless.gui.device_state.offline
         // # Offline
         // # zh_CN 离线
-        // #tr gtneverreset.wireless.gui.device_state.missing
+        // #tr gtnr.wireless.gui.device_state.missing
         // # Missing channel
         // # zh_CN 缺少频道
         String status = tr("device_state." + state);
@@ -573,16 +573,16 @@ abstract class WirelessCardPanel extends ModularPanel {
                 int textX = iconX + 18, width = rowStateX() - textX - 4;
                 fontRendererObj
                     .drawString(cropText(fontRendererObj, rowName(row, icon), width), textX, y + 2, textColor);
-                // #tr gtneverreset.wireless.gui.group_expand
+                // #tr gtnr.wireless.gui.group_expand
                 // # %s · click to expand
                 // # zh_CN %s · 点击展开
-                // #tr gtneverreset.wireless.gui.group_collapse
+                // #tr gtnr.wireless.gui.group_collapse
                 // # %s · click to collapse
                 // # zh_CN %s · 点击收起
-                // #tr gtneverreset.wireless.gui.group_device_groups
+                // #tr gtnr.wireless.gui.group_device_groups
                 // # %s device groups
                 // # zh_CN %s 个设备组
-                // #tr gtneverreset.wireless.gui.group_devices
+                // #tr gtnr.wireless.gui.group_devices
                 // # %s devices
                 // # zh_CN %s 个设备
                 int groups = row.getInteger("groupItems");

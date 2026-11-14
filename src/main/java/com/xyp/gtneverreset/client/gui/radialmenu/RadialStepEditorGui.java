@@ -31,10 +31,10 @@ public class RadialStepEditorGui extends RadialActionEditorGui {
 
     @Override
     protected String titleKey() {
-        // #tr radialmenu.steps.title
+        // #tr gtnr.radialmenu.steps.title
         // # Step %s
         // # zh_CN 步骤 %s
-        return "radialmenu.steps.title";
+        return "gtnr.radialmenu.steps.title";
     }
 
     @Override

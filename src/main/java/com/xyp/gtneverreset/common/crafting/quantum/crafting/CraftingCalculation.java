@@ -55,6 +55,8 @@ import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 
 public class CraftingCalculation {
 
+    private static final long MAX_CYCLE_BATCH_SEARCH = 1024;
+
     private final String requesterName;
     final ICraftingService craftingService;
     private final NetworkCraftingSimulationState networkInv;
@@ -2473,8 +2475,6 @@ public class CraftingCalculation {
      * How many root crafts of a cycle are tried before falling back to the batch in which every craft divides evenly,
      * see {@link #getCycleBatchRuns}.
      */
-    private static final long MAX_CYCLE_BATCH_SEARCH = 1024;
-
     /**
      * The cycle the request for an item being requested further up runs around: the items requested from that request
      * down, and the patterns of the processes between them.

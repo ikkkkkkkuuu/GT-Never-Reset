@@ -121,29 +121,29 @@ public class WildcardPatternItem extends ItemEncodedPattern implements IGuiHolde
             actualCount = WildcardPatternState.getExpandedPatternCount(stack);
         }
 
-        // #tr tooltip.wildcardpattern.desc_axis
+        // #tr gtnr.tooltip.wildcardpattern.desc_axis
         // # §7Generates a pattern for each material that passes the filter.
         // # zh_CN §7为每种符合过滤条件的材料生成一张样板。
-        lines.add(StatCollector.translateToLocal("tooltip.wildcardpattern.desc_axis"));
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.wildcardpattern.desc_axis"));
 
-        // #tr tooltip.wildcardpattern.usage
+        // #tr gtnr.tooltip.wildcardpattern.usage
         // # Right-click to configure; use NEI + to import a recipe, then save.
         // # zh_CN 右键配置，可点击 NEI 配方的＋自动填写，调整后保存。
-        lines.add(StatCollector.translateToLocal("tooltip.wildcardpattern.usage"));
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.wildcardpattern.usage"));
 
-        // #tr tooltip.wildcardpattern.desc_io
+        // #tr gtnr.tooltip.wildcardpattern.desc_io
         // # §7Inputs and outputs support material prefixes, fluids and fixed items.
         // # zh_CN §7输入输出支持材料前缀、流体与固定物品。
-        lines.add(StatCollector.translateToLocal("tooltip.wildcardpattern.desc_io"));
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.wildcardpattern.desc_io"));
 
-        // #tr tooltip.wildcardpattern.desc_filter
+        // #tr gtnr.tooltip.wildcardpattern.desc_filter
         // # §7Filter by material properties, tags or names.
         // # zh_CN §7可按材料属性、标签或名称过滤。
-        lines.add(StatCollector.translateToLocal("tooltip.wildcardpattern.desc_filter"));
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.wildcardpattern.desc_filter"));
 
-        // #tr tooltip.wildcardpattern.expand_count
+        // #tr gtnr.tooltip.wildcardpattern.expand_count
         // # Expanded patterns:
         // # zh_CN 展开样板数：
-        lines.add(StatCollector.translateToLocal("tooltip.wildcardpattern.expand_count") + " " + actualCount);
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.wildcardpattern.expand_count") + " " + actualCount);
     }
 }

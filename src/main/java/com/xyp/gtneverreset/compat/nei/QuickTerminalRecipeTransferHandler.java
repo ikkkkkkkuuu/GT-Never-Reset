@@ -15,7 +15,7 @@ import org.lwjgl.input.Keyboard;
 import com.glodblock.github.common.item.ItemFluidDrop;
 import com.glodblock.github.common.item.ItemFluidPacket;
 import com.glodblock.github.util.Util;
-import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.common.packet.RecipeTransferPayload;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
@@ -59,7 +59,7 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
 
     @Override
     public void overlayRecipe(GuiContainer gui, IRecipeHandler recipe, int recipeIndex, boolean shift) {
-        if (!(gui instanceof GuiQuickEncodingTerminal terminal)) return;
+        if (!(gui instanceof QuickEncodingTerminalGui terminal)) return;
 
         lastRecipe = recipe;
         lastRecipeIndex = recipeIndex;
@@ -253,7 +253,7 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
         return Keyboard.isKeyDown(Keyboard.KEY_LMENU) || Keyboard.isKeyDown(Keyboard.KEY_RMENU);
     }
 
-    public static boolean cycleRecipeIngredient(GuiQuickEncodingTerminal terminal, int wheel) {
+    public static boolean cycleRecipeIngredient(QuickEncodingTerminalGui terminal, int wheel) {
 
         IAEStack<?> current = terminal.getHoveredRecipeInput();
         if (lastRecipe == null || current == null || current.getStackSize() <= 0) return false;

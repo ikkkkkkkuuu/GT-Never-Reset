@@ -243,19 +243,19 @@ public class ToolBeltData implements IExtendedEntityProperties {
         boolean accepted = data.resize(requestedCount);
         if (!accepted) {
             if (requestedCount < ToolBeltData.MIN_SLOT_COUNT || requestedCount > ToolBeltData.MAX_SLOT_COUNT) {
-                // #tr chat.gtneverreset.toolbelt.resize_range
+                // #tr gtnr.chat.gtneverreset.toolbelt.resize_range
                 // # Tool belt size must be between %s and %s slots.
                 // # zh_CN 工具腰带槽位数必须在 %s 到 %s 之间。
                 player.addChatMessage(
                     new ChatComponentTranslation(
-                        "chat.gtneverreset.toolbelt.resize_range",
+                        "gtnr.chat.gtneverreset.toolbelt.resize_range",
                         ToolBeltData.MIN_SLOT_COUNT,
                         ToolBeltData.MAX_SLOT_COUNT));
             } else {
-                // #tr chat.gtneverreset.toolbelt.resize_occupied
+                // #tr gtnr.chat.gtneverreset.toolbelt.resize_occupied
                 // # Remove items from the slots being removed before shrinking the tool belt.
                 // # zh_CN 请先取出被缩减槽位中的物品，再缩小工具腰带。
-                player.addChatMessage(new ChatComponentTranslation("chat.gtneverreset.toolbelt.resize_occupied"));
+                player.addChatMessage(new ChatComponentTranslation("gtnr.chat.gtneverreset.toolbelt.resize_occupied"));
             }
         }
         if (!accepted || previousCount == requestedCount) data.syncToSelf();

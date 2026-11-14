@@ -45,10 +45,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
 
     @Override
     protected String titleKey() {
-        // #tr radialmenu.profiles.title
+        // #tr gtnr.radialmenu.profiles.title
         // # RadialMenu profiles
         // # zh_CN RadialMenu 配置
-        return "radialmenu.profiles.title";
+        return "gtnr.radialmenu.profiles.title";
     }
 
     @Override
@@ -81,104 +81,104 @@ public class RadialProfileManagerGui extends RadialUiScreen {
 
         y = addAction(
             ID_ACTIVATE,
-            // #tr radialmenu.profiles.activate
+            // #tr gtnr.radialmenu.profiles.activate
             // # Activate
             // # zh_CN 启用
-            "radialmenu.profiles.activate",
-            // #tr radialmenu.profiles.activate.tip
+            "gtnr.radialmenu.profiles.activate",
+            // #tr gtnr.radialmenu.profiles.activate.tip
             // # Use the selected profile
             // # zh_CN 启用选中的配置方案
-            "radialmenu.profiles.activate.tip",
+            "gtnr.radialmenu.profiles.activate.tip",
             x,
             y,
             has && !isActive);
         y = addAction(
             ID_RULES,
-            // #tr radialmenu.profiles.rules
+            // #tr gtnr.radialmenu.profiles.rules
             // # Auto-bind rules
             // # zh_CN 自动绑定规则
-            "radialmenu.profiles.rules",
-            // #tr radialmenu.profiles.rules.tip
+            "gtnr.radialmenu.profiles.rules",
+            // #tr gtnr.radialmenu.profiles.rules.tip
             // # Set when joining a server or world should activate this profile
             // # zh_CN 设置进入服务器或世界时自动启用此配置方案的条件
-            "radialmenu.profiles.rules.tip",
+            "gtnr.radialmenu.profiles.rules.tip",
             x,
             y,
             has);
         y = addAction(
             ID_COLORS,
-            // #tr radialmenu.profiles.colors
+            // #tr gtnr.radialmenu.profiles.colors
             // # Colors
             // # zh_CN 颜色
-            "radialmenu.profiles.colors",
-            // #tr radialmenu.profiles.colors.tip
+            "gtnr.radialmenu.profiles.colors",
+            // #tr gtnr.radialmenu.profiles.colors.tip
             // # Set ring and highlight colors for this profile
             // # zh_CN 设置此配置方案的轮盘和高亮颜色
-            "radialmenu.profiles.colors.tip",
+            "gtnr.radialmenu.profiles.colors.tip",
             x,
             y,
             has);
         y += RadialUi.GAP;
         y = addAction(
             ID_NEW,
-            // #tr radialmenu.profiles.new
+            // #tr gtnr.radialmenu.profiles.new
             // # New profile
             // # zh_CN 新建配置
-            "radialmenu.profiles.new",
-            // #tr radialmenu.profiles.new.tip
+            "gtnr.radialmenu.profiles.new",
+            // #tr gtnr.radialmenu.profiles.new.tip
             // # Create an empty profile
             // # zh_CN 创建空白配置方案
-            "radialmenu.profiles.new.tip",
+            "gtnr.radialmenu.profiles.new.tip",
             x,
             y,
             true);
         y = addAction(
             ID_RENAME,
-            // #tr radialmenu.profiles.rename
+            // #tr gtnr.radialmenu.profiles.rename
             // # Rename
             // # zh_CN 重命名
-            "radialmenu.profiles.rename",
-            // #tr radialmenu.profiles.rename.tip
+            "gtnr.radialmenu.profiles.rename",
+            // #tr gtnr.radialmenu.profiles.rename.tip
             // # Rename this profile and its file
             // # zh_CN 重命名此配置方案及其文件
-            "radialmenu.profiles.rename.tip",
+            "gtnr.radialmenu.profiles.rename.tip",
             x,
             y,
             has);
         y = addAction(
             ID_DUPLICATE,
-            // #tr radialmenu.profiles.duplicate
+            // #tr gtnr.radialmenu.profiles.duplicate
             // # Duplicate
             // # zh_CN 复制
-            "radialmenu.profiles.duplicate",
-            // #tr radialmenu.profiles.duplicate.tip
+            "gtnr.radialmenu.profiles.duplicate",
+            // #tr gtnr.radialmenu.profiles.duplicate.tip
             // # Copy this profile, including its rules and entries
             // # zh_CN 复制此配置方案，包含规则和全部条目
-            "radialmenu.profiles.duplicate.tip",
+            "gtnr.radialmenu.profiles.duplicate.tip",
             x,
             y,
             has);
         y = addAction(
             ID_BACKUPS,
-            // #tr radialmenu.profiles.backups
+            // #tr gtnr.radialmenu.profiles.backups
             // # Backups...
             // # zh_CN 备份...
-            "radialmenu.profiles.backups",
-            // #tr radialmenu.profiles.backups.tip
+            "gtnr.radialmenu.profiles.backups",
+            // #tr gtnr.radialmenu.profiles.backups.tip
             // # View versions backed up when changes were saved
             // # zh_CN 查看保存修改时备份的历史版本
-            "radialmenu.profiles.backups.tip",
+            "gtnr.radialmenu.profiles.backups.tip",
             x,
             y,
             has);
         y += RadialUi.GAP;
         addAction(
             ID_DELETE,
-            "radialmenu.profiles.delete",
-            // #tr radialmenu.profiles.delete.tip
+            "gtnr.radialmenu.profiles.delete",
+            // #tr gtnr.radialmenu.profiles.delete.tip
             // # Delete this profile. If active, another profile is selected automatically
             // # zh_CN 删除此配置方案；若正在使用，则自动切换到其他方案
-            "radialmenu.profiles.delete.tip",
+            "gtnr.radialmenu.profiles.delete.tip",
             x,
             y,
             has);
@@ -210,10 +210,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
 
             case ID_ACTIVATE:
                 if (!ProfileManager.switchTo(selected)) {
-                    // #tr radialmenu.profiles.error.load
+                    // #tr gtnr.radialmenu.profiles.error.load
                     // # Could not load that profile
                     // # zh_CN 无法加载该配置
-                    errorKey = "radialmenu.profiles.error.load";
+                    errorKey = "gtnr.radialmenu.profiles.error.load";
                 }
                 requestRebuild();
                 return;
@@ -228,15 +228,15 @@ public class RadialProfileManagerGui extends RadialUiScreen {
 
             case ID_NEW:
                 RadialGuiStack
-                    .push(new RadialTextPromptGui("radialmenu.profiles.new", "", new RadialTextPromptGui.Result() {
+                    .push(new RadialTextPromptGui("gtnr.radialmenu.profiles.new", "", new RadialTextPromptGui.Result() {
 
                         @Override
                         public String onConfirm(String value) {
                             if (!ProfileManager.create(value)) {
-                                // #tr radialmenu.profiles.error.exists
+                                // #tr gtnr.radialmenu.profiles.error.exists
                                 // # A profile with that name already exists
                                 // # zh_CN 已存在同名配置
-                                return "radialmenu.profiles.error.exists";
+                                return "gtnr.radialmenu.profiles.error.exists";
                             }
                             selected = ProfileStorage.sanitize(value);
                             return null;
@@ -247,31 +247,34 @@ public class RadialProfileManagerGui extends RadialUiScreen {
             case ID_RENAME:
                 final String renameFrom = selected;
                 RadialGuiStack.push(
-                    new RadialTextPromptGui("radialmenu.profiles.rename", renameFrom, new RadialTextPromptGui.Result() {
+                    new RadialTextPromptGui(
+                        "gtnr.radialmenu.profiles.rename",
+                        renameFrom,
+                        new RadialTextPromptGui.Result() {
 
-                        @Override
-                        public String onConfirm(String value) {
-                            if (!ProfileManager.rename(renameFrom, value)) {
-                                return "radialmenu.profiles.error.exists";
+                            @Override
+                            public String onConfirm(String value) {
+                                if (!ProfileManager.rename(renameFrom, value)) {
+                                    return "gtnr.radialmenu.profiles.error.exists";
+                                }
+                                selected = ProfileStorage.sanitize(value);
+                                return null;
                             }
-                            selected = ProfileStorage.sanitize(value);
-                            return null;
-                        }
-                    }));
+                        }));
                 return;
 
             case ID_DUPLICATE:
                 final String copyFrom = selected;
                 RadialGuiStack.push(
                     new RadialTextPromptGui(
-                        "radialmenu.profiles.duplicate",
+                        "gtnr.radialmenu.profiles.duplicate",
                         copyFrom + "-copy",
                         new RadialTextPromptGui.Result() {
 
                             @Override
                             public String onConfirm(String value) {
                                 if (!ProfileManager.duplicate(copyFrom, value)) {
-                                    return "radialmenu.profiles.error.exists";
+                                    return "gtnr.radialmenu.profiles.error.exists";
                                 }
                                 selected = ProfileStorage.sanitize(value);
                                 return null;
@@ -284,23 +287,26 @@ public class RadialProfileManagerGui extends RadialUiScreen {
                 return;
 
             case ID_DELETE:
-                // #tr radialmenu.profiles.confirmDelete
+                // #tr gtnr.radialmenu.profiles.confirm_delete
                 // # Delete this profile?
                 // # zh_CN 删除此配置？
                 RadialGuiStack.push(
-                    new RadialConfirmGui("radialmenu.profiles.confirmDelete", selected, new RadialConfirmGui.Result() {
+                    new RadialConfirmGui(
+                        "gtnr.radialmenu.profiles.confirm_delete",
+                        selected,
+                        new RadialConfirmGui.Result() {
 
-                        @Override
-                        public void onConfirmed() {
-                            if (!ProfileManager.delete(selected)) {
-                                // #tr radialmenu.profiles.error.delete
-                                // # Could not delete that profile
-                                // # zh_CN 无法删除该配置
-                                errorKey = "radialmenu.profiles.error.delete";
+                            @Override
+                            public void onConfirmed() {
+                                if (!ProfileManager.delete(selected)) {
+                                    // #tr gtnr.radialmenu.profiles.error.delete
+                                    // # Could not delete that profile
+                                    // # zh_CN 无法删除该配置
+                                    errorKey = "gtnr.radialmenu.profiles.error.delete";
+                                }
+                                selected = null;
                             }
-                            selected = null;
-                        }
-                    }));
+                        }));
                 return;
 
             default:
@@ -330,10 +336,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
                 active ? RadialUi.TEXT_ACTIVE : RadialUi.TEXT);
 
             if (active) {
-                // #tr radialmenu.profiles.activeMarker
+                // #tr gtnr.radialmenu.profiles.active_marker
                 // # (active)
                 // # zh_CN (当前)
-                String marker = I18n.format("radialmenu.profiles.activeMarker");
+                String marker = I18n.format("gtnr.radialmenu.profiles.active_marker");
                 this.fontRendererObj.drawString(
                     EnumChatFormatting.DARK_GREEN + marker,
                     list.right - 5 - this.fontRendererObj.getStringWidth(marker),
@@ -347,10 +353,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
         if (profiles.isEmpty()) {
             this.drawCenteredString(
                 this.fontRendererObj,
-                // #tr radialmenu.profiles.empty
+                // #tr gtnr.radialmenu.profiles.empty
                 // # No profiles yet
                 // # zh_CN 暂无配置
-                EnumChatFormatting.GRAY + I18n.format("radialmenu.profiles.empty"),
+                EnumChatFormatting.GRAY + I18n.format("gtnr.radialmenu.profiles.empty"),
                 (list.left + list.right) / 2,
                 list.top + 8,
                 RadialUi.TEXT);

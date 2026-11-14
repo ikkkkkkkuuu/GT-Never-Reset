@@ -723,12 +723,12 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
             }
         }
         if (!pendingPatternRefunds.isEmpty()) {
-            // #tr tooltip.gtneverreset.crafting_input.refunds
+            // #tr gtnr.tooltip.gtneverreset.crafting_input.refunds
             // # Pending input returns: %s buffers; reconnect ME to return them
             // # zh_CN 待退还原料：%s 份缓存；接回 ME 网络后自动退还
             ret.add(
                 StatCollector.translateToLocalFormatted(
-                    "tooltip.gtneverreset.crafting_input.refunds",
+                    "gtnr.tooltip.gtneverreset.crafting_input.refunds",
                     pendingPatternRefunds.size()));
         }
         return ret.toArray(new String[0]);
@@ -1148,10 +1148,10 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
                 tile.getXCoord(),
                 tile.getYCoord(),
                 tile.getZCoord()));
-        // #tr chat.gtnr.pattern_link.saved
+        // #tr gtnr.chat.gtnr.pattern_link.saved
         // # Saved pattern input link to Data Stick
         // # zh_CN 已将样板输入连接信息保存到数据棒
-        GTUtility.sendChatTrans(player, "chat.gtnr.pattern_link.saved");
+        GTUtility.sendChatTrans(player, "gtnr.chat.gtnr.pattern_link.saved");
     }
 
     @Override
@@ -1274,49 +1274,52 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
 
     /** Base lines shared by every pattern input assembly; product output is appended by {@link #getDescription()}. */
     protected String[] getBaseDescription() {
-        // #tr tooltip.gtneverreset.crafting_input.type
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.type
         // # Machine Type: {\\YELLOW}CRIB{\\RESET}
         // # zh_CN 机器类型：{\\YELLOW}CRIB{\\RESET}
-        String type = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.type");
-        // #tr tooltip.gtneverreset.crafting_input.item_input
+        String type = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.type");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.item_input
         // # Feeds the multiblock with ingredients from ME crafting jobs
         // # zh_CN 把 ME 合成任务要用的原料送进多方块机器
-        String itemInput = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.item_input");
-        // #tr tooltip.gtneverreset.crafting_input.tier
+        String itemInput = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.item_input");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.tier
         // # Hatch Tier: %s
         // # zh_CN 仓室等级：%s
         String tier = StatCollector.translateToLocalFormatted(
-            "tooltip.gtneverreset.crafting_input.tier",
+            "gtnr.tooltip.gtneverreset.crafting_input.tier",
             TIER_COLORS[supportFluids ? 10 : 6] + VN[supportFluids ? 10 : 6]);
-        // #tr tooltip.gtneverreset.crafting_input.processes
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.processes
         // # The Quantum Computer batches deliveries for processing patterns and buffers each one separately
         // # zh_CN 量子计算机可以把处理样板的发料合并成批，每张样板单独缓存
-        String processes = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.processes");
-        // #tr tooltip.gtneverreset.crafting_input.supports_fluids
+        String processes = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.processes");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.supports_fluids
         // # Handles fluid ingredients; use Ultimate Encoded Patterns for fluid recipes
         // # zh_CN 支持流体原料；流体配方要用终极编码样板
-        String supportsFluids = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.supports_fluids");
-        // #tr tooltip.gtneverreset.crafting_input.no_fluids
+        String supportsFluids = StatCollector
+            .translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.supports_fluids");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.no_fluids
         // # Item ingredients only; fluid patterns are not supported
         // # zh_CN 只收物品原料，不支持流体样板
-        String noFluids = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.no_fluids");
-        // #tr tooltip.gtneverreset.crafting_input.connection
+        String noFluids = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.no_fluids");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.connection
         // # Right-click with wire cutters to switch between front-only and all-side ME connections
         // # zh_CN 拿剪线钳右键，切换只连正面还是连所有面
-        String connection = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.connection");
-        // #tr tooltip.gtneverreset.crafting_input.ignores_hatches
+        String connection = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.connection");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.ignores_hatches
         // # Pattern recipes use only their own buffered ingredients, not other input buses or hatches
         // # zh_CN 样板配方只用自己缓存的原料，不碰其他输入总线或输入仓的原料
-        String ignoresHatches = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.ignores_hatches");
-        // #tr tooltip.gtneverreset.crafting_input.ignores_patterns
+        String ignoresHatches = StatCollector
+            .translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.ignores_hatches");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.ignores_patterns
         // # Each pattern keeps its own ingredients; manual slots are shared by all patterns
         // # zh_CN 各张样板的原料分开存；手动槽由所有样板共用
-        String ignoresPatterns = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.ignores_patterns");
-        // #tr tooltip.gtneverreset.crafting_input.capacity
+        String ignoresPatterns = StatCollector
+            .translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.ignores_patterns");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.capacity
         // # %s pattern slots; requires ME power and one channel
         // # zh_CN 共 %s 个样板槽；需要 ME 供电和一个频道
         String capacity = StatCollector
-            .translateToLocalFormatted("tooltip.gtneverreset.crafting_input.capacity", getPatternCount());
+            .translateToLocalFormatted("gtnr.tooltip.gtneverreset.crafting_input.capacity", getPatternCount());
         return new String[] { type, itemInput, tier, processes, capacity, supportFluids ? supportsFluids : noFluids,
             ignoresHatches, ignoresPatterns, connection };
     }

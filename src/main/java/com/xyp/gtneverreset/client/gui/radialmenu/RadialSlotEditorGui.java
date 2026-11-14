@@ -59,10 +59,10 @@ public class RadialSlotEditorGui extends RadialActionEditorGui implements Radial
         this.readOnly = parent.isBuiltIn() || existing != null && existing.isBuiltIn() && !toolBelt;
         this.draft = existing != null ? existing.copy()
             : MenuNode.leaf(
-                // #tr radialmenu.editor.newEntry
+                // #tr gtnr.radialmenu.editor.new_entry
                 // # New entry
                 // # zh_CN 新建条目
-                I18n.format("radialmenu.editor.newEntry"),
+                I18n.format("gtnr.radialmenu.editor.new_entry"),
                 IconSpec.item("minecraft:stone", 0),
                 ActionTypes.get(ActionTypes.KEYBIND)
                     .newSpec());
@@ -86,10 +86,10 @@ public class RadialSlotEditorGui extends RadialActionEditorGui implements Radial
 
     @Override
     protected String titleKey() {
-        // #tr radialmenu.editor.slot
+        // #tr gtnr.radialmenu.editor.slot
         // # Slot %s
         // # zh_CN 槽位 %s
-        return "radialmenu.editor.slot";
+        return "gtnr.radialmenu.editor.slot";
     }
 
     @Override
@@ -154,10 +154,10 @@ public class RadialSlotEditorGui extends RadialActionEditorGui implements Radial
                 controlWidth - RadialUi.ROW - RadialUi.GAP,
                 RadialUi.ROW,
                 iconLabel()));
-        // #tr radialmenu.editor.icon.tip
+        // #tr gtnr.radialmenu.editor.icon.tip
         // # Choose an item icon, a built-in sprite or a custom PNG
         // # zh_CN 选择物品图标、内置精灵图或自定义 PNG
-        tooltip(ID_ICON, describe("radialmenu.editor.icon.tip"));
+        tooltip(ID_ICON, describe("gtnr.radialmenu.editor.icon.tip"));
         y += RadialUi.STEP;
 
         this.buttonList.add(
@@ -166,15 +166,15 @@ public class RadialSlotEditorGui extends RadialActionEditorGui implements Radial
                 controlLeft,
                 y,
                 controlWidth,
-                // #tr radialmenu.editor.keepOpen
+                // #tr gtnr.radialmenu.editor.keep_open
                 // # Keep menu open
                 // # zh_CN 保持菜单打开
-                I18n.format("radialmenu.editor.keepOpen"),
+                I18n.format("gtnr.radialmenu.editor.keep_open"),
                 draft.keepOpen));
-        // #tr radialmenu.editor.keepOpen.tip
+        // #tr gtnr.radialmenu.editor.keep_open.tip
         // # Keep the wheel open after running this action
         // # zh_CN 执行此动作后保持轮盘打开
-        tooltip(ID_KEEP_OPEN, describe("radialmenu.editor.keepOpen.tip"));
+        tooltip(ID_KEEP_OPEN, describe("gtnr.radialmenu.editor.keep_open.tip"));
         y += RadialUi.STEP + RadialUi.GAP;
 
         actionSectionTop = y;
@@ -191,22 +191,22 @@ public class RadialSlotEditorGui extends RadialActionEditorGui implements Radial
                     y,
                     controlWidth,
                     RadialUi.ROW,
-                    // #tr radialmenu.editor.entries
+                    // #tr gtnr.radialmenu.editor.entries
                     // # Entries (%d)...
                     // # zh_CN 条目 (%d)...
-                    I18n.format("radialmenu.editor.entries", Integer.valueOf(draft.filledCount()))));
-            // #tr radialmenu.editor.entries.tip
+                    I18n.format("gtnr.radialmenu.editor.entries", Integer.valueOf(draft.filledCount()))));
+            // #tr gtnr.radialmenu.editor.entries.tip
             // # Save this slot, then arrange, copy, remove or move its submenu entries
             // # zh_CN 先保存此槽位，再调整、复制、删除或移动子菜单条目
-            tooltip(ID_ENTRIES, describe("radialmenu.editor.entries.tip"));
+            tooltip(ID_ENTRIES, describe("gtnr.radialmenu.editor.entries.tip"));
             y += RadialUi.STEP;
         }
 
         setContentHeight(y - scrolledTop() + RadialUi.PAD);
-        // #tr radialmenu.editor.delete
+        // #tr gtnr.radialmenu.editor.delete
         // # Delete
         // # zh_CN 删除
-        addBottomBar("radialmenu.editor.save", toolBelt ? null : "radialmenu.editor.delete", "gui.cancel");
+        addBottomBar("gtnr.radialmenu.editor.save", toolBelt ? null : "gtnr.radialmenu.editor.delete", "gui.cancel");
         if (toolBelt) {
             tooltip(ID_PRIMARY, RadialEditorRestrictions.resizeTip());
         }
@@ -263,18 +263,18 @@ public class RadialSlotEditorGui extends RadialActionEditorGui implements Radial
         captureInputs();
         RadialGuiStack.push(
             new RadialConfirmGui(
-                // #tr radialmenu.editor.confirmDiscard
+                // #tr gtnr.radialmenu.editor.confirm_discard
                 // # Discard this submenu?
                 // # zh_CN 丢弃此子菜单？
-                "radialmenu.editor.confirmDiscard",
-                // #tr radialmenu.editor.confirmDiscard.subject
+                "gtnr.radialmenu.editor.confirm_discard",
+                // #tr gtnr.radialmenu.editor.confirm_discard.subject
                 // # %d entries inside it will be lost
                 // # zh_CN 其中的 %d 个条目将会丢失
-                I18n.format("radialmenu.editor.confirmDiscard.subject", Integer.valueOf(draft.filledCount())),
-                // #tr radialmenu.editor.discard
+                I18n.format("gtnr.radialmenu.editor.confirm_discard.subject", Integer.valueOf(draft.filledCount())),
+                // #tr gtnr.radialmenu.editor.discard
                 // # Discard
                 // # zh_CN 丢弃
-                "radialmenu.editor.discard",
+                "gtnr.radialmenu.editor.discard",
                 new RadialConfirmGui.Result() {
 
                     @Override
@@ -363,34 +363,37 @@ public class RadialSlotEditorGui extends RadialActionEditorGui implements Radial
         int left = contentLeft();
         int y = scrolledTop();
 
-        // #tr radialmenu.editor.sectionLook
+        // #tr gtnr.radialmenu.editor.section_look
         // # Appearance
         // # zh_CN 外观
-        RadialUi.sectionHeader(I18n.format("radialmenu.editor.sectionLook"), left, y, contentRight());
+        RadialUi.sectionHeader(I18n.format("gtnr.radialmenu.editor.section_look"), left, y, contentRight());
         y += 14;
 
         if (isVisibleRow(y)) {
-            // #tr radialmenu.editor.title
+            // #tr gtnr.radialmenu.editor.title
             // # Title
             // # zh_CN 标题
-            RadialUi.rowLabel(I18n.format("radialmenu.editor.title"), left, y);
+            RadialUi.rowLabel(I18n.format("gtnr.radialmenu.editor.title"), left, y);
             titleField.drawTextBox();
         }
         y += RadialUi.STEP;
 
         if (isVisibleRow(y)) {
-            // #tr radialmenu.editor.icon
+            // #tr gtnr.radialmenu.editor.icon
             // # Icon
             // # zh_CN 图标
-            RadialUi.rowLabel(I18n.format("radialmenu.editor.icon"), left, y);
+            RadialUi.rowLabel(I18n.format("gtnr.radialmenu.editor.icon"), left, y);
         }
 
         if (isVisibleRow(actionSectionTop)) {
-            // #tr radialmenu.editor.sectionAction
+            // #tr gtnr.radialmenu.editor.section_action
             // # Action
             // # zh_CN 操作
-            RadialUi
-                .sectionHeader(I18n.format("radialmenu.editor.sectionAction"), left, actionSectionTop, contentRight());
+            RadialUi.sectionHeader(
+                I18n.format("gtnr.radialmenu.editor.section_action"),
+                left,
+                actionSectionTop,
+                contentRight());
         }
 
         drawActionSection();
@@ -398,7 +401,7 @@ public class RadialSlotEditorGui extends RadialActionEditorGui implements Radial
     }
 
     private String iconLabel() {
-        return draft.icon == null || draft.icon.id == null ? I18n.format("radialmenu.editor.pickIcon")
+        return draft.icon == null || draft.icon.id == null ? I18n.format("gtnr.radialmenu.editor.pick_icon")
             : RadialUi.fit(draft.icon.id, contentWidth() - RadialUi.LABEL_WIDTH - RadialUi.ROW - 16);
     }
 

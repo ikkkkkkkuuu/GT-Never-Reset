@@ -52,10 +52,10 @@ public class RadialMenuPickerGui extends RadialUiScreen {
 
     @Override
     protected String titleKey() {
-        // #tr radialmenu.menu.moveTitle
+        // #tr gtnr.radialmenu.menu.move_title
         // # Move the entry to
         // # zh_CN 移动条目到
-        return "radialmenu.menu.moveTitle";
+        return "gtnr.radialmenu.menu.move_title";
     }
 
     @Override
@@ -146,10 +146,10 @@ public class RadialMenuPickerGui extends RadialUiScreen {
         if (node == ProfileManager.active().root) {
             return ProfileManager.activeName();
         }
-        // #tr radialmenu.menu.untitled
+        // #tr gtnr.radialmenu.menu.untitled
         // # (untitled)
         // # zh_CN (无标题)
-        return node.title == null || node.title.isEmpty() ? I18n.format("radialmenu.menu.untitled") : node.title;
+        return node.title == null || node.title.isEmpty() ? I18n.format("gtnr.radialmenu.menu.untitled") : node.title;
     }
 
     @Override
@@ -210,10 +210,14 @@ public class RadialMenuPickerGui extends RadialUiScreen {
             int y = rowPositions.isEmpty() ? scrolledTop()
                 : rowPositions.get(rowPositions.size() - 1)[1] + RadialUi.STEP;
             this.fontRendererObj
-                // #tr radialmenu.menu.moveNowhere
+                // #tr gtnr.radialmenu.menu.move_nowhere
                 // # This profile has no other submenu to move it into
                 // # zh_CN 此配置没有其他可移动到的子菜单
-                .drawString(I18n.format("radialmenu.menu.moveNowhere"), contentLeft(), y + 4, RadialUi.TEXT_MUTED);
+                .drawString(
+                    I18n.format("gtnr.radialmenu.menu.move_nowhere"),
+                    contentLeft(),
+                    y + 4,
+                    RadialUi.TEXT_MUTED);
         }
 
         for (int i = 0; i < menus.size() && i < rowPositions.size(); i++) {

@@ -28,16 +28,16 @@ public final class UniversalWandFlightSpeedHudRenderer {
         if (!acceleration && speed <= 0) return;
         int rate = UniversalWandUtilityHandler.getClientAccelerationRate();
         String text = acceleration ? StatCollector.translateToLocalFormatted(
-            // #tr gtneverreset.universal_wand.acceleration_changed
+            // #tr gtnr.universal_wand.acceleration_changed
             // # Time acceleration: %s
             // # zh_CN 时间加速倍率：%s
-            "gtneverreset.universal_wand.acceleration_changed",
-            rate == 0 ? StatCollector.translateToLocal("gtneverreset.gui.universal_wand.acceleration_off") : "x" + rate)
+            "gtnr.universal_wand.acceleration_changed",
+            rate == 0 ? StatCollector.translateToLocal("gtnr.gui.universal_wand.acceleration_off") : "x" + rate)
             : StatCollector.translateToLocalFormatted(
-                // #tr gtneverreset.universal_wand.flight_speed_changed
+                // #tr gtnr.universal_wand.flight_speed_changed
                 // # Flight speed: %sx
                 // # zh_CN 飞行速度：%s 倍
-                "gtneverreset.universal_wand.flight_speed_changed",
+                "gtnr.universal_wand.flight_speed_changed",
                 String.format(Locale.ROOT, "%.1f", speed / 0.05F));
         int alpha = (int) Math.min(255, remaining * 255 / 500_000_000L);
         int width = event.resolution.getScaledWidth();

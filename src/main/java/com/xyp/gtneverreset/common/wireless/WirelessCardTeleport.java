@@ -89,7 +89,7 @@ public class WirelessCardTeleport {
             .sendTo(new WirelessHighlightPacket(target.dimension(), target.x(), target.y(), target.z()), player);
         player.addChatMessage(
             new ChatComponentTranslation(
-                "gtneverreset.wireless.gui.teleport_done",
+                "gtnr.wireless.gui.teleport_done",
                 target.dimension(),
                 target.x(),
                 target.y(),
@@ -144,7 +144,7 @@ public class WirelessCardTeleport {
     }
 
     private static boolean fail(EntityPlayerMP player, String key) {
-        player.addChatMessage(new ChatComponentTranslation("gtneverreset.wireless.gui." + key));
+        player.addChatMessage(new ChatComponentTranslation("gtnr.wireless.gui." + key));
         return false;
     }
 }

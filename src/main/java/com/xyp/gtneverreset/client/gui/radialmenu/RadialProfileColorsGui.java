@@ -41,10 +41,10 @@ public class RadialProfileColorsGui extends RadialUiScreen {
 
     @Override
     protected String titleKey() {
-        // #tr radialmenu.profileColors.title
+        // #tr gtnr.radialmenu.profile_colors.title
         // # Colors: %s
         // # zh_CN 颜色：%s
-        return "radialmenu.profileColors.title";
+        return "gtnr.radialmenu.profile_colors.title";
     }
 
     @Override
@@ -93,11 +93,11 @@ public class RadialProfileColorsGui extends RadialUiScreen {
                 y,
                 controlWidth,
                 RadialUi.ROW,
-                I18n.format("radialmenu.editor.pickAccent")));
-        // #tr radialmenu.profileColors.accent.tip
+                I18n.format("gtnr.radialmenu.editor.pick_accent")));
+        // #tr gtnr.radialmenu.profile_colors.accent.tip
         // # Generate the colors below from one accent, then adjust each color
         // # zh_CN 用强调色生成下方配色，再分别调整
-        tooltip(ID_ACCENT, I18n.format("radialmenu.profileColors.accent.tip"));
+        tooltip(ID_ACCENT, I18n.format("gtnr.radialmenu.profile_colors.accent.tip"));
 
         y += RadialUi.STEP + RadialUi.GAP;
 
@@ -118,10 +118,10 @@ public class RadialProfileColorsGui extends RadialUiScreen {
                     }
                 },
                 Colors.parseArgb(inherited(swatch), 0xFF000000),
-                // #tr radialmenu.profileColors.default
+                // #tr gtnr.radialmenu.profile_colors.default
                 // # From mod config
                 // # zh_CN 来自模组配置
-                I18n.format("radialmenu.profileColors.default"));
+                I18n.format("gtnr.radialmenu.profile_colors.default"));
             // Shown but not editable when its part of the wheel is switched off in the config. The value stays, and
             // an accent still writes into it, so turning that part back on brings back the colour chosen for it.
             pick.enabled = editable;
@@ -140,15 +140,15 @@ public class RadialProfileColorsGui extends RadialUiScreen {
                 RadialUiIconButton.Icon.Cross);
             clear.enabled = !colors[index].isEmpty();
             this.buttonList.add(clear);
-            tooltip(ID_CLEAR_BASE + index, I18n.format("radialmenu.profileColors.clear.tip"));
+            tooltip(ID_CLEAR_BASE + index, I18n.format("gtnr.radialmenu.profile_colors.clear.tip"));
 
             y += RadialUi.STEP;
         }
 
-        // #tr radialmenu.profileColors.reset
+        // #tr gtnr.radialmenu.profile_colors.reset
         // # Reset to defaults
         // # zh_CN 重置为默认
-        addBottomBar("radialmenu.editor.save", "radialmenu.profileColors.reset", "gui.cancel");
+        addBottomBar("gtnr.radialmenu.editor.save", "gtnr.radialmenu.profile_colors.reset", "gui.cancel");
     }
 
     private static String orEmpty(String value) {
@@ -278,15 +278,16 @@ public class RadialProfileColorsGui extends RadialUiScreen {
     @Override
     protected void drawContent(int mouseX, int mouseY, float partialTicks) {
         int left = contentLeft();
-        // #tr radialmenu.profileColors.section
+        // #tr gtnr.radialmenu.profile_colors.section
         // # Profile colors
         // # zh_CN 配置颜色
-        RadialUi.sectionHeader(I18n.format("radialmenu.profileColors.section"), left, contentTop(), contentRight());
+        RadialUi
+            .sectionHeader(I18n.format("gtnr.radialmenu.profile_colors.section"), left, contentTop(), contentRight());
 
-        // #tr radialmenu.profileColors.accent
+        // #tr gtnr.radialmenu.profile_colors.accent
         // # Accent
         // # zh_CN 强调色
-        RadialUi.rowLabel(I18n.format("radialmenu.profileColors.accent"), left, accentTop);
+        RadialUi.rowLabel(I18n.format("gtnr.radialmenu.profile_colors.accent"), left, accentTop);
 
         int y = accentTop + RadialUi.STEP + RadialUi.GAP;
         for (Swatch swatch : Swatch.values()) {
@@ -298,59 +299,59 @@ public class RadialProfileColorsGui extends RadialUiScreen {
     private enum Swatch {
 
         Ring(
-            // #tr radialmenu.profileColors.ring
+            // #tr gtnr.radialmenu.profile_colors.ring
             // # Ring fill
             // # zh_CN 环形填充色
-            "radialmenu.profileColors.ring",
-            // #tr radialmenu.profileColors.ring.tip
+            "gtnr.radialmenu.profile_colors.ring",
+            // #tr gtnr.radialmenu.profile_colors.ring.tip
             // # Ring color for this profile. Submenu colors override it
             // # zh_CN 配置方案的轮盘颜色；子菜单可单独设置
-            "radialmenu.profileColors.ring.tip", true, ActionTypes.PARAM_RING_COLOR),
+            "gtnr.radialmenu.profile_colors.ring.tip", true, ActionTypes.PARAM_RING_COLOR),
         Border(
-            // #tr radialmenu.profileColors.border
+            // #tr gtnr.radialmenu.profile_colors.border
             // # Ring outline
             // # zh_CN 环形边框
-            "radialmenu.profileColors.border",
-            // #tr radialmenu.profileColors.border.tip
+            "gtnr.radialmenu.profile_colors.border",
+            // #tr gtnr.radialmenu.profile_colors.border.tip
             // # Divider and edge color. Submenu colors override it
             // # zh_CN 分隔线和边缘颜色；子菜单可单独设置
-            "radialmenu.profileColors.border.tip", true, ActionTypes.PARAM_BORDER_COLOR),
+            "gtnr.radialmenu.profile_colors.border.tip", true, ActionTypes.PARAM_BORDER_COLOR),
         Highlight(
-            // #tr radialmenu.profileColors.highlight
+            // #tr gtnr.radialmenu.profile_colors.highlight
             // # Highlight fill
             // # zh_CN 高亮填充色
-            "radialmenu.profileColors.highlight",
-            // #tr radialmenu.profileColors.highlight.tip
+            "gtnr.radialmenu.profile_colors.highlight",
+            // #tr gtnr.radialmenu.profile_colors.highlight.tip
             // # Hovered sector color. Submenu colors override it
             // # zh_CN 悬停扇区颜色；子菜单可单独设置
-            "radialmenu.profileColors.highlight.tip", true, ActionTypes.PARAM_HIGHLIGHT_COLOR),
+            "gtnr.radialmenu.profile_colors.highlight.tip", true, ActionTypes.PARAM_HIGHLIGHT_COLOR),
         HighlightBorder(
-            // #tr radialmenu.profileColors.highlightBorder
+            // #tr gtnr.radialmenu.profile_colors.highlight_border
             // # Highlight outline
             // # zh_CN 高亮边框
-            "radialmenu.profileColors.highlightBorder",
-            // #tr radialmenu.profileColors.highlightBorder.tip
+            "gtnr.radialmenu.profile_colors.highlight_border",
+            // #tr gtnr.radialmenu.profile_colors.highlight_border.tip
             // # Outline color of the hovered sector
             // # zh_CN 悬停扇区的边框颜色
-            "radialmenu.profileColors.highlightBorder.tip", true, ActionTypes.PARAM_HIGHLIGHT_BORDER_COLOR),
+            "gtnr.radialmenu.profile_colors.highlight_border.tip", true, ActionTypes.PARAM_HIGHLIGHT_BORDER_COLOR),
         Background(
-            // #tr radialmenu.profileColors.background
+            // #tr gtnr.radialmenu.profile_colors.background
             // # Background
             // # zh_CN 背景
-            "radialmenu.profileColors.background",
-            // #tr radialmenu.profileColors.background.tip
+            "gtnr.radialmenu.profile_colors.background",
+            // #tr gtnr.radialmenu.profile_colors.background.tip
             // # Screen tint behind the wheel when its background is enabled
             // # zh_CN 启用轮盘背景时的屏幕蒙层颜色
-            "radialmenu.profileColors.background.tip", true, ActionTypes.PARAM_BACKGROUND_COLOR),
+            "gtnr.radialmenu.profile_colors.background.tip", true, ActionTypes.PARAM_BACKGROUND_COLOR),
         Icon(
-            // #tr radialmenu.profileColors.icon
+            // #tr gtnr.radialmenu.profile_colors.icon
             // # Sprite icons
             // # zh_CN 精灵图标
-            "radialmenu.profileColors.icon",
-            // #tr radialmenu.profileColors.icon.tip
+            "gtnr.radialmenu.profile_colors.icon",
+            // #tr gtnr.radialmenu.profile_colors.icon.tip
             // # Tint sprite icons without their own color. Items and custom PNGs keep their colors
             // # zh_CN 为未单独设色的精灵图标着色；物品和自定义 PNG 保持原色
-            "radialmenu.profileColors.icon.tip", false, ActionTypes.PARAM_ICON_COLOR);
+            "gtnr.radialmenu.profile_colors.icon.tip", false, ActionTypes.PARAM_ICON_COLOR);
 
         private final String labelKey;
         private final String tooltipKey;

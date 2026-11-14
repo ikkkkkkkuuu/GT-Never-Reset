@@ -11,19 +11,19 @@ import appeng.util.Platform;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
-public final class CPacketSwitchGuis implements IMessage {
+public final class SwitchGuisPacket implements IMessage {
 
     private WirelessTerminalGuiType type;
     private boolean restoreSaved;
 
-    public CPacketSwitchGuis() {}
+    public SwitchGuisPacket() {}
 
-    public CPacketSwitchGuis(WirelessTerminalGuiType type) {
+    public SwitchGuisPacket(WirelessTerminalGuiType type) {
         this.type = type;
     }
 
-    public static CPacketSwitchGuis restoreLast() {
-        CPacketSwitchGuis packet = new CPacketSwitchGuis();
+    public static SwitchGuisPacket restoreLast() {
+        SwitchGuisPacket packet = new SwitchGuisPacket();
         packet.restoreSaved = true;
         return packet;
     }

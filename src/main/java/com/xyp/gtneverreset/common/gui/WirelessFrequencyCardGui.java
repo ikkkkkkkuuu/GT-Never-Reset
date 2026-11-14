@@ -307,7 +307,7 @@ public final class WirelessFrequencyCardGui {
         }
 
         private void message(String key, Object... args) {
-            session.player.addChatMessage(new ChatComponentTranslation("gtneverreset.wireless.gui." + key, args));
+            session.player.addChatMessage(new ChatComponentTranslation("gtnr.wireless.gui." + key, args));
         }
     }
 

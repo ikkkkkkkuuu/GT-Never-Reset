@@ -19,10 +19,10 @@ public final class QuestSkipMenu implements IQuestContextMenuEntry {
 
     @Override
     public String getLabel(UUID questId, IQuest quest) {
-        // #tr gtneverreset.quest.skip
+        // #tr gtnr.quest.skip
         // # Skip
         // # zh_CN 跳过
-        return StatCollector.translateToLocal("gtneverreset.quest.skip");
+        return StatCollector.translateToLocal("gtnr.quest.skip");
     }
 
     @Override

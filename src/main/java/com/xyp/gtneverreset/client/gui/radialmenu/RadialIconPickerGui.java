@@ -83,10 +83,10 @@ public class RadialIconPickerGui extends RadialUiScreen {
 
     @Override
     protected String titleKey() {
-        // #tr radialmenu.editor.pickIcon
+        // #tr gtnr.radialmenu.editor.pick_icon
         // # Pick an icon
         // # zh_CN 选择图标
-        return "radialmenu.editor.pickIcon";
+        return "gtnr.radialmenu.editor.pick_icon";
     }
 
     @Override
@@ -117,15 +117,15 @@ public class RadialIconPickerGui extends RadialUiScreen {
         // Only sprites and untinted-by-choice PNGs take a colour; an item or an effect carries its own.
         colorButton.enabled = tab == Tab.Sprites || (tab == Tab.Files && !originalColors);
         this.buttonList.add(colorButton);
-        // #tr radialmenu.icons.color.tip
+        // #tr gtnr.radialmenu.icons.color.tip
         // # Tint sprite icons and custom PNGs. Item icons keep their original colors
         // # zh_CN 为精灵图标和自定义 PNG 着色；物品图标保持原色
-        tooltip(ID_COLOR, I18n.format("radialmenu.icons.color.tip"));
+        tooltip(ID_COLOR, I18n.format("gtnr.radialmenu.icons.color.tip"));
         this.buttonList.add(new GuiButton(ID_REFRESH, refreshLeft, y, RadialUi.ROW, RadialUi.ROW, "R"));
-        // #tr radialmenu.icons.refresh.tip
+        // #tr gtnr.radialmenu.icons.refresh.tip
         // # Reload PNG files from the icons folder
         // # zh_CN 重新读取图标文件夹中的 PNG 文件
-        tooltip(ID_REFRESH, I18n.format("radialmenu.icons.refresh.tip"));
+        tooltip(ID_REFRESH, I18n.format("gtnr.radialmenu.icons.refresh.tip"));
 
         y += RadialUi.STEP;
 
@@ -151,15 +151,15 @@ public class RadialIconPickerGui extends RadialUiScreen {
                     left,
                     afterTabs + RadialUi.GAP,
                     contentWidth(),
-                    // #tr radialmenu.icons.original
+                    // #tr gtnr.radialmenu.icons.original
                     // # Keep the image's own colors
                     // # zh_CN 保持图片原始颜色
-                    I18n.format("radialmenu.icons.original"),
+                    I18n.format("gtnr.radialmenu.icons.original"),
                     originalColors));
-            // #tr radialmenu.icons.original.tip
+            // #tr gtnr.radialmenu.icons.original.tip
             // # Use the PNG colors without applying the sprite tint
             // # zh_CN 使用 PNG 原色，忽略精灵图标的颜色设置
-            tooltip(ID_ORIGINAL, I18n.format("radialmenu.icons.original.tip"));
+            tooltip(ID_ORIGINAL, I18n.format("gtnr.radialmenu.icons.original.tip"));
             afterTabs += RadialUi.STEP;
         }
 
@@ -366,23 +366,23 @@ public class RadialIconPickerGui extends RadialUiScreen {
     private String emptyMessage() {
         switch (tab) {
             case Files:
-                // #tr radialmenu.icons.noFiles
+                // #tr gtnr.radialmenu.icons.no_files
                 // # Place PNGs in %s, then press R.
                 // # zh_CN 将 PNG 放入 %s，再按 R 刷新。
                 return I18n.format(
-                    "radialmenu.icons.noFiles",
+                    "gtnr.radialmenu.icons.no_files",
                     ProfileStorage.iconsDir()
                         .getPath());
             case Players:
-                // #tr radialmenu.icons.noPlayers
+                // #tr gtnr.radialmenu.icons.no_players
                 // # Type a player name, or stand near someone to learn their head
                 // # zh_CN 输入玩家名称，或站在某人附近以获取其头像
-                return I18n.format("radialmenu.icons.noPlayers");
+                return I18n.format("gtnr.radialmenu.icons.no_players");
             default:
-                // #tr radialmenu.icons.noMatches
+                // #tr gtnr.radialmenu.icons.no_matches
                 // # Nothing matches that search
                 // # zh_CN 没有匹配项
-                return I18n.format("radialmenu.icons.noMatches");
+                return I18n.format("gtnr.radialmenu.icons.no_matches");
         }
     }
 
@@ -509,7 +509,7 @@ public class RadialIconPickerGui extends RadialUiScreen {
                 0xFF000000 | shown,
                 0xFF000000);
 
-            String label = inherited ? I18n.format("radialmenu.editor.inherit") : color;
+            String label = inherited ? I18n.format("gtnr.radialmenu.editor.inherit") : color;
             this.fontRendererObj.drawString(
                 RadialUi.fit(label, button.width - 24),
                 button.xPosition + 20,
@@ -576,26 +576,26 @@ public class RadialIconPickerGui extends RadialUiScreen {
 
     private enum Tab {
 
-        // #tr radialmenu.icons.items
+        // #tr gtnr.radialmenu.icons.items
         // # Items
         // # zh_CN 物品
-        Items("radialmenu.icons.items"),
-        // #tr radialmenu.icons.sprites
+        Items("gtnr.radialmenu.icons.items"),
+        // #tr gtnr.radialmenu.icons.sprites
         // # Sprites
         // # zh_CN 精灵图
-        Sprites("radialmenu.icons.sprites"),
-        // #tr radialmenu.icons.effects
+        Sprites("gtnr.radialmenu.icons.sprites"),
+        // #tr gtnr.radialmenu.icons.effects
         // # Effects
         // # zh_CN 效果
-        Effects("radialmenu.icons.effects"),
-        // #tr radialmenu.icons.files
+        Effects("gtnr.radialmenu.icons.effects"),
+        // #tr gtnr.radialmenu.icons.files
         // # My PNGs
         // # zh_CN 我的 PNG 文件
-        Files("radialmenu.icons.files"),
-        // #tr radialmenu.icons.players
+        Files("gtnr.radialmenu.icons.files"),
+        // #tr gtnr.radialmenu.icons.players
         // # Heads
         // # zh_CN 玩家头像
-        Players("radialmenu.icons.players");
+        Players("gtnr.radialmenu.icons.players");
 
         private final String labelKey;
 

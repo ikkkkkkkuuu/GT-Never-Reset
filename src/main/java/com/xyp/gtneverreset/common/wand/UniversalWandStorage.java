@@ -58,28 +58,28 @@ public final class UniversalWandStorage {
         if (player.isDead || !ItemUniversalWand.isHeldBy(player)
             || !player.worldObj.blockExists(x, y, z)
             || !UniversalWandActions.isTarget(player, x, y, z)) {
-            // #tr gtneverreset.universal_wand.ae_invalid
+            // #tr gtnr.universal_wand.ae_invalid
             // # Target must be an online AE access point with insertion permission.
             // # zh_CN 目标不是在线且有注入权限的 AE 无线访问点。
-            player.addChatMessage(new ChatComponentTranslation("gtneverreset.universal_wand.ae_invalid"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.universal_wand.ae_invalid"));
             return;
         }
         TileEntity tile = player.worldObj.getTileEntity(x, y, z);
         if (!(tile instanceof IWirelessAccessPoint point) || tile.isInvalid()) {
-            player.addChatMessage(new ChatComponentTranslation("gtneverreset.universal_wand.ae_invalid"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.universal_wand.ae_invalid"));
             return;
         }
         NBTTagCompound existing = ItemUniversalWand.getAeBinding(wand);
         if (sameLocation(existing, player.dimension, x, y, z) && matchesBinding(tile, existing)) {
             if (UniversalWandRightClick.handled(player, ItemUniversalWand.setAeBinding(player, wand, null)))
-                // #tr gtneverreset.universal_wand.ae_unbound
+                // #tr gtnr.universal_wand.ae_unbound
                 // # AE wireless access point unbound.
                 // # zh_CN 已取消绑定 AE 无线访问点。
-                player.addChatMessage(new ChatComponentTranslation("gtneverreset.universal_wand.ae_unbound"));
+                player.addChatMessage(new ChatComponentTranslation("gtnr.universal_wand.ae_unbound"));
             return;
         }
         if (!point.isActive() || !canInsert(player, point.getGrid())) {
-            player.addChatMessage(new ChatComponentTranslation("gtneverreset.universal_wand.ae_invalid"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.universal_wand.ae_invalid"));
             return;
         }
         NBTTagCompound binding = new NBTTagCompound();
@@ -90,10 +90,10 @@ public final class UniversalWandStorage {
         if (tile instanceof ILocatable locatable) binding.setLong("serial", locatable.getLocatableSerial());
         if (UniversalWandRightClick.handled(player, ItemUniversalWand.setAeBinding(player, wand, binding)))
             player.addChatMessage(
-                // #tr gtneverreset.universal_wand.ae_bound
+                // #tr gtnr.universal_wand.ae_bound
                 // # Bound AE access point: dimension %s, %s, %s, %s.
                 // # zh_CN 已绑定 AE 无线访问点：维度 %s，%s，%s，%s。
-                new ChatComponentTranslation("gtneverreset.universal_wand.ae_bound", player.dimension, x, y, z));
+                new ChatComponentTranslation("gtnr.universal_wand.ae_bound", player.dimension, x, y, z));
     }
 
     private static boolean sameLocation(NBTTagCompound binding, int dimension, int x, int y, int z) {

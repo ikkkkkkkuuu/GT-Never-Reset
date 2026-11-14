@@ -93,32 +93,34 @@ final class RadialFieldControls {
                 return current == null || current.isEmpty() ? I18n.format("gtnrlib.gui.keybind.pick")
                     : I18n.format(current);
             case ProfileRef:
-                // #tr radialmenu.action.profileSwitch.next
+                // #tr gtnr.radialmenu.action.profile_switch.next
                 // # Next profile
                 // # zh_CN 下一个配置
-                return isBlank(current) ? I18n.format("radialmenu.action.profileSwitch.next") : current;
+                return isBlank(current) ? I18n.format("gtnr.radialmenu.action.profile_switch.next") : current;
             case MultilineString:
-                // #tr radialmenu.editor.editLines
+                // #tr gtnr.radialmenu.editor.edit_lines
                 // # Edit lines (%d)
                 // # zh_CN 编辑行 (%d)
-                return I18n.format("radialmenu.editor.editLines", Placeholders.splitLines(current).length);
+                return I18n.format("gtnr.radialmenu.editor.edit_lines", Placeholders.splitLines(current).length);
             case Code:
                 return I18n
-                    // #tr radialmenu.editor.editScript
+                    // #tr gtnr.radialmenu.editor.edit_script
                     // # Edit script (%d lines)
                     // # zh_CN 编辑脚本（%d 行）
-                    .format("radialmenu.editor.editScript", current == null ? 0 : current.split("\r?\n", -1).length);
+                    .format(
+                        "gtnr.radialmenu.editor.edit_script",
+                        current == null ? 0 : current.split("\r?\n", -1).length);
             case Color:
-                // #tr radialmenu.editor.inherit
+                // #tr gtnr.radialmenu.editor.inherit
                 // # Inherit
                 // # zh_CN 继承
-                return isBlank(current) ? I18n.format("radialmenu.editor.inherit") : current;
+                return isBlank(current) ? I18n.format("gtnr.radialmenu.editor.inherit") : current;
             case Accent:
                 // Nothing is stored, so there is no value to show - only the offer.
-                // #tr radialmenu.editor.pickAccent
+                // #tr gtnr.radialmenu.editor.pick_accent
                 // # Fill in from a color...
                 // # zh_CN 从颜色填充...
-                return I18n.format("radialmenu.editor.pickAccent");
+                return I18n.format("gtnr.radialmenu.editor.pick_accent");
             case Enum:
                 return localizedValue(field, current);
             default:
@@ -191,10 +193,10 @@ final class RadialFieldControls {
     /** Why a colour cannot be edited: the name of the setting that switched its part of the wheel off. */
     static String colorOffTip(String key) {
         String setting = switchFor(key);
-        // #tr radialmenu.editor.colorOff.tip
+        // #tr gtnr.radialmenu.editor.color_off.tip
         // # %s is disabled in Wheel settings. This color is kept until it is enabled again
         // # zh_CN 轮盘设置中的 %s 已关闭；此颜色在重新启用后生效
-        return setting == null ? null : I18n.format("radialmenu.editor.colorOff.tip", setting);
+        return setting == null ? null : I18n.format("gtnr.radialmenu.editor.color_off.tip", setting);
     }
 
     /** The setting that has to be on for this colour to be drawn, or null when it is always drawn. */

@@ -1,16 +1,12 @@
 package com.xyp.gtneverreset.common.machine.tooltip;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 
-import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource.TooltipStats;
 import com.xyp.gtneverreset.common.machine.tooltip.PerformanceSummary.BonusStat;
 import com.xyp.gtneverreset.common.machine.tooltip.StructureSummary.BlockLine;
@@ -19,117 +15,131 @@ import com.xyp.gtneverreset.common.machine.tooltip.StructureSummary.HatchLine;
 import com.xyp.gtneverreset.common.machine.tooltip.StructureSummary.Section;
 import com.xyp.gtneverreset.common.machine.tooltip.StructureSummary.Size;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
-import com.xyp.gtnrlib.text.TooltipLineWrapper;
 
+import gregtech.api.enums.HatchElement;
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
 import gregtech.api.util.MultiblockTooltipBuilder;
-import gregtech.api.util.tooltip.MarkdownTooltipLoader;
 import gregtech.api.util.tooltip.TooltipHelper;
 
 public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder {
 
-    private String[] information;
-    private String[] structureInformation;
+    public static final EnumChatFormatting HATCH_COLOR = EnumChatFormatting.GREEN;
+    public static final EnumChatFormatting MECHANIC_COLOR = EnumChatFormatting.LIGHT_PURPLE;
+    private final List<List<String>> pendingGroups = new ArrayList<>();
 
     @Override
     public MultiblockTooltipBuilder toolTipFinisher(EnumChatFormatting separatorColor, int separatorLength) {
-        super.toolTipFinisher(separatorColor, separatorLength);
-        information = TooltipLineWrapper.wrap(super.getInformation());
-        structureInformation = TooltipLineWrapper.wrap(super.getStructureInformation());
-        return this;
-    }
-
-    @Override
-    public String[] getInformation() {
-        return information;
-    }
-
-    @Override
-    public String[] getStructureInformation() {
-        return structureInformation;
+        for (List<String> group : pendingGroups) {
+            if (group.isEmpty()) continue;
+            addSeparator();
+            for (String line : group) addInfo(line);
+        }
+        pendingGroups.clear();
+        return super.toolTipFinisher(separatorColor, separatorLength);
     }
 
     public AutoMultiblockTooltipBuilder addAutoTooltip(MTEEnhancedMultiBlockBase<?> machine) {
-        MTEEnhancedMultiBlockBase<?> detached = StructureTooltipReader.detachedCopy(machine);
-        if (!(detached instanceof MultiblockTooltipSource source)) {
-            throw new IllegalArgumentException(
-                "Missing automatic tooltip source: " + machine.getClass()
-                    .getName());
-        }
-        String type = source.getTooltipMachineType();
-        if (type != null && !type.isEmpty()) addMachineType(type);
-        StructureSummary structure = StructureTooltipReader.readDetachedStructure(detached);
-        PerformanceSummary performance = MultiblockPerformanceReader.readPerformance(machine, structure);
-        TooltipStats stats = performance.stats();
+        return addAutoTooltip(machine, MultiblockTooltipReader.keyPrefixOf(machine));
+    }
+
+    public AutoMultiblockTooltipBuilder addAutoTooltip(MTEEnhancedMultiBlockBase<?> machine, String keyPrefix) {
+        MultiblockTooltipReader.InfoSummary info = MultiblockTooltipReader.readInfo(machine, keyPrefix);
+        if (info == null) return this;
+        StructureSummary structure = info.structure();
+        PerformanceSummary performance = info.performance();
+        TooltipStats stats = performance == null ? null : performance.stats();
+        if (info.machineType() != null && !info.machineType()
+            .isEmpty()) addMachineType(info.machineType());
         if (stats != null) {
-            if (stats.parallels() > 0) addStaticParallelInfo(stats.parallels());
-            for (String line : MultiblockPerformanceFormatter.bonuses(performance, BonusStat.PARALLEL)) addInfo(line);
+            if (stats.parallels() > 0) addInfo(
+                MultiblockPerformanceFormatter.statLine(
+                    StatCollector.translateToLocalFormatted(
+                        "GT5U.MBTT.Parallel.Base",
+                        TooltipHelper.parallelText(stats.parallels())),
+                    performance,
+                    BonusStat.PARALLEL));
+            if (Double.isFinite(stats.speed())) addInfo(
+                MultiblockPerformanceFormatter.statLine(
+                    StatCollector.translateToLocalFormatted(
+                        "GT5U.MBTT.Speed.Base",
+                        TooltipHelper.speedText((float) stats.speed())),
+                    performance,
+                    BonusStat.SPEED,
+                    BonusStat.DURATION));
+            if (Double.isFinite(stats.energyUsage())) {
+                boolean steam = info.steam();
+                String usage = steam ? TooltipHelper.percentageFormat.format(stats.energyUsage())
+                    : String.valueOf((float) stats.energyUsage());
+                String line = steam
+                    ? StatCollector
+                        .translateToLocalFormatted("GT5U.MBTT.SteamDiscount.Base", TooltipHelper.effText(usage))
+                    : StatCollector.translateToLocalFormatted(
+                        "GT5U.MBTT.EuDiscount.Base",
+                        TooltipHelper.effText((float) stats.energyUsage()));
+                addInfo(MultiblockPerformanceFormatter.statLine(line, performance, BonusStat.ENERGY));
+            }
         }
-        int recipeThreads = source.getTooltipRecipeThreads();
-        if (recipeThreads > 0) {
-            // #tr gtnr.multiblock.threads.capacity
+        int threads = info.recipeThreads();
+        if (threads > 0) {
+            // #tr gtnr.machine.tooltip.threads.capacity
             // # Concurrent recipe threads: {\\AQUA}%s{\\RESET}
             // # zh_CN 跨配方线程数：{\\AQUA}%s{\\RESET}
-            addInfo(StatCollector.translateToLocalFormatted("gtnr.multiblock.threads.capacity", recipeThreads));
-            for (String line : MultiblockPerformanceFormatter.bonuses(performance, BonusStat.THREADS)) addInfo(line);
+            String line = StatCollector.translateToLocalFormatted("gtnr.machine.tooltip.threads.capacity", threads);
+            addInfo(
+                performance == null ? line
+                    : MultiblockPerformanceFormatter.statLine(line, performance, BonusStat.THREADS));
         }
-        if (stats != null) {
-            if (Double.isFinite(stats.speed())) {
-                addStaticSpeedInfo((float) stats.speed());
-                for (String line : MultiblockPerformanceFormatter
-                    .bonuses(performance, BonusStat.SPEED, BonusStat.DURATION)) addInfo(line);
-            }
-            if (Double.isFinite(stats.energyUsage())) {
-                addStaticEuEffInfo((float) stats.energyUsage());
-                for (String line : MultiblockPerformanceFormatter.bonuses(performance, BonusStat.ENERGY)) addInfo(line);
-            }
+        for (String line : info.lines()) addInfo(line);
+        for (String line : info.features()) addInfo(line);
+        if (performance != null) {
+            for (String line : MultiblockPerformanceFormatter.rules(performance)) addInfo(line);
+            if (stats != null && stats.perfectOverclock()) addPerfectOCInfo();
         }
-        Map<String, Object> variables = tooltipVariables(source, stats);
-        for (String line : markdownLines(source.getTooltipPath(), variables)) addInfo(line);
-        for (String line : source.getTooltipFeatureLines()) addInfo(line);
-        for (String line : MultiblockPerformanceFormatter.rules(performance)) addInfo(line);
-        if (stats != null && stats.perfectOverclock()) addPerfectOCInfo();
-        addStructure(structure);
-        for (String note : source.getTooltipStructureNotes()) addStructureInfo(note);
+        addPollutionAmount(info.pollution());
+        if (info.hatchKeys()
+            .contains(HatchElement.ExoticEnergy.getDescriptionLangKey())) addSupportAny();
+        else if (info.hatchKeys()
+            .contains(HatchElement.MultiAmpEnergy.getDescriptionLangKey())) addSupportMultiAmp();
+        pendingGroups.addAll(info.groups());
+        if (structure != null) addStructure(structure);
+        for (String note : info.structureNotes()) addStructureInfo(note);
+        addParameterModules(info.moduleLimits());
+        return this;
+    }
+
+    private void addParameterModules(Map<MachineModuleType, Integer> limits) {
+        List<String> modules = new ArrayList<>();
         for (MachineModuleType module : MachineModuleType.values()) {
-            int limit = source.getParameterModuleLimit(module);
+            int limit = limits.getOrDefault(module, 0);
             if (limit <= 0) continue;
-            // #tr gtnr.tooltip.structure.module_limit
+            modules.add(hatchName(module.getTranslationKey()));
+            // #tr gtnr.structure.tooltip.module_limit
             // # %s: at most %s per machine
             // # zh_CN %s：每台机器最多 %s 个
             addStructureInfo(
                 StatCollector.translateToLocalFormatted(
-                    "gtnr.tooltip.structure.module_limit",
-                    StatCollector.translateToLocal(module.getTranslationKey()),
+                    "gtnr.structure.tooltip.module_limit",
+                    hatchName(module.getTranslationKey()),
                     limit));
         }
-        return this;
+        if (!modules.isEmpty()) {
+            // #tr gtnr.machine.tooltip.parameter_modules
+            // # Supports parameter modules: %s
+            // # zh_CN 支持参数模块：%s
+            pendingGroups.add(
+                List.of(
+                    StatCollector.translateToLocalFormatted(
+                        "gtnr.machine.tooltip.parameter_modules",
+                        MultiblockPerformanceFormatter.joinPhrases(modules))));
+        }
     }
 
-    private static Map<String, Object> tooltipVariables(MultiblockTooltipSource source, TooltipStats stats) {
-        Map<String, Object> variables = new HashMap<>();
-        if (stats != null) {
-            variables.put("parallels", stats.parallels());
-            if (Double.isFinite(stats.speed())) {
-                variables.put("speed", TooltipHelper.percentageFormat.format(stats.speed()));
-            }
-            if (Double.isFinite(stats.energyUsage())) {
-                variables.put("energy_usage", TooltipHelper.percentageFormat.format(stats.energyUsage()));
-            }
-        }
-        variables.putAll(source.getTooltipVars());
-        return variables;
+    public static String hatchName(String key) {
+        return TooltipHelper.coloredText(StatCollector.translateToLocal(key), HATCH_COLOR);
     }
 
-    private static List<String> markdownLines(String path, Map<String, Object> variables) {
-        if (path == null || path.isEmpty()) return List.of();
-        try {
-            return MarkdownTooltipLoader.STANDARD
-                .loadStandardPath(new ResourceLocation(GTNeverReset.MODID, path), variables);
-        } catch (RuntimeException failure) {
-            GTNeverReset.LOG.warn("Cannot load tooltip document {}", path, failure);
-            return List.of();
-        }
+    public static String mechanicName(String key) {
+        return TooltipHelper.coloredText(StatCollector.translateToLocal(key), MECHANIC_COLOR);
     }
 
     private void addStructure(StructureSummary summary) {

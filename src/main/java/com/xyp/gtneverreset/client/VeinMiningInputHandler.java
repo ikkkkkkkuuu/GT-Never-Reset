@@ -40,16 +40,16 @@ public class VeinMiningInputHandler {
         String subtitle;
         if (player.isSneaking() && !rightClickHeld) {
             setting = Setting.Range;
-            // #tr Tooltip_VeinMiningPickaxe_00
+            // #tr gtnr.item.vein_mining_pickaxe.tooltip.00
             // # Maximum gap between matching blocks: %d
             // # zh_CN 符合条件的方块之间最大间隔：%d 格
-            subtitle = "Tooltip_VeinMiningPickaxe_00";
+            subtitle = "gtnr.item.vein_mining_pickaxe.tooltip.00";
         } else if (!player.isSneaking() && rightClickHeld) {
             setting = Setting.Amount;
-            // #tr Tooltip_VeinMiningPickaxe_01
+            // #tr gtnr.item.vein_mining_pickaxe.tooltip.01
             // # Maximum blocks per vein: %d
             // # zh_CN 单次连锁挖掘上限：%d 个方块
-            subtitle = "Tooltip_VeinMiningPickaxe_01";
+            subtitle = "gtnr.item.vein_mining_pickaxe.tooltip.01";
         } else {
             return;
         }

@@ -273,10 +273,10 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
                     rowWidth - RadialUiDragReorder.GRIP - 2,
                     RadialUi.ROW,
                     RadialUi.fit(label, rowWidth - RadialUiDragReorder.GRIP - 10)));
-            // #tr radialmenu.steps.edit.tip
+            // #tr gtnr.radialmenu.steps.edit.tip
             // # Edit this step. Use arrows to move it or X to remove it
             // # zh_CN 编辑此步骤；箭头调整顺序，X 删除步骤
-            tooltip(ID_STEP_EDIT_BASE + i, describe("radialmenu.steps.edit.tip"));
+            tooltip(ID_STEP_EDIT_BASE + i, describe("gtnr.radialmenu.steps.edit.tip"));
 
             GuiButton up = new RadialUiIconButton(
                 ID_STEP_UP_BASE + i,
@@ -309,15 +309,21 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
         }
 
         this.buttonList
-            // #tr radialmenu.steps.add
+            // #tr gtnr.radialmenu.steps.add
             // # Add step
             // # zh_CN 添加步骤
             .add(
-                new GuiButton(ID_STEP_ADD, left, y, contentWidth(), RadialUi.ROW, I18n.format("radialmenu.steps.add")));
-        // #tr radialmenu.steps.add.tip
+                new GuiButton(
+                    ID_STEP_ADD,
+                    left,
+                    y,
+                    contentWidth(),
+                    RadialUi.ROW,
+                    I18n.format("gtnr.radialmenu.steps.add")));
+        // #tr gtnr.radialmenu.steps.add.tip
         // # Add a step at the end of the sequence
         // # zh_CN 在操作序列末尾添加步骤
-        tooltip(ID_STEP_ADD, describe("radialmenu.steps.add.tip"));
+        tooltip(ID_STEP_ADD, describe("gtnr.radialmenu.steps.add.tip"));
         return y + RadialUi.STEP;
     }
 
@@ -361,10 +367,10 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
                 clear.enabled = current != null && !current.trim()
                     .isEmpty();
                 this.buttonList.add(clear);
-                // #tr radialmenu.profileColors.clear.tip
+                // #tr gtnr.radialmenu.profile_colors.clear.tip
                 // # Clear this color to restore inheritance
                 // # zh_CN 清除此颜色，恢复继承
-                tooltip(ID_CLEAR_BASE + index, describe("radialmenu.profileColors.clear.tip"));
+                tooltip(ID_CLEAR_BASE + index, describe("gtnr.radialmenu.profile_colors.clear.tip"));
             }
             if (!editable) {
                 tooltip(ID_FIELD_BASE + index, RadialFieldControls.colorOffTip(field.key));
@@ -542,7 +548,7 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
             public String get() {
                 return spec.getString(field.key, "");
             }
-        }, RadialFieldControls.inheritedColor(field.key), I18n.format("radialmenu.editor.inherit"));
+        }, RadialFieldControls.inheritedColor(field.key), I18n.format("gtnr.radialmenu.editor.inherit"));
     }
 
     private String accentStart() {
@@ -580,10 +586,10 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
                 captureInputs();
                 RadialGuiStack.push(
                     new RadialScriptEditorGui(
-                        // #tr radialmenu.script.title
+                        // #tr gtnr.radialmenu.script.title
                         // # Script
                         // # zh_CN 脚本
-                        "radialmenu.script.title",
+                        "gtnr.radialmenu.script.title",
                         current,
                         ScriptHost.lastError(spec),
                         new RadialScriptEditorGui.Result() {
@@ -683,17 +689,21 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
             return;
         }
         if (isVisibleRow(stepsSectionTop)) {
-            // #tr radialmenu.steps.section
+            // #tr gtnr.radialmenu.steps.section
             // # Steps
             // # zh_CN 步骤
-            RadialUi.sectionHeader(I18n.format("radialmenu.steps.section"), left, stepsSectionTop, contentRight());
+            RadialUi.sectionHeader(I18n.format("gtnr.radialmenu.steps.section"), left, stepsSectionTop, contentRight());
         }
         if (stepCount == 0 && isVisibleRow(stepsSectionTop + 14)) {
             this.fontRendererObj
-                // #tr radialmenu.steps.empty
+                // #tr gtnr.radialmenu.steps.empty
                 // # This chain has no steps yet
                 // # zh_CN 此操作链还没有步骤
-                .drawString(I18n.format("radialmenu.steps.empty"), left, stepsSectionTop + 18, RadialUi.TEXT_MUTED);
+                .drawString(
+                    I18n.format("gtnr.radialmenu.steps.empty"),
+                    left,
+                    stepsSectionTop + 18,
+                    RadialUi.TEXT_MUTED);
         }
 
         for (int i = 0; i < stepCount; i++) {
@@ -825,10 +835,10 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
 
         static String of(ActionSpec spec) {
             if (spec == null || spec.type == null) {
-                // #tr radialmenu.steps.unset
+                // #tr gtnr.radialmenu.steps.unset
                 // # not set
                 // # zh_CN 未设置
-                return I18n.format("radialmenu.steps.unset");
+                return I18n.format("gtnr.radialmenu.steps.unset");
             }
             ActionType type = ActionTypes.get(spec.type);
             String name = type == null ? spec.type : I18n.format(type.labelKey);
@@ -839,32 +849,32 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
         private static String detailOf(ActionSpec spec) {
             if (ActionTypes.KEYBIND.equals(spec.type)) {
                 String binding = spec.getString(ActionTypes.PARAM_BINDING, "");
-                return binding.isEmpty() ? I18n.format("radialmenu.steps.unset") : I18n.format(binding);
+                return binding.isEmpty() ? I18n.format("gtnr.radialmenu.steps.unset") : I18n.format(binding);
             }
             if (ActionTypes.COMMAND.equals(spec.type)) {
                 String[] lines = Placeholders.splitLines(spec.getString(ActionTypes.PARAM_COMMAND, ""));
                 if (lines.length == 0) {
-                    return I18n.format("radialmenu.steps.unset");
+                    return I18n.format("gtnr.radialmenu.steps.unset");
                 }
-                // #tr radialmenu.steps.andMore
+                // #tr gtnr.radialmenu.steps.and_more
                 // # %s (+%s more)
                 // # zh_CN %s（另外还有 %s 个）
                 return lines.length == 1 ? lines[0]
-                    : I18n.format("radialmenu.steps.andMore", lines[0], lines.length - 1);
+                    : I18n.format("gtnr.radialmenu.steps.and_more", lines[0], lines.length - 1);
             }
             if (ActionTypes.PROFILE_SWITCH.equals(spec.type)) {
                 String profile = spec.getString(ActionTypes.PARAM_PROFILE, "");
-                // #tr radialmenu.steps.nextProfile
+                // #tr gtnr.radialmenu.steps.next_profile
                 // # next
                 // # zh_CN 下一个
-                return profile.isEmpty() ? I18n.format("radialmenu.steps.nextProfile") : profile;
+                return profile.isEmpty() ? I18n.format("gtnr.radialmenu.steps.next_profile") : profile;
             }
             if (ActionTypes.SEQUENCE.equals(spec.type)) {
-                // #tr radialmenu.steps.count
+                // #tr gtnr.radialmenu.steps.count
                 // # %s steps
                 // # zh_CN %s 个步骤
                 return I18n
-                    .format("radialmenu.steps.count", Integer.valueOf(spec.steps == null ? 0 : spec.steps.size()));
+                    .format("gtnr.radialmenu.steps.count", Integer.valueOf(spec.steps == null ? 0 : spec.steps.size()));
             }
             return "";
         }

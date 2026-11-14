@@ -23,7 +23,7 @@ import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 
-import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -227,10 +227,10 @@ public final class QuickTerminalRenderChecks {
             if (gui == null) {
                 AEConfig.instance.showOnlyInterfacesWithFreeSlotsInInterfaceTerminal = mode == 1 || mode == 5;
                 gui = mode >= 6 ? new GuiInterfaceTerminal(mc.thePlayer.inventory, terminal(mc.thePlayer))
-                    : new GuiQuickEncodingTerminal(mc.thePlayer.inventory, terminal(mc.thePlayer));
+                    : new QuickEncodingTerminalGui(mc.thePlayer.inventory, terminal(mc.thePlayer));
                 mc.displayGuiScreen(gui);
-                if (gui instanceof GuiQuickEncodingTerminal) {
-                    field(GuiQuickEncodingTerminal.class, "pendingPinRefresh").setBoolean(gui, false);
+                if (gui instanceof QuickEncodingTerminalGui) {
+                    field(QuickEncodingTerminalGui.class, "pendingPinRefresh").setBoolean(gui, false);
                 }
                 if (mode == 2) {
                     Object embedded = interfaceGui();
@@ -252,7 +252,7 @@ public final class QuickTerminalRenderChecks {
             if (step == 10) screenshot("expanded-" + mode);
             if (step < updates.size()) {
                 Object embedded = interfaceGui();
-                if (mode >= 2 && step > 0 && gui instanceof GuiQuickEncodingTerminal) {
+                if (mode >= 2 && step > 0 && gui instanceof QuickEncodingTerminalGui) {
                     Method freeze = embedded.getClass()
                         .getDeclaredMethod("freezeSearchResults");
                     freeze.setAccessible(true);
@@ -277,8 +277,8 @@ public final class QuickTerminalRenderChecks {
     }
 
     private Object interfaceGui() throws Exception {
-        return gui instanceof GuiQuickEncodingTerminal
-            ? field(GuiQuickEncodingTerminal.class, "interfaceTerminal").get(gui)
+        return gui instanceof QuickEncodingTerminalGui
+            ? field(QuickEncodingTerminalGui.class, "interfaceTerminal").get(gui)
             : gui;
     }
 

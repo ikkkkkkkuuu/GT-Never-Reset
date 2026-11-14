@@ -48,10 +48,10 @@ public final class NetherStarFlowerCrop extends CropCard {
 
     @Override
     public String getUnlocalizedName() {
-        // #tr gtneverreset.crop.nether_star_flower
+        // #tr gtnr.crop.nether_star_flower
         // # Nether Star Flower
         // # zh_CN 下界星花
-        return "gtneverreset.crop.nether_star_flower";
+        return "gtnr.crop.nether_star_flower";
     }
 
     @Override

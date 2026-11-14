@@ -9,10 +9,10 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class RadialConfirmGui extends ConfirmationScreen {
 
     public RadialConfirmGui(String questionKey, String subject, Result result) {
-        // #tr radialmenu.profiles.delete
+        // #tr gtnr.radialmenu.profiles.delete
         // # Delete
         // # zh_CN 删除
-        super(questionKey, subject, "radialmenu.profiles.delete", result);
+        super(questionKey, subject, "gtnr.radialmenu.profiles.delete", result);
     }
 
     public RadialConfirmGui(String questionKey, String subject, String confirmKey, Result result) {

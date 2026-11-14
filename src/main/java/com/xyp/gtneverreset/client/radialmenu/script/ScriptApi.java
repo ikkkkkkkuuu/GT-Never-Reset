@@ -135,10 +135,10 @@ final class ScriptApi {
             @Override
             public Varargs invoke(Varargs args) {
                 return task.yieldRequest(
-                    // #tr radialmenu.script.prompt
+                    // #tr gtnr.radialmenu.script.prompt
                     // # Type a value
                     // # zh_CN 输入一个值
-                    ScriptRequest.prompt(args.optjstring(1, "radialmenu.script.prompt"), args.optjstring(2, "")));
+                    ScriptRequest.prompt(args.optjstring(1, "gtnr.radialmenu.script.prompt"), args.optjstring(2, "")));
             }
         });
 

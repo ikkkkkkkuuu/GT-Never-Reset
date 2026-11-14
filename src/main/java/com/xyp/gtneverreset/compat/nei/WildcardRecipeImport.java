@@ -83,10 +83,10 @@ public final class WildcardRecipeImport {
             if (recipe.rejection != null) {
                 tooltip.add(recipe.rejection.text());
             } else {
-                // #tr gui.wildcardpattern.nei.import
+                // #tr gtnr.gui.wildcardpattern.nei.import
                 // # Import recipe with material wildcards; save to apply
                 // # zh_CN 导入配方，自动通配矿辞材料；保存后生效
-                tooltip.add(StatCollector.translateToLocal("gui.wildcardpattern.nei.import"));
+                tooltip.add(StatCollector.translateToLocal("gtnr.gui.wildcardpattern.nei.import"));
             }
             return tooltip;
         }
@@ -199,28 +199,28 @@ public final class WildcardRecipeImport {
         private String text() {
             return switch (this) {
                 case Unsupported -> {
-                    // #tr gui.wildcardpattern.nei.unsupported
+                    // #tr gtnr.gui.wildcardpattern.nei.unsupported
                     // # This recipe cannot be imported
                     // # zh_CN 此配方无法导入
-                    yield StatCollector.translateToLocal("gui.wildcardpattern.nei.unsupported");
+                    yield StatCollector.translateToLocal("gtnr.gui.wildcardpattern.nei.unsupported");
                 }
                 case Chance -> {
-                    // #tr gui.wildcardpattern.nei.chance
+                    // #tr gtnr.gui.wildcardpattern.nei.chance
                     // # Recipes with chance outputs cannot be imported
                     // # zh_CN 无法导入含概率产出的配方
-                    yield StatCollector.translateToLocal("gui.wildcardpattern.nei.chance");
+                    yield StatCollector.translateToLocal("gtnr.gui.wildcardpattern.nei.chance");
                 }
                 case Empty -> {
-                    // #tr gui.wildcardpattern.nei.empty
+                    // #tr gtnr.gui.wildcardpattern.nei.empty
                     // # This recipe needs both inputs and outputs
                     // # zh_CN 配方必须同时包含输入和输出
-                    yield StatCollector.translateToLocal("gui.wildcardpattern.nei.empty");
+                    yield StatCollector.translateToLocal("gtnr.gui.wildcardpattern.nei.empty");
                 }
                 case Slots -> {
-                    // #tr gui.wildcardpattern.nei.slots
+                    // #tr gtnr.gui.wildcardpattern.nei.slots
                     // # At most 6 inputs and 6 outputs; fluids share these slots
                     // # zh_CN 最多 6 项输入和 6 项输出，物品与流体共用数量限制
-                    yield StatCollector.translateToLocal("gui.wildcardpattern.nei.slots");
+                    yield StatCollector.translateToLocal("gtnr.gui.wildcardpattern.nei.slots");
                 }
             };
         }

@@ -106,11 +106,11 @@ public final class AdvancedIOGui {
             IKey.lang("item.advanced_io_bus.name")
                 .asWidget()
                 .pos(8, 6));
-        // #tr gui.advancedio.amount_hint
+        // #tr gtnr.gui.advancedio.amount_hint
         // # Middle-click a sample to set target stock.
         // # zh_CN 中键样本，设置目标库存。
         panel.child(
-            IKey.lang("gui.advancedio.amount_hint")
+            IKey.lang("gtnr.gui.advancedio.amount_hint")
                 .scale(0.8f)
                 .asWidget()
                 .pos(7, 17));
@@ -154,15 +154,15 @@ public final class AdvancedIOGui {
                     })
                     .tooltip(
                         t -> t.addLine(IKey.dynamic(() -> amount.getIntValue() + (fluid.getBoolValue() ? " L" : "")))
-                            .addLine(IKey.lang("gui.advancedio.amount_hint")))
+                            .addLine(IKey.lang("gtnr.gui.advancedio.amount_hint")))
                     .setEnabledIf(widget -> index < enabled.getIntValue())
                     .pos(xSlot, ySlot));
         }
-        // #tr gui.advancedio.upgrades
+        // #tr gtnr.gui.advancedio.upgrades
         // # Upgrades
         // # zh_CN 升级卡
         panel.child(
-            IKey.lang("gui.advancedio.upgrades")
+            IKey.lang("gtnr.gui.advancedio.upgrades")
                 .asWidget()
                 .pos(176, 16));
         var upgrades = new InvWrapper(part.getInventoryByName("upgrades"));
@@ -171,11 +171,11 @@ public final class AdvancedIOGui {
                 new ItemSlot().slot(new ModularSlot(upgrades, i).singletonSlotGroup())
                     .pos(176 + i % 2 * 18, 27 + i / 2 * 18));
         }
-        // #tr gui.advancedio.controls
+        // #tr gtnr.gui.advancedio.controls
         // # Modes
         // # zh_CN 工作模式
         panel.child(
-            IKey.lang("gui.advancedio.controls")
+            IKey.lang("gtnr.gui.advancedio.controls")
                 .asWidget()
                 .pos(176, 106));
         panel.child(
@@ -221,7 +221,7 @@ public final class AdvancedIOGui {
                             SchedulingMode.values()[(old + (mouse.mouseButton == 1 ? 2 : 1)) % 3]);
                     part.changed();
                 }).pos(176, 117));
-        // #tr gui.advancedio.regulate
+        // #tr gtnr.gui.advancedio.regulate
         // # Return stock above the target to ME
         // # zh_CN 将超出目标的库存送回 ME
         panel.child(
@@ -229,11 +229,11 @@ public final class AdvancedIOGui {
                 sync,
                 "regulateButton",
                 () -> regulate.getBoolValue() ? REGULATE_ON : REGULATE_OFF,
-                () -> IKey.lang("gui.advancedio.regulate")
+                () -> IKey.lang("gtnr.gui.advancedio.regulate")
                     .get() + ": "
                     + yesNo(regulate.getBoolValue()),
                 mouse -> part.setRegulate(!part.regulate())).pos(196, 117));
-        // #tr gui.advancedio.export_only
+        // #tr gtnr.gui.advancedio.export_only
         // # Only supply the machine (no product or excess stock recovery)
         // # zh_CN 仅向机器输入（不回收产物或超额库存）
         panel.child(
@@ -241,7 +241,7 @@ public final class AdvancedIOGui {
                 sync,
                 "exportOnlyButton",
                 () -> exportOnly.getBoolValue() ? EXPORT_ON : EXPORT_OFF,
-                () -> IKey.lang("gui.advancedio.export_only")
+                () -> IKey.lang("gtnr.gui.advancedio.export_only")
                     .get() + ": "
                     + yesNo(exportOnly.getBoolValue()),
                 mouse -> part.setExportOnly(!part.exportOnly())).pos(176, 139));
@@ -276,11 +276,11 @@ public final class AdvancedIOGui {
         sync.syncValue("displayQuantity", displayQuantity);
         var panel = ModularPanel.defaultPanel("advanced_io_amount", 176, 107);
         fluidAmount.setChangeListener(panel::scheduleResize);
-        // #tr gui.advancedio.set_amount
+        // #tr gtnr.gui.advancedio.set_amount
         // # Set Amount
         // # zh_CN 设置数量
         panel.child(
-            IKey.lang("gui.advancedio.set_amount")
+            IKey.lang("gtnr.gui.advancedio.set_amount")
                 .asWidget()
                 .pos(8, 6));
         var samples = new SampleItemHandler(part);
@@ -354,12 +354,12 @@ public final class AdvancedIOGui {
                     .pos(xs[step], i < 4 ? 30 : 72)
                     .size(widths[step], 20));
         }
-        // #tr gui.advancedio.set
+        // #tr gtnr.gui.advancedio.set
         // # Set
         // # zh_CN 设置
         panel.child(
             textButton(
-                () -> IKey.lang("gui.advancedio.set")
+                () -> IKey.lang("gtnr.gui.advancedio.set")
                     .get()).syncHandler(confirm)
                         .pos(120, 51)
                         .size(38, 20));
@@ -372,10 +372,10 @@ public final class AdvancedIOGui {
                     BACK.asIcon()
                         .size(16))
                 .syncHandler(back)
-                // #tr gui.advancedio.back
+                // #tr gtnr.gui.advancedio.back
                 // # Back
                 // # zh_CN 返回
-                .tooltip(t -> t.addLine(IKey.lang("gui.advancedio.back")))
+                .tooltip(t -> t.addLine(IKey.lang("gtnr.gui.advancedio.back")))
                 .pos(150, 5)
                 .size(20));
         return panel;
@@ -434,51 +434,51 @@ public final class AdvancedIOGui {
     }
 
     private static String yesNo(boolean value) {
-        // #tr gui.advancedio.yes
+        // #tr gtnr.gui.advancedio.yes
         // # On
         // # zh_CN 开
-        if (value) return IKey.lang("gui.advancedio.yes")
+        if (value) return IKey.lang("gtnr.gui.advancedio.yes")
             .get();
-        // #tr gui.advancedio.no
+        // #tr gtnr.gui.advancedio.no
         // # Off
         // # zh_CN 关
-        return IKey.lang("gui.advancedio.no")
+        return IKey.lang("gtnr.gui.advancedio.no")
             .get();
     }
 
     private static String schedulingLabel(int value) {
-        // #tr gui.advancedio.scheduling_default
+        // #tr gtnr.gui.advancedio.scheduling_default
         // # Scheduling: first to last
         // # zh_CN 调度模式：从前往后
-        if (value == 0) return IKey.lang("gui.advancedio.scheduling_default")
+        if (value == 0) return IKey.lang("gtnr.gui.advancedio.scheduling_default")
             .get();
-        // #tr gui.advancedio.scheduling_roundrobin
+        // #tr gtnr.gui.advancedio.scheduling_roundrobin
         // # Scheduling: round-robin
         // # zh_CN 调度模式：轮询
-        if (value == 1) return IKey.lang("gui.advancedio.scheduling_roundrobin")
+        if (value == 1) return IKey.lang("gtnr.gui.advancedio.scheduling_roundrobin")
             .get();
-        // #tr gui.advancedio.scheduling_random
+        // #tr gtnr.gui.advancedio.scheduling_random
         // # Scheduling: random
         // # zh_CN 调度模式：随机
-        return IKey.lang("gui.advancedio.scheduling_random")
+        return IKey.lang("gtnr.gui.advancedio.scheduling_random")
             .get();
     }
 
     private static String redstoneLabel(int value) {
-        // #tr gui.advancedio.redstone_high
+        // #tr gtnr.gui.advancedio.redstone_high
         // # Redstone: run with signal
         // # zh_CN 红石：有信号运行
-        if (value == RedstoneMode.HIGH_SIGNAL.ordinal()) return IKey.lang("gui.advancedio.redstone_high")
+        if (value == RedstoneMode.HIGH_SIGNAL.ordinal()) return IKey.lang("gtnr.gui.advancedio.redstone_high")
             .get();
-        // #tr gui.advancedio.redstone_low
+        // #tr gtnr.gui.advancedio.redstone_low
         // # Redstone: run without signal
         // # zh_CN 红石：无信号运行
-        if (value == RedstoneMode.LOW_SIGNAL.ordinal()) return IKey.lang("gui.advancedio.redstone_low")
+        if (value == RedstoneMode.LOW_SIGNAL.ordinal()) return IKey.lang("gtnr.gui.advancedio.redstone_low")
             .get();
-        // #tr gui.advancedio.redstone_ignore
+        // #tr gtnr.gui.advancedio.redstone_ignore
         // # Redstone: ignore signal
         // # zh_CN 红石：忽略信号
-        return IKey.lang("gui.advancedio.redstone_ignore")
+        return IKey.lang("gtnr.gui.advancedio.redstone_ignore")
             .get();
     }
 

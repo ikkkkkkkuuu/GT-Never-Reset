@@ -50,7 +50,7 @@ public final class OverloadedProviderGui {
         ModularPanel panel = ModularPanel.defaultPanel("overloaded_provider", 176, 184);
         InvWrapper inventory = new InvWrapper(tile);
         sync.registerSlotGroup("patterns", 9);
-        // #tr gui.overloaded.title
+        // #tr gtnr.gui.overloaded.title
         // # Overloaded Provider
         // # zh_CN 过载无线样板供应器
         panel.child(
@@ -61,7 +61,7 @@ public final class OverloadedProviderGui {
                 .child(
                     IKey.dynamic(
                         () -> tile.hasCustomName() ? tile.getCustomName()
-                            : StatCollector.translateToLocal("gui.overloaded.title"))
+                            : StatCollector.translateToLocal("gtnr.gui.overloaded.title"))
                         .asWidget()
                         .pos(5, 5)
                         .size(138, 9)
@@ -117,11 +117,11 @@ public final class OverloadedProviderGui {
                         tile.multiplyPatterns(mouse.shift, mouse.mouseButton == 1);
                 })));
         var machines = sync.syncedPanel("machines", true, (manager, handler) -> machines(tile, manager, settings));
-        // #tr gui.overloaded.machines
+        // #tr gtnr.gui.overloaded.machines
         // # Connected machines
         // # zh_CN 已连接机器
         panel.child(
-            control(115, PatternProviderGuiTextures.icon("frequency_select"), () -> tr("gui.overloaded.machines"))
+            control(115, PatternProviderGuiTextures.icon("frequency_select"), () -> tr("gtnr.gui.overloaded.machines"))
                 .name("machines")
                 .onMousePressed(button -> {
                     if (button != 0) return false;
@@ -139,11 +139,11 @@ public final class OverloadedProviderGui {
             control(
                 133,
                 returnIcon,
-                () -> tr(auto.getBoolValue() ? "gui.overloaded.return_on" : "gui.overloaded.return_off"))
-                    // #tr gui.overloaded.return_access
+                () -> tr(auto.getBoolValue() ? "gtnr.gui.overloaded.return_on" : "gtnr.gui.overloaded.return_off"))
+                    // #tr gtnr.gui.overloaded.return_access
                     // # Left-click: toggle auto return. Right-click: view output buffer.
                     // # zh_CN 左键切换自动回收，右键查看产物缓存。
-                    .tooltip(t -> t.addLine(IKey.lang("gui.overloaded.return_access")))
+                    .tooltip(t -> t.addLine(IKey.lang("gtnr.gui.overloaded.return_access")))
                     .onMousePressed(mouse -> {
                         if (mouse == 1) {
                             returns.openPanel();
@@ -173,11 +173,11 @@ public final class OverloadedProviderGui {
             .size(176, 46);
         InvWrapper inventory = new InvWrapper(tile);
         sync.registerSlotGroup("returns", 9);
-        // #tr gui.overloaded.return_buffer
+        // #tr gtnr.gui.overloaded.return_buffer
         // # Return buffer (kept when ME storage is full)
         // # zh_CN 回收缓存（ME 存储已满时保留产物）
         panel.child(
-            IKey.lang("gui.packaged.returns")
+            IKey.lang("gtnr.gui.packaged.returns")
                 .asWidget()
                 .pos(7, 6));
         for (int slot = TileEntityOverloadedProvider.PATTERNS; slot < tile.getSizeInventory(); slot++) {
@@ -186,7 +186,7 @@ public final class OverloadedProviderGui {
                     new ModularSlot(inventory, slot).slotGroup("returns")
                         .canPut(false))
                     .pos(7 + (slot - TileEntityOverloadedProvider.PATTERNS) * 18, 21)
-                    .tooltip(t -> t.addLine(IKey.lang("gui.overloaded.return_buffer"))));
+                    .tooltip(t -> t.addLine(IKey.lang("gtnr.gui.overloaded.return_buffer"))));
         }
         panel.child(ButtonWidget.panelCloseButton());
         return panel;
@@ -215,21 +215,21 @@ public final class OverloadedProviderGui {
                     : StatCollector.translateToLocal(tile.getInventoryName()))
                 .asWidget()
                 .pos(10, 8));
-        // #tr gui.overloaded.count
+        // #tr gtnr.gui.overloaded.count
         // # Machines: %s / %s
         // # zh_CN 机器：%s / %s 台
         panel.child(
             IKey.dynamic(
                 () -> StatCollector.translateToLocalFormatted(
-                    "gui.overloaded.count",
+                    "gtnr.gui.overloaded.count",
                     count.getIntValue(),
                     TileEntityOverloadedProvider.MAX_TARGETS))
                 .asWidget()
                 .pos(10, 29));
-        // #tr gui.overloaded.round_robin
+        // #tr gtnr.gui.overloaded.round_robin
         // # Mode: round robin
         // # zh_CN 模式：轮询逐台
-        // #tr gui.overloaded.fill_first
+        // #tr gtnr.gui.overloaded.fill_first
         // # Mode: fill first
         // # zh_CN 模式：优先填满
         panel.child(
@@ -237,7 +237,8 @@ public final class OverloadedProviderGui {
                 216,
                 22,
                 194,
-                () -> tr(distribution.getBoolValue() ? "gui.overloaded.round_robin" : "gui.overloaded.fill_first"),
+                () -> tr(
+                    distribution.getBoolValue() ? "gtnr.gui.overloaded.round_robin" : "gtnr.gui.overloaded.fill_first"),
                 sync,
                 tile,
                 tile::toggleDistribution));
@@ -330,7 +331,7 @@ public final class OverloadedProviderGui {
                     .asWidget()
                     .pos(36, y + 12)
                     .size(252, 10));
-            // #tr gui.overloaded.retry
+            // #tr gtnr.gui.overloaded.retry
             // # Retry
             // # zh_CN 重试
             ParentWidget<?> rowActions = new ParentWidget<>().name("row_actions_" + row)
@@ -345,7 +346,7 @@ public final class OverloadedProviderGui {
                     .size(52, 20)
                     .background(WirelessCardGuiTextures.BUTTONS[1])
                     .hoverBackground(WirelessCardGuiTextures.BUTTONS[2])
-                    .overlay(IKey.lang("gui.overloaded.retry"))
+                    .overlay(IKey.lang("gtnr.gui.overloaded.retry"))
                     .onMousePressed(mouse -> {
                         if (mouse == 0) actions.request(0, identity.getValue());
                         return true;
@@ -353,7 +354,7 @@ public final class OverloadedProviderGui {
                     .setEnabledIf(
                         widget -> !title.getValue()
                             .isEmpty()));
-            // #tr gui.overloaded.unlink
+            // #tr gtnr.gui.overloaded.unlink
             // # Unlink
             // # zh_CN 解绑
             rowActions.child(
@@ -362,7 +363,7 @@ public final class OverloadedProviderGui {
                     .size(56, 20)
                     .background(WirelessCardGuiTextures.BUTTONS[1])
                     .hoverBackground(WirelessCardGuiTextures.BUTTONS[2])
-                    .overlay(IKey.lang("gui.overloaded.unlink"))
+                    .overlay(IKey.lang("gtnr.gui.overloaded.unlink"))
                     .onMousePressed(mouse -> {
                         if (mouse == 0) actions.request(1, identity.getValue());
                         return true;
@@ -370,10 +371,10 @@ public final class OverloadedProviderGui {
                     .setEnabledIf(
                         widget -> !title.getValue()
                             .isEmpty())
-                    // #tr gui.overloaded.unlink_pending
+                    // #tr gtnr.gui.overloaded.unlink_pending
                     // # Deliver pending inputs before unlinking.
                     // # zh_CN 有待送材料时不能解绑，请先完成投料。
-                    .tooltip(t -> t.addLine(IKey.lang("gui.overloaded.unlink_pending"))));
+                    .tooltip(t -> t.addLine(IKey.lang("gtnr.gui.overloaded.unlink_pending"))));
         }
         panel.child(button(10, 203, 28, () -> "<", sync, tile, () -> page[0] = Math.max(0, page[0] - 1)));
         panel.child(
@@ -396,10 +397,10 @@ public final class OverloadedProviderGui {
                         (tile.connections()
                             .size() - 1) / PAGE_SIZE),
                     page[0] + 1)));
-        // #tr gui.overloaded.return_on
+        // #tr gtnr.gui.overloaded.return_on
         // # Auto return: ON
         // # zh_CN 自动回收：开
-        // #tr gui.overloaded.return_off
+        // #tr gtnr.gui.overloaded.return_off
         // # Auto return: OFF
         // # zh_CN 自动回收：关
         panel.child(
@@ -407,11 +408,12 @@ public final class OverloadedProviderGui {
                 140,
                 203,
                 146,
-                () -> tr(autoReturn.getBoolValue() ? "gui.overloaded.return_on" : "gui.overloaded.return_off"),
+                () -> tr(
+                    autoReturn.getBoolValue() ? "gtnr.gui.overloaded.return_on" : "gtnr.gui.overloaded.return_off"),
                 sync,
                 tile,
                 tile::toggleAutoReturn));
-        // #tr gui.overloaded.back
+        // #tr gtnr.gui.overloaded.back
         // # Back
         // # zh_CN 返回
         panel.child(
@@ -419,7 +421,7 @@ public final class OverloadedProviderGui {
                 .size(114, 20)
                 .background(WirelessCardGuiTextures.BUTTONS[1])
                 .hoverBackground(WirelessCardGuiTextures.BUTTONS[2])
-                .overlay(IKey.lang("gui.overloaded.back"))
+                .overlay(IKey.lang("gtnr.gui.overloaded.back"))
                 .onMousePressed(mouse -> {
                     panel.closeIfOpen();
                     return true;
@@ -452,29 +454,31 @@ public final class OverloadedProviderGui {
     private static String title(String value) {
         String[] parts = value.split("\\|", -1);
         if (parts.length != 3) return "";
-        return tr(parts[0]) + " (" + parts[1] + ") " + tr("gui.overloaded.face." + parts[2]);
+        return tr(parts[0]) + " (" + parts[1] + ") " + tr("gtnr.gui.overloaded.face." + parts[2]);
     }
 
     private static String status(String value) {
         if (value.isEmpty()) return "";
         String[] parts = value.split(":");
-        // #tr gui.overloaded.status.0
+        // #tr gtnr.gui.overloaded.status.0
         // # Unloaded or missing
         // # zh_CN 区块未加载或机器已移除
-        // #tr gui.overloaded.status.1
+        // #tr gtnr.gui.overloaded.status.1
         // # ME network offline
         // # zh_CN ME 网络未就绪
-        // #tr gui.overloaded.status.2
+        // #tr gtnr.gui.overloaded.status.2
         // # Waiting for input space
         // # zh_CN 等待输入空间
-        // #tr gui.overloaded.status.3
+        // #tr gtnr.gui.overloaded.status.3
         // # Ready
         // # zh_CN 就绪
-        // #tr gui.overloaded.pending
+        // #tr gtnr.gui.overloaded.pending
         // # %s | Pending: %s types
         // # zh_CN %s | 待送 %s 种
-        return StatCollector
-            .translateToLocalFormatted("gui.overloaded.pending", tr("gui.overloaded.status." + parts[0]), parts[1]);
+        return StatCollector.translateToLocalFormatted(
+            "gtnr.gui.overloaded.pending",
+            tr("gtnr.gui.overloaded.status." + parts[0]),
+            parts[1]);
     }
 
     private static final class TargetActions extends SyncHandler {
@@ -524,22 +528,22 @@ public final class OverloadedProviderGui {
     }
 
     private static String tr(String key) {
-        // #tr gui.overloaded.face.0
+        // #tr gtnr.gui.overloaded.face.0
         // # Bottom
         // # zh_CN 底
-        // #tr gui.overloaded.face.1
+        // #tr gtnr.gui.overloaded.face.1
         // # Top
         // # zh_CN 顶
-        // #tr gui.overloaded.face.2
+        // #tr gtnr.gui.overloaded.face.2
         // # North
         // # zh_CN 北
-        // #tr gui.overloaded.face.3
+        // #tr gtnr.gui.overloaded.face.3
         // # South
         // # zh_CN 南
-        // #tr gui.overloaded.face.4
+        // #tr gtnr.gui.overloaded.face.4
         // # West
         // # zh_CN 西
-        // #tr gui.overloaded.face.5
+        // #tr gtnr.gui.overloaded.face.5
         // # East
         // # zh_CN 东
         return StatCollector.translateToLocal(key);

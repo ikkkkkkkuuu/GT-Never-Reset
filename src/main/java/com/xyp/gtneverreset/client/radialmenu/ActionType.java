@@ -23,56 +23,56 @@ public class ActionType {
 
     public String tooltipKey() {
         switch (labelKey) {
-            // #tr radialmenu.action.keybind
+            // #tr gtnr.radialmenu.action.keybind
             // # Keybind
             // # zh_CN 按键绑定
-            case "radialmenu.action.keybind":
-                // #tr radialmenu.action.keybind.tip
+            case "gtnr.radialmenu.action.keybind":
+                // #tr gtnr.radialmenu.action.keybind.tooltip
                 // # Trigger a keybinding, including bindings with no assigned key
                 // # zh_CN 触发按键绑定，也支持未分配按键的绑定
-                return "radialmenu.action.keybind.tip";
-            // #tr radialmenu.action.profileSwitch
+                return "gtnr.radialmenu.action.keybind.tooltip";
+            // #tr gtnr.radialmenu.action.profile_switch
             // # Profile
             // # zh_CN 配置
-            case "radialmenu.action.profileSwitch":
-                // #tr radialmenu.action.profileSwitch.tip
+            case "gtnr.radialmenu.action.profile_switch":
+                // #tr gtnr.radialmenu.action.profile_switch.tooltip
                 // # Switch profiles. Leave blank to cycle to the next profile
                 // # zh_CN 切换配置方案；留空则切换到下一个
-                return "radialmenu.action.profileSwitch.tip";
-            // #tr radialmenu.action.command
+                return "gtnr.radialmenu.action.profile_switch.tooltip";
+            // #tr gtnr.radialmenu.action.command
             // # Command
             // # zh_CN 命令
-            case "radialmenu.action.command":
-                // #tr radialmenu.action.command.tip
+            case "gtnr.radialmenu.action.command":
+                // #tr gtnr.radialmenu.action.command.tooltip
                 // # Send chat messages or slash commands
                 // # zh_CN 发送聊天消息或斜杠命令
-                return "radialmenu.action.command.tip";
-            // #tr radialmenu.action.submenu
+                return "gtnr.radialmenu.action.command.tooltip";
+            // #tr gtnr.radialmenu.action.submenu
             // # Submenu
             // # zh_CN 子菜单
-            case "radialmenu.action.submenu":
-                // #tr radialmenu.action.submenu.tip
+            case "gtnr.radialmenu.action.submenu":
+                // #tr gtnr.radialmenu.action.submenu.tooltip
                 // # Open a submenu. Shift-click a slot in it to edit its action
                 // # zh_CN 打开子菜单；Shift+点击其中的槽位以编辑动作
-                return "radialmenu.action.submenu.tip";
-            // #tr radialmenu.action.sequence
+                return "gtnr.radialmenu.action.submenu.tooltip";
+            // #tr gtnr.radialmenu.action.sequence
             // # Chain
             // # zh_CN 操作链
-            case "radialmenu.action.sequence":
-                // #tr radialmenu.action.sequence.tip
+            case "gtnr.radialmenu.action.sequence":
+                // #tr gtnr.radialmenu.action.sequence.tooltip
                 // # Run the configured steps in order
                 // # zh_CN 按顺序执行设定的步骤
-                return "radialmenu.action.sequence.tip";
-            // #tr radialmenu.action.script
+                return "gtnr.radialmenu.action.sequence.tooltip";
+            // #tr gtnr.radialmenu.action.script
             // # Script
             // # zh_CN 脚本
-            case "radialmenu.action.script":
-                // #tr radialmenu.action.script.tip
+            case "gtnr.radialmenu.action.script":
+                // #tr gtnr.radialmenu.action.script.tooltip
                 // # Run Lua scripts to read server replies and create menus. See the scripting guide
                 // # zh_CN 运行 Lua 脚本，读取服务器回复并创建菜单；详见脚本指南
-                return "radialmenu.action.script.tip";
+                return "gtnr.radialmenu.action.script.tooltip";
             default:
-                return labelKey + ".tip";
+                return labelKey + ".tooltip";
         }
     }
 

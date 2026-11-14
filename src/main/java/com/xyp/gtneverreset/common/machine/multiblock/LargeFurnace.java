@@ -48,8 +48,9 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
     private static final int BASE_PARALLELS = 64;
     private static final int BASE_THREADS = 6;
     private static final int CASING_TEXTURE_ID = 16;
+    private static final String STRUCTURE_NAME = "large_furnace";
     private static final String STRUCTURE_PIECE = "main";
-    private static final int STRUCTURE_OFFSET_X = 5, STRUCTURE_OFFSET_Y = 11, STRUCTURE_OFFSET_Z = 0;
+    private static final int HORIZONTAL_OFFSET = 5, VERTICAL_OFFSET = 11, DEPTH_OFFSET = 0;
     private static final IIconContainer FRONT = Textures.BlockIcons
         .custom(ModList.GTNeverReset.getResourceLocation(), "parallel/furnace_front");
     private static final IIconContainer ACTIVE = Textures.BlockIcons
@@ -59,7 +60,7 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
         return (int) Math.min(Integer.MAX_VALUE, (long) base << Math.min(30, Math.max(0, tier - 1)));
     }
 
-    private IStructureDefinition<LargeFurnace> definition;
+    private IStructureDefinition<LargeFurnace> structureDefinition;
 
     public LargeFurnace(int id, String name, String regionalName) {
         super(id, name, regionalName);
@@ -76,9 +77,9 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
 
     @Override
     public IStructureDefinition<LargeFurnace> getStructureDefinition() {
-        if (definition == null) {
+        if (structureDefinition == null) {
             var builder = StructureDefinition.<LargeFurnace>builder()
-                .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load("large_furnace")))
+                .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load(STRUCTURE_NAME)))
                 .addElement(
                     'L',
                     ofChain(
@@ -99,14 +100,14 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
             for (char c : new char[] { 'B', 'C', 'G', 'K', 'M' }) {
                 builder.addElement(c, ofBlock(Blocks.iron_bars, 0));
             }
-            definition = builder.build();
+            structureDefinition = builder.build();
         }
-        return definition;
+        return structureDefinition;
     }
 
     @Override
     public void construct(ItemStack stack, boolean hintsOnly) {
-        buildPiece(STRUCTURE_PIECE, stack, hintsOnly, STRUCTURE_OFFSET_X, STRUCTURE_OFFSET_Y, STRUCTURE_OFFSET_Z);
+        buildPiece(STRUCTURE_PIECE, stack, hintsOnly, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET);
     }
 
     @Override
@@ -115,9 +116,9 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
         return survivalBuildPiece(
             STRUCTURE_PIECE,
             stack,
-            STRUCTURE_OFFSET_X,
-            STRUCTURE_OFFSET_Y,
-            STRUCTURE_OFFSET_Z,
+            HORIZONTAL_OFFSET,
+            VERTICAL_OFFSET,
+            DEPTH_OFFSET,
             elementBudget,
             environment,
             false,
@@ -126,7 +127,7 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
 
     @Override
     protected void checkMachineStructure(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        checkPiece(STRUCTURE_PIECE, STRUCTURE_OFFSET_X, STRUCTURE_OFFSET_Y, STRUCTURE_OFFSET_Z, errors);
+        checkPiece(STRUCTURE_PIECE, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors);
     }
 
     @Override
@@ -136,6 +137,11 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
         checkHatchMin(errors, Energy.or(ExoticEnergy), 1);
         checkHatchMin(errors, Maintenance, 1);
         checkHatchMax(errors, Maintenance, 1);
+    }
+
+    @Override
+    public RecipeMap<?> getRecipeMap() {
+        return RecipeMaps.furnaceRecipes;
     }
 
     @Override
@@ -155,13 +161,13 @@ public final class LargeFurnace extends GTNRMultiBlockBase<LargeFurnace> impleme
     }
 
     @Override
-    public String getTooltipPath() {
-        return "large-furnace";
+    public String getLocalNameKey() {
+        return "gtnr.machine.large_furnace.name";
     }
 
     @Override
-    public RecipeMap<?> getRecipeMap() {
-        return RecipeMaps.furnaceRecipes;
+    public String getTooltipPath() {
+        return "large-furnace";
     }
 
     @Override

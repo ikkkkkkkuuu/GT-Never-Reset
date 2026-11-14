@@ -9,7 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
 import com.xyp.gtneverreset.common.gui.WirelessTerminalGuiHandler;
-import com.xyp.gtneverreset.common.gui.container.ContainerQuickEncodingTerminal;
+import com.xyp.gtneverreset.common.gui.container.QuickEncodingTerminalContainer;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
 
@@ -40,7 +40,7 @@ public final class WirelessTerminalSession {
             player.addChatMessage(PlayerMessages.DeviceNotPowered.get());
             return;
         }
-        if (player.openContainer instanceof ContainerQuickEncodingTerminal container) container.restoreNativePinRows();
+        if (player.openContainer instanceof QuickEncodingTerminalContainer container) container.restoreNativePinRows();
         WirelessTerminalGuiType type = requested == null
             ? getLastGuiMode(stack, WirelessTerminalGuiType.WirelessDualInterfaceTerminal)
             : requested;

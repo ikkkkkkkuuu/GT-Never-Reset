@@ -72,8 +72,9 @@ import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
 public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBreeder>
     implements ISurvivalConstructable, MultiblockTooltipSource {
 
-    private static final String PIECE = "main";
-    private static final int OFFSET_X = 2, OFFSET_Y = 3, OFFSET_Z = 0;
+    private static final String STRUCTURE_NAME = "large_crop_breeder";
+    private static final String STRUCTURE_PIECE = "main";
+    private static final int HORIZONTAL_OFFSET = 2, VERTICAL_OFFSET = 3, DEPTH_OFFSET = 0;
     private static final int MIN_CASINGS = 24;
     private static final int FERTILIZER_PER_PARALLEL = 28_800;
     private static final int BASE_EUT = 512;
@@ -92,7 +93,7 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     private boolean washingMode;
     private int activeWashStat;
 
-    private IStructureDefinition<LargeCropBreeder> definition;
+    private IStructureDefinition<LargeCropBreeder> structureDefinition;
     private int casingCount;
     private int revision;
     private boolean planDirty = true;
@@ -127,9 +128,9 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
 
     @Override
     public IStructureDefinition<LargeCropBreeder> getStructureDefinition() {
-        if (definition == null) {
-            definition = StructureDefinition.<LargeCropBreeder>builder()
-                .addShape(PIECE, transpose(MultiblockStructureLoader.load("large_crop_breeder")))
+        if (structureDefinition == null) {
+            structureDefinition = StructureDefinition.<LargeCropBreeder>builder()
+                .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load(STRUCTURE_NAME)))
                 .addElement(
                     'A',
                     buildHatchAdder(LargeCropBreeder.class)
@@ -142,24 +143,34 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
                 .addElement('D', ofBlock(Blocks.dirt, 0))
                 .build();
         }
-        return definition;
+        return structureDefinition;
     }
 
     @Override
     public void construct(ItemStack stack, boolean hintsOnly) {
-        buildPiece(PIECE, stack, hintsOnly, OFFSET_X, OFFSET_Y, OFFSET_Z);
+        buildPiece(STRUCTURE_PIECE, stack, hintsOnly, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET);
     }
 
     @Override
     public int survivalConstruct(ItemStack stack, int budget, ISurvivalBuildEnvironment env) {
         if (mMachine) return -1;
-        return survivalBuildPiece(PIECE, stack, OFFSET_X, OFFSET_Y, OFFSET_Z, budget, env, false, true);
+        return survivalBuildPiece(
+            STRUCTURE_PIECE,
+            stack,
+            HORIZONTAL_OFFSET,
+            VERTICAL_OFFSET,
+            DEPTH_OFFSET,
+            budget,
+            env,
+            false,
+            true);
     }
 
     @Override
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
         casingCount = 0;
-        if (checkPiece(PIECE, OFFSET_X, OFFSET_Y, OFFSET_Z, errors)) collectTooltipStructureRequirements(errors);
+        if (checkPiece(STRUCTURE_PIECE, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors))
+            collectTooltipStructureRequirements(errors);
     }
 
     @Override
@@ -178,6 +189,11 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     private void requireHatch(List<StructureError> errors, HatchElement hatch, int count) {
         if (!StructureTooltipHooks.onCheckHatches(this, 1, Integer.MAX_VALUE, hatch) && count == 0)
             errors.add(StructureErrors.hatchCount(ErrorType.TOO_FEW, hatch, 0, 1));
+    }
+
+    @Override
+    public RecipeMap<?> getRecipeMap() {
+        return null;
     }
 
     @Override
@@ -442,6 +458,11 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     }
 
     @Override
+    public String getLocalNameKey() {
+        return "gtnr.machine.large_crop_breeder.name";
+    }
+
+    @Override
     public MultiblockTooltipBuilder createTooltip() {
         return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
             .toolTipFinisher();
@@ -449,10 +470,10 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
 
     @Override
     public String getTooltipMachineType() {
-        // #tr gtnr.crop_breeder.type
+        // #tr gtnr.machine.large_crop_breeder.recipe_type
         // # Crop Breeder
         // # zh_CN 作物杂交机
-        return StatCollector.translateToLocal("gtnr.crop_breeder.type");
+        return StatCollector.translateToLocal("gtnr.machine.large_crop_breeder.recipe_type");
     }
 
     @Override
@@ -525,6 +546,33 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
         return plan;
     }
 
+    public int getSuccessChance() {
+        if (!getActiveCrop().isEmpty()) return activeChance;
+        if (archive.containsKey(targetCrop)) return CropBreedingChance.percent(CropRegistry.instance.get(targetCrop));
+        List<ICropMutation> steps = getPlan().steps;
+        return steps.isEmpty() ? 0
+            : CropBreedingChance.percent(
+                steps.get(0)
+                    .getOutput());
+    }
+
+    public int getCurrentParallel() {
+        return mMaxProgresstime > 0 ? activeParallel : washingMode ? 1 : getMaxParallelRecipes();
+    }
+
+    public boolean isWashingMode() {
+        return washingMode;
+    }
+
+    public boolean showsWashingOperation() {
+        return mMaxProgresstime > 0 ? activeWashStat != 0 : washingMode;
+    }
+
+    public void toggleWashingMode() {
+        washingMode = !washingMode;
+        markChanged(false);
+    }
+
     @Override
     public void saveNBTData(NBTTagCompound tag) {
         super.saveNBTData(tag);
@@ -580,11 +628,6 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     }
 
     @Override
-    public RecipeMap<?> getRecipeMap() {
-        return null;
-    }
-
-    @Override
     public int getMaxParallelRecipes() {
         return 1 << Math.max(0, Math.min(14, (GTUtility.getTier(getMaxInputVoltage()) - VoltageIndex.HV) / 2));
     }
@@ -612,33 +655,6 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     @Override
     public boolean doesBindPlayerInventory() {
         return true;
-    }
-
-    public int getSuccessChance() {
-        if (!getActiveCrop().isEmpty()) return activeChance;
-        if (archive.containsKey(targetCrop)) return CropBreedingChance.percent(CropRegistry.instance.get(targetCrop));
-        List<ICropMutation> steps = getPlan().steps;
-        return steps.isEmpty() ? 0
-            : CropBreedingChance.percent(
-                steps.get(0)
-                    .getOutput());
-    }
-
-    public int getCurrentParallel() {
-        return mMaxProgresstime > 0 ? activeParallel : washingMode ? 1 : getMaxParallelRecipes();
-    }
-
-    public boolean isWashingMode() {
-        return washingMode;
-    }
-
-    public boolean showsWashingOperation() {
-        return mMaxProgresstime > 0 ? activeWashStat != 0 : washingMode;
-    }
-
-    public void toggleWashingMode() {
-        washingMode = !washingMode;
-        markChanged(false);
     }
 
     private void markChanged(boolean replan) {

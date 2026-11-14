@@ -42,11 +42,10 @@ public final class InterfaceTeleportation {
         targetWorld.getChunkFromBlockCoords(target.x, target.z);
         int[] arrival = findSafeInterfaceArrival(targetWorld, target.x, target.y, target.z, target.getSide());
         if (arrival == null) {
-            // #tr gtneverreset.message.interface_teleport.no_safe_location
+            // #tr gtnr.message.interface_teleport.no_safe_location
             // # No safe standing space was found beside this interface.
             // # zh_CN 未在该接口旁找到安全的落脚位置。
-            player.addChatMessage(
-                new ChatComponentTranslation("gtneverreset.message.interface_teleport.no_safe_location"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.message.interface_teleport.no_safe_location"));
             return false;
         }
 
@@ -69,11 +68,10 @@ public final class InterfaceTeleportation {
     }
 
     private static void sendInterfaceDimensionUnavailable(EntityPlayerMP player) {
-        // #tr gtneverreset.message.interface_teleport.dimension_unavailable
+        // #tr gtnr.message.interface_teleport.dimension_unavailable
         // # The interface dimension is currently unavailable.
         // # zh_CN 接口所在维度当前不可用。
-        player.addChatMessage(
-            new ChatComponentTranslation("gtneverreset.message.interface_teleport.dimension_unavailable"));
+        player.addChatMessage(new ChatComponentTranslation("gtnr.message.interface_teleport.dimension_unavailable"));
     }
 
     private static int[] findSafeInterfaceArrival(WorldServer world, int x, int y, int z,

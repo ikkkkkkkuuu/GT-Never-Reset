@@ -14,8 +14,8 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
-import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal.InterfacePatternRows;
-import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal.InterfaceRowFilter;
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui.InterfacePatternRows;
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui.InterfaceRowFilter;
 
 import appeng.client.gui.implementations.GuiInterfaceTerminal;
 import appeng.core.AEConfig;

@@ -2,20 +2,20 @@ package com.xyp.gtneverreset.common.packet;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 
-import com.xyp.gtneverreset.common.gui.container.ContainerQuickEncodingTerminal;
+import com.xyp.gtneverreset.common.gui.container.QuickEncodingTerminalContainer;
 import com.xyp.gtneverreset.common.me.InterfaceTeleportation;
 import com.xyp.gtneverreset.common.me.InterfaceTerminalLocation;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
-public final class CPacketTeleportToInterface implements IMessage {
+public final class TeleportToInterfacePacket implements IMessage {
 
     private long entryId;
 
-    public CPacketTeleportToInterface() {}
+    public TeleportToInterfacePacket() {}
 
-    public CPacketTeleportToInterface(long entryId) {
+    public TeleportToInterfacePacket(long entryId) {
         this.entryId = entryId;
     }
 
@@ -30,7 +30,7 @@ public final class CPacketTeleportToInterface implements IMessage {
     }
 
     public void handle(EntityPlayerMP player) {
-        if (!(player.openContainer instanceof ContainerQuickEncodingTerminal container)) return;
+        if (!(player.openContainer instanceof QuickEncodingTerminalContainer container)) return;
         InterfaceTerminalLocation target = container.getTrackedInterfaceLocation(entryId);
         if (target != null) InterfaceTeleportation.teleportNearInterface(player, target);
     }

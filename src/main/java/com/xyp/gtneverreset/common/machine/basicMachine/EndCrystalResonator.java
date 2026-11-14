@@ -73,40 +73,40 @@ public final class EndCrystalResonator extends MTETieredMachineBlock {
     @Override
     public String[] getDescription() {
         return new String[] {
-            // #tr tooltip.gtnr.crystal_resonator.generation
+            // #tr gtnr.tooltip.crystal_resonator.generation
             // # Generates EU from a Stable End Crystal without pollution
             // # zh_CN 利用稳定末影水晶发电，无污染
-            StatCollector.translateToLocal("tooltip.gtnr.crystal_resonator.generation"),
-            // #tr tooltip.gtnr.crystal_resonator.crystal
+            StatCollector.translateToLocal("gtnr.tooltip.crystal_resonator.generation"),
+            // #tr gtnr.tooltip.crystal_resonator.crystal
             // # Requires a Stable End Crystal directly above; it is not consumed
             // # zh_CN 正上方一格需要稳定末影水晶；运行时不消耗水晶
-            StatCollector.translateToLocal("tooltip.gtnr.crystal_resonator.crystal"),
-            // #tr tooltip.gtnr.crystal_resonator.voltage
+            StatCollector.translateToLocal("gtnr.tooltip.crystal_resonator.crystal"),
+            // #tr gtnr.tooltip.crystal_resonator.voltage
             // # Rated voltage: %s
             // # zh_CN 额定电压：%s
             StatCollector.translateToLocalFormatted(
-                "tooltip.gtnr.crystal_resonator.voltage",
+                "gtnr.tooltip.crystal_resonator.voltage",
                 TooltipHelper.voltageText(V[mTier])),
-            // #tr tooltip.gtnr.crystal_resonator.amperage
+            // #tr gtnr.tooltip.crystal_resonator.amperage
             // # Equivalent current: %s A
             // # zh_CN 等效电流：%s A
             StatCollector.translateToLocalFormatted(
-                "tooltip.gtnr.crystal_resonator.amperage",
+                "gtnr.tooltip.crystal_resonator.amperage",
                 TooltipHelper.ampText(generationForTier(mTier) / V[mTier])),
-            // #tr tooltip.gtnr.crystal_resonator.rate
+            // #tr gtnr.tooltip.crystal_resonator.rate
             // # Generation: %s
             // # zh_CN 发电量：%s
             StatCollector.translateToLocalFormatted(
-                "tooltip.gtnr.crystal_resonator.rate",
+                "gtnr.tooltip.crystal_resonator.rate",
                 TooltipHelper.euRateText(generationForTier(mTier))),
-            // #tr tooltip.gtnr.crystal_resonator.wireless
+            // #tr gtnr.tooltip.crystal_resonator.wireless
             // # Deposits EU into the owner's GT wireless network every second
             // # zh_CN 每秒将 EU 存入机主所属的 GT 无线电网
-            StatCollector.translateToLocal("tooltip.gtnr.crystal_resonator.wireless"),
-            // #tr tooltip.gtnr.crystal_resonator.placement
+            StatCollector.translateToLocal("gtnr.tooltip.crystal_resonator.wireless"),
+            // #tr gtnr.tooltip.crystal_resonator.placement
             // # Right-click the top with a Stable End Crystal to place it
             // # zh_CN 手持稳定末影水晶右键顶面放置
-            StatCollector.translateToLocal("tooltip.gtnr.crystal_resonator.placement") };
+            StatCollector.translateToLocal("gtnr.tooltip.crystal_resonator.placement") };
     }
 
     @Override
@@ -125,19 +125,19 @@ public final class EndCrystalResonator extends MTETieredMachineBlock {
         NBTTagCompound tag = accessor.getNBTData();
         if (!tag.hasKey("resonatorGeneration")) return;
         if (tag.getBoolean("resonatorGenerating")) {
-            // #tr waila.gtnr.crystal_resonator.generating
+            // #tr gtnr.waila.gtnr.crystal_resonator.generating
             // # Generating power
             // # zh_CN 正在发电
-            lines.add(StatCollector.translateToLocal("waila.gtnr.crystal_resonator.generating"));
+            lines.add(StatCollector.translateToLocal("gtnr.waila.gtnr.crystal_resonator.generating"));
         } else {
-            // #tr waila.gtnr.crystal_resonator.idle
+            // #tr gtnr.waila.gtnr.crystal_resonator.idle
             // # Not generating power
             // # zh_CN 未在发电
-            lines.add(StatCollector.translateToLocal("waila.gtnr.crystal_resonator.idle"));
+            lines.add(StatCollector.translateToLocal("gtnr.waila.gtnr.crystal_resonator.idle"));
         }
         lines.add(
             StatCollector.translateToLocalFormatted(
-                "tooltip.gtnr.crystal_resonator.rate",
+                "gtnr.tooltip.crystal_resonator.rate",
                 TooltipHelper.euRateText(tag.getLong("resonatorGeneration"))));
     }
 

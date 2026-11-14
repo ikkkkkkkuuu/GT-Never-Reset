@@ -9,8 +9,8 @@ import org.spongepowered.asm.mixin.injection.Coerce;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal.InterfacePatternRows;
-import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal.InterfaceRowFilter;
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui.InterfacePatternRows;
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui.InterfaceRowFilter;
 
 import appeng.client.gui.implementations.GuiInterfaceTerminal;
 

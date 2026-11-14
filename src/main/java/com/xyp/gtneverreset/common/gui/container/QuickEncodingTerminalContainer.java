@@ -74,7 +74,7 @@ import appeng.util.item.AEItemStack;
  * One server container that keeps AE2's storage/pattern terminal active while delegating
  * interface-terminal discovery and clicks to AE2's original implementation.
  */
-public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
+public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
 
     public static final int STORAGE_COLUMNS = 6;
     private static final Field TRACKED_BY_ID = findTrackedById();
@@ -126,7 +126,7 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
     private boolean nativePinRowsCaptured;
     private boolean encodingWithLogicalInventorySize;
 
-    public ContainerQuickEncodingTerminal(InventoryPlayer inventoryPlayer, ITerminalHost host) {
+    public QuickEncodingTerminalContainer(InventoryPlayer inventoryPlayer, ITerminalHost host) {
         super(inventoryPlayer, host, true);
         ContainerOpenContext context = new ContainerOpenContext(host);
         context.setWorld(inventoryPlayer.player.worldObj);
@@ -1061,11 +1061,11 @@ public final class ContainerQuickEncodingTerminal extends ContainerPatternTerm {
         ItemStack unusedContainers = hand.copy();
         unusedContainers.stackSize--;
         if (!canFullyStore(player.inventory, unusedContainers)) {
-            // #tr gui.gtneverreset.quick_terminal.container_inventory_full
+            // #tr gtnr.gui.gtneverreset.quick_terminal.container_inventory_full
             // # No inventory space for the remaining empty containers.
             // # zh_CN 物品栏没有空间存放剩余的空容器。
             player.addChatMessage(
-                new ChatComponentTranslation("gui.gtneverreset.quick_terminal.container_inventory_full"));
+                new ChatComponentTranslation("gtnr.gui.gtneverreset.quick_terminal.container_inventory_full"));
             return false;
         }
 

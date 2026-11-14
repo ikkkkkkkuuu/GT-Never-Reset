@@ -13,8 +13,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.xyp.gtneverreset.client.gui.CompactTerminalSwitchButton;
 import com.xyp.gtneverreset.client.gui.QuickTerminalButtonTextures;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
-import com.xyp.gtneverreset.common.packet.CPacketSwitchGuis;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
+import com.xyp.gtneverreset.common.packet.SwitchGuisPacket;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
 
 import appeng.api.config.ActionItems;
@@ -64,11 +64,11 @@ public abstract class MixinGuiCraftingTerm extends AEBaseGui {
             pinsButton.yPosition = y;
             y += 20;
         }
-        // #tr gtneverreset.tooltip.switch_to_dual_interface_terminal
+        // #tr gtnr.tooltip.switch_to_dual_interface_terminal
         // # Switch to Dual Interface Terminal
         // # zh_CN 切换到二合一接口终端
         this.gtneverreset$switchBackButton = new CompactTerminalSwitchButton(
-            I18n.format("gtneverreset.tooltip.switch_to_dual_interface_terminal"));
+            I18n.format("gtnr.tooltip.switch_to_dual_interface_terminal"));
         this.gtneverreset$switchBackButton.xPosition = x;
         this.gtneverreset$switchBackButton.yPosition = y;
         this.buttonList.add(this.gtneverreset$switchBackButton);
@@ -78,7 +78,7 @@ public abstract class MixinGuiCraftingTerm extends AEBaseGui {
     private void gtneverreset$onSwitchBack(GuiButton btn, CallbackInfo ci) {
         if (this.gtneverreset$switchBackButton != null && btn == this.gtneverreset$switchBackButton) {
             AEBaseGui.setSwitchingGuis(true);
-            NetWorkHandler.sendToServer(new CPacketSwitchGuis(WirelessTerminalGuiType.WirelessDualInterfaceTerminal));
+            NetWorkHandler.sendToServer(new SwitchGuisPacket(WirelessTerminalGuiType.WirelessDualInterfaceTerminal));
         }
     }
 

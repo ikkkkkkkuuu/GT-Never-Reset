@@ -67,10 +67,10 @@ final class UniversalWandDropBuffer {
                         "Universal Wand AE insertion outcome unknown; retained a quarantined recovery entry",
                         failure);
                     player.addChatMessage(
-                        // #tr gtneverreset.universal_wand.ae_unknown
+                        // #tr gtnr.universal_wand.ae_unknown
                         // # AE insertion outcome unknown. Ask an admin to check storage and logs.
                         // # zh_CN AE 存入结果未知，请联系管理员核对库存与日志。
-                        new ChatComponentTranslation("gtneverreset.universal_wand.ae_unknown"));
+                        new ChatComponentTranslation("gtnr.universal_wand.ae_unknown"));
                     continue;
                 }
             }

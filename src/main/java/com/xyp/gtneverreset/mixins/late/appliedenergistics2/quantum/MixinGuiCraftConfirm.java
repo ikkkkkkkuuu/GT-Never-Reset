@@ -48,10 +48,10 @@ import appeng.core.localization.ColorUtils;
 public abstract class MixinGuiCraftConfirm extends GuiSub implements ICraftingCycleHost {
 
     @Unique
-    // #tr gtnr.quantum_crafting.message.CraftingNoNetOutput
+    // #tr gtnr.quantum_crafting.message.crafting_no_net_output
     // # Patterns cannot yield a net output. Check cycles and missing external inputs.
     // # zh_CN 样板无法净产出请求物品，请检查循环样板及缺少的外部输入。
-    private static final String GTNR$NO_NET_OUTPUT = "gtnr.quantum_crafting.message.CraftingNoNetOutput";
+    private static final String GTNR$NO_NET_OUTPUT = "gtnr.quantum_crafting.message.crafting_no_net_output";
 
     @Shadow
     @Final

@@ -2,18 +2,18 @@ package com.xyp.gtneverreset.common.packet;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 
-import com.xyp.gtneverreset.common.gui.container.ContainerQuickEncodingTerminal;
+import com.xyp.gtneverreset.common.gui.container.QuickEncodingTerminalContainer;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
-public final class CPacketToggleInterfaceVisibility implements IMessage {
+public final class ToggleInterfaceVisibilityPacket implements IMessage {
 
     private long entryId;
 
-    public CPacketToggleInterfaceVisibility() {}
+    public ToggleInterfaceVisibilityPacket() {}
 
-    public CPacketToggleInterfaceVisibility(long entryId) {
+    public ToggleInterfaceVisibilityPacket(long entryId) {
         this.entryId = entryId;
     }
 
@@ -28,7 +28,7 @@ public final class CPacketToggleInterfaceVisibility implements IMessage {
     }
 
     public void handle(EntityPlayerMP player) {
-        if (player.openContainer instanceof ContainerQuickEncodingTerminal container) {
+        if (player.openContainer instanceof QuickEncodingTerminalContainer container) {
             container.toggleTrackedInterfaceVisibility(entryId);
         }
     }

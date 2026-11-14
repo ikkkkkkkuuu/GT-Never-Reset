@@ -14,10 +14,10 @@ public class RadialMultilineEditorGui extends MultilineEditorScreen {
 
     @Override
     protected String hintKey() {
-        // #tr radialmenu.lines.hint
+        // #tr gtnr.radialmenu.lines.hint
         // # Placeholders: {player} {dim} {x} {y} {z}
         // # zh_CN 占位符：{player} {dim} {x} {y} {z}
-        return "radialmenu.lines.hint";
+        return "gtnr.radialmenu.lines.hint";
     }
 
     @Override

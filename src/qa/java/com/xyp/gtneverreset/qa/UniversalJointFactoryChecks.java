@@ -134,6 +134,7 @@ public final class UniversalJointFactoryChecks {
         Minecraft mc = Minecraft.getMinecraft();
         try {
             if (stage == 4 && ++frames >= 100) {
+                verifyHintProjection(mc);
                 capture("factory-structure.png");
                 mc.displayGuiScreen(new FactoryTooltipScreen(false));
                 stage = 5;
@@ -168,7 +169,8 @@ public final class UniversalJointFactoryChecks {
                         && !text.contains("Does not accept parameter"),
                     "tooltip omits recipe list and obsolete module restriction");
                 require(
-                    text.contains("20%") && text.contains("0.9")
+                    text.contains("20%") && text.contains("10%")
+                        && (text.contains("减少") || text.contains("decreases"))
                         && !text.contains("无损超频")
                         && !text.contains("Perfect overclock"),
                     "tooltip derives glass bonuses without an automatic perfect overclock");
@@ -194,7 +196,186 @@ public final class UniversalJointFactoryChecks {
         }
     }
 
+    private void verifyHintProjection(Minecraft mc) throws Exception {
+        var clientTile = (BaseMetaTileEntity) mc.theWorld.getTileEntity(0, 80, 0);
+        require(clientTile != null, "client controller loaded for projection");
+        var clientFactory = (UniversalJointFactory) clientTile.getMetaTileEntity();
+        int[] before = projectionBlocks(mc.theWorld);
+        com.gtnewhorizon.structurelib.StructureLibAPI.startHinting(mc.theWorld);
+        clientFactory.construct(new ItemStack(Items.stick), true);
+        com.gtnewhorizon.structurelib.StructureLibAPI.endHinting(mc.theWorld);
+        require(
+            java.util.Arrays.equals(before, projectionBlocks(mc.theWorld)),
+            "hint-only projection leaves world blocks and metadata unchanged");
+        var field = Class.forName("com.gtnewhorizon.structurelib.ClientProxy")
+            .getDeclaredField("allHints");
+        field.setAccessible(true);
+        require(
+            !((java.util.Map<?, ?>) field.get(null)).isEmpty(),
+            "client projection generates real StructureLib hint particles");
+    }
+
+    private static int[] projectionBlocks(World world) {
+        int[] blocks = new int[111 * 111 * 111];
+        int index = 0;
+        for (int x = -55; x <= 55; x++) for (int y = 25; y <= 135; y++) for (int z = -55; z <= 55; z++)
+            blocks[index++] = net.minecraft.block.Block.getIdFromBlock(world.getBlock(x, y, z)) * 16
+                + world.getBlockMetadata(x, y, z);
+        return blocks;
+    }
+
+    private void verifyStructureContracts(EntityPlayerMP player) throws Exception {
+        String[] names = { "assembler_matrix", "quantum_computer", "large_ore_processor", "large_furnace",
+            "large_bee_breeder", "large_crop_breeder", "singularity_data_hub", "universal_joint_factory" };
+        GTNRMachineID[] ids = { GTNRMachineID.AssemblerMatrix, GTNRMachineID.QuantumComputer,
+            GTNRMachineID.LargeOreProcessor, GTNRMachineID.LargeFurnace, GTNRMachineID.LargeBeeBreeder,
+            GTNRMachineID.LargeCropBreeder, GTNRMachineID.SingularityDataHub, GTNRMachineID.UniversalJointFactory };
+        for (int i = 0; i < names.length; i++) {
+            String name = names[i];
+            String[][] original = MultiblockStructureLoader.load(name);
+            String[][] mutable = MultiblockStructureLoader.load(name);
+            require(java.util.Arrays.deepEquals(original, mutable), name + " deterministic MBS1 decode");
+            mutable[0][0] = "changed";
+            mutable[0] = new String[] { "replaced" };
+            require(
+                java.util.Arrays.deepEquals(original, MultiblockStructureLoader.load(name)),
+                name + " isolated cache");
+            var futures = new java.util.ArrayList<java.util.concurrent.CompletableFuture<String[][]>>();
+            for (int worker = 0; worker < 8; worker++) {
+                futures.add(
+                    java.util.concurrent.CompletableFuture.supplyAsync(() -> MultiblockStructureLoader.load(name)));
+            }
+            for (var future : futures)
+                require(java.util.Arrays.deepEquals(original, future.join()), name + " concurrent load");
+            var registered = GregTechAPI.METATILEENTITIES[ids[i].id];
+            require(registered != null, name + " registered controller");
+            var machine = (gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase<?>) registered
+                .newMetaEntity(null);
+            require(machine.getStructureDefinition() == machine.getStructureDefinition(), name + " cached definition");
+            int[][] offsets = { { 1, 1, 0 }, { 1, 1, 0 }, { 1, 2, 0 }, { 5, 11, 0 }, { 9, 9, 3 }, { 2, 3, 0 },
+                { 1, 1, 0 }, { 24, 15, 0 } };
+            var facings = new com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing[] {
+                com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing.NORTH_NORMAL_NONE,
+                com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing.SOUTH_NORMAL_NONE,
+                com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing.EAST_NORMAL_NONE,
+                com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing.WEST_NORMAL_NONE,
+                com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing.NORTH_NORMAL_HORIZONTAL,
+                com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing.EAST_CLOCKWISE_NONE };
+            for (int facingIndex = 0; facingIndex < facings.length; facingIndex++) {
+                int x = 100 + i * 80;
+                int z = facingIndex * 80;
+                var placed = place(player.worldObj, x, 100, z, ids[i].id);
+                placed.setFrontFacing(facings[facingIndex].getDirection());
+                placed.setOwnerName(player.getCommandSenderName());
+                placed.setOwnerUuid(player.getUniqueID());
+                placed.disableWorking();
+                var controller = (gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase<?>) placed
+                    .getMetaTileEntity();
+                controller.setExtendedFacing(facings[facingIndex]);
+                var constructable = (com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable) controller;
+                constructable.construct(new ItemStack(Items.stick), false);
+                com.gtnewhorizon.structurelib.structure.IStructureDefinition definition = controller
+                    .getStructureDefinition();
+                require(
+                    definition.check(
+                        controller,
+                        "main",
+                        player.worldObj,
+                        controller.getExtendedFacing(),
+                        x,
+                        100,
+                        z,
+                        offsets[i][0],
+                        offsets[i][1],
+                        offsets[i][2],
+                        false),
+                    name + " constructed shape " + facings[facingIndex]);
+                if (i == 0 && facingIndex == 0) verifySurvivalBudget(player, controller, x, z);
+            }
+            var output = new java.io.ByteArrayOutputStream();
+            com.xyp.gtnrlib.utils.StructureFileCodec.writeBinary(output, original);
+            require(
+                java.util.Arrays.deepEquals(
+                    original,
+                    com.xyp.gtnrlib.utils.StructureFileCodec
+                        .decode(new java.io.ByteArrayInputStream(output.toByteArray()))),
+                name + " whitespace and layer round trip");
+        }
+        for (String invalid : new String[] { null, "", "../large_furnace", "LargeFurnace", "large/furnace" }) {
+            boolean rejected = false;
+            try {
+                MultiblockStructureLoader.load(invalid);
+            } catch (IllegalArgumentException expected) {
+                rejected = true;
+            }
+            require(rejected, "invalid resource name rejected: " + invalid);
+        }
+        boolean missingRejected = false;
+        try {
+            MultiblockStructureLoader.load("qa_missing_structure");
+        } catch (IllegalStateException expected) {
+            missingRejected = expected.getMessage()
+                .contains("/assets/gtneverreset/multiblock/qa_missing_structure.mbs")
+                && expected.getCause() instanceof java.io.IOException;
+        }
+        require(missingRejected, "missing resource includes path and cause");
+    }
+
+    private void verifySurvivalBudget(EntityPlayerMP player,
+        gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase<?> controller, int x, int z) {
+        var inventory = new net.minecraft.inventory.InventoryBasic("qa", false, 128);
+        int count = 0;
+        for (int dx = -5; dx <= 5; dx++) for (int dy = -5; dy <= 5; dy++) for (int dz = -5; dz <= 5; dz++) {
+            if (dx == 0 && dy == 0 && dz == 0) continue;
+            var block = player.worldObj.getBlock(x + dx, 100 + dy, z + dz);
+            if (block == net.minecraft.init.Blocks.air) continue;
+            inventory.setInventorySlotContents(
+                count++,
+                new ItemStack(block, 1, player.worldObj.getBlockMetadata(x + dx, 100 + dy, z + dz)));
+            player.worldObj.setBlockToAir(x + dx, 100 + dy, z + dz);
+        }
+        require(count > 0, "survival fixture captured required materials");
+        var constructable = (com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable) controller;
+        var empty = com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment
+            .create((predicate, simulate, amount) -> java.util.Map.of(), player);
+        require(
+            constructable.survivalConstruct(new ItemStack(Items.stick), 1, empty) == 0,
+            "no materials means no placement");
+        var environment = com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment
+            .create(com.gtnewhorizon.structurelib.structure.IItemSource.fromInventory(inventory), player);
+        require(
+            constructable.survivalConstruct(new ItemStack(Items.stick), 1, environment) == 1,
+            "one-element survival budget");
+        int remaining = inventoryCount(inventory);
+        require(remaining == count - 1, "one placed block consumes one item");
+        for (int round = 0; round < count + 1 && remaining > 0; round++) {
+            int built = constructable.survivalConstruct(new ItemStack(Items.stick), 3, environment);
+            int next = inventoryCount(inventory);
+            require(
+                built > 0 && built <= 3 && remaining - next == built,
+                "bounded placement matches consumed inventory");
+            remaining = next;
+        }
+        require(remaining == 0, "survival build consumed exactly required materials");
+        com.gtnewhorizon.structurelib.structure.IStructureDefinition definition = controller.getStructureDefinition();
+        require(
+            definition
+                .check(controller, "main", player.worldObj, controller.getExtendedFacing(), x, 100, z, 1, 1, 0, false),
+            "survival-built shape matches creative shape");
+        System.out.println("STRUCTURE_SURVIVAL_QA PASS: empty inventory, budgets 1/3, exact material consumption");
+    }
+
+    private static int inventoryCount(net.minecraft.inventory.IInventory inventory) {
+        int total = 0;
+        for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
+            ItemStack stack = inventory.getStackInSlot(slot);
+            if (stack != null) total += stack.stackSize;
+        }
+        return total;
+    }
+
     private void verify(EntityPlayerMP player) throws Exception {
+        verifyStructureContracts(player);
         UniversalJointFactory detached = new UniversalJointFactory("qa");
         for (int tier = 1; tier <= 14; tier++) {
             var stats = detached.getTooltipStatsAtTier(TieredPart.VOLTAGE, tier);

@@ -34,10 +34,10 @@ public final class NetWorkHandler {
         if (initialized) return;
         initialized = true;
         nextPacketId = 0;
-        registerServerbound(CPacketSwitchGuis.class, CPacketSwitchGuis::handle);
-        registerServerbound(CPacketTeleportToInterface.class, CPacketTeleportToInterface::handle);
-        registerServerbound(CPacketToggleInterfaceVisibility.class, CPacketToggleInterfaceVisibility::handle);
-        registerServerbound(CPacketSendHeldItemToNetwork.class, CPacketSendHeldItemToNetwork::handle);
+        registerServerbound(SwitchGuisPacket.class, SwitchGuisPacket::handle);
+        registerServerbound(TeleportToInterfacePacket.class, TeleportToInterfacePacket::handle);
+        registerServerbound(ToggleInterfaceVisibilityPacket.class, ToggleInterfaceVisibilityPacket::handle);
+        registerServerbound(SendHeldItemToNetworkPacket.class, SendHeldItemToNetworkPacket::handle);
         registerServerbound(TerminalItemRequestPacket.class, TerminalItemRequestPacket::handle);
         registerServerbound(OpenWirelessCardPacket.class, OpenWirelessCardPacket::handle);
         registerServerbound(ToggleWirelessCardPacket.class, ToggleWirelessCardPacket::handle);

@@ -375,7 +375,7 @@ public class WirelessCardGui extends WirelessCardPanel {
     }
 
     private int autoWidth() {
-        // #tr gtneverreset.wireless.gui.auto_connect
+        // #tr gtnr.wireless.gui.auto_connect
         // # Auto-connect
         // # zh_CN 自动连接
         return AE2Theme.switchWidth(tr("auto_connect"));
@@ -514,13 +514,13 @@ public class WirelessCardGui extends WirelessCardPanel {
         }
     }
 
-    // #tr gtneverreset.wireless.gui.module.controller
+    // #tr gtnr.wireless.gui.module.controller
     // # Controller
     // # zh_CN 控制器
-    // #tr gtneverreset.wireless.gui.module.entrances
+    // #tr gtnr.wireless.gui.module.entrances
     // # Links
     // # zh_CN 接入点
-    // #tr gtneverreset.wireless.gui.module.devices
+    // #tr gtnr.wireless.gui.module.devices
     // # Devices
     // # zh_CN 设备
     private enum Stat {
@@ -559,7 +559,7 @@ public class WirelessCardGui extends WirelessCardPanel {
         details.add(tr("source", source));
         if (data.getBoolean("frequencySplit") || !data.getBoolean("sourceLoaded")) {
             boolean split = data.getBoolean("frequencySplit");
-            // #tr gtneverreset.wireless.gui.frequency_split
+            // #tr gtnr.wireless.gui.frequency_split
             // # Frequency split: take over one controller structure to reconnect.
             // # zh_CN 频率分裂：请接管一组控制器以恢复连接。
             String state = tr(split ? "frequency_split" : "source_waiting");
@@ -596,7 +596,7 @@ public class WirelessCardGui extends WirelessCardPanel {
             "",
             secondary(),
             List.of(tr("entrances", used)));
-        // #tr gtneverreset.wireless.gui.module.entrances_free
+        // #tr gtnr.wireless.gui.module.entrances_free
         // # %s free
         // # zh_CN 剩余 %s 个
         String free = tr("module.entrances_free", Math.max(0, limit - used));
@@ -615,7 +615,7 @@ public class WirelessCardGui extends WirelessCardPanel {
         int online = data.getInteger("online"), devices = data.getInteger("devices");
         int missing = data.getBoolean("stable") ? data.getInteger("missing") : 0;
         int offline = Math.max(0, devices - online - missing);
-        // #tr gtneverreset.wireless.gui.module.offline
+        // #tr gtnr.wireless.gui.module.offline
         // # Offline %s
         // # zh_CN 离线 %s
         String missingLine = tr("missing_metric", missingText(data));
@@ -773,7 +773,7 @@ public class WirelessCardGui extends WirelessCardPanel {
 
         @Override
         void drawHeader(NBTTagCompound data, int textColor) {
-            // #tr gtneverreset.wireless.gui.devices_title
+            // #tr gtnr.wireless.gui.devices_title
             // # Channel devices
             // # zh_CN 频道设备
             fontRendererObj.drawString(
@@ -889,10 +889,10 @@ public class WirelessCardGui extends WirelessCardPanel {
                 && target.equals(data.getString("detailTarget"))
                 && nameRevision == data.getLong("nameRevision")) return true;
             closeIfOpen();
-            // #tr gtneverreset.wireless.gui.stale
+            // #tr gtnr.wireless.gui.stale
             // # Physical cluster changed. Retry after refreshing.
             // # zh_CN 物理簇已变化，请在刷新后重新操作。
-            mc.thePlayer.addChatMessage(new ChatComponentTranslation("gtneverreset.wireless.gui.stale"));
+            mc.thePlayer.addChatMessage(new ChatComponentTranslation("gtnr.wireless.gui.stale"));
             return false;
         }
 
@@ -1128,7 +1128,7 @@ public class WirelessCardGui extends WirelessCardPanel {
 
                 case TELEPORT -> tr("teleport");
                 case HIGHLIGHT -> tr("highlight");
-                // #tr gtneverreset.wireless.gui.manage_devices
+                // #tr gtnr.wireless.gui.manage_devices
                 // # Device list (Shift: access points)
                 // # zh_CN 设备列表（Shift：接入点）
                 case MANAGE_DEVICES -> tr("manage_devices");
@@ -1662,11 +1662,10 @@ public class WirelessCardGui extends WirelessCardPanel {
                 String id = (String) key;
                 String name = dimensions.getString(id);
                 if (name.equals("Personal World " + id) || name.equals("personalworld")) {
-                    // #tr gtneverreset.wireless.gui.personal_world
+                    // #tr gtnr.wireless.gui.personal_world
                     // # Personal World
                     // # zh_CN 私人维度
-                    dimensions
-                        .setString(id, StatCollector.translateToLocal("gtneverreset.wireless.gui.personal_world"));
+                    dimensions.setString(id, StatCollector.translateToLocal("gtnr.wireless.gui.personal_world"));
                 } else if (!name.isEmpty()) dimensions.setString(id, DimensionHelper.getDimLocalizedName(name));
             }
             localizePosition(data, "source", dimensions);

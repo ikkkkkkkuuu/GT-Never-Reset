@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 import com.xyp.gtneverreset.client.gui.QuickTerminalButtonTextures;
 
 import appeng.client.gui.widgets.GuiTabButton;
@@ -25,7 +25,7 @@ public abstract class QuickTerminalTabButtonTextureMixin {
         remap = true,
         require = 1)
     private ResourceLocation gtneverreset$useModernTabButton(ResourceLocation original) {
-        return Minecraft.getMinecraft().currentScreen instanceof GuiQuickEncodingTerminal
+        return Minecraft.getMinecraft().currentScreen instanceof QuickEncodingTerminalGui
             ? QuickTerminalButtonTextures.states()
             : original;
     }

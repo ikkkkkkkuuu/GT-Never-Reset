@@ -513,11 +513,10 @@ public final class UniversalWandMiningHandler {
         player.getEntityData()
             .setTag(EntityPlayer.PERSISTED_NBT_TAG, persisted);
         if (notify) player
-            // #tr gtneverreset.universal_wand.chain_complete
+            // #tr gtnr.universal_wand.chain_complete
             // # Mining finished. Blocks mined this time: %s.
             // # zh_CN 挖掘结束，本次共挖掘%s个方块。
-            .addChatMessage(
-                new ChatComponentTranslation("gtneverreset.universal_wand.chain_complete", task.brokenCount));
+            .addChatMessage(new ChatComponentTranslation("gtnr.universal_wand.chain_complete", task.brokenCount));
     }
 
     private static void releasePendingDrops(EntityPlayerMP player) {

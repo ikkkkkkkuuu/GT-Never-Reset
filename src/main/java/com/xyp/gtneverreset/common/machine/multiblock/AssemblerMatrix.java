@@ -103,6 +103,12 @@ import mcp.mobius.waila.api.IWailaDataAccessor;
 public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMatrix> implements ISurvivalConstructable,
     IInterfaceHost, IGridProxyable, IAEAppEngInventory, IMEConnectable, ICustomNameObject, MultiblockTooltipSource {
 
+    private static final String STRUCTURE_NAME = "assembler_matrix";
+    private static final String STRUCTURE_PIECE = "main";
+    private static final int HORIZONTAL_OFFSET = 1;
+    private static final int VERTICAL_OFFSET = 1;
+    private static final int DEPTH_OFFSET = 0;
+
     public static final int MODE_INPUT = 0;
     public static final int MODE_OUTPUT = 1;
     public static final int MODE_OPERATING = 2;
@@ -136,7 +142,6 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
         return "gtnr.compact.interface.show_pattern.disabled";
     }
 
-    public final long mMaxParallelLong = Long.MAX_VALUE;
     public boolean wirelessMode;
     @Getter
     public boolean showPattern = true;
@@ -145,9 +150,10 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
     private String customName = "";
     @Getter
     private final AssemblerMatrixPatternInventory inventory = new AssemblerMatrixPatternInventory(this);
-    private final AssemblerMatrixPatternState patternState = new AssemblerMatrixPatternState();
     private final AssemblerMatrixTasks tasks = new AssemblerMatrixTasks();
 
+    private final AssemblerMatrixPatternState patternState = new AssemblerMatrixPatternState();
+    public final long mMaxParallelLong = Long.MAX_VALUE;
     public final int mMaxSlots = PATTERN_CAPACITY;
     public String costingEUText = "0";
     private AENetworkProxy gridProxy;
@@ -159,6 +165,8 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
 
     /** Last observed AE availability; recovery must wake GregTech's event-driven recipe checks as well as AE. */
     private boolean wasNetworkActive;
+
+    private IStructureDefinition<AssemblerMatrix> structureDefinition;
 
     public AssemblerMatrix(int aID, String aName, String aNameRegional) {
         super(aID, aName, aNameRegional);
@@ -229,8 +237,9 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
 
     @Override
     public IStructureDefinition<AssemblerMatrix> getStructureDefinition() {
-        return StructureDefinition.<AssemblerMatrix>builder()
-            .addShape("main", StructureUtility.transpose(MultiblockStructureLoader.load("assembler_matrix")))
+        if (structureDefinition != null) return structureDefinition;
+        structureDefinition = StructureDefinition.<AssemblerMatrix>builder()
+            .addShape(STRUCTURE_PIECE, StructureUtility.transpose(MultiblockStructureLoader.load(STRUCTURE_NAME)))
             .addElement(
                 'A',
                 StructureUtility.ofChain(
@@ -241,22 +250,32 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
                         .build(),
                     StructureUtility.ofBlock(GregTechAPI.sBlockCasings2, 0)))
             .build();
+        return structureDefinition;
     }
 
     @Override
     public void construct(ItemStack stack, boolean hintsOnly) {
-        buildPiece("main", stack, hintsOnly, 1, 1, 0);
+        buildPiece(STRUCTURE_PIECE, stack, hintsOnly, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET);
     }
 
     @Override
     public int survivalConstruct(ItemStack stack, int budget, ISurvivalBuildEnvironment env) {
         if (mMachine) return -1;
-        return survivalBuildPiece("main", stack, 1, 1, 0, budget, env, false, true);
+        return survivalBuildPiece(
+            STRUCTURE_PIECE,
+            stack,
+            HORIZONTAL_OFFSET,
+            VERTICAL_OFFSET,
+            DEPTH_OFFSET,
+            budget,
+            env,
+            false,
+            true);
     }
 
     @Override
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        boolean formed = checkPiece("main", 1, 1, 0, errors);
+        boolean formed = checkPiece(STRUCTURE_PIECE, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors);
         getProxy().setValidSides(
             formed ? EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)) : EnumSet.noneOf(ForgeDirection.class));
         if (formed) rebuildPatterns();
@@ -655,7 +674,7 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
 
     @Override
     public String getLocalNameKey() {
-        return "gtnr.AssemblerMatrix.name";
+        return "gtnr.machine.assembler_matrix.name";
     }
 
     @Override
@@ -666,10 +685,10 @@ public class AssemblerMatrix extends MTEExtendedPowerMultiBlockBase<AssemblerMat
 
     @Override
     public String getTooltipMachineType() {
-        // #tr gtnr.AssemblerMatrix.name
+        // #tr gtnr.machine.assembler_matrix.recipe_type
         // # Assembler Matrix
         // # zh_CN 装配矩阵
-        return StatCollector.translateToLocal("gtnr.AssemblerMatrix.name");
+        return StatCollector.translateToLocal("gtnr.machine.assembler_matrix.recipe_type");
     }
 
     @Override

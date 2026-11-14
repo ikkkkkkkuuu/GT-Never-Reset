@@ -34,33 +34,33 @@ public final class ItemBlockFluxConnector extends ItemBlock {
     public void addInformation(ItemStack stack, EntityPlayer player, List tooltip, boolean advanced) {
         super.addInformation(stack, player, tooltip, advanced);
         if (((BlockFluxConnector) field_150939_a).plug) {
-            // #tr flux.tooltip.plug
+            // #tr gtnr.flux.tooltip.plug
             // # Transfers incoming GT EU to the GTNH wireless energy network.
             // # zh_CN 将输入的 GT EU 存入 GTNH 无线电网。
-            tooltip.add(StatCollector.translateToLocal("flux.tooltip.plug"));
+            tooltip.add(StatCollector.translateToLocal("gtnr.flux.tooltip.plug"));
         } else {
-            // #tr flux.tooltip.point
+            // #tr gtnr.flux.tooltip.point
             // # Supplies GT EU from the GTNH wireless energy network.
             // # zh_CN 从 GTNH 无线电网取电并输出 GT EU。
-            tooltip.add(StatCollector.translateToLocal("flux.tooltip.point"));
+            tooltip.add(StatCollector.translateToLocal("gtnr.flux.tooltip.point"));
         }
-        // #tr flux.tooltip.owner
+        // #tr gtnr.flux.tooltip.owner
         // # Uses the placing player's GT wireless team balance.
         // # zh_CN 使用放置者所属 GT 无线团队的电量。
-        tooltip.add(StatCollector.translateToLocal("flux.tooltip.owner"));
-        // #tr flux.tooltip.settings
+        tooltip.add(StatCollector.translateToLocal("gtnr.flux.tooltip.owner"));
+        // #tr gtnr.flux.tooltip.settings
         // # Detects voltage on placement, or uses 32 V if unknown. Starts at 1 A; right-click to edit.
         // # zh_CN 放置时识别电压，无法识别时采用 32 V；默认 1 A，右键调整。
-        tooltip.add(StatCollector.translateToLocal("flux.tooltip.settings"));
-        // #tr flux.tooltip.rating
+        tooltip.add(StatCollector.translateToLocal("gtnr.flux.tooltip.settings"));
+        // #tr gtnr.flux.tooltip.rating
         // # Transfer limit: voltage x amperage EU/t.
         // # zh_CN 传输上限：电压 × 安培数 EU/t。
-        tooltip.add(StatCollector.translateToLocal("flux.tooltip.rating"));
+        tooltip.add(StatCollector.translateToLocal("gtnr.flux.tooltip.rating"));
         if (!((BlockFluxConnector) field_150939_a).plug) {
-            // #tr flux.tooltip.overvoltage
+            // #tr gtnr.flux.tooltip.overvoltage
             // # Output obeys GT overvoltage and cable amperage limits.
             // # zh_CN 输出仍受 GT 过压与线缆安培数限制。
-            tooltip.add(StatCollector.translateToLocal("flux.tooltip.overvoltage"));
+            tooltip.add(StatCollector.translateToLocal("gtnr.flux.tooltip.overvoltage"));
         }
     }
 }

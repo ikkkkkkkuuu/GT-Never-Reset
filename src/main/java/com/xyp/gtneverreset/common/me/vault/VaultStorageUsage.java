@@ -1,4 +1,4 @@
-package com.xyp.gtneverreset.common.machine.storage;
+package com.xyp.gtneverreset.common.me.vault;
 
 import java.math.BigInteger;
 

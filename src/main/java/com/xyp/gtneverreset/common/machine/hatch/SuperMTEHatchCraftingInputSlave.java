@@ -256,26 +256,26 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
         NBTTagCompound nbt = dataStick.stackTagCompound;
         if (nbt.hasKey("dimension")
             && nbt.getInteger("dimension") != getBaseMetaTileEntity().getWorld().provider.dimensionId) {
-            // #tr chat.gtnr.pattern_link.wrong_dimension
+            // #tr gtnr.chat.gtnr.pattern_link.wrong_dimension
             // # The pattern input is in another dimension
             // # zh_CN 样板输入主仓位于其他维度
-            GTUtility.sendChatTrans(aPlayer, "chat.gtnr.pattern_link.wrong_dimension");
+            GTUtility.sendChatTrans(aPlayer, "gtnr.chat.gtnr.pattern_link.wrong_dimension");
             return true;
         }
         int x = nbt.getInteger("x");
         int y = nbt.getInteger("y");
         int z = nbt.getInteger("z");
         if (trySetMasterFromCoord(x, y, z) != null) {
-            // #tr chat.gtnr.pattern_link.success
+            // #tr gtnr.chat.gtnr.pattern_link.success
             // # Pattern input link established
             // # zh_CN 样板输入连接成功
-            GTUtility.sendChatTrans(aPlayer, "chat.gtnr.pattern_link.success");
+            GTUtility.sendChatTrans(aPlayer, "gtnr.chat.gtnr.pattern_link.success");
             return true;
         }
-        // #tr chat.gtnr.pattern_link.failed
+        // #tr gtnr.chat.gtnr.pattern_link.failed
         // # Pattern input link failed; check the loaded master and mirror type
         // # zh_CN 样板输入连接失败，请检查主仓是否已加载且与镜像类型匹配
-        GTUtility.sendChatTrans(aPlayer, "chat.gtnr.pattern_link.failed");
+        GTUtility.sendChatTrans(aPlayer, "gtnr.chat.gtnr.pattern_link.failed");
         return true;
     }
 
@@ -305,10 +305,10 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
         if (!ItemList.Tool_DataStick.isStackEqual(dataStick, false, true)) return;
         var master = getMaster();
         if (master == null) {
-            // #tr chat.gtnr.pattern_link.unlinked_copy
+            // #tr gtnr.chat.gtnr.pattern_link.unlinked_copy
             // # This mirror has no pattern input link to copy
             // # zh_CN 此镜像尚未连接样板输入主仓，无法复制连接信息
-            GTUtility.sendChatTrans(aPlayer, "chat.gtnr.pattern_link.unlinked_copy");
+            GTUtility.sendChatTrans(aPlayer, "gtnr.chat.gtnr.pattern_link.unlinked_copy");
             return;
         }
 
@@ -425,23 +425,23 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
 
     @Override
     public String[] getDescription() {
-        // #tr tooltip.gtnr.crafting_input_mirror.proxy
+        // #tr gtnr.tooltip.crafting_input_mirror.proxy
         // # Only links to ordinary Pattern Input Assemblies/Buses; cannot link to circuit or cross-recipe assemblies
         // # zh_CN 仅可连接普通样板输入总成或总线，不可连接电路或跨配方类型总成
-        String proxy = StatCollector.translateToLocal("tooltip.gtnr.crafting_input_mirror.proxy");
-        // #tr tooltip.gtnr.crafting_input_mirror.tier
+        String proxy = StatCollector.translateToLocal("gtnr.tooltip.crafting_input_mirror.proxy");
+        // #tr gtnr.tooltip.crafting_input_mirror.tier
         // # Hatch tier: %s
         // # zh_CN 仓室等级：%s
         String tier = StatCollector
-            .translateToLocalFormatted("tooltip.gtnr.crafting_input_mirror.tier", TIER_COLORS[11] + VN[11]);
-        // #tr tooltip.gtnr.crafting_input_mirror.share
+            .translateToLocalFormatted("gtnr.tooltip.crafting_input_mirror.tier", TIER_COLORS[11] + VN[11]);
+        // #tr gtnr.tooltip.crafting_input_mirror.share
         // # Uses the linked master's pattern inputs and product output caches
         // # zh_CN 共用主仓的样板原料与产物输出缓存
-        String share = StatCollector.translateToLocal("tooltip.gtnr.crafting_input_mirror.share");
-        // #tr tooltip.gtnr.crafting_input_mirror.link
+        String share = StatCollector.translateToLocal("gtnr.tooltip.crafting_input_mirror.share");
+        // #tr gtnr.tooltip.crafting_input_mirror.link
         // # Data Stick: left-click the master, then right-click this hatch in the same dimension
         // # zh_CN 手持数据棒左键点击主仓，再右键点击同维度内的此仓完成连接
-        String link = StatCollector.translateToLocal("tooltip.gtnr.crafting_input_mirror.link");
+        String link = StatCollector.translateToLocal("gtnr.tooltip.crafting_input_mirror.link");
         return PatternMEOutput.describe(new String[] { proxy, tier, share, link });
     }
 }

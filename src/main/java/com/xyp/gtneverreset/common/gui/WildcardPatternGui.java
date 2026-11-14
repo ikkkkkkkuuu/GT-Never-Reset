@@ -130,22 +130,22 @@ public class WildcardPatternGui {
         Flow tabs = Flow.column()
             .pos(0, 24)
             .coverChildren()
-            // #tr gui.wildcardpattern.preview
+            // #tr gtnr.gui.wildcardpattern.preview
             // # Preview
             // # zh_CN 预览
-            .child(tabButton(0, new ItemDrawable(iconStack()), "gui.wildcardpattern.preview"))
-            // #tr gui.wildcardpattern.inputs
+            .child(tabButton(0, new ItemDrawable(iconStack()), "gtnr.gui.wildcardpattern.preview"))
+            // #tr gtnr.gui.wildcardpattern.inputs
             // # Inputs
             // # zh_CN 输入
-            .child(tabButton(1, IKey.str("IN"), "gui.wildcardpattern.inputs"))
-            // #tr gui.wildcardpattern.outputs
+            .child(tabButton(1, IKey.str("IN"), "gtnr.gui.wildcardpattern.inputs"))
+            // #tr gtnr.gui.wildcardpattern.outputs
             // # Outputs
             // # zh_CN 输出
-            .child(tabButton(2, IKey.str("OUT"), "gui.wildcardpattern.outputs"))
-            // #tr gui.wildcardpattern.filters
+            .child(tabButton(2, IKey.str("OUT"), "gtnr.gui.wildcardpattern.outputs"))
+            // #tr gtnr.gui.wildcardpattern.filters
             // # Filters
             // # zh_CN 筛选
-            .child(tabButton(3, new ItemDrawable(dustOf(Materials.Aluminium)), "gui.wildcardpattern.filters"));
+            .child(tabButton(3, new ItemDrawable(dustOf(Materials.Aluminium)), "gtnr.gui.wildcardpattern.filters"));
         PagedWidget<?> pages = new PagedWidget<>().controller(controller)
             .pos(7, 23)
             .size(158, PREVIEW_HEIGHT)
@@ -167,25 +167,25 @@ public class WildcardPatternGui {
                     .overlay(
                         new ItemDrawable(iconStack()).asIcon()
                             .size(12))
-                    .tooltipBuilder(tooltip -> tooltip.addLine(IKey.lang("gui.wildcardpattern.preview")))
+                    .tooltipBuilder(tooltip -> tooltip.addLine(IKey.lang("gtnr.gui.wildcardpattern.preview")))
                     .onMousePressed(mouse -> {
                         controller.setPage(0);
                         return true;
                     }))
             .child(
-                // #tr gui.wildcardpattern.reference_title
+                // #tr gtnr.gui.wildcardpattern.reference_title
                 // # Wildcard Pattern Configuration
                 // # zh_CN 通配符样板配置
-                IKey.lang("gui.wildcardpattern.reference_title")
+                IKey.lang("gtnr.gui.wildcardpattern.reference_title")
                     .asWidget()
                     .pos(25, 5)
                     .size(142, 12)
                     .tooltipBuilder(
                         tooltip -> tooltip.addLine(
-                            // #tr gui.wildcardpattern.nei_hint
+                            // #tr gtnr.gui.wildcardpattern.nei_hint
                             // # Use NEI + to import a recipe, then save
                             // # zh_CN 点击 NEI 配方的＋导入，调整后保存
-                            IKey.lang("gui.wildcardpattern.nei_hint"))))
+                            IKey.lang("gtnr.gui.wildcardpattern.nei_hint"))))
             .child(pages)
             .child(inventory);
         ModularPanel panel = new ModularPanel("wildcard_pattern") {
@@ -286,22 +286,23 @@ public class WildcardPatternGui {
         return new ParentWidget<>().size(158, EDITOR_HEIGHT)
             .child(cards)
             .child(
-                // #tr gui.wildcardpattern.single
+                // #tr gtnr.gui.wildcardpattern.single
                 // # Single
                 // # zh_CN 单一
-                addButton("gui.wildcardpattern.single", () -> addIO(cards, list, SimpleIOComponent.empty())).width(34)
+                addButton("gtnr.gui.wildcardpattern.single", () -> addIO(cards, list, SimpleIOComponent.empty()))
+                    .width(34)
                     .pos(0, EDITOR_HEIGHT - 20))
             .child(
-                // #tr gui.wildcardpattern.tag
+                // #tr gtnr.gui.wildcardpattern.tag
                 // # Tag
                 // # zh_CN 标签
-                addButton("gui.wildcardpattern.tag", () -> addIO(cards, list, PrefixIOComponent.empty())).width(45)
+                addButton("gtnr.gui.wildcardpattern.tag", () -> addIO(cards, list, PrefixIOComponent.empty())).width(45)
                     .pos(37, EDITOR_HEIGHT - 20))
             .child(
-                // #tr gui.wildcardpattern.fluid
+                // #tr gtnr.gui.wildcardpattern.fluid
                 // # Fluid
                 // # zh_CN 流体
-                addButton("gui.wildcardpattern.fluid", () -> addIO(cards, list, FluidIOComponent.empty()))
+                addButton("gtnr.gui.wildcardpattern.fluid", () -> addIO(cards, list, FluidIOComponent.empty()))
                     .pos(84, EDITOR_HEIGHT - 20))
             .child(saveButton().pos(126, EDITOR_HEIGHT - 20));
     }
@@ -442,25 +443,26 @@ public class WildcardPatternGui {
         return new ParentWidget<>().size(158, EDITOR_HEIGHT)
             .child(cards)
             .child(
-                // #tr gui.wildcardpattern.filter_name
+                // #tr gtnr.gui.wildcardpattern.filter_name
                 // # Name
                 // # zh_CN 名称
-                addButton("gui.wildcardpattern.filter_name", () -> addFilter(cards, StringFilterComponent.empty()))
+                addButton("gtnr.gui.wildcardpattern.filter_name", () -> addFilter(cards, StringFilterComponent.empty()))
                     .pos(2, EDITOR_HEIGHT - 20))
             .child(
-                // #tr gui.wildcardpattern.filter_property
+                // #tr gtnr.gui.wildcardpattern.filter_property
                 // # Property
                 // # zh_CN 属性
                 addButton(
-                    "gui.wildcardpattern.filter_property",
+                    "gtnr.gui.wildcardpattern.filter_property",
                     () -> addFilter(cards, PropertyFilterComponent.empty())).width(45)
                         .pos(37, EDITOR_HEIGHT - 20))
             .child(
-                // #tr gui.wildcardpattern.filter_subtag
+                // #tr gtnr.gui.wildcardpattern.filter_subtag
                 // # Flag
                 // # zh_CN 标记
-                addButton("gui.wildcardpattern.filter_subtag", () -> addFilter(cards, SubTagFilterComponent.empty()))
-                    .pos(84, EDITOR_HEIGHT - 20))
+                addButton(
+                    "gtnr.gui.wildcardpattern.filter_subtag",
+                    () -> addFilter(cards, SubTagFilterComponent.empty())).pos(84, EDITOR_HEIGHT - 20))
             .child(saveButton().pos(126, EDITOR_HEIGHT - 20));
     }
 
@@ -549,11 +551,11 @@ public class WildcardPatternGui {
                 names.add(property.displayName());
         }
         if (names.isEmpty()) {
-            // #tr gui.wildcardpattern.no_property
+            // #tr gtnr.gui.wildcardpattern.no_property
             // # no property
             // # zh_CN 无属性
             names.add(
-                IKey.lang("gui.wildcardpattern.no_property")
+                IKey.lang("gtnr.gui.wildcardpattern.no_property")
                     .get());
         }
         return names;
@@ -600,25 +602,25 @@ public class WildcardPatternGui {
             for (SubTag tag : WildcardMaterials.subTagsOf(material)) names.add(tag.mName);
         }
         if (names.isEmpty()) {
-            // #tr gui.wildcardpattern.no_flag
+            // #tr gtnr.gui.wildcardpattern.no_flag
             // # no flag
             // # zh_CN 无标记
             names.add(
-                IKey.lang("gui.wildcardpattern.no_flag")
+                IKey.lang("gtnr.gui.wildcardpattern.no_flag")
                     .get());
         }
         return names;
     }
 
     private ButtonWidget<?> whitelistButton(IWildcardFilterComponent component) {
-        // #tr gui.wildcardpattern.whitelist
+        // #tr gtnr.gui.wildcardpattern.whitelist
         // # Whitelist
         // # zh_CN 白名单
-        IKey whitelist = IKey.lang("gui.wildcardpattern.whitelist");
-        // #tr gui.wildcardpattern.blacklist
+        IKey whitelist = IKey.lang("gtnr.gui.wildcardpattern.whitelist");
+        // #tr gtnr.gui.wildcardpattern.blacklist
         // # Blacklist
         // # zh_CN 黑名单
-        IKey blacklist = IKey.lang("gui.wildcardpattern.blacklist");
+        IKey blacklist = IKey.lang("gtnr.gui.wildcardpattern.blacklist");
         return new ButtonWidget<>().overlay(IKey.dynamic(() -> component.isWhitelist() ? "W" : "B"))
             .tooltipBuilder(
                 tooltip -> tooltip.setAutoUpdate(true)
@@ -649,10 +651,10 @@ public class WildcardPatternGui {
 
     private ButtonWidget<?> saveButton() {
         return new ButtonWidget<>().size(30, 20)
-            // #tr gui.wildcardpattern.save
+            // #tr gtnr.gui.wildcardpattern.save
             // # Save
             // # zh_CN 保存
-            .overlay(IKey.lang("gui.wildcardpattern.save"))
+            .overlay(IKey.lang("gtnr.gui.wildcardpattern.save"))
             .onMousePressed(button -> {
                 pushConfig();
                 return true;
@@ -774,11 +776,11 @@ public class WildcardPatternGui {
         private PreviewPage(Consumer<String> excludeMaterial) {
             size(158, PREVIEW_HEIGHT);
             child(
-                // #tr gui.wildcardpattern.available_count
+                // #tr gtnr.gui.wildcardpattern.available_count
                 // # Available patterns: %s
                 // # zh_CN 可用样板：%s
                 IKey.dynamic(
-                    () -> IKey.lang("gui.wildcardpattern.available_count", patterns.size())
+                    () -> IKey.lang("gtnr.gui.wildcardpattern.available_count", patterns.size())
                         .get())
                     .asWidget()
                     .pos(2, 2)
@@ -790,10 +792,10 @@ public class WildcardPatternGui {
                     .onUpdateListener(button -> button.setEnabled(currentMaterialName() != null))
                     .tooltipBuilder(
                         tooltip -> tooltip.addLine(
-                            // #tr gui.wildcardpattern.exclude_current
+                            // #tr gtnr.gui.wildcardpattern.exclude_current
                             // # Add this material to the blacklist and save
                             // # zh_CN 将当前材料加入黑名单并保存
-                            IKey.lang("gui.wildcardpattern.exclude_current")))
+                            IKey.lang("gtnr.gui.wildcardpattern.exclude_current")))
                     .onMousePressed(mouse -> {
                         if (mouse != 0) return false;
                         String materialName = currentMaterialName();
@@ -815,10 +817,10 @@ public class WildcardPatternGui {
                     .pos(69, 27)
                     .size(20, 18));
             child(
-                // #tr gui.wildcardpattern.preview_search
+                // #tr gtnr.gui.wildcardpattern.preview_search
                 // # Search
                 // # zh_CN 搜索
-                IKey.lang("gui.wildcardpattern.preview_search")
+                IKey.lang("gtnr.gui.wildcardpattern.preview_search")
                     .asWidget()
                     .pos(2, 61)
                     .size(28, 12));

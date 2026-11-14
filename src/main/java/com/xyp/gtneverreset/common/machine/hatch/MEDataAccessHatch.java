@@ -324,22 +324,22 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
     @Override
     public String[] getDescription() {
         return new String[] {
-            // #tr tooltip.gtneverreset.meDataAccess.0
+            // #tr gtnr.tooltip.gtneverreset.me_data_access.0
             // # Supplies multiblocks with recipes from data sticks in ME storage
             // # zh_CN 为多方块机器提供 ME 存储中数据棒记录的配方
-            StatCollector.translateToLocal("tooltip.gtneverreset.meDataAccess.0"),
-            // #tr tooltip.gtneverreset.meDataAccess.1
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_data_access.0"),
+            // #tr gtnr.tooltip.gtneverreset.me_data_access.1
             // # Reads every stored data stick; no manual loading needed
             // # zh_CN 读取网络中存储的所有数据棒，无需手动装入
-            StatCollector.translateToLocal("tooltip.gtneverreset.meDataAccess.1"),
-            // #tr tooltip.gtneverreset.meDataAccess.2
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_data_access.1"),
+            // #tr gtnr.tooltip.gtneverreset.me_data_access.2
             // # Data sticks stay in ME storage and can serve multiple machines
             // # zh_CN 数据棒保留在 ME 存储中，可供多台机器共享
-            StatCollector.translateToLocal("tooltip.gtneverreset.meDataAccess.2"),
-            // #tr tooltip.gtneverreset.meDataAccess.3
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_data_access.2"),
+            // #tr gtnr.tooltip.gtneverreset.me_data_access.3
             // # Connect ME at the front; requires power and one channel
             // # zh_CN 从正面连接 ME，需要供电和一个频道
-            StatCollector.translateToLocal("tooltip.gtneverreset.meDataAccess.3") };
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_data_access.3") };
     }
 
     static final class MEDataStickSnapshot {

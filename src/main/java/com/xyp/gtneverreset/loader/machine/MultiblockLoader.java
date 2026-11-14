@@ -53,23 +53,23 @@ public final class MultiblockLoader {
                 "gtneverreset.universal_joint_factory",
                 StatCollector.translateToLocal("gtnr.machine.universal_joint_factory.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.UniversalJointFactory.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.QuantumComputer.name
+        // #tr gtnr.machine.quantum_computer.name
         // # Quantum Computer
         // # zh_CN 量子计算机
         GTNRItemList.QuantumComputer.set(
             new QuantumComputer(
                 GTNRMachineID.QuantumComputer.id,
                 "gtneverreset.quantum_computer",
-                StatCollector.translateToLocal("gtnr.QuantumComputer.name")));
+                StatCollector.translateToLocal("gtnr.machine.quantum_computer.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.QuantumComputer.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.AssemblerMatrix.name
+        // #tr gtnr.machine.assembler_matrix.name
         // # Assembler Matrix
         // # zh_CN 装配矩阵
         GTNRItemList.AssemblerMatrix.set(
             new AssemblerMatrix(
                 GTNRMachineID.AssemblerMatrix.id,
                 "gtneverreset.assembler_matrix",
-                StatCollector.translateToLocal("gtnr.AssemblerMatrix.name")));
+                StatCollector.translateToLocal("gtnr.machine.assembler_matrix.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.AssemblerMatrix.get(1), AnimatedText.GT_NEVER_RESET);
 
         // #tr gtnr.machine.singularity_data_hub.name

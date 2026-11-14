@@ -7,13 +7,13 @@ import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
-public final class CPacketSendHeldItemToNetwork implements IMessage {
+public final class SendHeldItemToNetworkPacket implements IMessage {
 
     private int slot;
 
-    public CPacketSendHeldItemToNetwork() {}
+    public SendHeldItemToNetworkPacket() {}
 
-    public CPacketSendHeldItemToNetwork(int slot) {
+    public SendHeldItemToNetworkPacket(int slot) {
         this.slot = slot;
     }
 

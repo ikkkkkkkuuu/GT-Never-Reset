@@ -190,33 +190,33 @@ public class MaxCapacityMEOutputBus extends MTEHatchOutputBusME {
 
     private static String[] getLocalizedDescription() {
         return new String[] {
-            // #tr tooltip.gtneverreset.maxCapacityMEOutputBus.0
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.0
             // # Transfers multiblock item outputs to the ME network
             // # zh_CN 将多方块机器产出的物品存入 ME 网络
-            StatCollector.translateToLocal("tooltip.gtneverreset.maxCapacityMEOutputBus.0"),
-            // #tr tooltip.gtneverreset.maxCapacityMEOutputBus.1
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.0"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.1
             // # Requires a powered ME network and one channel
             // # zh_CN 需要 ME 网络供电和一个频道
-            StatCollector.translateToLocal("tooltip.gtneverreset.maxCapacityMEOutputBus.1"),
-            // #tr tooltip.gtneverreset.maxCapacityMEOutputBus.2
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.1"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.2
             // # Output cache capacity: 2^63 - 1 items
             // # zh_CN 输出缓存容量：2^63 - 1 个
-            StatCollector.translateToLocal("tooltip.gtneverreset.maxCapacityMEOutputBus.2"),
-            // #tr tooltip.gtneverreset.maxCapacityMEOutputBus.3
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.2"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.3
             // # 9 filters; empty accepts all; configured filters accept matching outputs only
             // # zh_CN 9 格物品筛选；全空时接收全部，设置后仅接收匹配产物
-            StatCollector.translateToLocal("tooltip.gtneverreset.maxCapacityMEOutputBus.3"),
-            // #tr tooltip.gtneverreset.maxCapacityMEOutputBus.4
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.3"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.4
             // # Screwdriver: toggle cache mode
             // # zh_CN 螺丝刀右键：切换缓存模式
-            StatCollector.translateToLocal("tooltip.gtneverreset.maxCapacityMEOutputBus.4"),
-            // #tr tooltip.gtneverreset.maxCapacityMEOutputBus.5
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.4"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.5
             // # Shift + screwdriver: toggle check mode
             // # zh_CN 潜行螺丝刀右键：切换检查模式
-            StatCollector.translateToLocal("tooltip.gtneverreset.maxCapacityMEOutputBus.5"),
-            // #tr tooltip.gtneverreset.maxCapacityMEOutputBus.priority
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.5"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.priority
             // # Matching filters take priority over unfiltered outputs
             // # zh_CN 筛选匹配的输出总线优先于未设置筛选的输出总线
-            StatCollector.translateToLocal("tooltip.gtneverreset.maxCapacityMEOutputBus.priority") };
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_bus.priority") };
     }
 }

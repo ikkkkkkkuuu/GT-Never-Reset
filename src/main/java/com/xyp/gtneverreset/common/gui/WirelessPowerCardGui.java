@@ -403,7 +403,7 @@ public final class WirelessPowerCardGui {
                             if (player.dimension != connection.dimension) {
                                 player.addChatMessage(
                                     new ChatComponentTranslation(
-                                        "gtneverreset.wireless.gui.highlight_dimension",
+                                        "gtnr.wireless.gui.highlight_dimension",
                                         connection.dimension));
                             } else {
                                 NBTTagList positions = new NBTTagList();

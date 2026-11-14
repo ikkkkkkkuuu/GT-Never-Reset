@@ -76,6 +76,12 @@ import it.unimi.dsi.fastutil.objects.ReferenceArrayList;
 public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumComputer> implements ISurvivalConstructable,
     IActionHost, IGridProxyable, IAddGregtechLogo, ICustomNameObject, MultiblockTooltipSource {
 
+    private static final String STRUCTURE_NAME = "quantum_computer";
+    private static final String STRUCTURE_PIECE = "main";
+    private static final int HORIZONTAL_OFFSET = 1;
+    private static final int VERTICAL_OFFSET = 1;
+    private static final int DEPTH_OFFSET = 0;
+
     public int width = 3;
     public int height = 2;
     public int depth = 1;
@@ -83,13 +89,16 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
     public int maximumParallel = Integer.MAX_VALUE;
     public boolean enabledSingularityCore = true;
     public String customName = "";
-    public QuantumCraftingCpuCluster virtualCPU = null;
     public final List<QuantumCraftingCpuCluster> cpus = new ReferenceArrayList<>();
+
+    public QuantumCraftingCpuCluster virtualCPU = null;
     private AENetworkProxy gridProxy;
 
     public long usedStorage = 0;
     public int usedParallel = 0;
     private boolean wasActive = false;
+
+    private IStructureDefinition<QuantumComputer> structureDefinition;
 
     public QuantumComputer(int aID, String aName, String aNameRegional) {
         super(aID, aName, aNameRegional);
@@ -137,26 +146,37 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
 
     @Override
     public IStructureDefinition<QuantumComputer> getStructureDefinition() {
-        return StructureDefinition.<QuantumComputer>builder()
-            .addShape("main", StructureUtility.transpose(MultiblockStructureLoader.load("quantum_computer")))
+        if (structureDefinition != null) return structureDefinition;
+        structureDefinition = StructureDefinition.<QuantumComputer>builder()
+            .addShape(STRUCTURE_PIECE, StructureUtility.transpose(MultiblockStructureLoader.load(STRUCTURE_NAME)))
             .addElement('A', StructureUtility.ofBlock(GregTechAPI.sBlockCasings2, 0))
             .build();
+        return structureDefinition;
     }
 
     @Override
     public void construct(ItemStack stack, boolean hintsOnly) {
-        buildPiece("main", stack, hintsOnly, 1, 1, 0);
+        buildPiece(STRUCTURE_PIECE, stack, hintsOnly, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET);
     }
 
     @Override
     public int survivalConstruct(ItemStack stack, int budget, ISurvivalBuildEnvironment env) {
         if (mMachine) return -1;
-        return survivalBuildPiece("main", stack, 1, 1, 0, budget, env, false, true);
+        return survivalBuildPiece(
+            STRUCTURE_PIECE,
+            stack,
+            HORIZONTAL_OFFSET,
+            VERTICAL_OFFSET,
+            DEPTH_OFFSET,
+            budget,
+            env,
+            false,
+            true);
     }
 
     @Override
     public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        boolean formed = checkPiece("main", 1, 1, 0, errors);
+        boolean formed = checkPiece(STRUCTURE_PIECE, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors);
         getProxy().setValidSides(
             formed ? EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)) : EnumSet.noneOf(ForgeDirection.class));
         if (formed) createVirtualCPU();
@@ -345,7 +365,7 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
     }
 
     public String getLocalNameKey() {
-        return "gtnr.QuantumComputer.name";
+        return "gtnr.machine.quantum_computer.name";
     }
 
     @Override
@@ -356,10 +376,10 @@ public class QuantumComputer extends MTEExtendedPowerMultiBlockBase<QuantumCompu
 
     @Override
     public String getTooltipMachineType() {
-        // #tr gtnr.QuantumComputer.name
+        // #tr gtnr.machine.quantum_computer.recipe_type
         // # Quantum Computer
         // # zh_CN 量子计算机
-        return StatCollector.translateToLocal("gtnr.QuantumComputer.name");
+        return StatCollector.translateToLocal("gtnr.machine.quantum_computer.recipe_type");
     }
 
     @Override

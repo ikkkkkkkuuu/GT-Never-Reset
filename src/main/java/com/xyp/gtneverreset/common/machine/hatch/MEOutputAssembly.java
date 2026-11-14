@@ -236,37 +236,37 @@ public class MEOutputAssembly extends MaxCapacityMEOutputBus {
     @Override
     public String[] getDescription() {
         return new String[] {
-            // #tr tooltip.gtneverreset.me_output_assembly.outputs
+            // #tr gtnr.tooltip.gtneverreset.me_output_assembly.outputs
             // # Transfers multiblock item and fluid outputs to the ME network
             // # zh_CN 将多方块机器产出的物品和流体存入 ME 网络
-            StatCollector.translateToLocal("tooltip.gtneverreset.me_output_assembly.outputs"),
-            // #tr tooltip.gtneverreset.me_output_assembly.capacity
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_output_assembly.outputs"),
+            // #tr gtnr.tooltip.gtneverreset.me_output_assembly.capacity
             // # Separate caches: 2^63 - 1 items and 2^63 - 1 L of fluid
             // # zh_CN 独立输出缓存：物品 2^63 - 1 个，流体 2^63 - 1 L
-            StatCollector.translateToLocal("tooltip.gtneverreset.me_output_assembly.capacity"),
-            // #tr tooltip.gtneverreset.me_output_assembly.filters
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_output_assembly.capacity"),
+            // #tr gtnr.tooltip.gtneverreset.me_output_assembly.filters
             // # 9 item and 9 fluid filters; empty accepts all; configured filters accept matching outputs only
             // # zh_CN 物品和流体各有 9 格筛选；全空时接收全部，设置后仅接收匹配产物
-            StatCollector.translateToLocal("tooltip.gtneverreset.me_output_assembly.filters"),
-            // #tr tooltip.gtneverreset.me_output_assembly.pickup
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_output_assembly.filters"),
+            // #tr gtnr.tooltip.gtneverreset.me_output_assembly.pickup
             // # Pickup clears cached products and filters; drain the caches before removal
             // # zh_CN 拆下时清空缓存产物和筛选设置；请先排空缓存
-            StatCollector.translateToLocal("tooltip.gtneverreset.me_output_assembly.pickup"),
-            // #tr tooltip.gtneverreset.me_output_assembly.controls
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_output_assembly.pickup"),
+            // #tr gtnr.tooltip.gtneverreset.me_output_assembly.controls
             // # Screwdriver: toggle cache mode; Shift + screwdriver: toggle check mode
             // # zh_CN 螺丝刀右键切换缓存模式；潜行螺丝刀右键切换检查模式
-            StatCollector.translateToLocal("tooltip.gtneverreset.me_output_assembly.controls"),
-            // #tr tooltip.gtneverreset.me_output_assembly.priority
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_output_assembly.controls"),
+            // #tr gtnr.tooltip.gtneverreset.me_output_assembly.priority
             // # Matching filters take priority over unfiltered outputs
             // # zh_CN 筛选匹配的输出总成优先于未设置筛选的输出
-            StatCollector.translateToLocal("tooltip.gtneverreset.me_output_assembly.priority"),
-            // #tr tooltip.gtneverreset.me_output_assembly.network
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_output_assembly.priority"),
+            // #tr gtnr.tooltip.gtneverreset.me_output_assembly.network
             // # Requires ME power and one channel for both items and fluids
             // # zh_CN 物品和流体共用一个 ME 频道，需要网络供电
-            StatCollector.translateToLocal("tooltip.gtneverreset.me_output_assembly.network"),
-            // #tr tooltip.gtneverreset.me_output_assembly.stacking
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_output_assembly.network"),
+            // #tr gtnr.tooltip.gtneverreset.me_output_assembly.stacking
             // # Picked-up assemblies stack with newly crafted assemblies
             // # zh_CN 拆下的总成可与新合成的总成堆叠
-            StatCollector.translateToLocal("tooltip.gtneverreset.me_output_assembly.stacking") };
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_output_assembly.stacking") };
     }
 }

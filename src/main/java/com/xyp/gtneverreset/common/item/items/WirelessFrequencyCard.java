@@ -382,12 +382,12 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
                 "item.gtneverreset.wireless_frequency_card.source_count",
                 WirelessCardBinding.sources(stack.getTagCompound())
                     .size()));
-        // #tr gtneverreset.wireless.gui.visualisation
+        // #tr gtnr.wireless.gui.visualisation
         // # Network view: %s
         // # zh_CN 网络可视化：%s
         tooltip.add(
             (mode == 0 ? GRAY : AQUA) + StatCollector.translateToLocalFormatted(
-                "gtneverreset.wireless.gui.visualisation",
+                "gtnr.wireless.gui.visualisation",
                 StatCollector.translateToLocal(WirelessCardVisualisation.modeKey(mode))));
         tooltip.add(GRAY + StatCollector.translateToLocal(WirelessCardItemText.key("bauble_hint")));
         if (GuiScreen.isShiftKeyDown()) {
@@ -396,10 +396,10 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
             tooltip.add(GRAY + StatCollector.translateToLocal(WirelessCardItemText.key("tooltip.0")));
             tooltip.add(GRAY + StatCollector.translateToLocal(WirelessCardItemText.key("tooltip.2")));
             tooltip.add(GRAY + StatCollector.translateToLocal(WirelessCardItemText.key("visualisation_scroll_hint")));
-            // #tr gtneverreset.wireless.gui.visualisation_hint
+            // #tr gtnr.wireless.gui.visualisation_hint
             // # Hold or wear the card to view the network. Change views here or with the hotkey.
             // # zh_CN 手持或佩戴此卡查看网络，在此处或用快捷键切换视图。
-            tooltip.add(GRAY + StatCollector.translateToLocal("gtneverreset.wireless.gui.visualisation_hint"));
+            tooltip.add(GRAY + StatCollector.translateToLocal("gtnr.wireless.gui.visualisation_hint"));
             tooltip.add(GRAY + StatCollector.translateToLocal(WirelessCardItemText.key("tooltip.3")));
         } else tooltip.add(YELLOW + StatCollector.translateToLocal(WirelessCardItemText.key("more_hint")));
     }
