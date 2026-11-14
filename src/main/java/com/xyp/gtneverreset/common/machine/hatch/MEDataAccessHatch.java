@@ -75,21 +75,6 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
     }
 
     @Override
-    public AENetworkProxy getProxy() {
-        if (proxy == null) {
-            proxy = new AENetworkProxy(this, "proxy", GTNRItemList.MEDataAccessHatch.get(1), true);
-            proxy.setFlags(GridFlags.REQUIRE_CHANNEL);
-            proxy.setValidSides(EnumSet.of(getBaseMetaTileEntity().getFrontFacing()));
-            if (getBaseMetaTileEntity().getWorld() != null) {
-                proxy.setOwner(
-                    getBaseMetaTileEntity().getWorld()
-                        .getPlayerEntityByName(getBaseMetaTileEntity().getOwnerName()));
-            }
-        }
-        return proxy;
-    }
-
-    @Override
     public void onFirstTick(IGregTechTileEntity tile) {
         super.onFirstTick(tile);
         if (tile.isServerSide()) {
@@ -109,6 +94,24 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
     }
 
     @Override
+    public void onUnload() {
+        disconnect();
+        super.onUnload();
+    }
+
+    @Override
+    public void onRemoval() {
+        disconnect();
+        super.onRemoval();
+    }
+
+    private void disconnect() {
+        ready = false;
+        setMonitor(null);
+        if (snapshot.clear()) super.onContentsChanged(-1);
+    }
+
+    @Override
     public void onFacingChange() {
         getProxy().setValidSides(EnumSet.of(getBaseMetaTileEntity().getFrontFacing()));
         refreshPending = true;
@@ -119,13 +122,8 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
         refreshPending = true;
     }
 
-    private void setMonitor(IMEMonitor<IAEItemStack> next) {
-        if (monitor == next) return;
-        if (monitor != null) monitor.removeListener(this);
-        monitor = next;
-        refreshPending = true;
-        if (monitor != null) monitor.addListener(this, monitor);
-    }
+    @Override
+    public void securityBreak() {}
 
     /** Invalidates the inherited recipe cache only when the visible research actually changes. */
     private void refreshSnapshot() {
@@ -160,6 +158,14 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
         } finally {
             refreshing = false;
         }
+    }
+
+    private void setMonitor(IMEMonitor<IAEItemStack> next) {
+        if (monitor == next) return;
+        if (monitor != null) monitor.removeListener(this);
+        monitor = next;
+        refreshPending = true;
+        if (monitor != null) monitor.addListener(this, monitor);
     }
 
     @Override
@@ -243,18 +249,18 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
     }
 
     @Override
-    public boolean onRightclick(IGregTechTileEntity tile, EntityPlayer player) {
-        return false;
-    }
-
-    @Override
-    public boolean isPowered() {
-        return proxy != null && proxy.isPowered();
-    }
-
-    @Override
-    public boolean isActive() {
-        return proxy != null && proxy.isActive();
+    public AENetworkProxy getProxy() {
+        if (proxy == null) {
+            proxy = new AENetworkProxy(this, "proxy", GTNRItemList.MEDataAccessHatch.get(1), true);
+            proxy.setFlags(GridFlags.REQUIRE_CHANNEL);
+            proxy.setValidSides(EnumSet.of(getBaseMetaTileEntity().getFrontFacing()));
+            if (getBaseMetaTileEntity().getWorld() != null) {
+                proxy.setOwner(
+                    getBaseMetaTileEntity().getWorld()
+                        .getPlayerEntityByName(getBaseMetaTileEntity().getOwnerName()));
+            }
+        }
+        return proxy;
     }
 
     @Override
@@ -271,44 +277,6 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
     public DimensionalCoord getLocation() {
         IGregTechTileEntity tile = getBaseMetaTileEntity();
         return new DimensionalCoord(tile.getWorld(), tile.getXCoord(), tile.getYCoord(), tile.getZCoord());
-    }
-
-    @Override
-    public void securityBreak() {}
-
-    @Override
-    public void saveNBTData(NBTTagCompound nbt) {
-        super.saveNBTData(nbt);
-        getProxy().writeToNBT(nbt);
-    }
-
-    @Override
-    public void loadNBTData(NBTTagCompound nbt) {
-        super.loadNBTData(nbt);
-        ready = false;
-        setMonitor(null);
-        snapshot.clear();
-        refreshPending = true;
-        getProxy().readFromNBT(nbt);
-        super.onContentsChanged(-1);
-    }
-
-    private void disconnect() {
-        ready = false;
-        setMonitor(null);
-        if (snapshot.clear()) super.onContentsChanged(-1);
-    }
-
-    @Override
-    public void onUnload() {
-        disconnect();
-        super.onUnload();
-    }
-
-    @Override
-    public void onRemoval() {
-        disconnect();
-        super.onRemoval();
     }
 
     @Override
@@ -340,6 +308,38 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
             // # Connect ME at the front; requires power and one channel
             // # zh_CN 从正面连接 ME，需要供电和一个频道
             StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_data_access.3") };
+    }
+
+    @Override
+    public boolean onRightclick(IGregTechTileEntity tile, EntityPlayer player) {
+        return false;
+    }
+
+    @Override
+    public void saveNBTData(NBTTagCompound nbt) {
+        super.saveNBTData(nbt);
+        getProxy().writeToNBT(nbt);
+    }
+
+    @Override
+    public void loadNBTData(NBTTagCompound nbt) {
+        super.loadNBTData(nbt);
+        ready = false;
+        setMonitor(null);
+        snapshot.clear();
+        refreshPending = true;
+        getProxy().readFromNBT(nbt);
+        super.onContentsChanged(-1);
+    }
+
+    @Override
+    public boolean isPowered() {
+        return proxy != null && proxy.isPowered();
+    }
+
+    @Override
+    public boolean isActive() {
+        return proxy != null && proxy.isActive();
     }
 
     static final class MEDataStickSnapshot {
