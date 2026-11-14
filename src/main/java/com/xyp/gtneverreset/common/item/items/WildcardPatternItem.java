@@ -39,8 +39,8 @@ public class WildcardPatternItem extends ItemEncodedPattern implements IGuiHolde
         super();
         setMaxStackSize(1);
         // #tr item.wildcardpattern.name
-        // # Wildcard Pattern
-        // # zh_CN 通配样板符
+        // # &{nf;2}&9Pattern Wildcard
+        // # zh_CN &{nf;2}&9样板通配符
         setUnlocalizedName(UNLOCALIZED_NAME);
         setTextureName(GTNeverReset.MODID + ":wildcard_pattern");
         setCreativeTab(GTNRCreativeTabs.ITEMS);
