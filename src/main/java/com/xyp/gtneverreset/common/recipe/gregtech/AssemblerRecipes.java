@@ -8,6 +8,7 @@ import static gregtech.api.util.GTRecipeBuilder.SECONDS;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.gtnewhorizon.cropsnh.api.CropsNHItemList;
@@ -217,9 +218,19 @@ public final class AssemblerRecipes {
 
     /** Adds upgrades that retain the ordinary ME output bus and hatch as crafting prerequisites. */
     private static void registerMaxCapacityMEOutputRecipes() {
+        // Match the craftable 1k variants, including the capacity NBT used by AE patterns.
+        ItemStack outputBus = ItemList.Hatch_Output_Bus_ME.get(1L);
+        NBTTagCompound busTag = new NBTTagCompound();
+        busTag.setLong("baseCapacity", 8192L);
+        outputBus.setTagCompound(busTag);
+        ItemStack outputHatch = ItemList.Hatch_Output_ME.get(1L);
+        NBTTagCompound hatchTag = new NBTTagCompound();
+        hatchTag.setLong("baseCapacity", 8192L * 256);
+        outputHatch.setTagCompound(hatchTag);
+
         GTRecipeBuilder.builder()
             .itemInputs(
-                ItemList.Hatch_Output_Bus_ME.get(1L),
+                outputBus,
                 new Object[] { OrePrefixes.circuit.get(Materials.LV), 2 },
                 GTOreDictUnificator.get(OrePrefixes.plate, Materials.Aluminium, 2))
             .itemOutputs(GTNRItemList.MaxCapacityMEOutputBus.get(1))
@@ -229,7 +240,7 @@ public final class AssemblerRecipes {
 
         GTRecipeBuilder.builder()
             .itemInputs(
-                ItemList.Hatch_Output_ME.get(1L),
+                outputHatch,
                 new Object[] { OrePrefixes.circuit.get(Materials.LV), 2 },
                 GTOreDictUnificator.get(OrePrefixes.plate, Materials.Aluminium, 2))
             .itemOutputs(GTNRItemList.MaxCapacityMEOutputHatch.get(1))
