@@ -12,7 +12,6 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
-import com.cleanroommc.modularui.api.IThemeApi;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.Interactable;
@@ -30,7 +29,6 @@ import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.PageButton;
 import com.cleanroommc.modularui.widgets.PagedWidget;
-import com.cleanroommc.modularui.widgets.SliderWidget;
 import com.cleanroommc.modularui.widgets.TextWidget;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.xyp.gtneverreset.common.item.items.ItemUniversalWand;
@@ -85,12 +83,9 @@ public final class UniversalWandGui {
         BooleanSyncValue inventory = new BooleanSyncValue(
             () -> ItemUniversalWand.isInventoryCollection(expected),
             value -> ItemUniversalWand.setInventoryCollection(player, expected, value)).allowC2S();
-        BooleanSyncValue shears = new BooleanSyncValue(
-            () -> ItemUniversalWand.isShearsEnabled(expected),
-            value -> ItemUniversalWand.setShearsEnabled(player, expected, value)).allowC2S();
-        BooleanSyncValue hoe = new BooleanSyncValue(
-            () -> ItemUniversalWand.isHoeEnabled(expected),
-            value -> ItemUniversalWand.setHoeEnabled(player, expected, value)).allowC2S();
+        BooleanSyncValue backfill = new BooleanSyncValue(
+            () -> ItemUniversalWand.isOreBackfillEnabled(expected),
+            value -> ItemUniversalWand.setOreBackfillEnabled(player, expected, value)).allowC2S();
         BooleanSyncValue crops = new BooleanSyncValue(
             () -> ItemUniversalWand.isCropHarvestEnabled(expected),
             value -> ItemUniversalWand.setCropHarvestEnabled(player, expected, value)).allowC2S();
@@ -137,8 +132,7 @@ public final class UniversalWandGui {
         syncManager.syncValue("wand_max_mining_count", 0, max);
         syncManager.syncValue("wand_collect_items", 0, inventory);
         syncManager.syncValue("wand_ae_priority", 0, ae);
-        syncManager.syncValue("wand_shears", 0, shears);
-        syncManager.syncValue("wand_hoe", 0, hoe);
+        syncManager.syncValue("wand_ore_backfill", 0, backfill);
         syncManager.syncValue("wand_crop_harvest", 0, crops);
         syncManager.syncValue("wand_crop_sticks", 0, cropSticks);
         syncManager.syncValue("wand_force_kill", 0, forceKill);
@@ -159,300 +153,305 @@ public final class UniversalWandGui {
             true,
             (manager, handler) -> accelerationPanel(player, expected, manager, accelerationRates.getStringValue()));
         syncManager.syncValue("wand_aoe_size", 0, aoeSize);
-        // #tr gtneverreset.gui.universal_wand.section.tools
-        // # Tool settings
-        // # zh_CN 工具设置
-        // #tr gtneverreset.gui.universal_wand.tab.tools
-        // # Tools
-        // # zh_CN 工具
-        ParentWidget<?> tools = section("tools", 0, 84)
-            // #tr gtneverreset.gui.universal_wand.harvest_mode
-            // # Harvest mode
-            // # zh_CN 采集模式
-            .child(
-                IKey.lang("gtneverreset.gui.universal_wand.harvest_mode")
-                    .asWidget()
-                    .pos(6, 25))
-            // #tr gtneverreset.gui.universal_wand.silk
-            // # Silk Touch
-            // # zh_CN 精准采集
-            .child(
-                radioOption(syncManager, "silk", fortune, false).pos(80, 22)
-                    .size(74, 16))
-            // #tr gtneverreset.gui.universal_wand.fortune
-            // # Fortune
-            // # zh_CN 时运
-            .child(
-                radioOption(syncManager, "fortune", fortune, true).pos(158, 22)
-                    .size(70, 16))
-            .child(
-                // #tr gtneverreset.gui.universal_wand.protection
-                // # Protection mode
-                // # zh_CN 保护模式
-                // #tr gtneverreset.gui.universal_wand.protection.tooltip
-                // # Prevent accidental mining and pause automatic harvesting.
-                // # zh_CN 防止误挖，暂停自动收菜。
-                stateSwitch("protection", protection).pos(6, 42)
-                    .size(222, 16))
-            // #tr gtneverreset.gui.universal_wand.cooldown
-            // # Break cooldown (ticks)
-            // # zh_CN 破坏冷却（tick）
-            // #tr gtneverreset.gui.universal_wand.cooldown.tooltip
-            // # Mining cooldown after breaking a block: 0–20 ticks. Zero adds no cooldown.
-            // # zh_CN 破坏方块后的挖掘冷却，范围 0–20 tick；0 表示不添加冷却。
-            .child(numberRow("cooldown", cooldown, 0, 20, 62, false));
-        // #tr gtneverreset.gui.universal_wand.section.combat
-        // # Combat
-        // # zh_CN 战斗
-        // #tr gtneverreset.gui.universal_wand.tab.combat
-        // # Abilities
-        // # zh_CN 战斗 / 能力
-        ParentWidget<?> combat = section("combat", 0, 84)
-            // #tr gtneverreset.gui.universal_wand.force_kill
-            // # Force kill
-            // # zh_CN 强制击杀
-            // #tr gtneverreset.gui.universal_wand.force_kill.tooltip
-            // # Attempt to kill the target directly, excluding players and known allies.
-            // # zh_CN 尝试直接击杀目标，排除玩家与已识别友方。
-            .child(stateSwitch("force_kill", forceKill).pos(6, 22))
-            // #tr gtneverreset.gui.universal_wand.beheading
-            // # Beheading
-            // # zh_CN 斩首
-            // #tr gtneverreset.gui.universal_wand.beheading.tooltip
-            // # Get an extra skull from vanilla or Special Mobs skeletons, wither skeletons, zombies and creepers.
-            // # zh_CN 击杀原版及 Special Mobs 的骷髅、凋灵骷髅、僵尸或苦力怕，额外获得头颅。
-            .child(stateSwitch("beheading", beheading).pos(6, 42))
-            // #tr gtneverreset.gui.universal_wand.spawn_egg
-            // # Spawn Egg
-            // # zh_CN 生物捕捉
-            // #tr gtneverreset.gui.universal_wand.spawn_egg.tooltip
-            // # Get a spawn egg from supported mobs on kill. Original mob data is not retained.
-            // # zh_CN 击杀支持的生物时获得刷怪蛋，不保留原生物数据。
-            .child(stateSwitch("spawn_egg", spawnEgg).pos(119, 42))
-            // #tr gtneverreset.gui.universal_wand.aoe_size
-            // # Attack area
-            // # zh_CN 范围攻击大小
-            // #tr gtneverreset.gui.universal_wand.aoe_size.tooltip
-            // # Attack area: 1x1 to 27x27, extending 3 blocks above and below. 1x1 disables area attacks.
-            // # zh_CN 攻击范围 1×1–27×27，高度上下各 3 格；1×1 关闭范围攻击。
-            .child(numberRow("aoe_size", aoeSize, 0, 13, 62, true));
-        // #tr gtneverreset.gui.universal_wand.section.auxiliary
-        // # Player abilities
-        // # zh_CN 玩家能力
-        ParentWidget<?> auxiliary = section("auxiliary", 88, 84)
-            // #tr gtneverreset.gui.universal_wand.player_protection
-            // # Player protection
-            // # zh_CN 玩家保护
-            // #tr gtneverreset.gui.universal_wand.player_protection.tooltip
-            // # While carried, prevent damage and death and clear harmful effects.
-            // # zh_CN 携带时免疫伤害与死亡，并清除负面药效。
-            .child(stateSwitch("player_protection", playerProtection).pos(6, 22))
-            // #tr gtneverreset.gui.universal_wand.no_aggro
-            // # Advanced stealth
-            // # zh_CN 高级隐身
-            // #tr gtneverreset.gui.universal_wand.no_aggro.tooltip
-            // # While carried, hide from view and mobs; no natural spawning or vanilla spawner activation. Interaction
-            // stays available.
-            // # zh_CN 携带时隐身、免仇恨，不触发自然刷怪与原版刷怪笼；仍可交互。
-            .child(stateSwitch("no_aggro", noAggro).pos(119, 22))
-            // #tr gtneverreset.gui.universal_wand.teleport
-            // # Teleport
-            // # zh_CN 传送
-            // #tr gtneverreset.gui.universal_wand.teleport.tooltip
-            // # Use Ender IO Staff of Teleportation controls. Other successful right-click actions prevent teleport.
-            // # zh_CN 按 Ender IO 传送权杖的操作传送；其他右键操作生效时不传送。
-            .child(stateSwitch("teleport", teleport).pos(6, 42))
-            // #tr gtneverreset.gui.universal_wand.flight_speed_override
-            // # Flight speed override
-            // # zh_CN 飞行速度覆盖
-            // #tr gtneverreset.gui.universal_wand.flight_speed_override.tooltip
-            // # When enabled, prioritize wand flight speed, suppress extra equipment thrust horizontally, and slow
-            // faster after releasing movement keys. When disabled, allow equipment boosts with no extra wand slowing.
-            // Enabled by default.
-            // # zh_CN 开启时优先使用工具飞行速度、抑制装备额外水平推力，松开按键后加快减速；关闭时保留装备加速，停止工具的额外减速。默认开启。
-            .child(stateSwitch("flight_speed_override", flightOverride).pos(119, 42))
-            .child(
-                new ButtonWidget<>().name("acceleration")
-                    .overlay(
-                        IKey.dynamic(
-                            // #tr gtneverreset.gui.universal_wand.time_acceleration.tooltip
-                            // # While enabled, sneak-right-click the target to apply the selected acceleration settings
-                            // # zh_CN 开启后手持工具 Shift+右键目标，应用当前加速配置
-                            () -> (controlAllowed("time_acceleration") ? "" : "§7")
-                                // #tr gtneverreset.gui.universal_wand.time_acceleration
-                                // # Time acceleration
-                                // # zh_CN 时间加速
-                                + StatCollector.translateToLocal("gtneverreset.gui.universal_wand.time_acceleration"))
-                            .scale(1.0F))
-                    .onMousePressed(button -> {
-                        if (button != 0 || !UniversalWandFeature.ACCELERATION.allowed()) return false;
-                        accelerationSettings.openPanel();
-                        return true;
-                    })
-                    .tooltipDynamic(tooltip -> featureTooltip(tooltip, "time_acceleration"))
-                    .pos(6, 62)
-                    .size(222, 16));
-        // #tr gtneverreset.gui.universal_wand.section.mining
-        // # Mining
-        // # zh_CN 采矿
-        // #tr gtneverreset.gui.universal_wand.tab.mining
-        // # Mining
-        // # zh_CN 采矿
-        ParentWidget<?> mining = section("mining", 0, 144)
-            // #tr gtneverreset.gui.universal_wand.enhanced_chain
-            // # Enhanced chain
-            // # zh_CN 增强连锁
-            // #tr gtneverreset.gui.universal_wand.enhanced_chain.tooltip
-            // # Expand the chain search area with adjustable radius and block limit.
-            // # zh_CN 扩大连锁搜索范围，半径与数量可调。
-            .child(stateSwitch("enhanced_chain", enhanced).pos(6, 22))
-            // #tr gtneverreset.gui.universal_wand.gt_small_chain
-            // # Chain GT small ores
-            // # zh_CN 连锁贫瘠矿
-            // #tr gtneverreset.gui.universal_wand.gt_small_chain.tooltip
-            // # Chain matching GT large ores together with their small ore variants.
-            // # zh_CN GT 大矿石与对应的小矿石（贫瘠矿）混合连锁。
-            .child(stateSwitch("gt_small_chain", small).pos(119, 22))
-            // #tr gtneverreset.gui.universal_wand.crop_harvest
-            // # Automatic crop harvesting
-            // # zh_CN 全自动收菜
-            // #tr gtneverreset.gui.universal_wand.crop_harvest.tooltip
-            // # While held, harvest mature crops in a 16x16x3 area every second. Pauses in protection mode.
-            // # zh_CN 手持时每秒自动收获周围 16×16×3 范围的成熟作物；保护模式下暂停。
-            .child(stateSwitch("crop_harvest", crops).pos(6, 42))
-            // #tr gtneverreset.gui.universal_wand.crop_sticks
-            // # Crop-stick support
-            // # zh_CN 支持作物架
-            // #tr gtneverreset.gui.universal_wand.crop_sticks.tooltip
-            // # Include Crops NH crops in automatic harvesting, keeping crops and sticks intact.
-            // # zh_CN 自动收菜时也收获 Crops NH 作物架，保留作物与架子。
-            .child(stateSwitch("crop_sticks", cropSticks).pos(119, 42))
-            // #tr gtneverreset.gui.universal_wand.radius
-            // # Enhanced radius
-            // # zh_CN 增强半径
-            // #tr gtneverreset.gui.universal_wand.radius.tooltip
-            // # Enhanced chain-mining search radius: 1–128.
-            // # zh_CN 增强连锁的搜索半径，范围 1–128。
-            .child(numberRow("radius", radius, 1, 128, 62, false))
-            .child(
-                new TextWidget<>(
-                    // #tr gtneverreset.gui.universal_wand.max_count
-                    // # Max blocks
-                    // # zh_CN 最大挖掘方块
-                    IKey.lang("gtneverreset.gui.universal_wand.max_count")
-                        .scale(1.0F)).pos(6, 85)
-                            .size(105, 16)
-                            .maxWidth(105))
-            .child(
-                new TextFieldWidget().formatAsInteger(true)
-                    .setEnabledIf(widget -> UniversalWandFeature.CHAIN.allowed())
-                    .numbersInt(1, Integer.MAX_VALUE)
-                    .setMaxLength(10)
-                    .value(max)
-                    .pos(119, 82)
-                    // #tr gtneverreset.gui.universal_wand.max_count.tooltip
-                    // # Maximum blocks processed by one chain-mining operation. Minimum: 1.
-                    // # zh_CN 一次连锁挖掘最多处理的方块数，最小为 1。
-                    .addTooltipLine(StatCollector.translateToLocal("gtneverreset.gui.universal_wand.max_count.tooltip"))
-                    .size(109, 16))
-            .child(
-                new ButtonWidget<>().setEnabledIf(widget -> !UniversalWandFeature.CHAIN.allowed())
-                    .overlay(IKey.dynamic(() -> "§7" + max.getIntValue()))
-                    .onMousePressed(button -> true)
-                    .tooltipDynamic(tooltip -> featureTooltip(tooltip, "max_count"))
-                    .pos(119, 82)
-                    .size(109, 16))
-            .child(
-                // #tr gtneverreset.gui.universal_wand.force_bedrock
-                // # Force bedrock mining
-                // # zh_CN 强制挖掘基岩
-                // #tr gtneverreset.gui.universal_wand.force_bedrock.tooltip
-                // # Allow R to remove the targeted vanilla bedrock.
-                // # zh_CN 允许按 R 移除准星指向的原版基岩。
-                stateSwitch("force_bedrock", bedrock).pos(6, 102)
-                    .size(222, 16))
-            // #tr gtneverreset.gui.universal_wand.collect_items
-            // # Item collection
-            // # zh_CN 物品收集
-            // #tr gtneverreset.gui.universal_wand.collect_items.tooltip
-            // # Collect harvest and kill drops into your inventory; drop any overflow.
-            // # zh_CN 采集与击杀掉落优先收入背包，满时掉落。
-            .child(stateSwitch("collect_items", inventory).pos(6, 122))
-            // #tr gtneverreset.gui.universal_wand.ae_priority
-            // # Store drops in AE first
-            // # zh_CN AE优先存入
-            // #tr gtneverreset.gui.universal_wand.ae_priority.tooltip
-            // # Store drops in bound AE first, then your inventory. Enables item collection.
-            // # zh_CN 掉落优先存入已绑定 AE，剩余收入背包；自动开启物品收集。
-            .child(stateSwitch("ae_priority", ae).pos(119, 122));
-        // #tr gtneverreset.gui.universal_wand.shears
-        // # Shears
-        // # zh_CN 剪刀
-        // #tr gtneverreset.gui.universal_wand.shears.tooltip
-        // # Shear entities and shearable blocks; drops follow the item collection settings.
-        // # zh_CN 剪切生物和可剪切方块；产物沿用物品收集设置。
-        // #tr gtneverreset.gui.universal_wand.section.vanilla
-        // # Vanilla tools
-        // # zh_CN 原版工具
-        ParentWidget<?> vanilla = section("vanilla", 88, 44).child(stateSwitch("shears", shears).pos(6, 22))
-            // #tr gtneverreset.gui.universal_wand.hoe
-            // # Hoe
-            // # zh_CN 锄头
-            // #tr gtneverreset.gui.universal_wand.hoe.tooltip
-            // # Till soil with the vanilla hoe.
-            // # zh_CN 使用原版锄头耕地。
-            .child(stateSwitch("hoe", hoe).pos(119, 22));
         PagedWidget.Controller tabs = new PagedWidget.Controller();
         PagedWidget<?> pages = new PagedWidget<>().controller(tabs)
-            .pos(6, 40)
-            .size(234, 172);
-        pages.addPage(
-            new ParentWidget<>().size(234, 172)
-                .child(tools)
-                .child(vanilla));
+            .pos(102, 34)
+            .size(258, 204);
+        ParentWidget<?> mining = new ParentWidget<>().size(258, 204);
+        // #tr gtneverreset.gui.universal_wand.harvest_mode
+        // # Harvest mode
+        // # zh_CN 采集模式
+        mining.child(
+            IKey.lang("gtneverreset.gui.universal_wand.harvest_mode")
+                .asWidget()
+                .pos(6, 7));
+        // #tr gtneverreset.gui.universal_wand.silk
+        // # Silk Touch
+        // # zh_CN 精准采集
+        // #tr gtneverreset.gui.universal_wand.fortune
+        // # Fortune
+        // # zh_CN 时运
+        mining.child(
+            radioOption(syncManager, "silk", fortune, false).pos(100, 2)
+                .size(76, 20));
+        mining.child(
+            radioOption(syncManager, "fortune", fortune, true).pos(178, 2)
+                .size(74, 20));
+        // #tr gtneverreset.gui.universal_wand.cooldown
+        // # Break cooldown (ticks)
+        // # zh_CN 破坏冷却（tick）
+        // #tr gtneverreset.gui.universal_wand.cooldown.tooltip
+        // # Mining cooldown after breaking a block: 0–20 ticks. Zero adds no cooldown.
+        // # zh_CN 破坏方块后的挖掘冷却，范围 0–20 tick；0 表示不添加冷却。
+        mining.child(numberRow("cooldown", cooldown, 0, 20, 28, false, 1));
+        // #tr gtneverreset.gui.universal_wand.enhanced_chain
+        // # Enhanced chain
+        // # zh_CN 增强连锁
+        // #tr gtneverreset.gui.universal_wand.enhanced_chain.tooltip
+        // # Chain across gaps between matching blocks, with adjustable gap and block limits.
+        // # zh_CN 跨越匹配方块之间的间隔继续连锁，间隔与数量可调。
+        mining.child(
+            stateSwitch("enhanced_chain", enhanced).pos(6, 54)
+                .size(120, 20));
+        // #tr gtneverreset.gui.universal_wand.gt_small_chain
+        // # Small ores
+        // # zh_CN 连锁贫瘠矿
+        // #tr gtneverreset.gui.universal_wand.gt_small_chain.tooltip
+        // # Chain matching GT large ores together with their small ore variants.
+        // # zh_CN GT 大矿石与对应的小矿石（贫瘠矿）混合连锁。
+        mining.child(
+            stateSwitch("gt_small_chain", small).pos(130, 54)
+                .size(122, 20));
+        // #tr gtneverreset.gui.universal_wand.radius
+        // # Maximum gap
+        // # zh_CN 最大间隔
+        // #tr gtneverreset.gui.universal_wand.radius.tooltip
+        // # Maximum consecutive non-matching blocks: 1–128. Resets at each matching block.
+        // # zh_CN 允许跨越的连续非匹配方块数，范围 1–128；每遇到匹配方块重新计数。
+        mining.child(numberRow("radius", radius, 1, 128, 80, false, 1));
+        for (int i = 0; i < 4; i++) {
+            int preset = new int[] { 1, 8, 32, 128 }[i];
+            mining.child(
+                new ButtonWidget<>().overlay(IKey.str(Integer.toString(preset)))
+                    .onMousePressed(button -> {
+                        if (button != 0 || !controlAllowed("radius")) return false;
+                        radius.setIntValue(preset, true, true);
+                        return true;
+                    })
+                    .pos(128 + i * 31, 104)
+                    .size(29, 18));
+        }
+        // #tr gtneverreset.gui.universal_wand.max_count
+        // # Max blocks
+        // # zh_CN 最大挖掘方块
+        // #tr gtneverreset.gui.universal_wand.max_count.tooltip
+        // # Maximum blocks processed by one chain-mining operation. Minimum: 1.
+        // # zh_CN 一次连锁挖掘最多处理的方块数，最小为 1。
+        mining.child(numberRow("max_count", max, 1, Integer.MAX_VALUE, 128, false, 64));
+        // #tr gtneverreset.gui.universal_wand.ore_backfill
+        // # Backfill mined ores
+        // # zh_CN 矿脉回填石头
+        // #tr gtneverreset.gui.universal_wand.ore_backfill.tooltip
+        // # Replace successfully chain-mined ores with stone. Does not fill ordinary blocks or single-block mining.
+        // # zh_CN 用石头回填成功连锁挖掉的矿石；不填普通方块，单独挖掘时不回填。
+        mining.child(
+            stateSwitch("ore_backfill", backfill).pos(6, 154)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.force_bedrock
+        // # Force bedrock mining
+        // # zh_CN 强制挖掘基岩
+        // #tr gtneverreset.gui.universal_wand.force_bedrock.tooltip
+        // # Allow R to remove the targeted vanilla bedrock.
+        // # zh_CN 允许按 R 移除准星指向的原版基岩。
+        mining.child(
+            stateSwitch("force_bedrock", bedrock).pos(6, 180)
+                .size(244, 20));
+        ParentWidget<?> collection = new ParentWidget<>().size(258, 204);
+        // #tr gtneverreset.gui.universal_wand.collect_items
+        // # Item collection
+        // # zh_CN 物品收集
+        // #tr gtneverreset.gui.universal_wand.collect_items.tooltip
+        // # Collect harvest and kill drops into your inventory; drop any overflow.
+        // # zh_CN 采集与击杀掉落优先收入背包，满时掉落。
+        collection.child(
+            stateSwitch("collect_items", inventory).pos(6, 6)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.ae_priority
+        // # Store drops in AE first
+        // # zh_CN AE优先存入
+        // #tr gtneverreset.gui.universal_wand.ae_priority.tooltip
+        // # Store drops in bound AE first, then your inventory. Enables item collection.
+        // # zh_CN 掉落优先存入已绑定 AE，剩余收入背包；自动开启物品收集。
+        collection.child(
+            stateSwitch("ae_priority", ae).pos(6, 34)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.crop_harvest
+        // # Automatic crop harvesting
+        // # zh_CN 全自动收菜
+        // #tr gtneverreset.gui.universal_wand.crop_harvest.tooltip
+        // # While held, harvest mature crops in a 16x16x3 area every second. Pauses in protection mode.
+        // # zh_CN 手持时每秒自动收获周围 16×16×3 范围的成熟作物；保护模式下暂停。
+        collection.child(
+            stateSwitch("crop_harvest", crops).pos(6, 78)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.crop_sticks
+        // # Crop-stick support
+        // # zh_CN 支持作物架
+        // #tr gtneverreset.gui.universal_wand.crop_sticks.tooltip
+        // # Include Crops NH crops in automatic harvesting, keeping crops and sticks intact.
+        // # zh_CN 自动收菜时也收获 Crops NH 作物架，保留作物与架子。
+        collection.child(
+            stateSwitch("crop_sticks", cropSticks).pos(6, 106)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.collection_hint
+        // # AE priority enables collection; disabling collection also disables AE priority.
+        // # zh_CN AE 优先会开启物品收集；关闭物品收集也会关闭 AE 优先。
+        collection.child(
+            IKey.lang("gtneverreset.gui.universal_wand.collection_hint")
+                .asWidget()
+                .pos(6, 146)
+                .size(244, 48));
+        ParentWidget<?> combat = new ParentWidget<>().size(258, 204);
+        // #tr gtneverreset.gui.universal_wand.force_kill
+        // # Force kill
+        // # zh_CN 强制击杀
+        // #tr gtneverreset.gui.universal_wand.force_kill.tooltip
+        // # Attempt to kill the target directly, excluding players and known allies.
+        // # zh_CN 尝试直接击杀目标，排除玩家与已识别友方。
+        combat.child(
+            stateSwitch("force_kill", forceKill).pos(6, 6)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.beheading
+        // # Beheading
+        // # zh_CN 斩首
+        // #tr gtneverreset.gui.universal_wand.beheading.tooltip
+        // # Get an extra skull from vanilla or Special Mobs skeletons, wither skeletons, zombies and creepers.
+        // # zh_CN 击杀原版及 Special Mobs 的骷髅、凋灵骷髅、僵尸或苦力怕，额外获得头颅。
+        combat.child(
+            stateSwitch("beheading", beheading).pos(6, 34)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.spawn_egg
+        // # Spawn Egg
+        // # zh_CN 生物捕捉
+        // #tr gtneverreset.gui.universal_wand.spawn_egg.tooltip
+        // # Get a spawn egg from supported mobs on kill. Original mob data is not retained.
+        // # zh_CN 击杀支持的生物时获得刷怪蛋，不保留原生物数据。
+        combat.child(
+            stateSwitch("spawn_egg", spawnEgg).pos(6, 62)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.aoe_size
+        // # Attack area
+        // # zh_CN 范围攻击大小
+        // #tr gtneverreset.gui.universal_wand.aoe_size.tooltip
+        // # Attack area: 1x1 to 27x27, extending 3 blocks above and below. 1x1 disables area attacks.
+        // # zh_CN 攻击范围 1×1–27×27，高度上下各 3 格；1×1 关闭范围攻击。
+        combat.child(numberRow("aoe_size", aoeSize, 0, 13, 94, true, 1));
+        ParentWidget<?> abilities = new ParentWidget<>().size(258, 204);
+        // #tr gtneverreset.gui.universal_wand.player_protection
+        // # Player protection
+        // # zh_CN 玩家保护
+        // #tr gtneverreset.gui.universal_wand.player_protection.tooltip
+        // # While carried, prevent damage and death and clear harmful effects.
+        // # zh_CN 携带时免疫伤害与死亡，并清除负面药效。
+        abilities.child(
+            stateSwitch("player_protection", playerProtection).pos(6, 6)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.no_aggro
+        // # Advanced stealth
+        // # zh_CN 高级隐身
+        // #tr gtneverreset.gui.universal_wand.no_aggro.tooltip
+        // # While carried, hide from view and mobs; no natural spawning or vanilla spawner activation. Interaction
+        // stays available.
+        // # zh_CN 携带时隐身、免仇恨，不触发自然刷怪与原版刷怪笼；仍可交互。
+        abilities.child(
+            stateSwitch("no_aggro", noAggro).pos(6, 34)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.teleport
+        // # Teleport
+        // # zh_CN 传送
+        // #tr gtneverreset.gui.universal_wand.teleport.tooltip
+        // # Use Ender IO Staff of Teleportation controls. Other successful right-click actions prevent teleport.
+        // # zh_CN 按 Ender IO 传送权杖的操作传送；其他右键操作生效时不传送。
+        abilities.child(
+            stateSwitch("teleport", teleport).pos(6, 78)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.flight_speed_override
+        // # Flight speed override
+        // # zh_CN 飞行速度覆盖
+        // #tr gtneverreset.gui.universal_wand.flight_speed_override.tooltip
+        // # When enabled, prioritize wand flight speed, suppress extra equipment thrust horizontally, and slow faster
+        // after releasing movement keys. When disabled, allow equipment boosts with no extra wand slowing. Enabled by
+        // default.
+        // # zh_CN 开启时优先使用工具飞行速度、抑制装备额外水平推力，松开按键后加快减速；关闭时保留装备加速，停止工具的额外减速。默认开启。
+        abilities.child(
+            stateSwitch("flight_speed_override", flightOverride).pos(6, 106)
+                .size(244, 20));
+        ParentWidget<?> accelerationPage = new ParentWidget<>().size(258, 204);
+        // #tr gtneverreset.gui.universal_wand.time_acceleration
+        // # Time acceleration
+        // # zh_CN 时间加速
+        // #tr gtneverreset.gui.universal_wand.time_acceleration.tooltip
+        // # While enabled, sneak-right-click the target to apply the selected acceleration settings
+        // # zh_CN 开启后手持工具 Shift+右键目标，应用当前加速配置
+        accelerationPage.child(
+            stateSwitch("time_acceleration", acceleration).pos(6, 6)
+                .size(244, 20));
+        // #tr gtneverreset.gui.universal_wand.acceleration_settings
+        // # Multiplier and duration settings
+        // # zh_CN 倍率与持续模式设置
+        accelerationPage.child(
+            new ButtonWidget<>().name("acceleration")
+                .overlay(IKey.lang("gtneverreset.gui.universal_wand.acceleration_settings"))
+                .onMousePressed(button -> {
+                    if (button != 0 || !UniversalWandFeature.ACCELERATION.allowed()) return false;
+                    accelerationSettings.openPanel();
+                    return true;
+                })
+                .pos(6, 42)
+                .size(244, 24));
+        accelerationPage.child(
+            IKey.lang("gtneverreset.gui.universal_wand.time_acceleration.tooltip")
+                .asWidget()
+                .pos(6, 84)
+                .size(244, 48));
         pages.addPage(mining);
-        pages.addPage(
-            new ParentWidget<>().size(234, 172)
-                .child(combat)
-                .child(auxiliary));
-        ModularPanel panel = ModularPanel.defaultPanel("gtneverreset_universal_wand", 246, 216)
-            // #tr gtneverreset.gui.universal_wand.title
-            // # Universal Wand
-            // # zh_CN 无用之杖
+        pages.addPage(collection);
+        pages.addPage(combat);
+        pages.addPage(abilities);
+        pages.addPage(accelerationPage);
+        // #tr gtneverreset.gui.universal_wand.title
+        // # Universal Wand
+        // # zh_CN 无用之杖
+        ModularPanel panel = ModularPanel.defaultPanel("gtneverreset_universal_wand", 366, 244)
             .child(
                 IKey.lang("gtneverreset.gui.universal_wand.title")
                     .asWidget()
-                    .pos(8, 4)
-                    .height(12))
+                    .pos(10, 10)
+                    .height(16))
             .child(pages);
+        // #tr gtneverreset.gui.universal_wand.protection
+        // # Protection mode
+        // # zh_CN 保护模式
+        // #tr gtneverreset.gui.universal_wand.protection.tooltip
+        // # Prevent accidental mining and pause automatic harvesting.
+        // # zh_CN 防止误挖，暂停自动收菜。
+        panel.child(
+            stateSwitch("protection", protection).pos(200, 7)
+                .size(164, 20));
         boolean aeTabs = data.isClient() && ScreenThemeConfig.universalWand != ScreenTheme.DEFAULT;
-        panel.child(tab(tabs, 0, "tools", aeTabs));
-        panel.child(tab(tabs, 1, "mining", aeTabs));
+        // #tr gtneverreset.gui.universal_wand.tab.mining
+        // # Mining
+        // # zh_CN 采矿
+        panel.child(tab(tabs, 0, "mining", aeTabs));
+        // #tr gtneverreset.gui.universal_wand.tab.collection
+        // # Collection
+        // # zh_CN 采集与收集
+        panel.child(tab(tabs, 1, "collection", aeTabs));
+        // #tr gtneverreset.gui.universal_wand.tab.combat
+        // # Combat
+        // # zh_CN 战斗
         panel.child(tab(tabs, 2, "combat", aeTabs));
+        // #tr gtneverreset.gui.universal_wand.tab.abilities
+        // # Abilities
+        // # zh_CN 移动与保护
+        panel.child(tab(tabs, 3, "abilities", aeTabs));
+        // #tr gtneverreset.gui.universal_wand.tab.acceleration
+        // # Acceleration
+        // # zh_CN 时间加速
+        panel.child(tab(tabs, 4, "acceleration", aeTabs));
         if (data.isClient()) AE2Theme.sliderHandles(panel, ScreenThemeConfig.universalWand.themeId);
         return panel;
     }
 
     private static PageButton tab(PagedWidget.Controller tabs, int index, String name, boolean aeTabs) {
         IKey label = IKey.lang("gtneverreset.gui.universal_wand.tab." + name);
-        PageButton button = new PageButton(index, tabs).pos(10 + index * 77, 18)
-            .size(72, 18);
+        PageButton button = new PageButton(index, tabs).pos(8, 36 + index * 30)
+            .size(88, 26);
         if (aeTabs) {
             button.background(AE2Theme.button(button, () -> true, button::isActive))
                 .overlay(AE2Theme.label(button, label::get, () -> true, button::isActive));
         } else button.overlay(label);
         return button;
-    }
-
-    private static ParentWidget<?> section(String title, int y, int height) {
-        return new ParentWidget<>().pos(0, y)
-            .size(234, height)
-            .widgetTheme(IThemeApi.PANEL)
-            .child(
-                new TextWidget<>(
-                    IKey.lang("gtneverreset.gui.universal_wand.section." + title)
-                        .scale(1.0F)).pos(6, 5)
-                            .size(222, 14));
     }
 
     private static SlideSwitch stateSwitch(String key, BooleanSyncValue value) {
@@ -493,41 +492,52 @@ public final class UniversalWandGui {
         return option;
     }
 
-    private static ParentWidget<?> numberRow(String key, IntSyncValue value, int min, int max, int y, boolean area) {
+    private static ParentWidget<?> numberRow(String key, IntSyncValue value, int min, int max, int y, boolean area,
+        int step) {
         ParentWidget<?> row = new ParentWidget<>().pos(6, y)
-            .size(222, 16)
+            .size(246, 22)
             .child(
-                new TextWidget<>(
-                    IKey.lang("gtneverreset.gui.universal_wand." + key)
-                        .scale(1.0F)).pos(0, 3)
-                            .size(105, 16)
-                            .maxWidth(105))
-            .child(new SliderWidget() {
-
-                @Override
-                public Interactable.Result onMousePressed(int button) {
-                    return controlAllowed(key) ? super.onMousePressed(button) : Interactable.Result.STOP;
-                }
-
-                @Override
-                public void onMouseDrag(int button, long time) {
-                    if (controlAllowed(key)) super.onMouseDrag(button, time);
-                }
-            }.tooltipDynamic(tooltip -> featureTooltip(tooltip, key))
-                .bounds(min, max)
-                .stopper(1)
-                .value(value)
-                .pos(113, 0)
-                .size(76, 16));
-        IKey number = IKey.dynamic(
-            () -> area ? (value.getIntValue() * 2 + 1) + "x" + (value.getIntValue() * 2 + 1)
-                : Integer.toString(value.getIntValue()));
+                IKey.lang("gtneverreset.gui.universal_wand." + key)
+                    .asWidget()
+                    .pos(0, 5)
+                    .size(120, 16));
+        row.child(
+            new ButtonWidget<>().overlay(IKey.str("−"))
+                .onMousePressed(button -> {
+                    if (button != 0 || !controlAllowed(key)) return false;
+                    value.setIntValue((int) Math.max(min, (long) value.getIntValue() - step), true, true);
+                    return true;
+                })
+                .pos(122, 0)
+                .size(22, 22));
+        if (area) {
+            row.child(
+                IKey.dynamic(() -> (value.getIntValue() * 2 + 1) + "×" + (value.getIntValue() * 2 + 1))
+                    .asWidget()
+                    .pos(146, 3)
+                    .size(74, 16)
+                    .textAlign(Alignment.Center));
+        } else {
+            row.child(
+                new TextFieldWidget().name(key + "_input")
+                    .formatAsInteger(true)
+                    .numbersInt(min, max)
+                    .setMaxLength(10)
+                    .value(value)
+                    .setEnabledIf(widget -> controlAllowed(key))
+                    .tooltipDynamic(tooltip -> featureTooltip(tooltip, key))
+                    .pos(146, 0)
+                    .size(74, 22));
+        }
         return row.child(
-            number.shadow(false)
-                .asWidget()
-                .pos(190, 0)
-                .size(32, 16)
-                .textAlign(Alignment.Center));
+            new ButtonWidget<>().overlay(IKey.str("+"))
+                .onMousePressed(button -> {
+                    if (button != 0 || !controlAllowed(key)) return false;
+                    value.setIntValue((int) Math.min(max, (long) value.getIntValue() + step), true, true);
+                    return true;
+                })
+                .pos(224, 0)
+                .size(22, 22));
     }
 
     private static ModularPanel accelerationPanel(EntityPlayer player, ItemStack expected, PanelSyncManager manager,

@@ -41,7 +41,7 @@ public final class UniversalWandTravelFallback {
             || !ItemUniversalWand.isTeleportEnabled(stack)) return;
         boolean offhand = Loader.isModLoaded("backhand")
             && UniversalWandBackhandIntegration.getOffhandItem(player) != null;
-        if (offhand || hit.entityHit != null && ItemUniversalWand.isShearsEnabled(stack)) request(player, stack);
+        if (offhand) request(player, stack);
     }
 
     public static void finishClick() {
@@ -88,12 +88,10 @@ public final class UniversalWandTravelFallback {
     private static boolean needsDecision(PlayerInteractEvent event, ItemStack stack) {
         EntityPlayer player = event.entityPlayer;
         if (event.action == PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK) {
-            return ItemUniversalWand.isHoeEnabled(stack)
-                || player.isSneaking() && (ItemUniversalWand.isTimeAccelerationEnabled(stack)
-                    || event.world.getTileEntity(event.x, event.y, event.z) instanceof IWirelessAccessPoint);
+            return player.isSneaking() && (ItemUniversalWand.isTimeAccelerationEnabled(stack)
+                || event.world.getTileEntity(event.x, event.y, event.z) instanceof IWirelessAccessPoint);
         }
-        MovingObjectPosition hit = Minecraft.getMinecraft().objectMouseOver;
-        return ItemUniversalWand.isShearsEnabled(stack) && hit != null && hit.entityHit != null;
+        return false;
     }
 
     @SubscribeEvent

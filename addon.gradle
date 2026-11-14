@@ -20,6 +20,7 @@ allprojects {
 
 dependencies { api project(':gtnrlib') }
 sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.java.srcDir("src/qa/contracts")
 
 // Copy task outputs directly: distribution JARs must not pass through RFG dependency transforms.
 tasks.register('collectLibraryArtifacts')
@@ -28,7 +29,8 @@ tasks.named('check') { dependsOn ':gtnrlib:check' }
 
 // Register contract checks when their local test sources are available.
 def localContract = { String taskName, String entryPoint, Closure options ->
-    if (file("src/test/java/${entryPoint.replace('.', '/')}.java").isFile()) {
+    if (file("src/test/java/${entryPoint.replace('.', '/')}.java").isFile() ||
+        file("src/qa/contracts/${entryPoint.replace('.', '/')}.java").isFile()) {
         def contract = tasks.register(taskName, JavaExec) {
             group = 'verification'
             dependsOn tasks.named('testClasses')
@@ -42,6 +44,11 @@ def localContract = { String taskName, String entryPoint, Closure options ->
 
 localContract('checkConfigurationContracts',
     'com.xyp.gtneverreset.config.ConfigurationContracts') {
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+}
+
+localContract('checkUniversalWandSearchContracts',
+    'com.xyp.gtneverreset.common.wand.UniversalWandSearchContracts') {
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
 }
 
