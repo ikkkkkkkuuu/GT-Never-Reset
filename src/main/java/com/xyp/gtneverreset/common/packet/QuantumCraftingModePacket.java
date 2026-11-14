@@ -3,13 +3,13 @@ package com.xyp.gtneverreset.common.packet;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingMode;
+import com.xyp.gtnrlib.network.ServerboundPacket;
 
 import appeng.api.networking.IGrid;
 import appeng.container.implementations.ContainerCraftAmount;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
-public class QuantumCraftingModePacket implements IMessage {
+public class QuantumCraftingModePacket extends ServerboundPacket {
 
     private boolean enabled;
 
@@ -20,15 +20,16 @@ public class QuantumCraftingModePacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    protected void read(ByteBuf buf) {
         this.enabled = buf.readBoolean();
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    protected void write(ByteBuf buf) {
         buf.writeBoolean(this.enabled);
     }
 
+    @Override
     public void handleServer(EntityPlayerMP player) {
         QuantumCraftingMode.setEnabled(player, this.enabled);
         if (!(player.openContainer instanceof ContainerCraftAmount container)) return;

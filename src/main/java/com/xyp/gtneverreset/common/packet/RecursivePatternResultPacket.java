@@ -13,18 +13,16 @@ import com.xyp.gtneverreset.client.quantum.ICraftingCycleHost;
 import com.xyp.gtneverreset.client.quantum.RecursivePatternReport;
 import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder.Cycle;
 import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder.PatternLocation;
+import com.xyp.gtnrlib.network.ClientboundPacket;
 
 import appeng.api.storage.data.IAEStack;
 import appeng.api.util.DimensionalCoord;
 import cpw.mods.fml.common.network.ByteBufUtils;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 
-public class RecursivePatternResultPacket implements IMessage {
+public class RecursivePatternResultPacket extends ClientboundPacket {
 
     private static final int MAX_CYCLES = 32;
     private static final int MAX_ITEMS = 24;
@@ -43,7 +41,7 @@ public class RecursivePatternResultPacket implements IMessage {
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    protected void write(ByteBuf buf) {
         var data = new NBTTagCompound();
         data.setTag("request", this.request.toNBTGeneric());
         data.setBoolean("manual", this.manual);
@@ -104,7 +102,7 @@ public class RecursivePatternResultPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    protected void read(ByteBuf buf) {
         var data = ByteBufUtils.readTag(buf);
         this.request = IAEStack.fromNBTGeneric(data.getCompoundTag("request"));
         this.manual = data.getBoolean("manual");
@@ -139,9 +137,9 @@ public class RecursivePatternResultPacket implements IMessage {
         }
     }
 
+    @Override
     @SideOnly(Side.CLIENT)
-    private void handleClient() {
-        Minecraft minecraft = Minecraft.getMinecraft();
+    public void handleClient(Minecraft minecraft) {
         var connection = minecraft.getNetHandler();
         minecraft.func_152344_a(() -> {
             if (minecraft.getNetHandler() != connection) return;
@@ -153,12 +151,4 @@ public class RecursivePatternResultPacket implements IMessage {
         });
     }
 
-    public static final class Handler implements IMessageHandler<RecursivePatternResultPacket, IMessage> {
-
-        @Override
-        public IMessage onMessage(RecursivePatternResultPacket message, MessageContext context) {
-            message.handleClient();
-            return null;
-        }
-    }
 }

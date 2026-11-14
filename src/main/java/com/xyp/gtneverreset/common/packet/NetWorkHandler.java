@@ -2,12 +2,13 @@ package com.xyp.gtneverreset.common.packet;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BiConsumer;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtnrlib.network.GregTechToolUsePacket;
+import com.xyp.gtnrlib.network.PayloadHandler;
+import com.xyp.gtnrlib.network.ServerboundPacket;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -32,115 +33,109 @@ public final class NetWorkHandler {
         if (initialized) return;
         initialized = true;
         nextPacketId = 0;
-        registerServerbound(SwitchGuisPacket.class, SwitchGuisPacket::handle);
-        registerServerbound(TeleportToInterfacePacket.class, TeleportToInterfacePacket::handle);
-        registerServerbound(ToggleInterfaceVisibilityPacket.class, ToggleInterfaceVisibilityPacket::handle);
-        registerServerbound(SendHeldItemToNetworkPacket.class, SendHeldItemToNetworkPacket::handle);
-        registerServerbound(TerminalItemRequestPacket.class, TerminalItemRequestPacket::handle);
-        registerServerbound(OpenWirelessCardPacket.class, OpenWirelessCardPacket::handle);
-        registerServerbound(ToggleWirelessCardPacket.class, ToggleWirelessCardPacket::handle);
+        registerServerbound(SwitchGuisPacket.class);
+        registerServerbound(TeleportToInterfacePacket.class);
+        registerServerbound(ToggleInterfaceVisibilityPacket.class);
+        registerServerbound(SendHeldItemToNetworkPacket.class);
+        registerServerbound(TerminalItemRequestPacket.class);
+        registerServerbound(OpenWirelessCardPacket.class);
+        registerServerbound(ToggleWirelessCardPacket.class);
+        CHANNEL
+            .registerMessage(new PayloadHandler.Client<>(), WirelessHighlightPacket.class, nextPacketId++, Side.CLIENT);
         CHANNEL.registerMessage(
-            WirelessHighlightPacket.Handler.class,
-            WirelessHighlightPacket.class,
-            nextPacketId++,
-            Side.CLIENT);
-        CHANNEL.registerMessage(
-            WirelessVisualisationPacket.Handler.class,
+            new PayloadHandler.Client<>(),
             WirelessVisualisationPacket.class,
             nextPacketId++,
             Side.CLIENT);
-        registerServerbound(QuantumCraftingModePacket.class, QuantumCraftingModePacket::handleServer);
-        registerServerbound(RecursivePatternQueryPacket.class, RecursivePatternQueryPacket::handleServer);
+        registerServerbound(QuantumCraftingModePacket.class);
+        registerServerbound(RecursivePatternQueryPacket.class);
         CHANNEL.registerMessage(
-            QuantumCraftingAvailabilityPacket.Handler.class,
+            new PayloadHandler.Client<>(),
             QuantumCraftingAvailabilityPacket.class,
             nextPacketId++,
             Side.CLIENT);
         CHANNEL.registerMessage(
-            QuantumCraftConfirmPacket.Handler.class,
+            new PayloadHandler.Client<>(),
             QuantumCraftConfirmPacket.class,
             nextPacketId++,
             Side.CLIENT);
         CHANNEL.registerMessage(
-            RecursivePatternResultPacket.Handler.class,
+            new PayloadHandler.Client<>(),
             RecursivePatternResultPacket.class,
             nextPacketId++,
             Side.CLIENT);
-        registerServerbound(ToolBeltSwapPacket.class, ToolBeltSwapPacket::handle);
-        registerServerbound(ToolBeltResizePacket.class, ToolBeltResizePacket::handle);
-        CHANNEL
-            .registerMessage(ToolBeltSyncPacket.Handler.class, ToolBeltSyncPacket.class, nextPacketId++, Side.CLIENT);
-        registerServerbound(PackagedConnectorPacket.class, PackagedConnectorPacket::handle);
+        registerServerbound(ToolBeltSwapPacket.class);
+        registerServerbound(ToolBeltResizePacket.class);
+        CHANNEL.registerMessage(new PayloadHandler.Client<>(), ToolBeltSyncPacket.class, nextPacketId++, Side.CLIENT);
+        registerServerbound(PackagedConnectorPacket.class);
         // ID 17 is reserved for PackagedConnectorPacket.
         nextPacketId = 18;
         CHANNEL.registerMessage(
-            WirelessMonitorRequestPacket.Handler.class,
+            new PayloadHandler.Server<>(),
             WirelessMonitorRequestPacket.class,
             nextPacketId++,
             Side.SERVER);
         CHANNEL.registerMessage(
-            WirelessMonitorSnapshotPacket.Handler.class,
+            new PayloadHandler.Client<>(),
             WirelessMonitorSnapshotPacket.class,
             nextPacketId++,
             Side.CLIENT);
-        registerServerbound(VeinMiningSettingPacket.class, VeinMiningSettingPacket::handle);
-        registerServerbound(TerminalMagnetPacket.class, TerminalMagnetPacket::handle);
+        registerServerbound(VeinMiningSettingPacket.class);
+        registerServerbound(TerminalMagnetPacket.class);
         // ID 21 is reserved for TerminalMagnetPacket.
         nextPacketId = 22;
-        registerServerbound(QuestSkipPacket.class, QuestSkipPacket::handle);
-        registerServerbound(UniversalWandNetwork.OpenGuiMessage.class, UniversalWandNetwork::handleOpenGui);
-        registerServerbound(UniversalWandNetwork.ForceBedrockMessage.class, UniversalWandNetwork::handleForceBedrock);
+        registerServerbound(QuestSkipPacket.class);
+        registerServerbound(UniversalWandNetwork.OpenGuiMessage.class);
+        registerServerbound(UniversalWandNetwork.ForceBedrockMessage.class);
         CHANNEL.registerMessage(
-            UniversalWandNetwork.ChainKeyHandler.class,
+            new PayloadHandler.Server<>(),
             UniversalWandNetwork.ChainKeyMessage.class,
             nextPacketId++,
             Side.SERVER);
-        registerServerbound(UniversalWandNetwork.ChainStartMessage.class, UniversalWandNetwork::handleChainStart);
+        registerServerbound(UniversalWandNetwork.ChainStartMessage.class);
         // IDs 27 through 31 belonged to the removed wand building packets.
         nextPacketId = 32;
-        registerServerbound(UniversalWandNetwork.FlightSpeedMessage.class, UniversalWandNetwork::handleFlightSpeed);
+        registerServerbound(UniversalWandNetwork.FlightSpeedMessage.class);
         CHANNEL.registerMessage(
-            UniversalWandNetwork.FlightSpeedSyncHandler.class,
+            new PayloadHandler.Client<>(),
             UniversalWandNetwork.FlightSpeedSyncMessage.class,
             nextPacketId++,
             Side.CLIENT);
         CHANNEL.registerMessage(
-            UniversalWandNetwork.ProtectionSyncHandler.class,
+            new PayloadHandler.Client<>(),
             UniversalWandNetwork.ProtectionSyncMessage.class,
             nextPacketId++,
             Side.CLIENT);
         CHANNEL.registerMessage(
-            UniversalWandNetwork.AccelerationSyncHandler.class,
+            new PayloadHandler.Client<>(),
             UniversalWandNetwork.AccelerationSyncMessage.class,
             nextPacketId++,
             Side.CLIENT);
-        registerServerbound(
-            UniversalWandNetwork.AccelerationManagementMessage.class,
-            UniversalWandNetwork::handleAccelerationManagement);
+        registerServerbound(UniversalWandNetwork.AccelerationManagementMessage.class);
         CHANNEL.registerMessage(
-            UniversalWandNetwork.AccelerationNoticeHandler.class,
+            new PayloadHandler.Client<>(),
             UniversalWandNetwork.AccelerationNoticeMessage.class,
             nextPacketId++,
             Side.CLIENT);
         // Forge 1.7.10 dispatches these markers in the server's inbound packet loop. Keep the vanilla use
         // packet between them so its handled result is visible before granting travel.
         CHANNEL.registerMessage(
-            UniversalWandNetwork::handleTravelFallbackRequest,
+            new PayloadHandler.Server<>(),
             UniversalWandNetwork.TravelFallbackRequest.class,
             nextPacketId++,
             Side.SERVER);
         CHANNEL.registerMessage(
-            UniversalWandNetwork.TravelFallbackGrantHandler.class,
+            new PayloadHandler.Client<>(),
             UniversalWandNetwork.TravelFallbackGrant.class,
             nextPacketId++,
             Side.CLIENT);
         CHANNEL.registerMessage(
-            UniversalWandNetwork::handleTravelFallbackFinish,
+            new PayloadHandler.Server<>(),
             UniversalWandNetwork.TravelFallbackFinish.class,
             nextPacketId++,
             Side.SERVER);
         CHANNEL.registerMessage(
-            UniversalWandNetwork.FeatureHandler.class,
+            new PayloadHandler.Client<>(),
             UniversalWandNetwork.FeatureMessage.class,
             nextPacketId++,
             Side.CLIENT);
@@ -170,13 +165,16 @@ public final class NetWorkHandler {
         while ((action = SERVER_ACTIONS.poll()) != null) action.run();
     }
 
-    private static <T extends IMessage> void registerServerbound(Class<T> type, BiConsumer<T, EntityPlayerMP> action) {
+    private static <T extends ServerboundPacket> void registerServerbound(Class<T> type) {
+        var payloadHandler = new PayloadHandler.Server<T>();
         IMessageHandler<T, IMessage> handler = (message, context) -> {
+            if (message.isInvalid()) return null;
             EntityPlayerMP player = context.getServerHandler().playerEntity;
             var requestWorld = player.worldObj;
             SERVER_ACTIONS.add(() -> {
                 if (!player.isDead && player.worldObj == requestWorld
-                    && player.playerNetServerHandler.netManager.isChannelOpen()) action.accept(message, player);
+                    && player.playerNetServerHandler.netManager.isChannelOpen())
+                    payloadHandler.onMessage(message, context);
             });
             return null;
         };

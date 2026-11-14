@@ -9,16 +9,14 @@ import net.minecraft.item.ItemStack;
 
 import com.xyp.gtneverreset.client.radialmenu.action.ToolBeltMenu;
 import com.xyp.gtneverreset.common.item.ToolBeltData;
+import com.xyp.gtnrlib.network.ClientboundPacket;
 
 import cpw.mods.fml.common.network.ByteBufUtils;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 
-public class ToolBeltSyncPacket implements IMessage {
+public class ToolBeltSyncPacket extends ClientboundPacket {
 
     private int entityId;
     private ItemStack[] items;
@@ -35,7 +33,7 @@ public class ToolBeltSyncPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    protected void read(ByteBuf buf) {
         entityId = buf.readInt();
         int count = buf.readInt();
         if (count < 0 || count > ToolBeltData.MAX_SLOT_COUNT) {
@@ -60,7 +58,7 @@ public class ToolBeltSyncPacket implements IMessage {
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    protected void write(ByteBuf buf) {
         buf.writeInt(entityId);
         int count = 0;
         for (ItemStack item : items) {
@@ -75,9 +73,9 @@ public class ToolBeltSyncPacket implements IMessage {
         buf.writeInt(items.length);
     }
 
+    @Override
     @SideOnly(Side.CLIENT)
-    private void handleClient() {
-        Minecraft minecraft = Minecraft.getMinecraft();
+    public void handleClient(Minecraft minecraft) {
         var connection = minecraft.getNetHandler();
         var world = minecraft.theWorld;
         minecraft.func_152344_a(() -> {
@@ -96,12 +94,4 @@ public class ToolBeltSyncPacket implements IMessage {
         });
     }
 
-    public static class Handler implements IMessageHandler<ToolBeltSyncPacket, IMessage> {
-
-        @Override
-        public IMessage onMessage(ToolBeltSyncPacket message, MessageContext ctx) {
-            message.handleClient();
-            return null;
-        }
-    }
 }

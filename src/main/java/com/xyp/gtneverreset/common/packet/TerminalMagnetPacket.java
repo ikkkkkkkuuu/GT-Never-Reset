@@ -9,15 +9,15 @@ import com.xyp.gtneverreset.common.gui.WirelessTerminalMagnetGui;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
+import com.xyp.gtnrlib.network.ServerboundPacket;
 
 import appeng.container.AEBaseContainer;
 import appeng.container.interfaces.IContainerSubGui;
 import appeng.helpers.WirelessTerminalGuiObject;
 import appeng.util.Platform;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
-public final class TerminalMagnetPacket implements IMessage {
+public final class TerminalMagnetPacket extends ServerboundPacket {
 
     private boolean filter;
 
@@ -28,16 +28,17 @@ public final class TerminalMagnetPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    protected void read(ByteBuf buf) {
         filter = buf.readBoolean();
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    protected void write(ByteBuf buf) {
         buf.writeBoolean(filter);
     }
 
-    public void handle(EntityPlayerMP player) {
+    @Override
+    public void handleServer(EntityPlayerMP player) {
         if (!(player.openContainer instanceof AEBaseContainer container)
             || !(container.getTarget() instanceof WirelessTerminalGuiObject host)
             || !(host.getItemStack()

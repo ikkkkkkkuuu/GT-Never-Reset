@@ -3,19 +3,19 @@ package com.xyp.gtneverreset.common.packet;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.xyp.gtneverreset.common.crafting.cycle.RecursivePatternFinder;
+import com.xyp.gtnrlib.network.ServerboundPacket;
 
 import appeng.api.networking.IGrid;
 import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.container.implementations.ContainerCraftConfirm;
 import appeng.me.cache.CraftingGridCache;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
 /**
  * Asks for the crafting cycles of the request the player is confirming: by the player, to be shown, or by the screen
  * once the calculation is done, to mark them in the crafting tree.
  */
-public class RecursivePatternQueryPacket implements IMessage {
+public class RecursivePatternQueryPacket extends ServerboundPacket {
 
     private boolean manual;
 
@@ -26,15 +26,16 @@ public class RecursivePatternQueryPacket implements IMessage {
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    protected void write(ByteBuf buf) {
         buf.writeBoolean(this.manual);
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    protected void read(ByteBuf buf) {
         this.manual = buf.readBoolean();
     }
 
+    @Override
     public void handleServer(EntityPlayerMP player) {
         if (!(player.openContainer instanceof ContainerCraftConfirm container)) return;
         var request = container.getItemToCraft();

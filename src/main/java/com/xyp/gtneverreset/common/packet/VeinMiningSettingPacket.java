@@ -7,12 +7,12 @@ import net.minecraft.network.play.server.S2FPacketSetSlot;
 
 import com.xyp.gtneverreset.common.item.items.VeinMiningSettings;
 import com.xyp.gtneverreset.common.item.items.VeinMiningSettings.Setting;
+import com.xyp.gtnrlib.network.ServerboundPacket;
 
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
 /** Requests one bounded pickaxe setting; arbitrary item NBT is never accepted. */
-public class VeinMiningSettingPacket implements IMessage {
+public class VeinMiningSettingPacket extends ServerboundPacket {
 
     private int slot;
     private Setting setting;
@@ -27,7 +27,7 @@ public class VeinMiningSettingPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    protected void read(ByteBuf buf) {
         if (buf.readableBytes() != 6) throw new IllegalArgumentException("Invalid pickaxe setting payload");
         slot = buf.readUnsignedByte();
         int settingId = buf.readUnsignedByte();
@@ -37,7 +37,7 @@ public class VeinMiningSettingPacket implements IMessage {
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    protected void write(ByteBuf buf) {
         buf.writeByte(slot);
         buf.writeByte(setting.ordinal());
         buf.writeInt(value);
@@ -47,7 +47,8 @@ public class VeinMiningSettingPacket implements IMessage {
         return VeinMiningSettings.apply(inventory, slot, setting, value);
     }
 
-    public void handle(EntityPlayerMP player) {
+    @Override
+    public void handleServer(EntityPlayerMP player) {
         if (!player.isDead && apply(player.inventory)) {
             player.inventoryContainer.detectAndSendChanges();
             Slot target = player.inventoryContainer.getSlotFromInventory(player.inventory, slot);

@@ -13,56 +13,22 @@ import com.xyp.gtneverreset.common.wand.UniversalWandFeaturePolicy;
 import com.xyp.gtneverreset.common.wand.UniversalWandProtectionHandler;
 import com.xyp.gtneverreset.common.wand.UniversalWandRightClick;
 import com.xyp.gtneverreset.common.wand.UniversalWandUtilityHandler;
+import com.xyp.gtnrlib.network.ClientboundPacket;
+import com.xyp.gtnrlib.network.ServerboundPacket;
 
 import cpw.mods.fml.common.network.NetworkRegistry;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 
-/** Dedicated client-to-server action for opening the wand settings screen. */
+/** Wand action and synchronization payloads. */
 public final class UniversalWandNetwork {
 
     private UniversalWandNetwork() {}
 
-    @SideOnly(Side.CLIENT)
-    private static void onClient(MessageContext context, Runnable action) {
-        var mc = Minecraft.getMinecraft();
-        var connection = context.netHandler;
-        mc.func_152344_a(() -> { if (mc.getNetHandler() == connection) action.run(); });
-    }
-
     public static void syncFeatures(EntityPlayerMP player, long mask) {
         NetWorkHandler.sendTo(new FeatureMessage(mask), player);
-    }
-
-    public static final class FeatureMessage implements IMessage {
-
-        private long mask;
-
-        public FeatureMessage() {}
-
-        FeatureMessage(long mask) {
-            this.mask = mask;
-        }
-
-        public void fromBytes(ByteBuf buffer) {
-            mask = buffer.readLong();
-        }
-
-        public void toBytes(ByteBuf buffer) {
-            buffer.writeLong(mask);
-        }
-    }
-
-    public static final class FeatureHandler implements IMessageHandler<FeatureMessage, IMessage> {
-
-        public IMessage onMessage(FeatureMessage message, MessageContext context) {
-            onClient(context, () -> { UniversalWandFeaturePolicy.receive(message.mask); });
-            return null;
-        }
     }
 
     public static void requestTravelFallback(int id) {
@@ -77,131 +43,12 @@ public final class UniversalWandNetwork {
         NetWorkHandler.sendToServer(new TravelFallbackFinish(id));
     }
 
-    public static class TravelFallbackRequest implements IMessage {
-
-        int id;
-
-        public TravelFallbackRequest() {}
-
-        TravelFallbackRequest(int id) {
-            this.id = id;
-        }
-
-        public void fromBytes(ByteBuf buffer) {
-            id = buffer.readInt();
-        }
-
-        public void toBytes(ByteBuf buffer) {
-            buffer.writeInt(id);
-        }
-    }
-
-    public static final class TravelFallbackGrant extends TravelFallbackRequest {
-
-        public TravelFallbackGrant() {}
-
-        TravelFallbackGrant(int id) {
-            super(id);
-        }
-    }
-
-    static IMessage handleTravelFallbackRequest(TravelFallbackRequest message, MessageContext context) {
-        UniversalWandRightClick.request(context.getServerHandler().playerEntity, message.id);
-        return null;
-    }
-
-    public static final class TravelFallbackFinish extends TravelFallbackRequest {
-
-        public TravelFallbackFinish() {}
-
-        TravelFallbackFinish(int id) {
-            super(id);
-        }
-    }
-
-    static IMessage handleTravelFallbackFinish(TravelFallbackFinish message, MessageContext context) {
-        UniversalWandRightClick.finish(context.getServerHandler().playerEntity, message.id);
-        return null;
-    }
-
-    public static final class TravelFallbackGrantHandler implements IMessageHandler<TravelFallbackGrant, IMessage> {
-
-        public IMessage onMessage(TravelFallbackGrant message, MessageContext context) {
-            onClient(context, () -> { UniversalWandTravelFallback.allow(message.id); });
-            return null;
-        }
-    }
-
     public static void syncAccelerationNotice(EntityPlayerMP player, int rate) {
         NetWorkHandler.sendTo(new AccelerationNoticeMessage(rate), player);
     }
 
-    public static final class AccelerationNoticeMessage implements IMessage {
-
-        private int rate;
-
-        public AccelerationNoticeMessage() {}
-
-        AccelerationNoticeMessage(int rate) {
-            this.rate = rate;
-        }
-
-        public void fromBytes(ByteBuf buffer) {
-            rate = buffer.readInt();
-        }
-
-        public void toBytes(ByteBuf buffer) {
-            buffer.writeInt(rate);
-        }
-    }
-
-    public static final class AccelerationNoticeHandler
-        implements IMessageHandler<AccelerationNoticeMessage, IMessage> {
-
-        public IMessage onMessage(AccelerationNoticeMessage message, MessageContext context) {
-            onClient(context, () -> { UniversalWandUtilityHandler.showClientAccelerationNotice(message.rate); });
-            return null;
-        }
-    }
-
     public static void requestAccelerationManagement(int action, int dimension, int x, int y, int z) {
         NetWorkHandler.sendToServer(new AccelerationManagementMessage(action, dimension, x, y, z));
-    }
-
-    public static final class AccelerationManagementMessage implements IMessage {
-
-        private int action, dimension, x, y, z;
-
-        public AccelerationManagementMessage() {}
-
-        AccelerationManagementMessage(int action, int dimension, int x, int y, int z) {
-            this.action = action;
-            this.dimension = dimension;
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-
-        public void fromBytes(ByteBuf buffer) {
-            action = buffer.readInt();
-            dimension = buffer.readInt();
-            x = buffer.readInt();
-            y = buffer.readInt();
-            z = buffer.readInt();
-        }
-
-        public void toBytes(ByteBuf buffer) {
-            buffer.writeInt(action);
-            buffer.writeInt(dimension);
-            buffer.writeInt(x);
-            buffer.writeInt(y);
-            buffer.writeInt(z);
-        }
-    }
-
-    static void handleAccelerationManagement(AccelerationManagementMessage message, EntityPlayerMP player) {
-        if (message.action >= 0 && message.action <= 4) UniversalWandAccelerationHandler
-            .requestManagement(player, message.action, message.dimension, message.x, message.y, message.z);
     }
 
     public static void requestOpenGui(int slot) {
@@ -223,7 +70,222 @@ public final class UniversalWandNetwork {
         NetWorkHandler.sendToAllAround(message, new NetworkRegistry.TargetPoint(dimension, x, y, z, 64));
     }
 
-    public static final class AccelerationSyncMessage implements IMessage {
+    public static void syncProtection(EntityPlayerMP player, boolean enabled, boolean hidden) {
+        ProtectionSyncMessage message = new ProtectionSyncMessage(player.getUniqueID(), enabled, hidden);
+        NetWorkHandler.sendTo(message, player);
+        NetWorkHandler.sendToAllAround(
+            message,
+            new NetworkRegistry.TargetPoint(player.dimension, player.posX, player.posY, player.posZ, 512));
+    }
+
+    public static void requestFlightSpeed(boolean decrease) {
+        NetWorkHandler.sendToServer(new FlightSpeedMessage(decrease));
+    }
+
+    public static void syncFlightSpeed(EntityPlayerMP player, float speed, boolean override, boolean notify) {
+        NetWorkHandler.sendTo(new FlightSpeedSyncMessage(player.getUniqueID(), speed, override, notify), player);
+    }
+
+    public static void requestChainKey(boolean held) {
+        NetWorkHandler.sendToServer(new ChainKeyMessage(held));
+    }
+
+    public static void requestChainStart(int x, int y, int z) {
+        NetWorkHandler.sendToServer(new ChainStartMessage(x, y, z));
+    }
+
+    public static void requestForceBedrock(int x, int y, int z) {
+        NetWorkHandler.sendToServer(new ForceBedrockMessage(x, y, z));
+    }
+
+    @SideOnly(Side.CLIENT)
+    private static void onClient(Minecraft mc, MessageContext context, Runnable action) {
+        var connection = context == null ? mc.getNetHandler() : context.netHandler;
+        mc.func_152344_a(() -> { if (mc.getNetHandler() == connection) action.run(); });
+    }
+
+    public static final class FeatureMessage extends ClientboundPacket {
+
+        private long mask;
+
+        public FeatureMessage() {}
+
+        FeatureMessage(long mask) {
+            this.mask = mask;
+        }
+
+        @Override
+        protected void read(ByteBuf buffer) {
+            mask = buffer.readLong();
+        }
+
+        @Override
+        protected void write(ByteBuf buffer) {
+            buffer.writeLong(mask);
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft) {
+            handleClient(minecraft, null);
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft, MessageContext context) {
+            onClient(minecraft, context, () -> { UniversalWandFeaturePolicy.receive(this.mask); });
+        }
+    }
+
+    public static class TravelFallbackRequest extends ServerboundPacket {
+
+        int id;
+
+        public TravelFallbackRequest() {}
+
+        TravelFallbackRequest(int id) {
+            this.id = id;
+        }
+
+        @Override
+        protected void read(ByteBuf buffer) {
+            id = buffer.readInt();
+        }
+
+        @Override
+        protected void write(ByteBuf buffer) {
+            buffer.writeInt(id);
+        }
+
+        @Override
+        public void handleServer(EntityPlayerMP player) {
+            UniversalWandRightClick.request(player, this.id);
+        }
+    }
+
+    public static final class TravelFallbackGrant extends ClientboundPacket {
+
+        int id;
+
+        public TravelFallbackGrant() {}
+
+        TravelFallbackGrant(int id) {
+            this.id = id;
+        }
+
+        @Override
+        protected void read(ByteBuf buffer) {
+            id = buffer.readInt();
+        }
+
+        @Override
+        protected void write(ByteBuf buffer) {
+            buffer.writeInt(id);
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft) {
+            handleClient(minecraft, null);
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft, MessageContext context) {
+            onClient(minecraft, context, () -> { UniversalWandTravelFallback.allow(this.id); });
+        }
+    }
+
+    public static final class TravelFallbackFinish extends TravelFallbackRequest {
+
+        public TravelFallbackFinish() {}
+
+        TravelFallbackFinish(int id) {
+            super(id);
+        }
+
+        @Override
+        public void handleServer(EntityPlayerMP player) {
+            UniversalWandRightClick.finish(player, this.id);
+        }
+    }
+
+    public static final class AccelerationNoticeMessage extends ClientboundPacket {
+
+        private int rate;
+
+        public AccelerationNoticeMessage() {}
+
+        AccelerationNoticeMessage(int rate) {
+            this.rate = rate;
+        }
+
+        @Override
+        protected void read(ByteBuf buffer) {
+            rate = buffer.readInt();
+        }
+
+        @Override
+        protected void write(ByteBuf buffer) {
+            buffer.writeInt(rate);
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft) {
+            handleClient(minecraft, null);
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft, MessageContext context) {
+            onClient(
+                minecraft,
+                context,
+                () -> { UniversalWandUtilityHandler.showClientAccelerationNotice(this.rate); });
+        }
+    }
+
+    public static final class AccelerationManagementMessage extends ServerboundPacket {
+
+        private int action, dimension, x, y, z;
+
+        public AccelerationManagementMessage() {}
+
+        AccelerationManagementMessage(int action, int dimension, int x, int y, int z) {
+            this.action = action;
+            this.dimension = dimension;
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        @Override
+        protected void read(ByteBuf buffer) {
+            action = buffer.readInt();
+            dimension = buffer.readInt();
+            x = buffer.readInt();
+            y = buffer.readInt();
+            z = buffer.readInt();
+        }
+
+        @Override
+        protected void write(ByteBuf buffer) {
+            buffer.writeInt(action);
+            buffer.writeInt(dimension);
+            buffer.writeInt(x);
+            buffer.writeInt(y);
+            buffer.writeInt(z);
+        }
+
+        @Override
+        public void handleServer(EntityPlayerMP player) {
+            if (this.action >= 0 && this.action <= 4) UniversalWandAccelerationHandler
+                .requestManagement(player, this.action, this.dimension, this.x, this.y, this.z);
+        }
+    }
+
+    public static final class AccelerationSyncMessage extends ClientboundPacket {
 
         public int dimension, x, y, z, level, remaining, mode;
         public boolean throttled;
@@ -242,7 +304,8 @@ public final class UniversalWandNetwork {
             this.throttled = throttled;
         }
 
-        public void fromBytes(ByteBuf buffer) {
+        @Override
+        protected void read(ByteBuf buffer) {
             dimension = buffer.readInt();
             x = buffer.readInt();
             y = buffer.readInt();
@@ -253,7 +316,8 @@ public final class UniversalWandNetwork {
             throttled = buffer.readBoolean();
         }
 
-        public void toBytes(ByteBuf buffer) {
+        @Override
+        protected void write(ByteBuf buffer) {
             buffer.writeInt(dimension);
             buffer.writeInt(x);
             buffer.writeInt(y);
@@ -263,25 +327,21 @@ public final class UniversalWandNetwork {
             buffer.writeInt(mode);
             buffer.writeBoolean(throttled);
         }
-    }
 
-    public static final class AccelerationSyncHandler implements IMessageHandler<AccelerationSyncMessage, IMessage> {
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft) {
+            handleClient(minecraft, null);
+        }
 
-        public IMessage onMessage(AccelerationSyncMessage message, MessageContext context) {
-            onClient(context, () -> { UniversalWandAccelerationRenderer.receive(message); });
-            return null;
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft, MessageContext context) {
+            onClient(minecraft, context, () -> { UniversalWandAccelerationRenderer.receive(this); });
         }
     }
 
-    public static void syncProtection(EntityPlayerMP player, boolean enabled, boolean hidden) {
-        ProtectionSyncMessage message = new ProtectionSyncMessage(player.getUniqueID(), enabled, hidden);
-        NetWorkHandler.sendTo(message, player);
-        NetWorkHandler.sendToAllAround(
-            message,
-            new NetworkRegistry.TargetPoint(player.dimension, player.posX, player.posY, player.posZ, 512));
-    }
-
-    public static final class ProtectionSyncMessage implements IMessage {
+    public static final class ProtectionSyncMessage extends ClientboundPacket {
 
         private UUID player;
         private boolean enabled;
@@ -295,40 +355,38 @@ public final class UniversalWandNetwork {
             this.hidden = hidden;
         }
 
-        public void fromBytes(ByteBuf buffer) {
+        @Override
+        protected void read(ByteBuf buffer) {
             player = new UUID(buffer.readLong(), buffer.readLong());
             enabled = buffer.readBoolean();
             hidden = buffer.readBoolean();
         }
 
-        public void toBytes(ByteBuf buffer) {
+        @Override
+        protected void write(ByteBuf buffer) {
             buffer.writeLong(player.getMostSignificantBits());
             buffer.writeLong(player.getLeastSignificantBits());
             buffer.writeBoolean(enabled);
             buffer.writeBoolean(hidden);
         }
-    }
 
-    public static final class ProtectionSyncHandler implements IMessageHandler<ProtectionSyncMessage, IMessage> {
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft) {
+            handleClient(minecraft, null);
+        }
 
-        public IMessage onMessage(ProtectionSyncMessage message, MessageContext context) {
-            onClient(context, () -> {
-                UniversalWandProtectionHandler.receiveClientProtection(message.player, message.enabled);
-                UniversalWandProtectionHandler.receiveClientStealth(message.player, message.hidden);
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft, MessageContext context) {
+            onClient(minecraft, context, () -> {
+                UniversalWandProtectionHandler.receiveClientProtection(this.player, this.enabled);
+                UniversalWandProtectionHandler.receiveClientStealth(this.player, this.hidden);
             });
-            return null;
         }
     }
 
-    public static void requestFlightSpeed(boolean decrease) {
-        NetWorkHandler.sendToServer(new FlightSpeedMessage(decrease));
-    }
-
-    public static void syncFlightSpeed(EntityPlayerMP player, float speed, boolean override, boolean notify) {
-        NetWorkHandler.sendTo(new FlightSpeedSyncMessage(player.getUniqueID(), speed, override, notify), player);
-    }
-
-    public static final class FlightSpeedSyncMessage implements IMessage {
+    public static final class FlightSpeedSyncMessage extends ClientboundPacket {
 
         private UUID player;
         private float speed;
@@ -344,34 +402,40 @@ public final class UniversalWandNetwork {
             this.notify = notify;
         }
 
-        public void fromBytes(ByteBuf buffer) {
+        @Override
+        protected void read(ByteBuf buffer) {
             player = new UUID(buffer.readLong(), buffer.readLong());
             speed = buffer.readFloat();
             override = buffer.readBoolean();
             notify = buffer.readBoolean();
         }
 
-        public void toBytes(ByteBuf buffer) {
+        @Override
+        protected void write(ByteBuf buffer) {
             buffer.writeLong(player.getMostSignificantBits());
             buffer.writeLong(player.getLeastSignificantBits());
             buffer.writeFloat(speed);
             buffer.writeBoolean(override);
             buffer.writeBoolean(notify);
         }
-    }
 
-    public static final class FlightSpeedSyncHandler implements IMessageHandler<FlightSpeedSyncMessage, IMessage> {
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft) {
+            handleClient(minecraft, null);
+        }
 
-        public IMessage onMessage(FlightSpeedSyncMessage message, MessageContext context) {
-            onClient(context, () -> {
-                UniversalWandUtilityHandler.receiveClientSpeed(message.player, message.speed, message.override);
-                if (message.notify) UniversalWandUtilityHandler.showClientSpeedNotice();
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void handleClient(Minecraft minecraft, MessageContext context) {
+            onClient(minecraft, context, () -> {
+                UniversalWandUtilityHandler.receiveClientSpeed(this.player, this.speed, this.override);
+                if (this.notify) UniversalWandUtilityHandler.showClientSpeedNotice();
             });
-            return null;
         }
     }
 
-    public static final class FlightSpeedMessage implements IMessage {
+    public static final class FlightSpeedMessage extends ServerboundPacket {
 
         private boolean decrease;
 
@@ -381,28 +445,23 @@ public final class UniversalWandNetwork {
             this.decrease = decrease;
         }
 
-        public void fromBytes(ByteBuf buffer) {
+        @Override
+        protected void read(ByteBuf buffer) {
             decrease = buffer.readBoolean();
         }
 
-        public void toBytes(ByteBuf buffer) {
+        @Override
+        protected void write(ByteBuf buffer) {
             buffer.writeBoolean(decrease);
+        }
+
+        @Override
+        public void handleServer(EntityPlayerMP player) {
+            UniversalWandUtilityHandler.requestSpeed(player, this.decrease);
         }
     }
 
-    static void handleFlightSpeed(FlightSpeedMessage message, EntityPlayerMP player) {
-        UniversalWandUtilityHandler.requestSpeed(player, message.decrease);
-    }
-
-    public static void requestChainKey(boolean held) {
-        NetWorkHandler.sendToServer(new ChainKeyMessage(held));
-    }
-
-    public static void requestChainStart(int x, int y, int z) {
-        NetWorkHandler.sendToServer(new ChainStartMessage(x, y, z));
-    }
-
-    public static final class ChainKeyMessage implements IMessage {
+    public static final class ChainKeyMessage extends ServerboundPacket {
 
         private boolean held;
 
@@ -413,30 +472,26 @@ public final class UniversalWandNetwork {
         }
 
         @Override
-        public void fromBytes(ByteBuf buffer) {
+        protected void read(ByteBuf buffer) {
             held = buffer.readBoolean();
         }
 
         @Override
-        public void toBytes(ByteBuf buffer) {
+        protected void write(ByteBuf buffer) {
             buffer.writeBoolean(held);
         }
-    }
-
-    public static final class ChainKeyHandler implements IMessageHandler<ChainKeyMessage, IMessage> {
 
         @Override
-        public IMessage onMessage(ChainKeyMessage message, MessageContext context) {
-            var handler = context.getServerHandler();
+        public void handleServer(EntityPlayerMP player) {
+            var handler = player.playerNetServerHandler;
             // Queue the state before the following vanilla digging packet, without another server-tick delay.
             // UniversalWandActions applies it on the server thread, including at the start of a block break.
-            if (handler.netManager.isChannelOpen()) UniversalWandActions
-                .request(handler.playerEntity, UniversalWandActions.Action.CHAIN_KEY, message.held ? 1 : 0, 0, 0);
-            return null;
+            if (handler.netManager.isChannelOpen())
+                UniversalWandActions.request(player, UniversalWandActions.Action.CHAIN_KEY, held ? 1 : 0, 0, 0);
         }
     }
 
-    public static final class ChainStartMessage implements IMessage {
+    public static final class ChainStartMessage extends ServerboundPacket {
 
         private int x;
         private int y;
@@ -451,30 +506,27 @@ public final class UniversalWandNetwork {
         }
 
         @Override
-        public void fromBytes(ByteBuf buffer) {
+        protected void read(ByteBuf buffer) {
             x = buffer.readInt();
             y = buffer.readInt();
             z = buffer.readInt();
         }
 
         @Override
-        public void toBytes(ByteBuf buffer) {
+        protected void write(ByteBuf buffer) {
             buffer.writeInt(x);
             buffer.writeInt(y);
             buffer.writeInt(z);
         }
+
+        @Override
+        public void handleServer(EntityPlayerMP player) {
+            // Preserve the packet ID and payload for older clients; their vanilla digging packet starts the chain.
+            // A second harvest here would target the stone backfilled after that original harvest.
+        }
     }
 
-    static void handleChainStart(ChainStartMessage message, EntityPlayerMP player) {
-        // Preserve the packet ID and payload for older clients; their vanilla digging packet starts the chain.
-        // A second harvest here would target the stone backfilled after that original harvest.
-    }
-
-    public static void requestForceBedrock(int x, int y, int z) {
-        NetWorkHandler.sendToServer(new ForceBedrockMessage(x, y, z));
-    }
-
-    public static final class OpenGuiMessage implements IMessage {
+    public static final class OpenGuiMessage extends ServerboundPacket {
 
         private int slot;
 
@@ -485,21 +537,22 @@ public final class UniversalWandNetwork {
         }
 
         @Override
-        public void fromBytes(ByteBuf buffer) {
+        protected void read(ByteBuf buffer) {
             slot = buffer.readInt();
         }
 
         @Override
-        public void toBytes(ByteBuf buffer) {
+        protected void write(ByteBuf buffer) {
             buffer.writeInt(slot);
+        }
+
+        @Override
+        public void handleServer(EntityPlayerMP player) {
+            UniversalWandActions.request(player, UniversalWandActions.Action.OPEN_GUI, this.slot, 0, 0);
         }
     }
 
-    static void handleOpenGui(OpenGuiMessage message, EntityPlayerMP player) {
-        UniversalWandActions.request(player, UniversalWandActions.Action.OPEN_GUI, message.slot, 0, 0);
-    }
-
-    public static final class ForceBedrockMessage implements IMessage {
+    public static final class ForceBedrockMessage extends ServerboundPacket {
 
         private int x;
         private int y;
@@ -514,21 +567,23 @@ public final class UniversalWandNetwork {
         }
 
         @Override
-        public void fromBytes(ByteBuf buffer) {
+        protected void read(ByteBuf buffer) {
             x = buffer.readInt();
             y = buffer.readInt();
             z = buffer.readInt();
         }
 
         @Override
-        public void toBytes(ByteBuf buffer) {
+        protected void write(ByteBuf buffer) {
             buffer.writeInt(x);
             buffer.writeInt(y);
             buffer.writeInt(z);
         }
+
+        @Override
+        public void handleServer(EntityPlayerMP player) {
+            UniversalWandActions.request(player, UniversalWandActions.Action.BEDROCK, this.x, this.y, this.z);
+        }
     }
 
-    static void handleForceBedrock(ForceBedrockMessage message, EntityPlayerMP player) {
-        UniversalWandActions.request(player, UniversalWandActions.Action.BEDROCK, message.x, message.y, message.z);
-    }
 }

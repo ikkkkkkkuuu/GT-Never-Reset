@@ -3,6 +3,7 @@ package com.xyp.gtnrlib.network;
 import net.minecraft.client.Minecraft;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
+import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
@@ -25,6 +26,11 @@ public abstract class ClientboundPacket implements IMessage {
 
     @SideOnly(Side.CLIENT)
     public abstract void handleClient(Minecraft minecraft);
+
+    @SideOnly(Side.CLIENT)
+    public void handleClient(Minecraft minecraft, MessageContext context) {
+        handleClient(minecraft);
+    }
 
     @SideOnly(Side.CLIENT)
     protected static void runInWorld(Minecraft minecraft, Runnable task) {

@@ -4,12 +4,12 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
+import com.xyp.gtnrlib.network.ServerboundPacket;
 
 import cpw.mods.fml.common.network.ByteBufUtils;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
-public final class TerminalItemRequestPacket implements IMessage {
+public final class TerminalItemRequestPacket extends ServerboundPacket {
 
     private ItemStack stack;
     private boolean fullStack;
@@ -28,20 +28,21 @@ public final class TerminalItemRequestPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buffer) {
+    protected void read(ByteBuf buffer) {
         stack = ByteBufUtils.readItemStack(buffer);
         fullStack = buffer.readBoolean();
         targetSlot = buffer.isReadable() ? buffer.readByte() : -1;
     }
 
     @Override
-    public void toBytes(ByteBuf buffer) {
+    protected void write(ByteBuf buffer) {
         ByteBufUtils.writeItemStack(buffer, stack);
         buffer.writeBoolean(fullStack);
         buffer.writeByte(targetSlot);
     }
 
-    public void handle(EntityPlayerMP player) {
+    @Override
+    public void handleServer(EntityPlayerMP player) {
         WirelessTerminalSession.requestItem(player, stack, fullStack, targetSlot);
     }
 }

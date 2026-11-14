@@ -6,17 +6,15 @@ import net.minecraft.nbt.NBTTagCompound;
 import com.xyp.gtneverreset.client.wireless.WirelessCardInput;
 import com.xyp.gtneverreset.common.wireless.WirelessCardBinding;
 import com.xyp.gtneverreset.common.wireless.WirelessCardVisualisation;
+import com.xyp.gtnrlib.network.ClientboundPacket;
 
 import appeng.core.sync.AppEngPacket;
 import cpw.mods.fml.common.network.ByteBufUtils;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 
-public class WirelessVisualisationPacket implements IMessage {
+public class WirelessVisualisationPacket extends ClientboundPacket {
 
     private NBTTagCompound bindingTag;
     private int dimension;
@@ -46,7 +44,7 @@ public class WirelessVisualisationPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buffer) {
+    protected void read(ByteBuf buffer) {
         bindingTag = ByteBufUtils.readTag(buffer);
         dimension = buffer.readInt();
         int size = buffer.readInt();
@@ -59,16 +57,16 @@ public class WirelessVisualisationPacket implements IMessage {
     }
 
     @Override
-    public void toBytes(ByteBuf buffer) {
+    protected void write(ByteBuf buffer) {
         ByteBufUtils.writeTag(buffer, bindingTag);
         buffer.writeInt(dimension);
         buffer.writeInt(payload.length);
         buffer.writeBytes(payload);
     }
 
+    @Override
     @SideOnly(Side.CLIENT)
-    private void handleClient() {
-        Minecraft minecraft = Minecraft.getMinecraft();
+    public void handleClient(Minecraft minecraft) {
         var connection = minecraft.getNetHandler();
         minecraft.func_152344_a(() -> {
             if (minecraft.getNetHandler() == connection) WirelessCardInput
@@ -76,12 +74,4 @@ public class WirelessVisualisationPacket implements IMessage {
         });
     }
 
-    public static final class Handler implements IMessageHandler<WirelessVisualisationPacket, IMessage> {
-
-        @Override
-        public IMessage onMessage(WirelessVisualisationPacket message, MessageContext context) {
-            message.handleClient();
-            return null;
-        }
-    }
 }
