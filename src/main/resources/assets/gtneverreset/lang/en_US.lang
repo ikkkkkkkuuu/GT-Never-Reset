@@ -1071,6 +1071,7 @@ gtnr.message.interface_teleport.no_safe_location=No safe standing space was foun
 gtnr.message.interface_teleport.dimension_unavailable=The interface dimension is currently unavailable.
 gtnr.tooltip.gtneverreset.pattern_me_output=Products are also stored in the same ME network
 gtnr.tooltip.gtneverreset.pattern_me_output_cache=Items and fluids have separate output caches, up to 2^63 - 1 items / 2^63 - 1 L
+gtnr.gui.wildcardpattern.property.gtplusplus=GT++ materials
 gtnr.recipe.disassembler=Disassembler
 gtnr.recipe.disassembler.tier=Minimum disassembler tier: %s
 gtnr.recipe.modern_mixer=Small Mixer (Direct Fluids)

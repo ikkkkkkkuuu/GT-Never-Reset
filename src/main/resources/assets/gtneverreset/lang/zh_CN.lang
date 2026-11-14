@@ -1071,6 +1071,7 @@ gtnr.message.interface_teleport.no_safe_location=未在该接口旁找到安全�
 gtnr.message.interface_teleport.dimension_unavailable=接口所在维度当前不可用。
 gtnr.tooltip.gtneverreset.pattern_me_output=产物也会存进同一个 ME 网络
 gtnr.tooltip.gtneverreset.pattern_me_output_cache=物品和流体各有独立输出缓存，最多 2^63 - 1 个 / 2^63 - 1 L
+gtnr.gui.wildcardpattern.property.gtplusplus=GT++ 材料
 gtnr.recipe.disassembler=拆解机
 gtnr.recipe.disassembler.tier=最低拆解机等级：%s
 gtnr.recipe.modern_mixer=小型搅拌机（直接流体）

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.StatCollector;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
@@ -24,6 +25,7 @@ import gregtech.api.enums.SubTag;
 import gregtech.api.objects.ItemData;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTUtility;
+import gtPlusPlus.core.material.Material;
 
 public final class WildcardMaterials {
 
@@ -188,7 +190,8 @@ public final class WildcardMaterials {
         for (Property property : Property.values()) {
             if (property.serializedName.equals(serializedName)) return property;
         }
-        return null;
+        return Property.GTPlusPlus.displayName()
+            .equalsIgnoreCase(name.trim()) ? Property.GTPlusPlus : null;
     }
 
     /** 列出某材料实际拥有的属性（对齐原版：拖入示例物品后只在它真有的属性里选）。 */
@@ -202,6 +205,16 @@ public final class WildcardMaterials {
         return result;
     }
 
+    public static List<Property> propertiesOf(String materialName) {
+        List<Property> result = new ArrayList<>();
+        if (materialName == null || materialName.isEmpty()) return result;
+        for (Property property : Property.values()) {
+            if (property == Property.Metal || property == Property.ToolHead) continue;
+            if (property.test(materialName)) result.add(property);
+        }
+        return result;
+    }
+
     /** 列出某材料实际拥有的 SubTag。 */
     public static List<SubTag> subTagsOf(Materials material) {
         List<SubTag> result = new ArrayList<>();
@@ -210,6 +223,10 @@ public final class WildcardMaterials {
             if (hasSubTag(material, tag)) result.add(tag);
         }
         return result;
+    }
+
+    public static List<SubTag> subTagsOf(String materialName) {
+        return subTagsOf(findByName(materialName));
     }
 
     /** 材料是否带指定 SubTag。 */
@@ -247,7 +264,7 @@ public final class WildcardMaterials {
         ItemData data = GTOreDictUnificator.getAssociation(stack);
         if (data != null && data.hasValidPrefixMaterialData()) {
             Materials material = data.mMaterial.mMaterial;
-            return new PrefixMaterial(data.mPrefix, isRealMaterial(material) ? material : null);
+            if (isRealMaterial(material)) return new PrefixMaterial(data.mPrefix, material);
         }
         for (int oreId : OreDictionary.getOreIDs(stack)) {
             String oreName = OreDictionary.getOreName(oreId);
@@ -256,7 +273,7 @@ public final class WildcardMaterials {
                 String materialName = oreName.substring(
                     prefix.name()
                         .length());
-                return new PrefixMaterial(prefix, findByName(materialName));
+                return new PrefixMaterial(prefix, findByName(materialName), materialName);
             }
         }
         return PrefixMaterial.EMPTY;
@@ -371,7 +388,8 @@ public final class WildcardMaterials {
         Polymer("POLYMER"),
         Ingot("INGOT"),
         Tool("TOOL"),
-        FluidPipe("FLUID_PIPE");
+        FluidPipe("FLUID_PIPE"),
+        GTPlusPlus("GT_PLUS_PLUS");
 
         public final String serializedName;
 
@@ -385,9 +403,62 @@ public final class WildcardMaterials {
         }
 
         public String displayName() {
+            if (this == GTPlusPlus) {
+                // #tr gtnr.gui.wildcardpattern.property.gtplusplus
+                // # GT++ materials
+                // # zh_CN GT++ 材料
+                return StatCollector.translateToLocal("gtnr.gui.wildcardpattern.property.gtplusplus");
+            }
             if (this == Metal) return "ingot";
             if (this == ToolHead) return "tool";
             return serializedName.toLowerCase(Locale.ROOT);
+        }
+
+        public boolean test(String materialName) {
+            Materials material = findByName(materialName);
+            if (isRealMaterial(material)) return test(material);
+            if (this == GTPlusPlus) return materialName != null && Material.mMaterialsByName.containsKey(materialName);
+            boolean matches = false;
+            if (materialName != null && !materialName.isEmpty()) {
+                OrePrefixes prefix = null;
+                switch (this) {
+                    case Dust:
+                        prefix = OrePrefixes.dust;
+                        break;
+                    case Metal:
+                    case Ingot:
+                        prefix = OrePrefixes.ingot;
+                        break;
+                    case Gem:
+                        prefix = OrePrefixes.gem;
+                        break;
+                    case Ore:
+                        prefix = OrePrefixes.ore;
+                        break;
+                    case Cell:
+                        prefix = OrePrefixes.cell;
+                        break;
+                    case Gear:
+                        prefix = OrePrefixes.gearGt;
+                        break;
+                    case Tool:
+                    case ToolHead:
+                        prefix = OrePrefixes.toolHeadHammer;
+                        break;
+                    case FluidPipe:
+                        prefix = OrePrefixes.pipeTiny;
+                        break;
+                    default:
+                        break;
+                }
+                if (prefix != null) matches = makePrefixStack(prefix, materialName, 1) != null;
+                else if (this == Plasma || this == Fluid || this == Gas) {
+                    FluidState state = this == Plasma ? FluidState.PLASMA
+                        : this == Gas ? FluidState.GAS : FluidState.MOLTEN;
+                    matches = makeFluidStack(state, materialName, 1) != null;
+                }
+            }
+            return matches;
         }
 
         public boolean test(Materials material) {
@@ -434,10 +505,16 @@ public final class WildcardMaterials {
 
         public final OrePrefixes prefix;
         public final Materials material;
+        public final String materialName;
 
         public PrefixMaterial(OrePrefixes prefix, Materials material) {
+            this(prefix, material, isRealMaterial(material) ? material.mName : null);
+        }
+
+        private PrefixMaterial(OrePrefixes prefix, Materials material, String materialName) {
             this.prefix = prefix;
             this.material = material;
+            this.materialName = materialName;
         }
     }
 }
