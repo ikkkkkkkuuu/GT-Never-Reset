@@ -27,7 +27,8 @@ import com.xyp.gtneverreset.common.packet.WirelessMonitorSnapshotPacket;
 import com.xyp.gtneverreset.common.wireless.WirelessEnergyHistory;
 import com.xyp.gtneverreset.config.WirelessMonitorConfig;
 import com.xyp.gtneverreset.loader.ConfigLoader;
-import com.xyp.gtnrlib.client.text.EffectTextRenderer;
+import com.xyp.gtnrlib.client.text.TextEffectRegistry;
+import com.xyp.gtnrlib.text.TextEffectFormat;
 import com.xyp.gtnrlib.text.TextEffectStyle;
 import com.xyp.gtnrlib.text.TextEffects;
 
@@ -70,6 +71,7 @@ public final class WirelessMonitorHud extends Gui {
     private int ticksUntilRequest;
     private int ticksSinceSnapshot;
     private boolean wasEnabled;
+    private String cachedEffect;
     private String cachedPalette;
     private float cachedSpeed;
     private boolean cachedCustomPalette;
@@ -214,7 +216,7 @@ public final class WirelessMonitorHud extends Gui {
             : Math.max(plain.indexOf(':'), plain.indexOf('：')) + 1;
         if (end <= 0) end = plain.length();
         String animated = formatting() + plain.substring(0, end);
-        EffectTextRenderer.INSTANCE.drawStyledLine(font, animated, effectStyle(), x, y);
+        font.drawStringWithShadow(TextEffects.apply(animated, effectStyle()), x, y, 0xFFFFFF);
         if (end < plain.length()) {
             int split = Math.max(line.indexOf(':'), line.indexOf('：')) + 1;
             font.drawStringWithShadow(
@@ -226,7 +228,8 @@ public final class WirelessMonitorHud extends Gui {
     }
 
     private TextEffectStyle effectStyle() {
-        if (cachedStyle == null || !WirelessMonitorConfig.palette.equals(cachedPalette)
+        if (cachedStyle == null || !WirelessMonitorConfig.effect.equals(cachedEffect)
+            || !WirelessMonitorConfig.palette.equals(cachedPalette)
             || cachedSpeed != WirelessMonitorConfig.speed
             || cachedCustomPalette != WirelessMonitorConfig.customPalette) {
             List<Integer> colors = new ArrayList<>();
@@ -241,11 +244,17 @@ public final class WirelessMonitorHud extends Gui {
                     colors = List.of(0x33CCFF, 0xFFAA33, 0xDD77FF);
                 }
             }
-            cachedStyle = new TextEffectStyle(
-                TextEffects.EXOTIC_RAINBOW.rendererId(),
-                colors,
-                Float.isFinite(WirelessMonitorConfig.speed) ? Math.max(0, Math.min(10, WirelessMonitorConfig.speed))
-                    : 1);
+            TextEffectStyle selected = parseEffect(WirelessMonitorConfig.effect);
+            if (selected == null) selected = TextEffects.BURNISHED_AURIC.withShake(1);
+            cachedStyle = selected.withSpeed(
+                selected.speed() * (Float.isFinite(WirelessMonitorConfig.speed)
+                    ? Math.max(0, Math.min(10, WirelessMonitorConfig.speed))
+                    : 1));
+            if (WirelessMonitorConfig.customPalette) cachedStyle = cachedStyle.withColors(
+                colors.stream()
+                    .mapToInt(Integer::intValue)
+                    .toArray());
+            cachedEffect = WirelessMonitorConfig.effect;
             cachedPalette = WirelessMonitorConfig.palette;
             cachedSpeed = WirelessMonitorConfig.speed;
             cachedCustomPalette = WirelessMonitorConfig.customPalette;
@@ -284,8 +293,25 @@ public final class WirelessMonitorHud extends Gui {
         GL11.glColor4f(1, 1, 1, 1);
     }
 
+    static TextEffectStyle parseEffect(String value) {
+        if (value == null || value.length() > 256 || !value.matches("[&§]\\{[^{}]+}([&§][lmonk])*")) return null;
+        TextEffectStyle style = TextEffectFormat.readInline(value.substring(2, value.indexOf('}')));
+        if (style == null || TextEffectRegistry.get(style.rendererId()) == null
+            || !style.typewriter()
+                .equals(TextEffectStyle.Typewriter.NONE)
+            || !style.roll()
+                .equals(TextEffectStyle.Roll.NONE))
+            return null;
+        return style;
+    }
+
     private static String formatting() {
-        return (WirelessMonitorConfig.bold ? "\u00a7l" : "") + (WirelessMonitorConfig.italic ? "\u00a7o" : "");
+        String effect = WirelessMonitorConfig.effect;
+        String prefix = WirelessMonitorConfig.animatedColors ? (parseEffect(effect) == null ? "§l"
+            : effect.substring(effect.indexOf('}') + 1)
+                .replace('&', '§'))
+            : "";
+        return prefix + (WirelessMonitorConfig.bold ? "§l" : "") + (WirelessMonitorConfig.italic ? "§o" : "");
     }
 
     private String[] lines() {

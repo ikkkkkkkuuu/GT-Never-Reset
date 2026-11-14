@@ -9,6 +9,7 @@ import net.minecraft.util.StatCollector;
 
 import com.xyp.gtneverreset.config.WirelessMonitorConfig;
 import com.xyp.gtneverreset.loader.ConfigLoader;
+import com.xyp.gtnrlib.client.text.EffectTextRenderer;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -19,6 +20,7 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
     private static final String PREFIX = "gtneverreset.gui.config.general.wireless_monitor.";
     private int page;
     private GuiTextField palette;
+    private GuiTextField effect;
 
     @Override
     public void initGui() {
@@ -44,6 +46,9 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
                         20,
                         label(fields[i], value(i + 10))));
             }
+            effect = new EffectInput(left, top + 120);
+            effect.setMaxStringLength(256);
+            effect.setText(WirelessMonitorConfig.effect.replace('§', '&'));
             palette = new GuiTextField(fontRendererObj, left, top + 85, 310, 18);
             palette.setMaxStringLength(63);
             palette.setText(WirelessMonitorConfig.palette);
@@ -178,10 +183,23 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
             fontRendererObj
                 .drawString(StatCollector.translateToLocal(PREFIX + "palette"), width / 2 - 155, 112, 0xFFFFFF);
             palette.drawTextBox();
+            fontRendererObj
+                .drawString(StatCollector.translateToLocal(PREFIX + "effect"), width / 2 - 155, 147, 0xFFFFFF);
+            effect.drawTextBox();
+            // #tr gui.gtneverreset.wireless_settings.effect_hint
+            // # Prefix only; no text, typing or number rolling. Red = not saved.
+            // # zh_CN 仅填特效前缀，不填正文、打字或滚动；红色表示未保存。
+            drawCenteredString(
+                fontRendererObj,
+                StatCollector.translateToLocal("gui.gtneverreset.wireless_settings.effect_hint"),
+                width / 2,
+                181,
+                0xAAAAAA);
         }
-        int previewY = Math.max(160, height - 85);
+        int previewY = Math.max(page == 1 ? 198 : 160, height - 65);
         WirelessMonitorHud.INSTANCE.drawLine("§bEU/t: §a+3,200.00 §b(1.6A EV)", width / 2 - 110, previewY);
-        WirelessMonitorHud.INSTANCE.drawLine("§bEU: §f29,500,080", width / 2 - 110, previewY + 14);
+        if (previewY + 24 < height - 25)
+            WirelessMonitorHud.INSTANCE.drawLine("§bEU: §f29,500,080", width / 2 - 110, previewY + 14);
         super.drawScreen(mouseX, mouseY, partialTicks);
     }
 
@@ -197,11 +215,21 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
             }
         }
         super.mouseClicked(x, y, button);
-        if (page == 1 && palette != null) palette.mouseClicked(x, y, button);
+        if (page == 1 && palette != null) {
+            palette.mouseClicked(x, y, button);
+            effect.mouseClicked(x, y, button);
+        }
     }
 
     @Override
     protected void keyTyped(char character, int keyCode) {
+        if (page == 1 && effect.textboxKeyTyped(character, keyCode)) {
+            String value = effect.getText();
+            boolean valid = WirelessMonitorHud.parseEffect(value) != null;
+            effect.setTextColor(valid ? 0xFFFFFF : 0xFF5555);
+            if (valid) WirelessMonitorConfig.effect = value;
+            return;
+        }
         if (page == 1 && palette.textboxKeyTyped(character, keyCode)) {
             String value = palette.getText();
             boolean valid = value.matches("#[0-9a-fA-F]{6}(,#[0-9a-fA-F]{6}){0,7}");
@@ -214,7 +242,10 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
 
     @Override
     public void updateScreen() {
-        if (page == 1 && palette != null) palette.updateCursorCounter();
+        if (page == 1 && palette != null) {
+            palette.updateCursorCounter();
+            effect.updateCursorCounter();
+        }
     }
 
     @Override
@@ -228,4 +259,95 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
     public boolean doesGuiPauseGame() {
         return false;
     }
+
+    private final class EffectInput extends GuiTextField {
+
+        private EffectInput(int x, int y) {
+            super(new LiteralFont(), x, y, 310, 18);
+        }
+
+        @Override
+        public void drawTextBox() {
+            EffectTextRenderer.beginCapture();
+            try {
+                super.drawTextBox();
+            } finally {
+                EffectTextRenderer.endCapture();
+            }
+        }
+
+        @Override
+        public void mouseClicked(int x, int y, int button) {
+            EffectTextRenderer.beginCapture();
+            try {
+                super.mouseClicked(x, y, button);
+            } finally {
+                EffectTextRenderer.endCapture();
+            }
+        }
+
+        @Override
+        public void setSelectionPos(int position) {
+            EffectTextRenderer.beginCapture();
+            try {
+                super.setSelectionPos(position);
+            } finally {
+                EffectTextRenderer.endCapture();
+            }
+        }
+
+        @Override
+        public void writeText(String text) {
+            super.writeText(text.replace('§', '&'));
+        }
+    }
+
+    private final class LiteralFont extends net.minecraft.client.gui.FontRenderer {
+
+        private LiteralFont() {
+            super(
+                WirelessMonitorSettingsGui.this.mc.gameSettings,
+                new net.minecraft.util.ResourceLocation("textures/font/ascii.png"),
+                WirelessMonitorSettingsGui.this.mc.renderEngine,
+                false);
+        }
+
+        @Override
+        public int getStringWidth(String text) {
+            if (text == null) return 0;
+            int width = 0;
+            for (int i = 0; i < text.length(); i++) width += fontRendererObj.getCharWidth(text.charAt(i));
+            return width;
+        }
+
+        @Override
+        public String trimStringToWidth(String text, int width) {
+            return trimStringToWidth(text, width, false);
+        }
+
+        @Override
+        public String trimStringToWidth(String text, int width, boolean reverse) {
+            int count = 0;
+            int used = 0;
+            while (count < text.length()) {
+                int index = reverse ? text.length() - 1 - count : count;
+                used += fontRendererObj.getCharWidth(text.charAt(index));
+                if (used > width) break;
+                count++;
+            }
+            return reverse ? text.substring(text.length() - count) : text.substring(0, count);
+        }
+
+        @Override
+        public int drawStringWithShadow(String text, int x, int y, int color) {
+            if (text == null) return x;
+            for (int i = 0; i < text.length(); i++) {
+                char character = text.charAt(i);
+                fontRendererObj.drawStringWithShadow(String.valueOf(character), x, y, color);
+                x += fontRendererObj.getCharWidth(character);
+            }
+            return x;
+        }
+    }
+
 }
