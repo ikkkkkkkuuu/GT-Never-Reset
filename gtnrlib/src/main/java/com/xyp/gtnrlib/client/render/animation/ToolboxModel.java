@@ -1,11 +1,13 @@
 package com.xyp.gtnrlib.client.render.animation;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemRenderer;
+import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.client.ForgeHooksClient;
 
 import org.lwjgl.opengl.GL11;
 
@@ -21,6 +23,12 @@ public final class ToolboxModel {
 
     private static final int RED = 0xa63827, EDGE = 0x65251e, STEEL = 0xc3b9a1, LINING = 0x3a302a;
     private static final float HINGE_Y = .10f, HINGE_Z = -.22f, HANDLE_Y = .34f;
+    private static final RenderBlocks RENDER_BLOCKS = new RenderBlocks();
+    private static final RenderItem ITEMS = new RenderItem();
+    private static final int[][] FACES = { { 0, -1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1 },
+        { 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0 }, { 0, 0, -1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0 },
+        { 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1 }, { -1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0 },
+        { 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1 } };
 
     private ToolboxModel() {}
 
@@ -28,9 +36,9 @@ public final class ToolboxModel {
         float support = motion.support(), lid = motion.lid(), reach = motion.reach();
         GL11.glPushMatrix();
         try {
-            GL11.glTranslatef(.42f - .26f * support, -.42f + .10f * support, -1.10f - .12f * support);
+            GL11.glTranslatef(.42f + .45f * support, .02f, -1.35f - .10f * support);
             GL11.glRotatef(16 - 9 * support, 0, 1, 0);
-            GL11.glRotatef(8 * support, 1, 0, 0);
+            GL11.glRotatef(35 * support, 1, 0, 0);
             Minecraft.getMinecraft()
                 .getTextureManager()
                 .bindTexture(TextureMap.locationBlocksTexture);
@@ -57,7 +65,7 @@ public final class ToolboxModel {
                 GL11.glPopMatrix();
             }
             if (lid > 0) tools(contents);
-            if (support > 0) hand(hands, true, -.75f + .39f * support, -.65f + .41f * support, .18f, -38, -65);
+            if (support > 0) hand(hands, true, -.75f + .39f * support, -.75f + .39f * support, .10f, -38, -65);
             double angle = Math.toRadians(-105 * lid);
             float gripY = HINGE_Y + (float) (Math.cos(angle) * (HANDLE_Y - HINGE_Y) - Math.sin(angle) * -HINGE_Z);
             float gripZ = HINGE_Z + (float) (Math.sin(angle) * (HANDLE_Y - HINGE_Y) + Math.cos(angle) * -HINGE_Z);
@@ -75,42 +83,28 @@ public final class ToolboxModel {
     }
 
     private static void tools(ItemStack[] contents) {
-        Minecraft.getMinecraft()
-            .getTextureManager()
-            .bindTexture(TextureMap.locationItemsTexture);
+        var mc = Minecraft.getMinecraft();
         for (int i = 0; i < Math.min(contents.length, 6); i++) {
             ItemStack stack = contents[i];
             if (stack == null) continue;
+            GL11.glPushAttrib(
+                GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT
+                    | GL11.GL_TEXTURE_BIT
+                    | GL11.GL_COLOR_BUFFER_BIT
+                    | GL11.GL_DEPTH_BUFFER_BIT
+                    | GL11.GL_LIGHTING_BIT);
             GL11.glPushMatrix();
             try {
-                GL11.glTranslatef(-.30f + (i % 3) * .20f, -.10f, -.14f + (i / 3) * .17f);
+                GL11.glTranslatef(-.32f + (i % 3) * .22f, -.015f, -.015f + (i / 3) * .16f);
                 GL11.glRotatef(90, 1, 0, 0);
-                GL11.glScalef(.17f, .25f, .17f);
-                int passes = stack.getItem()
-                    .requiresMultipleRenderPasses()
-                        ? stack.getItem()
-                            .getRenderPasses(stack.getItemDamage())
-                        : 1;
-                for (int pass = 0; pass < passes; pass++) {
-                    var icon = stack.getItem()
-                        .getIcon(stack, pass);
-                    if (icon == null) continue;
-                    int color = stack.getItem()
-                        .getColorFromItemStack(stack, pass);
-                    GL11.glColor4ub((byte) (color >> 16), (byte) (color >> 8), (byte) color, (byte) 255);
-                    ItemRenderer.renderItemIn2D(
-                        Tessellator.instance,
-                        icon.getMaxU(),
-                        icon.getMinV(),
-                        icon.getMinU(),
-                        icon.getMaxV(),
-                        icon.getIconWidth(),
-                        icon.getIconHeight(),
-                        .035f);
-                    GL11.glTranslatef(0, 0, -.002f);
-                }
+                GL11.glScalef(.012f, -.00875f, .010f);
+                GL11.glDisable(GL11.GL_CULL_FACE);
+                // GT tools have no vanilla icon. Use their inventory renderer for actual materials and overlays.
+                if (!ForgeHooksClient.renderInventoryItem(RENDER_BLOCKS, mc.getTextureManager(), stack, true, 3, 0, 0))
+                    ITEMS.renderItemIntoGUI(mc.fontRenderer, mc.getTextureManager(), stack, 0, 0, false);
             } finally {
                 GL11.glPopMatrix();
+                GL11.glPopAttrib();
             }
         }
     }
@@ -130,6 +124,37 @@ public final class ToolboxModel {
     }
 
     private static void metal(int color, float x, float y, float z, float x2, float y2, float z2) {
-        DefaultItemModels.box(Blocks.iron_block, 0, color, x, y, z, x2, y2, z2);
+        var icon = Blocks.iron_block.getIcon(1, 0);
+        var tess = Tessellator.instance;
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_LIGHTING_BIT);
+        GL11.glPushMatrix();
+        try {
+            GL11.glDisable(GL11.GL_LIGHTING);
+            GL11.glTranslatef(x, y, z);
+            GL11.glScalef(x2 - x, y2 - y, z2 - z);
+            GL11.glColor4f(1, 1, 1, 1);
+            tess.startDrawingQuads();
+            for (var face : FACES) {
+                float shade = face[1] > 0 ? 1 : face[1] < 0 ? .5f : face[2] != 0 ? .8f : .65f;
+                tess.setColorOpaque(
+                    (int) ((color >> 16 & 255) * shade),
+                    (int) ((color >> 8 & 255) * shade),
+                    (int) ((color & 255) * shade));
+                tess.setNormal(face[0], face[1], face[2]);
+                for (int corner = 0; corner < 4; corner++) {
+                    int offset = 3 + corner * 3;
+                    tess.addVertexWithUV(
+                        face[offset],
+                        face[offset + 1],
+                        face[offset + 2],
+                        corner == 0 || corner == 3 ? icon.getMinU() : icon.getMaxU(),
+                        corner < 2 ? icon.getMaxV() : icon.getMinV());
+                }
+            }
+            tess.draw();
+        } finally {
+            GL11.glPopMatrix();
+            GL11.glPopAttrib();
+        }
     }
 }

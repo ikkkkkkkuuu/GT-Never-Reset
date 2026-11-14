@@ -18,6 +18,7 @@ public final class LibraryContracts {
             check(LibraryContracts.class.getResource(path) != null, "missing built-in animation resource " + path);
         }
         AnimationContracts.verify();
+        ToolboxMotionContracts.verify();
         PunchyPackContracts.verify();
         HmiPlaybackContracts.verifyPlayer(com.xyp.gtnrlib.compat.hmi.HmiPoseProgram.Scripts.BUILT_IN);
         String release = System.getProperty("gtnrlib.test.hmi");

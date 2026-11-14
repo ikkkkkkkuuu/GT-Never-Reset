@@ -273,7 +273,8 @@ public final class DefaultItemModels {
         }
     }
 
-    static void box(Block block, int meta, int rgb, double x, double y, double z, double x2, double y2, double z2) {
+    private static void box(Block block, int meta, int rgb, double x, double y, double z, double x2, double y2,
+        double z2) {
         var tess = Tessellator.instance;
         var icon = block.getIcon(1, meta);
         GL11.glColor3f((rgb >> 16 & 255) / 255f, (rgb >> 8 & 255) / 255f, (rgb & 255) / 255f);

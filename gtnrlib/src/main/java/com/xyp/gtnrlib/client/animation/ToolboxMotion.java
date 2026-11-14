@@ -13,10 +13,12 @@ public final class ToolboxMotion {
     }
 
     public void sample(double seconds, boolean open) {
+        if (!Double.isNaN(previous) && seconds <= previous) return;
         float elapsed = Double.isNaN(previous) ? 0 : (float) Math.max(0, Math.min(.1, seconds - previous));
         previous = seconds;
+        float before = phase;
         phase = Math.max(0, Math.min(1, phase + (open ? elapsed : -elapsed) / OPEN_SECONDS));
-        if (open && phase > .85f) searching += elapsed;
+        if (open) searching += Math.max(0, elapsed - Math.max(0, .85f - before) * OPEN_SECONDS);
         if (phase == 0) searching = 0;
     }
 

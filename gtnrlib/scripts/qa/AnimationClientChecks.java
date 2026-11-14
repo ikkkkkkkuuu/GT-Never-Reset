@@ -66,9 +66,10 @@ public final class AnimationClientChecks {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
-        if (Boolean.getBoolean("gtnrlib.animation.qa")) FMLCommonHandler.instance()
-            .bus()
-            .register(this);
+        if (Boolean.getBoolean("gtnrlib.animation.qa") && !Boolean.getBoolean("gtnrlib.animation.qa.toolbox"))
+            FMLCommonHandler.instance()
+                .bus()
+                .register(this);
     }
 
     @Mod.EventHandler
