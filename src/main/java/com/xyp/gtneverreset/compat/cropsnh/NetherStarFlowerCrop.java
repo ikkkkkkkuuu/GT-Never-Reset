@@ -3,6 +3,7 @@ package com.xyp.gtneverreset.compat.cropsnh;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import net.minecraft.block.Block;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
@@ -20,7 +21,9 @@ import com.gtnewhorizon.cropsnh.crops.abstracts.NHCropCard;
 import com.gtnewhorizon.cropsnh.farming.requirements.SubSoilRequirement;
 import com.gtnewhorizon.cropsnh.init.CropsNHItems;
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtnrlib.mod.ModList;
 
+import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.enums.VoltageIndex;
@@ -43,6 +46,10 @@ public final class NetherStarFlowerCrop extends CropCard {
         // # zh_CN 信标
         subSoil = SubSoilRequirement.get("gtneverreset.beacon")
             .addBlock(new BlockWithMeta(Blocks.beacon, 0));
+        if (ModList.EtFuturumRequiem.isModLoaded()) {
+            Block beacon = GameRegistry.findBlock(ModList.EtFuturumRequiem.ID, "beacon");
+            if (beacon != null) subSoil.addBlock(new BlockWithMeta(beacon, 0));
+        }
         addGrowthRequirement(subSoil);
     }
 
