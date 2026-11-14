@@ -1,0 +1,52 @@
+gradle.projectsEvaluated {
+    def library = gradle.rootProject.project(':gtnrlib')
+    library.spotless {
+        java { target 'src/*/java/**/*.java', 'scripts/qa/*.java' }
+    }
+    def output = library.file('build/typewriter-qa')
+    def classes = new File(output, 'classes')
+    def compile = library.tasks.register('compileTypewriterQA', JavaCompile) {
+        dependsOn library.tasks.named('classes')
+        source library.file('scripts/qa/TypewriterClientChecks.java')
+        classpath = library.sourceSets.test.compileClasspath
+        destinationDirectory.set(classes)
+        javaCompiler.set(library.javaToolchains.compilerFor(library.java.toolchain))
+        options.encoding = 'UTF-8'
+        options.compilerArgs += ['-proc:none']
+    }
+    library.tasks.named('runClient25').configure {
+        dependsOn compile
+        classpath += library.files(classes)
+        workingDir library.file('run/typewriter-qa')
+        systemProperty 'gtnrlib.typewriter.qa', 'true'
+        systemProperty 'gtnrlib.typewriter.qa.workspace', library.projectDir.absolutePath
+        systemProperty 'gtnrlib.typewriter.qa.output', new File(output, 'results').absolutePath
+        args '--width', '1100', '--height', '740'
+        notCompatibleWithConfigurationCache('Isolated automatic client checks')
+        doFirst {
+            if (!library.file('scripts/qa/HideTestClient.ps1').isFile() ||
+                !new File(classes, 'com/xyp/gtnrlib/qa/TypewriterClientChecks.class').isFile()) {
+                throw new GradleException('Background client QA prerequisites are missing')
+            }
+            workingDir.mkdirs()
+            new File(output, 'results').mkdirs()
+            new File(workingDir, 'options.txt').setText(
+                'lang:en_US\nguiScale:2\npauseOnLostFocus:false\nsoundCategory_master:0.0\nrenderDistance:4\n', 'UTF-8')
+            java.nio.file.Files.deleteIfExists(new File(output, 'results/result.txt').toPath())
+            java.nio.file.Files.deleteIfExists(new File(output, 'results/structure.log').toPath())
+            def ready = new File(output, 'window-helper.ready')
+            java.nio.file.Files.deleteIfExists(ready.toPath())
+            def helper = new ProcessBuilder('powershell.exe', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
+                '-ExecutionPolicy', 'Bypass', '-File', library.file('scripts/qa/HideTestClient.ps1').absolutePath,
+                '-Workspace', library.projectDir.absolutePath, '-Marker', '-Dgtnrlib.typewriter.qa=true',
+                '-ReadyFile', 'build/typewriter-qa/window-helper.ready')
+                .redirectErrorStream(true).redirectOutput(new File(output, 'window-helper.log')).start()
+            for (int attempt = 0; attempt < 100 && !ready.exists() && helper.isAlive(); attempt++) Thread.sleep(100)
+            if (!ready.exists()) throw new GradleException('Background window guard did not start')
+        }
+        doLast {
+            def result = new File(output, 'results/result.txt')
+            if (!result.exists() || result.text.trim() != 'PASS') throw new GradleException('AE2 theme QA failed')
+        }
+    }
+}

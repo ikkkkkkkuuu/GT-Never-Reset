@@ -123,6 +123,11 @@ public class EffectTextParser {
                     String terminator = scoped ? END : "}";
                     int end = headerEnd(source, start + prefix.length(), terminator);
                     String header = end < 0 ? "" : source.substring(start + prefix.length(), end);
+                    float pause = inline && end >= 0 ? TextEffectFormat.readPause(header) : -1;
+                    if (pause >= 0) {
+                        position = end + terminator.length();
+                        return new Token("", style, formatting, start, position, false, pause);
+                    }
                     TextEffectStyle declared = end < 0 ? null
                         : scoped ? readStyle(header) : TextEffectFormat.readInline(header);
                     if (declared != null && (!inline || rendererAvailable.test(declared.rendererId()))) {
@@ -209,13 +214,20 @@ public class EffectTextParser {
 
     private record Scope(TextEffectStyle saved, TextEffectStyle opened) {}
 
+    /** {@code pause} is the typewriter hold in seconds of an empty pause token, otherwise zero. */
     public record Token(String text, TextEffectStyle style, String formatting, int start, int end,
-        boolean formattingCode) {}
+        boolean formattingCode, float pause) {
+
+        public Token(String text, TextEffectStyle style, String formatting, int start, int end,
+            boolean formattingCode) {
+            this(text, style, formatting, start, end, formattingCode, 0);
+        }
+    }
 
     private static TextEffectStyle readStyle(String header) {
         if (header.equals("exotic_rainbow")) return TextEffects.EXOTIC_RAINBOW;
         String[] fields = header.split(";", -1);
-        if (fields.length != 3) return null;
+        if (fields.length < 3 || fields.length > 8) return null;
         try {
             IntArrayList colors = new IntArrayList();
             if (!fields[2].isEmpty()) {
@@ -226,7 +238,14 @@ public class EffectTextParser {
                     colors.add(Integer.parseInt(value, 16));
                 }
             }
-            return new TextEffectStyle(fields[0], colors, Float.parseFloat(fields[1]));
+            float typing = fields.length >= 4 ? Float.parseFloat(fields[3]) : 0;
+            TextEffectStyle style = new TextEffectStyle(fields[0], colors, Float.parseFloat(fields[1]))
+                .withTyping(typing);
+            if (fields.length >= 5 && !fields[4].isEmpty()) style = TextEffectFormat.readEntrance(style, fields[4]);
+            if (fields.length >= 6 && !fields[5].isEmpty()) style = TextEffectFormat.readRoll(style, fields[5]);
+            if (fields.length >= 7 && !fields[6].isEmpty()) style = TextEffectFormat.readShake(style, fields[6]);
+            if (fields.length == 8 && !fields[7].isEmpty()) style = TextEffectFormat.readOptions(style, fields[7]);
+            return style;
         } catch (IllegalArgumentException ignored) {
             return null;
         }

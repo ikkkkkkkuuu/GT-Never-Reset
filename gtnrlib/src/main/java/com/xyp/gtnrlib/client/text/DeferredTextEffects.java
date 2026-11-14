@@ -67,6 +67,7 @@ public class DeferredTextEffects {
         private float y;
         private int color;
         private boolean shadow;
+        private boolean still;
         private boolean unicode;
         private boolean depthTest;
         private boolean depthMask;
@@ -80,6 +81,7 @@ public class DeferredTextEffects {
             this.y = y;
             this.color = color;
             this.shadow = shadow;
+            still = TypewriterTimeline.INSTANCE.isStill();
             unicode = font.getUnicodeFlag();
             depthTest = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
             depthMask = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
@@ -102,9 +104,11 @@ public class DeferredTextEffects {
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, lightX, lightY);
             boolean previousUnicode = font.getUnicodeFlag();
             font.setUnicodeFlag(unicode);
+            if (still) TypewriterTimeline.INSTANCE.beginStill();
             try {
                 EffectTextRenderer.INSTANCE.draw(font, text, x, y, color, shadow);
             } finally {
+                if (still) TypewriterTimeline.INSTANCE.endStill();
                 font.setUnicodeFlag(previousUnicode);
             }
         }

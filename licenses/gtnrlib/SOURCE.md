@@ -1,5 +1,15 @@
 # GTNRLib sources and adaptations
 
+## Typewriter text (2026-11-13)
+
+Adapted the text parser, style parameters, render timeline, glyph masks, input-field
+guard and regression tests from GTNLLib at ca44c734c9947a793b6cf2d3c8bc3a8ac0fd4d51,
+then updated to 497e986 (character entrances, number roll, shake, and the neon flicker,
+arcane cipher, gravity lens, melting, constellation and corruption effects):
+https://github.com/GTNotLeisure/GTNLLib/pull/8
+Code remains under GPL-3.0 (see GPL-3.0.txt). Packages and client configuration were
+adapted to GTNRLib; existing local font compatibility and legacy text APIs are retained.
+
 Extracted from the existing GT-Never-Reset text parser, text renderer, font mixins
 and shader resources on 2026-10-31. The initial extraction retained the existing
 code's ownership and licensing terms.
