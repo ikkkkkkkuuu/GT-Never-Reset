@@ -92,34 +92,6 @@ public class VaultPortHatch extends MTEHatch
     }
 
     @Override
-    public boolean isFacingValid(ForgeDirection facing) {
-        return true;
-    }
-
-    @Override
-    public ITexture getCasingTexture() {
-        return BlockLoader.eddingtonWallCasing.getCasingTexture();
-    }
-
-    @Override
-    public ITexture[] getTexturesActive(ITexture aBaseTexture) {
-        return new ITexture[] { aBaseTexture, TextureFactory.of(Textures.BlockIcons.OVERLAY_PIPE_IN),
-            TextureFactory.builder()
-                .addIcon(OVERLAY_FRONT)
-                .extFacing()
-                .build() };
-    }
-
-    @Override
-    public ITexture[] getTexturesInactive(ITexture aBaseTexture) {
-        return new ITexture[] { aBaseTexture, TextureFactory.of(Textures.BlockIcons.OVERLAY_PIPE_IN),
-            TextureFactory.builder()
-                .addIcon(OVERLAY_FRONT)
-                .extFacing()
-                .build() };
-    }
-
-    @Override
     public void onFirstTick(IGregTechTileEntity baseMetaTileEntity) {
         super.onFirstTick(baseMetaTileEntity);
         AENetworkProxy proxy = getProxy();
@@ -137,23 +109,19 @@ public class VaultPortHatch extends MTEHatch
     }
 
     @Override
-    public void saveNBTData(NBTTagCompound aNBT) {
-        super.saveNBTData(aNBT);
-
-        if (this.gridProxy != null) {
-            NBTTagCompound proxyTag = new NBTTagCompound();
-            this.gridProxy.writeToNBT(proxyTag);
-            aNBT.setTag("gridProxy", proxyTag);
-        }
+    public void onRemoval() {
+        unbind();
+        super.onRemoval();
     }
 
     @Override
-    public void loadNBTData(NBTTagCompound aNBT) {
-        super.loadNBTData(aNBT);
-        NBTTagCompound proxyTag = aNBT.getCompoundTag("gridProxy");
-        AENetworkProxy proxy = getProxy();
-        if (proxy != null) proxy.readFromNBT(proxyTag);
+    public void onFacingChange() {
+        super.onFacingChange();
+        updateValidGridProxySides();
     }
+
+    @Override
+    public void securityBreak() {}
 
     public void bind(IItemVault controller) {
         if (this.controller == controller) return;
@@ -188,23 +156,6 @@ public class VaultPortHatch extends MTEHatch
     }
 
     @Override
-    public void onRemoval() {
-        unbind();
-        super.onRemoval();
-    }
-
-    @Override
-    public int getPriority() {
-        return 0;
-    }
-
-    @Override
-    public IGridNode getActionableNode() {
-        AENetworkProxy gp = getProxy();
-        return gp != null ? gp.getNode() : null;
-    }
-
-    @Override
     public AENetworkProxy getProxy() {
         if (gridProxy == null) {
             if (getBaseMetaTileEntity() instanceof IGridProxyable) {
@@ -229,19 +180,9 @@ public class VaultPortHatch extends MTEHatch
     }
 
     @Override
-    public void onFacingChange() {
-        super.onFacingChange();
-        updateValidGridProxySides();
-    }
-
-    @Override
-    public boolean connectsToAllSides() {
-        return true;
-    }
-
-    @Override
-    public void setConnectsToAllSides(boolean connects) {
-        updateValidGridProxySides();
+    public IGridNode getActionableNode() {
+        AENetworkProxy gp = getProxy();
+        return gp != null ? gp.getNode() : null;
     }
 
     @Override
@@ -256,7 +197,10 @@ public class VaultPortHatch extends MTEHatch
     }
 
     @Override
-    public void securityBreak() {}
+    public DimensionalCoord getLocation() {
+        IGregTechTileEntity gtm = this.getBaseMetaTileEntity();
+        return new DimensionalCoord(gtm.getWorld(), gtm.getXCoord(), gtm.getYCoord(), gtm.getZCoord());
+    }
 
     @Override
     @SuppressWarnings("rawtypes")
@@ -272,22 +216,6 @@ public class VaultPortHatch extends MTEHatch
     @Override
     public void saveChanges(IMEInventory cellInventory) {
         // This is handled by host itself.
-    }
-
-    @Override
-    public boolean isPowered() {
-        return getProxy() != null && getProxy().isPowered();
-    }
-
-    @Override
-    public boolean isActive() {
-        return getProxy() != null && getProxy().isActive();
-    }
-
-    @Override
-    public DimensionalCoord getLocation() {
-        IGregTechTileEntity gtm = this.getBaseMetaTileEntity();
-        return new DimensionalCoord(gtm.getWorld(), gtm.getXCoord(), gtm.getYCoord(), gtm.getZCoord());
     }
 
     public void postUpdateItem(ItemStack itemStack, long amt) {
@@ -320,6 +248,39 @@ public class VaultPortHatch extends MTEHatch
         } catch (GridAccessException e) {}
     }
 
+    @Override
+    public double injectAEPower(double amt, Actionable mode) {
+        return 0;
+    }
+
+    @Override
+    public double extractAEPower(double amt, Actionable mode, PowerMultiplier usePowerMultiplier) {
+        return amt;
+    }
+
+    @Override
+    public ITexture getCasingTexture() {
+        return BlockLoader.eddingtonWallCasing.getCasingTexture();
+    }
+
+    @Override
+    public ITexture[] getTexturesActive(ITexture aBaseTexture) {
+        return new ITexture[] { aBaseTexture, TextureFactory.of(Textures.BlockIcons.OVERLAY_PIPE_IN),
+            TextureFactory.builder()
+                .addIcon(OVERLAY_FRONT)
+                .extFacing()
+                .build() };
+    }
+
+    @Override
+    public ITexture[] getTexturesInactive(ITexture aBaseTexture) {
+        return new ITexture[] { aBaseTexture, TextureFactory.of(Textures.BlockIcons.OVERLAY_PIPE_IN),
+            TextureFactory.builder()
+                .addIcon(OVERLAY_FRONT)
+                .extFacing()
+                .build() };
+    }
+
     @MENetworkEventSubscribe
     public void powerRender(final MENetworkPowerStatusChange c) {
         try {
@@ -343,13 +304,52 @@ public class VaultPortHatch extends MTEHatch
     }
 
     @Override
-    public double injectAEPower(double amt, Actionable mode) {
+    public void saveNBTData(NBTTagCompound aNBT) {
+        super.saveNBTData(aNBT);
+
+        if (this.gridProxy != null) {
+            NBTTagCompound proxyTag = new NBTTagCompound();
+            this.gridProxy.writeToNBT(proxyTag);
+            aNBT.setTag("gridProxy", proxyTag);
+        }
+    }
+
+    @Override
+    public void loadNBTData(NBTTagCompound aNBT) {
+        super.loadNBTData(aNBT);
+        NBTTagCompound proxyTag = aNBT.getCompoundTag("gridProxy");
+        AENetworkProxy proxy = getProxy();
+        if (proxy != null) proxy.readFromNBT(proxyTag);
+    }
+
+    @Override
+    public boolean isFacingValid(ForgeDirection facing) {
+        return true;
+    }
+
+    @Override
+    public int getPriority() {
         return 0;
     }
 
     @Override
-    public double extractAEPower(double amt, Actionable mode, PowerMultiplier usePowerMultiplier) {
-        return amt;
+    public boolean connectsToAllSides() {
+        return true;
+    }
+
+    @Override
+    public void setConnectsToAllSides(boolean connects) {
+        updateValidGridProxySides();
+    }
+
+    @Override
+    public boolean isPowered() {
+        return getProxy() != null && getProxy().isPowered();
+    }
+
+    @Override
+    public boolean isActive() {
+        return getProxy() != null && getProxy().isActive();
     }
 
     @Override
