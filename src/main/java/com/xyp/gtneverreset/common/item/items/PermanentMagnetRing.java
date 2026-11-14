@@ -13,7 +13,6 @@ import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 
 import baubles.api.BaubleType;
 import baubles.api.IBauble;
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -31,7 +30,6 @@ public final class PermanentMagnetRing extends Item implements IBauble {
         setTextureName("gtneverreset:permanent_magnet_ring");
         setMaxStackSize(1);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
-        GameRegistry.registerItem(this, "PermanentMagnetRing");
     }
 
     @Override

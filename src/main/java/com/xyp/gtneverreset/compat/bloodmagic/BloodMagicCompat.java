@@ -10,6 +10,7 @@ import com.xyp.gtneverreset.loader.ItemLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import WayofTime.alchemicalWizardry.ModBlocks;
+import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -20,10 +21,9 @@ public final class BloodMagicCompat {
         // #tr item.blood_altar_packaged_core.name
         // # Blood Altar Packaged Core
         // # zh_CN 血魔法祭坛封包核心
-        ItemLoader.bloodAltarCore = new ItemPackagedCore(
-            "blood_altar",
-            "blood_altar_packaged_core",
-            GTNRItemList.BloodAltarCore);
+        ItemLoader.bloodAltarCore = new ItemPackagedCore("blood_altar", "blood_altar_packaged_core");
+        GameRegistry.registerItem(ItemLoader.bloodAltarCore, "blood_altar_packaged_core");
+        GTNRItemList.BloodAltarCore.set(ItemLoader.bloodAltarCore);
         PackagedCoreRegistry.register("blood_altar", new BloodAltarAdapter());
     }
 

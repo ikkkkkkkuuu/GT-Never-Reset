@@ -47,7 +47,6 @@ import com.xyp.gtneverreset.common.wireless.WirelessClusterManager;
 import com.xyp.gtneverreset.common.wireless.WirelessFrequencies;
 import com.xyp.gtneverreset.common.wireless.WirelessOperations;
 import com.xyp.gtneverreset.mixins.late.appliedenergistics2.wireless.AccessorTileController;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import appeng.api.exceptions.FailedConnection;
 import appeng.api.networking.IGridNode;
@@ -58,7 +57,6 @@ import appeng.api.parts.SelectedPart;
 import baubles.api.BaubleType;
 import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleExpanded;
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -72,8 +70,6 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
         setTextureName(GTNeverReset.MODID + ":" + REGISTRY_NAME);
         setMaxStackSize(1);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
-        GameRegistry.registerItem(this, REGISTRY_NAME);
-        GTNRItemList.WirelessFrequencyCard.set(this);
     }
 
     @Override

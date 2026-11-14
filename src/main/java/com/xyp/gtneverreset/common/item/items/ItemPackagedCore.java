@@ -9,10 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.StatCollector;
 
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.mod.ModList;
-
-import cpw.mods.fml.common.registry.GameRegistry;
 
 /** Common upstream core base; the client renderer adds the installed target mod's own item icon. */
 public final class ItemPackagedCore extends Item {
@@ -20,21 +17,18 @@ public final class ItemPackagedCore extends Item {
     public final String adapterId;
 
     /**
-     * Creates and registers an adapter-specific core. The caller declares the display-name
+     * Creates an adapter-specific core. The caller declares the display-name
      * translation next to the registration site and registers the matching adapter before worlds are loaded.
      *
      * @param adapterId       stable registry key, or empty for a nonfunctional base core
      * @param unlocalizedName item translation name without the item. prefix or .name suffix
-     * @param itemList        item list entry for this core
      */
-    public ItemPackagedCore(String adapterId, String unlocalizedName, GTNRItemList itemList) {
+    public ItemPackagedCore(String adapterId, String unlocalizedName) {
         this.adapterId = Objects.requireNonNull(adapterId);
         setUnlocalizedName(unlocalizedName);
         setMaxStackSize(1);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
         setTextureName(ModList.GTNeverReset.getResourcePath("packaged/provider_core_base"));
-        GameRegistry.registerItem(this, unlocalizedName);
-        itemList.set(this);
     }
 
     public ItemPackagedCore(boolean infusion) {
@@ -53,8 +47,6 @@ public final class ItemPackagedCore extends Item {
         setMaxStackSize(1);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
         setTextureName(ModList.GTNeverReset.getResourcePath("packaged/provider_core_base"));
-        GameRegistry.registerItem(this, infusion ? "tc4_infusion_packaged_core" : "basic_packaged_core");
-        (infusion ? GTNRItemList.ThaumcraftInfusionCore : GTNRItemList.BasicPackagedCore).set(this);
     }
 
     @Override

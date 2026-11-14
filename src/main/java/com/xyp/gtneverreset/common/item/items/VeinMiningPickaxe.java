@@ -31,7 +31,6 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IChatComponent;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.EnumHelper;
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -41,13 +40,10 @@ import com.github.bsideup.jabel.Desugar;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.config.VeinMinerPickaxeConfig;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
-import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
@@ -79,12 +75,6 @@ public class VeinMiningPickaxe extends ItemPickaxe {
         this.setTextureName(GTNeverReset.MODID + ":" + "SingularityPickaxe/SingularityPickaxe");
         this.setMaxStackSize(1);
         this.setMaxDamage(20000000);
-        MinecraftForge.EVENT_BUS.register(this);
-        FMLCommonHandler.instance()
-            .bus()
-            .register(this);
-        GameRegistry.registerItem(this, getUnlocalizedName());
-        GTNRItemList.VeinMiningPickaxe.set(new ItemStack(this, 1));
     }
 
     @Override

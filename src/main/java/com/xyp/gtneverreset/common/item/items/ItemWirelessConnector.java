@@ -16,10 +16,7 @@ import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvide
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.PackagedConnectorPacket;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.mod.ModList;
-
-import cpw.mods.fml.common.registry.GameRegistry;
 
 /** Upstream animated selection tool, with normal-select / Shift-bind controls that bypass target GUIs. */
 public final class ItemWirelessConnector extends Item {
@@ -32,8 +29,6 @@ public final class ItemWirelessConnector extends Item {
         setMaxStackSize(1);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
         setTextureName(ModList.GTNeverReset.getResourcePath("packaged/wireless_connector"));
-        GameRegistry.registerItem(this, "packaged_wireless_connector");
-        GTNRItemList.ItemWirelessConnector.set(this);
     }
 
     @Override

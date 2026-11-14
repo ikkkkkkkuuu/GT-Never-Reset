@@ -27,12 +27,10 @@ import com.xyp.gtneverreset.common.wireless.IWirelessPowerReceiver;
 import com.xyp.gtneverreset.common.wireless.WirelessCardInventory;
 import com.xyp.gtneverreset.common.wireless.WirelessPowerSavedData;
 import com.xyp.gtneverreset.common.wireless.WirelessPowerTransfer;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import baubles.api.BaubleType;
 import baubles.api.expanded.BaubleExpandedSlots;
 import baubles.api.expanded.IBaubleExpanded;
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
@@ -51,8 +49,6 @@ public final class WirelessPowerCard extends Item implements IBaubleExpanded, IG
         setTextureName("gtneverreset:wireless_power_card");
         setMaxStackSize(1);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
-        GameRegistry.registerItem(this, "wireless_power_card");
-        GTNRItemList.WirelessPowerCard.set(this);
     }
 
     @Override

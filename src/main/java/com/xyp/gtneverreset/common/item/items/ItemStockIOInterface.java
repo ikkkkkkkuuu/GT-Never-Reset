@@ -12,13 +12,11 @@ import net.minecraft.world.World;
 
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.part.PartStockIOInterface;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.AEApi;
 import appeng.api.parts.IPart;
 import appeng.api.parts.IPartItem;
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -38,8 +36,6 @@ public final class ItemStockIOInterface extends Item implements IPartItem {
         setUnlocalizedName("gtneverreset.stock_io_interface");
         setTextureName(ModList.GTNeverReset.getResourcePath("advancedio/advanced_io_bus"));
         setCreativeTab(GTNRCreativeTabs.ITEMS);
-        GameRegistry.registerItem(this, REGISTRY_NAME);
-        GTNRItemList.StockIOInterfacePart.set(this);
     }
 
     @Override

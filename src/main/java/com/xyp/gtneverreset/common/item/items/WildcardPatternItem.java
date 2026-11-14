@@ -20,13 +20,11 @@ import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.gui.WildcardPatternGui;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternState;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.client.gui.PixelFontModularScreen;
 import com.xyp.gtnrlib.mod.ModList;
 
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.items.misc.ItemEncodedPattern;
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -44,8 +42,6 @@ public class WildcardPatternItem extends ItemEncodedPattern implements IGuiHolde
         setUnlocalizedName(UNLOCALIZED_NAME);
         setTextureName(GTNeverReset.MODID + ":wildcard_pattern");
         setCreativeTab(GTNRCreativeTabs.ITEMS);
-        GameRegistry.registerItem(this, ITEM_NAME);
-        GTNRItemList.WildcardPattern.set(this);
     }
 
     @Override

@@ -23,10 +23,8 @@ import com.xyp.gtneverreset.client.terminal.WirelessTerminalInputHandler;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalMagnetGui;
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalMagnet;
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 
-import appeng.api.AEApi;
 import appeng.api.implementations.guiobjects.IGuiItem;
 import appeng.api.implementations.guiobjects.IGuiItemObject;
 import appeng.helpers.ICustomButtonDataObject;
@@ -35,7 +33,6 @@ import appeng.helpers.ICustomButtonSource;
 import appeng.items.contents.WirelessCraftingTerminalGuiObject;
 import appeng.items.tools.powered.ToolWirelessTerminal;
 import baubles.api.expanded.BaubleExpandedSlots;
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -51,12 +48,6 @@ public final class ItemWirelessDualInterfaceTerminal extends ToolWirelessTermina
         setUnlocalizedName(REGISTRY_NAME);
         setTextureName(GTNeverReset.MODID + ":" + REGISTRY_NAME);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
-        GameRegistry.registerItem(this, REGISTRY_NAME);
-        GTNRItemList.WirelessDualInterfaceTerminal.set(this);
-        AEApi.instance()
-            .registries()
-            .wireless()
-            .registerWirelessHandler(this);
     }
 
     @Override

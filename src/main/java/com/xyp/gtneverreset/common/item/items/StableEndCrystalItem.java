@@ -12,9 +12,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.entity.StableEndCrystalEntity;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -29,8 +27,6 @@ public final class StableEndCrystalItem extends Item {
         setUnlocalizedName("gtneverreset.stable_end_crystal");
         setTextureName(GTNeverReset.MODID + ":stable_end_crystal");
         setCreativeTab(GTNRCreativeTabs.ITEMS);
-        GameRegistry.registerItem(this, REGISTRY_NAME);
-        GTNRItemList.StableEndCrystal.set(this);
     }
 
     @Override

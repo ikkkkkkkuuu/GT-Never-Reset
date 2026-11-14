@@ -23,7 +23,6 @@ import com.xyp.gtnrlib.mod.ModList;
 
 import baubles.api.BaubleType;
 import baubles.api.IBauble;
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -41,7 +40,6 @@ public final class HarvestRing extends Item implements IBauble {
         setTextureName("gtneverreset:harvest_ring");
         setMaxStackSize(1);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
-        GameRegistry.registerItem(this, "HarvestRing");
     }
 
     @Override
