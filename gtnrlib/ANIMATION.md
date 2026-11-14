@@ -6,7 +6,9 @@
 
 从 Mods → GTNRLib → Config 关闭“第一人称手臂动画”，立即恢复原版手臂和持物表现，无需重启或重载资源。对应 `config/GTNeverReset/GTNRLib/gtnrlib.cfg` 的 `client.enableFirstPersonAnimations`，默认为 `true`，只影响本机。它同时控制内置动作、导入的动画包和物品动作绑定；重新开启后继续使用已加载的动画资源。原有 `builtInFirstPerson` 仅决定资源重载时是否加载内置动作。
 
-空手出拳、剑的地面连击和空中挥砍、镐和其他采掘工具、双手拉弓与松弦、进食、饮用和换物都使用同一个播放器。它分别求主手、物品和辅助手的姿势，再按当前握点合成呼吸、步态、转头滞后和垂直惯性。起跳后仍能挥剑、挖掘或拉弓，收招时回到角色当时的移动姿势。同一帧重复绘制不会重复推进运动。副手可参与持弓及双手工具动作，物品仍使用 1.7.10 的主手槽。
+空手出拳、剑的地面连击和空中挥砍、镐和其他采掘工具、双手拉弓与松弦、进食、饮用和换物都使用同一个播放器。它分别求主手、物品和辅助手的姿势，再按当前握点合成呼吸、步态、转头滞后和垂直惯性。起跳后仍能挥剑、挖掘或拉弓，收招时回到角色当时的移动姿势。同一帧重复绘制不会重复推进运动。辅助手可参与持弓及双手工具动作，动画物品使用 1.7.10 的主手槽。
+
+安装 Backhand 时，保留主手动画并绘制其副手物品。副手使用 Backhand 原有的挥动、使用与换物动作，不套用主手的动画状态；副手占用左臂时隐藏动画的辅助手，地图仍遵守 Backhand 的双手占用规则。双手持有同种物品时，副手使用也不会触发主手的进食、拉弓或自定义使用动作。Backhand 是可选依赖，无需安装即可使用默认动画。
 
 - 匠魂弩用右手稳住弩托，左手钩住弦中央，向后拉到卡榫。弦的两端固定在弩臂上，中央随手拉成 V 形，松手取箭时仍扣在卡榫上。左手随后从左下方举箭，快速对槽压入。弦保留当前材质，箭头、箭杆和箭羽来自实际选中的弹药。总装填时间由这把弩决定。射出时弦弹回，双手短促后坐，有弹药就开始下一轮装填。潜行右键可取消装填或卸下弩箭。
 - 普通 GT 手动扳手在服务端确认右键操作成功后向准星探出。扳口就位后，手带着扳柄绕扳口转过约 55°，再略微抽开、回到握持位置。单次动作长 0.45 秒，连续成功操作会衔接下一次拧动。
@@ -243,6 +245,7 @@ if (library.reload(logger::warn)) {
 ```powershell
 .\gradlew.bat spotlessCheck build :gtnrlib:checkLibraryContracts
 .\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-qa.init.gradle -PanimationQaDefaults :gtnrlib:runClient25
+.\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-qa.init.gradle -PanimationQaDefaults -PanimationQaOffhand -PanimationQaBackhand :gtnrlib:runClient25
 .\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-qa.init.gradle -PanimationQaDefaults -PanimationQaStandaloneMods :runClient25
 .\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-qa.init.gradle -PanimationQaDefaults -PanimationQaHost :runClient25
 .\gradlew.bat --no-configuration-cache -I gtnrlib/scripts/animation-qa.init.gradle :gtnrlib:runClient25
@@ -251,6 +254,8 @@ if (library.reload(logger::warn)) {
 ```
 
 默认动作结果及截图写入库 build 的 `animation-qa/{library-defaults,library-mods-defaults,host-defaults}`，每次启动从空资源包目录直接进入独立世界。附加的旧示例／可选原包测试使用另外的实例。开发者可给 `:gtnrlib:checkLibraryContracts` 传入 `-PhmiRelease=<原包绝对路径>` 运行逐帧对照。要重新生成内置数值资源，使用同一参数和 `-I gtnrlib/scripts/animation-qa.init.gradle :gtnrlib:captureDefaultPoses`，输出在库 build 的 `animation-qa/default-poses.gz`。
+
+副手专项夹具 `-PanimationQaOffhand` 检查动画开关、副手单次绘制、主手状态隔离、地图、进食、空手显示配置和放置方块，输出到 `animation-qa/library-defaults-backhand`。省略 `-PanimationQaBackhand` 验证不安装该模组时的启动和动画；追加 `-PanimationQaAngelica` 可在独立实例中同时加载 Angelica，结果目录追加 `-angelica`。这些检查不启用第三方光影包。
 
 Windows 客户端夹具在库 run 目录内启动独立静音实例，守护脚本隐藏窗口并设置点击穿透。它通过集成服务器和游戏帧缓冲操作，结果与 PNG 写入库 build 目录的 `animation-qa/{library,host}`。其中 `screenshots/world-grip.png` 和 `world-empty.png` 来自正常游戏帧。隔离绘制使用陆地上的 70° 手部投影，并临时在测试皮肤的腕部与袖口加上不同颜色的标记。夹具分别检查单手和双手姿势，要求两处标记可见且按对应方向分开，并核对禁用后的持剑、空手画面与原版逐像素一致。
 

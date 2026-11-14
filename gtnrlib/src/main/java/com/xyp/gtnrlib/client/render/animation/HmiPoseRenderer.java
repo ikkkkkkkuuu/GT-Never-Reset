@@ -86,14 +86,20 @@ public final class HmiPoseRenderer {
                 if (HMI.handheldTool() instanceof HmiItemBindings.TwoHandedModel rig) {
                     apply(HMI.item);
                     try {
-                        rig.renderGripped(stack, HMI.forgeRenderer(), partial, HmiPoseRenderer::gripHand);
+                        rig.renderGripped(
+                            stack,
+                            HMI.forgeRenderer(),
+                            partial,
+                            left -> {
+                                if (!left || !FirstPersonAnimations.offhandOwnsLeftArm(partial)) gripHand(left);
+                            });
                     } catch (RuntimeException ex) {
                         HMI.disableTool(stack, ex);
                         return false;
                     }
                 } else {
                     arm(false, stack != null);
-                    arm(true, false);
+                    if (!FirstPersonAnimations.offhandOwnsLeftArm(partial)) arm(true, false);
                     if (stack != null) {
                         apply(HMI.item);
                         if (stack.getItem() instanceof ItemMap map) map(mc, stack, map);
@@ -170,7 +176,9 @@ public final class HmiPoseRenderer {
     }
 
     private static void draw(ItemRenderer renderer, Minecraft mc, ItemStack stack) {
-        int used = mc.thePlayer.isUsingItem() ? mc.thePlayer.getItemInUseDuration() : -1;
+        int used = mc.thePlayer.isUsingItem() && !FirstPersonAnimations.usingOffhandItem()
+            ? mc.thePlayer.getItemInUseDuration()
+            : -1;
         var tool = HMI.handheldTool();
         var custom = HMI.forgeRenderer();
         if (models == null

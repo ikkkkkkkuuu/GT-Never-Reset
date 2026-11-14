@@ -275,7 +275,9 @@ public final class HmiFirstPerson {
             lastDamage = damage;
             var frame = program.frame;
             frame.set("age", p.ticksExisted);
-            boolean using = stack != null && p.getItemInUse() != null && stack.isItemEqual(p.getItemInUse());
+            boolean using = stack != null && p.getItemInUse() != null
+                && stack.isItemEqual(p.getItemInUse())
+                && !FirstPersonAnimations.usingOffhandItem();
             frame.set(
                 "using",
                 LuaValue.valueOf(
