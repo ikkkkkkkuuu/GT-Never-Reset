@@ -71,9 +71,7 @@ public final class SubTagFilterComponent extends AbstractFilterComponent {
 
     @Override
     public boolean test(String materialName) {
-        Materials material = WildcardMaterials.findByName(materialName);
-        return materialName != null && isWhitelist()
-            == (WildcardMaterials.isRealMaterial(material) && WildcardMaterials.hasSubTag(material, subTag));
+        return materialName != null && isWhitelist() == WildcardMaterials.hasSubTag(materialName, subTag);
     }
 
     @Override

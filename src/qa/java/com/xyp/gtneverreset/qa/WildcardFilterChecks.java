@@ -22,6 +22,7 @@ import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.PageButton;
 import com.cleanroommc.modularui.widgets.menu.AbstractMenuButton;
+import com.glodblock.github.common.item.ItemFluidDrop;
 import com.xyp.gtneverreset.common.gui.WildcardPatternGui.DropWidget;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 import com.xyp.gtneverreset.common.me.wildcard.model.WildcardExpansion;
@@ -35,15 +36,20 @@ import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.gui.widget.ItemStackSlot;
 import com.xyp.gtnrlib.gui.widget.ScrollingDropdown;
 
+import bartworks.system.material.Werkstoff;
+import bartworks.system.material.WerkstoffLoader;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.GregTechAPI;
+import gregtech.api.enums.FluidState;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
+import gregtech.api.enums.SubTag;
 import gtPlusPlus.core.material.Material;
+import gtPlusPlus.core.material.state.MaterialState;
 
 @Mod(modid = "wildcardfilterqa", name = "Wildcard Filter QA", version = "1", dependencies = "after:gtneverreset")
 public final class WildcardFilterChecks {
@@ -54,6 +60,8 @@ public final class WildcardFilterChecks {
     private volatile Throwable failure;
     private ItemStack sample;
     private String sampleName;
+    private ItemStack bwSample;
+    private String bwName;
     private ModularScreen previousScreen;
 
     @Mod.EventHandler
@@ -74,6 +82,7 @@ public final class WildcardFilterChecks {
             if (!initialized) {
                 initialized = true;
                 checkModel();
+                checkNativeMaterials();
                 ItemStack stack = GTNRItemList.WildcardPattern.get(1);
                 WildcardPatternGenerator.markAsWildcard(stack);
                 WildcardModelState
@@ -97,9 +106,29 @@ public final class WildcardFilterChecks {
                     acknowledged = 1;
                 }
             }
-            if (request == 2 && acknowledged == 1) {
+            if (request == 2 && acknowledged == 1 || request == 4 && acknowledged == 3) {
                 open(player);
-                acknowledged = 2;
+                acknowledged = request;
+            }
+            if (request == 3 && acknowledged == 2) {
+                var filters = WildcardModelState.getFilters(player.getHeldItem());
+                var property = (PropertyFilterComponent) filters.get(0);
+                var subTag = (SubTagFilterComponent) filters.get(1);
+                if (property.getProperty() == Property.BlastFurnace && subTag.getSubTag() == SubTag.METAL) {
+                    require(
+                        property.getExampleName()
+                            .isEmpty()
+                            && subTag.getExampleName()
+                                .isEmpty(),
+                        "cleared examples stay cleared on server");
+                    require(
+                        property.test("TungstenSteel") == Materials.TungstenSteel.mBlastFurnaceRequired,
+                        "native property reaches server");
+                    require(
+                        subTag.test("Iron") && !subTag.test(sampleName),
+                        "native tag reaches server without GT++ fake tags");
+                    acknowledged = 3;
+                }
             }
         } catch (Throwable error) {
             failure = error;
@@ -159,6 +188,121 @@ public final class WildcardFilterChecks {
             "expanded whitelist contains only GT++ material axes");
     }
 
+    private void checkNativeMaterials() {
+        require(
+            WildcardMaterials.findOreMaterial("Iron") == Materials.Iron,
+            "GT identity has priority over same-name addon entries");
+        require(
+            WildcardMaterials.findOreMaterial(sampleName) instanceof Material,
+            "GT++ resolves through IOreMaterial");
+        require(
+            Property.BlastFurnace.test("TungstenSteel") == Materials.TungstenSteel.mBlastFurnaceRequired,
+            "GT blast-furnace metadata is used");
+        require(
+            Property.Radioactive.test("Uranium235") && !Property.Radioactive.test("Iron"),
+            "GT radioactivity follows native enchantments");
+        require(
+            WildcardMaterials.findProperty("METAL") == Property.Metal
+                && WildcardMaterials.findProperty("INGOT") == Property.Ingot,
+            "legacy property IDs do not change through display aliases");
+        for (Property property : WildcardMaterials.propertyChoices()
+            .values()) {
+            require(
+                WildcardMaterials.findProperty(property.displayName()) == property,
+                "localized property round trip: " + property);
+            var filter = new PropertyFilterComponent(property, null, false);
+            var loaded = PropertyFilterComponent.readData(filter.writeData());
+            require(loaded.getProperty() == property && !loaded.isWhitelist(), "stable property NBT: " + property);
+        }
+        int gtppCount = 0, gtppGases = 0;
+        for (Material material : Material.mMaterialsByName.values()) {
+            String name = material.getInternalName();
+            if (WildcardMaterials.findOreMaterial(name) != material) continue;
+            if (Property.BlastFurnace.test(name) != material.requiresBlastFurnace()
+                || Property.Radioactive.test(name) != material.isRadioactive)
+                throw new AssertionError("GT++ native stats mismatch: " + name);
+            if (!WildcardMaterials.subTagsOf(name)
+                .isEmpty()) throw new AssertionError("invented GT++ tags: " + name);
+            if ((material.getState() == MaterialState.GAS || material.getState() == MaterialState.PURE_GAS)
+                && material.getFluid() != null) {
+                require(Property.Gas.test(name), "GT++ native gas property: " + name);
+                ItemStack drop = WildcardMaterials.makeFluidStack(FluidState.GAS, name, 1);
+                require(
+                    drop != null && ItemFluidDrop.getFluidStack(drop)
+                        .getFluid() == material.getFluid(),
+                    "GT++ gas uses registered fluid identity: " + name);
+                gtppGases++;
+            }
+            gtppCount++;
+        }
+        require(gtppCount > 0 && gtppGases > 0, "GT++ registry metadata checked: " + gtppCount);
+        int bwCount = 0, tagged = 0, toxic = 0, electrolytic = 0, centrifuged = 0;
+        for (Werkstoff material : Werkstoff.werkstoffHashSet) {
+            String name = material.getVarName();
+            if (WildcardMaterials.findOreMaterial(name) != material) continue;
+            if (Property.BlastFurnace.test(name) != material.getStats()
+                .isBlastFurnace() || Property.Radioactive.test(name)
+                    != material.getStats()
+                        .isRadioactive()
+                || Property.Toxic.test(name) != material.getStats()
+                    .isToxic()
+                || Property.Electrolysis.test(name) != material.getStats()
+                    .isElektrolysis()
+                || Property.Centrifuge.test(name) != material.getStats()
+                    .isCentrifuge())
+                throw new AssertionError("BW native stats mismatch: " + name);
+            Property type = Property.valueOf("BW" + switch (material.getType()) {
+                case MATERIAL -> "Material";
+                case COMPOUND -> "Compound";
+                case MIXTURE -> "Mixture";
+                case BIOLOGICAL -> "Biological";
+                case ELEMENT -> "Element";
+                case ISOTOPE -> "Isotope";
+                case UNDEFINED -> "Undefined";
+            });
+            if (!type.test(name)) throw new AssertionError("BW type mismatch: " + name);
+            for (SubTag tag : WildcardMaterials.subTagChoices()) {
+                if (material.contains(tag)) {
+                    if (!WildcardMaterials.hasSubTag(name, tag))
+                        throw new AssertionError("lost native BW tag: " + name + "/" + tag.mName);
+                    var filter = SubTagFilterComponent.readData(new SubTagFilterComponent(tag, null, true).writeData());
+                    if (!filter.test(name)) throw new AssertionError("BW tag NBT/filter mismatch: " + name);
+                    tagged++;
+                }
+            }
+            if (material.getStats()
+                .isToxic()) toxic++;
+            if (material.getStats()
+                .isElektrolysis()) electrolytic++;
+            if (material.getStats()
+                .isCentrifuge()) centrifuged++;
+            if (bwSample == null && !WildcardMaterials.subTagsOf(name)
+                .isEmpty()) {
+                ItemStack dust = WildcardMaterials.makePrefixStack(OrePrefixes.dust, name, 1);
+                if (dust != null) {
+                    bwSample = dust;
+                    bwName = name;
+                }
+            }
+            bwCount++;
+        }
+        require(
+            bwCount > 0 && tagged > 0 && toxic > 0 && electrolytic > 0 && centrifuged > 0 && bwSample != null,
+            "BW native registry checked: " + bwCount
+                + ", tags "
+                + tagged
+                + ", toxic "
+                + toxic
+                + ", electrolysis "
+                + electrolytic
+                + ", centrifuge "
+                + centrifuged);
+        require(
+            WildcardMaterials.subTagChoices()
+                .contains(WerkstoffLoader.NOBLE_GAS),
+            "BW tags are in native global choices");
+    }
+
     private static void open(EntityPlayerMP player) {
         ItemStack stack = player.getHeldItem();
         stack.getItem()
@@ -193,6 +337,22 @@ public final class WildcardFilterChecks {
                     property.getCandidates()
                         .contains(Property.GTPlusPlus.displayName()),
                     "origin entry available without dropping an item");
+                require(
+                    property.getCandidates()
+                        .containsAll(
+                            List.of(
+                                Property.BlastFurnace.displayName(),
+                                Property.Radioactive.displayName(),
+                                Property.BWCompound.displayName(),
+                                Property.Toxic.displayName(),
+                                Property.Electrolysis.displayName())),
+                    "native properties available without an example");
+                require(
+                    selectors.get(1)
+                        .getCandidates()
+                        .containsAll(
+                            List.of(SubTag.METAL.mName, SubTag.NO_SMELTING.mName, WerkstoffLoader.NOBLE_GAS.mName)),
+                    "GT and BW tags available without an example");
                 var drops = find(panel, DropWidget.class);
                 require(drops.size() == 2, "two material filter drop targets");
                 for (DropWidget drop : drops)
@@ -255,11 +415,92 @@ public final class WildcardFilterChecks {
                 frames = 0;
             } else if (stage == 4 && ++frames > 8) {
                 shot("gtplusplus-reopened.png");
+                var drops = find(panel, DropWidget.class);
+                for (DropWidget drop : drops) drop.handleDragAndDrop(bwSample.copy(), 0);
+                require(
+                    property.getCandidates()
+                        .containsAll(
+                            WildcardMaterials.propertiesOf(bwName)
+                                .stream()
+                                .map(Property::displayName)
+                                .toList()),
+                    "BW drag offers native properties");
+                require(
+                    selectors.get(1)
+                        .getCandidates()
+                        .equals(
+                            WildcardMaterials.subTagsOf(bwName)
+                                .stream()
+                                .map(tag -> tag.mName)
+                                .toList()),
+                    "BW drag offers native tags");
+                stage = 5;
+                frames = 0;
+            } else if (stage == 5 && ++frames > 8) {
+                shot("bartworks-native-filter.png");
+                mc.thePlayer.inventory.setItemStack(null);
+                for (DropWidget drop : find(panel, DropWidget.class)) drop.onMousePressed(0);
+                require(
+                    property.getCandidates()
+                        .contains(Property.BlastFurnace.displayName())
+                        && selectors.get(1)
+                            .getCandidates()
+                            .contains(SubTag.METAL.mName),
+                    "clearing examples restores global choices");
+                property.onMousePressed(0);
+                stage = 6;
+                frames = 0;
+            } else if (stage == 6 && ++frames > 8) {
+                choose(property, Property.BlastFurnace.displayName());
+                selectors.get(1)
+                    .onMousePressed(0);
+                stage = 7;
+                frames = 0;
+            } else if (stage == 7 && ++frames > 8) {
+                choose(selectors.get(1), SubTag.METAL.mName);
+                List<ButtonWidget> saves = new ArrayList<>();
+                for (ButtonWidget button : find(panel, ButtonWidget.class)) {
+                    if (button.getArea().width == 30 && button.getArea().height == 20) saves.add(button);
+                }
+                saves.get(saves.size() - 1)
+                    .onMousePressed(0);
+                request = 3;
+                stage = 8;
+            } else if (stage == 8 && acknowledged == 3) {
+                shot("native-filter-saved.png");
+                previousScreen = screen;
+                request = 4;
+                stage = 9;
+                frames = 0;
+            } else if (stage == 9 && acknowledged == 4 && screen != previousScreen && ++frames > 10) {
+                find(panel, PageButton.class).get(3)
+                    .onMousePressed(0);
+                require(
+                    property.getSelectedValue()
+                        .equals(Property.BlastFurnace.displayName())
+                        && selectors.get(1)
+                            .getSelectedValue()
+                            .equals(SubTag.METAL.mName),
+                    "native property and tag survive reopening");
+                stage = 10;
+                frames = 0;
+            } else if (stage == 10 && ++frames > 8) {
+                shot("native-filter-reopened.png");
                 finish(null);
             }
         } catch (Throwable error) {
             finish(error);
         }
+    }
+
+    private static void choose(ScrollingDropdown selector, String value) throws Exception {
+        Method menu = AbstractMenuButton.class.getDeclaredMethod("getMenu");
+        menu.setAccessible(true);
+        var buttons = find((IWidget) menu.invoke(selector), ButtonWidget.class);
+        buttons.get(
+            selector.getCandidates()
+                .indexOf(value))
+            .onMousePressed(0);
     }
 
     private static <T> List<T> find(IWidget parent, Class<T> type) {

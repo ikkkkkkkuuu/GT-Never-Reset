@@ -2,6 +2,7 @@ package com.xyp.gtneverreset.common.me.wildcard.model;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -18,14 +19,18 @@ import net.minecraftforge.oredict.OreDictionary;
 import com.glodblock.github.common.item.ItemFluidDrop;
 
 import bartworks.system.material.Werkstoff;
+import bartworks.system.material.WerkstoffLoader;
+import gregtech.api.enchants.EnchantmentRadioactivity;
 import gregtech.api.enums.FluidState;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.api.enums.SubTag;
+import gregtech.api.interfaces.IOreMaterial;
 import gregtech.api.objects.ItemData;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTUtility;
 import gtPlusPlus.core.material.Material;
+import gtPlusPlus.core.material.state.MaterialState;
 
 public final class WildcardMaterials {
 
@@ -66,10 +71,22 @@ public final class WildcardMaterials {
         return material;
     }
 
+    /** Preserve GT identities on name collisions, but recover the native BartWorks object for its own bridge. */
+    public static IOreMaterial findOreMaterial(String name) {
+        if (name == null || name.isEmpty()) return null;
+        Materials gt = findByName(name);
+        if (isRealMaterial(gt)) {
+            Werkstoff werkstoff = werkstoffOf(gt);
+            return werkstoff == null ? gt : werkstoff;
+        }
+        IOreMaterial material = IOreMaterial.findMaterial(name);
+        return material instanceof Materials ? null : material;
+    }
+
     /** Use registered stacks: doGenerateItem rejects valid forms whose generation bits are zero. */
     public static ItemStack makePrefixStack(OrePrefixes prefix, Materials material, int amount) {
         if (prefix == null || !isRealMaterial(material) || amount <= 0) return null;
-        ItemStack stack = GTOreDictUnificator.get(prefix, material, amount);
+        ItemStack stack = material.getPart(prefix, amount);
         if (stack == null || stack.getItem() == null) return null;
         stack.stackSize = amount;
         return stack;
@@ -80,7 +97,17 @@ public final class WildcardMaterials {
         if (prefix == null || materialName == null || materialName.isEmpty() || amount <= 0) return null;
         Materials material = findByName(materialName);
         if (isRealMaterial(material)) return makePrefixStack(prefix, material, amount);
-        List<ItemStack> ores = OreDictionary.getOres(prefix.name() + materialName);
+        List<ItemStack> ores = OreDictionary.getOres(prefix.name() + materialName, false);
+        // BartWorks getPart can construct a stack even for disabled forms; require an actual ore registration.
+        IOreMaterial nativeMaterial = findOreMaterial(materialName);
+        if (!ores.isEmpty() && nativeMaterial != null) {
+            ItemStack part = nativeMaterial.getPart(prefix, amount);
+            if (part != null && part.getItem() != null) {
+                for (ItemStack ore : ores) {
+                    if (ore != null && OreDictionary.itemMatches(ore, part, false)) return part;
+                }
+            }
+        }
         for (ItemStack ore : ores) {
             if (ore != null && ore.getItem() != null) {
                 ItemStack stack = ore.copy();
@@ -123,11 +150,15 @@ public final class WildcardMaterials {
         return ItemFluidDrop.newStack(fluid);
     }
 
-    /** Resolves addon fluids by the standard GTNH fluid registry names. */
+    /** Read registered native fluids first; retain the naming fallback for other ore-dictionary addons. */
     public static ItemStack makeFluidStack(FluidState state, String materialName, long amount) {
         if (state == null || materialName == null || materialName.isEmpty() || amount <= 0) return null;
-        Materials material = findByName(materialName);
-        if (isRealMaterial(material)) return makeFluidStack(state, material, amount);
+        IOreMaterial material = findOreMaterial(materialName);
+        if (material != null) {
+            Fluid fluid = nativeFluid(material, state);
+            return fluid == null ? null
+                : ItemFluidDrop.newStack(new FluidStack(fluid, (int) Math.min(Integer.MAX_VALUE, amount)));
+        }
         String prefix;
         switch (state) {
             case MOLTEN:
@@ -190,19 +221,17 @@ public final class WildcardMaterials {
         for (Property property : Property.values()) {
             if (property.serializedName.equals(serializedName)) return property;
         }
-        return Property.GTPlusPlus.displayName()
-            .equalsIgnoreCase(name.trim()) ? Property.GTPlusPlus : null;
+        for (Property property : Property.values()) {
+            if (property == Property.Metal || property == Property.ToolHead) continue;
+            if (property.displayName()
+                .equalsIgnoreCase(name.trim())) return property;
+        }
+        return null;
     }
 
     /** 列出某材料实际拥有的属性（对齐原版：拖入示例物品后只在它真有的属性里选）。 */
     public static List<Property> propertiesOf(Materials material) {
-        List<Property> result = new ArrayList<>();
-        if (material == null) return result;
-        for (Property property : Property.values()) {
-            if (property == Property.Metal || property == Property.ToolHead) continue;
-            if (property.test(material)) result.add(property);
-        }
-        return result;
+        return propertiesOf(isRealMaterial(material) ? material.mName : null);
     }
 
     public static List<Property> propertiesOf(String materialName) {
@@ -215,26 +244,34 @@ public final class WildcardMaterials {
         return result;
     }
 
-    /** 列出某材料实际拥有的 SubTag。 */
+    public static List<SubTag> subTagChoices() {
+        List<SubTag> tags = new ArrayList<>(SubTag.sSubTags.values());
+        tags.sort(Comparator.comparing(tag -> tag.mName));
+        return tags;
+    }
+
     public static List<SubTag> subTagsOf(Materials material) {
+        return subTagsOf(isRealMaterial(material) ? material.mName : null);
+    }
+
+    public static List<SubTag> subTagsOf(String materialName) {
         List<SubTag> result = new ArrayList<>();
-        if (material == null) return result;
-        for (SubTag tag : SubTag.sSubTags.values()) {
-            if (hasSubTag(material, tag)) result.add(tag);
+        for (SubTag tag : subTagChoices()) {
+            if (hasSubTag(materialName, tag)) result.add(tag);
         }
         return result;
     }
 
-    public static List<SubTag> subTagsOf(String materialName) {
-        return subTagsOf(findByName(materialName));
+    public static boolean hasSubTag(Materials material, SubTag tag) {
+        return isRealMaterial(material) && hasSubTag(material.mName, tag);
     }
 
-    /** 材料是否带指定 SubTag。 */
-    public static boolean hasSubTag(Materials material, SubTag tag) {
-        if (!isRealMaterial(material) || tag == null) return false;
-        if (material.contains(tag)) return true;
-        Werkstoff werkstoff = werkstoffOf(material);
-        return werkstoff != null && werkstoff.contains(tag);
+    public static boolean hasSubTag(String materialName, SubTag tag) {
+        if (tag == null) return false;
+        IOreMaterial material = findOreMaterial(materialName);
+        if (material != null && material.contains(tag)) return true;
+        Materials gt = findByName(materialName);
+        return isRealMaterial(gt) && gt.contains(tag);
     }
 
     /** 按名解析 SubTag，找不到返回 null。 */
@@ -273,7 +310,9 @@ public final class WildcardMaterials {
                 String materialName = oreName.substring(
                     prefix.name()
                         .length());
-                return new PrefixMaterial(prefix, findByName(materialName), materialName);
+                IOreMaterial nativeMaterial = findOreMaterial(materialName);
+                String name = nativeMaterial == null ? materialName : nativeMaterial.getInternalName();
+                return new PrefixMaterial(prefix, findByName(name), name);
             }
         }
         return PrefixMaterial.EMPTY;
@@ -331,10 +370,62 @@ public final class WildcardMaterials {
         return werkstoff != null && werkstoff.getBridgeMaterial() == material ? werkstoff : null;
     }
 
-    /** Queries BartWorks generation rules, including explicit prefix overrides. */
-    private static boolean hasWerkstoffForm(Materials material, OrePrefixes prefix) {
-        Werkstoff werkstoff = werkstoffOf(material);
-        return werkstoff != null && werkstoff.hasItemType(prefix);
+    private static boolean hasNativeForm(IOreMaterial material, String name, OrePrefixes... prefixes) {
+        for (OrePrefixes prefix : prefixes) {
+            if (material != null && material.generatesPrefix(prefix)) return true;
+            if (makePrefixStack(prefix, name, 1) != null) return true;
+        }
+        return false;
+    }
+
+    private static Fluid nativeFluid(IOreMaterial material, FluidState state) {
+        if (material instanceof Materials gt) {
+            FluidStack stack = getMaterialFluid(gt, state, 1);
+            return stack == null ? null : stack.getFluid();
+        }
+        if (material instanceof Werkstoff werkstoff) {
+            Fluid fluid = switch (state) {
+                case MOLTEN -> WerkstoffLoader.molten.get(werkstoff);
+                case GAS -> werkstoff.getStats()
+                    .isGas() ? WerkstoffLoader.fluids.get(werkstoff) : null;
+                case LIQUID -> !werkstoff.getStats()
+                    .isGas() ? WerkstoffLoader.fluids.get(werkstoff) : null;
+                default -> null;
+            };
+            return fluid != null ? fluid : nativeFluid(werkstoff.getGTMaterial(), state);
+        }
+        if (material instanceof Material gtpp) {
+            MaterialState nativeState = gtpp.getState();
+            return switch (state) {
+                case MOLTEN -> nativeState == MaterialState.SOLID || nativeState == MaterialState.ORE ? gtpp.getFluid()
+                    : null;
+                case LIQUID -> nativeState == MaterialState.LIQUID || nativeState == MaterialState.PURE_LIQUID
+                    ? gtpp.getFluid()
+                    : null;
+                case GAS -> nativeState == MaterialState.GAS || nativeState == MaterialState.PURE_GAS ? gtpp.getFluid()
+                    : null;
+                case PLASMA -> gtpp.getPlasma() != null ? gtpp.getPlasma()
+                    : nativeState == MaterialState.PLASMA ? gtpp.getFluid() : null;
+                default -> null;
+            };
+        }
+        return null;
+    }
+
+    private static boolean requiresBlastFurnace(IOreMaterial material) {
+        if (material instanceof Werkstoff werkstoff) return werkstoff.getStats()
+            .isBlastFurnace();
+        if (material instanceof Material gtpp) return gtpp.requiresBlastFurnace();
+        return material instanceof Materials gt && gt.mBlastFurnaceRequired;
+    }
+
+    private static boolean isRadioactive(IOreMaterial material) {
+        if (material instanceof Werkstoff werkstoff) return werkstoff.getStats()
+            .isRadioactive();
+        if (material instanceof Material gtpp) return gtpp.isRadioactive;
+        return material instanceof Materials gt
+            && (gt.mArmorEnchantment instanceof EnchantmentRadioactivity && gt.mArmorEnchantmentLevel > 0
+                || gt.mToolEnchantment instanceof EnchantmentRadioactivity && gt.mToolEnchantmentLevel > 0);
     }
 
     /**
@@ -363,15 +454,6 @@ public final class WildcardMaterials {
             || material == Materials.EpoxidFiberReinforced;
     }
 
-    /** Registered fluid-pipe forms are the GT5U equivalent of GTCEu's pipe property. */
-    private static boolean hasFluidPipe(Materials material) {
-        return makePrefixStack(OrePrefixes.pipeTiny, material, 1) != null
-            || makePrefixStack(OrePrefixes.pipeSmall, material, 1) != null
-            || makePrefixStack(OrePrefixes.pipeMedium, material, 1) != null
-            || makePrefixStack(OrePrefixes.pipeLarge, material, 1) != null
-            || makePrefixStack(OrePrefixes.pipeHuge, material, 1) != null;
-    }
-
     /** 支持的材料属性（用于 property 过滤）。 */
     public enum Property {
 
@@ -389,12 +471,77 @@ public final class WildcardMaterials {
         Ingot("INGOT"),
         Tool("TOOL"),
         FluidPipe("FLUID_PIPE"),
-        GTPlusPlus("GT_PLUS_PLUS");
+        // #tr gtnr.gui.wildcardpattern.property.gtplusplus
+        // # GT++ materials
+        // # zh_CN GT++ 材料
+        GTPlusPlus("GT_PLUS_PLUS", "gtnr.gui.wildcardpattern.property.gtplusplus"),
+        // #tr gtnr.gui.wildcardpattern.property.blast_furnace
+        // # Requires blast furnace
+        // # zh_CN 需要高炉
+        BlastFurnace("BLAST_FURNACE", "gtnr.gui.wildcardpattern.property.blast_furnace"),
+        // #tr gtnr.gui.wildcardpattern.property.radioactive
+        // # Radioactive
+        // # zh_CN 放射性
+        Radioactive("RADIOACTIVE", "gtnr.gui.wildcardpattern.property.radioactive"),
+        // #tr gtnr.gui.wildcardpattern.property.solid
+        // # Solid form
+        // # zh_CN 固态
+        Solid("SOLID", "gtnr.gui.wildcardpattern.property.solid"),
+        // #tr gtnr.gui.wildcardpattern.property.liquid
+        // # Liquid form
+        // # zh_CN 液态
+        Liquid("LIQUID", "gtnr.gui.wildcardpattern.property.liquid"),
+        // #tr gtnr.gui.wildcardpattern.property.toxic
+        // # Toxic (BW)
+        // # zh_CN 有毒（BW）
+        Toxic("TOXIC", "gtnr.gui.wildcardpattern.property.toxic"),
+        // #tr gtnr.gui.wildcardpattern.property.electrolysis
+        // # Electrolysis enabled (BW)
+        // # zh_CN 启用电解（BW）
+        Electrolysis("ELECTROLYSIS", "gtnr.gui.wildcardpattern.property.electrolysis"),
+        // #tr gtnr.gui.wildcardpattern.property.centrifuge
+        // # Centrifuge enabled (BW)
+        // # zh_CN 启用离心（BW）
+        Centrifuge("CENTRIFUGE", "gtnr.gui.wildcardpattern.property.centrifuge"),
+        // #tr gtnr.gui.wildcardpattern.property.bw_material
+        // # Material (BW)
+        // # zh_CN 材料（BW）
+        BWMaterial("BW_MATERIAL", "gtnr.gui.wildcardpattern.property.bw_material"),
+        // #tr gtnr.gui.wildcardpattern.property.bw_compound
+        // # Compound (BW)
+        // # zh_CN 化合物（BW）
+        BWCompound("BW_COMPOUND", "gtnr.gui.wildcardpattern.property.bw_compound"),
+        // #tr gtnr.gui.wildcardpattern.property.bw_mixture
+        // # Mixture (BW)
+        // # zh_CN 混合物（BW）
+        BWMixture("BW_MIXTURE", "gtnr.gui.wildcardpattern.property.bw_mixture"),
+        // #tr gtnr.gui.wildcardpattern.property.bw_biological
+        // # Biological (BW)
+        // # zh_CN 生物质（BW）
+        BWBiological("BW_BIOLOGICAL", "gtnr.gui.wildcardpattern.property.bw_biological"),
+        // #tr gtnr.gui.wildcardpattern.property.bw_element
+        // # Element (BW)
+        // # zh_CN 元素（BW）
+        BWElement("BW_ELEMENT", "gtnr.gui.wildcardpattern.property.bw_element"),
+        // #tr gtnr.gui.wildcardpattern.property.bw_isotope
+        // # Isotope (BW)
+        // # zh_CN 同位素（BW）
+        BWIsotope("BW_ISOTOPE", "gtnr.gui.wildcardpattern.property.bw_isotope"),
+        // #tr gtnr.gui.wildcardpattern.property.bw_undefined
+        // # Undefined type (BW)
+        // # zh_CN 未定义类型（BW）
+        BWUndefined("BW_UNDEFINED", "gtnr.gui.wildcardpattern.property.bw_undefined");
 
         public final String serializedName;
+        private final String translationKey;
 
         Property(String serializedName) {
+            this(serializedName, null);
+        }
+
+        Property(String serializedName, String translationKey) {
             this.serializedName = serializedName;
+            this.translationKey = translationKey;
         }
 
         @Override
@@ -403,98 +550,110 @@ public final class WildcardMaterials {
         }
 
         public String displayName() {
-            if (this == GTPlusPlus) {
-                // #tr gtnr.gui.wildcardpattern.property.gtplusplus
-                // # GT++ materials
-                // # zh_CN GT++ 材料
-                return StatCollector.translateToLocal("gtnr.gui.wildcardpattern.property.gtplusplus");
-            }
+            if (translationKey != null) return StatCollector.translateToLocal(translationKey);
             if (this == Metal) return "ingot";
             if (this == ToolHead) return "tool";
             return serializedName.toLowerCase(Locale.ROOT);
         }
 
         public boolean test(String materialName) {
-            Materials material = findByName(materialName);
-            if (isRealMaterial(material)) return test(material);
-            if (this == GTPlusPlus) return materialName != null && Material.mMaterialsByName.containsKey(materialName);
-            boolean matches = false;
-            if (materialName != null && !materialName.isEmpty()) {
-                OrePrefixes prefix = null;
-                switch (this) {
-                    case Dust:
-                        prefix = OrePrefixes.dust;
-                        break;
-                    case Metal:
-                    case Ingot:
-                        prefix = OrePrefixes.ingot;
-                        break;
-                    case Gem:
-                        prefix = OrePrefixes.gem;
-                        break;
-                    case Ore:
-                        prefix = OrePrefixes.ore;
-                        break;
-                    case Cell:
-                        prefix = OrePrefixes.cell;
-                        break;
-                    case Gear:
-                        prefix = OrePrefixes.gearGt;
-                        break;
-                    case Tool:
-                    case ToolHead:
-                        prefix = OrePrefixes.toolHeadHammer;
-                        break;
-                    case FluidPipe:
-                        prefix = OrePrefixes.pipeTiny;
-                        break;
-                    default:
-                        break;
-                }
-                if (prefix != null) matches = makePrefixStack(prefix, materialName, 1) != null;
-                else if (this == Plasma || this == Fluid || this == Gas) {
-                    FluidState state = this == Plasma ? FluidState.PLASMA
-                        : this == Gas ? FluidState.GAS : FluidState.MOLTEN;
-                    matches = makeFluidStack(state, materialName, 1) != null;
-                }
-            }
-            return matches;
-        }
-
-        public boolean test(Materials material) {
-            if (!isRealMaterial(material)) return false;
+            if (materialName == null || materialName.isEmpty()) return false;
+            IOreMaterial material = findOreMaterial(materialName);
+            Materials gt = findByName(materialName);
+            Werkstoff werkstoff = material instanceof Werkstoff bw ? bw : null;
             switch (this) {
+                case GTPlusPlus:
+                    return material instanceof Material;
                 case Dust:
-                    return material.hasDustItems() || hasWerkstoffForm(material, OrePrefixes.dust);
+                    return isRealMaterial(gt) && gt.hasDustItems()
+                        || hasNativeForm(material, materialName, OrePrefixes.dust);
                 case Metal:
                 case Ingot:
-                    return material.hasMetalItems() || hasWerkstoffForm(material, OrePrefixes.ingot);
+                    return isRealMaterial(gt) && gt.hasMetalItems()
+                        || hasNativeForm(material, materialName, OrePrefixes.ingot);
                 case Gem:
-                    return material.hasGemItems() || hasWerkstoffForm(material, OrePrefixes.gem);
+                    return isRealMaterial(gt) && gt.hasGemItems()
+                        || hasNativeForm(material, materialName, OrePrefixes.gem);
                 case Ore:
-                    return material.hasOresItems() || hasWerkstoffForm(material, OrePrefixes.ore);
+                    return isRealMaterial(gt) && gt.hasOresItems()
+                        || hasNativeForm(material, materialName, OrePrefixes.ore);
                 case Cell:
-                    return material.hasCell() || hasWerkstoffForm(material, OrePrefixes.cell);
+                    return isRealMaterial(gt) && gt.hasCell()
+                        || hasNativeForm(material, materialName, OrePrefixes.cell);
                 case Plasma:
-                    return material.hasPlasma();
+                    return isRealMaterial(gt) && gt.hasPlasma() || nativeFluid(material, FluidState.PLASMA) != null
+                        || material == null && makeFluidStack(FluidState.PLASMA, materialName, 1) != null;
                 case ToolHead:
                 case Tool:
-                    return material.hasToolHeadItems() || hasWerkstoffForm(material, OrePrefixes.toolHeadHammer)
-                        || hasWerkstoffForm(material, OrePrefixes.toolHeadWrench)
-                        || hasWerkstoffForm(material, OrePrefixes.toolHeadSaw);
+                    return isRealMaterial(gt) && gt.hasToolHeadItems() || hasNativeForm(
+                        material,
+                        materialName,
+                        OrePrefixes.toolHeadHammer,
+                        OrePrefixes.toolHeadWrench,
+                        OrePrefixes.toolHeadSaw);
                 case Gear:
-                    return material.hasGearItems() || hasWerkstoffForm(material, OrePrefixes.gearGt);
+                    return isRealMaterial(gt) && gt.hasGearItems()
+                        || hasNativeForm(material, materialName, OrePrefixes.gearGt);
                 case Fluid:
-                    return material.mFluid != null || material.mStandardMoltenFluid != null;
+                    return nativeFluid(material, FluidState.LIQUID) != null
+                        || nativeFluid(material, FluidState.MOLTEN) != null
+                        || material == null && (makeFluidStack(FluidState.LIQUID, materialName, 1) != null
+                            || makeFluidStack(FluidState.MOLTEN, materialName, 1) != null);
                 case Gas:
-                    return material.mGas != null;
+                    return nativeFluid(material, FluidState.GAS) != null
+                        || material == null && makeFluidStack(FluidState.GAS, materialName, 1) != null;
                 case Polymer:
-                    return isPolymer(material);
+                    return isPolymer(gt);
                 case FluidPipe:
-                    return hasFluidPipe(material);
+                    return hasNativeForm(
+                        material,
+                        materialName,
+                        OrePrefixes.pipeTiny,
+                        OrePrefixes.pipeSmall,
+                        OrePrefixes.pipeMedium,
+                        OrePrefixes.pipeLarge,
+                        OrePrefixes.pipeHuge);
+                case BlastFurnace:
+                    return requiresBlastFurnace(material);
+                case Radioactive:
+                    return isRadioactive(material);
+                case Solid:
+                    if (material instanceof Material gtpp)
+                        return gtpp.getState() == MaterialState.SOLID || gtpp.getState() == MaterialState.ORE;
+                    return hasNativeForm(material, materialName, OrePrefixes.dust, OrePrefixes.ingot, OrePrefixes.gem);
+                case Liquid:
+                    return nativeFluid(material, FluidState.LIQUID) != null
+                        || material == null && makeFluidStack(FluidState.LIQUID, materialName, 1) != null;
+                case Toxic:
+                    return werkstoff != null && werkstoff.getStats()
+                        .isToxic();
+                case Electrolysis:
+                    return werkstoff != null && werkstoff.getStats()
+                        .isElektrolysis();
+                case Centrifuge:
+                    return werkstoff != null && werkstoff.getStats()
+                        .isCentrifuge();
+                case BWMaterial:
+                    return werkstoff != null && werkstoff.getType() == Werkstoff.Types.MATERIAL;
+                case BWCompound:
+                    return werkstoff != null && werkstoff.getType() == Werkstoff.Types.COMPOUND;
+                case BWMixture:
+                    return werkstoff != null && werkstoff.getType() == Werkstoff.Types.MIXTURE;
+                case BWBiological:
+                    return werkstoff != null && werkstoff.getType() == Werkstoff.Types.BIOLOGICAL;
+                case BWElement:
+                    return werkstoff != null && werkstoff.getType() == Werkstoff.Types.ELEMENT;
+                case BWIsotope:
+                    return werkstoff != null && werkstoff.getType() == Werkstoff.Types.ISOTOPE;
+                case BWUndefined:
+                    return werkstoff != null && werkstoff.getType() == Werkstoff.Types.UNDEFINED;
                 default:
                     return false;
             }
+        }
+
+        public boolean test(Materials material) {
+            return isRealMaterial(material) && test(material.mName);
         }
     }
 

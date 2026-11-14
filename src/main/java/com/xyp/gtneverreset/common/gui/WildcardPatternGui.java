@@ -535,7 +535,9 @@ public class WildcardPatternGui {
                 : WildcardMaterials.makePrefixStack(OrePrefixes.dust, component.getExampleName(), 1),
             stack -> {
                 WildcardMaterials.PrefixMaterial parsed = WildcardMaterials.parseItem(stack);
-                if (parsed.prefix == null || !parsed.prefix.isMaterialBased() || parsed.materialName == null) return;
+                if (stack != null
+                    && (parsed.prefix == null || !parsed.prefix.isMaterialBased() || parsed.materialName == null))
+                    return;
                 String material = parsed.materialName;
                 component.setExampleName(material);
                 List<String> names = propertyNames(material);
@@ -547,6 +549,9 @@ public class WildcardPatternGui {
     }
 
     private static List<String> propertyNames(String material) {
+        if (material == null || material.isEmpty()) return new ArrayList<>(
+            WildcardMaterials.propertyChoices()
+                .keySet());
         List<String> names = new ArrayList<>();
         if (material != null && !material.isEmpty()) {
             for (WildcardMaterials.Property property : WildcardMaterials.propertiesOf(material))
@@ -582,7 +587,9 @@ public class WildcardPatternGui {
                 : WildcardMaterials.makePrefixStack(OrePrefixes.dust, component.getExampleName(), 1),
             stack -> {
                 WildcardMaterials.PrefixMaterial parsed = WildcardMaterials.parseItem(stack);
-                if (parsed.prefix == null || !parsed.prefix.isMaterialBased() || parsed.materialName == null) return;
+                if (stack != null
+                    && (parsed.prefix == null || !parsed.prefix.isMaterialBased() || parsed.materialName == null))
+                    return;
                 String material = parsed.materialName;
                 component.setExampleName(material);
                 List<String> names = subTagNames(material);
@@ -604,9 +611,9 @@ public class WildcardPatternGui {
 
     private static List<String> subTagNames(String material) {
         List<String> names = new ArrayList<>();
-        if (material != null && !material.isEmpty()) {
-            for (SubTag tag : WildcardMaterials.subTagsOf(material)) names.add(tag.mName);
-        }
+        List<SubTag> tags = material == null || material.isEmpty() ? WildcardMaterials.subTagChoices()
+            : WildcardMaterials.subTagsOf(material);
+        for (SubTag tag : tags) names.add(tag.mName);
         if (names.isEmpty()) {
             // #tr gtnr.gui.wildcardpattern.no_flag
             // # no flag
