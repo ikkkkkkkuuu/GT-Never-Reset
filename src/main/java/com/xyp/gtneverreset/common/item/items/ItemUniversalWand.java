@@ -117,9 +117,11 @@ public final class ItemUniversalWand extends Item
     }
 
     public ItemUniversalWand() {
+        // @formatter:off
         // #tr item.gtneverreset.universal_wand.name
-        // # Useless Tools
-        // # zh_CN 无用之杖
+        // # &{mt;t=12}Useless Wand  &{gl;t=12;r=decode}&l&o&m · Not So Useless&r
+        // # zh_CN &{mt;t=12}无 用 之 杖  &{gl;t=12;r=decode}&l&o&m · 并 非 无 用&r
+        // @formatter:on
         setUnlocalizedName(GTNeverReset.MODID + ".universal_wand");
         setTextureName(GTNeverReset.MODID + ":universal_wand");
         setCreativeTab(CreativeTabs.tabTools);

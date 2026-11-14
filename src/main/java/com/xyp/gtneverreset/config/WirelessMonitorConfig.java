@@ -126,19 +126,27 @@ public class WirelessMonitorConfig {
     @LangKey("gtneverreset.gui.config.general.wireless_monitor.showTier")
     public static boolean showTier = true;
 
-    @Comment("启用彩虹文字渲染")
+    @Comment("文字特效前缀；不包含数值或单位；实时监控不支持打字和数字滚动")
+    @DefaultString("&{ba;shake=1}&l")
+    // #tr gtneverreset.gui.config.general.wireless_monitor.effect
+    // # Text effect prefix
+    // # zh_CN 文字特效前缀
+    @LangKey("gtneverreset.gui.config.general.wireless_monitor.effect")
+    public static String effect = "&{ba;shake=1}&l";
+
+    @Comment("启用文字特效")
     @DefaultBoolean(true)
     // #tr gtneverreset.gui.config.general.wireless_monitor.animatedColors
-    // # Rainbow text
-    // # zh_CN 彩虹文字
+    // # Text effects
+    // # zh_CN 文字特效
     @LangKey("gtneverreset.gui.config.general.wireless_monitor.animatedColors")
     public static boolean animatedColors = true;
 
-    @Comment("数值也使用彩虹；关闭后净变化保留红绿颜色")
+    @Comment("数值也使用特效；关闭后净变化保留红绿颜色")
     @DefaultBoolean(true)
     // #tr gtneverreset.gui.config.general.wireless_monitor.animateValues
     // # Animate values
-    // # zh_CN 数值彩虹
+    // # zh_CN 数值特效
     @LangKey("gtneverreset.gui.config.general.wireless_monitor.animateValues")
     public static boolean animateValues = true;
 
@@ -175,7 +183,7 @@ public class WirelessMonitorConfig {
     @LangKey("gtneverreset.gui.config.general.wireless_monitor.palette")
     public static String palette = "#33CCFF,#FFAA33,#DD77FF";
 
-    @Comment("彩虹滚动速度，0 为静止")
+    @Comment("特效速度倍率，0 为静止")
     @DefaultDouble(1)
     @RangeDouble(min = 0, max = 10)
     // #tr gtneverreset.gui.config.general.wireless_monitor.speed

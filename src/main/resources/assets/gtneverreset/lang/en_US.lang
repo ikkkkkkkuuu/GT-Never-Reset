@@ -312,6 +312,7 @@ gui.gtneverreset.wireless_settings.card=Card
 gui.gtneverreset.wireless_settings.curve=Curve
 gui.gtneverreset.wireless_settings.title=Wireless network HUD
 gui.gtneverreset.wireless_settings.hint=Values: left-click +, right-click -. Rates show net grid change.
+gui.gtneverreset.wireless_settings.effect_hint=Prefix only; no text, typing or number rolling. Red = not saved.
 power.gui.back=Back
 power.gui.refresh=Refresh
 power.gui.selected=Power source: %s
@@ -762,7 +763,7 @@ tooltip.packaged.blood_altar_limit=Does not charge blood orbs or run several rec
 tooltip.packaged.basic_core=Crafting component for machine-specific Packaged Cores.
 tooltip.packaged.owner_required=The provider's owner must be online in the target's dimension with permission to use it.
 item.gtneverreset.stock_io_interface.name=ME Stock IO Interface
-item.gtneverreset.universal_wand.name=Useless Tools
+item.gtneverreset.universal_wand.name=&{mt;t=12}Useless Wand  &{gl;t=12;r=decode}&l&o&m · Not So Useless&r
 gtneverreset.item.universal_wand.lore_1=Across countless dimensions, its former glory has faded.
 gtneverreset.item.universal_wand.lore_2=A lingering light remains, with countless uses within this staff.
 gtneverreset.gui.universal_wand.aoe=Area damage
@@ -1307,7 +1308,8 @@ gtneverreset.gui.config.general.wireless_monitor.showEnergy=Show energy
 gtneverreset.gui.config.general.wireless_monitor.showRealtime=Show instant net power
 gtneverreset.gui.config.general.wireless_monitor.showAverage=Show average net power
 gtneverreset.gui.config.general.wireless_monitor.showTier=Show voltage tier
-gtneverreset.gui.config.general.wireless_monitor.animatedColors=Rainbow text
+gtneverreset.gui.config.general.wireless_monitor.effect=Text effect prefix
+gtneverreset.gui.config.general.wireless_monitor.animatedColors=Text effects
 gtneverreset.gui.config.general.wireless_monitor.animateValues=Animate values
 gtneverreset.gui.config.general.wireless_monitor.customPalette=Custom palette
 gtneverreset.gui.config.general.wireless_monitor.bold=Bold
