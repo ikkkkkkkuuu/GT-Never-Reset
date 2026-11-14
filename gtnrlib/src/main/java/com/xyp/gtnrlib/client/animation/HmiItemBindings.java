@@ -34,6 +34,11 @@ public final class HmiItemBindings {
 
         boolean matches(ItemStack stack, IItemRenderer renderer);
 
+        /** Opt in a stack that has no active Forge first-person renderer. Existing renderer adapters stay opt-out. */
+        default boolean matchesVanilla(ItemStack stack) {
+            return false;
+        }
+
         /** Optional complete mount for a native Forge model, before Forge applies its equipped render helper. */
         default Matrix4fc equippedMount(ItemStack stack) {
             return null;
@@ -98,7 +103,7 @@ public final class HmiItemBindings {
         if (entries != null) for (var it = entries.iterator(); it.hasNext();) {
             var entry = it.next();
             try {
-                if (entry.matches(stack, renderer)) return entry;
+                if (renderer == null ? entry.matchesVanilla(stack) : entry.matches(stack, renderer)) return entry;
             } catch (RuntimeException ex) {
                 it.remove();
                 GTNRLib.LOG.error("Disabled failing HMI tool matcher for {}", stack, ex);

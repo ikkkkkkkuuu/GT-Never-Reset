@@ -29,7 +29,9 @@ gradle.projectsEvaluated {
     def modsOnly = gradle.startParameter.projectProperties.containsKey('animationQaStandaloneMods')
     def host = (modsOnly || gradle.startParameter.projectProperties.containsKey('animationQaHost')) ? gradle.rootProject : lib
     def defaults = gradle.startParameter.projectProperties.containsKey('animationQaDefaults')
-    def mode = (modsOnly ? 'library-mods' : host == lib ? 'library' : 'host') + (defaults ? '-defaults' : '')
+    def toolbox = gradle.startParameter.projectProperties.containsKey('animationQaToolbox')
+    if (toolbox && host == lib) throw new GradleException('Toolbox QA requires -PanimationQaStandaloneMods or -PanimationQaHost')
+    def mode = (modsOnly ? 'library-mods' : host == lib ? 'library' : 'host') + (defaults ? '-defaults' : '') + (toolbox ? '-toolbox' : '')
     def output = lib.file("build/animation-qa/" + mode)
     def classes = new File(output, 'classes')
     def fixture = host.tasks.register('compileAnimationQA', JavaCompile) {
@@ -48,6 +50,7 @@ gradle.projectsEvaluated {
             source lib.file('scripts/qa/AnimationToolChecks.java')
             source lib.file('scripts/qa/AnimationCutterChecks.java')
             source lib.file('scripts/qa/AnimationCrossbowChecks.java')
+            source lib.file('scripts/qa/AnimationToolboxChecks.java')
         }
         destinationDirectory.set(classes)
         javaCompiler.set(lib.javaToolchains.compilerFor(lib.java.toolchain))
@@ -64,6 +67,8 @@ gradle.projectsEvaluated {
         classpath += lib.files(classes)
         workingDir lib.file("run/animation-qa/" + mode)
         systemProperty 'gtnrlib.animation.qa', 'true'
+        systemProperty 'gtnrlib.animation.qa.toolbox', toolbox
+        systemProperty 'gtnrlib.animation.qa.toolbox.capture', gradle.startParameter.projectProperties.containsKey('animationQaToolboxCapture')
         systemProperty 'gtnrlib.animation.qa.workspace', lib.projectDir.absolutePath
         systemProperty 'gtnrlib.animation.qa.output', output.absolutePath
         systemProperty 'gtnrlib.animation.qa.toolMods', host != lib

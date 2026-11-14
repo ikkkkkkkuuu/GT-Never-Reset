@@ -2,6 +2,7 @@ package com.xyp.gtnrlib.compat.animation;
 
 import com.xyp.gtnrlib.compat.gregtech.GregTechScrewdriverAnimation;
 import com.xyp.gtnrlib.compat.gregtech.GregTechToolGrips;
+import com.xyp.gtnrlib.compat.gregtech.GregTechToolboxAnimation;
 import com.xyp.gtnrlib.compat.gregtech.GregTechWireCutterAnimation;
 import com.xyp.gtnrlib.compat.gregtech.GregTechWrenchAnimation;
 import com.xyp.gtnrlib.compat.ic2.IndustrialCraftToolGrips;
@@ -31,6 +32,7 @@ public final class ToolAnimationCompat {
             if (!legacyClass("compat/gregtech/GregTechWrenchAnimation")) GregTechWrenchAnimation.register();
             if (!legacyClass("compat/gregtech/GregTechWireCutterAnimation")) GregTechWireCutterAnimation.register();
             GregTechScrewdriverAnimation.register();
+            GregTechToolboxAnimation.register();
         }
         if (Loader.isModLoaded("IC2") && !legacyClass("compat/ic2/IndustrialCraftToolGrips"))
             IndustrialCraftToolGrips.register();
