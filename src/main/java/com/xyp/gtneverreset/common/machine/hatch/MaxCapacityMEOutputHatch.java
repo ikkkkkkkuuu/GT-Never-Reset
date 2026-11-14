@@ -45,68 +45,19 @@ public class MaxCapacityMEOutputHatch extends MTEHatchOutputME {
         forceMaxCapacity();
     }
 
-    public MaxCapacityMEOutputFilters getFilters() {
-        return filters;
-    }
-
-    private void filtersChanged() {
-        if (getBaseMetaTileEntity() != null && getBaseMetaTileEntity().isServerSide()) {
-            markDirty();
-            notifyOutputSpaceChanged();
-        }
-    }
-
-    @Override
-    public boolean isFiltered() {
-        return filters.hasFluids() || super.isFiltered();
-    }
-
-    @Override
-    public boolean isFluidLocked() {
-        return isFiltered();
-    }
-
-    @Override
-    public boolean isEmptyAndAcceptsAnyFluid() {
-        return !filters.hasFluids() && super.isEmptyAndAcceptsAnyFluid();
-    }
-
-    @Override
-    public boolean canStoreFluid(FluidStack stack) {
-        return filters.accepts(stack) && super.canStoreFluid(stack);
-    }
-
-    @Override
-    public boolean isFilteredToFluid(GTUtility.FluidId id) {
-        return canStoreFluid(id.getFluidStack());
-    }
-
-    @Override
-    public OutputHatchType getHatchType() {
-        if (getProvider().getCacheMode())
-            return isFiltered() ? OutputHatchType.MECacheFiltered : OutputHatchType.MECacheUnfiltered;
-        return isFiltered() ? OutputHatchType.MEFiltered : OutputHatchType.MEUnfiltered;
-    }
-
-    @Override
-    public ModularPanel buildUI(PosGuiData data, PanelSyncManager sync, UISettings settings) {
-        return new MaxCapacityMEOutputGui.Fluids(this).build(data, sync, settings);
-    }
-
     @Override
     public MetaTileEntity newMetaEntity(IGregTechTileEntity aTileEntity) {
         return new MaxCapacityMEOutputHatch(this.mName, this.mTier, getDescription(), this.mTextures);
     }
 
     @Override
-    public String[] getDescription() {
-        return getLocalizedDescription();
-    }
-
-    @Override
     public void onFirstTick(IGregTechTileEntity aBaseMetaTileEntity) {
         super.onFirstTick(aBaseMetaTileEntity);
         forceMaxCapacity();
+    }
+
+    private void forceMaxCapacity() {
+        MEOutputCapacityOverride.forceMaxCapacity(getProvider());
     }
 
     @Override
@@ -133,6 +84,85 @@ public class MaxCapacityMEOutputHatch extends MTEHatchOutputME {
         if (!filters.accepts(aFluid)) return 0;
         forceMaxCapacity();
         return super.fill(aFluid, doFill);
+    }
+
+    @Override
+    public boolean hasAvailableSpace() {
+        forceMaxCapacity();
+        return super.hasAvailableSpace();
+    }
+
+    @Override
+    public List getCellArray(StorageChannel channel) {
+        forceMaxCapacity();
+        return super.getCellArray(channel);
+    }
+
+    public MaxCapacityMEOutputFilters getFilters() {
+        return filters;
+    }
+
+    private void filtersChanged() {
+        if (getBaseMetaTileEntity() != null && getBaseMetaTileEntity().isServerSide()) {
+            markDirty();
+            notifyOutputSpaceChanged();
+        }
+    }
+
+    @Override
+    public String[] getDescription() {
+        return getLocalizedDescription();
+    }
+
+    private static String[] getLocalizedDescription() {
+        return new String[] {
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.0
+            // # Transfers multiblock fluid outputs to the ME network
+            // # zh_CN 将多方块机器产出的流体存入 ME 网络
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.0"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.1
+            // # Requires a powered ME network and one channel
+            // # zh_CN 需要 ME 网络供电和一个频道
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.1"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.2
+            // # Output cache capacity: 2^63 - 1 L of fluid
+            // # zh_CN 输出缓存容量：2^63 - 1 L
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.2"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.3
+            // # 9 filters; empty accepts all; configured filters accept matching outputs only
+            // # zh_CN 9 格流体筛选；全空时接收全部，设置后仅接收匹配产物
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.3"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.4
+            // # Screwdriver: toggle cache mode
+            // # zh_CN 螺丝刀右键：切换缓存模式
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.4"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.5
+            // # Shift + screwdriver: toggle check mode
+            // # zh_CN 潜行螺丝刀右键：切换检查模式
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.5"),
+            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.priority
+            // # Matching filters take priority over unfiltered outputs
+            // # zh_CN 筛选匹配的输出仓优先于未设置筛选的输出仓
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.priority") };
+    }
+
+    @Override
+    public void getWailaBody(ItemStack itemStack, List<String> ss, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        forceMaxCapacity();
+        super.getWailaBody(itemStack, ss, accessor, config);
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        forceMaxCapacity();
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+    }
+
+    @Override
+    public ModularPanel buildUI(PosGuiData data, PanelSyncManager sync, UISettings settings) {
+        return new MaxCapacityMEOutputGui.Fluids(this).build(data, sync, settings);
     }
 
     @Override
@@ -170,64 +200,34 @@ public class MaxCapacityMEOutputHatch extends MTEHatchOutputME {
     }
 
     @Override
-    public boolean hasAvailableSpace() {
-        forceMaxCapacity();
-        return super.hasAvailableSpace();
+    public boolean isFiltered() {
+        return filters.hasFluids() || super.isFiltered();
     }
 
     @Override
-    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
-        int z) {
-        forceMaxCapacity();
-        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+    public boolean isFluidLocked() {
+        return isFiltered();
     }
 
     @Override
-    public void getWailaBody(ItemStack itemStack, List<String> ss, IWailaDataAccessor accessor,
-        IWailaConfigHandler config) {
-        forceMaxCapacity();
-        super.getWailaBody(itemStack, ss, accessor, config);
+    public boolean isEmptyAndAcceptsAnyFluid() {
+        return !filters.hasFluids() && super.isEmptyAndAcceptsAnyFluid();
     }
 
     @Override
-    public List getCellArray(StorageChannel channel) {
-        forceMaxCapacity();
-        return super.getCellArray(channel);
+    public boolean canStoreFluid(FluidStack stack) {
+        return filters.accepts(stack) && super.canStoreFluid(stack);
     }
 
-    private void forceMaxCapacity() {
-        MEOutputCapacityOverride.forceMaxCapacity(getProvider());
+    @Override
+    public boolean isFilteredToFluid(GTUtility.FluidId id) {
+        return canStoreFluid(id.getFluidStack());
     }
 
-    private static String[] getLocalizedDescription() {
-        return new String[] {
-            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.0
-            // # Transfers multiblock fluid outputs to the ME network
-            // # zh_CN 将多方块机器产出的流体存入 ME 网络
-            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.0"),
-            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.1
-            // # Requires a powered ME network and one channel
-            // # zh_CN 需要 ME 网络供电和一个频道
-            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.1"),
-            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.2
-            // # Output cache capacity: 2^63 - 1 L of fluid
-            // # zh_CN 输出缓存容量：2^63 - 1 L
-            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.2"),
-            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.3
-            // # 9 filters; empty accepts all; configured filters accept matching outputs only
-            // # zh_CN 9 格流体筛选；全空时接收全部，设置后仅接收匹配产物
-            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.3"),
-            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.4
-            // # Screwdriver: toggle cache mode
-            // # zh_CN 螺丝刀右键：切换缓存模式
-            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.4"),
-            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.5
-            // # Shift + screwdriver: toggle check mode
-            // # zh_CN 潜行螺丝刀右键：切换检查模式
-            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.5"),
-            // #tr gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.priority
-            // # Matching filters take priority over unfiltered outputs
-            // # zh_CN 筛选匹配的输出仓优先于未设置筛选的输出仓
-            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.max_capacity_me_output_hatch.priority") };
+    @Override
+    public OutputHatchType getHatchType() {
+        if (getProvider().getCacheMode())
+            return isFiltered() ? OutputHatchType.MECacheFiltered : OutputHatchType.MECacheUnfiltered;
+        return isFiltered() ? OutputHatchType.MEFiltered : OutputHatchType.MEUnfiltered;
     }
 }
