@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -31,6 +32,7 @@ import com.gtnewhorizon.cropsnh.compatibility.NEI.NEICropsNHCropstickBreedingHan
 import com.gtnewhorizon.cropsnh.farming.SeedStats;
 import com.gtnewhorizon.cropsnh.farming.registries.CropRegistry;
 import com.gtnewhorizon.cropsnh.farming.registries.MutationRegistry;
+import com.gtnewhorizon.cropsnh.farming.requirements.SubSoilRequirement;
 import com.gtnewhorizon.cropsnh.init.CropsNHBlocks;
 import com.gtnewhorizon.cropsnh.recipes.CropsNHGTRecipeMaps;
 import com.gtnewhorizon.cropsnh.tileentity.TileEntityCropSticks;
@@ -46,6 +48,7 @@ import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.common.registry.GameRegistry;
 import gregtech.api.GregTechAPI;
 import gregtech.api.recipe.RecipeMap;
 
@@ -154,6 +157,7 @@ public final class NetherStarFlowerChecks {
                         .getLeft() == SeedPlantingResult.SUCCESS,
                     "seed plants on farmland, stage " + i);
                 if (i == 0) {
+                    checkBeaconVariants(world, tile, mutation, parents);
                     require(tile.areGrowthRequirementsMet(), "beacon enables growth");
                     require(tile.harvest(1.0) == null, "immature crop cannot be harvested");
                     require(
@@ -269,6 +273,46 @@ public final class NetherStarFlowerChecks {
         } catch (Throwable error) {
             finish(error);
         }
+    }
+
+    private void checkBeaconVariants(World world, TileEntityCropSticks tile, ICropMutation mutation,
+        ArrayList<ICropCard> parents) {
+        Block etFuturumBeacon = GameRegistry.findBlock("etfuturum", "beacon");
+        require(etFuturumBeacon != null, "Et Futurum beacon is available for compatibility regression checks");
+        var requirement = SubSoilRequirement.get("gtneverreset.beacon");
+        for (Block beacon : List.of(Blocks.beacon, etFuturumBeacon)) {
+            String id = Block.blockRegistry.getNameForObject(beacon);
+            ItemStack catalyst = new ItemStack(beacon);
+            require(requirement.isValidSubSoil(catalyst), id + " is a valid machine substrate");
+            require(
+                requirement.canGrow(tile.getSeed(), null, new ItemStack[] { catalyst }),
+                id + " enables machine growth");
+            int[] consumed = mutation.canBreed(parents, null, new ItemStack[] { catalyst });
+            require(consumed != null && consumed[0] == 1, id + " is consumed by machine breeding");
+            require(
+                crop.getSubSoilsForNEI(false)
+                    .stream()
+                    .anyMatch(catalyst::isItemEqual),
+                id + " is listed as a substrate in NEI");
+            world.setBlock(tile.xCoord, tile.yCoord - 2, tile.zCoord, beacon, 0, 3);
+            require(tile.areGrowthRequirementsMet(), id + " enables in-world growth");
+            require(
+                mutation.canBreed(parents, world, tile, tile.xCoord, tile.yCoord, tile.zCoord),
+                id + " enables in-world breeding");
+            tile.setGrowthProgress(0);
+            tile.addWater(100, 100, 100, false);
+            tile.addFertilizer(100, 100, 100, false);
+            require(tile.calcGrowthRate() > 0, "test crop has enough nutrients to grow");
+            tile.onGrowthTick();
+            require(tile.getGrowthProgress() > 0, id + " advances crop growth");
+            world.setBlock(tile.xCoord, tile.yCoord - 2, tile.zCoord, Blocks.stone, 0, 3);
+            int progress = tile.getGrowthProgress();
+            tile.onGrowthTick();
+            require(!tile.areGrowthRequirementsMet(), "removing " + id + " fails the growth requirement");
+            require(tile.getGrowthProgress() == progress, "removing " + id + " stops crop growth");
+        }
+        tile.setGrowthProgress(0);
+        world.setBlock(tile.xCoord, tile.yCoord - 2, tile.zCoord, Blocks.beacon, 0, 3);
     }
 
     private static void screenshot(String name) {
