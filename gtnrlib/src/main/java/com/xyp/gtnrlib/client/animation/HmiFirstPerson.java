@@ -230,8 +230,8 @@ public final class HmiFirstPerson {
             if (stack.getItem() instanceof ItemMap
                 && MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.FIRST_PERSON_MAP) != null) return false;
             renderer = MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON);
+            selected = HmiItemBindings.tool(stack, renderer);
             if (renderer != null) {
-                selected = HmiItemBindings.tool(stack, renderer);
                 if (selected == null && grip == null
                     && !OreGrip.isMaterial(stack)
                     && !actions.controls(p, stack)
