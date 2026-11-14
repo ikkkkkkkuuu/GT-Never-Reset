@@ -6,11 +6,13 @@ import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StatCollector;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.drawable.ItemDrawable;
+import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.utils.item.InvWrapper;
@@ -32,6 +34,7 @@ import com.gtnewhorizon.gtnhlib.util.ServerThreadUtil;
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityOverloadedProvider.Lane;
+import com.xyp.gtnrlib.mod.ModList;
 
 import gregtech.api.modularui2.GTGuiTextures;
 import gregtech.api.modularui2.GTGuiThemes;
@@ -547,5 +550,37 @@ public final class OverloadedProviderGui {
         // # East
         // # zh_CN 东
         return StatCollector.translateToLocal(key);
+    }
+
+    private static final class WirelessCardGuiTextures {
+
+        private static final UITexture BACKGROUND = UITexture.builder()
+            .location(ModList.AE2.getResourceLocation("textures/guis/wireless_network_manager.png"))
+            .imageSize(256, 256)
+            .subAreaXYWH(0, 0, 106, 232)
+            .adaptable(4)
+            .build();
+        private static final UITexture[] BUTTONS = { button(0), button(1), button(2) };
+        private static final UITexture TOGGLE_BACKGROUND = toggle(255), TOGGLE_ON = toggle(129),
+            TOGGLE_OFF = toggle(128);
+
+        private WirelessCardGuiTextures() {}
+
+        private static UITexture button(int state) {
+            return UITexture.builder()
+                .location(new ResourceLocation("minecraft", "textures/gui/widgets.png"))
+                .imageSize(256, 256)
+                .subAreaXYWH(0, 46 + state * 20, 200, 20)
+                .adaptable(2)
+                .build();
+        }
+
+        private static UITexture toggle(int icon) {
+            return UITexture.builder()
+                .location(ModList.AE2.getResourceLocation("textures/guis/states.png"))
+                .imageSize(256, 256)
+                .subAreaXYWH(icon % 16 * 16, icon / 16 * 16, 16, 16)
+                .build();
+        }
     }
 }

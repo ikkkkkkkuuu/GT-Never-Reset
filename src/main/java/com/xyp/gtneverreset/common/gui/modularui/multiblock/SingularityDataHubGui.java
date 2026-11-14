@@ -17,6 +17,7 @@ import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.drawable.DynamicDrawable;
 import com.cleanroommc.modularui.drawable.Rectangle;
+import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
@@ -32,7 +33,7 @@ import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.SlotGroupWidget;
 import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.layout.Flow;
-import com.xyp.gtneverreset.common.gui.VaultGuiTextures;
+import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
 
 import cpw.mods.fml.relauncher.Side;
@@ -419,5 +420,55 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
             if (filled > 0) new Rectangle().color(color)
                 .draw(context, 3, 3, filled, height - 6, theme);
         }
+    }
+
+    private static final class VaultGuiTextures {
+
+        private static final UITexture BACKGROUND = UITexture.builder()
+            .location(GTNeverReset.MODID, "gui/modernity/vault_background")
+            .imageSize(16, 16)
+            .adaptable(2, 2, 2, 4)
+            .build();
+        private static final UITexture PANEL_BORDER = UITexture.builder()
+            .location(GTNeverReset.MODID, "gui/modernity/vault_panel_border")
+            .imageSize(16, 16)
+            .adaptable(6)
+            .build();
+        private static final UITexture ITEM_SLOT = UITexture.builder()
+            .location(GTNeverReset.MODID, "gui/modernity/vault_item_slot")
+            .imageSize(18, 18)
+            .adaptable(1)
+            .build();
+        private static final UITexture BUTTON = UITexture.builder()
+            .location(GTNeverReset.MODID, "gui/modernity/button")
+            .imageSize(20, 20)
+            .adaptable(3)
+            .build();
+        private static final UITexture BUTTON_HOVER = UITexture.builder()
+            .location(GTNeverReset.MODID, "gui/modernity/button_hover")
+            .imageSize(20, 20)
+            .subAreaXYWH(0, 1, 20, 19)
+            .adaptable(3)
+            .build();
+        private static final UITexture BUTTON_PRESSED = UITexture.builder()
+            .location(GTNeverReset.MODID, "gui/modernity/button_pressed")
+            .imageSize(20, 20)
+            .adaptable(3)
+            .build();
+        private static final UITexture BUTTON_DISABLED = UITexture.builder()
+            .location(GTNeverReset.MODID, "gui/modernity/button_disabled")
+            .imageSize(20, 20)
+            .subAreaXYWH(0, 2, 20, 18)
+            .adaptable(3)
+            .build();
+        private static final UITexture POWER_SWITCH_ON = UITexture
+            .fullImage(GTNeverReset.MODID, "gui/overlay_button/power_switch_on");
+        private static final UITexture POWER_SWITCH_DISABLED = UITexture
+            .fullImage(GTNeverReset.MODID, "gui/overlay_button/power_switch_disabled");
+        private static final UITexture STRUCTURE_CHECK_ON = UITexture
+            .fullImage(GTNeverReset.MODID, "gui/overlay_button/structure_check_on");
+        private static final UITexture STRUCTURE_CHECK_OFF = UITexture
+            .fullImage(GTNeverReset.MODID, "gui/overlay_button/structure_check_off");
+
     }
 }
