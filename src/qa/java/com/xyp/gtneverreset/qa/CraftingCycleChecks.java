@@ -40,7 +40,10 @@ public final class CraftingCycleChecks {
         if (done || event.phase != TickEvent.Phase.END || Minecraft.getMinecraft().currentScreen == null) return;
         done = true;
         try {
-            Class.forName("appeng.client.gui.implementations.GuiCraftConfirm");
+            if (!com.xyp.gtneverreset.client.quantum.CraftConfirmCycles.Host.class
+                .isAssignableFrom(Class.forName("appeng.client.gui.implementations.GuiCraftConfirm"))) {
+                throw new AssertionError("craft confirmation host bridge was not applied");
+            }
             var tree = new GuiCraftingTree(null, 0, 0, 203, 170);
             var cycles = (ICraftingTreeCycles) tree;
             var stack = AEItemStack.create(new ItemStack(Items.iron_ingot));
