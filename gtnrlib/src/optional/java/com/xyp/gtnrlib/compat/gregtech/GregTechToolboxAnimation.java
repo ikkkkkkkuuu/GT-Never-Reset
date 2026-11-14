@@ -96,7 +96,7 @@ public final class GregTechToolboxAnimation implements HmiItemBindings.TwoHanded
                 }
             }
         }
-        ToolboxModel.render(motion, contents, hands);
+        ToolboxModel.render(motion, stack, contents, hands);
     }
 
     private static boolean isOpen() {

@@ -245,9 +245,10 @@ public final class AnimationToolboxChecks {
         var tools = new ItemStack[] { stored.getStackInSlot(ToolboxSlot.WRENCH.getSlotID()),
             stored.getStackInSlot(ToolboxSlot.SCREWDRIVER.getSlotID()),
             stored.getStackInSlot(ToolboxSlot.WIRE_CUTTER.getSlotID()) };
-        int[] filled = qa.draw(mc, "toolbox-filled-tray", .5f, () -> ToolboxModel.render(pose, tools, left -> {}));
+        int[] filled = qa
+            .draw(mc, "toolbox-filled-tray", .5f, () -> ToolboxModel.render(pose, stack, tools, left -> {}));
         int[] empty = qa
-            .draw(mc, "toolbox-empty-tray", .5f, () -> ToolboxModel.render(pose, new ItemStack[0], left -> {}));
+            .draw(mc, "toolbox-empty-tray", .5f, () -> ToolboxModel.render(pose, stack, new ItemStack[0], left -> {}));
         int changed = 0;
         for (int i = 0; i < filled.length; i++) if (filled[i] != empty[i]) changed++;
         qa.require(changed > 40, "actual stored GT tools produce visible tray pixels: " + changed);
