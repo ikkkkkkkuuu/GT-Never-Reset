@@ -6,10 +6,10 @@
 
 | GTNH 版本 | 模组版本 | 现状 | 下载 |
 | --- | --- | --- | --- |
-| `2.9.0`（当前开发基准） | `0.1.45` | 已发布 | [下载](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.45) |
+| `2.9.0`（当前开发基准） | `0.1.46` | 已发布 | [下载](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.46) |
 | `2.9.0-RC-2` | `0.1.10` | 已发布 | [![Download Releases](https://img.shields.io/badge/Download-Releases-blue)](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.10) |
 
-可在 [0.1.45 发行页](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.45) 下载正式模组文件 `gtneverreset-0.1.45.jar`。构建状态与日志可在 [Actions](https://github.com/ikkkkkkkuuu/GT-Never-Reset/actions) 查看。
+可在 [0.1.46 发行页](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.46) 下载正式模组文件 `gtneverreset-0.1.46.jar`。构建状态与日志可在 [Actions](https://github.com/ikkkkkkkuuu/GT-Never-Reset/actions) 查看。
 
 开发环境使用 Minecraft `1.7.10`、Forge `10.13.4.1614`，主模组与 GTNRLib 共用 GTNH [`2.9.0` 正式版依赖清单](https://github.com/GTNewHorizons/DreamAssemblerXXL/blob/master/releases/manifests/2.9.0.json)，由 `gradle.properties` 中的 `elytra.manifest.version` 统一选择；其他 GTNH 版本的兼容性尚待验证。
 
