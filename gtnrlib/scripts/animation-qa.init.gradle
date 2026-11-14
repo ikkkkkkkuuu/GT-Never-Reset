@@ -68,6 +68,7 @@ gradle.projectsEvaluated {
         workingDir lib.file("run/animation-qa/" + mode)
         systemProperty 'gtnrlib.animation.qa', 'true'
         systemProperty 'gtnrlib.animation.qa.toolbox', toolbox
+        systemProperty 'gtnrlib.animation.qa.toolbox.capture', gradle.startParameter.projectProperties.containsKey('animationQaToolboxCapture')
         systemProperty 'gtnrlib.animation.qa.workspace', lib.projectDir.absolutePath
         systemProperty 'gtnrlib.animation.qa.output', output.absolutePath
         systemProperty 'gtnrlib.animation.qa.toolMods', host != lib

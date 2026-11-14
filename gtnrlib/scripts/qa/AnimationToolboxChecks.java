@@ -1,7 +1,10 @@
 package com.xyp.gtnrlib.qa;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -57,6 +60,10 @@ public final class AnimationToolboxChecks {
     private boolean launched, finished;
     private int ticks, stage, entered, captures;
     private int[] carrying, searching;
+    private final boolean recording = Boolean.getBoolean("gtnrlib.animation.qa.toolbox.capture");
+    private final List<String> frameTimes = new ArrayList<>();
+    private File sequence;
+    private double nextFrame = Double.NaN, firstFrame;
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
@@ -92,6 +99,12 @@ public final class AnimationToolboxChecks {
             if (serverError != null) throw new AssertionError("server operation failed", serverError);
             int age = mc.thePlayer.ticksExisted;
             var stack = mc.thePlayer.getHeldItem();
+            if (recording && stage >= 1
+                && stage <= 4
+                && (stage != 1 || age - entered >= 15)
+                && stack != null
+                && stack.getItem() instanceof ItemGTToolbox)
+                recordFrame(mc, age + (double) event.renderTickTime, event.renderTickTime);
             switch (stage) {
                 case 0 -> {
                     if (age < 30 || mc.currentScreen != null) return;
@@ -114,7 +127,8 @@ public final class AnimationToolboxChecks {
                     next(age);
                 }
                 case 1 -> {
-                    if (!(stack != null && stack.getItem() instanceof ItemGTToolbox) || age - entered < 25) return;
+                    if (!(stack != null && stack.getItem() instanceof ItemGTToolbox)
+                        || age - entered < (recording ? 45 : 25)) return;
                     snapshot(mc, "toolbox-carry-world");
                     carrying = qa.draw(mc, "toolbox-carry", .5f);
                     qa.require(
@@ -145,7 +159,7 @@ public final class AnimationToolboxChecks {
                         if (captures == 3) searching = pixels;
                         captures++;
                     }
-                    if (elapsed < 46) return;
+                    if (elapsed < (recording ? 70 : 46)) return;
                     qa.require(
                         !Arrays.equals(searching, qa.draw(mc, "toolbox-search", .5f)),
                         "searching continues with the inventory open");
@@ -154,7 +168,8 @@ public final class AnimationToolboxChecks {
                     next(age);
                 }
                 case 4 -> {
-                    if (age - entered < 30 || mc.currentScreen != null) return;
+                    if (age - entered < (recording ? 40 : 30) || mc.currentScreen != null) return;
+                    if (recording) Files.write(new File(sequence, "frames.csv").toPath(), frameTimes);
                     qa.draw(mc, "toolbox-closed-again", .5f);
                     ToolboxSelectGuiFactory.INSTANCE.open(mc.thePlayer);
                     next(age);
@@ -263,6 +278,19 @@ public final class AnimationToolboxChecks {
     private void next(int age) {
         entered = age;
         stage++;
+    }
+
+    private void recordFrame(Minecraft mc, double time, float partial) throws Exception {
+        if (Double.isNaN(nextFrame)) {
+            sequence = new File(output, "screenshots/toolbox-sequence-" + System.currentTimeMillis());
+            Files.createDirectories(sequence.toPath());
+            firstFrame = nextFrame = time;
+        }
+        if (time < nextFrame) return;
+        String name = String.format(java.util.Locale.ROOT, "frame-%05d", frameTimes.size());
+        qa.draw(mc, sequence.getName() + "/" + name, partial);
+        frameTimes.add(name + ".png," + (time - firstFrame) / 20 + "," + stage);
+        nextFrame = time + 20d / 25;
     }
 
     private void snapshot(Minecraft mc, String name) {

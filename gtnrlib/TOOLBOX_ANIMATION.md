@@ -35,3 +35,5 @@
 2026-11-14 验证：`spotlessCheck`、`compileJava`、`:gtnrlib:build`、库契约测试和上述独立客户端夹具通过。客户端确认未加载 GT-Never-Reset；真实库存打开、轮盘打开、选工具包、动画开关和换槽检查通过。有工具与空盘的隔离绘制产生 827 个不同像素，确认箱内工具实际可见。
 
 实机截图：[提握](docs/toolbox-animation/carry.png)、[开盖翻找](docs/toolbox-animation/search.png)、[工具盘细节](docs/toolbox-animation/tray.png)。截图来自游戏帧缓冲，未使用图像生成或后期绘制。
+
+需要录制完整动作时，在客户端命令中追加 `-PanimationQaToolboxCapture`。夹具会在提握、真实开箱、翻找、关闭四个阶段按最高 25 FPS 保存隔离绘制的 PNG，输出到 `screenshots/toolbox-sequence-<时间戳>/`。同目录的 `frames.csv` 记录每帧文件名、实际游戏时间（秒）和测试阶段，供动图或视频编码时保留原播放速度。
