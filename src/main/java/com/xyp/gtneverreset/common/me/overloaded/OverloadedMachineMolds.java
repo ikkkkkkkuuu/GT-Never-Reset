@@ -49,6 +49,18 @@ public final class OverloadedMachineMolds {
         if (supports(machine)) ((OverloadedMachineConfiguration) machine).gtnr$setVirtualMold(mold);
     }
 
+    /** Applies a manual selection only while the server machine is idle and has no pending batch. */
+    public static void select(MTEBasicMachine machine, int index) {
+        if (index < -1 || index >= MoldDataManager.getMoldCount() || !supports(machine)) return;
+        var tile = machine.getBaseMetaTileEntity();
+        if (tile == null || tile.isClientSide()
+            || ((OverloadedMachineConfiguration) machine).gtnr$hasPending()
+            || !OverloadedMachineInput.isIdle(machine)) return;
+        set(machine, at(index));
+        tile.markInventoryBeenModified();
+        tile.markDirty();
+    }
+
     /** Appends a disposable catalyst while preserving references to real consumable stacks for GT consumption. */
     public static ItemStack[] append(ItemStack[] inputs, ItemStack mold) {
         if (mold == null) return inputs;
