@@ -20,7 +20,7 @@ public class PayloadHandler {
         @Override
         public @Nullable IMessage onMessage(T message, MessageContext ctx) {
             try {
-                runClient(message);
+                runClient(message, ctx);
             } catch (RuntimeException exception) {
                 GTNRLib.LOG.error(
                     "Unhandled clientbound packet {}",
@@ -33,8 +33,8 @@ public class PayloadHandler {
         }
 
         @SideOnly(Side.CLIENT)
-        private void runClient(T message) {
-            message.handleClient(Minecraft.getMinecraft());
+        private void runClient(T message, MessageContext context) {
+            message.handleClient(Minecraft.getMinecraft(), context);
         }
     }
 

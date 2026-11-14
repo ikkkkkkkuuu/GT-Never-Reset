@@ -15,7 +15,6 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.layout.Grid;
 import com.xyp.gtneverreset.common.me.MoldDataManager;
-import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineInput;
 import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineMolds;
 
 import gregtech.api.metatileentity.implementations.MTEBasicMachine;
@@ -32,17 +31,7 @@ public final class SingleblockMoldSelector {
     public static Widget<?> create(MTEBasicMachine machine, PanelSyncManager syncManager) {
         IntSyncValue selection = new IntSyncValue(
             () -> OverloadedMachineMolds.indexOf(OverloadedMachineMolds.get(machine)),
-            index -> {
-                if (syncManager.isClient() || index < -1 || index >= MoldDataManager.getMoldCount()) return;
-                // Manual selection obeys the same empty/idle boundary as automatic configuration changes.
-                if (((com.xyp.gtneverreset.api.machine.OverloadedMachineConfiguration) machine).gtnr$hasPending()
-                    || !OverloadedMachineInput.isIdle(machine)) return;
-                OverloadedMachineMolds.set(machine, OverloadedMachineMolds.at(index));
-                machine.getBaseMetaTileEntity()
-                    .markInventoryBeenModified();
-                machine.getBaseMetaTileEntity()
-                    .markDirty();
-            }).allowC2S();
+            index -> { if (!syncManager.isClient()) OverloadedMachineMolds.select(machine, index); }).allowC2S();
         syncManager.syncValue("gtnrVirtualMold", selection);
         IPanelHandler popup = syncManager.syncedPanel("gtnrMoldSelector", true, (mainPanel, player) -> {
             ModularPanel panel = GTGuis.createPopUpPanel("gtnrMoldSelector")

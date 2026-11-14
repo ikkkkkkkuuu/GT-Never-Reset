@@ -62,23 +62,8 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
     }
 
     @Override
-    protected boolean useMui2() {
-        return false;
-    }
-
-    @Override
     public MetaTileEntity newMetaEntity(IGregTechTileEntity aTileEntity) {
         return new SuperMTEHatchCraftingInputSlave(mName, mTier, mDescriptionArray, mTextures);
-    }
-
-    @Override
-    public ITexture[] getTexturesActive(ITexture aBaseTexture) {
-        return getTexturesInactive(aBaseTexture);
-    }
-
-    @Override
-    public ITexture[] getTexturesInactive(ITexture aBaseTexture) {
-        return new ITexture[] { aBaseTexture, TextureFactory.of(OVERLAY_ME_CRAFTING_INPUT_SLAVE) };
     }
 
     @Override
@@ -94,56 +79,55 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
     }
 
     @Override
-    public void loadNBTData(NBTTagCompound aNBT) {
-        super.loadNBTData(aNBT);
+    public void onRemoval() {
+        super.onRemoval();
         if (master != null) master.removeProxyHatch(this);
-        master = null;
-        masterSet = false;
-        if (aNBT.hasKey("master")) {
-            NBTTagCompound masterNBT = aNBT.getCompoundTag("master");
-            masterX = masterNBT.getInteger("x");
-            masterY = masterNBT.getInteger("y");
-            masterZ = masterNBT.getInteger("z");
-            masterSet = true;
+    }
+
+    @Override
+    public boolean onRightclick(IGregTechTileEntity aBaseMetaTileEntity, EntityPlayer aPlayer) {
+        if (!(aPlayer instanceof EntityPlayerMP player)) {
+            return false;
         }
-        reverseRecipes = aNBT.getBoolean("reverseRecipes");
-    }
-
-    @Override
-    public void saveNBTData(NBTTagCompound aNBT) {
-        super.saveNBTData(aNBT);
-        if (masterSet) {
-            NBTTagCompound masterNBT = new NBTTagCompound();
-            masterNBT.setInteger("x", masterX);
-            masterNBT.setInteger("y", masterY);
-            masterNBT.setInteger("z", masterZ);
-            aNBT.setTag("master", masterNBT);
+        if (tryLinkDataStick(aPlayer)) {
+            return true;
         }
-        aNBT.setBoolean("reverseRecipes", reverseRecipes);
+        var master = getMaster();
+        if (master != null) {
+            if (aBaseMetaTileEntity.isServerSide()) {
+                ProxiedMteGui.open(master, player);
+            }
+            return true;
+        }
+        return false;
     }
 
     @Override
-    public boolean isGivingInformation() {
-        return true;
+    public void onLeftclick(IGregTechTileEntity aBaseMetaTileEntity, EntityPlayer aPlayer) {
+        if (!(aPlayer instanceof EntityPlayerMP)) return;
+
+        ItemStack dataStick = aPlayer.inventory.getCurrentItem();
+        if (!ItemList.Tool_DataStick.isStackEqual(dataStick, false, true)) return;
+        var master = getMaster();
+        if (master == null) {
+            // #tr gtnr.chat.gtnr.pattern_link.unlinked_copy
+            // # This mirror has no pattern input link to copy
+            // # zh_CN 此镜像尚未连接样板输入主仓，无法复制连接信息
+            GTUtility.sendChatTrans(aPlayer, "gtnr.chat.gtnr.pattern_link.unlinked_copy");
+            return;
+        }
+
+        master.saveToDataStick(aPlayer, dataStick);
     }
 
     @Override
-    public String[] getInfoData() {
-        var ret = new ArrayList<String>();
-        if (getMaster() != null) {
-            ret.add(
-                StatCollector.translateToLocalFormatted(
-                    "GT5U.infodata.hatch.crafting_input_slave.linked_to",
-                    masterX,
-                    masterY,
-                    masterZ));
-            ret.addAll(Arrays.asList(getMaster().getInfoData()));
-        } else ret.add(StatCollector.translateToLocal("GT5U.infodata.hatch.crafting_input_slave.not_linked_to"));
-        ret.add(
-            StatCollector.translateToLocalFormatted(
-                "GT5U.infodata.hatch.crafting_input_slave.reverseRecipes",
-                reverseRecipes ? "on" : "off"));
-        return ret.toArray(new String[0]);
+    public final void onScrewdriverRightClick(ForgeDirection side, EntityPlayer aPlayer, float aX, float aY, float aZ,
+        ItemStack aTool) {
+        if (getBaseMetaTileEntity().isServerSide()) {
+            toggleReverseRecipes();
+            GTUtility.sendChatTrans(aPlayer, "chat.proxy.reverse." + reverseRecipes);
+        }
+        // not calling super.onScrewdriverRightClick, because input filter is irrelevant for a proxy hatch
     }
 
     public SuperMTEHatchCraftingInputME getMaster() {
@@ -155,63 +139,6 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
             getBaseMetaTileEntity().enableTicking();
         }
         return master;
-    }
-
-    /** Notifies this mirror's controllers when the shared ME output cache gains space. */
-    public void notifyMEOutputSpaceChanged() {
-        notifyWatchers();
-    }
-
-    @Override
-    public byte getTierForStructure() {
-        return getMaster() == null ? super.getTierForStructure() : getMaster().getTierForStructure();
-    }
-
-    @Override
-    public boolean allowPullStack(IGregTechTileEntity aBaseMetaTileEntity, int aIndex, ForgeDirection side,
-        ItemStack aStack) {
-        return false;
-    }
-
-    @Override
-    public boolean allowPutStack(IGregTechTileEntity aBaseMetaTileEntity, int aIndex, ForgeDirection side,
-        ItemStack aStack) {
-        return false;
-    }
-
-    @Override
-    public Iterator<SuperMTEHatchCraftingInputME.PatternSlot<SuperMTEHatchCraftingInputME>> inventories() {
-        return getMaster() != null ? (reverseRecipes ? getMaster().inventoriesReversed() : getMaster().inventories())
-            : Collections.emptyIterator();
-    }
-
-    @Override
-    public Optional<IDualInputInventory> getFirstNonEmptyInventory() {
-        Iterator<SuperMTEHatchCraftingInputME.PatternSlot<SuperMTEHatchCraftingInputME>> inputs = inventories();
-        while (inputs.hasNext()) {
-            IDualInputInventory input = inputs.next();
-            if (!input.isEmpty()) return Optional.of(input);
-        }
-        return Optional.empty();
-    }
-
-    @Override
-    public boolean supportsFluids() {
-        return getMaster() != null && getMaster().supportsFluids();
-    }
-
-    @Override
-    public ItemStack[] getSharedItems() {
-        return getMaster() != null ? getMaster().getSharedItems() : GTValues.emptyItemStackArray;
-    }
-
-    /**
-     * Schedules a recipe check for every controller using this mirror after the master accepts ingredients.
-     * The master calls every linked mirror before clearing its pending-input flag, so controllers cannot consume
-     * another mirror's notification. This also works while this mirror's own ticking is disabled.
-     */
-    public void onParentInvChange() {
-        notifyWatchers();
     }
 
     public SuperMTEHatchCraftingInputME trySetMasterFromCoord(int x, int y, int z) {
@@ -256,104 +183,108 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
         NBTTagCompound nbt = dataStick.stackTagCompound;
         if (nbt.hasKey("dimension")
             && nbt.getInteger("dimension") != getBaseMetaTileEntity().getWorld().provider.dimensionId) {
-            // #tr chat.gtnr.pattern_link.wrong_dimension
+            // #tr gtnr.chat.gtnr.pattern_link.wrong_dimension
             // # The pattern input is in another dimension
             // # zh_CN 样板输入主仓位于其他维度
-            GTUtility.sendChatTrans(aPlayer, "chat.gtnr.pattern_link.wrong_dimension");
+            GTUtility.sendChatTrans(aPlayer, "gtnr.chat.gtnr.pattern_link.wrong_dimension");
             return true;
         }
         int x = nbt.getInteger("x");
         int y = nbt.getInteger("y");
         int z = nbt.getInteger("z");
         if (trySetMasterFromCoord(x, y, z) != null) {
-            // #tr chat.gtnr.pattern_link.success
+            // #tr gtnr.chat.gtnr.pattern_link.success
             // # Pattern input link established
             // # zh_CN 样板输入连接成功
-            GTUtility.sendChatTrans(aPlayer, "chat.gtnr.pattern_link.success");
+            GTUtility.sendChatTrans(aPlayer, "gtnr.chat.gtnr.pattern_link.success");
             return true;
         }
-        // #tr chat.gtnr.pattern_link.failed
+        // #tr gtnr.chat.gtnr.pattern_link.failed
         // # Pattern input link failed; check the loaded master and mirror type
         // # zh_CN 样板输入连接失败，请检查主仓是否已加载且与镜像类型匹配
-        GTUtility.sendChatTrans(aPlayer, "chat.gtnr.pattern_link.failed");
+        GTUtility.sendChatTrans(aPlayer, "gtnr.chat.gtnr.pattern_link.failed");
         return true;
     }
 
+    /** Notifies this mirror's controllers when the shared ME output cache gains space. */
+    public void notifyMEOutputSpaceChanged() {
+        notifyWatchers();
+    }
+
     @Override
-    public boolean onRightclick(IGregTechTileEntity aBaseMetaTileEntity, EntityPlayer aPlayer) {
-        if (!(aPlayer instanceof EntityPlayerMP player)) {
-            return false;
-        }
-        if (tryLinkDataStick(aPlayer)) {
-            return true;
-        }
-        var master = getMaster();
-        if (master != null) {
-            if (aBaseMetaTileEntity.isServerSide()) {
-                ProxiedMteGui.open(master, player);
-            }
-            return true;
-        }
+    public boolean allowPullStack(IGregTechTileEntity aBaseMetaTileEntity, int aIndex, ForgeDirection side,
+        ItemStack aStack) {
         return false;
     }
 
     @Override
-    public void onLeftclick(IGregTechTileEntity aBaseMetaTileEntity, EntityPlayer aPlayer) {
-        if (!(aPlayer instanceof EntityPlayerMP)) return;
+    public boolean allowPutStack(IGregTechTileEntity aBaseMetaTileEntity, int aIndex, ForgeDirection side,
+        ItemStack aStack) {
+        return false;
+    }
 
-        ItemStack dataStick = aPlayer.inventory.getCurrentItem();
-        if (!ItemList.Tool_DataStick.isStackEqual(dataStick, false, true)) return;
-        var master = getMaster();
-        if (master == null) {
-            // #tr chat.gtnr.pattern_link.unlinked_copy
-            // # This mirror has no pattern input link to copy
-            // # zh_CN 此镜像尚未连接样板输入主仓，无法复制连接信息
-            GTUtility.sendChatTrans(aPlayer, "chat.gtnr.pattern_link.unlinked_copy");
-            return;
+    @Override
+    public Iterator<SuperMTEHatchCraftingInputME.PatternSlot<SuperMTEHatchCraftingInputME>> inventories() {
+        return getMaster() != null ? (reverseRecipes ? getMaster().inventoriesReversed() : getMaster().inventories())
+            : Collections.emptyIterator();
+    }
+
+    @Override
+    public Optional<IDualInputInventory> getFirstNonEmptyInventory() {
+        Iterator<SuperMTEHatchCraftingInputME.PatternSlot<SuperMTEHatchCraftingInputME>> inputs = inventories();
+        while (inputs.hasNext()) {
+            IDualInputInventory input = inputs.next();
+            if (!input.isEmpty()) return Optional.of(input);
         }
-
-        master.saveToDataStick(aPlayer, dataStick);
+        return Optional.empty();
     }
 
     @Override
-    public void onRemoval() {
-        super.onRemoval();
-        if (master != null) master.removeProxyHatch(this);
+    public ItemStack[] getSharedItems() {
+        return getMaster() != null ? getMaster().getSharedItems() : GTValues.emptyItemStackArray;
     }
 
-    @Override
-    public String getCopiedDataIdentifier(EntityPlayer player) {
-        return COPIED_DATA_IDENTIFIER;
-    }
-
-    @Override
-    public boolean pasteCopiedData(EntityPlayer player, NBTTagCompound nbt) {
-        if (!getBaseMetaTileEntity().isServerSide() || nbt == null
-            || !COPIED_DATA_IDENTIFIER.equals(nbt.getString("type"))) return false;
-        if (nbt.hasKey("master")) {
-            NBTTagCompound masterNBT = nbt.getCompoundTag("master");
-            if (trySetMasterFromCoord(masterNBT.getInteger("x"), masterNBT.getInteger("y"), masterNBT.getInteger("z"))
-                == null) return false;
-        }
-        reverseRecipes = nbt.getBoolean("reverseRecipes");
-        markDirty();
+    /**
+     * Schedules a recipe check for every controller using this mirror after the master accepts ingredients.
+     * The master calls every linked mirror before clearing its pending-input flag, so controllers cannot consume
+     * another mirror's notification. This also works while this mirror's own ticking is disabled.
+     */
+    public void onParentInvChange() {
         notifyWatchers();
+    }
+
+    @Override
+    public ITexture[] getTexturesActive(ITexture aBaseTexture) {
+        return getTexturesInactive(aBaseTexture);
+    }
+
+    @Override
+    public ITexture[] getTexturesInactive(ITexture aBaseTexture) {
+        return new ITexture[] { aBaseTexture, TextureFactory.of(OVERLAY_ME_CRAFTING_INPUT_SLAVE) };
+    }
+
+    @Override
+    public boolean isGivingInformation() {
         return true;
     }
 
     @Override
-    public NBTTagCompound getCopiedData(EntityPlayer player) {
-        NBTTagCompound tag = new NBTTagCompound();
-        tag.setString("type", COPIED_DATA_IDENTIFIER);
-        if (masterSet) {
-            NBTTagCompound masterNBT = new NBTTagCompound();
-            masterNBT.setInteger("x", masterX);
-            masterNBT.setInteger("y", masterY);
-            masterNBT.setInteger("z", masterZ);
-            tag.setTag("master", masterNBT);
-        }
-        tag.setBoolean("reverseRecipes", reverseRecipes);
-        return tag;
+    public String[] getInfoData() {
+        var ret = new ArrayList<String>();
+        if (getMaster() != null) {
+            ret.add(
+                StatCollector.translateToLocalFormatted(
+                    "GT5U.infodata.hatch.crafting_input_slave.linked_to",
+                    masterX,
+                    masterY,
+                    masterZ));
+            ret.addAll(Arrays.asList(getMaster().getInfoData()));
+        } else ret.add(StatCollector.translateToLocal("GT5U.infodata.hatch.crafting_input_slave.not_linked_to"));
+        ret.add(
+            StatCollector.translateToLocalFormatted(
+                "GT5U.infodata.hatch.crafting_input_slave.reverseRecipes",
+                reverseRecipes ? "on" : "off"));
+        return ret.toArray(new String[0]);
     }
 
     @Override
@@ -407,41 +338,110 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
         return getMaster() != null ? getMaster().getItemsForHoloGlasses() : null;
     }
 
+    @Override
+    public String[] getDescription() {
+        // #tr gtnr.tooltip.crafting_input_mirror.proxy
+        // # Only links to ordinary Pattern Input Assemblies/Buses; cannot link to circuit or cross-recipe assemblies
+        // # zh_CN 仅可连接普通样板输入总成或总线，不可连接电路或跨配方类型总成
+        String proxy = StatCollector.translateToLocal("gtnr.tooltip.crafting_input_mirror.proxy");
+        // #tr gtnr.tooltip.crafting_input_mirror.tier
+        // # Hatch tier: %s
+        // # zh_CN 仓室等级：%s
+        String tier = StatCollector
+            .translateToLocalFormatted("gtnr.tooltip.crafting_input_mirror.tier", TIER_COLORS[11] + VN[11]);
+        // #tr gtnr.tooltip.crafting_input_mirror.share
+        // # Uses the linked master's pattern inputs and product output caches
+        // # zh_CN 共用主仓的样板原料与产物输出缓存
+        String share = StatCollector.translateToLocal("gtnr.tooltip.crafting_input_mirror.share");
+        // #tr gtnr.tooltip.crafting_input_mirror.link
+        // # Data Stick: left-click the master, then right-click this hatch in the same dimension
+        // # zh_CN 手持数据棒左键点击主仓，再右键点击同维度内的此仓完成连接
+        String link = StatCollector.translateToLocal("gtnr.tooltip.crafting_input_mirror.link");
+        return PatternMEOutput.describe(new String[] { proxy, tier, share, link });
+    }
+
+    @Override
+    protected boolean useMui2() {
+        return false;
+    }
+
+    @Override
+    public void loadNBTData(NBTTagCompound aNBT) {
+        super.loadNBTData(aNBT);
+        if (master != null) master.removeProxyHatch(this);
+        master = null;
+        masterSet = false;
+        if (aNBT.hasKey("master")) {
+            NBTTagCompound masterNBT = aNBT.getCompoundTag("master");
+            masterX = masterNBT.getInteger("x");
+            masterY = masterNBT.getInteger("y");
+            masterZ = masterNBT.getInteger("z");
+            masterSet = true;
+        }
+        reverseRecipes = aNBT.getBoolean("reverseRecipes");
+    }
+
+    @Override
+    public void saveNBTData(NBTTagCompound aNBT) {
+        super.saveNBTData(aNBT);
+        if (masterSet) {
+            NBTTagCompound masterNBT = new NBTTagCompound();
+            masterNBT.setInteger("x", masterX);
+            masterNBT.setInteger("y", masterY);
+            masterNBT.setInteger("z", masterZ);
+            aNBT.setTag("master", masterNBT);
+        }
+        aNBT.setBoolean("reverseRecipes", reverseRecipes);
+    }
+
+    @Override
+    public String getCopiedDataIdentifier(EntityPlayer player) {
+        return COPIED_DATA_IDENTIFIER;
+    }
+
+    @Override
+    public boolean pasteCopiedData(EntityPlayer player, NBTTagCompound nbt) {
+        if (!getBaseMetaTileEntity().isServerSide() || nbt == null
+            || !COPIED_DATA_IDENTIFIER.equals(nbt.getString("type"))) return false;
+        if (nbt.hasKey("master")) {
+            NBTTagCompound masterNBT = nbt.getCompoundTag("master");
+            if (trySetMasterFromCoord(masterNBT.getInteger("x"), masterNBT.getInteger("y"), masterNBT.getInteger("z"))
+                == null) return false;
+        }
+        reverseRecipes = nbt.getBoolean("reverseRecipes");
+        markDirty();
+        notifyWatchers();
+        return true;
+    }
+
+    @Override
+    public NBTTagCompound getCopiedData(EntityPlayer player) {
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setString("type", COPIED_DATA_IDENTIFIER);
+        if (masterSet) {
+            NBTTagCompound masterNBT = new NBTTagCompound();
+            masterNBT.setInteger("x", masterX);
+            masterNBT.setInteger("y", masterY);
+            masterNBT.setInteger("z", masterZ);
+            tag.setTag("master", masterNBT);
+        }
+        tag.setBoolean("reverseRecipes", reverseRecipes);
+        return tag;
+    }
+
+    @Override
+    public byte getTierForStructure() {
+        return getMaster() == null ? super.getTierForStructure() : getMaster().getTierForStructure();
+    }
+
+    @Override
+    public boolean supportsFluids() {
+        return getMaster() != null && getMaster().supportsFluids();
+    }
+
     private void toggleReverseRecipes() {
         reverseRecipes = !reverseRecipes;
         markDirty();
         notifyWatchers();
-    }
-
-    @Override
-    public final void onScrewdriverRightClick(ForgeDirection side, EntityPlayer aPlayer, float aX, float aY, float aZ,
-        ItemStack aTool) {
-        if (getBaseMetaTileEntity().isServerSide()) {
-            toggleReverseRecipes();
-            GTUtility.sendChatTrans(aPlayer, "chat.proxy.reverse." + reverseRecipes);
-        }
-        // not calling super.onScrewdriverRightClick, because input filter is irrelevant for a proxy hatch
-    }
-
-    @Override
-    public String[] getDescription() {
-        // #tr tooltip.gtnr.crafting_input_mirror.proxy
-        // # Only links to ordinary Pattern Input Assemblies/Buses; cannot link to circuit or cross-recipe assemblies
-        // # zh_CN 仅可连接普通样板输入总成或总线，不可连接电路或跨配方类型总成
-        String proxy = StatCollector.translateToLocal("tooltip.gtnr.crafting_input_mirror.proxy");
-        // #tr tooltip.gtnr.crafting_input_mirror.tier
-        // # Hatch tier: %s
-        // # zh_CN 仓室等级：%s
-        String tier = StatCollector
-            .translateToLocalFormatted("tooltip.gtnr.crafting_input_mirror.tier", TIER_COLORS[11] + VN[11]);
-        // #tr tooltip.gtnr.crafting_input_mirror.share
-        // # Uses the linked master's pattern inputs and product output caches
-        // # zh_CN 共用主仓的样板原料与产物输出缓存
-        String share = StatCollector.translateToLocal("tooltip.gtnr.crafting_input_mirror.share");
-        // #tr tooltip.gtnr.crafting_input_mirror.link
-        // # Data Stick: left-click the master, then right-click this hatch in the same dimension
-        // # zh_CN 手持数据棒左键点击主仓，再右键点击同维度内的此仓完成连接
-        String link = StatCollector.translateToLocal("tooltip.gtnr.crafting_input_mirror.link");
-        return PatternMEOutput.describe(new String[] { proxy, tier, share, link });
     }
 }

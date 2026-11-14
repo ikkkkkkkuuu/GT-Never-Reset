@@ -9,10 +9,10 @@ import net.minecraftforge.common.util.ForgeDirection;
 import com.glodblock.github.client.gui.container.ContainerMagnetFilter;
 import com.glodblock.github.inventory.item.WirelessMagnetCardFilterInventory;
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.common.gui.container.ContainerQuickEncodingTerminal;
+import com.xyp.gtneverreset.common.gui.container.QuickEncodingTerminalContainer;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
-import com.xyp.gtneverreset.common.packet.CPacketSwitchGuis;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
+import com.xyp.gtneverreset.common.packet.SwitchGuisPacket;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
@@ -36,7 +36,7 @@ public final class WirelessTerminalGuiHandler implements IGuiHandler {
     }
 
     public static void switchGui(WirelessTerminalGuiType type) {
-        NetWorkHandler.sendToServer(new CPacketSwitchGuis(type));
+        NetWorkHandler.sendToServer(new SwitchGuisPacket(type));
     }
 
     public static WirelessTerminalGuiObject buildHost(EntityPlayer player, World world, int slot,
@@ -71,14 +71,14 @@ public final class WirelessTerminalGuiHandler implements IGuiHandler {
         if (!security.hasPermission(player, SecurityPermissions.CRAFT)
             || type == WirelessTerminalGuiType.WirelessDualInterfaceTerminal
                 && !security.hasPermission(player, SecurityPermissions.BUILD)) {
-            // #tr gtneverreset.message.terminal_access_denied
+            // #tr gtnr.message.terminal_access_denied
             // # You do not have permission to use this terminal on the ME network.
             // # zh_CN 你没有在该 ME 网络上使用此终端的权限。
-            player.addChatMessage(new ChatComponentTranslation("gtneverreset.message.terminal_access_denied"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.message.terminal_access_denied"));
             return null;
         }
         AEBaseContainer container = host instanceof DualTerminalGuiObject dual
-            ? new ContainerQuickEncodingTerminal(player.inventory, dual)
+            ? new QuickEncodingTerminalContainer(player.inventory, dual)
             : new ContainerCraftingTerm(player.inventory, (WirelessCraftingTerminalGuiObject) host);
         ContainerOpenContext context = new ContainerOpenContext(host);
         context.setWorld(world);

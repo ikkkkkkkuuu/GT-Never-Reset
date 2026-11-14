@@ -488,7 +488,7 @@ public final class UniversalWandAccelerationHandler {
             NBTTagList list = root.getTagList("tasks", 10);
             for (int i = 0; i < list.tagCount(); i++) {
                 NBTTagCompound tag = list.getCompoundTagAt(i);
-                // #tr gtneverreset.gui.universal_wand.mode
+                // #tr gtnr.gui.universal_wand.mode
                 // # Fortune X mode
                 // # zh_CN 时运 X 模式
                 int mode = tag.getInteger("mode"), rate = tag.getInteger("rate"), y = tag.getInteger("y");

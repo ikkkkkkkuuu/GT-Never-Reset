@@ -67,18 +67,39 @@ public class SuperAdvancedMEInputHatchGui extends MTEHatchBaseGui<SuperAdvancedM
     private final Slot[] slots;
     private final VerticalScrollData fluidScroll = new VerticalScrollData();
     private FluidStack selectedFluid;
-    private final GenericSyncValue<FluidStack, ?> selection = GenericSyncValue.builder(FluidStack.class)
-        .getter(() -> selectedFluid)
-        .setter(value -> selectedFluid = GTUtility.copyAmount(1, value))
-        .adapter(ByteBufAdapters.FLUID_STACK)
-        .nullable()
-        .build()
-        .allowC2S();
     private IPanelHandler policyPanel;
 
     public SuperAdvancedMEInputHatchGui(SuperAdvancedMEInputHatch hatch, Slot[] slots) {
         super(hatch);
         this.slots = slots;
+    }
+
+    @Override
+    public void registerSyncValues(PanelSyncManager syncManager) {
+        super.registerSyncValues(syncManager);
+
+        GenericListSyncHandler<Slot> slotSyncHandler = GenericListSyncHandler.<Slot>builder()
+            .getter(() -> GTDataUtils.mapToList(slots, slot -> {
+                if (slot == null) return null;
+                Slot copy = new Slot(slot.config.copy());
+                copy.extracted = slot.extracted == null ? null : slot.extracted.copy();
+                copy.extractedAmount = slot.extractedAmount;
+                return copy;
+            }))
+            .setter(slots2 -> System.arraycopy(slots2.toArray(new Slot[0]), 0, slots, 0, SLOT_COUNT))
+            .adapter(new MTEHatchInputMESlotAdapter())
+            .build();
+        syncManager.syncValue("slots", slotSyncHandler);
+    }
+
+    @Override
+    protected int getBasePanelHeight() {
+        return 238;
+    }
+
+    @Override
+    protected int getBasePanelWidth() {
+        return 366;
     }
 
     @Override
@@ -174,6 +195,12 @@ public class SuperAdvancedMEInputHatchGui extends MTEHatchBaseGui<SuperAdvancedM
         return content;
     }
 
+    private boolean containsSuchStack(FluidStack tStack) {
+        return Stream.of(slots)
+            .filter(Objects::nonNull)
+            .anyMatch(slot -> GTUtility.areFluidsEqual(slot.config, tStack));
+    }
+
     private Grid createFilterSlots(PanelSyncManager syncManager, BooleanSyncValue isAutoPullSyncer) {
         syncManager.registerSlotGroup(FILTER_INV_NAME, FILTER_SLOT_ROW);
 
@@ -243,12 +270,6 @@ public class SuperAdvancedMEInputHatchGui extends MTEHatchBaseGui<SuperAdvancedM
                 GTGuiTextures.OVERLAY_SLOT_ARROW_ME))
             .size(9 * SLOT_SIZE + 4, 4 * SLOT_SIZE)
             .scrollable(fluidScroll);
-    }
-
-    private boolean containsSuchStack(FluidStack tStack) {
-        return Stream.of(slots)
-            .filter(Objects::nonNull)
-            .anyMatch(slot -> GTUtility.areFluidsEqual(slot.config, tStack));
     }
 
     private Flow createMiddleColumn(PanelSyncManager syncManager, ModularPanel panel,
@@ -453,34 +474,6 @@ public class SuperAdvancedMEInputHatchGui extends MTEHatchBaseGui<SuperAdvancedM
         return super.createBottomLeftCornerFlow(panel, syncManager).child(status);
     }
 
-    @Override
-    public void registerSyncValues(PanelSyncManager syncManager) {
-        super.registerSyncValues(syncManager);
-
-        GenericListSyncHandler<Slot> slotSyncHandler = GenericListSyncHandler.<Slot>builder()
-            .getter(() -> GTDataUtils.mapToList(slots, slot -> {
-                if (slot == null) return null;
-                Slot copy = new Slot(slot.config.copy());
-                copy.extracted = slot.extracted == null ? null : slot.extracted.copy();
-                copy.extractedAmount = slot.extractedAmount;
-                return copy;
-            }))
-            .setter(slots2 -> System.arraycopy(slots2.toArray(new Slot[0]), 0, slots, 0, SLOT_COUNT))
-            .adapter(new MTEHatchInputMESlotAdapter())
-            .build();
-        syncManager.syncValue("slots", slotSyncHandler);
-    }
-
-    @Override
-    protected int getBasePanelHeight() {
-        return 238;
-    }
-
-    @Override
-    protected int getBasePanelWidth() {
-        return 366;
-    }
-
     private ModularPanel createPolicyPanel(ModularPanel parent, PanelSyncManager sync) {
         LongSyncValue reserve = new LongSyncValue(() -> {
             FluidPolicy policy = getSelectedPolicy();
@@ -563,6 +556,14 @@ public class SuperAdvancedMEInputHatchGui extends MTEHatchBaseGui<SuperAdvancedM
         }
         return -1;
     }
+
+    private final GenericSyncValue<FluidStack, ?> selection = GenericSyncValue.builder(FluidStack.class)
+        .getter(() -> selectedFluid)
+        .setter(value -> selectedFluid = GTUtility.copyAmount(1, value))
+        .adapter(ByteBufAdapters.FLUID_STACK)
+        .nullable()
+        .build()
+        .allowC2S();
 
     protected class ConfigFluidTank implements IFluidTank {
 

@@ -53,7 +53,7 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
             palette.setMaxStringLength(63);
             palette.setText(WirelessMonitorConfig.palette);
         }
-        // #tr gui.gtneverreset.wireless_settings.page
+        // #tr gtnr.gui.gtneverreset.wireless_settings.page
         // # Display / Colors
         // # zh_CN 显示 / 配色
         buttonList.add(
@@ -63,8 +63,8 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
                 height - 25,
                 100,
                 20,
-                StatCollector.translateToLocal("gui.gtneverreset.wireless_settings.page")));
-        // #tr gui.gtneverreset.wireless_settings.position
+                StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_settings.page")));
+        // #tr gtnr.gui.gtneverreset.wireless_settings.position
         // # Move HUD
         // # zh_CN 调整位置
         buttonList.add(
@@ -74,7 +74,7 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
                 height - 25,
                 100,
                 20,
-                StatCollector.translateToLocal("gui.gtneverreset.wireless_settings.position")));
+                StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_settings.position")));
         buttonList.add(new GuiButton(22, left + 210, height - 25, 100, 20, StatCollector.translateToLocal("gui.done")));
     }
 
@@ -109,18 +109,18 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
     }
 
     private static String styleName(int style) {
-        // #tr gui.gtneverreset.wireless_settings.text
+        // #tr gtnr.gui.gtneverreset.wireless_settings.text
         // # Text
         // # zh_CN 文本
-        if (style == 0) return StatCollector.translateToLocal("gui.gtneverreset.wireless_settings.text");
-        // #tr gui.gtneverreset.wireless_settings.card
+        if (style == 0) return StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_settings.text");
+        // #tr gtnr.gui.gtneverreset.wireless_settings.card
         // # Card
         // # zh_CN 卡片
-        if (style == 1) return StatCollector.translateToLocal("gui.gtneverreset.wireless_settings.card");
-        // #tr gui.gtneverreset.wireless_settings.curve
+        if (style == 1) return StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_settings.card");
+        // #tr gtnr.gui.gtneverreset.wireless_settings.curve
         // # Curve
         // # zh_CN 曲线
-        return StatCollector.translateToLocal("gui.gtneverreset.wireless_settings.curve");
+        return StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_settings.curve");
     }
 
     @Override
@@ -161,21 +161,21 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
-        // #tr gui.gtneverreset.wireless_settings.title
+        // #tr gtnr.gui.gtneverreset.wireless_settings.title
         // # Wireless network HUD
         // # zh_CN 无线电网 HUD
         drawCenteredString(
             fontRendererObj,
-            StatCollector.translateToLocal("gui.gtneverreset.wireless_settings.title"),
+            StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_settings.title"),
             width / 2,
             10,
             0xFFFFFF);
-        // #tr gui.gtneverreset.wireless_settings.hint
+        // #tr gtnr.gui.gtneverreset.wireless_settings.hint
         // # Values: left-click +, right-click -. Rates show net grid change.
         // # zh_CN 数值左键增加、右键减少；功率表示整个电网的净变化。
         drawCenteredString(
             fontRendererObj,
-            StatCollector.translateToLocal("gui.gtneverreset.wireless_settings.hint"),
+            StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_settings.hint"),
             width / 2,
             24,
             0xAAAAAA);
@@ -186,12 +186,12 @@ public final class WirelessMonitorSettingsGui extends GuiScreen {
             fontRendererObj
                 .drawString(StatCollector.translateToLocal(PREFIX + "effect"), width / 2 - 155, 147, 0xFFFFFF);
             effect.drawTextBox();
-            // #tr gui.gtneverreset.wireless_settings.effect_hint
+            // #tr gtnr.gui.gtneverreset.wireless_settings.effect_hint
             // # Prefix only; no text, typing or number rolling. Red = not saved.
             // # zh_CN 仅填特效前缀，不填正文、打字或滚动；红色表示未保存。
             drawCenteredString(
                 fontRendererObj,
-                StatCollector.translateToLocal("gui.gtneverreset.wireless_settings.effect_hint"),
+                StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_settings.effect_hint"),
                 width / 2,
                 181,
                 0xAAAAAA);

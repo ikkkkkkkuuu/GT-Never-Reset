@@ -96,10 +96,10 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
 
     @Override
     protected String titleKey() {
-        // #tr radialmenu.menu.title
+        // #tr gtnr.radialmenu.menu.title
         // # Menu settings
         // # zh_CN 菜单设置
-        return "radialmenu.menu.title";
+        return "gtnr.radialmenu.menu.title";
     }
 
     @Override
@@ -141,7 +141,7 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
 
         if (toolBelt) {
             iconRowTop = y;
-            String iconLabel = icon == null || icon.id == null ? I18n.format("radialmenu.editor.pickIcon")
+            String iconLabel = icon == null || icon.id == null ? I18n.format("gtnr.radialmenu.editor.pick_icon")
                 : RadialUi.fit(icon.id, controlWidth - RadialUi.ROW - 16);
             this.buttonList.add(
                 new GuiButton(
@@ -151,7 +151,7 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
                     controlWidth - RadialUi.ROW - RadialUi.GAP,
                     RadialUi.ROW,
                     iconLabel));
-            tooltip(ID_ICON, describe("radialmenu.editor.icon.tip"));
+            tooltip(ID_ICON, describe("gtnr.radialmenu.editor.icon.tooltip"));
             y += RadialUi.STEP;
         }
 
@@ -208,7 +208,7 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
                     clear.enabled = current != null && !current.trim()
                         .isEmpty();
                     this.buttonList.add(clear);
-                    tooltip(ID_CLEAR_BASE + index, describe("radialmenu.profileColors.clear.tip"));
+                    tooltip(ID_CLEAR_BASE + index, describe("gtnr.radialmenu.profile_colors.clear.tooltip"));
                 }
                 if (!editable) {
                     tooltip(ID_FIELD_BASE + index, RadialFieldControls.colorOffTip(field.key));
@@ -295,18 +295,18 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
             this.buttonList.add(delete);
             this.buttonList.add(up);
             this.buttonList.add(down);
-            // #tr radialmenu.menu.move.tip
+            // #tr gtnr.radialmenu.menu.move.tooltip
             // # Move this entry into another submenu
             // # zh_CN 将此条目移动到另一个子菜单
-            tooltip(ID_MOVE_BASE + i, describe("radialmenu.menu.move.tip"));
-            // #tr radialmenu.menu.copy.tip
+            tooltip(ID_MOVE_BASE + i, describe("gtnr.radialmenu.menu.move.tooltip"));
+            // #tr gtnr.radialmenu.menu.copy.tooltip
             // # Duplicate this entry
             // # zh_CN 复制此条目
-            tooltip(ID_COPY_BASE + i, describe("radialmenu.menu.copy.tip"));
-            // #tr radialmenu.menu.remove.tip
+            tooltip(ID_COPY_BASE + i, describe("gtnr.radialmenu.menu.copy.tooltip"));
+            // #tr gtnr.radialmenu.menu.remove.tooltip
             // # Remove this entry. Changes take effect when saved
             // # zh_CN 移除此条目，保存后生效
-            tooltip(ID_DELETE_BASE + i, describe("radialmenu.menu.remove.tip"));
+            tooltip(ID_DELETE_BASE + i, describe("gtnr.radialmenu.menu.remove.tooltip"));
             if (toolBelt || child.isBuiltIn()) {
                 tooltip(ID_COPY_BASE + i, RadialEditorRestrictions.builtInTip());
                 tooltip(ID_DELETE_BASE + i, RadialEditorRestrictions.builtInTip());
@@ -328,7 +328,7 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
         y += pendingMoves.size() * 10;
 
         setContentHeight(y - scrolledTop() + RadialUi.PAD);
-        addBottomBar("radialmenu.editor.save", null, "gui.cancel");
+        addBottomBar("gtnr.radialmenu.editor.save", null, "gui.cancel");
         if (toolBelt) tooltip(ID_PRIMARY, RadialEditorRestrictions.resizeTip());
     }
 
@@ -362,7 +362,7 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
             public String get() {
                 return draft.getString(field.key, "");
             }
-        }, RadialFieldControls.inheritedColor(field.key), I18n.format("radialmenu.editor.inherit"));
+        }, RadialFieldControls.inheritedColor(field.key), I18n.format("gtnr.radialmenu.editor.inherit"));
     }
 
     private static String describe(String key) {
@@ -617,26 +617,29 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
         int left = contentLeft();
 
         if (isVisibleRow(generalSectionTop)) {
-            // #tr radialmenu.menu.sectionGeneral
+            // #tr gtnr.radialmenu.menu.section_general
             // # Appearance
             // # zh_CN 外观
-            RadialUi
-                .sectionHeader(I18n.format("radialmenu.menu.sectionGeneral"), left, generalSectionTop, contentRight());
+            RadialUi.sectionHeader(
+                I18n.format("gtnr.radialmenu.menu.section_general"),
+                left,
+                generalSectionTop,
+                contentRight());
         }
 
         int y = generalSectionTop + 14;
 
         if (isVisibleRow(y)) {
-            // #tr radialmenu.menu.name
+            // #tr gtnr.radialmenu.menu.name
             // # Name
             // # zh_CN 名称
-            RadialUi.rowLabel(I18n.format("radialmenu.menu.name"), left, y);
+            RadialUi.rowLabel(I18n.format("gtnr.radialmenu.menu.name"), left, y);
             titleField.drawTextBox();
         }
         y += RadialUi.STEP;
 
         if (toolBelt && isVisibleRow(iconRowTop)) {
-            RadialUi.rowLabel(I18n.format("radialmenu.editor.icon"), left, iconRowTop);
+            RadialUi.rowLabel(I18n.format("gtnr.radialmenu.editor.icon"), left, iconRowTop);
             int iconLeft = left + RadialUi.LABEL_WIDTH + RadialUi.GAP;
             RadialUi.frame(
                 iconLeft,
@@ -664,19 +667,20 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
         }
 
         if (isVisibleRow(entriesSectionTop)) {
-            // #tr radialmenu.menu.entries
+            // #tr gtnr.radialmenu.menu.entries
             // # Entries
             // # zh_CN 条目
-            RadialUi.sectionHeader(I18n.format("radialmenu.menu.entries"), left, entriesSectionTop, contentRight());
+            RadialUi
+                .sectionHeader(I18n.format("gtnr.radialmenu.menu.entries"), left, entriesSectionTop, contentRight());
         }
 
         if (rowNodes.isEmpty() && isVisibleRow(entriesSectionTop + 14)) {
             this.fontRendererObj
-                // #tr radialmenu.menu.noEntries
+                // #tr gtnr.radialmenu.menu.no_entries
                 // # This menu has no entries yet
                 // # zh_CN 此菜单还没有任何条目
                 .drawString(
-                    I18n.format("radialmenu.menu.noEntries"),
+                    I18n.format("gtnr.radialmenu.menu.no_entries"),
                     left,
                     entriesSectionTop + 18,
                     RadialUi.TEXT_MUTED);
@@ -707,7 +711,7 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
 
             IconRenderer.draw(child.icon, iconLeft, position[1] + 2);
 
-            String title = child.title == null || child.title.isEmpty() ? I18n.format("radialmenu.menu.untitled")
+            String title = child.title == null || child.title.isEmpty() ? I18n.format("gtnr.radialmenu.menu.untitled")
                 : child.title;
             this.fontRendererObj.drawString(
                 RadialUi.fit(title, rowButtonsLeft() - iconLeft - 24),
@@ -735,10 +739,12 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
                 continue;
             }
             this.fontRendererObj.drawString(
-                // #tr radialmenu.menu.movePending
+                // #tr gtnr.radialmenu.menu.move_pending
                 // # %s moves to %s when you save
                 // # zh_CN %s 将在保存时移动到 %s
-                RadialUi.fit(I18n.format("radialmenu.menu.movePending", name(move[0]), name(move[1])), contentWidth()),
+                RadialUi.fit(
+                    I18n.format("gtnr.radialmenu.menu.move_pending", name(move[0]), name(move[1])),
+                    contentWidth()),
                 contentLeft(),
                 y + 2,
                 RadialUi.TEXT_MUTED);
@@ -750,7 +756,7 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
         if (node == ProfileManager.active().root) {
             return ProfileManager.activeName();
         }
-        return node.title == null || node.title.isEmpty() ? I18n.format("radialmenu.menu.untitled") : node.title;
+        return node.title == null || node.title.isEmpty() ? I18n.format("gtnr.radialmenu.menu.untitled") : node.title;
     }
 
     private void scrollTowardsDrag() {

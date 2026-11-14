@@ -5,7 +5,7 @@ import java.io.File;
 import net.minecraft.client.gui.inventory.GuiContainer;
 
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 import com.xyp.gtneverreset.config.ClientConfig;
 import com.xyp.gtneverreset.loader.ConfigLoader;
 
@@ -29,7 +29,7 @@ public final class NEIWirelessTerminalConfig implements IConfigureNEI {
 
             @Override
             public boolean hideItemPanelSlot(GuiContainer gui, int x, int y, int width, int height) {
-                return gui instanceof GuiQuickEncodingTerminal terminal
+                return gui instanceof QuickEncodingTerminalGui terminal
                     && terminal.hideItemPanelSlot(x, y, width, height);
             }
         });
@@ -76,9 +76,9 @@ public final class NEIWirelessTerminalConfig implements IConfigureNEI {
     }
 
     private static void register(String identifier) {
-        if (!API.hasGuiOverlayHandler(GuiQuickEncodingTerminal.class, identifier)) {
+        if (!API.hasGuiOverlayHandler(QuickEncodingTerminalGui.class, identifier)) {
             API.registerGuiOverlayHandler(
-                GuiQuickEncodingTerminal.class,
+                QuickEncodingTerminalGui.class,
                 QuickTerminalRecipeTransferHandler.INSTANCE,
                 identifier);
         }

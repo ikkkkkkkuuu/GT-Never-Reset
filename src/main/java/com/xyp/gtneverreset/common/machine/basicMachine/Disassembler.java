@@ -76,40 +76,40 @@ public final class Disassembler extends MTEBasicMachineWithRecipe {
 
     @Override
     public String[] getDescription() {
-        // #tr gtneverreset.disassembler.tier.1.description
+        // #tr gtnr.disassembler.tier.1.description
         // # Disassembles Machines up to %sLow Voltage
         // # zh_CN 最高可拆解%sLV{\\RESET}机器
-        // #tr gtneverreset.disassembler.tier.2.description
+        // #tr gtnr.disassembler.tier.2.description
         // # Disassembles Machines up to %sMedium Voltage
         // # zh_CN 最高可拆解%sMV{\\RESET}机器
-        // #tr gtneverreset.disassembler.tier.3.description
+        // #tr gtnr.disassembler.tier.3.description
         // # Disassembles Machines up to %sHigh Voltage
         // # zh_CN 最高可拆解%sHV{\\RESET}机器
-        // #tr gtneverreset.disassembler.tier.4.description
+        // #tr gtnr.disassembler.tier.4.description
         // # Disassembles Machines up to %sExtreme Voltage
         // # zh_CN 最高可拆解%sEV{\\RESET}机器
-        // #tr gtneverreset.disassembler.tier.5.description
+        // #tr gtnr.disassembler.tier.5.description
         // # Disassembles Machines up to %sInsane Voltage
         // # zh_CN 最高可拆解%sIV{\\RESET}机器
-        // #tr gtneverreset.disassembler.tier.6.description
+        // #tr gtnr.disassembler.tier.6.description
         // # Disassembles Machines up to %sLudicrous Voltage
         // # zh_CN 最高可拆解%sLuV{\\RESET}机器
-        // #tr gtneverreset.disassembler.tier.7.description
+        // #tr gtnr.disassembler.tier.7.description
         // # Disassembles Machines up to %sZPM Voltage
         // # zh_CN 最高可拆解%sZPM{\\RESET}机器
-        // #tr gtneverreset.disassembler.tier.8.description
+        // #tr gtnr.disassembler.tier.8.description
         // # Disassembles Machines up to %sUltimate Voltage
         // # zh_CN 最高可拆解%sUV{\\RESET}机器
-        // #tr gtneverreset.disassembler.tier.9.description
+        // #tr gtnr.disassembler.tier.9.description
         // # Disassembles Machines up to %sUltimate High Voltage
         // # zh_CN 最高可拆解%sUHV{\\RESET}机器
-        // #tr gtneverreset.disassembler.tier.10.description
+        // #tr gtnr.disassembler.tier.10.description
         // # Disassembles Machines up to %sUltimate Extreme Voltage
         // # zh_CN 最高可拆解%sUEV{\\RESET}机器
-        // #tr gtneverreset.disassembler.tier.11.description
+        // #tr gtnr.disassembler.tier.11.description
         // # Disassembles Machines up to %sUltimate Insane Voltage
         // # zh_CN 最高可拆解%sUIV{\\RESET}机器
-        // #tr gtneverreset.disassembler.tier.12.description
+        // #tr gtnr.disassembler.tier.12.description
         // # Disassembles Machines up to %sUltimate Mega Voltage
         // # zh_CN 最高可拆解%sUMV{\\RESET}机器
         String tierDescription = StatCollector.translateToLocalFormatted(mName + ".description", getLegacyTierColor());

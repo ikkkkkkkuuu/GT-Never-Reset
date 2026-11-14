@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.TerminalItemRequestPacket;
@@ -52,7 +52,7 @@ public abstract class TerminalPanelWidgetMixin {
     }
 
     private static boolean gtneverreset$canRequestFromScreen(GuiScreen screen) {
-        if (screen instanceof GuiQuickEncodingTerminal) return true;
+        if (screen instanceof QuickEncodingTerminalGui) return true;
         if (!(screen instanceof AEBaseGui)) return screen instanceof GuiContainer;
         return screen instanceof AEBaseGui gui && gui.inventorySlots instanceof AEBaseContainer container
             && container.getTarget() instanceof IGuiItemObject host

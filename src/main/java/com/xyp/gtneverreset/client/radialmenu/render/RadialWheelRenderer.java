@@ -556,18 +556,18 @@ public final class RadialWheelRenderer {
             line.append("   ")
                 .append(EnumChatFormatting.GOLD)
                 .append(EnumChatFormatting.BOLD)
-                // #tr radialmenu.wheel.editing
+                // #tr gtnr.radialmenu.wheel.editing
                 // # EDIT
                 // # zh_CN 编辑中
-                .append(I18n.format("radialmenu.wheel.editing"));
+                .append(I18n.format("gtnr.radialmenu.wheel.editing"));
         } else if (scripted) {
             line.append("   ")
                 .append(EnumChatFormatting.AQUA)
                 .append(EnumChatFormatting.BOLD)
-                // #tr radialmenu.wheel.scripted
+                // #tr gtnr.radialmenu.wheel.scripted
                 // # SCRIPT
                 // # zh_CN 脚本
-                .append(I18n.format("radialmenu.wheel.scripted"));
+                .append(I18n.format("gtnr.radialmenu.wheel.scripted"));
         }
 
         String text = line.toString();
@@ -580,10 +580,10 @@ public final class RadialWheelRenderer {
 
     public static void drawCenterHint(MenuNode menu, int centerX, int centerY, int hoveredSlot) {
         FontRenderer font = Minecraft.getMinecraft().fontRenderer;
-        // #tr radialmenu.wheel.menuSettings
+        // #tr gtnr.radialmenu.wheel.menu_settings
         // # Menu settings
         // # zh_CN 菜单设置
-        String text = I18n.format("radialmenu.wheel.menuSettings");
+        String text = I18n.format("gtnr.radialmenu.wheel.menu_settings");
 
         int lines = labelLines(menu, hoveredSlot).size();
         int y = lines == 0 ? centerY - font.FONT_HEIGHT / 2 : centerY + lines * font.FONT_HEIGHT / 2 + 1;

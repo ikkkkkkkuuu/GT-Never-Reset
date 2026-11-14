@@ -44,8 +44,8 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
 
     private static final int BASE_PARALLELS = 64;
     private static final int RECIPE_THREADS = 10;
+    private static final String STRUCTURE_NAME = "large_ore_processor";
     private static final String STRUCTURE_PIECE = "main";
-    private static final String[][] STRUCTURE_SHAPE = MultiblockStructureLoader.load("large_ore_processor");
     private static final int HORIZONTAL_OFFSET = 1;
     private static final int VERTICAL_OFFSET = 2;
     private static final int DEPTH_OFFSET = 0;
@@ -60,6 +60,8 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
     }
 
     private int casingCount;
+
+    private IStructureDefinition<LargeOreProcessor> structureDefinition;
 
     public LargeOreProcessor(int id, String name, String regionalName) {
         super(id, name, regionalName);
@@ -76,8 +78,9 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
 
     @Override
     public IStructureDefinition<LargeOreProcessor> getStructureDefinition() {
-        return StructureDefinition.<LargeOreProcessor>builder()
-            .addShape(STRUCTURE_PIECE, transpose(STRUCTURE_SHAPE))
+        if (structureDefinition != null) return structureDefinition;
+        structureDefinition = StructureDefinition.<LargeOreProcessor>builder()
+            .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load(STRUCTURE_NAME)))
             .addElement(
                 'A',
                 ofChain(
@@ -90,6 +93,7 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
                         .build(),
                     onElementPass(machine -> ++machine.casingCount, ofBlock(GregTechAPI.sBlockCasings2, CASING_META))))
             .build();
+        return structureDefinition;
     }
 
     @Override
@@ -127,6 +131,11 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
     }
 
     @Override
+    public RecipeMap<?> getRecipeMap() {
+        return GTNRRecipeMaps.ORE_PROCESSING_RECIPES;
+    }
+
+    @Override
     protected RecipeThreadProcessingLogic createRecipeThreadProcessingLogic() {
         return new OreRecipeThreadProcessingLogic();
     }
@@ -143,13 +152,13 @@ public class LargeOreProcessor extends GTNRMultiBlockBase<LargeOreProcessor> imp
     }
 
     @Override
-    public String getTooltipPath() {
-        return "large-ore-processor";
+    public String getLocalNameKey() {
+        return "gtnr.machine.large_ore_processor.name";
     }
 
     @Override
-    public RecipeMap<?> getRecipeMap() {
-        return GTNRRecipeMaps.ORE_PROCESSING_RECIPES;
+    public String getTooltipPath() {
+        return "large-ore-processor";
     }
 
     @Override

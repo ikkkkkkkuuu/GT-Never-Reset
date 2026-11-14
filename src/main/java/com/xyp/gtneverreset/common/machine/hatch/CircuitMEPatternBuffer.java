@@ -197,13 +197,13 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
     public String[] getInfoData() {
         String[] lines = super.getInfoData();
         if (pendingRefunds.isEmpty()) return lines;
-        // #tr tooltip.gtneverreset.circuit_buffer.refunds
+        // #tr gtnr.tooltip.gtneverreset.circuit_buffer.refunds
         // # Pending input returns: %s buffers; reconnect ME to return them
         // # zh_CN 待退还原料：%s 份缓存；接回 ME 网络后自动退还
         return ArrayUtils.add(
             lines,
             StatCollector
-                .translateToLocalFormatted("tooltip.gtneverreset.circuit_buffer.refunds", pendingRefunds.size()));
+                .translateToLocalFormatted("gtnr.tooltip.gtneverreset.circuit_buffer.refunds", pendingRefunds.size()));
     }
 
     @Override
@@ -213,23 +213,23 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
 
     /** Circuit-specific lines; base lines come first and product output is appended last. */
     protected String[] getCircuitDescription() {
-        // #tr tooltip.gtneverreset.circuit_buffer.virtual
+        // #tr gtnr.tooltip.gtneverreset.circuit_buffer.virtual
         // # Provides each pattern's circuit and reusable molds on its own, without asking ME
         // # zh_CN 每张样板的电路和可重复使用的模具都由它自己提供，不用向 ME 要
-        String circuit = StatCollector.translateToLocal("tooltip.gtneverreset.circuit_buffer.virtual");
-        // #tr tooltip.gtneverreset.circuit_buffer.capacity
+        String circuit = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.circuit_buffer.virtual");
+        // #tr gtnr.tooltip.gtneverreset.circuit_buffer.capacity
         // # Each pattern slot holds up to 64 item types and 64 fluid types, 2^63 - 1 of each
         // # zh_CN 每个样板槽最多存 64 种物品和 64 种流体，每种最多 2^63 - 1
-        String capacity = StatCollector.translateToLocal("tooltip.gtneverreset.circuit_buffer.capacity");
-        // #tr tooltip.gtneverreset.circuit_buffer.recipe_view
+        String capacity = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.circuit_buffer.capacity");
+        // #tr gtnr.tooltip.gtneverreset.circuit_buffer.recipe_view
         // # A recipe check can draw up to 2^31 - 1 of each ingredient; the rest stays buffered
         // # zh_CN 配方检查时每种原料最多取出 2^31 - 1，剩下的继续留在缓存里
-        String recipeView = StatCollector.translateToLocal("tooltip.gtneverreset.circuit_buffer.recipe_view");
+        String recipeView = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.circuit_buffer.recipe_view");
         String mirror = getMirrorDescription();
-        // #tr tooltip.gtneverreset.circuit_buffer.wildcard
+        // #tr gtnr.tooltip.gtneverreset.circuit_buffer.wildcard
         // # Wildcard patterns expand automatically; a slot only switches recipes after its buffer is empty
         // # zh_CN 通配样板会自动展开；某个槽的缓存清空后，才会换到下一条配方
-        String wildcard = StatCollector.translateToLocal("tooltip.gtneverreset.circuit_buffer.wildcard");
+        String wildcard = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.circuit_buffer.wildcard");
         return new String[] { circuit, capacity, recipeView, mirror, wildcard };
     }
 

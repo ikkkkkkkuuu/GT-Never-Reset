@@ -59,18 +59,45 @@ public class SuperAdvancedMEInputBusGui extends MTEHatchBaseGui<SuperAdvancedMEI
     private final Slot[] slots;
     private final VerticalScrollData itemScroll = new VerticalScrollData();
     private ItemStack selectedItem;
-    private final GenericSyncValue<ItemStack, ?> selection = GenericSyncValue.builder(ItemStack.class)
-        .getter(() -> selectedItem)
-        .setter(value -> selectedItem = GTUtility.copyAmount(1, value))
-        .adapter(ByteBufAdapters.ITEM_STACK)
-        .nullable()
-        .build()
-        .allowC2S();
     private IPanelHandler policyPanel;
 
     public SuperAdvancedMEInputBusGui(SuperAdvancedMEInputBus hatch, Slot[] slots) {
         super(hatch);
         this.slots = slots;
+    }
+
+    @Override
+    public void registerSyncValues(PanelSyncManager syncManager) {
+        super.registerSyncValues(syncManager);
+        syncManager.registerSlotGroup("item_inv", 1);
+
+        GenericListSyncHandler<Slot> slotSyncHandler = GenericListSyncHandler.<Slot>builder()
+            .getter(() -> GTDataUtils.mapToList(slots, slot -> {
+                if (slot == null) return null;
+                Slot copy = new Slot(slot.config.copy());
+                copy.extracted = slot.extracted == null ? null : slot.extracted.copy();
+                copy.extractedAmount = slot.extractedAmount;
+                return copy;
+            }))
+            .setter(slots2 -> System.arraycopy(slots2.toArray(new Slot[0]), 0, slots, 0, SLOT_COUNT))
+            .adapter(new MTEHatchInputBusMESlotAdapter())
+            .build();
+        syncManager.syncValue("slots", slotSyncHandler);
+    }
+
+    @Override
+    protected int getBasePanelHeight() {
+        return 238;
+    }
+
+    @Override
+    protected boolean supportsBottomRowOverlap() {
+        return false;
+    }
+
+    @Override
+    protected int getBasePanelWidth() {
+        return 366;
     }
 
     @Override
@@ -450,40 +477,6 @@ public class SuperAdvancedMEInputBusGui extends MTEHatchBaseGui<SuperAdvancedMEI
         return super.createBottomLeftCornerFlow(panel, syncManager).child(status);
     }
 
-    @Override
-    public void registerSyncValues(PanelSyncManager syncManager) {
-        super.registerSyncValues(syncManager);
-        syncManager.registerSlotGroup("item_inv", 1);
-
-        GenericListSyncHandler<Slot> slotSyncHandler = GenericListSyncHandler.<Slot>builder()
-            .getter(() -> GTDataUtils.mapToList(slots, slot -> {
-                if (slot == null) return null;
-                Slot copy = new Slot(slot.config.copy());
-                copy.extracted = slot.extracted == null ? null : slot.extracted.copy();
-                copy.extractedAmount = slot.extractedAmount;
-                return copy;
-            }))
-            .setter(slots2 -> System.arraycopy(slots2.toArray(new Slot[0]), 0, slots, 0, SLOT_COUNT))
-            .adapter(new MTEHatchInputBusMESlotAdapter())
-            .build();
-        syncManager.syncValue("slots", slotSyncHandler);
-    }
-
-    @Override
-    protected int getBasePanelHeight() {
-        return 238;
-    }
-
-    @Override
-    protected boolean supportsBottomRowOverlap() {
-        return false;
-    }
-
-    @Override
-    protected int getBasePanelWidth() {
-        return 366;
-    }
-
     private ModularPanel createPolicyPanel(ModularPanel parent, PanelSyncManager sync) {
         LongSyncValue reserve = new LongSyncValue(() -> {
             ItemPolicy policy = getSelectedPolicy();
@@ -564,5 +557,13 @@ public class SuperAdvancedMEInputBusGui extends MTEHatchBaseGui<SuperAdvancedMEI
         }
         return -1;
     }
+
+    private final GenericSyncValue<ItemStack, ?> selection = GenericSyncValue.builder(ItemStack.class)
+        .getter(() -> selectedItem)
+        .setter(value -> selectedItem = GTUtility.copyAmount(1, value))
+        .adapter(ByteBufAdapters.ITEM_STACK)
+        .nullable()
+        .build()
+        .allowC2S();
 
 }

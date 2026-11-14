@@ -13,10 +13,20 @@ import appeng.api.networking.crafting.ICraftingCPU;
 import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.security.PlayerSource;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.PlayerEvent;
 
 public final class QuantumCraftingMode {
 
+    public static final QuantumCraftingMode INSTANCE = new QuantumCraftingMode();
     private static final Set<UUID> ENABLED_PLAYERS = ConcurrentHashMap.newKeySet();
+
+    private QuantumCraftingMode() {}
+
+    @SubscribeEvent
+    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        onPlayerLoggedOut(event.player);
+    }
 
     public static void setEnabled(EntityPlayer player, boolean enabled) {
         if (enabled) {

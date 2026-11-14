@@ -23,7 +23,6 @@ import com.xyp.gtnrlib.mod.ModList;
 
 import baubles.api.BaubleType;
 import baubles.api.IBauble;
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -41,7 +40,6 @@ public final class HarvestRing extends Item implements IBauble {
         setTextureName("gtneverreset:harvest_ring");
         setMaxStackSize(1);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
-        GameRegistry.registerItem(this, "HarvestRing");
     }
 
     @Override
@@ -141,9 +139,9 @@ public final class HarvestRing extends Item implements IBauble {
     @Override
     @SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, EntityPlayer player, List<String> lines, boolean advanced) {
-        // #tr tooltip.gtnr.harvest_ring
+        // #tr gtnr.tooltip.harvest_ring
         // # Harvests Crops NH and vanilla crops within 8 horizontal and 3 vertical blocks. Sneak to pause.
         // # zh_CN 装备于 Baubles 戒指栏：收获 Crops NH 作物架、小麦、胡萝卜、马铃薯和地狱疣。水平半径8格、上下3格，潜行暂停。
-        lines.add(StatCollector.translateToLocal("tooltip.gtnr.harvest_ring"));
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.harvest_ring"));
     }
 }

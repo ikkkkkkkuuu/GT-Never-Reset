@@ -6,16 +6,15 @@ import java.util.UUID;
 import net.minecraft.client.Minecraft;
 
 import com.xyp.gtneverreset.client.wireless.WirelessMonitorHud;
+import com.xyp.gtnrlib.network.ClientboundPacket;
 
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 
 /** Exact balance and server tick, with a request token to discard replies from an earlier HUD session. */
-public final class WirelessMonitorSnapshotPacket implements IMessage {
+public final class WirelessMonitorSnapshotPacket extends ClientboundPacket {
 
     private static final int MAX_ENERGY_BYTES = 4096;
     public long requestId;
@@ -33,7 +32,7 @@ public final class WirelessMonitorSnapshotPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buffer) {
+    protected void read(ByteBuf buffer) {
         requestId = buffer.readLong();
         tick = buffer.readLong();
         owner = new UUID(buffer.readLong(), buffer.readLong());
@@ -48,7 +47,7 @@ public final class WirelessMonitorSnapshotPacket implements IMessage {
     }
 
     @Override
-    public void toBytes(ByteBuf buffer) {
+    protected void write(ByteBuf buffer) {
         byte[] bytes = energy.toByteArray();
         if (bytes.length > MAX_ENERGY_BYTES || energy.signum() < 0) {
             throw new IllegalArgumentException("Invalid wireless energy");
@@ -61,10 +60,16 @@ public final class WirelessMonitorSnapshotPacket implements IMessage {
         buffer.writeBytes(bytes);
     }
 
+    @Override
     @SideOnly(Side.CLIENT)
-    private void handleClient(MessageContext context) {
-        Minecraft minecraft = Minecraft.getMinecraft();
-        var connection = context.getClientHandler();
+    public void handleClient(Minecraft minecraft) {
+        handleClient(minecraft, null);
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public void handleClient(Minecraft minecraft, MessageContext context) {
+        var connection = context == null ? minecraft.getNetHandler() : context.getClientHandler();
         minecraft.func_152344_a(() -> {
             if (minecraft.getNetHandler() == connection && minecraft.theWorld != null) {
                 WirelessMonitorHud.INSTANCE.receive(this, connection);
@@ -72,12 +77,4 @@ public final class WirelessMonitorSnapshotPacket implements IMessage {
         });
     }
 
-    public static final class Handler implements IMessageHandler<WirelessMonitorSnapshotPacket, IMessage> {
-
-        @Override
-        public IMessage onMessage(WirelessMonitorSnapshotPacket message, MessageContext context) {
-            message.handleClient(context);
-            return null;
-        }
-    }
 }

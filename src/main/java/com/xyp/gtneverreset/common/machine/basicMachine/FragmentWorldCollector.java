@@ -122,22 +122,22 @@ public final class FragmentWorldCollector extends MTEBasicMachine {
 
     private static String[] description() {
         return new String[] {
-            // #tr tooltip.gtnr.fragment_world_collector.resources
+            // #tr gtnr.tooltip.fragment_world_collector.resources
             // # Collects resources selected by a dimension display block and circuit
             // # zh_CN 使用维度展示方块和电路选择采集资源
-            StatCollector.translateToLocal("tooltip.gtnr.fragment_world_collector.resources"),
-            // #tr tooltip.gtnr.fragment_world_collector.dimension
+            StatCollector.translateToLocal("gtnr.tooltip.fragment_world_collector.resources"),
+            // #tr gtnr.tooltip.fragment_world_collector.dimension
             // # The dimension block is not consumed; works in any dimension
             // # zh_CN 不消耗维度方块，可在任意维度运行
-            StatCollector.translateToLocal("tooltip.gtnr.fragment_world_collector.dimension"),
-            // #tr tooltip.gtnr.fragment_world_collector.drill
+            StatCollector.translateToLocal("gtnr.tooltip.fragment_world_collector.dimension"),
+            // #tr gtnr.tooltip.fragment_world_collector.drill
             // # Fluid collection requires a drill head with a chance of consumption
             // # zh_CN 流体采集需要钻头，钻头有概率消耗
-            StatCollector.translateToLocal("tooltip.gtnr.fragment_world_collector.drill"),
-            // #tr tooltip.gtnr.fragment_world_collector.power
+            StatCollector.translateToLocal("gtnr.tooltip.fragment_world_collector.drill"),
+            // #tr gtnr.tooltip.fragment_world_collector.power
             // # Uses 8 EU/t; processing time follows the selected recipe
             // # zh_CN 耗电 8 EU/t，耗时取决于所选配方
-            StatCollector.translateToLocal("tooltip.gtnr.fragment_world_collector.power") };
+            StatCollector.translateToLocal("gtnr.tooltip.fragment_world_collector.power") };
     }
 
     private ITexture[] overlay(byte color, IIconContainer icon) {

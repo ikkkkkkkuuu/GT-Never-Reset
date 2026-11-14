@@ -3,11 +3,11 @@ package com.xyp.gtneverreset.common.packet;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.xyp.gtneverreset.common.wireless.WirelessAutoConnect;
+import com.xyp.gtnrlib.network.ServerboundPacket;
 
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
-public final class ToggleWirelessCardPacket implements IMessage {
+public final class ToggleWirelessCardPacket extends ServerboundPacket {
 
     private boolean heldOnly;
     private int slot;
@@ -24,7 +24,7 @@ public final class ToggleWirelessCardPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buffer) {
+    protected void read(ByteBuf buffer) {
         if (buffer.readableBytes() != 4) throw new IllegalArgumentException("Invalid wireless card payload length");
         heldOnly = buffer.readBoolean();
         slot = buffer.readByte();
@@ -35,14 +35,15 @@ public final class ToggleWirelessCardPacket implements IMessage {
     }
 
     @Override
-    public void toBytes(ByteBuf buffer) {
+    protected void write(ByteBuf buffer) {
         buffer.writeBoolean(heldOnly);
         buffer.writeByte(slot);
         buffer.writeBoolean(visualisation);
         buffer.writeBoolean(backwards);
     }
 
-    public void handle(EntityPlayerMP player) {
+    @Override
+    public void handleServer(EntityPlayerMP player) {
         if (visualisation) WirelessAutoConnect.cycleVisualisation(player, heldOnly, slot, backwards);
         else WirelessAutoConnect.toggle(player);
     }

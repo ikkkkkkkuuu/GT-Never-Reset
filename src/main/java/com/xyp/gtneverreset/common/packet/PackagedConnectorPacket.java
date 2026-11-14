@@ -7,13 +7,13 @@ import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
 import com.xyp.gtneverreset.common.item.items.ItemWirelessConnector;
+import com.xyp.gtnrlib.network.ServerboundPacket;
 
 import cpw.mods.fml.common.eventhandler.Event;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
 /** The request contains only the hit position; selection, ownership and sneak state come from the server. */
-public final class PackagedConnectorPacket implements IMessage {
+public final class PackagedConnectorPacket extends ServerboundPacket {
 
     private int x, y, z, face;
 
@@ -27,7 +27,7 @@ public final class PackagedConnectorPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buffer) {
+    protected void read(ByteBuf buffer) {
         x = buffer.readInt();
         y = buffer.readInt();
         z = buffer.readInt();
@@ -35,39 +35,39 @@ public final class PackagedConnectorPacket implements IMessage {
     }
 
     @Override
-    public void toBytes(ByteBuf buffer) {
+    protected void write(ByteBuf buffer) {
         buffer.writeInt(x);
         buffer.writeInt(y);
         buffer.writeInt(z);
         buffer.writeByte(face);
     }
 
-    public static void handle(PackagedConnectorPacket message, EntityPlayerMP player) {
+    @Override
+    public void handleServer(EntityPlayerMP player) {
         ItemStack held = player.getHeldItem();
         var world = player.getServerForPlayer();
         if (player.isDead || held == null
             || !(held.getItem() instanceof ItemWirelessConnector)
-            || message.face > 5
-            || message.y < 0
-            || message.y >= world.getHeight()
+            || this.face > 5
+            || this.y < 0
+            || this.y >= world.getHeight()
             || !world.getChunkProvider()
-                .chunkExists(message.x >> 4, message.z >> 4))
+                .chunkExists(this.x >> 4, this.z >> 4))
             return;
         double reach = player.theItemInWorldManager.getBlockReachDistance() + 1;
-        if (player.getDistanceSq(message.x + .5, message.y + .5, message.z + .5) > reach * reach
-            || MinecraftServer.getServer()
-                .isBlockProtected(world, message.x, message.y, message.z, player)
-            || !player.canPlayerEdit(message.x, message.y, message.z, message.face, held)) return;
+        if (player.getDistanceSq(this.x + .5, this.y + .5, this.z + .5) > reach * reach || MinecraftServer.getServer()
+            .isBlockProtected(world, this.x, this.y, this.z, player)
+            || !player.canPlayerEdit(this.x, this.y, this.z, this.face, held)) return;
         PlayerInteractEvent event = ForgeEventFactory.onPlayerInteract(
             player,
             PlayerInteractEvent.Action.RIGHT_CLICK_BLOCK,
-            message.x,
-            message.y,
-            message.z,
-            message.face,
+            this.x,
+            this.y,
+            this.z,
+            this.face,
             world);
         if (!event.isCanceled() && event.useItem != Event.Result.DENY) {
-            ItemWirelessConnector.use(player, message.x, message.y, message.z, message.face);
+            ItemWirelessConnector.use(player, this.x, this.y, this.z, this.face);
             player.inventory.markDirty();
             player.inventoryContainer.detectAndSendChanges();
         }

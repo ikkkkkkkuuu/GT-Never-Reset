@@ -93,26 +93,26 @@ public final class FluxConnectorGui {
         panel.child(pages);
         int[] upstreamTabs = { 0, 1, 3, 4, 6 };
         String[] tabNames = {
-            // #tr flux.gui.home
+            // #tr gtnr.flux.gui.home
             // # Home
             // # zh_CN 主页
-            tr("flux.gui.home"),
-            // #tr flux.gui.selection
+            tr("gtnr.flux.gui.home"),
+            // #tr gtnr.flux.gui.selection
             // # Network Selection
             // # zh_CN 网络选择
-            tr("flux.gui.selection"),
-            // #tr flux.gui.connections
+            tr("gtnr.flux.gui.selection"),
+            // #tr gtnr.flux.gui.connections
             // # Connections
             // # zh_CN 连接
-            tr("flux.gui.connections"),
-            // #tr flux.gui.statistics
+            tr("gtnr.flux.gui.connections"),
+            // #tr gtnr.flux.gui.statistics
             // # Network Statistics
             // # zh_CN 网络统计
-            tr("flux.gui.statistics"),
-            // #tr flux.gui.settings
+            tr("gtnr.flux.gui.statistics"),
+            // #tr gtnr.flux.gui.settings
             // # Settings
             // # zh_CN 设置
-            tr("flux.gui.settings") };
+            tr("gtnr.flux.gui.settings") };
         for (int i = 0; i < upstreamTabs.length; i++) {
             int page = i;
             IDrawable icon = texture("gui_icon", 64 * upstreamTabs[i], 192, 64, 64);
@@ -138,28 +138,28 @@ public final class FluxConnectorGui {
                     pages.setPage(1);
                     return true;
                 }));
-        // #tr flux.gui.name
+        // #tr gtnr.flux.gui.name
         // # Name:
         // # zh_CN 名称：
-        field(home, tr("flux.gui.name"), name, 28, false);
-        // #tr flux.gui.priority
+        field(home, tr("gtnr.flux.gui.name"), name, 28, false);
+        // #tr gtnr.flux.gui.priority
         // # Priority:
         // # zh_CN 优先级：
-        field(home, tr("flux.gui.priority"), priority, 45, true).setPattern(Pattern.compile("-?[0-9]*"));
+        field(home, tr("gtnr.flux.gui.priority"), priority, 45, true).setPattern(Pattern.compile("-?[0-9]*"));
         home.child(
             new ItemDrawable(tile.isPlug() ? GTNRItemList.FluxPlug.get(1) : GTNRItemList.FluxPoint.get(1)).asWidget()
                 .pos(10, 91)
                 .size(16, 16));
         home.child(text(() -> part(status, 3) + " EU/t", 30, 90, 130));
-        // #tr flux.gui.buffer
+        // #tr gtnr.flux.gui.buffer
         // # Buffer:
         // # zh_CN 缓存：
-        home.child(text(() -> tr("flux.gui.buffer") + " " + part(status, 2) + " EU", 30, 100, 130));
-        // #tr flux.gui.surge
+        home.child(text(() -> tr("gtnr.flux.gui.buffer") + " " + part(status, 2) + " EU", 30, 100, 130));
+        // #tr gtnr.flux.gui.surge
         // # Surge Mode
         // # zh_CN 浪涌模式
-        toggle(home, sync, tile, "surge", tr("flux.gui.surge"), () -> bool(status, 7), tile::toggleSurgeMode, 120);
-        // #tr flux.gui.chunk_loading
+        toggle(home, sync, tile, "surge", tr("gtnr.flux.gui.surge"), () -> bool(status, 7), tile::toggleSurgeMode, 120);
+        // #tr gtnr.flux.gui.chunk_loading
         // # Chunk Loading
         // # zh_CN 区块加载
         toggle(
@@ -167,19 +167,19 @@ public final class FluxConnectorGui {
             sync,
             tile,
             "chunk_loading",
-            tr("flux.gui.chunk_loading"),
+            tr("gtnr.flux.gui.chunk_loading"),
             () -> bool(status, 8),
             tile::toggleChunkLoading,
             144);
-        // #tr flux.gui.voltage
+        // #tr gtnr.flux.gui.voltage
         // # Voltage:
         // # zh_CN 电压：
-        field(settings, tr("flux.gui.voltage"), volts, 28, true);
-        // #tr flux.gui.amperage
+        field(settings, tr("gtnr.flux.gui.voltage"), volts, 28, true);
+        // #tr gtnr.flux.gui.amperage
         // # Amperage:
         // # zh_CN 安培数：
-        field(settings, tr("flux.gui.amperage"), amps, 45, true);
-        // #tr flux.gui.enabled
+        field(settings, tr("gtnr.flux.gui.amperage"), amps, 45, true);
+        // #tr gtnr.flux.gui.enabled
         // # Enable Transfer
         // # zh_CN 启用传输
         toggle(
@@ -187,11 +187,11 @@ public final class FluxConnectorGui {
             sync,
             tile,
             "enabled",
-            tr("flux.gui.enabled"),
+            tr("gtnr.flux.gui.enabled"),
             () -> bool(status, 4),
             tile::toggleEnabled,
             120);
-        // #tr flux.gui.connected
+        // #tr gtnr.flux.gui.connected
         // # Connect Network
         // # zh_CN 连接网络
         toggle(
@@ -199,11 +199,11 @@ public final class FluxConnectorGui {
             sync,
             tile,
             "connected",
-            tr("flux.gui.connected"),
+            tr("gtnr.flux.gui.connected"),
             () -> bool(status, 5),
             tile::toggleConnected,
             132);
-        // #tr flux.gui.redstone
+        // #tr gtnr.flux.gui.redstone
         // # Require Redstone
         // # zh_CN 需要红石信号
         toggle(
@@ -211,27 +211,27 @@ public final class FluxConnectorGui {
             sync,
             tile,
             "redstone",
-            tr("flux.gui.redstone"),
+            tr("gtnr.flux.gui.redstone"),
             () -> bool(status, 6),
             tile::toggleRedstone,
             144);
 
         account.child(text(() -> accountName(status), 16, 12, 144));
-        // #tr flux.gui.account
+        // #tr gtnr.flux.gui.account
         // # GTNH wireless account
         // # zh_CN GTNH 无线电网账户
-        account.child(text(() -> tr("flux.gui.account"), 16, 32, 144));
+        account.child(text(() -> tr("gtnr.flux.gui.account"), 16, 32, 144));
         account.child(text(() -> part(status, 0), 16, 48, 144));
-        // #tr flux.gui.team
+        // #tr gtnr.flux.gui.team
         // # Uses the owner's GT team balance
         // # zh_CN 共用所有者的 GT 团队余额
-        account.child(text(() -> tr("flux.gui.team"), 16, 68, 144));
+        account.child(text(() -> tr("gtnr.flux.gui.team"), 16, 68, 144));
         toggle(
             account,
             sync,
             tile,
             "account_connected",
-            tr("flux.gui.connected"),
+            tr("gtnr.flux.gui.connected"),
             () -> bool(status, 5),
             tile::toggleConnected,
             132);
@@ -242,20 +242,20 @@ public final class FluxConnectorGui {
             sync.syncValue("neighbour_" + i, target);
             neighbours.child(text(() -> directions[side] + "  " + target.getStringValue(), 16, 12 + 22 * i, 144));
         }
-        // #tr flux.gui.balance
+        // #tr gtnr.flux.gui.balance
         // # Wireless balance (EU)
         // # zh_CN 无线电网余额（EU）
-        statistics.child(text(() -> tr("flux.gui.balance"), 16, 12, 144));
+        statistics.child(text(() -> tr("gtnr.flux.gui.balance"), 16, 12, 144));
         statistics.child(text(() -> part(status, 1), 16, 30, 144));
         statistics.child(text(() -> part(status, 3) + " EU/t", 16, 60, 144));
-        // #tr flux.gui.owner_edit
+        // #tr gtnr.flux.gui.owner_edit
         // # Only the owner can edit settings
         // # zh_CN 仅所有者可修改设置
-        statistics.child(text(() -> tr("flux.gui.owner_edit"), 16, 110, 144));
-        // #tr flux.gui.voltage_note
+        statistics.child(text(() -> tr("gtnr.flux.gui.owner_edit"), 16, 110, 144));
+        // #tr gtnr.flux.gui.voltage_note
         // # Output voltage must match the receiver
         // # zh_CN 输出电压须匹配接收设备
-        statistics.child(text(() -> tr("flux.gui.voltage_note"), 16, 130, 144));
+        statistics.child(text(() -> tr("gtnr.flux.gui.voltage_note"), 16, 130, 144));
         return panel;
     }
 

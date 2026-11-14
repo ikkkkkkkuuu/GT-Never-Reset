@@ -34,10 +34,10 @@ public final class WirelessMonitorPositionGui extends GuiScreen {
                 72,
                 100,
                 20,
-                // #tr gui.gtneverreset.wireless_position.settings
+                // #tr gtnr.gui.gtneverreset.wireless_position.settings
                 // # HUD settings
                 // # zh_CN HUD 设置
-                StatCollector.translateToLocal("gui.gtneverreset.wireless_position.settings")));
+                StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_position.settings")));
         buttonList.add(
             new GuiButton(
                 0,
@@ -45,10 +45,10 @@ public final class WirelessMonitorPositionGui extends GuiScreen {
                 48,
                 100,
                 20,
-                // #tr gui.gtneverreset.wireless_position.reset
+                // #tr gtnr.gui.gtneverreset.wireless_position.reset
                 // # Reset position
                 // # zh_CN 恢复默认位置
-                StatCollector.translateToLocal("gui.gtneverreset.wireless_position.reset")));
+                StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_position.reset")));
         buttonList.add(
             new GuiButton(
                 1,
@@ -56,10 +56,10 @@ public final class WirelessMonitorPositionGui extends GuiScreen {
                 48,
                 100,
                 20,
-                // #tr gui.gtneverreset.wireless_position.done
+                // #tr gtnr.gui.gtneverreset.wireless_position.done
                 // # Save and close
                 // # zh_CN 保存并退出
-                StatCollector.translateToLocal("gui.gtneverreset.wireless_position.done")));
+                StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_position.done")));
     }
 
     @Override
@@ -67,19 +67,19 @@ public final class WirelessMonitorPositionGui extends GuiScreen {
         drawRect(0, 0, width, height, 0x18000000);
         drawCenteredString(
             fontRendererObj,
-            // #tr gui.gtneverreset.wireless_position.title
+            // #tr gtnr.gui.gtneverreset.wireless_position.title
             // # Wireless HUD position
             // # zh_CN 调整无线电网 HUD 位置
-            StatCollector.translateToLocal("gui.gtneverreset.wireless_position.title"),
+            StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_position.title"),
             width / 2,
             12,
             0xFFFFFF);
         drawCenteredString(
             fontRendererObj,
-            // #tr gui.gtneverreset.wireless_position.hint
+            // #tr gtnr.gui.gtneverreset.wireless_position.hint
             // # Drag the HUD with left mouse; press the edit key or Esc to save.
             // # zh_CN 左键拖动文字区域；再次按编辑键或 Esc 保存退出。
-            StatCollector.translateToLocal("gui.gtneverreset.wireless_position.hint"),
+            StatCollector.translateToLocal("gtnr.gui.gtneverreset.wireless_position.hint"),
             width / 2,
             29,
             0xDDDDDD);

@@ -383,10 +383,10 @@ public final class ScriptHost {
         }
         LAST_ERRORS.put(run.owner, error);
         GTNeverReset.LOG.warn("[" + run.token + "] " + error);
-        // #tr radialmenu.script.error
+        // #tr gtnr.radialmenu.script.error
         // # Script error: %s
         // # zh_CN 脚本错误：%s
-        tell(StatCollector.translateToLocalFormatted("radialmenu.script.error", error), EnumChatFormatting.RED);
+        tell(StatCollector.translateToLocalFormatted("gtnr.radialmenu.script.error", error), EnumChatFormatting.RED);
     }
 
     private static void cancel(Run run, String reason) {

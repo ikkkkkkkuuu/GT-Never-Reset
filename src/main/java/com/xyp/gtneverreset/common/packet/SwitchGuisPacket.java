@@ -4,43 +4,44 @@ import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
+import com.xyp.gtnrlib.network.ServerboundPacket;
 
 import appeng.container.AEBaseContainer;
 import appeng.helpers.WirelessTerminalGuiObject;
 import appeng.util.Platform;
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
-public final class CPacketSwitchGuis implements IMessage {
+public final class SwitchGuisPacket extends ServerboundPacket {
 
     private WirelessTerminalGuiType type;
     private boolean restoreSaved;
 
-    public CPacketSwitchGuis() {}
+    public SwitchGuisPacket() {}
 
-    public CPacketSwitchGuis(WirelessTerminalGuiType type) {
+    public SwitchGuisPacket(WirelessTerminalGuiType type) {
         this.type = type;
     }
 
-    public static CPacketSwitchGuis restoreLast() {
-        CPacketSwitchGuis packet = new CPacketSwitchGuis();
+    public static SwitchGuisPacket restoreLast() {
+        SwitchGuisPacket packet = new SwitchGuisPacket();
         packet.restoreSaved = true;
         return packet;
     }
 
     @Override
-    public void fromBytes(ByteBuf buffer) {
+    protected void read(ByteBuf buffer) {
         type = WirelessTerminalGuiType.getByOrdinal(buffer.readByte());
         restoreSaved = buffer.readBoolean();
     }
 
     @Override
-    public void toBytes(ByteBuf buffer) {
+    protected void write(ByteBuf buffer) {
         buffer.writeByte(type == null ? -1 : type.ordinal());
         buffer.writeBoolean(restoreSaved);
     }
 
-    public void handle(EntityPlayerMP player) {
+    @Override
+    public void handleServer(EntityPlayerMP player) {
         if (!restoreSaved && type == null) return;
         int slot = -1;
         if (!restoreSaved && player.openContainer instanceof AEBaseContainer container

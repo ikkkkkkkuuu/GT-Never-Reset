@@ -94,88 +94,95 @@ public final class ActionTypes {
         register(
             new ActionType(
                 KEYBIND,
-                "radialmenu.action.keybind",
+                "gtnr.radialmenu.action.keybind",
                 false,
-                // #tr radialmenu.action.keybind.binding
+                // #tr gtnr.radialmenu.action.keybind.binding
                 // # Keybinding
                 // # zh_CN 绑定按键
-                ActionField.keybindRef(PARAM_BINDING, "radialmenu.action.keybind.binding")
+                ActionField.keybindRef(PARAM_BINDING, "gtnr.radialmenu.action.keybind.binding")
                     .required(),
-                ActionField.enumeration(PARAM_MODE, "radialmenu.action.keybind.mode", "tap", "tap", "toggle", "hold"),
-                ActionField.integer(PARAM_HOLD_TICKS, "radialmenu.action.keybind.holdTicks", 20),
+                ActionField
+                    .enumeration(PARAM_MODE, "gtnr.radialmenu.action.keybind.mode", "tap", "tap", "toggle", "hold"),
+                ActionField.integer(PARAM_HOLD_TICKS, "gtnr.radialmenu.action.keybind.hold_ticks", 20),
 
-                ActionField.bool(PARAM_SHIFT, "radialmenu.action.keybind.shift", false),
-                ActionField.bool(PARAM_CTRL, "radialmenu.action.keybind.ctrl", false),
-                ActionField.bool(PARAM_ALT, "radialmenu.action.keybind.alt", false),
-                ActionField.bool(PARAM_SNEAK, "radialmenu.action.keybind.sneak", false)));
+                ActionField.bool(PARAM_SHIFT, "gtnr.radialmenu.action.keybind.shift", false),
+                ActionField.bool(PARAM_CTRL, "gtnr.radialmenu.action.keybind.ctrl", false),
+                ActionField.bool(PARAM_ALT, "gtnr.radialmenu.action.keybind.alt", false),
+                ActionField.bool(PARAM_SNEAK, "gtnr.radialmenu.action.keybind.sneak", false)));
 
         register(
             new ActionType(
                 PROFILE_SWITCH,
-                "radialmenu.action.profileSwitch",
+                "gtnr.radialmenu.action.profile_switch",
                 false,
-                // #tr radialmenu.action.profileSwitch.profile
+                // #tr gtnr.radialmenu.action.profile_switch.profile
                 // # Profile
                 // # zh_CN 配置
-                ActionField.profileRef(PARAM_PROFILE, "radialmenu.action.profileSwitch.profile")));
+                ActionField.profileRef(PARAM_PROFILE, "gtnr.radialmenu.action.profile_switch.profile")));
 
         register(
             new ActionType(
                 COMMAND,
-                "radialmenu.action.command",
+                "gtnr.radialmenu.action.command",
                 false,
-                // #tr radialmenu.action.command.text
+                // #tr gtnr.radialmenu.action.command.text
                 // # Commands
                 // # zh_CN 命令内容
-                ActionField.multiline(PARAM_COMMAND, "radialmenu.action.command.text", "")
+                ActionField.multiline(PARAM_COMMAND, "gtnr.radialmenu.action.command.text", "")
                     .required(),
-                ActionField.integer(PARAM_DELAY_TICKS, "radialmenu.action.command.delayTicks", 0),
-                ActionField.bool(PARAM_CYCLE, "radialmenu.action.command.cycle", false)));
+                ActionField.integer(PARAM_DELAY_TICKS, "gtnr.radialmenu.action.command.delay_ticks", 0),
+                ActionField.bool(PARAM_CYCLE, "gtnr.radialmenu.action.command.cycle", false)));
 
         register(
             new ActionType(
                 SUBMENU,
-                "radialmenu.action.submenu",
+                "gtnr.radialmenu.action.submenu",
                 false,
 
+                ActionField.enumeration(
+                    PARAM_OPENING,
+                    "gtnr.radialmenu.action.submenu.opening",
+                    "replace",
+                    "replace",
+                    "inline"),
                 ActionField
-                    .enumeration(PARAM_OPENING, "radialmenu.action.submenu.opening", "replace", "replace", "inline"),
-                ActionField.enumeration(PARAM_SLOT_MODE, "radialmenu.action.submenu.mode", "fixed", "fixed", "dynamic"),
+                    .enumeration(PARAM_SLOT_MODE, "gtnr.radialmenu.action.submenu.mode", "fixed", "fixed", "dynamic"),
                 ActionField.range(
                     PARAM_SLOT_COUNT,
-                    "radialmenu.action.submenu.slots",
+                    "gtnr.radialmenu.action.submenu.slots",
                     SlotLayout.DEFAULT_SLOTS,
                     SlotLayout.MIN_SLOTS,
                     SlotLayout.MAX_SLOTS),
                 ActionField.accent(
                     PARAM_ACCENT,
-                    "radialmenu.action.submenu.accent",
+                    "gtnr.radialmenu.action.submenu.accent",
                     PARAM_RING_COLOR,
                     PARAM_HIGHLIGHT_COLOR,
                     PARAM_BORDER_COLOR,
                     PARAM_HIGHLIGHT_BORDER_COLOR,
                     PARAM_BACKGROUND_COLOR),
 
-                ActionField.color(PARAM_RING_COLOR, "radialmenu.action.submenu.ringColor"),
-                ActionField.color(PARAM_BORDER_COLOR, "radialmenu.action.submenu.borderColor"),
-                ActionField.color(PARAM_HIGHLIGHT_COLOR, "radialmenu.action.submenu.highlightColor"),
-                ActionField.color(PARAM_HIGHLIGHT_BORDER_COLOR, "radialmenu.action.submenu.highlightBorderColor"),
-                ActionField.color(PARAM_BACKGROUND_COLOR, "radialmenu.action.submenu.backgroundColor")));
+                ActionField.color(PARAM_RING_COLOR, "gtnr.radialmenu.action.submenu.ring_color"),
+                ActionField.color(PARAM_BORDER_COLOR, "gtnr.radialmenu.action.submenu.border_color"),
+                ActionField.color(PARAM_HIGHLIGHT_COLOR, "gtnr.radialmenu.action.submenu.highlight_color"),
+                ActionField
+                    .color(PARAM_HIGHLIGHT_BORDER_COLOR, "gtnr.radialmenu.action.submenu.highlight_border_color"),
+                ActionField.color(PARAM_BACKGROUND_COLOR, "gtnr.radialmenu.action.submenu.background_color")));
 
         register(
             new ActionType(
                 SCRIPT,
-                "radialmenu.action.script",
+                "gtnr.radialmenu.action.script",
                 false,
-                ActionField.code(PARAM_SCRIPT, "radialmenu.action.script.source", "")
+                ActionField.code(PARAM_SCRIPT, "gtnr.radialmenu.action.script.source", "")
                     .required(),
-                ActionField.integer(PARAM_TIMEOUT_TICKS, "radialmenu.action.script.timeoutTicks", 600)));
+                ActionField.integer(PARAM_TIMEOUT_TICKS, "gtnr.radialmenu.action.script.timeout_ticks", 600)));
 
         register(
             new ActionType(
                 SEQUENCE,
-                "radialmenu.action.sequence",
+                "gtnr.radialmenu.action.sequence",
                 true,
-                ActionField.integer(PARAM_DELAY_TICKS, "radialmenu.action.sequence.delayTicks", 0)));
+                ActionField.integer(PARAM_DELAY_TICKS, "gtnr.radialmenu.action.sequence.delay_ticks", 0)));
     }
 }

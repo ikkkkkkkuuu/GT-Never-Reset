@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -139,6 +141,7 @@ public final class StructureTooltipReader {
                     .get(0)
                     .blocks());
         }
+        CasingMetadata casing = readCasingMetadata(controller, variants);
         return new StructureSummary(
             size(
                 first.cells()
@@ -158,7 +161,64 @@ public final class StructureTooltipReader {
                 last.cells()
                     .keySet()),
             List.copyOf(sections),
-            layered);
+            layered,
+            casing.name(),
+            casing.tiers());
+    }
+
+    private static <T extends MTEEnhancedMultiBlockBase<T>> CasingMetadata readCasingMetadata(T machine,
+        List<Variant<T>> variants) {
+        Set<IStructureElement<T>> elements = new LinkedHashSet<>();
+        for (Variant<T> variant : variants) elements.addAll(
+            variant.cells()
+                .values());
+        CasingMetadata result = new CasingMetadata(null, List.of());
+        boolean found = false;
+        for (IStructureElement<T> element : elements) {
+            try {
+                T probe = freshCopy(machine);
+                Set<String> usedChannels = new LinkedHashSet<>();
+                element.getBlocksToPlace(probe, null, 0, 0, 0, channelProbe(1, usedChannels), null);
+                usedChannels.remove(GTStructureChannels.BOROGLASS.get());
+                usedChannels.remove(GTStructureChannels.HEATING_COIL.get());
+                if (usedChannels.isEmpty()) continue;
+                List<String> tiers = new ArrayList<>();
+                Block commonBlock = null;
+                boolean sharedBlock = true;
+                for (int tier = 1; tier <= MultiblockTooltipSource.TieredPart.CASING.maxTier + 1; tier++) {
+                    BlocksToPlace placement = element
+                        .getBlocksToPlace(probe, null, 0, 0, 0, channelProbe(tier, new LinkedHashSet<>()), null);
+                    List<String> names = placedNames(placement, List.of());
+                    if (names.isEmpty()) break;
+                    tiers.add(String.join(" / ", names));
+                    if (placement != null && placement.getStacks() != null) {
+                        for (ItemStack stack : placement.getStacks()) {
+                            Block block = Block.getBlockFromItem(stack.getItem());
+                            if (block == Blocks.air || commonBlock != null && block != commonBlock) sharedBlock = false;
+                            commonBlock = block;
+                        }
+                    }
+                }
+                if (tiers.stream()
+                    .distinct()
+                    .count() < 2) continue;
+                // Several independent tiered casings cannot be represented by one unambiguous name.
+                if (found) return new CasingMetadata(null, List.of());
+                found = true;
+                String name = sharedBlock && commonBlock != null
+                    && StatCollector.canTranslate(commonBlock.getUnlocalizedName() + ".name")
+                        ? commonBlock.getLocalizedName()
+                        : null;
+                result = new CasingMetadata(name, List.copyOf(tiers));
+            } catch (RuntimeException failure) {
+                GTNeverReset.LOG.debug(
+                    "cannot read casing metadata for {}",
+                    machine.getClass()
+                        .getSimpleName(),
+                    failure);
+            }
+        }
+        return result;
     }
 
     @SuppressWarnings("unchecked")
@@ -748,6 +808,8 @@ public final class StructureTooltipReader {
     private record Line(int first, int second) {}
 
     private record Variant<T> (int stackSize, List<PieceCall> pieces, Map<Position, IStructureElement<T>> cells) {}
+
+    private record CasingMetadata(String name, List<String> tiers) {}
 
     private record ShapeData(MultiblockTooltipSource source, List<BlockGroup> blocks, Map<String, HatchGroup> hatches,
         List<Integer> minimums, List<HatchRule> rules) {}

@@ -3,15 +3,13 @@ package com.xyp.gtneverreset.common.packet;
 import net.minecraft.client.Minecraft;
 
 import com.xyp.gtneverreset.common.crafting.quantum.ae2.IQuantumCraftAmountGui;
+import com.xyp.gtnrlib.network.ClientboundPacket;
 
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 
-public class QuantumCraftingAvailabilityPacket implements IMessage {
+public class QuantumCraftingAvailabilityPacket extends ClientboundPacket {
 
     private boolean available;
 
@@ -22,18 +20,18 @@ public class QuantumCraftingAvailabilityPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    protected void read(ByteBuf buf) {
         this.available = buf.readBoolean();
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    protected void write(ByteBuf buf) {
         buf.writeBoolean(this.available);
     }
 
+    @Override
     @SideOnly(Side.CLIENT)
-    private void handleClient() {
-        Minecraft minecraft = Minecraft.getMinecraft();
+    public void handleClient(Minecraft minecraft) {
         var connection = minecraft.getNetHandler();
         minecraft.func_152344_a(() -> {
             if (minecraft.getNetHandler() == connection
@@ -43,12 +41,4 @@ public class QuantumCraftingAvailabilityPacket implements IMessage {
         });
     }
 
-    public static final class Handler implements IMessageHandler<QuantumCraftingAvailabilityPacket, IMessage> {
-
-        @Override
-        public IMessage onMessage(QuantumCraftingAvailabilityPacket message, MessageContext context) {
-            message.handleClient();
-            return null;
-        }
-    }
 }

@@ -23,7 +23,7 @@ import net.minecraft.world.WorldType;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
-import com.xyp.gtneverreset.common.gui.container.ContainerQuickEncodingTerminal;
+import com.xyp.gtneverreset.common.gui.container.QuickEncodingTerminalContainer;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
@@ -147,9 +147,9 @@ public final class TerminalRecipeChecks {
             map);
     }
 
-    private static void transfer(ContainerQuickEncodingTerminal container, RecipeTransferPayload recipe)
+    private static void transfer(QuickEncodingTerminalContainer container, RecipeTransferPayload recipe)
         throws Exception {
-        Method method = ContainerQuickEncodingTerminal.class
+        Method method = QuickEncodingTerminalContainer.class
             .getDeclaredMethod("applyRecipeTransfer", RecipeTransferPayload.class);
         method.setAccessible(true);
         method.invoke(container, recipe);
@@ -167,7 +167,7 @@ public final class TerminalRecipeChecks {
 
     private static void verifyEncoding(EntityPlayerMP player) throws Exception {
         var terminal = terminal(player);
-        var container = new ContainerQuickEncodingTerminal(player.inventory, terminal);
+        var container = new QuickEncodingTerminalContainer(player.inventory, terminal);
         String lathe = RecipeMaps.latheRecipes.unlocalizedName;
         transfer(container, recipe(lathe, true));
         require(lathe.equals(PatternRecipeMap.name(encoded(terminal))), "NEI automatic encoding writes recipe type");
@@ -196,7 +196,7 @@ public final class TerminalRecipeChecks {
             .putAEStackInSlot(0, AEItemStack.create(new ItemStack(Items.iron_ingot, 4)));
         terminal.writeInventory();
         terminal.readInventory();
-        container = new ContainerQuickEncodingTerminal(player.inventory, terminal);
+        container = new QuickEncodingTerminalContainer(player.inventory, terminal);
         outputs = terminal.getAEInventoryByName(StorageName.CRAFTING_OUTPUT);
         encode(terminal, player, lathe, "quantity edits and terminal reload");
 

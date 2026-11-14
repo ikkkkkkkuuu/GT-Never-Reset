@@ -141,7 +141,7 @@ public class WirelessAutoConnect {
         WirelessCardVisualisation.cycle(card, player, backwards);
         player.addChatMessage(
             new ChatComponentTranslation(
-                "gtneverreset.wireless.gui.visualisation",
+                "gtnr.wireless.gui.visualisation",
                 new ChatComponentTranslation(
                     WirelessCardVisualisation.modeKey(WirelessCardVisualisation.mode(card.getTagCompound())))));
     }

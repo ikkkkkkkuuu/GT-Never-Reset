@@ -2,13 +2,16 @@ package com.xyp.gtneverreset.common.machine.tooltip;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.function.ToDoubleFunction;
 
 import net.minecraft.util.EnumChatFormatting;
 
+import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource.HeatRules;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource.TierRange;
@@ -22,6 +25,7 @@ import gregtech.api.enums.HeatingCoilLevel;
 import gregtech.api.enums.VoltageIndex;
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
 import gregtech.api.util.tooltip.TooltipHelper;
+import gregtech.common.misc.GTStructureChannels;
 
 public final class MultiblockPerformanceReader {
 
@@ -40,25 +44,76 @@ public final class MultiblockPerformanceReader {
             MultiblockTooltipSource declarations = freshSource(machine);
             EnumSet<TieredPart> parts = EnumSet.noneOf(TieredPart.class);
             parts.addAll(Objects.requireNonNull(declarations.getTooltipTieredParts(), "tooltip tiered parts"));
+            if (structure != null) {
+                Set<String> channels = new HashSet<>();
+                for (var channel : structure.channels()) channels.add(channel.get());
+                if (!channels.contains(GTStructureChannels.HEATING_COIL.get())) parts.remove(TieredPart.COIL);
+                if (!channels.contains(GTStructureChannels.BOROGLASS.get())) parts.remove(TieredPart.GLASS);
+            }
             for (TieredPart part : parts) {
-                TierRange range = Objects.requireNonNull(declarations.getTooltipTierRange(part), "tooltip tier range");
-                validateRange(part, range);
-                if (part == TieredPart.HIGH_PRESSURE) {
-                    if (range.first() <= 1 && range.last() >= 1) addSwitchBonuses(machine, base, bonuses, thresholds);
-                    continue;
+                try {
+                    TierRange range = Objects
+                        .requireNonNull(declarations.getTooltipTierRange(part), "tooltip tier range");
+                    validateRange(part, range);
+                    if (part == TieredPart.HIGH_PRESSURE) {
+                        if (range.first() <= 1 && range.last() >= 1)
+                            addSwitchBonuses(machine, base, bonuses, thresholds);
+                        continue;
+                    }
+                    TooltipStats[] probes = probeTiers(machine, part, range);
+                    if (probes == null) continue;
+                    addTierBonuses(bonuses, part, probes);
+                    if (!base.perfectOverclock())
+                        addPerfectOverclockThreshold(thresholds, part, range.first(), probes, structure);
+                } catch (RuntimeException failure) {
+                    GTNeverReset.LOG.warn(
+                        "cannot read {} tooltip tier {}",
+                        machine.getClass()
+                            .getSimpleName(),
+                        part,
+                        failure);
                 }
-                TooltipStats[] probes = probeTiers(machine, part, range);
-                if (probes == null) continue;
-                addTierBonuses(bonuses, part, probes);
-                if (!base.perfectOverclock()) addPerfectOverclockThreshold(thresholds, part, range.first(), probes);
             }
         }
-        HeatRules heat = freshSource(machine).getTooltipHeatRules();
-        OptionalInt skips = Objects.requireNonNull(freshSource(machine).getTooltipTierSkips(), "tooltip tier skips");
-        if (skips.isPresent() && skips.getAsInt() < 0) {
-            throw new IllegalArgumentException("Tooltip tier skips must not be negative");
+        HeatRules heat = readHeatRules(machine);
+        OptionalInt skips = readTierSkips(machine);
+        return new PerformanceSummary(
+            base,
+            bonuses,
+            heat,
+            thresholds,
+            skips,
+            structure == null ? null : structure.casingName());
+    }
+
+    private static HeatRules readHeatRules(MTEEnhancedMultiBlockBase<?> machine) {
+        try {
+            return freshSource(machine).getTooltipHeatRules();
+        } catch (RuntimeException failure) {
+            GTNeverReset.LOG.warn(
+                "cannot read {} tooltip heat rules",
+                machine.getClass()
+                    .getSimpleName(),
+                failure);
+            return null;
         }
-        return new PerformanceSummary(base, bonuses, heat, thresholds, skips);
+    }
+
+    private static OptionalInt readTierSkips(MTEEnhancedMultiBlockBase<?> machine) {
+        try {
+            OptionalInt skips = Objects
+                .requireNonNull(freshSource(machine).getTooltipTierSkips(), "tooltip tier skips");
+            if (skips.isPresent() && skips.getAsInt() < 0)
+                throw new IllegalArgumentException("Negative tooltip tier skips");
+            return skips;
+        } catch (RuntimeException failure) {
+            GTNeverReset.LOG.warn(
+                "cannot read {} tooltip tier skips",
+                machine.getClass()
+                    .getSimpleName(),
+                failure);
+            return OptionalInt.empty();
+        }
     }
 
     private static MultiblockTooltipSource freshSource(MTEEnhancedMultiBlockBase<?> machine) {
@@ -173,15 +228,15 @@ public final class MultiblockPerformanceReader {
     }
 
     private static void addPerfectOverclockThreshold(List<TierThreshold> thresholds, TieredPart part, int firstTier,
-        TooltipStats[] probes) {
+        TooltipStats[] probes, StructureSummary structure) {
         int index = probes.length - 1;
         if (!probes[index].perfectOverclock()) return;
         while (index >= 0 && probes[index].perfectOverclock()) index--;
         int tier = firstTier + index + 1;
-        thresholds.add(new TierThreshold(part, tier, tierName(part, tier)));
+        thresholds.add(new TierThreshold(part, tier, tierName(part, tier, structure)));
     }
 
-    private static String tierName(TieredPart part, int tier) {
+    private static String tierName(TieredPart part, int tier, StructureSummary structure) {
         return switch (part) {
             case VOLTAGE, GLASS, PARALLEL_CONTROLLER -> tier <= VoltageIndex.MAX
                 ? TooltipHelper.voltageTierText(tier, false)
@@ -190,7 +245,10 @@ public final class MultiblockPerformanceReader {
                 (int) HeatingCoilLevel.getFromTier((byte) tier)
                     .getHeat(),
                 true) + EnumChatFormatting.GRAY : null;
-            case CASING, HIGH_PRESSURE -> null;
+            case CASING -> structure != null && tier < structure.casingTierNames()
+                .size() ? EnumChatFormatting.WHITE + structure.casingTierNames()
+                    .get(tier) + EnumChatFormatting.GRAY : null;
+            case HIGH_PRESSURE -> null;
         };
     }
 }

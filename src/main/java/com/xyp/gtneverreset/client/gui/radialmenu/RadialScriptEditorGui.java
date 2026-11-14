@@ -134,15 +134,15 @@ public class RadialScriptEditorGui extends RadialUiScreen implements RadialIconP
         setContentHeight(0);
         addBottomBar("gui.done", null, "gui.cancel");
 
-        // #tr radialmenu.script.snippets.hide
+        // #tr gtnr.radialmenu.script.snippets.hide
         // # Hide API
         // # zh_CN 隐藏 API
-        String toggleKey = "radialmenu.script.snippets.hide";
+        String toggleKey = "gtnr.radialmenu.script.snippets.hide";
         if (!snippetsOpen) {
-            // #tr radialmenu.script.snippets.show
+            // #tr gtnr.radialmenu.script.snippets.show
             // # Show API
             // # zh_CN 显示 API
-            toggleKey = "radialmenu.script.snippets.show";
+            toggleKey = "gtnr.radialmenu.script.snippets.show";
         }
         GuiButton toggle = new GuiButton(
             ID_SNIPPETS,
@@ -153,10 +153,10 @@ public class RadialScriptEditorGui extends RadialUiScreen implements RadialIconP
             I18n.format(toggleKey));
         this.buttonList.add(toggle);
         markFooter(ID_SNIPPETS);
-        // #tr radialmenu.script.snippets.tip
+        // #tr gtnr.radialmenu.script.snippets.tooltip
         // # Insert the selected snippet at the cursor
         // # zh_CN 在光标处插入选中的脚本片段
-        tooltip(ID_SNIPPETS, I18n.format("radialmenu.script.snippets.tip"));
+        tooltip(ID_SNIPPETS, I18n.format("gtnr.radialmenu.script.snippets.tooltip"));
 
         // Opposite the API toggle and the same width, so the bar stays balanced around Done and Cancel.
         this.buttonList.add(
@@ -166,15 +166,15 @@ public class RadialScriptEditorGui extends RadialUiScreen implements RadialIconP
                 RadialUi.bottomBarY(this.height),
                 SNIPPET_WIDTH,
                 RadialUi.ROW,
-                // #tr radialmenu.script.icon
+                // #tr gtnr.radialmenu.script.icon
                 // # Insert icon
                 // # zh_CN 插入图标
-                I18n.format("radialmenu.script.icon")));
+                I18n.format("gtnr.radialmenu.script.icon")));
         markFooter(ID_ICON);
-        // #tr radialmenu.script.icon.tip
+        // #tr gtnr.radialmenu.script.icon.tooltip
         // # Insert an icon name. Replace the quoted string if the cursor is inside one
         // # zh_CN 插入图标名称；光标在引号内时替换整个字符串
-        tooltip(ID_ICON, I18n.format("radialmenu.script.icon.tip"));
+        tooltip(ID_ICON, I18n.format("gtnr.radialmenu.script.icon.tooltip"));
     }
 
     @Override
@@ -597,10 +597,14 @@ public class RadialScriptEditorGui extends RadialUiScreen implements RadialIconP
             return;
         }
         String position = I18n
-            // #tr radialmenu.script.position
+            // #tr gtnr.radialmenu.script.position
             // # Ln %d, Col %d - %d lines
             // # zh_CN 第 %d 行，第 %d 列 - 共 %d 行
-            .format("radialmenu.script.position", buffer.caretLine() + 1, buffer.caretColumn() + 1, buffer.lineCount());
+            .format(
+                "gtnr.radialmenu.script.position",
+                buffer.caretLine() + 1,
+                buffer.caretColumn() + 1,
+                buffer.lineCount());
         this.fontRendererObj.drawString(position, viewportLeft(), y, RadialUi.TEXT_MUTED);
     }
 

@@ -51,8 +51,8 @@ public class WirelessCardVisualisation {
     }
 
     public static String modeKey(int mode) {
-        return mode <= 0 || !validMode(mode) ? "gtneverreset.wireless.gui.visualisation_off"
-            : "gtneverreset.wireless.gui.visualisation." + VisualisationModes.values()[mode - 1].name()
+        return mode <= 0 || !validMode(mode) ? "gtnr.wireless.gui.visualisation_off"
+            : "gtnr.wireless.gui.visualisation." + VisualisationModes.values()[mode - 1].name()
                 .toLowerCase(Locale.ROOT);
     }
 

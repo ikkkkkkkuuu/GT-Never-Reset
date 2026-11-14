@@ -137,20 +137,20 @@ public final class ArcaneWorkbenchPatterns {
             }
         }
         if (result == null || result.stackSize <= 0 || destination < 0 || blankSlot < 0) {
-            // #tr gui.packaged.arcane_capture_failed
+            // #tr gtnr.gui.packaged.arcane_capture_failed
             // # Check research, table recipe, an empty pattern slot and a blank pattern in your inventory.
             // # zh_CN 请检查研究、台上配方、供应器空样板槽和背包中的空白样板。
-            player.addChatMessage(new ChatComponentTranslation("gui.packaged.arcane_capture_failed"));
+            player.addChatMessage(new ChatComponentTranslation("gtnr.gui.packaged.arcane_capture_failed"));
             return;
         }
         ItemStack encoded = encode(example, result);
         provider.setInventorySlotContents(destination, encoded);
         player.inventory.decrStackSize(blankSlot, 1);
         player.inventory.markDirty();
-        // #tr gui.packaged.arcane_captured
+        // #tr gtnr.gui.packaged.arcane_captured
         // # Recipe recorded. Clear the example ingredients, leave the wand, and close the workbench.
         // # zh_CN 配方已录入。请清空示例材料，保留法杖并关闭工作台。
-        player.addChatMessage(new ChatComponentTranslation("gui.packaged.arcane_captured"));
+        player.addChatMessage(new ChatComponentTranslation("gtnr.gui.packaged.arcane_captured"));
     }
 
     /** Encodes both AE's unordered bill of materials and the exact TC4 matching layout. */

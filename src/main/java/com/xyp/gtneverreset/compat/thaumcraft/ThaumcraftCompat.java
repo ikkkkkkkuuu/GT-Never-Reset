@@ -9,6 +9,7 @@ import com.xyp.gtneverreset.common.item.items.ItemPackagedCore;
 import com.xyp.gtneverreset.loader.ItemLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
+import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import thaumcraft.common.config.ConfigBlocks;
@@ -20,18 +21,18 @@ public final class ThaumcraftCompat {
         // #tr item.tc4_crucible_packaged_core.name
         // # Thaumcraft Crucible Packaged Core
         // # zh_CN 神秘时代坩埚封包核心
-        ItemLoader.thaumcraftCrucibleCore = new ItemPackagedCore(
-            "thaumcraft_crucible",
-            "tc4_crucible_packaged_core",
-            GTNRItemList.ThaumcraftCrucibleCore);
+        ItemLoader.thaumcraftCrucibleCore = new ItemPackagedCore("thaumcraft_crucible", "tc4_crucible_packaged_core");
+        GameRegistry.registerItem(ItemLoader.thaumcraftCrucibleCore, "tc4_crucible_packaged_core");
+        GTNRItemList.ThaumcraftCrucibleCore.set(ItemLoader.thaumcraftCrucibleCore);
         // #tr item.arcane_workbench_packaged_core.name
         // # Arcane Workbench Packaged Core
         // # zh_CN 奥术工作台封包核心
-        ItemLoader.arcaneWorkbenchCore = new ItemPackagedCore(
-            "arcane_workbench",
-            "arcane_workbench_packaged_core",
-            GTNRItemList.ArcaneWorkbenchCore);
+        ItemLoader.arcaneWorkbenchCore = new ItemPackagedCore("arcane_workbench", "arcane_workbench_packaged_core");
+        GameRegistry.registerItem(ItemLoader.arcaneWorkbenchCore, "arcane_workbench_packaged_core");
+        GTNRItemList.ArcaneWorkbenchCore.set(ItemLoader.arcaneWorkbenchCore);
         ItemLoader.thaumcraftInfusionCore = new ItemPackagedCore(true);
+        GameRegistry.registerItem(ItemLoader.thaumcraftInfusionCore, "tc4_infusion_packaged_core");
+        GTNRItemList.ThaumcraftInfusionCore.set(ItemLoader.thaumcraftInfusionCore);
 
         PackagedCoreRegistry.register("thaumcraft_crucible", new ThaumcraftCrucibleAdapter());
         PackagedCoreRegistry.register("arcane_workbench", new ArcaneWorkbenchAdapter());

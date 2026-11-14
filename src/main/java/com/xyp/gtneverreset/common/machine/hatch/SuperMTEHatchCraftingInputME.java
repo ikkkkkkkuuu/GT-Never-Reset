@@ -200,11 +200,6 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
     }
 
     @Override
-    protected boolean useMui2() {
-        return true;
-    }
-
-    @Override
     public MetaTileEntity newMetaEntity(IGregTechTileEntity aTileEntity) {
         return new SuperMTEHatchCraftingInputME(
             mName,
@@ -215,33 +210,10 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
             getPatternCount() / 9);
     }
 
-    /** Returns the independent item and fluid product caches owned by this hatch. */
-    public PatternMEOutput getMEOutput() {
-        return meOutput;
-    }
-
-    /** Reuses the hatch's security action source when exporting products. */
-    public BaseActionSource getMEOutputActionSource() {
-        return getRequest();
-    }
-
-    /** Wakes controllers attached to the hatch after output space grows. */
-    public void notifyMEOutputSpaceChanged() {
-        notifyWatchers();
-        for (SuperMTEHatchCraftingInputSlave mirror : getProxyHatches()) {
-            mirror.notifyMEOutputSpaceChanged();
-        }
-    }
-
     @Override
-    public ITexture[] getTexturesActive(ITexture aBaseTexture) {
-        return getTexturesInactive(aBaseTexture);
-    }
-
-    @Override
-    public ITexture[] getTexturesInactive(ITexture aBaseTexture) {
-        return new ITexture[] { aBaseTexture,
-            TextureFactory.of(supportFluids ? OVERLAY_ME_CRAFTING_INPUT_BUFFER : OVERLAY_ME_CRAFTING_INPUT_BUS) };
+    public void onFirstTick(IGregTechTileEntity aBaseMetaTileEntity) {
+        super.onFirstTick(aBaseMetaTileEntity);
+        getProxy().onReady();
     }
 
     @Override
@@ -270,73 +242,42 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
     }
 
     @Override
-    public void onFirstTick(IGregTechTileEntity aBaseMetaTileEntity) {
-        super.onFirstTick(aBaseMetaTileEntity);
-        getProxy().onReady();
-    }
-
-    @Override
-    public IGridNode getGridNode(ForgeDirection dir) {
-        return getProxy().getNode();
-    }
-
-    @Override
-    public void onColorChangeServer(byte aColor) {
-        updateAE2ProxyColor();
-    }
-
-    public void addProxyHatch(SuperMTEHatchCraftingInputSlave proxy) {
-        if (!proxyHatches.contains(proxy)) proxyHatches.add(proxy);
-    }
-
-    public void removeProxyHatch(SuperMTEHatchCraftingInputSlave proxy) {
-        proxyHatches.remove(proxy);
-    }
-
-    public List<SuperMTEHatchCraftingInputSlave> getProxyHatches() {
-        long currentTime = getBaseMetaTileEntity().getTimer();
-        if (currentTime != lastProxyHatchValidationTime) {
-            proxyHatches
-                .removeIf(hatch -> hatch == null || hatch.getBaseMetaTileEntity() == null || hatch.getMaster() != this);
-            lastProxyHatchValidationTime = currentTime;
+    public void onBlockDestroyed() {
+        // 清除幽灵模具槽位，防止掉落
+        if (inventoryHandler != null) {
+            inventoryHandler.setStackInSlot(getMoldSlot(), null);
         }
-        return Collections.unmodifiableList(proxyHatches);
-    }
+        mInventory[getMoldSlot()] = null;
 
-    public void updateAE2ProxyColor() {
-        AENetworkProxy proxy = getProxy();
-        byte color = this.getColor();
-        if (color == -1) {
-            proxy.setColor(AEColor.Transparent);
-        } else {
-            proxy.setColor(AEColor.values()[Dyes.transformDyeIndex(color)]);
-        }
-        if (proxy.getNode() != null) {
-            proxy.getNode()
-                .updateState();
-        }
+        refundAll(true);
+        super.onBlockDestroyed();
     }
 
     @Override
-    public AECableType getCableConnectionType(ForgeDirection forgeDirection) {
-        return isOutputFacing(forgeDirection) ? AECableType.SMART : AECableType.NONE;
+    public void onLeftclick(IGregTechTileEntity tile, EntityPlayer player) {
+        if (!(player instanceof EntityPlayerMP)) return;
+        ItemStack dataStick = player.inventory.getCurrentItem();
+        if (ItemList.Tool_DataStick.isStackEqual(dataStick, false, true)) saveToDataStick(player, dataStick);
     }
 
-    private void updateValidGridProxySides() {
-        if (additionalConnection) {
-            getProxy().setValidSides(EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)));
-        } else {
-            getProxy().setValidSides(EnumSet.of(getBaseMetaTileEntity().getFrontFacing()));
+    @Override
+    public boolean onRightclick(IGregTechTileEntity aBaseMetaTileEntity, EntityPlayer aPlayer, ForgeDirection side,
+        float aX, float aY, float aZ) {
+        final ItemStack is = aPlayer.inventory.getCurrentItem();
+        if (is != null && is.getItem() instanceof ToolQuartzCuttingKnife) {
+            if (ForgeEventFactory.onItemUseStart(aPlayer, is, 1) <= 0) return false;
+            IGregTechTileEntity te = getBaseMetaTileEntity();
+            aPlayer.openGui(
+                AppEng.instance(),
+                GuiBridge.GUI_RENAMER.ordinal() << 5 | (side.ordinal()),
+                te.getWorld(),
+                te.getXCoord(),
+                te.getYCoord(),
+                te.getZCoord());
+            return true;
         }
+        return super.onRightclick(aBaseMetaTileEntity, aPlayer, side, aX, aY, aZ);
     }
-
-    @Override
-    public void onFacingChange() {
-        updateValidGridProxySides();
-    }
-
-    @Override
-    public void securityBreak() {}
 
     @Override
     public boolean onWireCutterRightClick(ForgeDirection side, ForgeDirection wrenchingSide, EntityPlayer aPlayer,
@@ -362,14 +303,283 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
     }
 
     @Override
-    public boolean connectsToAllSides() {
-        return additionalConnection;
+    public void onColorChangeServer(byte aColor) {
+        updateAE2ProxyColor();
     }
 
     @Override
-    public void setConnectsToAllSides(boolean connects) {
-        additionalConnection = connects;
+    public void onFacingChange() {
         updateValidGridProxySides();
+    }
+
+    @Override
+    public void gridChanged() {
+        needPatternSync = true;
+    }
+
+    @Override
+    public void securityBreak() {}
+
+    @Override
+    public void provideCrafting(ICraftingProviderHelper craftingTracker) {
+        if (!isActive()) return;
+
+        patternDetailsPatternSlotMap.clear();
+        for (PatternSlot<SuperMTEHatchCraftingInputME> slot : internalInventory) {
+            if (slot == null) continue;
+            if (slot instanceof WildcardPatternSlotSuper wildcardSlot) {
+                for (ICraftingPatternDetails details : wildcardSlot
+                    .getExpandedDetails(slot.pattern, getBaseMetaTileEntity().getWorld())) {
+                    patternDetailsPatternSlotMap.put(details, slot);
+                    craftingTracker.addCraftingOption(this, details);
+                }
+                continue;
+            }
+            ICraftingPatternDetails details = slot.getPatternDetails();
+            if (details == null) {
+                GTLoggers.GT_FML_LOGGER.warn(
+                    "Found an invalid pattern at " + getBaseMetaTileEntity().getCoords()
+                        + " in dim "
+                        + getBaseMetaTileEntity().getWorld().provider.dimensionId);
+                continue;
+            }
+            patternDetailsPatternSlotMap.put(details, slot);
+            craftingTracker.addCraftingOption(this, details);
+        }
+    }
+
+    @Override
+    public boolean pushPattern(ICraftingPatternDetails patternDetails, InventoryCrafting table) {
+        if (!isActive()) return false;
+        if (!getBaseMetaTileEntity().isAllowedToWork()) return false;
+        if (!(table instanceof MEInventoryCrafting meic)) return false;
+
+        for (int i = 0; i < table.getSizeInventory(); ++i) {
+            IAEStack<?> stackInSlot = meic.getAEStackInSlot(i);
+            if (stackInSlot == null || stackInSlot instanceof IAEItemStack
+                || (supportFluids && stackInSlot instanceof IAEFluidStack)) {
+                continue;
+            }
+
+            scheduledReason = ScheduledReason.UNSUPPORTED_STACK;
+            return false;
+        }
+
+        PatternSlot<SuperMTEHatchCraftingInputME> slot = patternDetailsPatternSlotMap.get(patternDetails);
+        if (slot == null && patternDetails != null) {
+            String requestedId = WildcardPatternGenerator.getGeneratedPatternId(patternDetails.getPattern());
+            if (!requestedId.isEmpty()) {
+                for (Map.Entry<ICraftingPatternDetails, PatternSlot<SuperMTEHatchCraftingInputME>> entry : patternDetailsPatternSlotMap
+                    .entrySet()) {
+                    if (requestedId.equals(
+                        WildcardPatternGenerator.getGeneratedPatternId(
+                            entry.getKey()
+                                .getPattern()))) {
+                        slot = entry.getValue();
+                        break;
+                    }
+                }
+            }
+        }
+        if (slot instanceof WildcardPatternSlotSuper wildcardSlot) {
+            if (!wildcardSlot.canAcceptPattern(patternDetails)) return false;
+            wildcardSlot.setActivePatternDetails(patternDetails);
+        }
+        if (slot == null || !slot.insertItemsAndFluids(meic)) {
+            scheduledReason = ScheduledReason.SOMETHING_STUCK;
+            return false;
+        }
+        justHadNewItems = true;
+        markDirty();
+        return true;
+    }
+
+    private BaseActionSource getRequest() {
+        if (requestSource == null) requestSource = new MachineSource((IActionHost) getBaseMetaTileEntity());
+        return requestSource;
+    }
+
+    @Override
+    public ScheduledReason getScheduledReason() {
+        return scheduledReason;
+    }
+
+    @Override
+    public boolean isBusy() {
+        return false;
+    }
+
+    public void onPatternChange(int index, ItemStack newItem) {
+        if (!getBaseMetaTileEntity().isServerSide() || index < 0 || index >= getPatternCount()) return;
+
+        World world = getBaseMetaTileEntity().getWorld();
+
+        PatternSlot<SuperMTEHatchCraftingInputME> originalPattern = internalInventory[index];
+        if (originalPattern != null) {
+            if (originalPattern.hasChanged(newItem, world)) {
+                try {
+                    originalPattern.refund(getProxy(), getRequest(), false);
+                } catch (GridAccessException ignored) {}
+                if (usesDefaultPatternRefunds() && !originalPattern.isEmpty()) {
+                    pendingPatternRefunds.add(originalPattern);
+                    markDirty();
+                }
+                if (patternDetailsPatternSlotMap.remove(originalPattern.getPatternDetails(), originalPattern)) {
+                    for (PatternSlot<SuperMTEHatchCraftingInputME> duplicate : internalInventory) {
+                        if (duplicate != null && duplicate != originalPattern
+                            && Objects.equals(duplicate.getPatternDetails(), originalPattern.getPatternDetails())) {
+                            patternDetailsPatternSlotMap.put(duplicate.getPatternDetails(), duplicate);
+                            break;
+                        }
+                    }
+                }
+                patternDetailsPatternSlotMap.values()
+                    .removeIf(slot -> slot == originalPattern);
+                internalInventory[index] = null;
+                needPatternSync = true;
+            } else {
+                return; // nothing has changed
+            }
+        }
+
+        if (newItem == null || !(newItem.getItem() instanceof ICraftingPatternItem)) {
+            refreshLastNonNullIndex();
+            return;
+        }
+
+        PatternSlot<SuperMTEHatchCraftingInputME> patternSlot = createPatternSlot(newItem, null);
+        internalInventory[index] = patternSlot;
+        registerPatternOptions(patternSlot);
+        needPatternSync = true;
+
+        refreshLastNonNullIndex(); // 更新最后非空索引
+    }
+
+    /** Allows specialized hatches to decode and expose a separate recipe inventory for each pattern. */
+    protected PatternSlot<SuperMTEHatchCraftingInputME> createPatternSlot(ItemStack pattern, NBTTagCompound saved) {
+        return WildcardPatternGenerator.isWildcardPattern(pattern)
+            && !WildcardPatternGenerator.isGeneratedPattern(pattern)
+                ? new WildcardPatternSlotSuper(this, pattern, saved)
+                : new PatternSlot<>(pattern, saved, this);
+    }
+
+    private void registerPatternOptions(PatternSlot<SuperMTEHatchCraftingInputME> slot) {
+        if (slot instanceof WildcardPatternSlotSuper wildcardSlot) {
+            for (ICraftingPatternDetails details : wildcardSlot
+                .getExpandedDetails(slot.pattern, getBaseMetaTileEntity().getWorld()))
+                patternDetailsPatternSlotMap.put(details, slot);
+        } else if (slot.getPatternDetails() != null) {
+            patternDetailsPatternSlotMap.put(slot.getPatternDetails(), slot);
+        }
+    }
+
+    protected PatternSlot<SuperMTEHatchCraftingInputME> getPatternSlot(int index) {
+        return internalInventory[index];
+    }
+
+    /**
+     * 刷新最后一个非空配方槽位的索引，用于动态计算GUI行数
+     */
+    public void refreshLastNonNullIndex() {
+        lastNonNullIndex = -1;
+        if (internalInventory == null || internalInventory.length == 0) return;
+
+        for (int i = internalInventory.length - 1; i >= 0; i--) {
+            if (internalInventory[i] != null) {
+                lastNonNullIndex = i;
+                break;
+            }
+        }
+    }
+
+    private boolean postMEPatternChange() {
+        // don't post until it's active
+        if (!getProxy().isActive()) return false;
+        try {
+            getProxy().getGrid()
+                .postEvent(new MENetworkCraftingPatternChange(this, getProxy().getNode()));
+        } catch (GridAccessException ignored) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public void updateSlots() {
+        for (int slotId = getManualSlotStart(); slotId < getManualSlotStart() + SLOT_MANUAL_SIZE; ++slotId) {
+            if (mInventory[slotId] != null && mInventory[slotId].stackSize <= 0) mInventory[slotId] = null;
+        }
+    }
+
+    @Override
+    public void setInventorySlotContents(int aIndex, ItemStack aStack) {
+        super.setInventorySlotContents(aIndex, aStack);
+        if (aIndex >= getPatternCount()) return;
+        onPatternChange(aIndex, aStack);
+        needPatternSync = true;
+    }
+
+    public void doublePatterns(int val) {
+        boolean fast = (val & 1) != 0;
+        boolean backwards = (val & 2) != 0;
+        CraftingGridCache.pauseRebuilds();
+        try {
+            IInventory patterns = this.getPatterns();
+            TileEntity te = this.getTileEntity();
+            for (int i = 0; i < getPatternCount(); i++) {
+                ItemStack stack = patterns.getStackInSlot(i);
+                if (stack != null && stack.getItem() instanceof ICraftingPatternItem cpi) {
+                    ICraftingPatternDetails details = cpi.getPatternForItem(stack, te.getWorldObj());
+                    if (details != null && !details.isCraftable()) {
+                        int max = backwards ? PatternMultiplierHelper.getMaxBitDivider(details)
+                            : PatternMultiplierHelper.getMaxBitMultiplier(details);
+                        if (max > 0) {
+                            ItemStack copy = stack.copy();
+                            PatternMultiplierHelper
+                                .applyModification(copy, (fast ? Math.min(3, max) : 1) * (backwards ? -1 : 1));
+                            patterns.setInventorySlotContents(i, copy);
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        CraftingGridCache.unpauseRebuilds();
+    }
+
+    /** Returns the independent item and fluid product caches owned by this hatch. */
+    public PatternMEOutput getMEOutput() {
+        return meOutput;
+    }
+
+    /** Reuses the hatch's security action source when exporting products. */
+    public BaseActionSource getMEOutputActionSource() {
+        return getRequest();
+    }
+
+    /** Wakes controllers attached to the hatch after output space grows. */
+    public void notifyMEOutputSpaceChanged() {
+        notifyWatchers();
+        for (SuperMTEHatchCraftingInputSlave mirror : getProxyHatches()) {
+            mirror.notifyMEOutputSpaceChanged();
+        }
+    }
+
+    public void addProxyHatch(SuperMTEHatchCraftingInputSlave proxy) {
+        if (!proxyHatches.contains(proxy)) proxyHatches.add(proxy);
+    }
+
+    public void removeProxyHatch(SuperMTEHatchCraftingInputSlave proxy) {
+        proxyHatches.remove(proxy);
+    }
+
+    public List<SuperMTEHatchCraftingInputSlave> getProxyHatches() {
+        long currentTime = getBaseMetaTileEntity().getTimer();
+        if (currentTime != lastProxyHatchValidationTime) {
+            proxyHatches
+                .removeIf(hatch -> hatch == null || hatch.getBaseMetaTileEntity() == null || hatch.getMaster() != this);
+            lastProxyHatchValidationTime = currentTime;
+        }
+        return Collections.unmodifiableList(proxyHatches);
     }
 
     @Override
@@ -386,6 +596,38 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
         return this.gridProxy;
     }
 
+    public void updateAE2ProxyColor() {
+        AENetworkProxy proxy = getProxy();
+        byte color = this.getColor();
+        if (color == -1) {
+            proxy.setColor(AEColor.Transparent);
+        } else {
+            proxy.setColor(AEColor.values()[Dyes.transformDyeIndex(color)]);
+        }
+        if (proxy.getNode() != null) {
+            proxy.getNode()
+                .updateState();
+        }
+    }
+
+    private void updateValidGridProxySides() {
+        if (additionalConnection) {
+            getProxy().setValidSides(EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)));
+        } else {
+            getProxy().setValidSides(EnumSet.of(getBaseMetaTileEntity().getFrontFacing()));
+        }
+    }
+
+    @Override
+    public IGridNode getGridNode(ForgeDirection dir) {
+        return getProxy().getNode();
+    }
+
+    @Override
+    public AECableType getCableConnectionType(ForgeDirection forgeDirection) {
+        return isOutputFacing(forgeDirection) ? AECableType.SMART : AECableType.NONE;
+    }
+
     @Override
     public DimensionalCoord getLocation() {
         return new DimensionalCoord(
@@ -396,23 +638,338 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
     }
 
     @Override
-    public int rows() {
-        if (lastNonNullIndex == -1) refreshLastNonNullIndex();
-        int calculatedRows = (lastNonNullIndex + 9) / 9 + 1;
-        if ((lastNonNullIndex + 1) % 9 == 0) {
-            calculatedRows++;
-        }
-        return Math.min(calculatedRows, getPatternCount() / 9);
+    public TileEntity getTileEntity() {
+        return (TileEntity) getBaseMetaTileEntity();
     }
 
     @Override
-    public int rowSize() {
-        return 9;
+    public boolean allowPullStack(IGregTechTileEntity aBaseMetaTileEntity, int aIndex, ForgeDirection side,
+        ItemStack aStack) {
+        return false;
+    }
+
+    @Override
+    public boolean allowPutStack(IGregTechTileEntity aBaseMetaTileEntity, int aIndex, ForgeDirection side,
+        ItemStack aStack) {
+        return false;
+    }
+
+    @Override
+    public Iterator<PatternSlot<SuperMTEHatchCraftingInputME>> inventories() {
+        return Arrays.stream(internalInventory)
+            .filter(Objects::nonNull)
+            .iterator();
+    }
+
+    public Iterator<PatternSlot<SuperMTEHatchCraftingInputME>> inventoriesReversed() {
+        return IntStream.range(0, internalInventory.length)
+            .map(i -> internalInventory.length - 1 - i)
+            .mapToObj(i -> internalInventory[i])
+            .filter(Objects::nonNull)
+            .iterator();
+    }
+
+    @Override
+    public Optional<IDualInputInventory> getFirstNonEmptyInventory() {
+        for (PatternSlot<SuperMTEHatchCraftingInputME> slot : internalInventory) {
+            if (slot != null && !slot.isEmpty()) return Optional.of(slot);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public ItemStack[] getSharedItems() {
+        ItemStack[] sharedItems = new ItemStack[SLOT_MANUAL_SIZE + 2];
+        sharedItems[0] = mInventory[getCircuitSlot()];
+        sharedItems[1] = mInventory[getMoldSlot()];
+        System.arraycopy(mInventory, getManualSlotStart(), sharedItems, 2, SLOT_MANUAL_SIZE);
+        return ArrayExt.withoutNulls(sharedItems, ItemStack[]::new);
     }
 
     @Override
     public IInventory getPatterns() {
         return patternInventory;
+    }
+
+    public int getPatternCount() {
+        return mInventory.length - SLOT_MANUAL_SIZE - 2;
+    }
+
+    public int getManualSlotStart() {
+        return getCircuitSlot() + 1;
+    }
+
+    @Override
+    public int getCircuitSlot() {
+        return getPatternCount();
+    }
+
+    public int getMoldSlot() {
+        return getManualSlotStart() + SLOT_MANUAL_SIZE;
+    }
+
+    public boolean hasVirtualMoldSlot() {
+        return true;
+    }
+
+    public void setMold(@Nullable ItemStack selected) {
+        if (!hasVirtualMoldSlot()) return;
+        ItemStack phantom = findMatchingMold(selected);
+        if (phantom != null) phantom.stackSize = 0;
+        if (inventoryHandler != null) {
+            inventoryHandler.setStackInSlot(getMoldSlot(), phantom);
+        }
+        setInventorySlotContents(getMoldSlot(), phantom);
+        getBaseMetaTileEntity().markInventoryBeenModified();
+    }
+
+    @Nullable
+    public static ItemStack findMatchingMold(@Nullable ItemStack stack) {
+        if (stack == null) return null;
+        for (ItemStack mold : MoldDataManager.getMolds()) {
+            if (GTUtility.areStacksEqual(mold, stack, true)) return mold.copy();
+        }
+        return null;
+    }
+
+    public int findMatchingMoldIndex(@Nullable ItemStack stack) {
+        if (stack == null) return -1;
+        for (int i = 0; i < MoldDataManager.getMoldCount(); i++) {
+            if (GTUtility.areStacksEqual(MoldDataManager.getMolds()[i], stack, true)) return i;
+        }
+        return -1;
+    }
+
+    @Override
+    public ITexture[] getTexturesActive(ITexture aBaseTexture) {
+        return getTexturesInactive(aBaseTexture);
+    }
+
+    @Override
+    public ITexture[] getTexturesInactive(ITexture aBaseTexture) {
+        return new ITexture[] { aBaseTexture,
+            TextureFactory.of(supportFluids ? OVERLAY_ME_CRAFTING_INPUT_BUFFER : OVERLAY_ME_CRAFTING_INPUT_BUS) };
+    }
+
+    @Override
+    public ItemStack getCrafterIcon() {
+        return getMachineCraftingIcon();
+    }
+
+    @Override
+    public boolean isGivingInformation() {
+        return true;
+    }
+
+    @Override
+    public String[] getInfoData() {
+        List<String> ret = new ArrayList<>();
+        ret.add(
+            (getProxy() != null && getProxy().isActive())
+                ? StatCollector.translateToLocal("GT5U.infodata.hatch.crafting_input_me.bus.online")
+                : StatCollector.translateToLocalFormatted(
+                    "GT5U.infodata.hatch.crafting_input_me.bus.offline",
+                    getAEDiagnostics()));
+        ret.add(
+            StatCollector.translateToLocal(
+                "GT5U.infodata.hatch.crafting_input_me.show_pattern." + (showPattern ? "enable" : "disabled")));
+        ret.add(StatCollector.translateToLocal("GT5U.infodata.hatch.internal_inventory"));
+        int i = 0;
+        for (PatternSlot<SuperMTEHatchCraftingInputME> slot : internalInventory) {
+            if (slot == null) continue;
+            if (slot.getPatternDetails() == null) continue;
+            i += 1;
+            ret.add(
+                StatCollector.translateToLocalFormatted(
+                    "GT5U.infodata.hatch.internal_inventory.slot",
+                    i,
+                    EnumChatFormatting.BLUE + describePattern(slot.getPatternDetails()) + EnumChatFormatting.RESET));
+            Map<GTUtility.ItemId, BigInteger> itemMap = new HashMap<>();
+            for (IAEItemStack stack : slot.getStoredItems()) {
+                ItemStack item = stack.copy()
+                    .setStackSize(1)
+                    .getItemStack();
+                itemMap.merge(GTUtility.ItemId.create(item), BigInteger.valueOf(stack.getStackSize()), BigInteger::add);
+            }
+            for (Map.Entry<GTUtility.ItemId, BigInteger> entry : itemMap.entrySet()) {
+                ItemStack item = entry.getKey()
+                    .getItemStack();
+                BigInteger amount = entry.getValue();
+                ret.add(
+                    item.getItem()
+                        .getItemStackDisplayName(item) + ": "
+                        + EnumChatFormatting.GOLD
+                        + readableAmount(amount)
+                        + EnumChatFormatting.RESET);
+            }
+            Map<Fluid, BigInteger> fluidMap = new HashMap<>();
+            for (IAEFluidStack stack : slot.getStoredFluids()) {
+                fluidMap.merge(stack.getFluid(), BigInteger.valueOf(stack.getStackSize()), BigInteger::add);
+            }
+            for (Map.Entry<Fluid, BigInteger> entry : fluidMap.entrySet()) {
+                FluidStack fluid = new FluidStack(entry.getKey(), 1);
+                BigInteger amount = entry.getValue();
+                ret.add(
+                    fluid.getLocalizedName() + ": "
+                        + EnumChatFormatting.AQUA
+                        + readableAmount(amount)
+                        + EnumChatFormatting.RESET);
+            }
+        }
+        if (!pendingPatternRefunds.isEmpty()) {
+            // #tr gtnr.tooltip.gtneverreset.crafting_input.refunds
+            // # Pending input returns: %s buffers; reconnect ME to return them
+            // # zh_CN 待退还原料：%s 份缓存；接回 ME 网络后自动退还
+            ret.add(
+                StatCollector.translateToLocalFormatted(
+                    "gtnr.tooltip.gtneverreset.crafting_input.refunds",
+                    pendingPatternRefunds.size()));
+        }
+        return ret.toArray(new String[0]);
+    }
+
+    private String describePattern(ICraftingPatternDetails patternDetails) {
+        return Arrays.stream(patternDetails.getCondensedOutputs())
+            .map(
+                aeItemStack -> aeItemStack.getItem()
+                    .getItemStackDisplayName(aeItemStack.getItemStack()))
+            .collect(Collectors.joining(", "));
+    }
+
+    @Override
+    public void getWailaBody(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor,
+        IWailaConfigHandler config) {
+        NBTTagCompound tag = accessor.getNBTData();
+        if (tag.hasKey("name"))
+            currenttip.add(EnumChatFormatting.AQUA + tag.getString("name") + EnumChatFormatting.RESET);
+        currenttip.add(
+            StatCollector.translateToLocal(
+                "GT5U.infodata.hatch.crafting_input_me.show_pattern." + (showPattern ? "enable" : "disabled")));
+        if (tag.hasKey("inventory")) {
+            NBTTagList inventory = tag.getTagList("inventory", Constants.NBT.TAG_COMPOUND);
+            for (int i = 0; i < inventory.tagCount(); ++i) {
+                NBTTagCompound item = inventory.getCompoundTagAt(i);
+                String name = item.getString("name");
+                String amount = item.hasKey("amountText") ? item.getString("amountText")
+                    : ReadableNumberConverter.INSTANCE.toWideReadableForm(item.getLong("amount"));
+                currenttip.add(name + ": " + EnumChatFormatting.GOLD + amount + EnumChatFormatting.RESET);
+            }
+        }
+        super.getWailaBody(itemStack, currenttip, accessor, config);
+    }
+
+    @Override
+    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
+        int z) {
+        tag.setBoolean("showPattern", showPattern);
+        NBTTagList inventory = new NBTTagList();
+        HashMap<String, BigInteger> nameToAmount = new HashMap<>();
+        for (Iterator<PatternSlot<SuperMTEHatchCraftingInputME>> it = inventories(); it.hasNext();) {
+            PatternSlot<SuperMTEHatchCraftingInputME> i = it.next();
+            for (IAEItemStack item : i.getStoredItems()) {
+                String name = item.copy()
+                    .setStackSize(1)
+                    .getItemStack()
+                    .getDisplayName();
+                nameToAmount.merge(name, BigInteger.valueOf(item.getStackSize()), BigInteger::add);
+            }
+            for (IAEFluidStack fluid : i.getStoredFluids()) {
+                String name = fluid.copy()
+                    .setStackSize(1)
+                    .getFluidStack()
+                    .getLocalizedName();
+                nameToAmount.merge(name, BigInteger.valueOf(fluid.getStackSize()), BigInteger::add);
+            }
+        }
+        for (Map.Entry<String, BigInteger> entry : nameToAmount.entrySet()) {
+            NBTTagCompound item = new NBTTagCompound();
+            item.setString("name", entry.getKey());
+            item.setString("amountText", readableAmount(entry.getValue()));
+            inventory.appendTag(item);
+        }
+
+        tag.setTag("inventory", inventory);
+        if (!Objects.equals(getName(), getLocalName())) {
+            tag.setString("name", getName());
+        }
+        super.getWailaNBTData(player, tile, tag, world, x, y, z);
+    }
+
+    private static String readableAmount(BigInteger amount) {
+        return amount.bitLength() <= 63 ? ReadableNumberConverter.INSTANCE.toWideReadableForm(amount.longValue())
+            : NumberFormat.getIntegerInstance(Locale.ROOT)
+                .format(amount);
+    }
+
+    @Override
+    public List<ItemStack> getItemsForHoloGlasses() {
+        List<ItemStack> list = new ArrayList<>();
+        for (PatternSlot<SuperMTEHatchCraftingInputME> slot : internalInventory) {
+            if (slot == null) continue;
+            if (slot.getPatternDetails() == null) continue;
+
+            IAEItemStack[] outputs = slot.getPatternDetails()
+                .getCondensedOutputs();
+            list.add(outputs[0].getItemStack());
+        }
+        return list;
+    }
+
+    @Override
+    public String[] getDescription() {
+        return PatternMEOutput.describe(getBaseDescription());
+    }
+
+    /** Base lines shared by every pattern input assembly; product output is appended by {@link #getDescription()}. */
+    protected String[] getBaseDescription() {
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.type
+        // # Machine Type: {\\YELLOW}CRIB{\\RESET}
+        // # zh_CN 机器类型：{\\YELLOW}CRIB{\\RESET}
+        String type = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.type");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.item_input
+        // # Feeds the multiblock with ingredients from ME crafting jobs
+        // # zh_CN 把 ME 合成任务要用的原料送进多方块机器
+        String itemInput = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.item_input");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.tier
+        // # Hatch Tier: %s
+        // # zh_CN 仓室等级：%s
+        String tier = StatCollector.translateToLocalFormatted(
+            "gtnr.tooltip.gtneverreset.crafting_input.tier",
+            TIER_COLORS[supportFluids ? 10 : 6] + VN[supportFluids ? 10 : 6]);
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.processes
+        // # The Quantum Computer batches deliveries for processing patterns and buffers each one separately
+        // # zh_CN 量子计算机可以把处理样板的发料合并成批，每张样板单独缓存
+        String processes = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.processes");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.supports_fluids
+        // # Handles fluid ingredients; use Ultimate Encoded Patterns for fluid recipes
+        // # zh_CN 支持流体原料；流体配方要用终极编码样板
+        String supportsFluids = StatCollector
+            .translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.supports_fluids");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.no_fluids
+        // # Item ingredients only; fluid patterns are not supported
+        // # zh_CN 只收物品原料，不支持流体样板
+        String noFluids = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.no_fluids");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.connection
+        // # Right-click with wire cutters to switch between front-only and all-side ME connections
+        // # zh_CN 拿剪线钳右键，切换只连正面还是连所有面
+        String connection = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.connection");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.ignores_hatches
+        // # Pattern recipes use only their own buffered ingredients, not other input buses or hatches
+        // # zh_CN 样板配方只用自己缓存的原料，不碰其他输入总线或输入仓的原料
+        String ignoresHatches = StatCollector
+            .translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.ignores_hatches");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.ignores_patterns
+        // # Each pattern keeps its own ingredients; manual slots are shared by all patterns
+        // # zh_CN 各张样板的原料分开存；手动槽由所有样板共用
+        String ignoresPatterns = StatCollector
+            .translateToLocal("gtnr.tooltip.gtneverreset.crafting_input.ignores_patterns");
+        // #tr gtnr.tooltip.gtneverreset.crafting_input.capacity
+        // # %s pattern slots; requires ME power and one channel
+        // # zh_CN 共 %s 个样板槽；需要 ME 供电和一个频道
+        String capacity = StatCollector
+            .translateToLocalFormatted("gtnr.tooltip.gtneverreset.crafting_input.capacity", getPatternCount());
+        return new String[] { type, itemInput, tier, processes, capacity, supportFluids ? supportsFluids : noFluids,
+            ignoresHatches, ignoresPatterns, connection };
     }
 
     @Override
@@ -521,35 +1078,6 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
     }
 
     @Override
-    public TileEntity getTileEntity() {
-        return (TileEntity) getBaseMetaTileEntity();
-    }
-
-    @Override
-    public boolean shouldDisplay() {
-        return showPattern;
-    }
-
-    @Override
-    public void toggleTerminalVisibility() {
-        showPattern = !showPattern;
-        if (getBaseMetaTileEntity() != null) getBaseMetaTileEntity().markDirty();
-    }
-
-    @Override
-    public boolean allowsPatternOptimization() {
-        return !disablePatternOptimization;
-    }
-
-    @Override
-    public IAEStackType<?>[] getSupportedStackTypes() {
-        if (supportFluids) {
-            return new IAEStackType<?>[] { ITEM_STACK_TYPE, FLUID_STACK_TYPE };
-        }
-        return new IAEStackType<?>[] { ITEM_STACK_TYPE };
-    }
-
-    @Override
     public ItemStack getSelfRep() {
         return this.getStackForm(1);
     }
@@ -561,18 +1089,64 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
     }
 
     @Override
-    public void gridChanged() {
-        needPatternSync = true;
+    public String getCustomName() {
+        return customName;
     }
 
     @Override
-    public boolean isPowered() {
-        return getProxy() != null && getProxy().isPowered();
+    public boolean hasCustomName() {
+        return customName != null;
     }
 
     @Override
-    public boolean isActive() {
-        return getProxy() != null && getProxy().isActive();
+    public void setCustomName(String name) {
+        customName = name;
+    }
+
+    @Override
+    protected boolean useMui2() {
+        return true;
+    }
+
+    @Override
+    public ModularPanel buildUI(PosGuiData data, PanelSyncManager syncManager, UISettings uiSettings) {
+        return new SuperMTEHatchCraftingInputMEGui(this).build(data, syncManager, uiSettings);
+    }
+
+    @Override
+    public int getCircuitSlotX() {
+        return 170;
+    }
+
+    @Override
+    public int getCircuitSlotY() {
+        return 64;
+    }
+
+    @Override
+    public int rows() {
+        if (lastNonNullIndex == -1) refreshLastNonNullIndex();
+        int calculatedRows = (lastNonNullIndex + 9) / 9 + 1;
+        if ((lastNonNullIndex + 1) % 9 == 0) {
+            calculatedRows++;
+        }
+        return Math.min(calculatedRows, getPatternCount() / 9);
+    }
+
+    @Override
+    public int rowSize() {
+        return 9;
+    }
+
+    @Override
+    public boolean shouldDisplay() {
+        return showPattern;
+    }
+
+    @Override
+    public void toggleTerminalVisibility() {
+        showPattern = !showPattern;
+        if (getBaseMetaTileEntity() != null) getBaseMetaTileEntity().markDirty();
     }
 
     @Override
@@ -654,440 +1228,39 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
         }
     }
 
+    /** Preserves buffered products on the dropped machine stack when picked up with a wrench. */
     @Override
-    public boolean isGivingInformation() {
-        return true;
-    }
-
-    private String describePattern(ICraftingPatternDetails patternDetails) {
-        return Arrays.stream(patternDetails.getCondensedOutputs())
-            .map(
-                aeItemStack -> aeItemStack.getItem()
-                    .getItemStackDisplayName(aeItemStack.getItemStack()))
-            .collect(Collectors.joining(", "));
-    }
-
-    @Override
-    public String[] getInfoData() {
-        List<String> ret = new ArrayList<>();
-        ret.add(
-            (getProxy() != null && getProxy().isActive())
-                ? StatCollector.translateToLocal("GT5U.infodata.hatch.crafting_input_me.bus.online")
-                : StatCollector.translateToLocalFormatted(
-                    "GT5U.infodata.hatch.crafting_input_me.bus.offline",
-                    getAEDiagnostics()));
-        ret.add(
-            StatCollector.translateToLocal(
-                "GT5U.infodata.hatch.crafting_input_me.show_pattern." + (showPattern ? "enable" : "disabled")));
-        ret.add(StatCollector.translateToLocal("GT5U.infodata.hatch.internal_inventory"));
-        int i = 0;
-        for (PatternSlot<SuperMTEHatchCraftingInputME> slot : internalInventory) {
-            if (slot == null) continue;
-            if (slot.getPatternDetails() == null) continue;
-            i += 1;
-            ret.add(
-                StatCollector.translateToLocalFormatted(
-                    "GT5U.infodata.hatch.internal_inventory.slot",
-                    i,
-                    EnumChatFormatting.BLUE + describePattern(slot.getPatternDetails()) + EnumChatFormatting.RESET));
-            Map<GTUtility.ItemId, BigInteger> itemMap = new HashMap<>();
-            for (IAEItemStack stack : slot.getStoredItems()) {
-                ItemStack item = stack.copy()
-                    .setStackSize(1)
-                    .getItemStack();
-                itemMap.merge(GTUtility.ItemId.create(item), BigInteger.valueOf(stack.getStackSize()), BigInteger::add);
-            }
-            for (Map.Entry<GTUtility.ItemId, BigInteger> entry : itemMap.entrySet()) {
-                ItemStack item = entry.getKey()
-                    .getItemStack();
-                BigInteger amount = entry.getValue();
-                ret.add(
-                    item.getItem()
-                        .getItemStackDisplayName(item) + ": "
-                        + EnumChatFormatting.GOLD
-                        + readableAmount(amount)
-                        + EnumChatFormatting.RESET);
-            }
-            Map<Fluid, BigInteger> fluidMap = new HashMap<>();
-            for (IAEFluidStack stack : slot.getStoredFluids()) {
-                fluidMap.merge(stack.getFluid(), BigInteger.valueOf(stack.getStackSize()), BigInteger::add);
-            }
-            for (Map.Entry<Fluid, BigInteger> entry : fluidMap.entrySet()) {
-                FluidStack fluid = new FluidStack(entry.getKey(), 1);
-                BigInteger amount = entry.getValue();
-                ret.add(
-                    fluid.getLocalizedName() + ": "
-                        + EnumChatFormatting.AQUA
-                        + readableAmount(amount)
-                        + EnumChatFormatting.RESET);
-            }
-        }
-        if (!pendingPatternRefunds.isEmpty()) {
-            // #tr tooltip.gtneverreset.crafting_input.refunds
-            // # Pending input returns: %s buffers; reconnect ME to return them
-            // # zh_CN 待退还原料：%s 份缓存；接回 ME 网络后自动退还
-            ret.add(
-                StatCollector.translateToLocalFormatted(
-                    "tooltip.gtneverreset.crafting_input.refunds",
-                    pendingPatternRefunds.size()));
-        }
-        return ret.toArray(new String[0]);
-    }
-
-    @Override
-    public boolean allowPullStack(IGregTechTileEntity aBaseMetaTileEntity, int aIndex, ForgeDirection side,
-        ItemStack aStack) {
-        return false;
-    }
-
-    @Override
-    public boolean allowPutStack(IGregTechTileEntity aBaseMetaTileEntity, int aIndex, ForgeDirection side,
-        ItemStack aStack) {
-        return false;
-    }
-
-    public int getPatternCount() {
-        return mInventory.length - SLOT_MANUAL_SIZE - 2;
-    }
-
-    public int getManualSlotStart() {
-        return getCircuitSlot() + 1;
-    }
-
-    @Override
-    public int getCircuitSlot() {
-        return getPatternCount();
-    }
-
-    public int getMoldSlot() {
-        return getManualSlotStart() + SLOT_MANUAL_SIZE;
-    }
-
-    public boolean hasVirtualMoldSlot() {
-        return true;
-    }
-
-    public void setMold(@Nullable ItemStack selected) {
-        if (!hasVirtualMoldSlot()) return;
-        ItemStack phantom = findMatchingMold(selected);
-        if (phantom != null) phantom.stackSize = 0;
-        if (inventoryHandler != null) {
-            inventoryHandler.setStackInSlot(getMoldSlot(), phantom);
-        }
-        setInventorySlotContents(getMoldSlot(), phantom);
-        getBaseMetaTileEntity().markInventoryBeenModified();
-    }
-
-    @Nullable
-    public static ItemStack findMatchingMold(@Nullable ItemStack stack) {
-        if (stack == null) return null;
-        for (ItemStack mold : MoldDataManager.getMolds()) {
-            if (GTUtility.areStacksEqual(mold, stack, true)) return mold.copy();
-        }
-        return null;
-    }
-
-    public int findMatchingMoldIndex(@Nullable ItemStack stack) {
-        if (stack == null) return -1;
-        for (int i = 0; i < MoldDataManager.getMoldCount(); i++) {
-            if (GTUtility.areStacksEqual(MoldDataManager.getMolds()[i], stack, true)) return i;
-        }
-        return -1;
-    }
-
-    @Override
-    public int getCircuitSlotX() {
-        return 170;
-    }
-
-    @Override
-    public int getCircuitSlotY() {
-        return 64;
-    }
-
-    @Override
-    public ModularPanel buildUI(PosGuiData data, PanelSyncManager syncManager, UISettings uiSettings) {
-        return new SuperMTEHatchCraftingInputMEGui(this).build(data, syncManager, uiSettings);
-    }
-
-    @Override
-    public void updateSlots() {
-        for (int slotId = getManualSlotStart(); slotId < getManualSlotStart() + SLOT_MANUAL_SIZE; ++slotId) {
-            if (mInventory[slotId] != null && mInventory[slotId].stackSize <= 0) mInventory[slotId] = null;
+    public void setItemNBT(NBTTagCompound tag) {
+        super.setItemNBT(tag);
+        meOutput.save(tag);
+        if (usesDefaultPatternRefunds()) {
+            writePatternRefunds(tag, true);
+            inputsSerializedIntoDrop = true;
         }
     }
 
-    private BaseActionSource getRequest() {
-        if (requestSource == null) requestSource = new MachineSource((IActionHost) getBaseMetaTileEntity());
-        return requestSource;
-    }
-
-    public void onPatternChange(int index, ItemStack newItem) {
-        if (!getBaseMetaTileEntity().isServerSide() || index < 0 || index >= getPatternCount()) return;
-
-        World world = getBaseMetaTileEntity().getWorld();
-
-        PatternSlot<SuperMTEHatchCraftingInputME> originalPattern = internalInventory[index];
-        if (originalPattern != null) {
-            if (originalPattern.hasChanged(newItem, world)) {
-                try {
-                    originalPattern.refund(getProxy(), getRequest(), false);
-                } catch (GridAccessException ignored) {}
-                if (usesDefaultPatternRefunds() && !originalPattern.isEmpty()) {
-                    pendingPatternRefunds.add(originalPattern);
-                    markDirty();
-                }
-                if (patternDetailsPatternSlotMap.remove(originalPattern.getPatternDetails(), originalPattern)) {
-                    for (PatternSlot<SuperMTEHatchCraftingInputME> duplicate : internalInventory) {
-                        if (duplicate != null && duplicate != originalPattern
-                            && Objects.equals(duplicate.getPatternDetails(), originalPattern.getPatternDetails())) {
-                            patternDetailsPatternSlotMap.put(duplicate.getPatternDetails(), duplicate);
-                            break;
-                        }
-                    }
-                }
-                patternDetailsPatternSlotMap.values()
-                    .removeIf(slot -> slot == originalPattern);
-                internalInventory[index] = null;
-                needPatternSync = true;
-            } else {
-                return; // nothing has changed
-            }
-        }
-
-        if (newItem == null || !(newItem.getItem() instanceof ICraftingPatternItem)) {
-            refreshLastNonNullIndex();
-            return;
-        }
-
-        PatternSlot<SuperMTEHatchCraftingInputME> patternSlot = createPatternSlot(newItem, null);
-        internalInventory[index] = patternSlot;
-        registerPatternOptions(patternSlot);
-        needPatternSync = true;
-
-        refreshLastNonNullIndex(); // 更新最后非空索引
-    }
-
-    /** Allows specialized hatches to decode and expose a separate recipe inventory for each pattern. */
-    protected PatternSlot<SuperMTEHatchCraftingInputME> createPatternSlot(ItemStack pattern, NBTTagCompound saved) {
-        return WildcardPatternGenerator.isWildcardPattern(pattern)
-            && !WildcardPatternGenerator.isGeneratedPattern(pattern)
-                ? new WildcardPatternSlotSuper(this, pattern, saved)
-                : new PatternSlot<>(pattern, saved, this);
-    }
-
-    private void registerPatternOptions(PatternSlot<SuperMTEHatchCraftingInputME> slot) {
-        if (slot instanceof WildcardPatternSlotSuper wildcardSlot) {
-            for (ICraftingPatternDetails details : wildcardSlot
-                .getExpandedDetails(slot.pattern, getBaseMetaTileEntity().getWorld()))
-                patternDetailsPatternSlotMap.put(details, slot);
-        } else if (slot.getPatternDetails() != null) {
-            patternDetailsPatternSlotMap.put(slot.getPatternDetails(), slot);
-        }
-    }
-
-    protected PatternSlot<SuperMTEHatchCraftingInputME> getPatternSlot(int index) {
-        return internalInventory[index];
-    }
-
-    /**
-     * 刷新最后一个非空配方槽位的索引，用于动态计算GUI行数
-     */
-    public void refreshLastNonNullIndex() {
-        lastNonNullIndex = -1;
-        if (internalInventory == null || internalInventory.length == 0) return;
-
-        for (int i = internalInventory.length - 1; i >= 0; i--) {
-            if (internalInventory[i] != null) {
-                lastNonNullIndex = i;
-                break;
-            }
-        }
-    }
-
-    @Override
-    public ItemStack[] getSharedItems() {
-        ItemStack[] sharedItems = new ItemStack[SLOT_MANUAL_SIZE + 2];
-        sharedItems[0] = mInventory[getCircuitSlot()];
-        sharedItems[1] = mInventory[getMoldSlot()];
-        System.arraycopy(mInventory, getManualSlotStart(), sharedItems, 2, SLOT_MANUAL_SIZE);
-        return ArrayExt.withoutNulls(sharedItems, ItemStack[]::new);
-    }
-
-    @Override
-    public void getWailaBody(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor,
-        IWailaConfigHandler config) {
-        NBTTagCompound tag = accessor.getNBTData();
-        if (tag.hasKey("name"))
-            currenttip.add(EnumChatFormatting.AQUA + tag.getString("name") + EnumChatFormatting.RESET);
-        currenttip.add(
-            StatCollector.translateToLocal(
-                "GT5U.infodata.hatch.crafting_input_me.show_pattern." + (showPattern ? "enable" : "disabled")));
-        if (tag.hasKey("inventory")) {
-            NBTTagList inventory = tag.getTagList("inventory", Constants.NBT.TAG_COMPOUND);
-            for (int i = 0; i < inventory.tagCount(); ++i) {
-                NBTTagCompound item = inventory.getCompoundTagAt(i);
-                String name = item.getString("name");
-                String amount = item.hasKey("amountText") ? item.getString("amountText")
-                    : ReadableNumberConverter.INSTANCE.toWideReadableForm(item.getLong("amount"));
-                currenttip.add(name + ": " + EnumChatFormatting.GOLD + amount + EnumChatFormatting.RESET);
-            }
-        }
-        super.getWailaBody(itemStack, currenttip, accessor, config);
-    }
-
-    @Override
-    public void getWailaNBTData(EntityPlayerMP player, TileEntity tile, NBTTagCompound tag, World world, int x, int y,
-        int z) {
-        tag.setBoolean("showPattern", showPattern);
-        NBTTagList inventory = new NBTTagList();
-        HashMap<String, BigInteger> nameToAmount = new HashMap<>();
-        for (Iterator<PatternSlot<SuperMTEHatchCraftingInputME>> it = inventories(); it.hasNext();) {
-            PatternSlot<SuperMTEHatchCraftingInputME> i = it.next();
-            for (IAEItemStack item : i.getStoredItems()) {
-                String name = item.copy()
-                    .setStackSize(1)
-                    .getItemStack()
-                    .getDisplayName();
-                nameToAmount.merge(name, BigInteger.valueOf(item.getStackSize()), BigInteger::add);
-            }
-            for (IAEFluidStack fluid : i.getStoredFluids()) {
-                String name = fluid.copy()
-                    .setStackSize(1)
-                    .getFluidStack()
-                    .getLocalizedName();
-                nameToAmount.merge(name, BigInteger.valueOf(fluid.getStackSize()), BigInteger::add);
-            }
-        }
-        for (Map.Entry<String, BigInteger> entry : nameToAmount.entrySet()) {
-            NBTTagCompound item = new NBTTagCompound();
-            item.setString("name", entry.getKey());
-            item.setString("amountText", readableAmount(entry.getValue()));
-            inventory.appendTag(item);
-        }
-
-        tag.setTag("inventory", inventory);
-        if (!Objects.equals(getName(), getLocalName())) {
-            tag.setString("name", getName());
-        }
-        super.getWailaNBTData(player, tile, tag, world, x, y, z);
-    }
-
-    private static String readableAmount(BigInteger amount) {
-        return amount.bitLength() <= 63 ? ReadableNumberConverter.INSTANCE.toWideReadableForm(amount.longValue())
-            : NumberFormat.getIntegerInstance(Locale.ROOT)
-                .format(amount);
-    }
-
-    @Override
-    public void provideCrafting(ICraftingProviderHelper craftingTracker) {
-        if (!isActive()) return;
-
-        patternDetailsPatternSlotMap.clear();
-        for (PatternSlot<SuperMTEHatchCraftingInputME> slot : internalInventory) {
-            if (slot == null) continue;
-            if (slot instanceof WildcardPatternSlotSuper wildcardSlot) {
-                for (ICraftingPatternDetails details : wildcardSlot
-                    .getExpandedDetails(slot.pattern, getBaseMetaTileEntity().getWorld())) {
-                    patternDetailsPatternSlotMap.put(details, slot);
-                    craftingTracker.addCraftingOption(this, details);
-                }
-                continue;
-            }
-            ICraftingPatternDetails details = slot.getPatternDetails();
-            if (details == null) {
-                GTLoggers.GT_FML_LOGGER.warn(
-                    "Found an invalid pattern at " + getBaseMetaTileEntity().getCoords()
-                        + " in dim "
-                        + getBaseMetaTileEntity().getWorld().provider.dimensionId);
-                continue;
-            }
-            patternDetailsPatternSlotMap.put(details, slot);
-            craftingTracker.addCraftingOption(this, details);
-        }
-    }
-
-    @Override
-    public boolean pushPattern(ICraftingPatternDetails patternDetails, InventoryCrafting table) {
-        if (!isActive()) return false;
-        if (!getBaseMetaTileEntity().isAllowedToWork()) return false;
-        if (!(table instanceof MEInventoryCrafting meic)) return false;
-
-        for (int i = 0; i < table.getSizeInventory(); ++i) {
-            IAEStack<?> stackInSlot = meic.getAEStackInSlot(i);
-            if (stackInSlot == null || stackInSlot instanceof IAEItemStack
-                || (supportFluids && stackInSlot instanceof IAEFluidStack)) {
-                continue;
-            }
-
-            scheduledReason = ScheduledReason.UNSUPPORTED_STACK;
-            return false;
-        }
-
-        PatternSlot<SuperMTEHatchCraftingInputME> slot = patternDetailsPatternSlotMap.get(patternDetails);
-        if (slot == null && patternDetails != null) {
-            String requestedId = WildcardPatternGenerator.getGeneratedPatternId(patternDetails.getPattern());
-            if (!requestedId.isEmpty()) {
-                for (Map.Entry<ICraftingPatternDetails, PatternSlot<SuperMTEHatchCraftingInputME>> entry : patternDetailsPatternSlotMap
-                    .entrySet()) {
-                    if (requestedId.equals(
-                        WildcardPatternGenerator.getGeneratedPatternId(
-                            entry.getKey()
-                                .getPattern()))) {
-                        slot = entry.getValue();
-                        break;
-                    }
-                }
-            }
-        }
-        if (slot instanceof WildcardPatternSlotSuper wildcardSlot) {
-            if (!wildcardSlot.canAcceptPattern(patternDetails)) return false;
-            wildcardSlot.setActivePatternDetails(patternDetails);
-        }
-        if (slot == null || !slot.insertItemsAndFluids(meic)) {
-            scheduledReason = ScheduledReason.SOMETHING_STUCK;
-            return false;
-        }
-        justHadNewItems = true;
-        markDirty();
-        return true;
-    }
-
-    @Override
-    public ScheduledReason getScheduledReason() {
-        return scheduledReason;
-    }
-
-    @Override
-    public boolean isBusy() {
-        return false;
-    }
-
-    @Override
-    public Iterator<PatternSlot<SuperMTEHatchCraftingInputME>> inventories() {
-        return Arrays.stream(internalInventory)
-            .filter(Objects::nonNull)
-            .iterator();
-    }
-
-    public Iterator<PatternSlot<SuperMTEHatchCraftingInputME>> inventoriesReversed() {
-        return IntStream.range(0, internalInventory.length)
-            .map(i -> internalInventory.length - 1 - i)
-            .mapToObj(i -> internalInventory[i])
-            .filter(Objects::nonNull)
-            .iterator();
-    }
-
-    @Override
-    public void onBlockDestroyed() {
-        // 清除幽灵模具槽位，防止掉落
-        if (inventoryHandler != null) {
-            inventoryHandler.setStackInSlot(getMoldSlot(), null);
-        }
-        mInventory[getMoldSlot()] = null;
-
-        refundAll(true);
-        super.onBlockDestroyed();
+    public void saveToDataStick(EntityPlayer player, ItemStack dataStick) {
+        IGregTechTileEntity tile = getBaseMetaTileEntity();
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setString("type", "CraftingInputBuffer");
+        tag.setInteger("x", tile.getXCoord());
+        tag.setInteger("y", tile.getYCoord());
+        tag.setInteger("z", tile.getZCoord());
+        tag.setInteger("dimension", tile.getWorld().provider.dimensionId);
+        dataStick.setTagCompound(tag);
+        // #tr item.gtnr.pattern_link.name
+        // # Pattern Input Link (%s, %s, %s)
+        // # zh_CN 样板输入连接数据（%s，%s，%s）
+        dataStick.setStackDisplayName(
+            StatCollector.translateToLocalFormatted(
+                "item.gtnr.pattern_link.name",
+                tile.getXCoord(),
+                tile.getYCoord(),
+                tile.getZCoord()));
+        // #tr gtnr.chat.gtnr.pattern_link.saved
+        // # Saved pattern input link to Data Stick
+        // # zh_CN 已将样板输入连接信息保存到数据棒
+        GTUtility.sendChatTrans(player, "gtnr.chat.gtnr.pattern_link.saved");
     }
 
     public void refundAll(boolean shouldDrop) {
@@ -1110,215 +1283,6 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
         }
         if (usesDefaultPatternRefunds()) retryPatternRefunds(pendingPatternRefunds.size());
         markDirty();
-    }
-
-    /** Preserves buffered products on the dropped machine stack when picked up with a wrench. */
-    @Override
-    public void setItemNBT(NBTTagCompound tag) {
-        super.setItemNBT(tag);
-        meOutput.save(tag);
-        if (usesDefaultPatternRefunds()) {
-            writePatternRefunds(tag, true);
-            inputsSerializedIntoDrop = true;
-        }
-    }
-
-    @Override
-    public void onLeftclick(IGregTechTileEntity tile, EntityPlayer player) {
-        if (!(player instanceof EntityPlayerMP)) return;
-        ItemStack dataStick = player.inventory.getCurrentItem();
-        if (ItemList.Tool_DataStick.isStackEqual(dataStick, false, true)) saveToDataStick(player, dataStick);
-    }
-
-    public void saveToDataStick(EntityPlayer player, ItemStack dataStick) {
-        IGregTechTileEntity tile = getBaseMetaTileEntity();
-        NBTTagCompound tag = new NBTTagCompound();
-        tag.setString("type", "CraftingInputBuffer");
-        tag.setInteger("x", tile.getXCoord());
-        tag.setInteger("y", tile.getYCoord());
-        tag.setInteger("z", tile.getZCoord());
-        tag.setInteger("dimension", tile.getWorld().provider.dimensionId);
-        dataStick.setTagCompound(tag);
-        // #tr item.gtnr.pattern_link.name
-        // # Pattern Input Link (%s, %s, %s)
-        // # zh_CN 样板输入连接数据（%s，%s，%s）
-        dataStick.setStackDisplayName(
-            StatCollector.translateToLocalFormatted(
-                "item.gtnr.pattern_link.name",
-                tile.getXCoord(),
-                tile.getYCoord(),
-                tile.getZCoord()));
-        // #tr chat.gtnr.pattern_link.saved
-        // # Saved pattern input link to Data Stick
-        // # zh_CN 已将样板输入连接信息保存到数据棒
-        GTUtility.sendChatTrans(player, "chat.gtnr.pattern_link.saved");
-    }
-
-    @Override
-    public boolean onRightclick(IGregTechTileEntity aBaseMetaTileEntity, EntityPlayer aPlayer, ForgeDirection side,
-        float aX, float aY, float aZ) {
-        final ItemStack is = aPlayer.inventory.getCurrentItem();
-        if (is != null && is.getItem() instanceof ToolQuartzCuttingKnife) {
-            if (ForgeEventFactory.onItemUseStart(aPlayer, is, 1) <= 0) return false;
-            IGregTechTileEntity te = getBaseMetaTileEntity();
-            aPlayer.openGui(
-                AppEng.instance(),
-                GuiBridge.GUI_RENAMER.ordinal() << 5 | (side.ordinal()),
-                te.getWorld(),
-                te.getXCoord(),
-                te.getYCoord(),
-                te.getZCoord());
-            return true;
-        }
-        return super.onRightclick(aBaseMetaTileEntity, aPlayer, side, aX, aY, aZ);
-    }
-
-    @Override
-    public ItemStack getCrafterIcon() {
-        return getMachineCraftingIcon();
-    }
-
-    private boolean postMEPatternChange() {
-        // don't post until it's active
-        if (!getProxy().isActive()) return false;
-        try {
-            getProxy().getGrid()
-                .postEvent(new MENetworkCraftingPatternChange(this, getProxy().getNode()));
-        } catch (GridAccessException ignored) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public void setInventorySlotContents(int aIndex, ItemStack aStack) {
-        super.setInventorySlotContents(aIndex, aStack);
-        if (aIndex >= getPatternCount()) return;
-        onPatternChange(aIndex, aStack);
-        needPatternSync = true;
-    }
-
-    @Override
-    public String getCustomName() {
-        return customName;
-    }
-
-    @Override
-    public boolean hasCustomName() {
-        return customName != null;
-    }
-
-    @Override
-    public void setCustomName(String name) {
-        customName = name;
-    }
-
-    @Override
-    public Optional<IDualInputInventory> getFirstNonEmptyInventory() {
-        for (PatternSlot<SuperMTEHatchCraftingInputME> slot : internalInventory) {
-            if (slot != null && !slot.isEmpty()) return Optional.of(slot);
-        }
-        return Optional.empty();
-    }
-
-    @Override
-    public boolean supportsFluids() {
-        return this.supportFluids;
-    }
-
-    @Override
-    public List<ItemStack> getItemsForHoloGlasses() {
-        List<ItemStack> list = new ArrayList<>();
-        for (PatternSlot<SuperMTEHatchCraftingInputME> slot : internalInventory) {
-            if (slot == null) continue;
-            if (slot.getPatternDetails() == null) continue;
-
-            IAEItemStack[] outputs = slot.getPatternDetails()
-                .getCondensedOutputs();
-            list.add(outputs[0].getItemStack());
-        }
-        return list;
-    }
-
-    public void doublePatterns(int val) {
-        boolean fast = (val & 1) != 0;
-        boolean backwards = (val & 2) != 0;
-        CraftingGridCache.pauseRebuilds();
-        try {
-            IInventory patterns = this.getPatterns();
-            TileEntity te = this.getTileEntity();
-            for (int i = 0; i < getPatternCount(); i++) {
-                ItemStack stack = patterns.getStackInSlot(i);
-                if (stack != null && stack.getItem() instanceof ICraftingPatternItem cpi) {
-                    ICraftingPatternDetails details = cpi.getPatternForItem(stack, te.getWorldObj());
-                    if (details != null && !details.isCraftable()) {
-                        int max = backwards ? PatternMultiplierHelper.getMaxBitDivider(details)
-                            : PatternMultiplierHelper.getMaxBitMultiplier(details);
-                        if (max > 0) {
-                            ItemStack copy = stack.copy();
-                            PatternMultiplierHelper
-                                .applyModification(copy, (fast ? Math.min(3, max) : 1) * (backwards ? -1 : 1));
-                            patterns.setInventorySlotContents(i, copy);
-                        }
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
-        CraftingGridCache.unpauseRebuilds();
-    }
-
-    @Override
-    public String[] getDescription() {
-        return PatternMEOutput.describe(getBaseDescription());
-    }
-
-    /** Base lines shared by every pattern input assembly; product output is appended by {@link #getDescription()}. */
-    protected String[] getBaseDescription() {
-        // #tr tooltip.gtneverreset.crafting_input.type
-        // # Machine Type: {\\YELLOW}CRIB{\\RESET}
-        // # zh_CN 机器类型：{\\YELLOW}CRIB{\\RESET}
-        String type = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.type");
-        // #tr tooltip.gtneverreset.crafting_input.item_input
-        // # Feeds the multiblock with ingredients from ME crafting jobs
-        // # zh_CN 把 ME 合成任务要用的原料送进多方块机器
-        String itemInput = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.item_input");
-        // #tr tooltip.gtneverreset.crafting_input.tier
-        // # Hatch Tier: %s
-        // # zh_CN 仓室等级：%s
-        String tier = StatCollector.translateToLocalFormatted(
-            "tooltip.gtneverreset.crafting_input.tier",
-            TIER_COLORS[supportFluids ? 10 : 6] + VN[supportFluids ? 10 : 6]);
-        // #tr tooltip.gtneverreset.crafting_input.processes
-        // # The Quantum Computer batches deliveries for processing patterns and buffers each one separately
-        // # zh_CN 量子计算机可以把处理样板的发料合并成批，每张样板单独缓存
-        String processes = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.processes");
-        // #tr tooltip.gtneverreset.crafting_input.supports_fluids
-        // # Handles fluid ingredients; use Ultimate Encoded Patterns for fluid recipes
-        // # zh_CN 支持流体原料；流体配方要用终极编码样板
-        String supportsFluids = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.supports_fluids");
-        // #tr tooltip.gtneverreset.crafting_input.no_fluids
-        // # Item ingredients only; fluid patterns are not supported
-        // # zh_CN 只收物品原料，不支持流体样板
-        String noFluids = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.no_fluids");
-        // #tr tooltip.gtneverreset.crafting_input.connection
-        // # Right-click with wire cutters to switch between front-only and all-side ME connections
-        // # zh_CN 拿剪线钳右键，切换只连正面还是连所有面
-        String connection = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.connection");
-        // #tr tooltip.gtneverreset.crafting_input.ignores_hatches
-        // # Pattern recipes use only their own buffered ingredients, not other input buses or hatches
-        // # zh_CN 样板配方只用自己缓存的原料，不碰其他输入总线或输入仓的原料
-        String ignoresHatches = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.ignores_hatches");
-        // #tr tooltip.gtneverreset.crafting_input.ignores_patterns
-        // # Each pattern keeps its own ingredients; manual slots are shared by all patterns
-        // # zh_CN 各张样板的原料分开存；手动槽由所有样板共用
-        String ignoresPatterns = StatCollector.translateToLocal("tooltip.gtneverreset.crafting_input.ignores_patterns");
-        // #tr tooltip.gtneverreset.crafting_input.capacity
-        // # %s pattern slots; requires ME power and one channel
-        // # zh_CN 共 %s 个样板槽；需要 ME 供电和一个频道
-        String capacity = StatCollector
-            .translateToLocalFormatted("tooltip.gtneverreset.crafting_input.capacity", getPatternCount());
-        return new String[] { type, itemInput, tier, processes, capacity, supportFluids ? supportsFluids : noFluids,
-            ignoresHatches, ignoresPatterns, connection };
     }
 
     /** Specialized inventories can supply their own persistent refund mechanism. */
@@ -1351,6 +1315,45 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
         }
         if (list.tagCount() == 0) tag.removeTag("patternInputRefunds");
         else tag.setTag("patternInputRefunds", list);
+    }
+
+    @Override
+    public boolean supportsFluids() {
+        return this.supportFluids;
+    }
+
+    @Override
+    public boolean allowsPatternOptimization() {
+        return !disablePatternOptimization;
+    }
+
+    @Override
+    public IAEStackType<?>[] getSupportedStackTypes() {
+        if (supportFluids) {
+            return new IAEStackType<?>[] { ITEM_STACK_TYPE, FLUID_STACK_TYPE };
+        }
+        return new IAEStackType<?>[] { ITEM_STACK_TYPE };
+    }
+
+    @Override
+    public boolean connectsToAllSides() {
+        return additionalConnection;
+    }
+
+    @Override
+    public void setConnectsToAllSides(boolean connects) {
+        additionalConnection = connects;
+        updateValidGridProxySides();
+    }
+
+    @Override
+    public boolean isPowered() {
+        return getProxy() != null && getProxy().isPowered();
+    }
+
+    @Override
+    public boolean isActive() {
+        return getProxy() != null && getProxy().isActive();
     }
 
     // Each pattern slot in the crafting input hatch has its own internal inventory

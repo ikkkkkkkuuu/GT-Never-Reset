@@ -44,14 +44,14 @@ import com.glodblock.github.FluidCraft;
 import com.glodblock.github.client.gui.GuiFCImgButton;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalMagnetGui;
-import com.xyp.gtneverreset.common.gui.container.ContainerQuickEncodingTerminal;
-import com.xyp.gtneverreset.common.packet.CPacketSwitchGuis;
-import com.xyp.gtneverreset.common.packet.CPacketTeleportToInterface;
-import com.xyp.gtneverreset.common.packet.CPacketToggleInterfaceVisibility;
+import com.xyp.gtneverreset.common.gui.container.QuickEncodingTerminalContainer;
 import com.xyp.gtneverreset.common.packet.InterfacePatternTarget;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.RecipeTransferPayload;
 import com.xyp.gtneverreset.common.packet.StorageFluidRequest;
+import com.xyp.gtneverreset.common.packet.SwitchGuisPacket;
+import com.xyp.gtneverreset.common.packet.TeleportToInterfacePacket;
+import com.xyp.gtneverreset.common.packet.ToggleInterfaceVisibilityPacket;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
 import com.xyp.gtneverreset.compat.nei.NeiCraftingFluid;
 import com.xyp.gtneverreset.compat.nei.QuickTerminalRecipeTransferHandler;
@@ -113,9 +113,9 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements IInterfaceTerminalPostUpdate {
+public final class QuickEncodingTerminalGui extends GuiPatternTerm implements IInterfaceTerminalPostUpdate {
 
-    private static final int ITEM_COLUMNS = ContainerQuickEncodingTerminal.STORAGE_COLUMNS;
+    private static final int ITEM_COLUMNS = QuickEncodingTerminalContainer.STORAGE_COLUMNS;
     private static final int ITEM_PANEL_WIDTH = 29 + ITEM_COLUMNS * 18;
     private static final int BUTTON_COLUMN_WIDTH = 18;
     private static final int ITEM_PANEL_X = -ITEM_PANEL_WIDTH - BUTTON_COLUMN_WIDTH;
@@ -170,7 +170,7 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
     private static final Field TYPE_TOGGLE_BUTTONS = findField(GuiMEMonitorable.class, "typeToggleButtons");
     private static final Field PATTERN_GUI_CRAFTING_MODE = findField(GuiPatternTerm.class, "craftingMode");
 
-    private final ContainerQuickEncodingTerminal patternContainer;
+    private final QuickEncodingTerminalContainer patternContainer;
     private final EmbeddedInterfaceTerminal interfaceTerminal;
     private final List<GuiButton> interfaceButtons = new ArrayList<>();
     private final List<GuiButton> storageButtons = new ArrayList<>();
@@ -213,12 +213,12 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         .newSetFromMap(new IdentityHashMap<>());
     private boolean storageShiftDrag;
 
-    public GuiQuickEncodingTerminal(InventoryPlayer inventoryPlayer, ITerminalHost host) {
-        this(inventoryPlayer, host, new ContainerQuickEncodingTerminal(inventoryPlayer, host));
+    public QuickEncodingTerminalGui(InventoryPlayer inventoryPlayer, ITerminalHost host) {
+        this(inventoryPlayer, host, new QuickEncodingTerminalContainer(inventoryPlayer, host));
     }
 
-    private GuiQuickEncodingTerminal(InventoryPlayer inventoryPlayer, ITerminalHost host,
-        ContainerQuickEncodingTerminal container) {
+    private QuickEncodingTerminalGui(InventoryPlayer inventoryPlayer, ITerminalHost host,
+        QuickEncodingTerminalContainer container) {
         super(inventoryPlayer, host, container);
         patternContainer = container;
         interfaceTerminal = new EmbeddedInterfaceTerminal(container);
@@ -260,14 +260,14 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         }
         buttonList.addAll(interfaceButtons);
 
-        // #tr gtneverreset.terminal.quick.mode.crafting
+        // #tr gtnr.terminal.quick.mode.crafting
         // # Crafting Pattern
         // # zh_CN 合成样板
-        craftingModeButton = createModeButton(Blocks.crafting_table, "gtneverreset.terminal.quick.mode.crafting");
-        // #tr gtneverreset.terminal.quick.mode.processing_4x4
+        craftingModeButton = createModeButton(Blocks.crafting_table, "gtnr.terminal.quick.mode.crafting");
+        // #tr gtnr.terminal.quick.mode.processing_4x4
         // # 4x4 Processing Pattern
         // # zh_CN 4x4 处理样板
-        processing4ModeButton = createModeButton(Blocks.dispenser, "gtneverreset.terminal.quick.mode.processing_4x4");
+        processing4ModeButton = createModeButton(Blocks.dispenser, "gtnr.terminal.quick.mode.processing_4x4");
         encodeButton = new RightEncodingButton();
         patternButtons.add(craftingModeButton);
         patternButtons.add(processing4ModeButton);
@@ -276,11 +276,11 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         buttonList.add(processing4ModeButton);
         buttonList.add(encodeButton);
 
-        // #tr gtneverreset.tooltip.switch_to_crafting_terminal
+        // #tr gtnr.tooltip.switch_to_crafting_terminal
         // # Switch to Wireless Crafting Terminal
         // # zh_CN 切换到无线合成终端
         switchToCraftingButton = new CompactTerminalSwitchButton(
-            StatCollector.translateToLocal("gtneverreset.tooltip.switch_to_crafting_terminal"));
+            StatCollector.translateToLocal("gtnr.tooltip.switch_to_crafting_terminal"));
         buttonList.add(switchToCraftingButton);
         fillSearchButton = new InterfaceSearchButton();
         buttonList.add(fillSearchButton);
@@ -810,17 +810,16 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
     public void showProcessingLimit(boolean inputs) {
         if (mc.thePlayer == null) return;
         if (inputs) {
-            // #tr gtneverreset.terminal.quick.too_many_processing_inputs
+            // #tr gtnr.terminal.quick.too_many_processing_inputs
             // # Processing pattern has more than 256 inputs
             // # zh_CN 处理样板的输入超过 256 项
-            mc.thePlayer
-                .addChatMessage(new ChatComponentTranslation("gtneverreset.terminal.quick.too_many_processing_inputs"));
+            mc.thePlayer.addChatMessage(new ChatComponentTranslation("gtnr.terminal.quick.too_many_processing_inputs"));
         } else {
-            // #tr gtneverreset.terminal.quick.too_many_processing_outputs
+            // #tr gtnr.terminal.quick.too_many_processing_outputs
             // # Processing pattern has more than 256 outputs
             // # zh_CN 处理样板的输出超过 256 项
-            mc.thePlayer.addChatMessage(
-                new ChatComponentTranslation("gtneverreset.terminal.quick.too_many_processing_outputs"));
+            mc.thePlayer
+                .addChatMessage(new ChatComponentTranslation("gtnr.terminal.quick.too_many_processing_outputs"));
         }
     }
 
@@ -963,18 +962,18 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         interfaceTerminal.drawCentralForeground(offsetX, offsetY, mouseX, mouseY);
         interfaceTerminal.drawCentralScrollBar();
         fontRendererObj.drawString(
-            // #tr gtneverreset.terminal.quick.storage
+            // #tr gtnr.terminal.quick.storage
             // # ME Storage
             // # zh_CN ME 库存
-            StatCollector.translateToLocal("gtneverreset.terminal.quick.storage"),
+            StatCollector.translateToLocal("gtnr.terminal.quick.storage"),
             ITEM_PANEL_X + 5,
             itemPanelY - 10,
             0x404040);
         fontRendererObj.drawString(
-            // #tr gtneverreset.terminal.quick.encoding
+            // #tr gtnr.terminal.quick.encoding
             // # Encoding
             // # zh_CN 编码
-            StatCollector.translateToLocal("gtneverreset.terminal.quick.encoding"),
+            StatCollector.translateToLocal("gtnr.terminal.quick.encoding"),
             PATTERN_PANEL_X + 8,
             patternPanelY() - 10,
             0x404040);
@@ -1028,11 +1027,11 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         }
         if (button == switchToCraftingButton) {
             AEBaseGui.setSwitchingGuis(true);
-            NetWorkHandler.sendToServer(new CPacketSwitchGuis(WirelessTerminalGuiType.WirelessCraftingTerminal));
+            NetWorkHandler.sendToServer(new SwitchGuisPacket(WirelessTerminalGuiType.WirelessCraftingTerminal));
             return;
         }
         if (button == craftingStatusButton) {
-            // Use AE2's native sub-GUI path so ContainerQuickEncodingTerminal#createPrimaryGui is attached to the
+            // Use AE2's native sub-GUI path so QuickEncodingTerminalContainer#createPrimaryGui is attached to the
             // crafting-status container. The legacy custom packet cannot establish this native parent/return link.
             NetworkHandler.instance.sendToServer(new PacketSwitchGuis(GuiBridge.GUI_CRAFTING_STATUS));
             return;
@@ -1740,22 +1739,22 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
 
         @Override
         public String getMessage() {
-            // #tr gtneverreset.terminal.quick.fill_search
+            // #tr gtnr.terminal.quick.fill_search
             // # Autofill interface search from NEI recipes
             // # zh_CN 用 NEI 配方自动填充接口搜索
-            String title = StatCollector.translateToLocal("gtneverreset.terminal.quick.fill_search");
-            // #tr gtneverreset.terminal.quick.fill_search.on
+            String title = StatCollector.translateToLocal("gtnr.terminal.quick.fill_search");
+            // #tr gtnr.terminal.quick.fill_search.on
             // # Enabled
             // # zh_CN 已开启
-            String on = StatCollector.translateToLocal("gtneverreset.terminal.quick.fill_search.on");
-            // #tr gtneverreset.terminal.quick.fill_search.off
+            String on = StatCollector.translateToLocal("gtnr.terminal.quick.fill_search.on");
+            // #tr gtnr.terminal.quick.fill_search.off
             // # Disabled
             // # zh_CN 已关闭
-            String off = StatCollector.translateToLocal("gtneverreset.terminal.quick.fill_search.off");
-            // #tr gtneverreset.terminal.quick.fill_search.detail
+            String off = StatCollector.translateToLocal("gtnr.terminal.quick.fill_search.off");
+            // #tr gtnr.terminal.quick.fill_search.detail
             // # Fill the interface name search when importing an NEI recipe
             // # zh_CN 导入 NEI 配方时，自动填入接口名称搜索框
-            String detail = StatCollector.translateToLocal("gtneverreset.terminal.quick.fill_search.detail");
+            String detail = StatCollector.translateToLocal("gtnr.terminal.quick.fill_search.detail");
             String status = ClientConfig.wirelessTerminal.fillSearchFromNeiRecipes ? EnumChatFormatting.GREEN + on
                 : EnumChatFormatting.RED + off;
             return title + "\n" + status + "\n" + EnumChatFormatting.GRAY + detail;
@@ -1775,22 +1774,22 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
 
         @Override
         public String getMessage() {
-            // #tr gtneverreset.terminal.quick.append_suffix
+            // #tr gtnr.terminal.quick.append_suffix
             // # Append NC item suffixes
             // # zh_CN 追加不消耗物品后缀
-            String title = StatCollector.translateToLocal("gtneverreset.terminal.quick.append_suffix");
-            // #tr gtneverreset.terminal.quick.append_suffix.on
+            String title = StatCollector.translateToLocal("gtnr.terminal.quick.append_suffix");
+            // #tr gtnr.terminal.quick.append_suffix.on
             // # Enabled
             // # zh_CN 已开启
-            String on = StatCollector.translateToLocal("gtneverreset.terminal.quick.append_suffix.on");
-            // #tr gtneverreset.terminal.quick.append_suffix.off
+            String on = StatCollector.translateToLocal("gtnr.terminal.quick.append_suffix.on");
+            // #tr gtnr.terminal.quick.append_suffix.off
             // # Disabled
             // # zh_CN 已关闭
-            String off = StatCollector.translateToLocal("gtneverreset.terminal.quick.append_suffix.off");
-            // #tr gtneverreset.terminal.quick.append_suffix.detail
+            String off = StatCollector.translateToLocal("gtnr.terminal.quick.append_suffix.off");
+            // #tr gtnr.terminal.quick.append_suffix.detail
             // # Append non-consumed item numbers when autofilling the interface name search
             // # zh_CN 自动填充接口名称搜索框时，追加不消耗物品的编号
-            String detail = StatCollector.translateToLocal("gtneverreset.terminal.quick.append_suffix.detail");
+            String detail = StatCollector.translateToLocal("gtnr.terminal.quick.append_suffix.detail");
             String status = appendsSuffix() ? EnumChatFormatting.GREEN + on : EnumChatFormatting.RED + off;
             return title + "\n" + status + "\n" + EnumChatFormatting.GRAY + detail;
         }
@@ -1873,22 +1872,22 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
 
         @Override
         public String getMessage() {
-            // #tr gtneverreset.terminal.quick.keep_non_consumables
+            // #tr gtnr.terminal.quick.keep_non_consumables
             // # Write programmed circuit and mold information
             // # zh_CN 写入编程电路和模具信息
-            String title = StatCollector.translateToLocal("gtneverreset.terminal.quick.keep_non_consumables");
-            // #tr gtneverreset.terminal.quick.keep_non_consumables.on
+            String title = StatCollector.translateToLocal("gtnr.terminal.quick.keep_non_consumables");
+            // #tr gtnr.terminal.quick.keep_non_consumables.on
             // # Enabled
             // # zh_CN 已开启
-            String enabled = StatCollector.translateToLocal("gtneverreset.terminal.quick.keep_non_consumables.on");
-            // #tr gtneverreset.terminal.quick.keep_non_consumables.off
+            String enabled = StatCollector.translateToLocal("gtnr.terminal.quick.keep_non_consumables.on");
+            // #tr gtnr.terminal.quick.keep_non_consumables.off
             // # Disabled
             // # zh_CN 已关闭
-            String disabled = StatCollector.translateToLocal("gtneverreset.terminal.quick.keep_non_consumables.off");
-            // #tr gtneverreset.terminal.quick.keep_non_consumables.detail
+            String disabled = StatCollector.translateToLocal("gtnr.terminal.quick.keep_non_consumables.off");
+            // #tr gtnr.terminal.quick.keep_non_consumables.detail
             // # Store circuits and verified reusable molds as editable metadata, separate from ME inputs
             // # zh_CN 保留支持的工具供编辑；编码时将电路和已核实的不消耗模具保存为附加信息，不计入 ME 原料
-            String detail = StatCollector.translateToLocal("gtneverreset.terminal.quick.keep_non_consumables.detail");
+            String detail = StatCollector.translateToLocal("gtnr.terminal.quick.keep_non_consumables.detail");
             return title + "\n" + (shouldKeepNonConsumables() ? enabled : disabled) + "\n" + detail;
         }
     }
@@ -1903,10 +1902,10 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
         @Override
         public String getMessage() {
             return super.getMessage() + "\n"
-            // #tr gtneverreset.terminal.quick.encode_alt_upload
+            // #tr gtnr.terminal.quick.encode_alt_upload
             // # Alt-click to encode and upload the pattern
             // # zh_CN Alt+点击编码并上传样板
-                + StatCollector.translateToLocal("gtneverreset.terminal.quick.encode_alt_upload");
+                + StatCollector.translateToLocal("gtnr.terminal.quick.encode_alt_upload");
         }
 
         @Override
@@ -2224,10 +2223,10 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
             Object value = objectField(this, EXTRA_OPTIONS_TEXT);
             if (!(value instanceof List<?>rawList)) return;
             List<String> lines = (List<String>) rawList;
-            // #tr gtneverreset.terminal.quick.interface_ctrl_teleport
+            // #tr gtnr.terminal.quick.interface_ctrl_teleport
             // # Ctrl-click to teleport beside this interface
             // # zh_CN Ctrl+点击传送到此接口旁
-            String tooltip = StatCollector.translateToLocal("gtneverreset.terminal.quick.interface_ctrl_teleport");
+            String tooltip = StatCollector.translateToLocal("gtnr.terminal.quick.interface_ctrl_teleport");
             if (!lines.contains(tooltip)) lines.add(tooltip);
         }
 
@@ -2372,12 +2371,12 @@ public final class GuiQuickEncodingTerminal extends GuiPatternTerm implements II
                 boolean altDown = Keyboard.isKeyDown(Keyboard.KEY_LMENU) || Keyboard.isKeyDown(Keyboard.KEY_RMENU);
                 if (ctrlDown && entryId >= 0) {
                     option.func_146113_a(mc.getSoundHandler());
-                    NetWorkHandler.sendToServer(new CPacketTeleportToInterface(entryId));
+                    NetWorkHandler.sendToServer(new TeleportToInterfacePacket(entryId));
                     return true;
                 }
                 if (altDown && entryId >= 0) {
                     option.func_146113_a(mc.getSoundHandler());
-                    NetWorkHandler.sendToServer(new CPacketToggleInterfaceVisibility(entryId));
+                    NetWorkHandler.sendToServer(new ToggleInterfaceVisibilityPacket(entryId));
                     return true;
                 }
 

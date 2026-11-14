@@ -1,14 +1,14 @@
 package com.xyp.gtneverreset.common.packet;
 
-import com.xyp.gtneverreset.common.wireless.WirelessMonitorService;
+import net.minecraft.entity.player.EntityPlayerMP;
 
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
+import com.xyp.gtneverreset.common.wireless.WirelessMonitorService;
+import com.xyp.gtnrlib.network.ServerboundPacket;
+
 import io.netty.buffer.ByteBuf;
 
 /** Requests the sender's own network; clients cannot supply another player's UUID. */
-public final class WirelessMonitorRequestPacket implements IMessage {
+public final class WirelessMonitorRequestPacket extends ServerboundPacket {
 
     public long requestId;
 
@@ -19,22 +19,18 @@ public final class WirelessMonitorRequestPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buffer) {
+    protected void read(ByteBuf buffer) {
         requestId = buffer.readLong();
         if (buffer.isReadable()) throw new IllegalArgumentException("Trailing wireless monitor request data");
     }
 
     @Override
-    public void toBytes(ByteBuf buffer) {
+    protected void write(ByteBuf buffer) {
         buffer.writeLong(requestId);
     }
 
-    public static final class Handler implements IMessageHandler<WirelessMonitorRequestPacket, IMessage> {
-
-        @Override
-        public IMessage onMessage(WirelessMonitorRequestPacket message, MessageContext context) {
-            WirelessMonitorService.enqueue(context.getServerHandler().playerEntity, message.requestId);
-            return null;
-        }
+    @Override
+    public void handleServer(EntityPlayerMP player) {
+        WirelessMonitorService.enqueue(player, requestId);
     }
 }

@@ -13,7 +13,6 @@ import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 
 import baubles.api.BaubleType;
 import baubles.api.IBauble;
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -31,7 +30,6 @@ public final class PermanentMagnetRing extends Item implements IBauble {
         setTextureName("gtneverreset:permanent_magnet_ring");
         setMaxStackSize(1);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
-        GameRegistry.registerItem(this, "PermanentMagnetRing");
     }
 
     @Override
@@ -85,9 +83,9 @@ public final class PermanentMagnetRing extends Item implements IBauble {
     @Override
     @SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, EntityPlayer player, List<String> lines, boolean advanced) {
-        // #tr tooltip.gtnr.permanent_magnet_ring
+        // #tr gtnr.tooltip.permanent_magnet_ring
         // # Equip in a Baubles ring slot: collects dropped items within 64 blocks. Sneak to pause. No energy required.
         // # zh_CN 装备于 Baubles 戒指栏：收集半径64格内的掉落物，潜行暂停，无需能量。
-        lines.add(StatCollector.translateToLocal("tooltip.gtnr.permanent_magnet_ring"));
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.permanent_magnet_ring"));
     }
 }

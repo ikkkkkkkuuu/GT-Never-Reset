@@ -8,14 +8,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtnrlib.utils.StructureFileCodec;
 
-/** Loads the GTNL MBS1 string-table format from this mod's packaged multiblock resources. */
+/** Loads the MBS1 string-table format from this mod's packaged multiblock resources. */
 public final class MultiblockStructureLoader {
 
     private static final Map<String, String[][]> STRUCTURES = new ConcurrentHashMap<>();
 
+    private MultiblockStructureLoader() {}
+
     /** Returns an independent array so callers can transpose or modify it without changing the cache. */
     public static String[][] load(String name) {
-        if (!name.matches("[a-z0-9_]+"))
+        if (name == null || !name.matches("[a-z0-9_]+"))
             throw new IllegalArgumentException("Invalid multiblock resource name: " + name);
         String[][] stored = STRUCTURES.computeIfAbsent(name, MultiblockStructureLoader::readResource);
         String[][] copy = new String[stored.length][];

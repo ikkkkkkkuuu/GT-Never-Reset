@@ -33,29 +33,30 @@ public abstract class ItemEncodedPatternMixin {
         boolean displayMoreInfo, CallbackInfo ci) {
         String recipeMap = PatternRecipeMap.name(stack);
         if (recipeMap != null) {
-            // #tr tooltip.gtneverreset.pattern.recipe_map
+            // #tr gtnr.tooltip.gtneverreset.pattern.recipe_map
             // # Recipe type: %s
             // # zh_CN 配方池：%s
             lines.add(
                 StatCollector.translateToLocalFormatted(
-                    "tooltip.gtneverreset.pattern.recipe_map",
+                    "gtnr.tooltip.gtneverreset.pattern.recipe_map",
                     StatCollector.translateToLocal(recipeMap)));
         }
         int circuit = CircuitPatternCodec.storedCircuit(stack);
         if (circuit >= 0) {
-            // #tr tooltip.gtneverreset.pattern.circuit
+            // #tr gtnr.tooltip.gtneverreset.pattern.circuit
             // # Stored circuit configuration: %s (not requested from ME)
             // # zh_CN 内置编程电路：%s（不向 ME 索取）
-            lines.add(StatCollector.translateToLocalFormatted("tooltip.gtneverreset.pattern.circuit", circuit));
+            lines.add(StatCollector.translateToLocalFormatted("gtnr.tooltip.gtneverreset.pattern.circuit", circuit));
         }
         ItemStack[] molds = CircuitPatternCodec.storedMolds(stack);
         if (molds == null) return;
         for (ItemStack mold : molds) {
-            // #tr tooltip.gtneverreset.pattern.mold
+            // #tr gtnr.tooltip.gtneverreset.pattern.mold
             // # Stored reusable tool: %s (not requested from ME)
             // # zh_CN 内置不消耗工具：%s（不向 ME 索取）
             lines.add(
-                StatCollector.translateToLocalFormatted("tooltip.gtneverreset.pattern.mold", mold.getDisplayName()));
+                StatCollector
+                    .translateToLocalFormatted("gtnr.tooltip.gtneverreset.pattern.mold", mold.getDisplayName()));
         }
     }
 
@@ -91,10 +92,10 @@ public abstract class ItemEncodedPatternMixin {
         if (!WildcardPatternGenerator.isWildcardPattern(stack)) {
             return;
         }
-        // #tr tooltip.wildcardpattern.usage
+        // #tr gtnr.tooltip.wildcardpattern.usage
         // # Right-click to configure; use NEI + to import a recipe, then save.
         // # zh_CN 右键配置，可点击 NEI 配方的＋自动填写，调整后保存。
-        lines.add(StatCollector.translateToLocal("tooltip.wildcardpattern.usage"));
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.wildcardpattern.usage"));
         ci.cancel();
     }
 }

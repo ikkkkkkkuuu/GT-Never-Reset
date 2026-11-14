@@ -87,19 +87,18 @@ public final class UniversalWandChainHudRenderer {
             lastTick = mc.thePlayer.ticksExisted;
         }
         String title = "Ultimine: "
-            // #tr gtneverreset.hud.wand.normal
+            // #tr gtnr.hud.wand.normal
             // # Normal chain
             // # zh_CN 普通连锁
-            // #tr gtneverreset.hud.wand.enhanced
+            // #tr gtnr.hud.wand.enhanced
             // # Enhanced chain
             // # zh_CN 增强连锁
-            + StatCollector
-                .translateToLocal(enhanced ? "gtneverreset.hud.wand.enhanced" : "gtneverreset.hud.wand.normal");
+            + StatCollector.translateToLocal(enhanced ? "gtnr.hud.wand.enhanced" : "gtnr.hud.wand.normal");
         String countText = count >= UniversalWandMiningHandler.PREVIEW_MAX_BLOCKS ? "65536+++" : String.valueOf(count);
-        // #tr gtneverreset.hud.wand.count
+        // #tr gtnr.hud.wand.count
         // # Mining count:
         // # zh_CN 挖掘数量:
-        String amount = StatCollector.translateToLocal("gtneverreset.hud.wand.count") + " " + countText;
+        String amount = StatCollector.translateToLocal("gtnr.hud.wand.count") + " " + countText;
         int color = enhanced ? 0x43DDE9 : 0x59BB62;
         int width = Math.max(mc.fontRenderer.getStringWidth(title), mc.fontRenderer.getStringWidth(amount)) + 16;
         Gui.drawRect(3, 0, width + 3, 39, 0x99302A28);

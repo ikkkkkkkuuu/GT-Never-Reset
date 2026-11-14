@@ -250,16 +250,14 @@ public final class ItemUniversalWand extends Item
 
     @Override
     public void addInformation(ItemStack stack, EntityPlayer player, List<String> tooltip, boolean advanced) {
-        // #tr gtneverreset.item.universal_wand.lore_1
+        // #tr gtnr.item.universal_wand.lore_1
         // # Across countless dimensions, its former glory has faded.
         // # zh_CN 跨越无数次元，昔日荣光已逝。
-        tooltip
-            .add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("gtneverreset.item.universal_wand.lore_1"));
-        // #tr gtneverreset.item.universal_wand.lore_2
+        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("gtnr.item.universal_wand.lore_1"));
+        // #tr gtnr.item.universal_wand.lore_2
         // # A lingering light remains, with countless uses within this staff.
         // # zh_CN 余辉尚堪一用，万般巧用皆藏于此杖。
-        tooltip
-            .add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("gtneverreset.item.universal_wand.lore_2"));
+        tooltip.add(EnumChatFormatting.GRAY + StatCollector.translateToLocal("gtnr.item.universal_wand.lore_2"));
         tooltip.add("");
         tooltip.add(EnumChatFormatting.DARK_GRAY + "---- Tools ----");
         addStateTooltip(tooltip, "protection", isProtectionMode(stack), EnumChatFormatting.BLUE);
@@ -275,7 +273,7 @@ public final class ItemUniversalWand extends Item
         addStateTooltip(tooltip, "force_kill", isForceKillEnabled(stack), EnumChatFormatting.RED);
         addStateTooltip(tooltip, "beheading", isBeheadingEnabled(stack), EnumChatFormatting.RED);
         addStateTooltip(tooltip, "spawn_egg", isSpawnEggEnabled(stack), EnumChatFormatting.GREEN);
-        // #tr gtneverreset.gui.universal_wand.aoe
+        // #tr gtnr.gui.universal_wand.aoe
         // # Area damage
         // # zh_CN 范围伤害
         addStateTooltip(tooltip, "aoe", isAoeDamageEnabled(stack), EnumChatFormatting.RED);
@@ -293,43 +291,42 @@ public final class ItemUniversalWand extends Item
 
     private static void addStateTooltip(List<String> tooltip, String key, boolean enabled, EnumChatFormatting color) {
         tooltip.add(
-            color + StatCollector.translateToLocal("gtneverreset.gui.universal_wand." + key)
+            color + StatCollector.translateToLocal("gtnr.gui.universal_wand." + key)
                 + EnumChatFormatting.GRAY
                 + ": "
                 + (enabled ? EnumChatFormatting.GREEN : EnumChatFormatting.GRAY)
                 + StatCollector
-                    // #tr gtneverreset.item.universal_wand.enabled
+                    // #tr gtnr.item.universal_wand.enabled
                     // # On
                     // # zh_CN 开启
-                    // #tr gtneverreset.item.universal_wand.disabled
+                    // #tr gtnr.item.universal_wand.disabled
                     // # Off
                     // # zh_CN 关闭
-                    // #tr gtneverreset.item.universal_wand.mode
+                    // #tr gtnr.item.universal_wand.mode
                     // # Mode: %s
                     // # zh_CN 模式：%s
-                    // #tr gtneverreset.item.universal_wand.silk
+                    // #tr gtnr.item.universal_wand.silk
                     // # Silk Touch X
                     // # zh_CN 精准采集 X
-                    // #tr gtneverreset.item.universal_wand.fortune
+                    // #tr gtnr.item.universal_wand.fortune
                     // # Fortune X
                     // # zh_CN 时运 X
-                    // #tr gtneverreset.item.universal_wand.shift_reach
+                    // #tr gtnr.item.universal_wand.shift_reach
                     // # +8 Reach
                     // # zh_CN +8 触及距离
-                    // #tr gtneverreset.item.universal_wand.open
+                    // #tr gtnr.item.universal_wand.open
                     // # Press G to configure.
                     // # zh_CN 按 G 打开设置。
-                    .translateToLocal("gtneverreset.item.universal_wand." + (enabled ? "enabled" : "disabled")));
+                    .translateToLocal("gtnr.item.universal_wand." + (enabled ? "enabled" : "disabled")));
         UniversalWandFeature feature = UniversalWandFeature.forControl(key);
         if (feature != null && !feature.allowed()) tooltip.add(disabledFeatureTooltip());
     }
 
     public static String disabledFeatureTooltip() {
-        // #tr gtneverreset.gui.universal_wand.config_disabled
+        // #tr gtnr.gui.universal_wand.config_disabled
         // # Disabled by config
         // # zh_CN 已禁用
-        return EnumChatFormatting.RED
-            + StatCollector.translateToLocal("gtneverreset.gui.universal_wand.config_disabled");
+        return EnumChatFormatting.RED + StatCollector.translateToLocal("gtnr.gui.universal_wand.config_disabled");
     }
 
     @Override

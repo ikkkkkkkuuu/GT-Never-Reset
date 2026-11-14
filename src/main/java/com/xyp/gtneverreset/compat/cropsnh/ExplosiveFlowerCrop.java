@@ -47,10 +47,10 @@ public final class ExplosiveFlowerCrop extends CropCard {
 
     @Override
     public String getUnlocalizedName() {
-        // #tr gtneverreset.crop.explosive_flower
+        // #tr gtnr.crop.explosive_flower
         // # Explosive Flower
         // # zh_CN 炸药花
-        return "gtneverreset.crop.explosive_flower";
+        return "gtnr.crop.explosive_flower";
     }
 
     @Override

@@ -75,21 +75,6 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
     }
 
     @Override
-    public AENetworkProxy getProxy() {
-        if (proxy == null) {
-            proxy = new AENetworkProxy(this, "proxy", GTNRItemList.MEDataAccessHatch.get(1), true);
-            proxy.setFlags(GridFlags.REQUIRE_CHANNEL);
-            proxy.setValidSides(EnumSet.of(getBaseMetaTileEntity().getFrontFacing()));
-            if (getBaseMetaTileEntity().getWorld() != null) {
-                proxy.setOwner(
-                    getBaseMetaTileEntity().getWorld()
-                        .getPlayerEntityByName(getBaseMetaTileEntity().getOwnerName()));
-            }
-        }
-        return proxy;
-    }
-
-    @Override
     public void onFirstTick(IGregTechTileEntity tile) {
         super.onFirstTick(tile);
         if (tile.isServerSide()) {
@@ -109,6 +94,24 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
     }
 
     @Override
+    public void onUnload() {
+        disconnect();
+        super.onUnload();
+    }
+
+    @Override
+    public void onRemoval() {
+        disconnect();
+        super.onRemoval();
+    }
+
+    private void disconnect() {
+        ready = false;
+        setMonitor(null);
+        if (snapshot.clear()) super.onContentsChanged(-1);
+    }
+
+    @Override
     public void onFacingChange() {
         getProxy().setValidSides(EnumSet.of(getBaseMetaTileEntity().getFrontFacing()));
         refreshPending = true;
@@ -119,13 +122,8 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
         refreshPending = true;
     }
 
-    private void setMonitor(IMEMonitor<IAEItemStack> next) {
-        if (monitor == next) return;
-        if (monitor != null) monitor.removeListener(this);
-        monitor = next;
-        refreshPending = true;
-        if (monitor != null) monitor.addListener(this, monitor);
-    }
+    @Override
+    public void securityBreak() {}
 
     /** Invalidates the inherited recipe cache only when the visible research actually changes. */
     private void refreshSnapshot() {
@@ -160,6 +158,14 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
         } finally {
             refreshing = false;
         }
+    }
+
+    private void setMonitor(IMEMonitor<IAEItemStack> next) {
+        if (monitor == next) return;
+        if (monitor != null) monitor.removeListener(this);
+        monitor = next;
+        refreshPending = true;
+        if (monitor != null) monitor.addListener(this, monitor);
     }
 
     @Override
@@ -243,18 +249,18 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
     }
 
     @Override
-    public boolean onRightclick(IGregTechTileEntity tile, EntityPlayer player) {
-        return false;
-    }
-
-    @Override
-    public boolean isPowered() {
-        return proxy != null && proxy.isPowered();
-    }
-
-    @Override
-    public boolean isActive() {
-        return proxy != null && proxy.isActive();
+    public AENetworkProxy getProxy() {
+        if (proxy == null) {
+            proxy = new AENetworkProxy(this, "proxy", GTNRItemList.MEDataAccessHatch.get(1), true);
+            proxy.setFlags(GridFlags.REQUIRE_CHANNEL);
+            proxy.setValidSides(EnumSet.of(getBaseMetaTileEntity().getFrontFacing()));
+            if (getBaseMetaTileEntity().getWorld() != null) {
+                proxy.setOwner(
+                    getBaseMetaTileEntity().getWorld()
+                        .getPlayerEntityByName(getBaseMetaTileEntity().getOwnerName()));
+            }
+        }
+        return proxy;
     }
 
     @Override
@@ -274,7 +280,40 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
     }
 
     @Override
-    public void securityBreak() {}
+    public ITexture[] getTexturesActive(ITexture background) {
+        return new ITexture[] { background, TextureFactory.of(BlockIcons.OVERLAY_ME_INPUT_HATCH_ACTIVE) };
+    }
+
+    @Override
+    public ITexture[] getTexturesInactive(ITexture background) {
+        return new ITexture[] { background, TextureFactory.of(BlockIcons.OVERLAY_ME_INPUT_HATCH) };
+    }
+
+    @Override
+    public String[] getDescription() {
+        return new String[] {
+            // #tr gtnr.tooltip.gtneverreset.me_data_access.0
+            // # Supplies multiblocks with recipes from data sticks in ME storage
+            // # zh_CN 为多方块机器提供 ME 存储中数据棒记录的配方
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_data_access.0"),
+            // #tr gtnr.tooltip.gtneverreset.me_data_access.1
+            // # Reads every stored data stick; no manual loading needed
+            // # zh_CN 读取网络中存储的所有数据棒，无需手动装入
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_data_access.1"),
+            // #tr gtnr.tooltip.gtneverreset.me_data_access.2
+            // # Data sticks stay in ME storage and can serve multiple machines
+            // # zh_CN 数据棒保留在 ME 存储中，可供多台机器共享
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_data_access.2"),
+            // #tr gtnr.tooltip.gtneverreset.me_data_access.3
+            // # Connect ME at the front; requires power and one channel
+            // # zh_CN 从正面连接 ME，需要供电和一个频道
+            StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.me_data_access.3") };
+    }
+
+    @Override
+    public boolean onRightclick(IGregTechTileEntity tile, EntityPlayer player) {
+        return false;
+    }
 
     @Override
     public void saveNBTData(NBTTagCompound nbt) {
@@ -293,53 +332,14 @@ public class MEDataAccessHatch extends MTEHatchDataAccess
         super.onContentsChanged(-1);
     }
 
-    private void disconnect() {
-        ready = false;
-        setMonitor(null);
-        if (snapshot.clear()) super.onContentsChanged(-1);
+    @Override
+    public boolean isPowered() {
+        return proxy != null && proxy.isPowered();
     }
 
     @Override
-    public void onUnload() {
-        disconnect();
-        super.onUnload();
-    }
-
-    @Override
-    public void onRemoval() {
-        disconnect();
-        super.onRemoval();
-    }
-
-    @Override
-    public ITexture[] getTexturesActive(ITexture background) {
-        return new ITexture[] { background, TextureFactory.of(BlockIcons.OVERLAY_ME_INPUT_HATCH_ACTIVE) };
-    }
-
-    @Override
-    public ITexture[] getTexturesInactive(ITexture background) {
-        return new ITexture[] { background, TextureFactory.of(BlockIcons.OVERLAY_ME_INPUT_HATCH) };
-    }
-
-    @Override
-    public String[] getDescription() {
-        return new String[] {
-            // #tr tooltip.gtneverreset.meDataAccess.0
-            // # Supplies multiblocks with recipes from data sticks in ME storage
-            // # zh_CN 为多方块机器提供 ME 存储中数据棒记录的配方
-            StatCollector.translateToLocal("tooltip.gtneverreset.meDataAccess.0"),
-            // #tr tooltip.gtneverreset.meDataAccess.1
-            // # Reads every stored data stick; no manual loading needed
-            // # zh_CN 读取网络中存储的所有数据棒，无需手动装入
-            StatCollector.translateToLocal("tooltip.gtneverreset.meDataAccess.1"),
-            // #tr tooltip.gtneverreset.meDataAccess.2
-            // # Data sticks stay in ME storage and can serve multiple machines
-            // # zh_CN 数据棒保留在 ME 存储中，可供多台机器共享
-            StatCollector.translateToLocal("tooltip.gtneverreset.meDataAccess.2"),
-            // #tr tooltip.gtneverreset.meDataAccess.3
-            // # Connect ME at the front; requires power and one channel
-            // # zh_CN 从正面连接 ME，需要供电和一个频道
-            StatCollector.translateToLocal("tooltip.gtneverreset.meDataAccess.3") };
+    public boolean isActive() {
+        return proxy != null && proxy.isActive();
     }
 
     static final class MEDataStickSnapshot {

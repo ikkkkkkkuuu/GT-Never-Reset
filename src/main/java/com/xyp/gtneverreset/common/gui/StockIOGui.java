@@ -124,11 +124,11 @@ public final class StockIOGui {
     private ModularPanel build() {
         ModularPanel panel = ModularPanel.defaultPanel("stock_io", 366, 282)
             .background(GTGuiTextures.BACKGROUND_STANDARD);
-        // #tr gui.stock_io.title
+        // #tr gtnr.gui.stock_io.title
         // # ME Inventory IO Interface
         // # zh_CN 库存 IO 接口 (ME)
         panel.child(
-            IKey.lang("gui.stock_io.title")
+            IKey.lang("gtnr.gui.stock_io.title")
                 .asWidget()
                 .pos(8, 7)
                 .size(350, 12));
@@ -138,25 +138,25 @@ public final class StockIOGui {
         sync.syncValue("online", online);
         sync.syncValue("connected", connected);
         panel.child(IKey.dynamic(() -> {
-            // #tr gui.stock_io.offline
+            // #tr gtnr.gui.stock_io.offline
             // # Offline: check power and channel
             // # zh_CN 离线：检查供电与频道
-            if (!online.getBoolValue()) return IKey.lang("gui.stock_io.offline")
+            if (!online.getBoolValue()) return IKey.lang("gtnr.gui.stock_io.offline")
                 .get();
-            // #tr gui.stock_io.no_target
+            // #tr gtnr.gui.stock_io.no_target
             // # No adjacent inventory
             // # zh_CN 未找到相邻容器
-            if (!connected.getBoolValue()) return IKey.lang("gui.stock_io.no_target")
+            if (!connected.getBoolValue()) return IKey.lang("gtnr.gui.stock_io.no_target")
                 .get();
-            // #tr gui.stock_io.running
+            // #tr gtnr.gui.stock_io.running
             // # Running
             // # zh_CN 运行中
-            if (enabled.getBoolValue()) return IKey.lang("gui.stock_io.running")
+            if (enabled.getBoolValue()) return IKey.lang("gtnr.gui.stock_io.running")
                 .get();
-            // #tr gui.stock_io.paused
+            // #tr gtnr.gui.stock_io.paused
             // # Paused
             // # zh_CN 已暂停
-            return IKey.lang("gui.stock_io.paused")
+            return IKey.lang("gtnr.gui.stock_io.paused")
                 .get();
         })
             .color(() -> online.getBoolValue() && connected.getBoolValue() ? 0xFF287034 : 0xFF902E2E)
@@ -178,61 +178,61 @@ public final class StockIOGui {
                 .size(350, 86)
                 .addPage(page(false, itemPolicy, settings))
                 .addPage(page(true, fluidPolicy, settings)));
-        // #tr gui.stock_io.items
+        // #tr gtnr.gui.stock_io.items
         // # Items
         // # zh_CN 物品
-        panel.child(tab(controller, 0, IKey.lang("gui.stock_io.items")).pos(8, 25));
-        // #tr gui.stock_io.fluids
+        panel.child(tab(controller, 0, IKey.lang("gtnr.gui.stock_io.items")).pos(8, 25));
+        // #tr gtnr.gui.stock_io.fluids
         // # Fluids
         // # zh_CN 流体
-        panel.child(tab(controller, 1, IKey.lang("gui.stock_io.fluids")).pos(86, 25));
-        // #tr gui.stock_io.samples_hint
+        panel.child(tab(controller, 1, IKey.lang("gtnr.gui.stock_io.fluids")).pos(86, 25));
+        // #tr gtnr.gui.stock_io.samples_hint
         // # Samples are not consumed. Right-click to set reserve and fixed amounts.
         // # zh_CN 样本不消耗，右键设置保留量与固定可用量。
         panel.child(
-            IKey.lang("gui.stock_io.samples_hint")
+            IKey.lang("gtnr.gui.stock_io.samples_hint")
                 .asWidget()
                 .pos(8, 141)
                 .size(350, 10));
 
-        // #tr gui.stock_io.enabled
+        // #tr gtnr.gui.stock_io.enabled
         // # Enabled
         // # zh_CN 运行
-        IKey enabledLabel = IKey.lang("gui.stock_io.enabled");
-        // #tr gui.stock_io.enabled_help
+        IKey enabledLabel = IKey.lang("gtnr.gui.stock_io.enabled");
+        // #tr gtnr.gui.stock_io.enabled_help
         // # Allows GT machines to read ME stock and enables the selected recovery settings.
         // # zh_CN 允许 GT 机器读取 ME 库存，并执行已启用的回收。
-        IKey enabledHelp = IKey.lang("gui.stock_io.enabled_help");
+        IKey enabledHelp = IKey.lang("gtnr.gui.stock_io.enabled_help");
         panel.child(toggle(enabled, enabledLabel, enabledHelp).pos(8, 157));
-        // #tr gui.stock_io.limited
+        // #tr gtnr.gui.stock_io.limited
         // # Reserve
         // # zh_CN 限制
-        IKey limitedLabel = IKey.lang("gui.stock_io.limited");
-        // #tr gui.stock_io.limited_help
+        IKey limitedLabel = IKey.lang("gtnr.gui.stock_io.limited");
+        // #tr gtnr.gui.stock_io.limited_help
         // # Keeps each marked resource's reserve in ME; only the surplus is available.
         // # zh_CN 为每种标记资源保留设定的 ME 库存，仅提供超出部分。
-        IKey limitedHelp = IKey.lang("gui.stock_io.limited_help");
+        IKey limitedHelp = IKey.lang("gtnr.gui.stock_io.limited_help");
         panel.child(
             toggle(toggleValue("limited", logic::isLimitedMode, logic::setLimitedMode), limitedLabel, limitedHelp)
                 .pos(97, 157));
-        // #tr gui.stock_io.fixed
+        // #tr gtnr.gui.stock_io.fixed
         // # Fixed
         // # zh_CN 固定
-        IKey fixedLabel = IKey.lang("gui.stock_io.fixed");
-        // #tr gui.stock_io.fixed_help
+        IKey fixedLabel = IKey.lang("gtnr.gui.stock_io.fixed");
+        // #tr gtnr.gui.stock_io.fixed_help
         // # Offers a fixed amount per recipe or fuel check. Waits until the full amount is available.
         // # zh_CN 每次配方或燃料检查提供固定数量，可用库存不足时等待。
-        IKey fixedHelp = IKey.lang("gui.stock_io.fixed_help");
+        IKey fixedHelp = IKey.lang("gtnr.gui.stock_io.fixed_help");
         panel.child(
             toggle(toggleValue("fixed", logic::isFixedMode, logic::setFixedMode), fixedLabel, fixedHelp).pos(186, 157));
-        // #tr gui.stock_io.recycle
+        // #tr gtnr.gui.stock_io.recycle
         // # Recycle
         // # zh_CN 回收
-        IKey recycleLabel = IKey.lang("gui.stock_io.recycle");
-        // #tr gui.stock_io.recycle_help
+        IKey recycleLabel = IKey.lang("gtnr.gui.stock_io.recycle");
+        // #tr gtnr.gui.stock_io.recycle_help
         // # Returns GT item and fluid outputs to ME without extracting recipe inputs.
         // # zh_CN 将 GT 物品与流体输出送回 ME，不抽取配方输入。
-        IKey recycleHelp = IKey.lang("gui.stock_io.recycle_help");
+        IKey recycleHelp = IKey.lang("gtnr.gui.stock_io.recycle_help");
         panel.child(
             toggle(toggleValue("recycle", logic::isRecycle, logic::setRecycle), recycleLabel, recycleHelp)
                 .pos(275, 157));
@@ -245,19 +245,19 @@ public final class StockIOGui {
 
     private ParentWidget<?> page(boolean fluid, IPanelHandler policy, IPanelHandler settings) {
         ParentWidget<?> page = new ParentWidget<>().size(350, 86);
-        // #tr gui.stock_io.marked
+        // #tr gtnr.gui.stock_io.marked
         // # Marked samples (900)
         // # zh_CN 标记样本（900）
         page.child(
-            IKey.lang("gui.stock_io.marked")
+            IKey.lang("gtnr.gui.stock_io.marked")
                 .asWidget()
                 .pos(0, 0)
                 .size(GRID_WIDTH, 10));
-        // #tr gui.stock_io.available
+        // #tr gtnr.gui.stock_io.available
         // # Available from ME
         // # zh_CN ME 可用量
         page.child(
-            IKey.lang("gui.stock_io.available")
+            IKey.lang("gtnr.gui.stock_io.available")
                 .asWidget()
                 .pos(184, 0)
                 .size(GRID_WIDTH, 10));
@@ -290,10 +290,10 @@ public final class StockIOGui {
             .pos(184, 14);
         page.child(samples)
             .child(stocks);
-        // #tr gui.stock_io.autopull
+        // #tr gtnr.gui.stock_io.autopull
         // # Automatically marks ME resources. Right-click to set refresh interval and minimum stock.
         // # zh_CN 自动标记 ME 资源，右键设置刷新间隔与最低库存。
-        IKey autoPullHelp = IKey.lang("gui.stock_io.autopull");
+        IKey autoPullHelp = IKey.lang("gtnr.gui.stock_io.autopull");
         page.child(new ToggleButton() {
 
             @Override
@@ -316,10 +316,10 @@ public final class StockIOGui {
             GTGuiTextures.PICTURE_ARROW_DOUBLE.asWidget()
                 .size(12)
                 .pos(170, 40));
-        // #tr gui.stock_io.settings
+        // #tr gtnr.gui.stock_io.settings
         // # Auto-mark settings
         // # zh_CN 自动标记设置
-        IKey settingsHelp = IKey.lang("gui.stock_io.settings");
+        IKey settingsHelp = IKey.lang("gtnr.gui.stock_io.settings");
         page.child(
             new ButtonWidget<>().size(16)
                 .pos(168, 64)
@@ -393,11 +393,11 @@ public final class StockIOGui {
             IKey.dynamic(() -> sampleName(fluid, selection.getIntValue()))
                 .asWidget()
                 .maxWidth(204));
-        // #tr gui.stock_io.reserve_quantity
+        // #tr gtnr.gui.stock_io.reserve_quantity
         // # Keep in ME (items / mB)
         // # zh_CN ME 保留量（个 / mB）
         content.child(
-            IKey.lang("gui.stock_io.reserve_quantity")
+            IKey.lang("gtnr.gui.stock_io.reserve_quantity")
                 .asWidget());
         content.child(
             new TextFieldWidget().value(reserve)
@@ -405,11 +405,11 @@ public final class StockIOGui {
                 .formatAsInteger(true)
                 .setMaxLength(19)
                 .width(192));
-        // #tr gui.stock_io.fixed_quantity
+        // #tr gtnr.gui.stock_io.fixed_quantity
         // # Per check (items / mB)
         // # zh_CN 单次检查可用量（个 / mB）
         content.child(
-            IKey.lang("gui.stock_io.fixed_quantity")
+            IKey.lang("gtnr.gui.stock_io.fixed_quantity")
                 .asWidget());
         content.child(
             new TextFieldWidget().value(batch)
@@ -417,11 +417,11 @@ public final class StockIOGui {
                 .formatAsInteger(true)
                 .setMaxLength(10)
                 .width(192));
-        // #tr gui.stock_io.fixed_hint
+        // #tr gtnr.gui.stock_io.fixed_hint
         // # Waits for the full available amount. Only actual recipe or fuel consumption is extracted.
         // # zh_CN 可用库存不足设定量时等待，只扣除配方或燃料的实际消耗。
         content.child(
-            IKey.lang("gui.stock_io.fixed_hint")
+            IKey.lang("gtnr.gui.stock_io.fixed_hint")
                 .asWidget()
                 .maxWidth(204));
         return createPopUpPanel(fluid ? "fluidPolicy" : "itemPolicy").size(224, 164)
@@ -478,10 +478,10 @@ public final class StockIOGui {
         sync.syncValue("targetSide", side);
         sync.syncValue("targetSelectable", selectable);
         sync.syncValue("targetName", target);
-        // #tr gui.stock_io.target_side
+        // #tr gtnr.gui.stock_io.target_side
         // # Machine-facing side. Click to select another side.
         // # zh_CN 面向机器的一侧，点击切换方向。
-        IKey directionHelp = IKey.lang("gui.stock_io.target_side");
+        IKey directionHelp = IKey.lang("gtnr.gui.stock_io.target_side");
         panel.child(
             new ButtonWidget<>().size(84, 18)
                 .pos(8, 179)
@@ -494,12 +494,12 @@ public final class StockIOGui {
                     side.setIntValue((side.getIntValue() + 1) % 6);
                     return true;
                 }));
-        // #tr gui.stock_io.target
+        // #tr gtnr.gui.stock_io.target
         // # Target:
         // # zh_CN 目标：
         panel.child(
             IKey.dynamic(
-                () -> IKey.lang("gui.stock_io.target")
+                () -> IKey.lang("gtnr.gui.stock_io.target")
                     .get() + " "
                     + (target.getValue()
                         .isEmpty() ? ""
@@ -562,40 +562,40 @@ public final class StockIOGui {
     private static String directionName(int side) {
         switch (ForgeDirection.getOrientation(side)) {
             case DOWN:
-                // #tr gui.stock_io.down
+                // #tr gtnr.gui.stock_io.down
                 // # Down
                 // # zh_CN 下
-                return IKey.lang("gui.stock_io.down")
+                return IKey.lang("gtnr.gui.stock_io.down")
                     .get();
             case UP:
-                // #tr gui.stock_io.up
+                // #tr gtnr.gui.stock_io.up
                 // # Up
                 // # zh_CN 上
-                return IKey.lang("gui.stock_io.up")
+                return IKey.lang("gtnr.gui.stock_io.up")
                     .get();
             case NORTH:
-                // #tr gui.stock_io.north
+                // #tr gtnr.gui.stock_io.north
                 // # North
                 // # zh_CN 北
-                return IKey.lang("gui.stock_io.north")
+                return IKey.lang("gtnr.gui.stock_io.north")
                     .get();
             case SOUTH:
-                // #tr gui.stock_io.south
+                // #tr gtnr.gui.stock_io.south
                 // # South
                 // # zh_CN 南
-                return IKey.lang("gui.stock_io.south")
+                return IKey.lang("gtnr.gui.stock_io.south")
                     .get();
             case WEST:
-                // #tr gui.stock_io.west
+                // #tr gtnr.gui.stock_io.west
                 // # West
                 // # zh_CN 西
-                return IKey.lang("gui.stock_io.west")
+                return IKey.lang("gtnr.gui.stock_io.west")
                     .get();
             case EAST:
-                // #tr gui.stock_io.east
+                // #tr gtnr.gui.stock_io.east
                 // # East
                 // # zh_CN 东
-                return IKey.lang("gui.stock_io.east")
+                return IKey.lang("gtnr.gui.stock_io.east")
                     .get();
             default:
                 return "";
@@ -667,10 +667,10 @@ public final class StockIOGui {
             }.singletonSlotGroup();
             syncHandler(new ItemSampleSyncHandler(slot, logic, authorized));
             background(GTGuiTextures.SLOT_ITEM_STANDARD, GTGuiTextures.OVERLAY_SLOT_ARROW_ME);
-            // #tr gui.stock_io.configure
+            // #tr gtnr.gui.stock_io.configure
             // # Right-click to set reserve and fixed amounts.
             // # zh_CN 右键设置保留量与固定可用量。
-            IKey configure = IKey.lang("gui.stock_io.configure");
+            IKey configure = IKey.lang("gtnr.gui.stock_io.configure");
             tooltip(t -> {
                 t.addLine(configure);
                 if (locked.getBoolValue()) t.addLine(IKey.lang("GT5U.machines.stocking_bus.cannot_set_slot"));
@@ -806,7 +806,7 @@ public final class StockIOGui {
         protected void addToolTip(RichTooltip tooltip) {
             FluidStack stack = getFluidStack();
             if (stack != null) tooltip.addFromFluid(stack);
-            tooltip.addLine(IKey.lang("gui.stock_io.configure"));
+            tooltip.addLine(IKey.lang("gtnr.gui.stock_io.configure"));
             if (locked.getBoolValue()) tooltip.addLine(IKey.lang("GT5U.machines.stocking_bus.cannot_set_slot"));
             else tooltip.addLine(IKey.lang("modularui2.fluid.phantom.clear"));
         }
@@ -871,16 +871,16 @@ public final class StockIOGui {
                     String unit = fluid == null ? "" : " mB";
                     tooltip.addLine(
                         IKey.str(
-                            IKey.lang("gui.stock_io.available")
+                            IKey.lang("gtnr.gui.stock_io.available")
                                 .get() + ": "
                                 + available.getAsLong()
                                 + unit));
-                    // #tr gui.stock_io.network_stock
+                    // #tr gtnr.gui.stock_io.network_stock
                     // # Total in ME
                     // # zh_CN ME 总库存
                     tooltip.addLine(
                         IKey.str(
-                            IKey.lang("gui.stock_io.network_stock")
+                            IKey.lang("gtnr.gui.stock_io.network_stock")
                                 .get() + ": "
                                 + network.getAsLong()
                                 + unit));

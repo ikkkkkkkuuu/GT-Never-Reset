@@ -5,7 +5,7 @@ import java.lang.reflect.Field;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.item.ItemStack;
 
-import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IAEStack;
@@ -29,7 +29,7 @@ public final class TerminalNeiCrafting {
     private TerminalNeiCrafting() {}
 
     public static boolean requestCraft(GuiScreen screen, ItemStack stack) {
-        if (screen instanceof GuiQuickEncodingTerminal terminal && terminal.requestFluidCraft(stack)) return true;
+        if (screen instanceof QuickEncodingTerminalGui terminal && terminal.requestFluidCraft(stack)) return true;
         if (!(screen instanceof GuiMEMonitorable gui)
             || !(gui.inventorySlots instanceof ContainerMEMonitorable container)) return false;
         IAEItemStack item = AEItemStack.create(stack);

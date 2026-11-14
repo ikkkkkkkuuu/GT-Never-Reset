@@ -28,7 +28,7 @@ import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.client.gui.GuiQuickEncodingTerminal;
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 import com.xyp.gtneverreset.client.terminal.WirelessTerminalSorting;
 import com.xyp.gtneverreset.compat.ae2.TerminalInventorySort;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -207,8 +207,8 @@ public final class WirelessTerminalSortingChecks {
         gui = (GuiMEMonitorable) GTNeverReset.proxy.createTerminalGui(type.ordinal(), mc.thePlayer, mc.theWorld, 0);
         require(gui != null, "terminal GUI was not created");
         mc.displayGuiScreen(gui);
-        if (gui instanceof GuiQuickEncodingTerminal) {
-            field(GuiQuickEncodingTerminal.class, "pendingPinRefresh").setBoolean(gui, false);
+        if (gui instanceof QuickEncodingTerminalGui) {
+            field(QuickEncodingTerminalGui.class, "pendingPinRefresh").setBoolean(gui, false);
         }
     }
 

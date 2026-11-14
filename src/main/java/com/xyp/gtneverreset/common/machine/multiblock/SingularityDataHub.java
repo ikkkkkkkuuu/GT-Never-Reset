@@ -46,9 +46,9 @@ import com.xyp.gtneverreset.api.IItemVault;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.SingularityDataHubGui;
 import com.xyp.gtneverreset.common.machine.hatch.VaultPortHatch;
-import com.xyp.gtneverreset.common.machine.storage.VaultStorageUsage;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
 import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
+import com.xyp.gtneverreset.common.me.vault.VaultStorageUsage;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.utils.enums.BlockIcons;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
@@ -93,19 +93,19 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
         .multiply(BigInteger.valueOf(ITEMS_PER_BYTE));
     public static BigInteger maxFluidCapacity = BigInteger.valueOf(MAX_STORAGE_BYTES)
         .multiply(BigInteger.valueOf(FLUID_MB_PER_BYTE));
-    private static final String STRUCTURE_PIECE_MAIN = "main";
-    private static final String[][] STRUCTURE_SHAPE = MultiblockStructureLoader.load("singularity_data_hub");
+    private static final String STRUCTURE_NAME = "singularity_data_hub";
+    private static final String STRUCTURE_PIECE = "main";
     private static final int HORIZONTAL_OFFSET = 1;
     private static final int VERTICAL_OFFSET = 1;
     private static final int DEPTH_OFFSET = 0;
     public static NumberFormat nf = NumberFormat.getNumberInstance();
 
     /**
-     * Rebuilds AE's mutable item definition instead of sharing it through {@link IAEItemStack#copy()}.
+     * Rebuilds AE's mutable item structureDefinition instead of sharing it through {@link IAEItemStack#copy()}.
      * Crafting flags do not describe stored inventory and are intentionally omitted.
      *
      * @param stack stored item identity and quantity
-     * @return independent item definition with the original long quantity
+     * @return independent item structureDefinition with the original long quantity
      */
     private static IAEItemStack snapshotStoredItem(IAEItemStack stack) {
         return AEItemStack.create(stack.getItemStack())
@@ -183,7 +183,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     public IStructureDefinition<SingularityDataHub> getStructureDefinition() {
         if (structureDefinition != null) return structureDefinition;
         structureDefinition = StructureDefinition.<SingularityDataHub>builder()
-            .addShape(STRUCTURE_PIECE_MAIN, transpose(STRUCTURE_SHAPE))
+            .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load(STRUCTURE_NAME)))
             .addElement(
                 'A',
                 ofChain(
@@ -205,7 +205,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
 
         mCountCasing = 0;
 
-        if (!checkPiece(STRUCTURE_PIECE_MAIN, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors)) {
+        if (!checkPiece(STRUCTURE_PIECE, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors)) {
             return;
         }
 
@@ -223,25 +223,25 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
         if (!StructureTooltipHooks.onCheckCasingMin(this, 1)) checkCasingMin(errors, mCountCasing, 1);
 
         if (!StructureTooltipHooks.onCheckHatchKeys(this, 1, 1, "gtnr.hatch.vault_port.name") && portHatch == null) {
-            // #tr structure_error.need_vault_port_hatch
+            // #tr gtnr.structure_error.need_vault_port_hatch
             // # Vault Port Hatch is required
             // # zh_CN 需要仓库端口仓
-            errors.add(StructureErrors.of("structure_error.need_vault_port_hatch"));
+            errors.add(StructureErrors.of("gtnr.structure_error.need_vault_port_hatch"));
         }
     }
 
     @Override
     public void construct(ItemStack stackSize, boolean hintsOnly) {
-        if (StructureTooltipHooks
-            .onBuildPiece(this, STRUCTURE_PIECE_MAIN, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET)) return;
-        buildPiece(STRUCTURE_PIECE_MAIN, stackSize, hintsOnly, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET);
+        if (StructureTooltipHooks.onBuildPiece(this, STRUCTURE_PIECE, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET))
+            return;
+        buildPiece(STRUCTURE_PIECE, stackSize, hintsOnly, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET);
     }
 
     @Override
     public int survivalConstruct(ItemStack stackSize, int elementBudget, ISurvivalBuildEnvironment env) {
         if (mMachine) return -1;
         return survivalBuildPiece(
-            STRUCTURE_PIECE_MAIN,
+            STRUCTURE_PIECE,
             stackSize,
             HORIZONTAL_OFFSET,
             VERTICAL_OFFSET,
@@ -356,23 +356,6 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
             portHatch.unbind();
             portHatch = null;
         }
-    }
-
-    @Override
-    public ITexture[] getTexture(IGregTechTileEntity aBaseMetaTileEntity, ForgeDirection side, ForgeDirection facing,
-        int colorIndex, boolean aActive, boolean aRedstone) {
-        if (side != facing) return new ITexture[] { BlockLoader.eddingtonWallCasing.getCasingTexture() };
-        return new ITexture[] { BlockLoader.eddingtonWallCasing.getCasingTexture(), TextureFactory.builder()
-            .addIcon(aActive ? BlockIcons.OverlayFrontKerrCompressorActive : BlockIcons.OverlayFrontKerrCompressor)
-            .extFacing()
-            .build(),
-            TextureFactory.builder()
-                .addIcon(
-                    aActive ? BlockIcons.OverlayFrontKerrCompressorActiveGlow
-                        : BlockIcons.OverlayFrontKerrCompressorGlow)
-                .extFacing()
-                .glow()
-                .build() };
     }
 
     private void rebuildStorageUsage() {
@@ -626,6 +609,28 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     }
 
     @Override
+    public ITexture[] getTexture(IGregTechTileEntity aBaseMetaTileEntity, ForgeDirection side, ForgeDirection facing,
+        int colorIndex, boolean aActive, boolean aRedstone) {
+        if (side != facing) return new ITexture[] { BlockLoader.eddingtonWallCasing.getCasingTexture() };
+        return new ITexture[] { BlockLoader.eddingtonWallCasing.getCasingTexture(), TextureFactory.builder()
+            .addIcon(aActive ? BlockIcons.OverlayFrontKerrCompressorActive : BlockIcons.OverlayFrontKerrCompressor)
+            .extFacing()
+            .build(),
+            TextureFactory.builder()
+                .addIcon(
+                    aActive ? BlockIcons.OverlayFrontKerrCompressorActiveGlow
+                        : BlockIcons.OverlayFrontKerrCompressorGlow)
+                .extFacing()
+                .glow()
+                .build() };
+    }
+
+    @Override
+    public String getLocalNameKey() {
+        return "gtnr.machine.singularity_data_hub.name";
+    }
+
+    @Override
     public String[] getStructureDescription(ItemStack stackSize) {
         return new String[0];
     }
@@ -637,10 +642,10 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
 
     @Override
     public String getTooltipMachineType() {
-        // #tr SingularityDataHubRecipeType
+        // #tr gtnr.machine.singularity_data_hub.recipe_type
         // # Vault
         // # zh_CN 保险库
-        return StatCollector.translateToLocal("SingularityDataHubRecipeType");
+        return StatCollector.translateToLocal("gtnr.machine.singularity_data_hub.recipe_type");
     }
 
     @Override
@@ -651,11 +656,12 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     @Override
     public String[] getInfoData() {
         ArrayList<String> ll = new ArrayList<>();
-        // #tr Info_SingularityDataHub_StoredItems
+        // #tr gtnr.machine.singularity_data_hub.info.stored_items
         // # Stored Items:
         // # zh_CN 已存储物品：
         ll.add(
-            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_StoredItems")
+            EnumChatFormatting.YELLOW
+                + StatCollector.translateToLocal("gtnr.machine.singularity_data_hub.info.stored_items")
                 + EnumChatFormatting.RESET);
 
         int i = 0;
@@ -672,11 +678,12 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
             if (i >= 32) break;
         }
 
-        // #tr Info_SingularityDataHub_StoredFluids
+        // #tr gtnr.machine.singularity_data_hub.info.stored_fluids
         // # Stored Fluids:
         // # zh_CN 已存储流体：
         ll.add(
-            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_StoredFluids")
+            EnumChatFormatting.YELLOW
+                + StatCollector.translateToLocal("gtnr.machine.singularity_data_hub.info.stored_fluids")
                 + EnumChatFormatting.RESET);
 
         int j = 0;
@@ -693,80 +700,99 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
             if (j >= 32) break;
         }
 
-        // #tr Info_SingularityDataHub_OperationalData
+        // #tr gtnr.machine.singularity_data_hub.info.operational_data
         // # Operational Data
         // # zh_CN 运行数据
         ll.add(
-            EnumChatFormatting.YELLOW + StatCollector.translateToLocal("Info_SingularityDataHub_OperationalData")
+            EnumChatFormatting.YELLOW
+                + StatCollector.translateToLocal("gtnr.machine.singularity_data_hub.info.operational_data")
                 + EnumChatFormatting.RESET);
 
-        // #tr Info_SingularityDataHub_ItemUsed
+        // #tr gtnr.machine.singularity_data_hub.info.item_used
         // # Item Used Capacity: %s
         // # zh_CN 已用物品容量: %s
         ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_ItemUsed", nf.format(getItemStoredAmount())));
-        // #tr Info_SingularityDataHub_ItemTotal
+            StatCollector.translateToLocalFormatted(
+                "gtnr.machine.singularity_data_hub.info.item_used",
+                nf.format(getItemStoredAmount())));
+        // #tr gtnr.machine.singularity_data_hub.info.item_total
         // # Item Total Capacity: %s
         // # zh_CN 物品总容量: %s
         ll.add(
-            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_ItemTotal", nf.format(maxItemCapacity)));
-        // #tr Info_SingularityDataHub_PerItemCapacity
+            StatCollector.translateToLocalFormatted(
+                "gtnr.machine.singularity_data_hub.info.item_total",
+                nf.format(maxItemCapacity)));
+        // #tr gtnr.machine.singularity_data_hub.info.per_item_capacity
         // # Per-Item Capacity: %s
         // # zh_CN 每种物品容量: %s
         ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_PerItemCapacity", nf.format(capacityPerItem)));
-        // #tr Info_SingularityDataHub_ItemUsedTypes
+            StatCollector.translateToLocalFormatted(
+                "gtnr.machine.singularity_data_hub.info.per_item_capacity",
+                nf.format(capacityPerItem)));
+        // #tr gtnr.machine.singularity_data_hub.info.item_used_types
         // # Item Used Type: %s
         // # zh_CN 已用物品种类: %s
         ll.add(
-            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_ItemUsedTypes", nf.format(itemsCount())));
-        // #tr Info_SingularityDataHub_ItemTotalTypes
+            StatCollector.translateToLocalFormatted(
+                "gtnr.machine.singularity_data_hub.info.item_used_types",
+                nf.format(itemsCount())));
+        // #tr gtnr.machine.singularity_data_hub.info.item_total_types
         // # Item Total Type: %s
         // # zh_CN 物品总种类: %s
         ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_ItemTotalTypes", nf.format(maxItemCount())));
+            StatCollector.translateToLocalFormatted(
+                "gtnr.machine.singularity_data_hub.info.item_total_types",
+                nf.format(maxItemCount())));
 
-        // #tr Info_SingularityDataHub_FluidUsed
+        // #tr gtnr.machine.singularity_data_hub.info.fluid_used
         // # Fluid Used Capacity: %s
         // # zh_CN 已用流体容量: %s
         ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_FluidUsed", nf.format(getFluidStoredAmount())));
-        // #tr Info_SingularityDataHub_FluidTotal
+            StatCollector.translateToLocalFormatted(
+                "gtnr.machine.singularity_data_hub.info.fluid_used",
+                nf.format(getFluidStoredAmount())));
+        // #tr gtnr.machine.singularity_data_hub.info.fluid_total
         // # Fluid Total Capacity: %s
         // # zh_CN 流体总容量: %s
         ll.add(
-            StatCollector.translateToLocalFormatted("Info_SingularityDataHub_FluidTotal", nf.format(maxFluidCapacity)));
-        // #tr Info_SingularityDataHub_PerFluidCapacity
+            StatCollector.translateToLocalFormatted(
+                "gtnr.machine.singularity_data_hub.info.fluid_total",
+                nf.format(maxFluidCapacity)));
+        // #tr gtnr.machine.singularity_data_hub.info.per_fluid_capacity
         // # Per-Fluid Capacity: %s
         // # zh_CN 每种流体容量: %s
         ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_PerFluidCapacity", nf.format(capacityPerFluid)));
-        // #tr Info_SingularityDataHub_FluidUsedTypes
+            StatCollector.translateToLocalFormatted(
+                "gtnr.machine.singularity_data_hub.info.per_fluid_capacity",
+                nf.format(capacityPerFluid)));
+        // #tr gtnr.machine.singularity_data_hub.info.fluid_used_types
         // # Fluid Used Type: %s
         // # zh_CN 已用流体种类: %s
         ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_FluidUsedTypes", nf.format(fluidsCount())));
-        // #tr Info_SingularityDataHub_FluidTotalTypes
+            StatCollector.translateToLocalFormatted(
+                "gtnr.machine.singularity_data_hub.info.fluid_used_types",
+                nf.format(fluidsCount())));
+        // #tr gtnr.machine.singularity_data_hub.info.fluid_total_types
         // # Fluid Total Type: %s
         // # zh_CN 流体总种类: %s
         ll.add(
-            StatCollector
-                .translateToLocalFormatted("Info_SingularityDataHub_FluidTotalTypes", nf.format(maxFluidCount())));
+            StatCollector.translateToLocalFormatted(
+                "gtnr.machine.singularity_data_hub.info.fluid_total_types",
+                nf.format(maxFluidCount())));
 
-        // #tr Info_SingularityDataHub_RunningCost
+        // #tr gtnr.machine.singularity_data_hub.info.running_cost
         // # Running Cost: %dEU/t
         // # zh_CN 运行成本: %dEU/t
-        ll.add(StatCollector.translateToLocalFormatted("Info_SingularityDataHub_RunningCost", getActualEnergyUsage()));
-        // #tr Info_SingularityDataHub_AutoVoiding
+        ll.add(
+            StatCollector.translateToLocalFormatted(
+                "gtnr.machine.singularity_data_hub.info.running_cost",
+                getActualEnergyUsage()));
+        // #tr gtnr.machine.singularity_data_hub.info.auto_voiding
         // # Auto-voiding: %b
         // # zh_CN 自动销毁溢出: %b
-        ll.add(StatCollector.translateToLocalFormatted("Info_SingularityDataHub_AutoVoiding", doVoidExcess));
+        ll.add(
+            StatCollector
+                .translateToLocalFormatted("gtnr.machine.singularity_data_hub.info.auto_voiding", doVoidExcess));
         // #tr Waila_WirelessMode
         // # Wireless Mode
         // # zh_CN 无线模式
@@ -792,12 +818,13 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
         if (getBaseMetaTileEntity().isServerSide()) {
             this.setDoVoidExcess(!doVoidExcess);
             markDirty();
-            // #tr Info_SingularityDataHub_AutoVoiding
+            // #tr gtnr.machine.singularity_data_hub.info.auto_voiding
             // # Auto-voiding: %b
             // # zh_CN 自动销毁溢出: %b
             GTUtility.sendChatToPlayer(
                 aPlayer,
-                StatCollector.translateToLocalFormatted("Info_SingularityDataHub_AutoVoiding", doVoidExcess));
+                StatCollector
+                    .translateToLocalFormatted("gtnr.machine.singularity_data_hub.info.auto_voiding", doVoidExcess));
         }
     }
 

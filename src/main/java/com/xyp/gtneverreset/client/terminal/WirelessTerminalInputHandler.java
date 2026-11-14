@@ -10,9 +10,9 @@ import net.minecraft.util.MovingObjectPosition;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
-import com.xyp.gtneverreset.common.packet.CPacketSendHeldItemToNetwork;
-import com.xyp.gtneverreset.common.packet.CPacketSwitchGuis;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
+import com.xyp.gtneverreset.common.packet.SendHeldItemToNetworkPacket;
+import com.xyp.gtneverreset.common.packet.SwitchGuisPacket;
 import com.xyp.gtneverreset.common.packet.TerminalItemRequestPacket;
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
 
@@ -45,9 +45,9 @@ public final class WirelessTerminalInputHandler {
         Minecraft minecraft = Minecraft.getMinecraft();
         EntityPlayer player = minecraft.thePlayer;
         if (player == null || minecraft.currentScreen != null) return;
-        if (OPEN_TERMINAL.isPressed()) NetWorkHandler.sendToServer(CPacketSwitchGuis.restoreLast());
+        if (OPEN_TERMINAL.isPressed()) NetWorkHandler.sendToServer(SwitchGuisPacket.restoreLast());
         if (SEND_HELD_ITEM.isPressed() && player.inventory.getCurrentItem() != null) {
-            NetWorkHandler.sendToServer(new CPacketSendHeldItemToNetwork(player.inventory.currentItem));
+            NetWorkHandler.sendToServer(new SendHeldItemToNetworkPacket(player.inventory.currentItem));
         }
         if (!(event instanceof InputEvent.MouseInputEvent) || !Mouse.getEventButtonState()
             || Mouse.getEventButton() != 2

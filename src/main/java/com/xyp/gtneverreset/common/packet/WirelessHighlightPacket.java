@@ -3,15 +3,13 @@ package com.xyp.gtneverreset.common.packet;
 import net.minecraft.client.Minecraft;
 
 import com.xyp.gtneverreset.client.wireless.WirelessWorldHighlightRender;
+import com.xyp.gtnrlib.network.ClientboundPacket;
 
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
-import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
-import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 
-public class WirelessHighlightPacket implements IMessage {
+public class WirelessHighlightPacket extends ClientboundPacket {
 
     private int dimension, x, y, z;
 
@@ -25,7 +23,7 @@ public class WirelessHighlightPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buffer) {
+    protected void read(ByteBuf buffer) {
         dimension = buffer.readInt();
         x = buffer.readInt();
         y = buffer.readInt();
@@ -33,16 +31,16 @@ public class WirelessHighlightPacket implements IMessage {
     }
 
     @Override
-    public void toBytes(ByteBuf buffer) {
+    protected void write(ByteBuf buffer) {
         buffer.writeInt(dimension);
         buffer.writeInt(x);
         buffer.writeInt(y);
         buffer.writeInt(z);
     }
 
+    @Override
     @SideOnly(Side.CLIENT)
-    private void handleClient() {
-        Minecraft minecraft = Minecraft.getMinecraft();
+    public void handleClient(Minecraft minecraft) {
         var connection = minecraft.getNetHandler();
         minecraft.func_152344_a(() -> {
             if (minecraft.getNetHandler() == connection)
@@ -50,12 +48,4 @@ public class WirelessHighlightPacket implements IMessage {
         });
     }
 
-    public static final class Handler implements IMessageHandler<WirelessHighlightPacket, IMessage> {
-
-        @Override
-        public IMessage onMessage(WirelessHighlightPacket message, MessageContext context) {
-            message.handleClient();
-            return null;
-        }
-    }
 }

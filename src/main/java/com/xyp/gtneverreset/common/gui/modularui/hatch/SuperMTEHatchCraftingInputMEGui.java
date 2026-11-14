@@ -268,23 +268,23 @@ public class SuperMTEHatchCraftingInputMEGui extends MTEHatchBaseGui<SuperMTEHat
             ItemStack current = hatch.inventoryHandler.getStackInSlot(hatch.getMoldSlot());
             String moldName;
             if (current == null) {
-                // #tr gui.gtneverreset.select_mold.tooltip
+                // #tr gtnr.gui.gtneverreset.select_mold.tooltip
                 // # Ghost Mold Slot
                 // # zh_CN 虚拟模具槽
-                moldName = StatCollector.translateToLocal("gui.gtneverreset.select_mold.tooltip");
+                moldName = StatCollector.translateToLocal("gtnr.gui.gtneverreset.select_mold.tooltip");
             } else {
                 moldName = current.getDisplayName();
             }
             tooltip.clearText()
                 .addLine(moldName)
-                // #tr gui.gtneverreset.select_mold.tooltip.1
+                // #tr gtnr.gui.gtneverreset.select_mold.tooltip.1
                 // # Shift+left-click to select a mold
                 // # zh_CN Shift+左键选择模具
-                .addLine(IKey.lang("gui.gtneverreset.select_mold.tooltip.1"))
-                // #tr gui.gtneverreset.select_mold.tooltip.2
+                .addLine(IKey.lang("gtnr.gui.gtneverreset.select_mold.tooltip.1"))
+                // #tr gtnr.gui.gtneverreset.select_mold.tooltip.2
                 // # Scroll to cycle molds
                 // # zh_CN 滚动滚轮切换模具
-                .addLine(IKey.lang("gui.gtneverreset.select_mold.tooltip.2"));
+                .addLine(IKey.lang("gtnr.gui.gtneverreset.select_mold.tooltip.2"));
         }
 
         private boolean isSelectorPanelOpen() {
@@ -316,11 +316,11 @@ public class SuperMTEHatchCraftingInputMEGui extends MTEHatchBaseGui<SuperMTEHat
                         .child(
                             new ItemDrawable(hatch.getStackForm(1)).asWidget()
                                 .size(16))
-                        // #tr gui.gtneverreset.select_mold
+                        // #tr gtnr.gui.gtneverreset.select_mold
                         // # Select Mold
                         // # zh_CN 选择模具
                         .child(
-                            IKey.lang("gui.gtneverreset.select_mold")
+                            IKey.lang("gtnr.gui.gtneverreset.select_mold")
                                 .asWidget()));
 
                 // "Current" label

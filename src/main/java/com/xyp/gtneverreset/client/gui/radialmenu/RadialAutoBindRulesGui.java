@@ -46,10 +46,10 @@ public class RadialAutoBindRulesGui extends RadialUiScreen {
 
     @Override
     protected String titleKey() {
-        // #tr radialmenu.rules.title
+        // #tr gtnr.radialmenu.rules.title
         // # Auto-bind rules: %s
         // # zh_CN 自动绑定规则：%s
-        return "radialmenu.rules.title";
+        return "gtnr.radialmenu.rules.title";
     }
 
     @Override
@@ -103,10 +103,10 @@ public class RadialAutoBindRulesGui extends RadialUiScreen {
             }
 
             this.buttonList.add(new GuiButton(ID_TYPE_BASE + i, left, y, TYPE_WIDTH, RadialUi.ROW, typeLabel(binding)));
-            // #tr radialmenu.rules.type.tip
+            // #tr gtnr.radialmenu.rules.type.tooltip
             // # Match a server address, a world folder or any singleplayer world
             // # zh_CN 匹配服务器地址、世界文件夹或任意单人世界
-            tooltip(ID_TYPE_BASE + i, I18n.format("radialmenu.rules.type.tip"));
+            tooltip(ID_TYPE_BASE + i, I18n.format("gtnr.radialmenu.rules.type.tooltip"));
 
             int fieldLeft = left + TYPE_WIDTH + RadialUi.GAP;
             int fieldWidth = contentRight() - fieldLeft - REMOVE_WIDTH - RadialUi.GAP;
@@ -136,52 +136,58 @@ public class RadialAutoBindRulesGui extends RadialUiScreen {
         int footerY = panelBottom - RadialUi.PAD - RadialUi.ROW;
         int half = (contentWidth() - RadialUi.GAP) / 2;
         // Marked as footer below, which is what exempts them from the scroll visibility check.
-        // #tr radialmenu.rules.add
+        // #tr gtnr.radialmenu.rules.add
         // # Add rule
         // # zh_CN 添加规则
-        GuiButton add = new GuiButton(ID_ADD, left, footerY, half, RadialUi.ROW, I18n.format("radialmenu.rules.add"));
+        GuiButton add = new GuiButton(
+            ID_ADD,
+            left,
+            footerY,
+            half,
+            RadialUi.ROW,
+            I18n.format("gtnr.radialmenu.rules.add"));
         GuiButton useCurrent = new GuiButton(
             ID_USE_CURRENT,
             left + half + RadialUi.GAP,
             footerY,
             half,
             RadialUi.ROW,
-            // #tr radialmenu.rules.useCurrent
+            // #tr gtnr.radialmenu.rules.use_current
             // # Use current world
             // # zh_CN 使用当前世界
-            I18n.format("radialmenu.rules.useCurrent"));
+            I18n.format("gtnr.radialmenu.rules.use_current"));
         this.buttonList.add(add);
         this.buttonList.add(useCurrent);
         markFooter(ID_ADD);
         markFooter(ID_USE_CURRENT);
-        // #tr radialmenu.rules.useCurrent.tip
+        // #tr gtnr.radialmenu.rules.use_current.tooltip
         // # Add a rule for the current server or world
         // # zh_CN 为当前服务器或世界添加规则
-        tooltip(ID_USE_CURRENT, I18n.format("radialmenu.rules.useCurrent.tip"));
-        // #tr radialmenu.editor.save
+        tooltip(ID_USE_CURRENT, I18n.format("gtnr.radialmenu.rules.use_current.tooltip"));
+        // #tr gtnr.radialmenu.editor.save
         // # Save
         // # zh_CN 保存
-        addBottomBar("radialmenu.editor.save", null, "gui.cancel");
+        addBottomBar("gtnr.radialmenu.editor.save", null, "gui.cancel");
     }
 
     private String typeLabel(ProfileBinding binding) {
         ProfileBinding.Type type = binding.type == null ? ProfileBinding.Type.Server : binding.type;
         switch (type) {
             case Server:
-                // #tr radialmenu.rules.type.server
+                // #tr gtnr.radialmenu.rules.type.server
                 // # Server
                 // # zh_CN 服务器
-                return I18n.format("radialmenu.rules.type.server");
+                return I18n.format("gtnr.radialmenu.rules.type.server");
             case World:
-                // #tr radialmenu.rules.type.world
+                // #tr gtnr.radialmenu.rules.type.world
                 // # World
                 // # zh_CN 世界
-                return I18n.format("radialmenu.rules.type.world");
+                return I18n.format("gtnr.radialmenu.rules.type.world");
             default:
-                // #tr radialmenu.rules.type.singleplayer
+                // #tr gtnr.radialmenu.rules.type.singleplayer
                 // # Singleplayer
                 // # zh_CN 单人游戏
-                return I18n.format("radialmenu.rules.type.singleplayer");
+                return I18n.format("gtnr.radialmenu.rules.type.singleplayer");
         }
     }
 
@@ -279,10 +285,10 @@ public class RadialAutoBindRulesGui extends RadialUiScreen {
         if (profile.bindings.isEmpty()) {
             this.drawCenteredString(
                 this.fontRendererObj,
-                // #tr radialmenu.rules.empty
+                // #tr gtnr.radialmenu.rules.empty
                 // # No rules. This profile is only selected by hand.
                 // # zh_CN 没有规则。此配置只能手动选择。
-                EnumChatFormatting.GRAY + I18n.format("radialmenu.rules.empty"),
+                EnumChatFormatting.GRAY + I18n.format("gtnr.radialmenu.rules.empty"),
                 this.width / 2,
                 contentTop() + 6,
                 RadialUi.TEXT);

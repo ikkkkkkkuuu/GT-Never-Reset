@@ -32,10 +32,10 @@ public class CommandWirelessFrequency extends CommandBase {
         if (args.length != 2 || !"owner".equals(args[0])) throw new WrongUsageException(getCommandUsage(sender));
         var player = getCommandSenderAsPlayer(sender);
         var card = player.getCurrentEquippedItem();
-        // #tr gtneverreset.wireless.command.card_required
+        // #tr gtnr.wireless.command.card_required
         // # Hold a bound wireless frequency card. Load its original controller if it has not been migrated yet.
         // # zh_CN 请手持已绑定的无线频率卡；尚未迁移的旧卡需要先加载原控制器。
-        String required = "gtneverreset.wireless.command.card_required";
+        String required = "gtnr.wireless.command.card_required";
         if (card == null || !(card.getItem() instanceof WirelessFrequencyCard)) throw new CommandException(required);
         WirelessCardBinding.upgrade(card, player);
         var binding = WirelessCardBinding.read(card.getTagCompound());
@@ -43,10 +43,10 @@ public class CommandWirelessFrequency extends CommandBase {
         if (binding == null || !WirelessFrequencies.setCreator(binding.frequency(), owner.getUniqueID()))
             throw new CommandException(required);
         WirelessCardBinding.upgrade(card, player);
-        // #tr gtneverreset.wireless.command.owner_set
+        // #tr gtnr.wireless.command.owner_set
         // # Frequency creator set to %s. Card holders still need AE build permission to take it over.
         // # zh_CN 已将频率创建者设为 %s；接管时仍须持有自己的卡并具有 AE 建造权限。
         sender.addChatMessage(
-            new ChatComponentTranslation("gtneverreset.wireless.command.owner_set", owner.getCommandSenderName()));
+            new ChatComponentTranslation("gtnr.wireless.command.owner_set", owner.getCommandSenderName()));
     }
 }

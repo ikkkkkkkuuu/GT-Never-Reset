@@ -3,11 +3,11 @@ package com.xyp.gtneverreset.common.packet;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.xyp.gtneverreset.common.item.ToolBeltData;
+import com.xyp.gtnrlib.network.ServerboundPacket;
 
-import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import io.netty.buffer.ByteBuf;
 
-public class ToolBeltSwapPacket implements IMessage {
+public class ToolBeltSwapPacket extends ServerboundPacket {
 
     private int swapWith;
 
@@ -18,16 +18,17 @@ public class ToolBeltSwapPacket implements IMessage {
     }
 
     @Override
-    public void fromBytes(ByteBuf buf) {
+    protected void read(ByteBuf buf) {
         swapWith = buf.readInt();
     }
 
     @Override
-    public void toBytes(ByteBuf buf) {
+    protected void write(ByteBuf buf) {
         buf.writeInt(swapWith);
     }
 
-    public void handle(EntityPlayerMP player) {
+    @Override
+    public void handleServer(EntityPlayerMP player) {
         ToolBeltData.swapItem(swapWith, player);
     }
 

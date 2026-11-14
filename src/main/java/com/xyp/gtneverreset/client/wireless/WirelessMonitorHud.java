@@ -315,27 +315,28 @@ public final class WirelessMonitorHud extends Gui {
     }
 
     private String[] lines() {
-        // #tr hud.gtneverreset.wireless.realtime
+        // #tr gtnr.hud.gtneverreset.wireless.realtime
         // # Instant:
         // # zh_CN 瞬时：
-        String realtime = StatCollector.translateToLocal("hud.gtneverreset.wireless.realtime");
-        // #tr hud.gtneverreset.wireless.average
+        String realtime = StatCollector.translateToLocal("gtnr.hud.gtneverreset.wireless.realtime");
+        // #tr gtnr.hud.gtneverreset.wireless.average
         // # Average (5m):
         // # zh_CN 平均（5分钟）：
-        String average = StatCollector.translateToLocal("hud.gtneverreset.wireless.average");
-        // #tr hud.gtneverreset.wireless.energy
+        String average = StatCollector.translateToLocal("gtnr.hud.gtneverreset.wireless.average");
+        // #tr gtnr.hud.gtneverreset.wireless.energy
         // # Wireless network:
         // # zh_CN 无线电网：
-        String energy = StatCollector.translateToLocal("hud.gtneverreset.wireless.energy");
-        // #tr hud.gtneverreset.wireless.syncing
+        String energy = StatCollector.translateToLocal("gtnr.hud.gtneverreset.wireless.energy");
+        // #tr gtnr.hud.gtneverreset.wireless.syncing
         // # Synchronizing...
         // # zh_CN 同步中…
-        String syncing = EnumChatFormatting.GRAY + StatCollector.translateToLocal("hud.gtneverreset.wireless.syncing");
-        // #tr hud.gtneverreset.wireless.measuring
+        String syncing = EnumChatFormatting.GRAY
+            + StatCollector.translateToLocal("gtnr.hud.gtneverreset.wireless.syncing");
+        // #tr gtnr.hud.gtneverreset.wireless.measuring
         // # Measuring...
         // # zh_CN 采样中…
         String measuring = EnumChatFormatting.GRAY
-            + StatCollector.translateToLocal("hud.gtneverreset.wireless.measuring");
+            + StatCollector.translateToLocal("gtnr.hud.gtneverreset.wireless.measuring");
         List<String> result = new ArrayList<>();
         if (WirelessMonitorConfig.showRealtime) result.add(
             EnumChatFormatting.AQUA + realtime

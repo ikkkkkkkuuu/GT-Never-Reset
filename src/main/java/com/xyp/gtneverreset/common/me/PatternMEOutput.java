@@ -158,14 +158,14 @@ public final class PatternMEOutput {
     /** Appends the shared product-output behavior to each input variant's existing tooltip. */
     public static String[] describe(String[] original) {
         List<String> lines = new ArrayList<>(Arrays.asList(original));
-        // #tr tooltip.gtneverreset.pattern_me_output
+        // #tr gtnr.tooltip.gtneverreset.pattern_me_output
         // # Products are also stored in the same ME network
         // # zh_CN 产物也会存进同一个 ME 网络
-        lines.add(StatCollector.translateToLocal("tooltip.gtneverreset.pattern_me_output"));
-        // #tr tooltip.gtneverreset.pattern_me_output_cache
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.pattern_me_output"));
+        // #tr gtnr.tooltip.gtneverreset.pattern_me_output_cache
         // # Items and fluids have separate output caches, up to 2^63 - 1 items / 2^63 - 1 L
         // # zh_CN 物品和流体各有独立输出缓存，最多 2^63 - 1 个 / 2^63 - 1 L
-        lines.add(StatCollector.translateToLocal("tooltip.gtneverreset.pattern_me_output_cache"));
+        lines.add(StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.pattern_me_output_cache"));
         return lines.toArray(new String[0]);
     }
 

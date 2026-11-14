@@ -106,12 +106,11 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     private static final byte OPERATION_BREEDING = 1;
     private static final byte OPERATION_OUTPUT = 2;
 
-    private static final String STRUCTURE_PIECE_MAIN = "main";
+    private static final String STRUCTURE_NAME = "large_bee_breeder";
+    private static final String STRUCTURE_PIECE = "main";
     private static final int HORIZONTAL_OFFSET = 9;
     private static final int VERTICAL_OFFSET = 9;
     private static final int DEPTH_OFFSET = 3;
-
-    private static final String[][] SHAPE = MultiblockStructureLoader.load("large_bee_breeder");
 
     private static int getParallelForVoltageTier(int voltageTier) {
         int upgrades = Math.max(0, Math.min(voltageTier, VoltageIndex.MAX) - BASE_VOLTAGE_TIER);
@@ -206,7 +205,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     public IStructureDefinition<LargeBeeBreeder> getStructureDefinition() {
         if (structureDefinition == null) {
             structureDefinition = StructureDefinition.<LargeBeeBreeder>builder()
-                .addShape(STRUCTURE_PIECE_MAIN, transpose(SHAPE))
+                .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load(STRUCTURE_NAME)))
                 .addElement('A', chainAllGlasses(-1, (te, t) -> te.mGlassTier = t, te -> te.mGlassTier))
                 .addElement('B', ofStructureBlock(ModsItemlist.ChiselYellowHempcrete))
                 .addElement('C', ofStructureBlock(ModsItemlist.ChiselBrownHempcrete))
@@ -241,14 +240,14 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
 
     @Override
     public void construct(ItemStack stackSize, boolean hintsOnly) {
-        this.buildPiece(STRUCTURE_PIECE_MAIN, stackSize, hintsOnly, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET);
+        this.buildPiece(STRUCTURE_PIECE, stackSize, hintsOnly, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET);
     }
 
     @Override
     public int survivalConstruct(ItemStack stackSize, int elementBudget, ISurvivalBuildEnvironment env) {
         if (this.mMachine) return -1;
         return this.survivalBuildPiece(
-            STRUCTURE_PIECE_MAIN,
+            STRUCTURE_PIECE,
             stackSize,
             HORIZONTAL_OFFSET,
             VERTICAL_OFFSET,
@@ -263,7 +262,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     public void checkMachine(IGregTechTileEntity aBaseMetaTileEntity, ItemStack aStack, List<StructureError> errors) {
         mCountCasing = 0;
         mGlassTier = -1;
-        if (!checkPiece(STRUCTURE_PIECE_MAIN, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors)) return;
+        if (!checkPiece(STRUCTURE_PIECE, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors)) return;
         collectTooltipStructureRequirements(errors);
 
         markBreedingChanged();
@@ -309,6 +308,11 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
             tier = Math.max(tier, (int) hatch.getInputTier());
         }
         return tier;
+    }
+
+    @Override
+    public RecipeMap<?> getRecipeMap() {
+        return null;
     }
 
     @Nonnull
@@ -467,6 +471,40 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
             // @formatter:on
             default -> "gtnr_bee_breeder_voltage_hv";
         });
+    }
+
+    public long getEuPerBreedingAttempt() {
+        return getEnergyCostPerTick(1);
+    }
+
+    private long getEnergyCostPerTick(int parallelAttempts) {
+        return getEnergyCostPerTick(parallelAttempts, 0);
+    }
+
+    private long getEnergyCostPerTick(int parallelAttempts, int extraOverclocks) {
+        long eutPerAttempt = createBreedingOverclockCalculator(extraOverclocks).getConsumption() << getGlassUpgrades();
+        return eutPerAttempt * Math.max(0, parallelAttempts);
+    }
+
+    private OverclockCalculator createBreedingOverclockCalculator() {
+        return createBreedingOverclockCalculator(0);
+    }
+
+    private OverclockCalculator createBreedingOverclockCalculator(int extraOverclocks) {
+        int voltageUpgrades = Math.max(0, Math.min(getBreedingVoltageTier(), VoltageIndex.MAX) - BASE_VOLTAGE_TIER)
+            + extraOverclocks;
+        ParameterModuleHatch speed = parameterModule(MachineModuleType.Speed);
+        ParameterModuleHatch power = parameterModule(MachineModuleType.PowerConsumption);
+        ParameterModuleHatch overclock = parameterModule(MachineModuleType.Overclock);
+        return new OverclockCalculator().setRecipeEUt(BASE_EUT_PER_BREEDING)
+            .setEUt(BASE_EUT_PER_BREEDING << (2 * voltageUpgrades))
+            .setDuration(TICKS_PER_BREEDING)
+            .setMaxOverclocks(voltageUpgrades)
+            .setEUtDiscount(power == null ? 1 : power.getPowerMultiplier())
+            .setDurationModifier(speed == null ? 1 : 1D / speed.getParameter())
+            .setEUtIncreasePerOC(overclock == null ? 4 : overclock.getPowerIncrease())
+            .setDurationDecreasePerOC(overclock == null ? 2 : overclock.getTimeReduction())
+            .calculate();
     }
 
     private void prepareBreedingCycle(long eut) {
@@ -740,10 +778,6 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         }
     }
 
-    public List<FoundationRequirement> getMissingFoundations() {
-        return Collections.unmodifiableList(missingFoundations);
-    }
-
     @Override
     public ITexture[] getTexture(IGregTechTileEntity aBaseMetaTileEntity, ForgeDirection side, ForgeDirection aFacing,
         int colorIndex, boolean aActive, boolean redstoneLevel) {
@@ -825,6 +859,11 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     }
 
     @Override
+    public String getLocalNameKey() {
+        return "gtnr.machine.large_bee_breeder.name";
+    }
+
+    @Override
     public MultiblockTooltipBuilder createTooltip() {
         return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
             .toolTipFinisher();
@@ -832,10 +871,10 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
 
     @Override
     public String getTooltipMachineType() {
-        // #tr gtnr.bee_breeder.type
+        // #tr gtnr.machine.large_bee_breeder.recipe_type
         // # Bee Breeder
         // # zh_CN 养蜂机
-        return StatCollector.translateToLocal("gtnr.bee_breeder.type");
+        return StatCollector.translateToLocal("gtnr.machine.large_bee_breeder.recipe_type");
     }
 
     @Override
@@ -844,21 +883,14 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     }
 
     @Override
-    public void onValueUpdate(byte value) {}
-
-    @Override
-    public byte getUpdateData() {
-        return 0;
-    }
-
-    @Override
-    public RecipeMap<?> getRecipeMap() {
-        return null;
-    }
-
-    @Override
     public TooltipStats getTooltipStats() {
         return new TooltipStats(BASE_PARALLEL_STEPS, Double.NaN, Double.NaN, false);
+    }
+
+    @Override
+    public TierRange getTooltipTierRange(TieredPart part) {
+        return part == TieredPart.VOLTAGE ? new TierRange(BASE_VOLTAGE_TIER, part.maxTier)
+            : MultiblockTooltipSource.super.getTooltipTierRange(part);
     }
 
     @Override
@@ -876,6 +908,10 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         values.put("baseEu", BASE_EUT_PER_BREEDING);
         values.put("glassChance", CHANCE_PER_GLASS_TIER);
         return values;
+    }
+
+    public List<FoundationRequirement> getMissingFoundations() {
+        return Collections.unmodifiableList(missingFoundations);
     }
 
     @Override
@@ -978,6 +1014,14 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
     }
 
     @Override
+    public void onValueUpdate(byte value) {}
+
+    @Override
+    public byte getUpdateData() {
+        return 0;
+    }
+
+    @Override
     public void saveNBTData(NBTTagCompound aNBT) {
         super.saveNBTData(aNBT);
 
@@ -1047,40 +1091,6 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
         ParameterModuleHatch module = parameterModule(MachineModuleType.Parallel);
         long multiplier = module == null ? 1 : 1L + module.getParameter();
         return (int) Math.min(Integer.MAX_VALUE, getParallelForVoltageTier(getBreedingVoltageTier()) * multiplier);
-    }
-
-    public long getEuPerBreedingAttempt() {
-        return getEnergyCostPerTick(1);
-    }
-
-    private long getEnergyCostPerTick(int parallelAttempts) {
-        return getEnergyCostPerTick(parallelAttempts, 0);
-    }
-
-    private long getEnergyCostPerTick(int parallelAttempts, int extraOverclocks) {
-        long eutPerAttempt = createBreedingOverclockCalculator(extraOverclocks).getConsumption() << getGlassUpgrades();
-        return eutPerAttempt * Math.max(0, parallelAttempts);
-    }
-
-    private OverclockCalculator createBreedingOverclockCalculator() {
-        return createBreedingOverclockCalculator(0);
-    }
-
-    private OverclockCalculator createBreedingOverclockCalculator(int extraOverclocks) {
-        int voltageUpgrades = Math.max(0, Math.min(getBreedingVoltageTier(), VoltageIndex.MAX) - BASE_VOLTAGE_TIER)
-            + extraOverclocks;
-        ParameterModuleHatch speed = parameterModule(MachineModuleType.Speed);
-        ParameterModuleHatch power = parameterModule(MachineModuleType.PowerConsumption);
-        ParameterModuleHatch overclock = parameterModule(MachineModuleType.Overclock);
-        return new OverclockCalculator().setRecipeEUt(BASE_EUT_PER_BREEDING)
-            .setEUt(BASE_EUT_PER_BREEDING << (2 * voltageUpgrades))
-            .setDuration(TICKS_PER_BREEDING)
-            .setMaxOverclocks(voltageUpgrades)
-            .setEUtDiscount(power == null ? 1 : power.getPowerMultiplier())
-            .setDurationModifier(speed == null ? 1 : 1D / speed.getParameter())
-            .setEUtIncreasePerOC(overclock == null ? 4 : overclock.getPowerIncrease())
-            .setDurationDecreasePerOC(overclock == null ? 2 : overclock.getTimeReduction())
-            .calculate();
     }
 
     private int getGlassUpgrades() {

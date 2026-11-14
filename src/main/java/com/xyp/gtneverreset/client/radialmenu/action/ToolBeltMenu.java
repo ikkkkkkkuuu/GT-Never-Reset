@@ -28,11 +28,11 @@ public final class ToolBeltMenu implements IActionExecutor {
     private static final String SLOT = "slot";
 
     public static MenuNode create() {
-        // #tr radialmenu.toolbelt.title
+        // #tr gtnr.radialmenu.toolbelt.title
         // # Tool Belt
         // # zh_CN 工具腰带
         MenuNode menu = MenuNode.category(
-            StatCollector.translateToLocal("radialmenu.toolbelt.title"),
+            StatCollector.translateToLocal("gtnr.radialmenu.toolbelt.title"),
             IconSpec.sprite("wrench", null),
             SlotLayout.fixed(ToolBeltData.DEFAULT_SLOT_COUNT));
         menu.builtIn = TYPE;
@@ -108,10 +108,11 @@ public final class ToolBeltMenu implements IActionExecutor {
         List<MenuNode> slots = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             ItemStack stack = data == null ? null : data.getStackInSlot(i);
-            // #tr radialmenu.toolbelt.empty
+            // #tr gtnr.radialmenu.toolbelt.empty
             // # Empty slot %s - insert held item
             // # zh_CN 空槽 %s：放入手持物品
-            String title = stack == null ? StatCollector.translateToLocalFormatted("radialmenu.toolbelt.empty", i + 1)
+            String title = stack == null
+                ? StatCollector.translateToLocalFormatted("gtnr.radialmenu.toolbelt.empty", i + 1)
                 : stack.getDisplayName();
             IconSpec icon = stack == null ? IconSpec.sprite("plus", "#80FFFFFF") : IconSpec.fromStack(stack);
             MenuNode slot = MenuNode.leaf(title, icon, new ActionSpec(TYPE).set(SLOT, Integer.toString(i)));

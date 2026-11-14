@@ -184,18 +184,18 @@ public final class CrossRecipeMEPatternBuffer extends CircuitMEPatternBuffer {
 
     @Override
     public String[] getDescription() {
-        // #tr tooltip.gtneverreset.cross_recipe_buffer.routing
+        // #tr gtnr.tooltip.gtneverreset.cross_recipe_buffer.routing
         // # Uses the recipe type saved during NEI import to switch the controller to the matching mode
         // # zh_CN 按 NEI 导入时记下的配方类型，自动把控制器切到对应模式
-        String routing = StatCollector.translateToLocal("tooltip.gtneverreset.cross_recipe_buffer.routing");
-        // #tr tooltip.gtneverreset.cross_recipe_buffer.support
+        String routing = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.cross_recipe_buffer.routing");
+        // #tr gtnr.tooltip.gtneverreset.cross_recipe_buffer.support
         // # Only recipe types the controller supports are used; normal machine requirements still apply
         // # zh_CN 只用控制器支持的配方类型；机器原本的加工条件仍然有效
-        String support = StatCollector.translateToLocal("tooltip.gtneverreset.cross_recipe_buffer.support");
-        // #tr tooltip.gtneverreset.cross_recipe_buffer.fallback
+        String support = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.cross_recipe_buffer.support");
+        // #tr gtnr.tooltip.gtneverreset.cross_recipe_buffer.fallback
         // # Patterns without a saved type use the current mode; unsupported types leave ingredients buffered
         // # zh_CN 没记配方类型的样板按当前模式处理；不支持的类型不会动缓存里的原料
-        String fallback = StatCollector.translateToLocal("tooltip.gtneverreset.cross_recipe_buffer.fallback");
+        String fallback = StatCollector.translateToLocal("gtnr.tooltip.gtneverreset.cross_recipe_buffer.fallback");
         String[] lines = ArrayUtils.addAll(getBaseDescription(), getCircuitDescription());
         return PatternMEOutput.describe(ArrayUtils.addAll(lines, routing, support, fallback));
     }

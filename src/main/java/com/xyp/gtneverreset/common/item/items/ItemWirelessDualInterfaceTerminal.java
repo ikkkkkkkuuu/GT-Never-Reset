@@ -23,10 +23,8 @@ import com.xyp.gtneverreset.client.terminal.WirelessTerminalInputHandler;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalMagnetGui;
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalMagnet;
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 
-import appeng.api.AEApi;
 import appeng.api.implementations.guiobjects.IGuiItem;
 import appeng.api.implementations.guiobjects.IGuiItemObject;
 import appeng.helpers.ICustomButtonDataObject;
@@ -35,7 +33,6 @@ import appeng.helpers.ICustomButtonSource;
 import appeng.items.contents.WirelessCraftingTerminalGuiObject;
 import appeng.items.tools.powered.ToolWirelessTerminal;
 import baubles.api.expanded.BaubleExpandedSlots;
-import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -51,12 +48,6 @@ public final class ItemWirelessDualInterfaceTerminal extends ToolWirelessTermina
         setUnlocalizedName(REGISTRY_NAME);
         setTextureName(GTNeverReset.MODID + ":" + REGISTRY_NAME);
         setCreativeTab(GTNRCreativeTabs.ITEMS);
-        GameRegistry.registerItem(this, REGISTRY_NAME);
-        GTNRItemList.WirelessDualInterfaceTerminal.set(this);
-        AEApi.instance()
-            .registries()
-            .wireless()
-            .registerWirelessHandler(this);
     }
 
     @Override
@@ -138,52 +129,52 @@ public final class ItemWirelessDualInterfaceTerminal extends ToolWirelessTermina
     public void addCheckedInformation(ItemStack stack, EntityPlayer player, List<String> lines, boolean more) {
         super.addCheckedInformation(stack, player, lines, more);
         if (GuiScreen.isShiftKeyDown()) {
-            // #tr gtneverreset.tooltip.wireless_dual_interface_terminal.desc
+            // #tr gtnr.tooltip.wireless_dual_interface_terminal.desc
             // # Access ME interfaces and encode patterns wirelessly
             // # zh_CN 无线访问 ME 接口并编码样板
-            lines.add(I18n.format("gtneverreset.tooltip.wireless_dual_interface_terminal.desc"));
-            // #tr gtneverreset.tooltip.wireless_dual_interface_terminal.magnet
+            lines.add(I18n.format("gtnr.tooltip.wireless_dual_interface_terminal.desc"));
+            // #tr gtnr.tooltip.wireless_dual_interface_terminal.magnet
             // # Built-in magnet: Off/Inventory/ME and filters via side buttons. Sneak to pause.
             // # zh_CN 内置磁力功能，默认吸入背包；侧边按钮切换关闭/背包/ME及过滤设置，潜行暂停。
-            lines.add(I18n.format("gtneverreset.tooltip.wireless_dual_interface_terminal.magnet"));
-            // #tr gtneverreset.tooltip.wireless_dual_interface_terminal.key_open
+            lines.add(I18n.format("gtnr.tooltip.wireless_dual_interface_terminal.magnet"));
+            // #tr gtnr.tooltip.wireless_dual_interface_terminal.key_open
             // # §7Press §b%s§7 to open the terminal
             // # zh_CN §7按 §b%s§7 打开终端
             lines.add(
                 I18n.format(
-                    "gtneverreset.tooltip.wireless_dual_interface_terminal.key_open",
+                    "gtnr.tooltip.wireless_dual_interface_terminal.key_open",
                     keyName(WirelessTerminalInputHandler.OPEN_TERMINAL)));
-            // #tr gtneverreset.tooltip.wireless_dual_interface_terminal.key_send
+            // #tr gtnr.tooltip.wireless_dual_interface_terminal.key_send
             // # §7Press §b%s§7 to send the held item to the ME network
             // # zh_CN §7按 §b%s§7 将手持物品存入 ME 网络
             lines.add(
                 I18n.format(
-                    "gtneverreset.tooltip.wireless_dual_interface_terminal.key_send",
+                    "gtnr.tooltip.wireless_dual_interface_terminal.key_send",
                     keyName(WirelessTerminalInputHandler.SEND_HELD_ITEM)));
-            // #tr gtneverreset.tooltip.wireless_dual_interface_terminal.nei_to_inv
+            // #tr gtnr.tooltip.wireless_dual_interface_terminal.nei_to_inv
             // # §7Shift/Ctrl+middle-click an NEI item to request it from the ME network
             // # zh_CN §7Shift/Ctrl+中键点击 NEI 物品，从 ME 网络提取到物品栏
-            lines.add(I18n.format("gtneverreset.tooltip.wireless_dual_interface_terminal.nei_to_inv"));
+            lines.add(I18n.format("gtnr.tooltip.wireless_dual_interface_terminal.nei_to_inv"));
         } else {
-            // #tr gtneverreset.tooltip.shift_for_more
+            // #tr gtnr.tooltip.shift_for_more
             // # §7Hold §bShift§7 for controls and functions
             // # zh_CN §7按住 §bShift§7 查看功能和操作
-            lines.add(I18n.format("gtneverreset.tooltip.shift_for_more"));
+            lines.add(I18n.format("gtnr.tooltip.shift_for_more"));
         }
         if (GuiScreen.isCtrlKeyDown()) {
-            // #tr gtneverreset.tooltip.wireless.installed
+            // #tr gtnr.tooltip.wireless.installed
             // # Installed cards:
             // # zh_CN 已安装的卡：
-            lines.add(I18n.format("gtneverreset.tooltip.wireless.installed"));
+            lines.add(I18n.format("gtnr.tooltip.wireless.installed"));
             if (stack.getItem() instanceof ItemWirelessDualInterfaceTerminal terminal) {
                 if (terminal.hasInfinityRange(stack)) addCardName(lines, ModsItemlist.InfinityBoosterCard.get(1));
                 if (terminal.hasInfinityPower(stack)) addCardName(lines, ModsItemlist.EnergyCard.get(1));
             }
         } else {
-            // #tr gtneverreset.tooltip.ctrl_for_more
+            // #tr gtnr.tooltip.ctrl_for_more
             // # §7Hold §bCtrl§7 to view installed cards
             // # zh_CN §7按住 §bCtrl§7 查看已安装的卡
-            lines.add(I18n.format("gtneverreset.tooltip.ctrl_for_more"));
+            lines.add(I18n.format("gtnr.tooltip.ctrl_for_more"));
         }
     }
 
@@ -195,10 +186,10 @@ public final class ItemWirelessDualInterfaceTerminal extends ToolWirelessTermina
     @SideOnly(Side.CLIENT)
     private static String keyName(KeyBinding key) {
         if (key == null || key.getKeyCode() == Keyboard.CHAR_NONE) {
-            // #tr gtneverreset.tooltip.key_unbound
+            // #tr gtnr.tooltip.key_unbound
             // # Unbound
             // # zh_CN 未绑定
-            return I18n.format("gtneverreset.tooltip.key_unbound");
+            return I18n.format("gtnr.tooltip.key_unbound");
         }
         return GameSettings.getKeyDisplayString(key.getKeyCode());
     }

@@ -41,10 +41,10 @@ public class RadialProfileBackupsGui extends RadialUiScreen {
 
     @Override
     protected String titleKey() {
-        // #tr radialmenu.backups.title
+        // #tr gtnr.radialmenu.backups.title
         // # Kept versions of %s
         // # zh_CN %s 的保留版本
-        return "radialmenu.backups.title";
+        return "gtnr.radialmenu.backups.title";
     }
 
     @Override
@@ -87,14 +87,14 @@ public class RadialProfileBackupsGui extends RadialUiScreen {
                     y,
                     RESTORE_WIDTH,
                     RadialUi.ROW,
-                    // #tr radialmenu.backups.restore
+                    // #tr gtnr.radialmenu.backups.restore
                     // # Restore
                     // # zh_CN 恢复
-                    I18n.format("radialmenu.backups.restore")));
-            // #tr radialmenu.backups.restore.tip
+                    I18n.format("gtnr.radialmenu.backups.restore")));
+            // #tr gtnr.radialmenu.backups.restore.tooltip
             // # Restore this version and back up the current one
             // # zh_CN 恢复此版本，并备份当前版本
-            tooltip(ID_RESTORE_BASE + age, describe("radialmenu.backups.restore.tip"));
+            tooltip(ID_RESTORE_BASE + age, describe("gtnr.radialmenu.backups.restore.tooltip"));
             rowPositions.add(new int[] { contentLeft(), y });
             ages.add(Integer.valueOf(age));
             summaries.add(summary(age));
@@ -124,15 +124,15 @@ public class RadialProfileBackupsGui extends RadialUiScreen {
         }
         RadialGuiStack.push(
             new RadialConfirmGui(
-                // #tr radialmenu.backups.confirmRestore
+                // #tr gtnr.radialmenu.backups.confirm_restore
                 // # Restore this version?
                 // # zh_CN 恢复此版本？
-                "radialmenu.backups.confirmRestore",
-                // #tr radialmenu.backups.confirmRestore.subject
+                "gtnr.radialmenu.backups.confirm_restore",
+                // #tr gtnr.radialmenu.backups.confirm_restore.subject
                 // # The profile goes back to how it was at %s
                 // # zh_CN 配置将恢复到 %s 时的状态
-                I18n.format("radialmenu.backups.confirmRestore.subject", when(age)),
-                "radialmenu.backups.restore",
+                I18n.format("gtnr.radialmenu.backups.confirm_restore.subject", when(age)),
+                "gtnr.radialmenu.backups.restore",
                 new RadialConfirmGui.Result() {
 
                     @Override
@@ -175,10 +175,10 @@ public class RadialProfileBackupsGui extends RadialUiScreen {
                 textY,
                 current ? RadialUi.TEXT : RadialUi.TEXT_MUTED);
             if (current) {
-                // #tr radialmenu.backups.current
+                // #tr gtnr.radialmenu.backups.current
                 // # now
                 // # zh_CN 现在
-                String label = I18n.format("radialmenu.backups.current");
+                String label = I18n.format("gtnr.radialmenu.backups.current");
                 this.fontRendererObj.drawString(
                     label,
                     contentRight() - this.fontRendererObj.getStringWidth(label),
@@ -189,10 +189,10 @@ public class RadialProfileBackupsGui extends RadialUiScreen {
 
         if (ages.size() <= 1) {
             this.fontRendererObj.drawString(
-                // #tr radialmenu.backups.none
+                // #tr gtnr.radialmenu.backups.none
                 // # Nothing has been saved over yet, so there is no earlier version to go back to
                 // # zh_CN 尚未保存过任何版本，因此没有可恢复的旧版本
-                I18n.format("radialmenu.backups.none"),
+                I18n.format("gtnr.radialmenu.backups.none"),
                 contentLeft(),
                 scrolledTop() + RadialUi.STEP + 6,
                 RadialUi.TEXT_MUTED);
@@ -208,17 +208,17 @@ public class RadialProfileBackupsGui extends RadialUiScreen {
     private String summary(int age) {
         Profile kept = age == 0 ? ProfileStorage.loadProfile(profile) : ProfileStorage.loadBackup(profile, age);
         if (kept == null || kept.root == null) {
-            // #tr radialmenu.backups.unreadable
+            // #tr gtnr.radialmenu.backups.unreadable
             // # could not be read
             // # zh_CN 无法读取
-            return I18n.format("radialmenu.backups.unreadable");
+            return I18n.format("gtnr.radialmenu.backups.unreadable");
         }
         // The whole tree, not the first ring of it. A submenu emptied out leaves the wheel above it the same
         // length, and a number that could not see that would be silent about the very loss this screen is for.
-        // #tr radialmenu.backups.entries
+        // #tr gtnr.radialmenu.backups.entries
         // # %d entries
         // # zh_CN %d 个条目
-        return I18n.format("radialmenu.backups.entries", Integer.valueOf(kept.root.deepCount()));
+        return I18n.format("gtnr.radialmenu.backups.entries", Integer.valueOf(kept.root.deepCount()));
     }
 
     private static String describe(String key) {

@@ -122,20 +122,20 @@ public final class PackagedProviderGui {
                 .asWidget()
                 .pos(8, 6)
                 .size(160, 9));
-        // #tr gui.packaged.patterns
+        // #tr gtnr.gui.packaged.patterns
         // # Patterns
         // # zh_CN 样板
         panel.child(
-            IKey.lang("gui.packaged.patterns")
+            IKey.lang("gtnr.gui.packaged.patterns")
                 .color(0xff404040)
                 .shadow(false)
                 .asWidget()
                 .pos(8, 31));
-        // #tr gui.packaged.returns
+        // #tr gtnr.gui.packaged.returns
         // # Return Inventory
         // # zh_CN 回收物品栏
         panel.child(
-            IKey.lang("gui.packaged.returns")
+            IKey.lang("gtnr.gui.packaged.returns")
                 .color(0xff404040)
                 .shadow(false)
                 .asWidget()
@@ -208,11 +208,11 @@ public final class PackagedProviderGui {
             .background(IDrawable.EMPTY)
             // The original atlas slot begins at U=0; its five-pixel padding is vertical only.
             .pos(186, 77)
-            // #tr gui.packaged.core_slot
+            // #tr gtnr.gui.packaged.core_slot
             // # Packaged Core; cannot be changed while jobs are active
             // # zh_CN 封包核心，有进行中的任务时无法更换
             .tooltip(
-                t -> t.addLine(IKey.lang("gui.packaged.core_slot"))
+                t -> t.addLine(IKey.lang("gtnr.gui.packaged.core_slot"))
                     .addLine(
                         IKey.dynamic(
                             () -> missingUnits.getIntValue() > 0
@@ -245,10 +245,10 @@ public final class PackagedProviderGui {
             theme) -> texture("states", 256, 256, visible.getBoolValue() ? 64 : 80, 80, 16, 16)
                 .draw(context, x, y, w, h, theme);
         panel.child(toolbar(-18, 23, terminalIcon, () -> {
-            // #tr gui.packaged.terminal
+            // #tr gtnr.gui.packaged.terminal
             // # Visible in the Pattern Access Terminal: %s
             // # zh_CN 在样板访问终端中显示：%s
-            return StatCollector.translateToLocalFormatted("gui.packaged.terminal", state(visible.getBoolValue()));
+            return StatCollector.translateToLocalFormatted("gtnr.gui.packaged.terminal", state(visible.getBoolValue()));
         }, () -> {
             if (tile.canConfigure(sync.getPlayer())) {
                 tile.setTerminalVisible(!tile.shouldDisplay());
@@ -259,11 +259,11 @@ public final class PackagedProviderGui {
             new ButtonWidget<>().pos(5, 17)
                 .size(160, 12)
                 .background(IDrawable.EMPTY)
-                // #tr gui.packaged.locked
+                // #tr gtnr.gui.packaged.locked
                 // # Crafting locked - click to reset
                 // # zh_CN 合成已锁定，点击重置
                 .overlay(
-                    IKey.lang("gui.packaged.locked")
+                    IKey.lang("gtnr.gui.packaged.locked")
                         .color(0xff404040)
                         .shadow(false))
                 .setEnabledIf(widget -> locked.getBoolValue())
@@ -273,10 +273,10 @@ public final class PackagedProviderGui {
                             if (!mouse.isClient() && tile.canConfigure(sync.getPlayer())) tile.resetCraftingLock();
                         })));
         panel.child(toolbar(-18, 45, icon("frequency_select"), () -> {
-            // #tr gui.packaged.targets
+            // #tr gtnr.gui.packaged.targets
             // # Connected targets: %s
             // # zh_CN 已连接目标：%s
-            return StatCollector.translateToLocalFormatted("gui.packaged.targets", count.getIntValue());
+            return StatCollector.translateToLocalFormatted("gtnr.gui.packaged.targets", count.getIntValue());
         }, () -> {}).name("targets")
             .onMousePressed(button -> {
                 if (button != 0) return false;
@@ -287,11 +287,13 @@ public final class PackagedProviderGui {
         IDrawable returnIcon = (context, x, y, w, h,
             theme) -> icon(auto.getBoolValue() ? "auto_input_on" : "auto_input_off").draw(context, x, y, w, h, theme);
         panel.child(toolbar(-18, 67, returnIcon, () -> {
-            // #tr gui.packaged.auto_return
+            // #tr gtnr.gui.packaged.auto_return
             // # Auto return: %s | Active jobs: %s
             // # zh_CN 自动回收：%s | 进行中：%s
-            return StatCollector
-                .translateToLocalFormatted("gui.packaged.auto_return", state(auto.getBoolValue()), jobs.getIntValue());
+            return StatCollector.translateToLocalFormatted(
+                "gtnr.gui.packaged.auto_return",
+                state(auto.getBoolValue()),
+                jobs.getIntValue());
         }, () -> {
             if (tile.canConfigure(sync.getPlayer())) {
                 tile.setAutoReturn(!tile.getAutoReturn());
@@ -300,15 +302,16 @@ public final class PackagedProviderGui {
         }));
         panel.child(toolbar(-18, 89, icon("frequency_connect"), () -> {
             if (essentia.getBoolValue()) {
-                // #tr gui.packaged.essentia_ae
+                // #tr gtnr.gui.packaged.essentia_ae
                 // # AE essentia: %sx. Left-click: source; right-click: speed. No active jobs allowed.
                 // # zh_CN AE 源质：%s 倍；左键切换来源，右键调速，须先结束所有任务。
-                return StatCollector.translateToLocalFormatted("gui.packaged.essentia_ae", essentiaSpeed.getIntValue());
+                return StatCollector
+                    .translateToLocalFormatted("gtnr.gui.packaged.essentia_ae", essentiaSpeed.getIntValue());
             }
-            // #tr gui.packaged.essentia_altar
+            // #tr gtnr.gui.packaged.essentia_altar
             // # Use nearby altar essentia. Click to use AE essentia; requires Thaumic Energistics.
             // # zh_CN 使用祭坛周围的源质；点击切换 AE 源质，需要神秘能源。
-            return StatCollector.translateToLocal("gui.packaged.essentia_altar");
+            return StatCollector.translateToLocal("gtnr.gui.packaged.essentia_altar");
         }, () -> {}).name("essentia_mode")
             .setEnabledIf(widget -> infusionCore.getBoolValue())
             .syncHandler(new InteractionSyncHandler().setOnMousePressed(mouse -> {
@@ -320,21 +323,22 @@ public final class PackagedProviderGui {
             theme) -> (optimization.getBoolValue() ? OPTIMIZATION_ON : OPTIMIZATION_OFF)
                 .draw(context, x, y, w, h, theme);
         panel.child(toolbar(-18, 111, optimizationIcon, () -> {
-            // #tr gui.packaged.pattern_optimization
+            // #tr gtnr.gui.packaged.pattern_optimization
             // # Allow pattern optimization: %s
             // # zh_CN 允许样板优化：%s
-            return StatCollector
-                .translateToLocalFormatted("gui.packaged.pattern_optimization", state(optimization.getBoolValue()));
+            return StatCollector.translateToLocalFormatted(
+                "gtnr.gui.packaged.pattern_optimization",
+                state(optimization.getBoolValue()));
         }, () -> {
             if (tile.canConfigure(sync.getPlayer())) {
                 tile.setPatternOptimization(!tile.allowsPatternOptimization());
             }
         }).name("pattern_optimization"));
         panel.child(toolbar(166, -5, texture("states", 256, 256, 144, 64, 16, 16), () -> {
-            // #tr gui.packaged.priority
+            // #tr gtnr.gui.packaged.priority
             // # Priority: %s
             // # zh_CN 优先级：%s
-            return StatCollector.translateToLocalFormatted("gui.packaged.priority", priority.getIntValue());
+            return StatCollector.translateToLocalFormatted("gtnr.gui.packaged.priority", priority.getIntValue());
         }, () -> {}).name("priority")
             .size(20, 20)
             .background(texture("states", 256, 256, 160, 192, 20, 20))
@@ -363,15 +367,15 @@ public final class PackagedProviderGui {
 
     private static String state(boolean enabled) {
         if (enabled) {
-            // #tr gui.packaged.enabled
+            // #tr gtnr.gui.packaged.enabled
             // # Enabled
             // # zh_CN 启用
-            return StatCollector.translateToLocal("gui.packaged.enabled");
+            return StatCollector.translateToLocal("gtnr.gui.packaged.enabled");
         }
-        // #tr gui.packaged.disabled
+        // #tr gtnr.gui.packaged.disabled
         // # Disabled
         // # zh_CN 关闭
-        return StatCollector.translateToLocal("gui.packaged.disabled");
+        return StatCollector.translateToLocal("gtnr.gui.packaged.disabled");
     }
 
     /** AE2 19.2.17 priority page geometry and number-entry step sizes, adapted to MUI synchronization. */
@@ -383,11 +387,11 @@ public final class PackagedProviderGui {
             () -> tile.getPriority(),
             value -> { if (tile.canConfigure(sync.getPlayer())) tile.setPriority(value); }).allowC2S();
         sync.syncValue("priority", priority);
-        // #tr gui.packaged.priority_title
+        // #tr gtnr.gui.packaged.priority_title
         // # Priority
         // # zh_CN 优先级
         panel.child(
-            IKey.lang("gui.packaged.priority_title")
+            IKey.lang("gtnr.gui.packaged.priority_title")
                 .color(0xff404040)
                 .shadow(false)
                 .asWidget()
@@ -449,11 +453,11 @@ public final class PackagedProviderGui {
                 .size());
         sync.syncValue("page", pageValue);
         sync.syncValue("pages", pages);
-        // #tr gui.packaged.target_title
+        // #tr gtnr.gui.packaged.target_title
         // # Connected Targets
         // # zh_CN 已连接目标
         panel.child(
-            IKey.lang("gui.packaged.target_title")
+            IKey.lang("gtnr.gui.packaged.target_title")
                 .color(0xff404040)
                 .shadow(false)
                 .asWidget()
@@ -483,22 +487,22 @@ public final class PackagedProviderGui {
                         widget -> !label.getValue()
                             .isEmpty())
                     .tooltip(t -> {
-                        // #tr gui.packaged.remove_target
+                        // #tr gtnr.gui.packaged.remove_target
                         // # Right-click to unlink. Shift-right-click to try stopping and releasing the job.
                         // # zh_CN 右键断开连接；Shift 右键尝试中断并释放此目标的任务。
-                        t.addLine(IKey.lang("gui.packaged.remove_target"));
-                        // #tr gui.packaged.remove_target_busy
+                        t.addLine(IKey.lang("gtnr.gui.packaged.remove_target"));
+                        // #tr gtnr.gui.packaged.remove_target_busy
                         // # Active targets cannot be unlinked. Cancel the AE request separately after releasing a job.
                         // # zh_CN 有任务的目标无法直接断开，释放任务后须另行取消对应的 AE 订单。
-                        t.addLine(IKey.lang("gui.packaged.remove_target_busy"));
-                        // #tr gui.packaged.arcane_record
+                        t.addLine(IKey.lang("gtnr.gui.packaged.remove_target_busy"));
+                        // #tr gtnr.gui.packaged.arcane_record
                         // # Arcane core: left-click the table to record its grid. Consumes a blank pattern.
                         // # zh_CN 奥术核心：左键工作台条目，消耗空白样板录入九宫格。
-                        t.addLine(IKey.lang("gui.packaged.arcane_record"));
-                        // #tr gui.packaged.interrupt_materials
+                        t.addLine(IKey.lang("gtnr.gui.packaged.arcane_record"));
+                        // #tr gtnr.gui.packaged.interrupt_materials
                         // # No refund for consumed inputs. Clear leftovers before restarting.
                         // # zh_CN 中断装配线不会返还已消耗的材料，重启前须清理剩余材料。
-                        t.addLine(IKey.lang("gui.packaged.interrupt_materials"));
+                        t.addLine(IKey.lang("gtnr.gui.packaged.interrupt_materials"));
                     })
                     .syncHandler(new InteractionSyncHandler().setOnMousePressed(mouse -> {
                         if (!mouse.isClient() && mouse.mouseButton == 0
@@ -509,12 +513,12 @@ public final class PackagedProviderGui {
                         if (!mouse.isClient() && mouse.mouseButton == 1 && tile.canConfigure(sync.getPlayer())) {
                             if (mouse.shift) {
                                 boolean released = tile.releaseInterrupted(page[0] + offset);
-                                // #tr gui.packaged.recovery_result
+                                // #tr gtnr.gui.packaged.recovery_result
                                 // # Released: %s. Check leftovers and cancel the AE request.
                                 // # zh_CN 任务已释放：%s。请检查剩余材料并取消对应的 AE 订单。
                                 sync.getPlayer()
                                     .addChatMessage(
-                                        new ChatComponentTranslation("gui.packaged.recovery_result", released));
+                                        new ChatComponentTranslation("gtnr.gui.packaged.recovery_result", released));
                             } else tile.removeTarget(page[0] + offset);
                             page[0] = Math.min(
                                 page[0],
@@ -586,10 +590,10 @@ public final class PackagedProviderGui {
                     new ItemDrawable(tile.getSelfRep()).asIcon()
                         .size(16))
                 .excludeAreaInRecipeViewer()
-                // #tr gui.packaged.back
+                // #tr gtnr.gui.packaged.back
                 // # Return to the Packaged Pattern Provider
                 // # zh_CN 返回封包样板供应器
-                .tooltip(t -> t.addLine(IKey.lang("gui.packaged.back")))
+                .tooltip(t -> t.addLine(IKey.lang("gtnr.gui.packaged.back")))
                 .onMousePressed(mouse -> {
                     panel.closeIfOpen();
                     return true;

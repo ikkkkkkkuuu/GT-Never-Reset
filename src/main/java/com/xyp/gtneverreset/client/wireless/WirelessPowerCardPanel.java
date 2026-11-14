@@ -115,17 +115,17 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             this::scrollReady,
             offset -> session.request(SCROLL_TO, Integer.toString(offset)));
         child(scrollbar);
-        // #tr power.gui.back
+        // #tr gtnr.power.gui.back
         // # Back
         // # zh_CN 返回
-        back = button(() -> tr("power.gui.back"), details ? CLOSE : DEVICES, () -> "", () -> true);
+        back = button(() -> tr("gtnr.power.gui.back"), details ? CLOSE : DEVICES, () -> "", () -> true);
         back.setEnabledIf(widget -> details || sources());
-        // #tr power.gui.refresh
+        // #tr gtnr.power.gui.refresh
         // # Refresh
         // # zh_CN 刷新
         refresh = iconButton(
             Icon.REFRESH,
-            () -> tr("power.gui.refresh"),
+            () -> tr("gtnr.power.gui.refresh"),
             () -> session.request(REFRESH, ""),
             () -> true);
         sourceLink = new CardButton().background(IDrawable.EMPTY)
@@ -136,10 +136,10 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             })
             .setEnabledIf(widget -> !details && !sources());
         sourceLink.tooltipBuilder(tooltip -> {
-            // #tr power.gui.selected
+            // #tr gtnr.power.gui.selected
             // # Power source: %s
             // # zh_CN 供电源：%s
-            tooltip.addLine(tr("power.gui.selected", view().getString("sourceName")));
+            tooltip.addLine(tr("gtnr.power.gui.selected", view().getString("sourceName")));
             tooltip.addLine(view().getString("balance") + " EU");
         })
             .tooltipAutoUpdate(true);
@@ -150,7 +150,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             AUTO,
             () -> "");
         automatic.setEnabledIf(widget -> !details && !sources());
-        // #tr power.gui.search
+        // #tr gtnr.power.gui.search
         // # Search devices, sources or coordinates...
         // # zh_CN 搜索设备、电网或坐标…
         search = new TextFieldWidget() {
@@ -161,7 +161,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             }
         }.setMaxLength(64)
             .padding(2, 0)
-            .hintText(tr("power.gui.search"))
+            .hintText(tr("gtnr.power.gui.search"))
             .autoUpdateOnChange(true)
             .value(new StringValue.Dynamic(() -> searchText, text -> {
                 if (searchText.equals(text)) return;
@@ -184,12 +184,12 @@ public final class WirelessPowerCardPanel extends ModularPanel {
                     });
                 chip.tooltipBuilder(tooltip -> {
                     tooltip.addLine(
-                        state == PowerState.ALL ? tr("gtneverreset.wireless.gui.chip_all_tip")
-                            : tr("gtneverreset.wireless.gui.chip_tip", stateLabel(state)));
-                    // #tr power.gui.devices
+                        state == PowerState.ALL ? tr("gtnr.wireless.gui.chip_all_tip")
+                            : tr("gtnr.wireless.gui.chip_tip", stateLabel(state)));
+                    // #tr gtnr.power.gui.devices
                     // # Connected devices: %s
                     // # zh_CN 已接入设备：%s
-                    tooltip.addLine(tr("power.gui.devices", stateCount(state)));
+                    tooltip.addLine(tr("gtnr.power.gui.devices", stateCount(state)));
                 })
                     .tooltipAutoUpdate(true);
                 chips.add(chip);
@@ -212,14 +212,14 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         }
         for (int i = 0; i < MAX_ROWS; i++) {
             final int index = i;
-            // #tr power.gui.select
+            // #tr gtnr.power.gui.select
             // # Select
             // # zh_CN 选择
-            // #tr power.gui.selected_row
+            // #tr gtnr.power.gui.selected_row
             // # Selected
             // # zh_CN 已选中
             select[i] = button(
-                () -> tr(selected(index) ? "power.gui.selected_row" : "power.gui.select"),
+                () -> tr(selected(index) ? "gtnr.power.gui.selected_row" : "gtnr.power.gui.select"),
                 SELECT,
                 () -> row(index).getString("id"),
                 () -> !selected(index));
@@ -237,35 +237,35 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             })
                 .tooltipAutoUpdate(true);
             child(sourceRows[i]);
-            // #tr power.gui.remove
+            // #tr gtnr.power.gui.remove
             // # Unlink
             // # zh_CN 解绑
             remove[i] = iconButton(
                 Icon.REMOVE,
-                () -> tr("power.gui.remove"),
+                () -> tr("gtnr.power.gui.remove"),
                 () -> session.request(REMOVE, row(index).getString("id")),
                 () -> true);
             remove[i].setEnabledIf(widget -> device(index));
-            // #tr power.gui.teleport
+            // #tr gtnr.power.gui.teleport
             // # Teleport
             // # zh_CN 传送
             teleport[i] = iconButton(
                 Icon.MOVE_TO,
-                () -> tr("power.gui.teleport"),
+                () -> tr("gtnr.power.gui.teleport"),
                 () -> session.request(TELEPORT, row(index).getString("id")),
                 () -> row(index).getBoolean("loaded"));
             teleport[i].setEnabledIf(widget -> device(index));
-            // #tr power.gui.copy
+            // #tr gtnr.power.gui.copy
             // # Copy
             // # zh_CN 复制
-            copy[i] = iconButton(Icon.COPY, () -> tr("power.gui.copy"), () -> copyPosition(index), () -> true);
+            copy[i] = iconButton(Icon.COPY, () -> tr("gtnr.power.gui.copy"), () -> copyPosition(index), () -> true);
             copy[i].setEnabledIf(widget -> !sources() && hasRow(index) && row(index).getInteger("typeCount") == 0);
-            // #tr power.gui.highlight
+            // #tr gtnr.power.gui.highlight
             // # Highlight
             // # zh_CN 高亮
             highlight[i] = iconButton(
                 Icon.VISIBLE,
-                () -> tr("power.gui.highlight"),
+                () -> tr("gtnr.power.gui.highlight"),
                 () -> session.request(HIGHLIGHT, row(index).getString("id")),
                 () -> row(index).getBoolean("loaded"));
             highlight[i].setEnabledIf(widget -> device(index));
@@ -285,26 +285,27 @@ public final class WirelessPowerCardPanel extends ModularPanel {
                 NBTTagCompound row = row(index);
                 tooltip.addLine(deviceName(row));
                 if (row.getInteger("typeCount") > 1) {
-                    tooltip.addLine(tr("power.gui.devices", row.getInteger("typeCount")));
+                    tooltip.addLine(tr("gtnr.power.gui.devices", row.getInteger("typeCount")));
                     return;
                 }
                 tooltip.addLine(position(row, true));
                 tooltip.addLine(row.getString("sourceName"));
                 if (row.hasKey("recipeEUt")) {
-                    // #tr power.gui.recipe_usage
+                    // #tr gtnr.power.gui.recipe_usage
                     // # Recipe consumption: %s EU/t
                     // # zh_CN 配方耗电：%s EU/t
-                    tooltip.addLine(tr("power.gui.recipe_usage", compact(Long.toString(row.getLong("recipeEUt")))));
+                    tooltip
+                        .addLine(tr("gtnr.power.gui.recipe_usage", compact(Long.toString(row.getLong("recipeEUt")))));
                 }
-                // #tr power.gui.wireless_input
+                // #tr gtnr.power.gui.wireless_input
                 // # Wireless input (1s avg): %s EU/t
                 // # zh_CN 无线供电（近1秒平均）：%s EU/t
-                tooltip.addLine(tr("power.gui.wireless_input", rate(row.getDouble("transfer"))));
+                tooltip.addLine(tr("gtnr.power.gui.wireless_input", rate(row.getDouble("transfer"))));
                 if (!row.getBoolean("loaded")) {
-                    // #tr power.gui.unloaded_hint
+                    // #tr gtnr.power.gui.unloaded_hint
                     // # This chunk is not loaded. The connection is kept and resumes when the chunk loads.
                     // # zh_CN 目标区块未加载；保留连接，区块加载后自动恢复供电。
-                    tooltip.addLine(tr("power.gui.unloaded_hint"));
+                    tooltip.addLine(tr("gtnr.power.gui.unloaded_hint"));
                 }
             })
                 .tooltipAutoUpdate(true);
@@ -362,7 +363,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             int autoWidth = Math.max(
                 AE2Theme.switchWidth(tr(WirelessPowerCard.autoOnKey())),
                 AE2Theme.switchWidth(tr(WirelessPowerCard.autoOffKey())));
-            int mergeWidth = AE2Theme.switchWidth(tr("gtneverreset.wireless.gui.merge_types"));
+            int mergeWidth = AE2Theme.switchWidth(tr("gtnr.wireless.gui.merge_types"));
             automatic.pos(xSize - 34 - autoWidth, ySize - 23)
                 .size(autoWidth, AE2Theme.SWITCH_HEIGHT);
             merge.pos(xSize - 38 - autoWidth - mergeWidth, ySize - 23)
@@ -523,28 +524,28 @@ public final class WirelessPowerCardPanel extends ModularPanel {
                 NBTTagCompound controller = view().getCompoundTag("controller");
                 text(deviceName(controller), 10, 11, xSize - 40, text);
                 text(position(controller, true), 10, 29, xSize - 20, text);
-                // #tr power.gui.hatches
+                // #tr gtnr.power.gui.hatches
                 // # Energy inputs: %s/%s loaded
                 // # zh_CN 能源输入：%s/%s 已加载
                 text(
-                    tr("power.gui.hatches", controller.getInteger("online"), controller.getInteger("members")),
+                    tr("gtnr.power.gui.hatches", controller.getInteger("online"), controller.getInteger("members")),
                     10,
                     47,
                     xSize - 20,
                     text);
             } else if (sources()) {
-                // #tr power.gui.sources_title
+                // #tr gtnr.power.gui.sources_title
                 // # Wireless Power Card · Sources
                 // # zh_CN 无线电网卡 · 电网源
-                text(tr("power.gui.sources_title"), 10, 11, xSize - 20, text);
-                // #tr power.gui.sources_hint
+                text(tr("gtnr.power.gui.sources_title"), 10, 11, xSize - 20, text);
+                // #tr gtnr.power.gui.sources_hint
                 // # Select a player's avatar or press Select to use their wireless power network.
                 // # zh_CN 点击玩家头像或选择按钮，使用该玩家的无线电网。
-                text(tr("power.gui.sources_hint"), 10, 29, xSize - 20, text);
-                // #tr power.gui.sources_auto_hint
+                text(tr("gtnr.power.gui.sources_hint"), 10, 29, xSize - 20, text);
+                // #tr gtnr.power.gui.sources_auto_hint
                 // # Auto-connect uses the selected source; existing connections stay unchanged.
                 // # zh_CN 自动连接使用当前选中的源；已有连接保持不变。
-                text(tr("power.gui.sources_auto_hint"), 10, 47, xSize - 20, text);
+                text(tr("gtnr.power.gui.sources_auto_hint"), 10, 47, xSize - 20, text);
             } else {
                 drawOverview(text);
             }
@@ -555,11 +556,11 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             for (int i = 0; i < visibleRows && hasRow(i); i++)
                 drawRow(i, i == hovered || row(i).getBoolean("expanded") || sources() && selected(i));
             if (view().getInteger("total") == 0) {
-                // #tr power.gui.empty
+                // #tr gtnr.power.gui.empty
                 // # No matching devices. Carry this card when placing GT receivers, or right-click existing ones.
                 // # zh_CN 暂无匹配的设备。携带卡片放置 GT 用电设备，或手持卡片右键已有设备。
                 int y = rowTop() + 24;
-                for (String line : font.listFormattedStringToWidth(tr("power.gui.empty"), xSize - 48)) {
+                for (String line : font.listFormattedStringToWidth(tr("gtnr.power.gui.empty"), xSize - 48)) {
                     font.drawString(line, (xSize - font.getStringWidth(line)) / 2, y, text);
                     y += 12;
                 }
@@ -569,10 +570,10 @@ public final class WirelessPowerCardPanel extends ModularPanel {
                     .isEmpty() || activeState() != PowerState.ALL;
                 text(
                     tr(
-                        // #tr power.gui.matched
+                        // #tr gtnr.power.gui.matched
                         // # Matching devices: %s
                         // # zh_CN 匹配设备：%s
-                        filtered ? "power.gui.matched" : "power.gui.devices",
+                        filtered ? "gtnr.power.gui.matched" : "gtnr.power.gui.devices",
                         view().getInteger("matched")),
                     footerLeft,
                     ySize - 20,
@@ -598,10 +599,10 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         int good = stateColor(PowerState.CONNECTED, colors), warning = stateColor(PowerState.OFFLINE, colors);
         int width = statWidth(), x = 14;
         int line = colors == null ? ColorUtils.craftingDiagnosticTerminalLine.getColor() : colors.line();
-        // #tr power.gui.source_title
+        // #tr gtnr.power.gui.source_title
         // # Power source
         // # zh_CN 供电源
-        text(tr("power.gui.source_title"), x, 23, width - 8, foreground);
+        text(tr("gtnr.power.gui.source_title"), x, 23, width - 8, foreground);
         text(compact(data.getString("balance")) + " EU", x, 44, width - 8, good);
         text(data.getString("sourceName"), x, 34, width - 8, secondary);
         x += width + 6;
@@ -609,7 +610,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         int total = data.getInteger("deviceCount"), connected = overall[PowerState.CONNECTED.ordinal()];
         drawStat(
             x,
-            tr("gtneverreset.wireless.gui.module.devices"),
+            tr("gtnr.wireless.gui.module.devices"),
             connected + "/" + total,
             connected,
             total,
@@ -620,22 +621,22 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         x += width + 6;
         drawRect(x - 8, 22, x - 7, 50, line);
         int offline = overall[PowerState.OFFLINE.ordinal()], empty = overall[PowerState.NO_POWER.ordinal()];
-        // #tr power.gui.unavailable
+        // #tr gtnr.power.gui.unavailable
         // # Unavailable
         // # zh_CN 供电异常
         drawStat(
             x,
-            tr("power.gui.unavailable"),
+            tr("gtnr.power.gui.unavailable"),
             Integer.toString(offline + empty),
             offline + empty,
             total,
             warning,
             foreground,
             line);
-        // #tr power.gui.unavailable_counts
+        // #tr gtnr.power.gui.unavailable_counts
         // # Offline %s · No power %s
         // # zh_CN 未加载 %s · 缺电 %s
-        text(tr("power.gui.unavailable_counts", offline, empty), x, 44, width - 8, secondary);
+        text(tr("gtnr.power.gui.unavailable_counts", offline, empty), x, 44, width - 8, secondary);
     }
 
     private void drawStat(int x, String title, String value, int count, int total, int color, int foreground,
@@ -696,12 +697,12 @@ public final class WirelessPowerCardPanel extends ModularPanel {
                 text(count, rowRight() - font.getStringWidth(count) - 4, y + 8, font.getStringWidth(count), secondary);
                 text(
                     tr(
-                        row.getBoolean("expanded") ? "gtneverreset.wireless.gui.group_collapse"
-                            : "gtneverreset.wireless.gui.group_expand",
-                        // #tr power.gui.group_size
+                        row.getBoolean("expanded") ? "gtnr.wireless.gui.group_collapse"
+                            : "gtnr.wireless.gui.group_expand",
+                        // #tr gtnr.power.gui.group_size
                         // # %s devices
                         // # zh_CN %s 台设备
-                        tr("power.gui.group_size", row.getInteger("typeCount"))),
+                        tr("gtnr.power.gui.group_size", row.getInteger("typeCount"))),
                     textX,
                     y + 13,
                     rowRight() - textX - 32,
@@ -733,23 +734,23 @@ public final class WirelessPowerCardPanel extends ModularPanel {
 
     private static String stateLabel(PowerState state) {
         return switch (state) {
-            case ALL -> tr("gtneverreset.wireless.gui.filter.0");
-            // #tr power.gui.connected
+            case ALL -> tr("gtnr.wireless.gui.filter.0");
+            // #tr gtnr.power.gui.connected
             // # Connected
             // # zh_CN 已连接
-            case CONNECTED -> tr("power.gui.connected");
-            // #tr power.gui.offline
+            case CONNECTED -> tr("gtnr.power.gui.connected");
+            // #tr gtnr.power.gui.offline
             // # Chunk unloaded
             // # zh_CN 区块未加载
-            case OFFLINE -> tr("power.gui.offline");
-            // #tr power.gui.no_power
+            case OFFLINE -> tr("gtnr.power.gui.offline");
+            // #tr gtnr.power.gui.no_power
             // # No power
             // # zh_CN 电量不足
-            case NO_POWER -> tr("power.gui.no_power");
-            // #tr power.gui.paused
+            case NO_POWER -> tr("gtnr.power.gui.no_power");
+            // #tr gtnr.power.gui.paused
             // # Paused
             // # zh_CN 已暂停
-            case PAUSED -> tr("power.gui.paused");
+            case PAUSED -> tr("gtnr.power.gui.paused");
         };
     }
 
@@ -767,14 +768,14 @@ public final class WirelessPowerCardPanel extends ModularPanel {
     }
 
     private String dimensionLabel(String id, boolean withCount) {
-        if (id.isEmpty()) return tr("gtneverreset.wireless.gui.dimension_all");
+        if (id.isEmpty()) return tr("gtnr.wireless.gui.dimension_all");
         var options = view().getTagList("dimensions", 10);
         for (int i = 0; i < options.tagCount(); i++) {
             var option = options.getCompoundTagAt(i);
             int dim = option.getInteger("dimension");
             if (!id.equals(Integer.toString(dim))) continue;
             String name = localizedDimension(option.getString("name"), dim);
-            return withCount ? tr("gtneverreset.wireless.gui.dimension_option", name, dim, option.getInteger("count"))
+            return withCount ? tr("gtnr.wireless.gui.dimension_option", name, dim, option.getInteger("count"))
                 : name.isEmpty() ? "D" + id : name;
         }
         return "D" + id;
@@ -803,16 +804,16 @@ public final class WirelessPowerCardPanel extends ModularPanel {
 
     private static String localizedDimension(String name, int id) {
         if (name.equals("Personal World " + id) || name.equals("personalworld"))
-            return tr("gtneverreset.wireless.gui.personal_world");
+            return tr("gtnr.wireless.gui.personal_world");
         return name.isEmpty() ? "" : DimensionHelper.getDimLocalizedName(name);
     }
 
     private void copyPosition(int index) {
         GuiScreen.setClipboardString(position(row(index), false));
-        // #tr power.gui.copied
+        // #tr gtnr.power.gui.copied
         // # Copied dimension and coordinates to the clipboard.
         // # zh_CN 已复制目标维度和坐标到剪贴板。
-        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentTranslation("power.gui.copied"));
+        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentTranslation("gtnr.power.gui.copied"));
     }
 
     private void text(String value, int x, int y, int width, int color) {
@@ -866,7 +867,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         IDrawable look = action != PAUSE ? AE2Theme.toggleSwitch(
             button,
             on,
-            () -> action == MERGE_TYPES ? tr("gtneverreset.wireless.gui.merge_types")
+            () -> action == MERGE_TYPES ? tr("gtnr.wireless.gui.merge_types")
                 : tr(on.getAsBoolean() ? WirelessPowerCard.autoOnKey() : WirelessPowerCard.autoOffKey()),
             () -> true) : AE2Theme.iconButton(button, () -> on.getAsBoolean() ? Icon.PAUSE : Icon.PLAY, () -> true);
         button.value(new BoolValue.Dynamic(on, ignored -> session.request(action, target.get())))
@@ -877,13 +878,13 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             .overlay(false, look)
             .overlay(true, look);
         if (action == PAUSE) button.tooltipBuilder(tooltip -> {
-            // #tr power.gui.pause
+            // #tr gtnr.power.gui.pause
             // # Pause power supply
             // # zh_CN 暂停供电
-            // #tr power.gui.resume
+            // #tr gtnr.power.gui.resume
             // # Resume power supply
             // # zh_CN 恢复供电
-            tooltip.addLine(tr(on.getAsBoolean() ? "power.gui.pause" : "power.gui.resume"));
+            tooltip.addLine(tr(on.getAsBoolean() ? "gtnr.power.gui.pause" : "gtnr.power.gui.resume"));
         })
             .tooltipAutoUpdate(true);
         child(button);

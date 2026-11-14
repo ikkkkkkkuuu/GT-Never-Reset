@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -20,51 +21,129 @@ import com.xyp.gtneverreset.common.machine.tooltip.PerformanceSummary.TierBonus;
 import com.xyp.gtneverreset.common.machine.tooltip.PerformanceSummary.TierThreshold;
 
 import gregtech.api.enums.GTValues;
+import gregtech.api.util.tooltip.TooltipHelper;
 
 final class MultiblockPerformanceFormatter {
 
-    static List<String> bonuses(PerformanceSummary summary, BonusStat... shown) {
-        Map<TieredPart, List<TierBonus>> byPart = new LinkedHashMap<>();
+    // #tr gtnr.structure.tooltip.stat_with_bonus
+    // # %s, %s
+    // # zh_CN %s，%s
+    private static final String WITH_BONUS_KEY = "gtnr.structure.tooltip.stat_with_bonus";
+    // #tr gtnr.structure.tooltip.per_tier
+    // # %2$s per %1$s
+    // # zh_CN 每%1$s%2$s
+    private static final String BONUS_KEY = "gtnr.structure.tooltip.per_tier";
+    // #tr gtnr.structure.tooltip.change.increase
+    // # increases by %s
+    // # zh_CN 增加%s
+    private static final String INCREASE_KEY = "gtnr.structure.tooltip.change.increase";
+    // #tr gtnr.structure.tooltip.change.decrease
+    // # decreases by %s
+    // # zh_CN 减少%s
+    private static final String DECREASE_KEY = "gtnr.structure.tooltip.change.decrease";
+    // #tr gtnr.structure.tooltip.per_tier.duration
+    // # recipe time %2$s per %1$s
+    // # zh_CN 每%1$s%2$s配方时间
+    private static final String DURATION_BONUS_KEY = "gtnr.structure.tooltip.per_tier.duration";
+    // #tr gtnr.structure.tooltip.change.compound
+    // # %s (compounding)
+    // # zh_CN %s(乘算叠加)
+    private static final String COMPOUND_KEY = "gtnr.structure.tooltip.change.compound";
+    // #tr gtnr.structure.tooltip.switch_bonus
+    // # %2$s at %1$s
+    // # zh_CN %s%s
+    private static final String SWITCH_BONUS_KEY = "gtnr.structure.tooltip.switch_bonus";
+    // #tr gtnr.structure.tooltip.join.list
+    // # %s, %s
+    // # zh_CN %s、%s
+    private static final String LIST_JOIN_KEY = "gtnr.structure.tooltip.join.list";
+    // #tr gtnr.structure.tooltip.join.last
+    // # %s and %s
+    // # zh_CN %s和%s
+    private static final String LAST_JOIN_KEY = "gtnr.structure.tooltip.join.last";
+    // #tr gtnr.structure.tooltip.part.tier
+    // # %s §fTier§7
+    // # zh_CN %s§f等级§7
+    private static final String PART_TIER_KEY = "gtnr.structure.tooltip.part.tier";
+
+    static String statLine(String line, PerformanceSummary summary, BonusStat... stats) {
+        List<BonusStat> shown = Arrays.asList(stats);
+        Map<TierBonus, List<TieredPart>> partsBySameBonus = new LinkedHashMap<>();
         for (TierBonus bonus : summary.tierBonuses()) {
-            if (Arrays.asList(shown)
-                .contains(bonus.stat())) {
-                byPart.computeIfAbsent(bonus.part(), ignored -> new ArrayList<>())
-                    .add(bonus);
-            }
+            if (!shown.contains(bonus.stat())) continue;
+            partsBySameBonus
+                .computeIfAbsent(sameBonusAs(partsBySameBonus.keySet(), bonus), ignored -> new ArrayList<>())
+                .add(bonus.part());
         }
-        Map<Effects, List<String>> groups = new LinkedHashMap<>();
-        for (var entry : byPart.entrySet()) {
-            List<String> effects = entry.getValue()
-                .stream()
-                .map(MultiblockPerformanceFormatter::effect)
-                .toList();
-            boolean perTier = entry.getValue()
-                .get(0)
-                .perTier();
-            groups.computeIfAbsent(new Effects(effects, perTier), ignored -> new ArrayList<>())
-                .add(partName(entry.getKey()));
+        String casingName = summary.casingName();
+        for (Map.Entry<TierBonus, List<TieredPart>> entry : partsBySameBonus.entrySet()) {
+            line = StatCollector.translateToLocalFormatted(
+                WITH_BONUS_KEY,
+                line,
+                bonusText(entry.getKey(), entry.getValue(), casingName));
         }
-        List<String> lines = new ArrayList<>();
-        for (var entry : groups.entrySet()) {
-            String parts = String.join(" / ", entry.getValue());
-            String effects = String.join(
-                ", ",
-                entry.getKey()
-                    .lines());
-            if (entry.getKey()
-                .perTier()) {
-                // #tr gtnr.tooltip.performance.per_tier
-                // # Per %s tier: %s
-                // # zh_CN 每%s等级：%s
-                lines.add(StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.per_tier", parts, effects));
-            } else {
-                // #tr gtnr.tooltip.performance.switch
-                // # %s: %s
-                // # zh_CN %s：%s
-                lines.add(StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.switch", parts, effects));
-            }
+        return line;
+    }
+
+    private static TierBonus sameBonusAs(Collection<TierBonus> shown, TierBonus bonus) {
+        for (TierBonus other : shown) {
+            if (other.perTier() && bonus.perTier()
+                && other.stat() == bonus.stat()
+                && other.multiplicative() == bonus.multiplicative()
+                && changeText(other).equals(changeText(bonus))) return other;
         }
-        return lines;
+        return bonus;
+    }
+
+    private static String partTierText(List<TieredPart> parts, String casingName) {
+        List<String> names = new ArrayList<>();
+        for (TieredPart part : parts) names.add(partName(part, casingName));
+        return StatCollector.translateToLocalFormatted(PART_TIER_KEY, joinPhrases(names));
+    }
+
+    private static String partName(TieredPart part, String casingName) {
+        boolean namedCasing = part == TieredPart.CASING && casingName != null;
+        return TooltipHelper.tierText(namedCasing ? casingName : StatCollector.translateToLocal(part.langKey));
+    }
+
+    private static String bonusText(TierBonus bonus, List<TieredPart> parts, String casingName) {
+        String part = partTierText(parts, casingName);
+        if (!bonus.perTier()) return StatCollector.translateToLocalFormatted(SWITCH_BONUS_KEY, part, changeText(bonus));
+        String key = bonus.stat() == BonusStat.DURATION ? DURATION_BONUS_KEY : BONUS_KEY;
+        String text = StatCollector.translateToLocalFormatted(key, part, changeText(bonus));
+        return bonus.multiplicative() ? StatCollector.translateToLocalFormatted(COMPOUND_KEY, text) : text;
+    }
+
+    private static String changeText(TierBonus bonus) {
+        double change = bonus.multiplicative() ? bonus.value() - 1 : bonus.value();
+        return changeText(bonus.stat(), change, bonus.multiplicative());
+    }
+
+    private static String changeText(BonusStat stat, double change, boolean multiplicative) {
+        String amount = (stat == BonusStat.PARALLEL || stat == BonusStat.THREADS) && !multiplicative
+            ? Long.toString(Math.round(Math.abs(change)))
+            : TooltipHelper.percentageFormat.format(Math.abs(change));
+        return StatCollector.translateToLocalFormatted(
+            change < 0 ? DECREASE_KEY : INCREASE_KEY,
+            TooltipHelper.coloredText(amount, colorOf(stat)));
+    }
+
+    private static EnumChatFormatting colorOf(BonusStat stat) {
+        return switch (stat) {
+            case PARALLEL, THREADS -> TooltipHelper.PARALLEL_COLOR;
+            case SPEED, DURATION -> TooltipHelper.SPEED_COLOR;
+            case ENERGY -> TooltipHelper.EFF_COLOR;
+        };
+    }
+
+    public static String joinPhrases(List<String> phrases) {
+        if (phrases.isEmpty()) return "";
+        String joined = phrases.get(0);
+        for (int i = 1; i < phrases.size() - 1; i++) {
+            joined = StatCollector.translateToLocalFormatted(LIST_JOIN_KEY, joined, phrases.get(i));
+        }
+        if (phrases.size() == 1) return joined;
+        return StatCollector.translateToLocalFormatted(LAST_JOIN_KEY, joined, phrases.get(phrases.size() - 1));
     }
 
     static List<String> rules(PerformanceSummary summary) {
@@ -87,45 +166,6 @@ final class MultiblockPerformanceFormatter {
                 summary.tierSkips()
                     .getAsInt());
         return lines;
-    }
-
-    private static String effect(TierBonus bonus) {
-        boolean count = bonus.stat() == BonusStat.PARALLEL || bonus.stat() == BonusStat.THREADS;
-        String change = bonus.multiplicative() ? "×" + number(bonus.value())
-            : (bonus.value() > 0 ? "+" : "") + number(count ? bonus.value() : bonus.value() * 100) + (count ? "" : "%");
-        String value = EnumChatFormatting.AQUA + change + EnumChatFormatting.GRAY;
-        return switch (bonus.stat()) {
-            case PARALLEL -> {
-                // #tr gtnr.tooltip.performance.bonus.parallel
-                // # Parallels %s
-                // # zh_CN 并行数 %s
-                yield StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.bonus.parallel", value);
-            }
-            case THREADS -> {
-                // #tr gtnr.tooltip.performance.bonus.threads
-                // # Concurrent recipe threads %s
-                // # zh_CN 跨配方线程数 %s
-                yield StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.bonus.threads", value);
-            }
-            case SPEED -> {
-                // #tr gtnr.tooltip.performance.bonus.speed
-                // # Speed multiplier %s
-                // # zh_CN 速度系数 %s
-                yield StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.bonus.speed", value);
-            }
-            case DURATION -> {
-                // #tr gtnr.tooltip.performance.bonus.duration
-                // # Recipe time multiplier %s
-                // # zh_CN 配方时间系数 %s
-                yield StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.bonus.duration", value);
-            }
-            case ENERGY -> {
-                // #tr gtnr.tooltip.performance.bonus.energy
-                // # Energy multiplier %s
-                // # zh_CN 耗电系数 %s
-                yield StatCollector.translateToLocalFormatted("gtnr.tooltip.performance.bonus.energy", value);
-            }
-        };
     }
 
     private static void addHeat(List<String> lines, HeatRules heat, boolean perfect) {
@@ -231,5 +271,4 @@ final class MultiblockPerformanceFormatter {
         return new DecimalFormat("0.####", DecimalFormatSymbols.getInstance(Locale.ROOT)).format(value);
     }
 
-    private record Effects(List<String> lines, boolean perTier) {}
 }

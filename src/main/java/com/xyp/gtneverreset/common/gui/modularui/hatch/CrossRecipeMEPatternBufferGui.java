@@ -41,15 +41,15 @@ public final class CrossRecipeMEPatternBufferGui extends SuperMTEHatchCraftingIn
         ButtonWidget<?> button = new ButtonWidget<>().name("auto_assign_recipe_names")
             .syncHandler(assign)
             .overlay(GuiTextures.EDIT);
-        // #tr gui.gtneverreset.cross_recipe_buffer.auto_names
+        // #tr gtnr.gui.gtneverreset.cross_recipe_buffer.auto_names
         // # Automatically assign names
         // # zh_CN 自动分配名字
-        button.addTooltipLine(StatCollector.translateToLocal("gui.gtneverreset.cross_recipe_buffer.auto_names"));
-        // #tr gui.gtneverreset.cross_recipe_buffer.auto_names.description
+        button.addTooltipLine(StatCollector.translateToLocal("gtnr.gui.gtneverreset.cross_recipe_buffer.auto_names"));
+        // #tr gtnr.gui.gtneverreset.cross_recipe_buffer.auto_names.description
         // # Cycle recipe names across connected buffers; mirrors share a name. Only terminal names change.
         // # zh_CN 按坐标顺序为同一控制器上的跨配方池总成分配配方池名称，数量超出时循环分配。镜像共用主仓名称；只更改接口终端显示名。
         button.addTooltipLine(
-            StatCollector.translateToLocal("gui.gtneverreset.cross_recipe_buffer.auto_names.description"));
+            StatCollector.translateToLocal("gtnr.gui.gtneverreset.cross_recipe_buffer.auto_names.description"));
         return super.createBottomLeftCornerFlow(panel, syncManager).child(button);
     }
 
@@ -68,10 +68,11 @@ public final class CrossRecipeMEPatternBufferGui extends SuperMTEHatchCraftingIn
         syncManager.syncValue("terminalRecipeMaps", maps);
         syncManager.syncValue("terminalRecipeMap", selected);
         RecipeMapSelector selector = new RecipeMapSelector(maps, selected);
-        // #tr gui.gtneverreset.cross_recipe_buffer.terminal_name
+        // #tr gtnr.gui.gtneverreset.cross_recipe_buffer.terminal_name
         // # Select the recipe type name shown in the Interface Terminal; processing modes are selected by patterns
         // # zh_CN 选择接口终端显示的配方池名称；加工模式仍由样板自动选择
-        selector.addTooltipLine(StatCollector.translateToLocal("gui.gtneverreset.cross_recipe_buffer.terminal_name"));
+        selector
+            .addTooltipLine(StatCollector.translateToLocal("gtnr.gui.gtneverreset.cross_recipe_buffer.terminal_name"));
         return getEmptyContent().child(selector.size(162, 18))
             .child(createSlots(syncManager).top(20));
     }
@@ -113,11 +114,11 @@ public final class CrossRecipeMEPatternBufferGui extends SuperMTEHatchCraftingIn
                 setCandidates(labels);
             }
             int index = ids.indexOf(selected.getValue());
-            // #tr gui.gtneverreset.cross_recipe_buffer.no_controller
+            // #tr gtnr.gui.gtneverreset.cross_recipe_buffer.no_controller
             // # No controller recipe types
             // # zh_CN 未连接配方池控制器
             setValue(
-                index < 0 ? StatCollector.translateToLocal("gui.gtneverreset.cross_recipe_buffer.no_controller")
+                index < 0 ? StatCollector.translateToLocal("gtnr.gui.gtneverreset.cross_recipe_buffer.no_controller")
                     : labels.get(index));
         }
     }

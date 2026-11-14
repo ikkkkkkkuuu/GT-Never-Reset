@@ -38,11 +38,11 @@ public final class MaxCapacityMEOutputGui {
                 .height(24)
                 .top(0)
                 .child(nativeControls));
-        // #tr gui.gtneverreset.me_output.filters
+        // #tr gtnr.gui.gtneverreset.me_output.filters
         // # Filters (empty: accept all)
         // # zh_CN 过滤标记（全空：接收全部）
         content.child(
-            IKey.lang("gui.gtneverreset.me_output.filters")
+            IKey.lang("gtnr.gui.gtneverreset.me_output.filters")
                 .asWidget()
                 .pos(0, 28));
         return content;
@@ -103,11 +103,11 @@ public final class MaxCapacityMEOutputGui {
         @Override
         protected ParentWidget<?> createContentSection(ModularPanel panel, PanelSyncManager sync) {
             ParentWidget<?> content = super.createContentSection(panel, sync);
-            // #tr gui.gtneverreset.me_output.fluid_filters
+            // #tr gtnr.gui.gtneverreset.me_output.fluid_filters
             // # Fluid filters (empty: accept all)
             // # zh_CN 流体过滤标记（全空：接收全部）
             content.child(
-                IKey.lang("gui.gtneverreset.me_output.fluid_filters")
+                IKey.lang("gtnr.gui.gtneverreset.me_output.fluid_filters")
                     .asWidget()
                     .pos(0, 66));
             for (int i = 0; i < MaxCapacityMEOutputFilters.SLOT_COUNT; i++) {

@@ -1,0 +1,6 @@
+Automatic multiblock tooltip formatting adaptation
+Source: GTNotLeisure/GT-Not-Leisure
+Revision: fdf3f3d0c4ca7a57d18b1421e84b12e8986c11ef
+Source files: GTNLMultiblockTooltipBuilder.java, MultiblockTooltipReader.java
+License: GNU General Public License v3.0; see ../GTNL-LICENSE.txt.
+Adaptations: GTNR namespaces, detached controller probes, threaded processing, parameter modules and existing MBS1 codec separation.

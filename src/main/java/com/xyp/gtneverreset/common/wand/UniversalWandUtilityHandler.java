@@ -322,10 +322,10 @@ public final class UniversalWandUtilityHandler {
         player.inventory.markDirty();
         player.sendContainerToPlayer(player.inventoryContainer);
         player.addChatMessage(
-            // #tr gtneverreset.universalwand.first_join_gift
+            // #tr gtnr.universalwand.first_join_gift
             // # Across countless dimensions, its former glory has faded, yet a lingering light remains of use.
             // # zh_CN 跨越无数次元，昔日荣光已逝，余辉尚堪一用。
-            new ChatComponentTranslation("gtneverreset.universalwand.first_join_gift"));
+            new ChatComponentTranslation("gtnr.universalwand.first_join_gift"));
     }
 
     @SubscribeEvent

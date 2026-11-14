@@ -29,11 +29,11 @@ public final class DefaultProfile {
                 "key.inventory",
                 "tap",
                 false));
-        // #tr radialmenu.default.movement
+        // #tr gtnr.radialmenu.default.movement
         // # Movement
         // # zh_CN 移动
         MenuNode movement = MenuNode.category(
-            StatCollector.translateToLocal("radialmenu.default.movement"),
+            StatCollector.translateToLocal("gtnr.radialmenu.default.movement"),
             IconSpec.item("minecraft:golden_boots", 0),
             SlotLayout.fixed(3));
         movement.layout.opening = SlotLayout.Opening.Inline;
@@ -62,13 +62,13 @@ public final class DefaultProfile {
                 "hold",
                 false));
         profile.root.setChildAt(4, movement);
-        // #tr radialmenu.default.editor
+        // #tr gtnr.radialmenu.default.editor
         // # Edit Profiles
         // # zh_CN 编辑轮盘配置
         profile.root.setChildAt(
             6,
             keybind(
-                StatCollector.translateToLocal("radialmenu.default.editor"),
+                StatCollector.translateToLocal("gtnr.radialmenu.default.editor"),
                 IconSpec.sprite("gear", null),
                 "key.radialmenu.openEditor",
                 "tap",
