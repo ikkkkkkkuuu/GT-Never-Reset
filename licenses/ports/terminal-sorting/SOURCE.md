@@ -13,3 +13,12 @@ GTNH removed the source configuration in commit `e658a2baeff4e99f64c31ae5ee8ef60
 GTNR bundles this fallback and installs it only when that AE2 file is absent and no sorting tree is already loaded, when the wireless terminal is first opened. Existing files are never replaced, merged or normalized. AE2's public initializer and comparator are reused; no separate sorter or Inventory Tweaks mod is required. The installed tree is shared by AE2 terminals. Changes to the on-disk file after initialization require a client restart, as with AE2's normal configuration loading.
 
 These source and license records are distributed through the existing `licenses/ports` resource and source-JAR tasks.
+
+## Sorting comparator optimization
+
+`compat.ae2.TerminalInventorySort` adapts the comparison order in Applied Energistics 2's `appeng.util.InvTweakSortingModule` and `appeng.util.ItemSorters` at tag `rv3-beta-1095-GTNH`:
+https://github.com/GTNewHorizons/Applied-Energistics-2-Unofficial/tree/rv3-beta-1095-GTNH/src/main/java/appeng/util
+
+The adapted comparison code is distributed under LGPL-3.0-or-later; see `LICENSE-LGPL-3.0.txt` and `LICENSE-GPL-3.0.txt`. Copyright Applied Energistics 2 contributors; the Inventory Tweaks-derived ordering was originally developed by Jimeo Wan and contributors. This code license is separate from the bundled configuration's CC license above.
+
+Changes: capture the physical item stack and rule order once per visible entry per sort, lazily cache names and enchantment summaries, and release all keys after sorting. A client-only ItemRepo hook replaces only the built-in Inventory Tweaks comparator while rules are loaded. Rule lookup still uses AE2's loaded tree; tie-break order, snapshot stack counts and sort direction are preserved. No cached state survives across inventory updates, rule reloads, or GUI sessions.

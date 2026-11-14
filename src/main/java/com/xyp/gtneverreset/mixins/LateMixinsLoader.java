@@ -153,6 +153,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
         mixins.addAll(
             Arrays.asList(
                 "appliedenergistics2.wireless.MixinWirelessVisualiserRender",
+                "appliedenergistics2.TerminalInventorySortMixin",
                 "appliedenergistics2.AccessorGuiScrollbar",
                 "appliedenergistics2.AccessorContainerMEMonitorable",
                 "appliedenergistics2.MixinGuiCraftingTerm",
