@@ -23,6 +23,6 @@ final class RadialEditorRestrictions {
         // #tr gtnr.radialmenu.editor.toolbelt.shrink
         // # Empty the affected slots before reducing the slot count
         // # zh_CN 缩减槽位前，先清空将被移除的槽位
-        return shared + "\n" + I18n.format("radialmenu.editor.toolbelt.shrink");
+        return shared + "\n" + I18n.format("gtnr.radialmenu.editor.toolbelt.shrink");
     }
 }
