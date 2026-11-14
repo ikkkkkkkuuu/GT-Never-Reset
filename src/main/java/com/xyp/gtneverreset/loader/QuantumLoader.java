@@ -4,9 +4,17 @@ import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingCache;
 import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingMode;
 import com.xyp.gtneverreset.common.crafting.quantum.hooks.ticking.TickHandler;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 
 public final class QuantumLoader implements IContentLoader {
+
+    @Override
+    public void init() {
+        FMLCommonHandler.instance()
+            .bus()
+            .register(QuantumCraftingMode.INSTANCE);
+    }
 
     @Override
     public void serverStarting(FMLServerStartingEvent event) {

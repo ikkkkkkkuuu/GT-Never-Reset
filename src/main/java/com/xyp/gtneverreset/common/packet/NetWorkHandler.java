@@ -7,12 +7,10 @@ import java.util.function.BiConsumer;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingMode;
 import com.xyp.gtnrlib.network.GregTechToolUsePacket;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
@@ -170,11 +168,6 @@ public final class NetWorkHandler {
         if (event.phase != TickEvent.Phase.START) return;
         Runnable action;
         while ((action = SERVER_ACTIONS.poll()) != null) action.run();
-    }
-
-    @SubscribeEvent
-    public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-        QuantumCraftingMode.onPlayerLoggedOut(event.player);
     }
 
     private static <T extends IMessage> void registerServerbound(Class<T> type, BiConsumer<T, EntityPlayerMP> action) {
