@@ -103,10 +103,10 @@ public class RadialAutoBindRulesGui extends RadialUiScreen {
             }
 
             this.buttonList.add(new GuiButton(ID_TYPE_BASE + i, left, y, TYPE_WIDTH, RadialUi.ROW, typeLabel(binding)));
-            // #tr gtnr.radialmenu.rules.type.tip
+            // #tr gtnr.radialmenu.rules.type.tooltip
             // # Match a server address, a world folder or any singleplayer world
             // # zh_CN 匹配服务器地址、世界文件夹或任意单人世界
-            tooltip(ID_TYPE_BASE + i, I18n.format("gtnr.radialmenu.rules.type.tip"));
+            tooltip(ID_TYPE_BASE + i, I18n.format("gtnr.radialmenu.rules.type.tooltip"));
 
             int fieldLeft = left + TYPE_WIDTH + RadialUi.GAP;
             int fieldWidth = contentRight() - fieldLeft - REMOVE_WIDTH - RadialUi.GAP;
@@ -160,10 +160,10 @@ public class RadialAutoBindRulesGui extends RadialUiScreen {
         this.buttonList.add(useCurrent);
         markFooter(ID_ADD);
         markFooter(ID_USE_CURRENT);
-        // #tr gtnr.radialmenu.rules.use_current.tip
+        // #tr gtnr.radialmenu.rules.use_current.tooltip
         // # Add a rule for the current server or world
         // # zh_CN 为当前服务器或世界添加规则
-        tooltip(ID_USE_CURRENT, I18n.format("gtnr.radialmenu.rules.use_current.tip"));
+        tooltip(ID_USE_CURRENT, I18n.format("gtnr.radialmenu.rules.use_current.tooltip"));
         // #tr gtnr.radialmenu.editor.save
         // # Save
         // # zh_CN 保存

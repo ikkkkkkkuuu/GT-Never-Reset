@@ -193,10 +193,10 @@ final class RadialFieldControls {
     /** Why a colour cannot be edited: the name of the setting that switched its part of the wheel off. */
     static String colorOffTip(String key) {
         String setting = switchFor(key);
-        // #tr gtnr.radialmenu.editor.color_off.tip
+        // #tr gtnr.radialmenu.editor.color_off.tooltip
         // # %s is disabled in Wheel settings. This color is kept until it is enabled again
         // # zh_CN 轮盘设置中的 %s 已关闭；此颜色在重新启用后生效
-        return setting == null ? null : I18n.format("gtnr.radialmenu.editor.color_off.tip", setting);
+        return setting == null ? null : I18n.format("gtnr.radialmenu.editor.color_off.tooltip", setting);
     }
 
     /** The setting that has to be on for this colour to be drawn, or null when it is always drawn. */

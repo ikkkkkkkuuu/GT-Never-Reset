@@ -273,10 +273,10 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
                     rowWidth - RadialUiDragReorder.GRIP - 2,
                     RadialUi.ROW,
                     RadialUi.fit(label, rowWidth - RadialUiDragReorder.GRIP - 10)));
-            // #tr gtnr.radialmenu.steps.edit.tip
+            // #tr gtnr.radialmenu.steps.edit.tooltip
             // # Edit this step. Use arrows to move it or X to remove it
             // # zh_CN 编辑此步骤；箭头调整顺序，X 删除步骤
-            tooltip(ID_STEP_EDIT_BASE + i, describe("gtnr.radialmenu.steps.edit.tip"));
+            tooltip(ID_STEP_EDIT_BASE + i, describe("gtnr.radialmenu.steps.edit.tooltip"));
 
             GuiButton up = new RadialUiIconButton(
                 ID_STEP_UP_BASE + i,
@@ -320,10 +320,10 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
                     contentWidth(),
                     RadialUi.ROW,
                     I18n.format("gtnr.radialmenu.steps.add")));
-        // #tr gtnr.radialmenu.steps.add.tip
+        // #tr gtnr.radialmenu.steps.add.tooltip
         // # Add a step at the end of the sequence
         // # zh_CN 在操作序列末尾添加步骤
-        tooltip(ID_STEP_ADD, describe("gtnr.radialmenu.steps.add.tip"));
+        tooltip(ID_STEP_ADD, describe("gtnr.radialmenu.steps.add.tooltip"));
         return y + RadialUi.STEP;
     }
 
@@ -367,10 +367,10 @@ public abstract class RadialActionEditorGui extends RadialUiScreen implements Ra
                 clear.enabled = current != null && !current.trim()
                     .isEmpty();
                 this.buttonList.add(clear);
-                // #tr gtnr.radialmenu.profile_colors.clear.tip
+                // #tr gtnr.radialmenu.profile_colors.clear.tooltip
                 // # Clear this color to restore inheritance
                 // # zh_CN 清除此颜色，恢复继承
-                tooltip(ID_CLEAR_BASE + index, describe("gtnr.radialmenu.profile_colors.clear.tip"));
+                tooltip(ID_CLEAR_BASE + index, describe("gtnr.radialmenu.profile_colors.clear.tooltip"));
             }
             if (!editable) {
                 tooltip(ID_FIELD_BASE + index, RadialFieldControls.colorOffTip(field.key));

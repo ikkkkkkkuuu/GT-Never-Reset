@@ -117,15 +117,15 @@ public class RadialIconPickerGui extends RadialUiScreen {
         // Only sprites and untinted-by-choice PNGs take a colour; an item or an effect carries its own.
         colorButton.enabled = tab == Tab.Sprites || (tab == Tab.Files && !originalColors);
         this.buttonList.add(colorButton);
-        // #tr gtnr.radialmenu.icons.color.tip
+        // #tr gtnr.radialmenu.icons.color.tooltip
         // # Tint sprite icons and custom PNGs. Item icons keep their original colors
         // # zh_CN 为精灵图标和自定义 PNG 着色；物品图标保持原色
-        tooltip(ID_COLOR, I18n.format("gtnr.radialmenu.icons.color.tip"));
+        tooltip(ID_COLOR, I18n.format("gtnr.radialmenu.icons.color.tooltip"));
         this.buttonList.add(new GuiButton(ID_REFRESH, refreshLeft, y, RadialUi.ROW, RadialUi.ROW, "R"));
-        // #tr gtnr.radialmenu.icons.refresh.tip
+        // #tr gtnr.radialmenu.icons.refresh.tooltip
         // # Reload PNG files from the icons folder
         // # zh_CN 重新读取图标文件夹中的 PNG 文件
-        tooltip(ID_REFRESH, I18n.format("gtnr.radialmenu.icons.refresh.tip"));
+        tooltip(ID_REFRESH, I18n.format("gtnr.radialmenu.icons.refresh.tooltip"));
 
         y += RadialUi.STEP;
 
@@ -156,10 +156,10 @@ public class RadialIconPickerGui extends RadialUiScreen {
                     // # zh_CN 保持图片原始颜色
                     I18n.format("gtnr.radialmenu.icons.original"),
                     originalColors));
-            // #tr gtnr.radialmenu.icons.original.tip
+            // #tr gtnr.radialmenu.icons.original.tooltip
             // # Use the PNG colors without applying the sprite tint
             // # zh_CN 使用 PNG 原色，忽略精灵图标的颜色设置
-            tooltip(ID_ORIGINAL, I18n.format("gtnr.radialmenu.icons.original.tip"));
+            tooltip(ID_ORIGINAL, I18n.format("gtnr.radialmenu.icons.original.tooltip"));
             afterTabs += RadialUi.STEP;
         }
 

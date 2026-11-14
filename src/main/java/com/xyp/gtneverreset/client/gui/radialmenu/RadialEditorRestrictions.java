@@ -9,10 +9,10 @@ import cpw.mods.fml.relauncher.SideOnly;
 final class RadialEditorRestrictions {
 
     static String builtInTip() {
-        // #tr gtnr.radialmenu.editor.built_in.tip
+        // #tr gtnr.radialmenu.editor.built_in.tooltip
         // # Store and retrieve items from the wheel. Edit the toolbelt entry separately
         // # zh_CN 在轮盘中存取物品；腰带入口可单独编辑
-        return I18n.format("gtnr.radialmenu.editor.built_in.tip");
+        return I18n.format("gtnr.radialmenu.editor.built_in.tooltip");
     }
 
     static String resizeTip() {

@@ -154,10 +154,10 @@ public class RadialSlotEditorGui extends RadialActionEditorGui implements Radial
                 controlWidth - RadialUi.ROW - RadialUi.GAP,
                 RadialUi.ROW,
                 iconLabel()));
-        // #tr gtnr.radialmenu.editor.icon.tip
+        // #tr gtnr.radialmenu.editor.icon.tooltip
         // # Choose an item icon, a built-in sprite or a custom PNG
         // # zh_CN 选择物品图标、内置精灵图或自定义 PNG
-        tooltip(ID_ICON, describe("gtnr.radialmenu.editor.icon.tip"));
+        tooltip(ID_ICON, describe("gtnr.radialmenu.editor.icon.tooltip"));
         y += RadialUi.STEP;
 
         this.buttonList.add(
@@ -171,10 +171,10 @@ public class RadialSlotEditorGui extends RadialActionEditorGui implements Radial
                 // # zh_CN 保持菜单打开
                 I18n.format("gtnr.radialmenu.editor.keep_open"),
                 draft.keepOpen));
-        // #tr gtnr.radialmenu.editor.keep_open.tip
+        // #tr gtnr.radialmenu.editor.keep_open.tooltip
         // # Keep the wheel open after running this action
         // # zh_CN 执行此动作后保持轮盘打开
-        tooltip(ID_KEEP_OPEN, describe("gtnr.radialmenu.editor.keep_open.tip"));
+        tooltip(ID_KEEP_OPEN, describe("gtnr.radialmenu.editor.keep_open.tooltip"));
         y += RadialUi.STEP + RadialUi.GAP;
 
         actionSectionTop = y;
@@ -195,10 +195,10 @@ public class RadialSlotEditorGui extends RadialActionEditorGui implements Radial
                     // # Entries (%d)...
                     // # zh_CN 条目 (%d)...
                     I18n.format("gtnr.radialmenu.editor.entries", Integer.valueOf(draft.filledCount()))));
-            // #tr gtnr.radialmenu.editor.entries.tip
+            // #tr gtnr.radialmenu.editor.entries.tooltip
             // # Save this slot, then arrange, copy, remove or move its submenu entries
             // # zh_CN 先保存此槽位，再调整、复制、删除或移动子菜单条目
-            tooltip(ID_ENTRIES, describe("gtnr.radialmenu.editor.entries.tip"));
+            tooltip(ID_ENTRIES, describe("gtnr.radialmenu.editor.entries.tooltip"));
             y += RadialUi.STEP;
         }
 

@@ -91,10 +91,10 @@ public class RadialProfileBackupsGui extends RadialUiScreen {
                     // # Restore
                     // # zh_CN 恢复
                     I18n.format("gtnr.radialmenu.backups.restore")));
-            // #tr gtnr.radialmenu.backups.restore.tip
+            // #tr gtnr.radialmenu.backups.restore.tooltip
             // # Restore this version and back up the current one
             // # zh_CN 恢复此版本，并备份当前版本
-            tooltip(ID_RESTORE_BASE + age, describe("gtnr.radialmenu.backups.restore.tip"));
+            tooltip(ID_RESTORE_BASE + age, describe("gtnr.radialmenu.backups.restore.tooltip"));
             rowPositions.add(new int[] { contentLeft(), y });
             ages.add(Integer.valueOf(age));
             summaries.add(summary(age));

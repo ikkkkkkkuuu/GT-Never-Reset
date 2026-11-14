@@ -153,10 +153,10 @@ public class RadialScriptEditorGui extends RadialUiScreen implements RadialIconP
             I18n.format(toggleKey));
         this.buttonList.add(toggle);
         markFooter(ID_SNIPPETS);
-        // #tr gtnr.radialmenu.script.snippets.tip
+        // #tr gtnr.radialmenu.script.snippets.tooltip
         // # Insert the selected snippet at the cursor
         // # zh_CN 在光标处插入选中的脚本片段
-        tooltip(ID_SNIPPETS, I18n.format("gtnr.radialmenu.script.snippets.tip"));
+        tooltip(ID_SNIPPETS, I18n.format("gtnr.radialmenu.script.snippets.tooltip"));
 
         // Opposite the API toggle and the same width, so the bar stays balanced around Done and Cancel.
         this.buttonList.add(
@@ -171,10 +171,10 @@ public class RadialScriptEditorGui extends RadialUiScreen implements RadialIconP
                 // # zh_CN 插入图标
                 I18n.format("gtnr.radialmenu.script.icon")));
         markFooter(ID_ICON);
-        // #tr gtnr.radialmenu.script.icon.tip
+        // #tr gtnr.radialmenu.script.icon.tooltip
         // # Insert an icon name. Replace the quoted string if the cursor is inside one
         // # zh_CN 插入图标名称；光标在引号内时替换整个字符串
-        tooltip(ID_ICON, I18n.format("gtnr.radialmenu.script.icon.tip"));
+        tooltip(ID_ICON, I18n.format("gtnr.radialmenu.script.icon.tooltip"));
     }
 
     @Override

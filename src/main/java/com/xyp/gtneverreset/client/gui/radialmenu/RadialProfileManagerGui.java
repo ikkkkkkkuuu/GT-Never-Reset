@@ -85,10 +85,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
             // # Activate
             // # zh_CN 启用
             "gtnr.radialmenu.profiles.activate",
-            // #tr gtnr.radialmenu.profiles.activate.tip
+            // #tr gtnr.radialmenu.profiles.activate.tooltip
             // # Use the selected profile
             // # zh_CN 启用选中的配置方案
-            "gtnr.radialmenu.profiles.activate.tip",
+            "gtnr.radialmenu.profiles.activate.tooltip",
             x,
             y,
             has && !isActive);
@@ -98,10 +98,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
             // # Auto-bind rules
             // # zh_CN 自动绑定规则
             "gtnr.radialmenu.profiles.rules",
-            // #tr gtnr.radialmenu.profiles.rules.tip
+            // #tr gtnr.radialmenu.profiles.rules.tooltip
             // # Set when joining a server or world should activate this profile
             // # zh_CN 设置进入服务器或世界时自动启用此配置方案的条件
-            "gtnr.radialmenu.profiles.rules.tip",
+            "gtnr.radialmenu.profiles.rules.tooltip",
             x,
             y,
             has);
@@ -111,10 +111,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
             // # Colors
             // # zh_CN 颜色
             "gtnr.radialmenu.profiles.colors",
-            // #tr gtnr.radialmenu.profiles.colors.tip
+            // #tr gtnr.radialmenu.profiles.colors.tooltip
             // # Set ring and highlight colors for this profile
             // # zh_CN 设置此配置方案的轮盘和高亮颜色
-            "gtnr.radialmenu.profiles.colors.tip",
+            "gtnr.radialmenu.profiles.colors.tooltip",
             x,
             y,
             has);
@@ -125,10 +125,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
             // # New profile
             // # zh_CN 新建配置
             "gtnr.radialmenu.profiles.new",
-            // #tr gtnr.radialmenu.profiles.new.tip
+            // #tr gtnr.radialmenu.profiles.new.tooltip
             // # Create an empty profile
             // # zh_CN 创建空白配置方案
-            "gtnr.radialmenu.profiles.new.tip",
+            "gtnr.radialmenu.profiles.new.tooltip",
             x,
             y,
             true);
@@ -138,10 +138,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
             // # Rename
             // # zh_CN 重命名
             "gtnr.radialmenu.profiles.rename",
-            // #tr gtnr.radialmenu.profiles.rename.tip
+            // #tr gtnr.radialmenu.profiles.rename.tooltip
             // # Rename this profile and its file
             // # zh_CN 重命名此配置方案及其文件
-            "gtnr.radialmenu.profiles.rename.tip",
+            "gtnr.radialmenu.profiles.rename.tooltip",
             x,
             y,
             has);
@@ -151,10 +151,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
             // # Duplicate
             // # zh_CN 复制
             "gtnr.radialmenu.profiles.duplicate",
-            // #tr gtnr.radialmenu.profiles.duplicate.tip
+            // #tr gtnr.radialmenu.profiles.duplicate.tooltip
             // # Copy this profile, including its rules and entries
             // # zh_CN 复制此配置方案，包含规则和全部条目
-            "gtnr.radialmenu.profiles.duplicate.tip",
+            "gtnr.radialmenu.profiles.duplicate.tooltip",
             x,
             y,
             has);
@@ -164,10 +164,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
             // # Backups...
             // # zh_CN 备份...
             "gtnr.radialmenu.profiles.backups",
-            // #tr gtnr.radialmenu.profiles.backups.tip
+            // #tr gtnr.radialmenu.profiles.backups.tooltip
             // # View versions backed up when changes were saved
             // # zh_CN 查看保存修改时备份的历史版本
-            "gtnr.radialmenu.profiles.backups.tip",
+            "gtnr.radialmenu.profiles.backups.tooltip",
             x,
             y,
             has);
@@ -175,10 +175,10 @@ public class RadialProfileManagerGui extends RadialUiScreen {
         addAction(
             ID_DELETE,
             "gtnr.radialmenu.profiles.delete",
-            // #tr gtnr.radialmenu.profiles.delete.tip
+            // #tr gtnr.radialmenu.profiles.delete.tooltip
             // # Delete this profile. If active, another profile is selected automatically
             // # zh_CN 删除此配置方案；若正在使用，则自动切换到其他方案
-            "gtnr.radialmenu.profiles.delete.tip",
+            "gtnr.radialmenu.profiles.delete.tooltip",
             x,
             y,
             has);

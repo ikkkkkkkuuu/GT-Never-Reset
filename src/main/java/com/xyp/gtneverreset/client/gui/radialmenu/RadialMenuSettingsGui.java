@@ -151,7 +151,7 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
                     controlWidth - RadialUi.ROW - RadialUi.GAP,
                     RadialUi.ROW,
                     iconLabel));
-            tooltip(ID_ICON, describe("gtnr.radialmenu.editor.icon.tip"));
+            tooltip(ID_ICON, describe("gtnr.radialmenu.editor.icon.tooltip"));
             y += RadialUi.STEP;
         }
 
@@ -208,7 +208,7 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
                     clear.enabled = current != null && !current.trim()
                         .isEmpty();
                     this.buttonList.add(clear);
-                    tooltip(ID_CLEAR_BASE + index, describe("gtnr.radialmenu.profile_colors.clear.tip"));
+                    tooltip(ID_CLEAR_BASE + index, describe("gtnr.radialmenu.profile_colors.clear.tooltip"));
                 }
                 if (!editable) {
                     tooltip(ID_FIELD_BASE + index, RadialFieldControls.colorOffTip(field.key));
@@ -295,18 +295,18 @@ public class RadialMenuSettingsGui extends RadialUiScreen implements RadialIconP
             this.buttonList.add(delete);
             this.buttonList.add(up);
             this.buttonList.add(down);
-            // #tr gtnr.radialmenu.menu.move.tip
+            // #tr gtnr.radialmenu.menu.move.tooltip
             // # Move this entry into another submenu
             // # zh_CN 将此条目移动到另一个子菜单
-            tooltip(ID_MOVE_BASE + i, describe("gtnr.radialmenu.menu.move.tip"));
-            // #tr gtnr.radialmenu.menu.copy.tip
+            tooltip(ID_MOVE_BASE + i, describe("gtnr.radialmenu.menu.move.tooltip"));
+            // #tr gtnr.radialmenu.menu.copy.tooltip
             // # Duplicate this entry
             // # zh_CN 复制此条目
-            tooltip(ID_COPY_BASE + i, describe("gtnr.radialmenu.menu.copy.tip"));
-            // #tr gtnr.radialmenu.menu.remove.tip
+            tooltip(ID_COPY_BASE + i, describe("gtnr.radialmenu.menu.copy.tooltip"));
+            // #tr gtnr.radialmenu.menu.remove.tooltip
             // # Remove this entry. Changes take effect when saved
             // # zh_CN 移除此条目，保存后生效
-            tooltip(ID_DELETE_BASE + i, describe("gtnr.radialmenu.menu.remove.tip"));
+            tooltip(ID_DELETE_BASE + i, describe("gtnr.radialmenu.menu.remove.tooltip"));
             if (toolBelt || child.isBuiltIn()) {
                 tooltip(ID_COPY_BASE + i, RadialEditorRestrictions.builtInTip());
                 tooltip(ID_DELETE_BASE + i, RadialEditorRestrictions.builtInTip());
