@@ -1,6 +1,5 @@
 package com.xyp.gtneverreset.loader;
 
-import com.xyp.gtneverreset.common.crafting.chaos.ChaosPresets;
 import com.xyp.gtneverreset.common.machine.multiblock.bee.BeeBreedingTiers;
 import com.xyp.gtneverreset.common.recipe.CraftingTableRecipes;
 import com.xyp.gtneverreset.common.recipe.FurnaceRecipes;
@@ -8,8 +7,6 @@ import com.xyp.gtneverreset.common.recipe.gregtech.AssemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.BenderRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.BlastFurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.ExtruderRecipes;
-import com.xyp.gtneverreset.common.recipe.gtneverreset.ChaosCredentialRecipes;
-import com.xyp.gtneverreset.common.recipe.gtneverreset.ChaosStructureModuleRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.DisassemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernNonCellRecipes;
@@ -31,6 +28,16 @@ public final class RecipeLoader implements IContentLoader {
     }
 
     @Override
+    public void init() {
+        gregtech.api.recipe.check.CheckRecipeResultRegistry
+            .register(com.xyp.gtneverreset.common.crafting.chaos.result.ChaosTextResult.ofSuccess(""));
+        gregtech.api.recipe.check.CheckRecipeResultRegistry
+            .register(new com.xyp.gtneverreset.common.crafting.chaos.result.BottledChaosPoolFailure());
+        gregtech.api.recipe.check.CheckRecipeResultRegistry
+            .register(new com.xyp.gtneverreset.common.crafting.chaos.result.BottledChaosMissingCategoriesResult(0));
+    }
+
+    @Override
     public void postInit() {
         registerRecipes();
     }
@@ -44,7 +51,13 @@ public final class RecipeLoader implements IContentLoader {
     public static void registerRecipes() {
         CraftingTableRecipes.register();
         AssemblerRecipes.register();
+        com.xyp.gtneverreset.common.recipe.gregtech.SpaceAssemblerRecipes.register();
+        com.xyp.gtneverreset.common.recipe.gregtech.AssemblyLineRecipes.register();
+        com.xyp.gtneverreset.common.recipe.gregtech.CondensateAssemblerRecipes.register();
+        com.xyp.gtneverreset.common.recipe.gregtech.FluidSolidifierRecipes.register();
+        com.xyp.gtneverreset.common.recipe.gregtech.LaserEngraverRecipes.register();
         BenderRecipes.register();
+        com.xyp.gtneverreset.common.recipe.gregtech.FormingPressRecipes.register();
         BlastFurnaceRecipes.register();
         FurnaceRecipes.register();
         OreProcessingRecipes.register();
@@ -56,8 +69,11 @@ public final class RecipeLoader implements IContentLoader {
         ModernNonCellRecipes.registerLateRecipes();
         FragmentWorldCollectorRecipes.scheduleRecipes();
         DisassemblerRecipes.register();
-        ChaosPresets.initialize();
-        ChaosCredentialRecipes.register();
-        ChaosStructureModuleRecipes.register();
+        com.xyp.gtneverreset.common.recipe.gtneverreset.ChaosNeutronActivatorRecipes.loadRecipes();
+        com.xyp.gtneverreset.common.recipe.gtneverreset.ChaosCoolingRecipes.register();
+        com.xyp.gtneverreset.common.recipe.gtneverreset.ChaosStellarForgeRecipes.loadRecipes();
+        com.xyp.gtneverreset.common.recipe.gtneverreset.ChaosStellarForgeRecipes.loadOnServerStarted();
+        com.xyp.gtneverreset.common.recipe.gtneverreset.BottleInChaosRecipes.registerRecipes();
+        com.xyp.gtneverreset.common.recipe.gtneverreset.BottleInChaosRecipes.resolveLateSources();
     }
 }

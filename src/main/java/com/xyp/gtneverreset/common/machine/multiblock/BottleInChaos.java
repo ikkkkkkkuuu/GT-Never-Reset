@@ -1,613 +1,297 @@
 package com.xyp.gtneverreset.common.machine.multiblock;
 
-import static com.gtnewhorizon.structurelib.structure.StructureUtility.*;
-import static gregtech.api.enums.HatchElement.*;
-import static gregtech.api.util.GTStructureUtility.*;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
 
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.util.StatCollector;
-import net.minecraftforge.common.util.ForgeDirection;
-import net.minecraftforge.fluids.FluidStack;
 
-import com.cleanroommc.modularui.utils.item.ItemStackHandler;
-import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
+import com.gtnewhorizon.structurelib.alignment.constructable.ChannelDataAccessor;
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
-import com.gtnewhorizon.structurelib.structure.StructureDefinition;
-import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
-import com.xyp.gtneverreset.common.crafting.chaos.ChaosBuffer;
-import com.xyp.gtneverreset.common.crafting.chaos.ChaosChain;
-import com.xyp.gtneverreset.common.crafting.chaos.ChaosPresets;
-import com.xyp.gtneverreset.common.crafting.chaos.ChaosProcessingGroup;
-import com.xyp.gtneverreset.common.gui.modularui.multiblock.BottleInChaosGui;
-import com.xyp.gtneverreset.common.item.items.ChaosCredentialItem;
-import com.xyp.gtneverreset.common.item.items.ChaosStructureModuleItem;
-import com.xyp.gtneverreset.common.machine.hatch.ChaosCredentialHatch;
-import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadInputPreflight;
-import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
-import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
-import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
-import com.xyp.gtneverreset.common.me.ChaosPatternCompiler;
-import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
+import com.xyp.gtneverreset.common.crafting.chaos.ChaosLocalization;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.BottleInChaosMachineBase;
+import com.xyp.gtneverreset.common.machine.multiblock.structure.BottledChaosPrototypeStructure;
+import com.xyp.gtneverreset.common.machine.multiblock.structure.BottledChaosStandardStructure;
+import com.xyp.gtneverreset.common.machine.multiblock.structure.BottledChaosStructure;
+import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
-import appeng.api.implementations.ICraftingPatternItem;
 import gregtech.api.GregTechAPI;
-import gregtech.api.enums.Textures;
-import gregtech.api.enums.VoidingMode;
-import gregtech.api.interfaces.ITexture;
+import gregtech.api.interfaces.INEIPreviewModifier;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
-import gregtech.api.logic.ProcessingLogic;
-import gregtech.api.metatileentity.implementations.MTEExtendedPowerMultiBlockBase;
-import gregtech.api.metatileentity.implementations.MTEHatchInput;
-import gregtech.api.metatileentity.implementations.MTEHatchInputBus;
-import gregtech.api.recipe.RecipeMap;
-import gregtech.api.recipe.check.CheckRecipeResult;
-import gregtech.api.recipe.check.CheckRecipeResultRegistry;
-import gregtech.api.render.TextureFactory;
 import gregtech.api.structure.error.StructureError;
-import gregtech.api.structure.error.StructureErrors;
-import gregtech.api.util.GTRecipe;
+import gregtech.api.util.GTUtility;
 import gregtech.api.util.MultiblockTooltipBuilder;
-import gregtech.api.util.shutdown.ShutDownReason;
-import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
-import gregtech.common.tileentities.machines.IDualInputHatch;
+import gregtech.api.util.shutdown.ShutDownReasonRegistry;
 
+/** One registered controller; each structure owns its layout, tiers and construction rules. */
 @IMetaTileEntity.SkipGenerateDescription
-public final class BottleInChaos extends MTEExtendedPowerMultiBlockBase<BottleInChaos>
-    implements ISurvivalConstructable, MultiblockTooltipSource {
+public class BottleInChaos extends BottleInChaosMachineBase<BottleInChaos>
+    implements com.xyp.gtneverreset.api.machine.MultiblockTooltipSource, INEIPreviewModifier {
 
-    public static final int GROUP_COUNT = 8;
-    public static final int MODULE_SLOTS = 16;
-    public static final int CREDENTIAL_INPUT = 16, CREDENTIAL_OUTPUT = 17, MODULE_INPUT = 18;
-    public static final int MACHINE_INPUT = 19, CASING_INPUT = 20, MODULE_OUTPUT = 21, PATTERN_START = 22;
-    public static final int INVENTORY_SIZE = PATTERN_START + ChaosChain.MAX_STEPS;
-    private static final int TEXTURE = 16, OFFSET_X = 5, OFFSET_Y = 8, OFFSET_Z = 0;
-    private static final long BASE_CAPACITY = 1_000_000L;
+    // #tr gtnr.machine.BottleInChaosPrototype.name
+    // # Recipe Chain Validation Prototype
+    // # zh_CN 配方链验证原型机
+    public static final String PROTOTYPE_NAME_KEY = "gtnr.machine.BottleInChaosPrototype.name";
 
-    private ChaosProcessingGroup[] groups = new ChaosProcessingGroup[GROUP_COUNT];
-    private int preset;
-    // #tr gtnr.chaos.status.idle
-    // # Idle
-    // # zh_CN 空闲
-    private String feedback = "gtnr.chaos.status.idle";
-    private final ItemStackHandler workbench = new ItemStackHandler(INVENTORY_SIZE) {
+    private static final String PROTOTYPE_NBT = "bottledChaosPrototype";
+    private BottledChaosStructure structure;
 
-        @Override
-        protected void onContentsChanged(int slot) {
-            markDirty();
-        }
-
-        @Override
-        public boolean isItemValid(int slot, ItemStack stack) {
-            if (stack == null) return false;
-            if (slot < MODULE_SLOTS) return ChaosStructureModuleItem.unpack(stack) != null;
-            if (slot == CREDENTIAL_INPUT)
-                return stack.getItem() instanceof ChaosCredentialItem && !ChaosCredentialItem.isBound(stack);
-            if (slot == MODULE_INPUT) return stack.getItem() instanceof ChaosStructureModuleItem
-                && ChaosStructureModuleItem.unpack(stack) == null;
-            if (slot == MACHINE_INPUT) return ChaosStructureModuleItem.source(stack) != null;
-            if (slot == CASING_INPUT) return stack.isItemEqual(new ItemStack(GregTechAPI.sBlockCasings2, 1, 0));
-            return slot >= PATTERN_START && stack.getItem() instanceof ICraftingPatternItem;
-        }
-
-        @Override
-        public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            return slot < MODULE_SLOTS && hasWork() ? null : super.extractItem(slot, amount, simulate);
-        }
-    };
-
-    private final ChaosCredentialHatch[] credentialHatches = new ChaosCredentialHatch[GROUP_COUNT];
-    private final Map<Object, Integer> dedicatedInputs = new IdentityHashMap<>();
-    private IStructureDefinition<BottleInChaos> structure;
-    private int glassTier;
-    private int nextGroup;
-
-    public BottleInChaos(int id, String name, String regionalName) {
-        super(id, name, regionalName);
-        initializeGroups();
+    public BottleInChaos(int id, String name, String nameRegional) {
+        super(id, name, nameRegional);
     }
 
     public BottleInChaos(String name) {
         super(name);
-        initializeGroups();
-    }
-
-    private void initializeGroups() {
-        for (int i = 0; i < groups.length; i++) groups[i] = new ChaosProcessingGroup();
     }
 
     @Override
-    public IMetaTileEntity newMetaEntity(IGregTechTileEntity tile) {
+    public IMetaTileEntity newMetaEntity(IGregTechTileEntity tileEntity) {
         return new BottleInChaos(mName);
     }
 
-    @Override
-    public void clearHatches() {
-        super.clearHatches();
-        if (credentialHatches != null) {
-            for (ChaosCredentialHatch hatch : credentialHatches) if (hatch != null) hatch.unbind(this);
-            Arrays.fill(credentialHatches, null);
-        }
-        if (dedicatedInputs != null) dedicatedInputs.clear();
-    }
-
-    @Override
-    public IStructureDefinition<BottleInChaos> getStructureDefinition() {
-        if (structure == null) {
-            com.gtnewhorizon.structurelib.structure.IStructureElement<BottleInChaos> casing = ofBlock(
-                GregTechAPI.sBlockCasings2,
-                0);
-            var builder = StructureDefinition.<BottleInChaos>builder()
-                .addShape("main", transpose(MultiblockStructureLoader.load("bottle_in_chaos")))
-                .addElement(
-                    'X',
-                    buildHatchAdder(BottleInChaos.class)
-                        .atLeast(InputBus, InputHatch, OutputBus, OutputHatch, Energy.or(ExoticEnergy), Maintenance)
-                        .casingIndex(TEXTURE)
-                        .hint(1)
-                        .buildAndChain(casing))
-                .addElement('K', casing)
-                .addElement('L', ofBlock(GregTechAPI.sBlockCasings8, 7))
-                .addElement(
-                    'V',
-                    chainAllGlasses(-1, (machine, tier) -> machine.glassTier = tier, machine -> machine.glassTier));
-            for (int i = 0; i < GROUP_COUNT; i++) {
-                final int slot = i;
-                builder.addElement(
-                    (char) ('A' + i),
-                    ofChain(
-                        StructureTooltipHooks.describeAsHatch(
-                            ofHatchAdder(
-                                (BottleInChaos machine, IGregTechTileEntity tile, Short texture) -> machine
-                                    .addCredential(slot, tile, texture),
-                                TEXTURE,
-                                2 + i),
-                            ChaosCredentialHatch.NAME_KEY),
-                        casing));
-                builder.addElement(
-                    (char) ('a' + i),
-                    ofChain(
-                        ofHatchAdder(
-                            (BottleInChaos machine, IGregTechTileEntity tile, Short texture) -> machine
-                                .addDedicated(slot, tile, texture),
-                            TEXTURE,
-                            10 + i),
-                        casing));
-            }
-            structure = builder.build();
-        }
+    public BottledChaosStructure getMachineStructure() {
+        if (structure == null) structure = new BottledChaosStandardStructure(this);
         return structure;
     }
 
-    private boolean addCredential(int slot, IGregTechTileEntity tile, int texture) {
-        if (tile == null || !(tile.getMetaTileEntity() instanceof ChaosCredentialHatch hatch)) return false;
-        if (!hatch.bind(this, slot)) return false;
-        credentialHatches[slot] = hatch;
-        hatch.updateTexture(texture);
+    public boolean isPrototype() {
+        return getMachineStructure() instanceof BottledChaosPrototypeStructure;
+    }
+
+    public static boolean isPrototype(ItemStack stack) {
+        return stack != null && stack.hasTagCompound()
+            && stack.getTagCompound()
+                .getBoolean(PROTOTYPE_NBT)
+            && GTNRItemList.BottleInChaos.hasBeenSet()
+            && GTUtility.areStacksEqual(stack, GTNRItemList.BottleInChaos.get(1), true);
+    }
+
+    private void selectStructure(boolean prototype) {
+        if (prototype == isPrototype()) return;
+        structure = prototype ? new BottledChaosPrototypeStructure(this) : new BottledChaosStandardStructure(this);
+    }
+
+    @Override
+    public void onPreviewConstruct(ItemStack trigger) {
+        // GuideNH imports controllers by meta ID; select the NBT variant only in its preview world.
+        if (ChannelDataAccessor.hasSubChannel(trigger, BottledChaosPrototypeStructure.PREVIEW_CHANNEL)
+            && getBaseMetaTileEntity() != null
+            && GregTechAPI.isDummyWorld(getBaseMetaTileEntity().getWorld())) {
+            selectStructure(true);
+        }
+    }
+
+    public boolean convertToPrototype(EntityPlayer player) {
+        if (isPrototype()) return false;
+        if (hasPendingProcessing()) {
+            GTUtility
+                // #tr gtnr.machine.BottleInChaosPrototype.conversion_busy
+                // # Finish or clear all processing groups before converting the controller.
+                // # zh_CN 转换前请完成或清空全部加工组任务.
+                .sendChatToPlayer(player, ChaosLocalization.tr("gtnr.machine.BottleInChaosPrototype.conversion_busy"));
+            return false;
+        }
+        stopMachine(ShutDownReasonRegistry.NONE);
+        selectStructure(true);
+        mMachine = false;
+        onMachineBlockUpdate();
+        getBaseMetaTileEntity().issueTileUpdate();
+        markDirty();
         return true;
     }
 
-    private boolean addDedicated(int slot, IGregTechTileEntity tile, int texture) {
-        if (tile == null || tile.getMetaTileEntity() instanceof IDualInputHatch) return false;
-        Object hatch = tile.getMetaTileEntity();
-        if (!(hatch instanceof MTEHatchInputBus) && !(hatch instanceof MTEHatchInput)) return false;
-        if (!super.addToMachineList(tile, texture)) return false;
-        dedicatedInputs.put(hatch, slot);
-        return true;
+    @Override
+    public boolean onRightclick(IGregTechTileEntity base, EntityPlayer player) {
+        ItemStack held = player.getHeldItem();
+        if (GTUtility.areStacksEqual(held, GTNRItemList.ChaosPrototypeProtocol.get(1), true)) {
+            if (base.isServerSide() && base.isUseableByPlayer(player)
+                && convertToPrototype(player)
+                && !player.capabilities.isCreativeMode) {
+                held.stackSize--;
+            }
+            return true;
+        }
+        return super.onRightclick(base, player);
     }
 
     @Override
-    public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        glassTier = -1;
-        checkPiece("main", OFFSET_X, OFFSET_Y, OFFSET_Z, errors);
-        collectTooltipStructureRequirements(errors);
-        for (var hatch : getExoticAndNormalEnergyHatchList())
-            if (hatch.mTier > glassTier) errors.add(StructureErrors.glassTierNotEnough(hatch.mTier));
+    public void saveNBTData(NBTTagCompound nbt) {
+        super.saveNBTData(nbt);
+        nbt.setBoolean(PROTOTYPE_NBT, isPrototype());
     }
 
     @Override
-    public void collectTooltipStructureRequirements(List<StructureError> errors) {
-        checkHatchMin(errors, InputBus, 1);
-        checkHatchMin(errors, OutputBus, 1);
-        checkHatchMin(errors, OutputHatch, 1);
-        if (mExoticEnergyHatches.isEmpty()) checkHatchMin(errors, Energy, 1);
-        checkHatchMin(errors, Maintenance, 1);
-        checkHatchMax(errors, Maintenance, 1);
+    public void loadNBTData(NBTTagCompound nbt) {
+        selectStructure(nbt.getBoolean(PROTOTYPE_NBT));
+        super.loadNBTData(nbt);
     }
 
     @Override
-    public void construct(ItemStack stack, boolean hintsOnly) {
-        buildPiece("main", stack, hintsOnly, OFFSET_X, OFFSET_Y, OFFSET_Z);
+    public void initDefaultModes(NBTTagCompound nbt) {
+        super.initDefaultModes(nbt);
+        selectStructure(nbt != null && nbt.getBoolean(PROTOTYPE_NBT));
     }
 
     @Override
-    public int survivalConstruct(ItemStack stack, int budget, ISurvivalBuildEnvironment environment) {
-        return mMachine ? -1
-            : survivalBuildPiece("main", stack, OFFSET_X, OFFSET_Y, OFFSET_Z, budget, environment, false, true);
+    public void setItemNBT(NBTTagCompound nbt) {
+        super.setItemNBT(nbt);
+        if (!isPrototype()) return;
+        nbt.setBoolean(PROTOTYPE_NBT, true);
     }
 
     @Override
-    protected ProcessingLogic createProcessingLogic() {
-        return null;
+    public ItemStack getStackForm(long amount) {
+        ItemStack stack = super.getStackForm(amount);
+        if (isPrototype()) {
+            NBTTagCompound nbt = new NBTTagCompound();
+            setItemNBT(nbt);
+            stack.setTagCompound(nbt);
+        }
+        return stack;
     }
 
     @Override
-    public CheckRecipeResult checkProcessing() {
-        return CheckRecipeResultRegistry.NO_RECIPE;
+    public byte getUpdateData() {
+        return (byte) (isPrototype() ? 1 : 0);
     }
 
     @Override
-    protected void runMachine(IGregTechTileEntity tile, long tick) {
-        long power = 0;
-        for (int i = 0; i < GROUP_COUNT; i++)
-            if (connected(i) && groups[i].enabled()) power = Math.addExact(power, groups[i].eut());
-        boolean running = tile.isAllowedToWork() && power <= getMaxInputEu() && (power == 0 || drainEnergyInput(power));
-        if (running) {
-            for (int i = 0; i < GROUP_COUNT; i++)
-                if (connected(i) && groups[i].enabled() && groups[i].remaining() > 0) {
-                    try {
-                        groups[i].advance();
-                    } catch (RuntimeException failure) {
-                        groups[i].status("gtnr.chaos.error.recipe");
-                    }
-                    markDirty();
-                }
-        }
-        if (tick % 5 == 0) for (int offset = 0; offset < GROUP_COUNT; offset++) {
-            int i = (nextGroup + offset) % GROUP_COUNT;
-            if (!connected(i)) continue;
-            ChaosProcessingGroup group = groups[i];
-            if (group.remaining() > 0) {
-                // #tr gtnr.chaos.status.running
-                // # Processing
-                // # zh_CN 加工中
-                // #tr gtnr.chaos.status.paused
-                // # Paused / power unavailable
-                // # zh_CN 暂停／供电不足
-                group.status(running && group.enabled() ? "gtnr.chaos.status.running" : "gtnr.chaos.status.paused");
-                continue;
-            }
-            try {
-                if (group.busy() && (group.exporting() || group.currentStep() == null)) {
-                    // #tr gtnr.chaos.status.output
-                    // # Exporting / output blocked
-                    // # zh_CN 输出中／输出堵塞
-                    group.status("gtnr.chaos.status.output");
-                    group.flush(this);
-                    markDirty();
-                }
-                if (!running || !group.enabled() || group.exporting()) continue;
-                if (!group.busy()) {
-                    ItemStack credential = credentialHatches[i].credential();
-                    // #tr gtnr.chaos.status.credential
-                    // # Insert a bound credential
-                    // # zh_CN 需要已绑定凭证
-                    if (!ChaosCredentialItem.isBound(credential)) {
-                        group.status("gtnr.chaos.status.credential");
-                        continue;
-                    }
-                    group.bind(
-                        credential.getTagCompound()
-                            .getCompoundTag(ChaosCredentialItem.CHAIN_KEY));
-                    markDirty();
-                }
-                startStep(i);
-            } catch (RuntimeException failure) {
-                group.status("gtnr.chaos.error.recipe");
-            }
-        }
-        if (tick % 5 == 0) nextGroup = (nextGroup + 1) % GROUP_COUNT;
-        lEUt = running ? -power : 0;
-        mEfficiency = 10000;
-        mMaxProgresstime = running && power > 0 ? 20 : 0;
-        mProgresstime = mMaxProgresstime == 0 ? 0 : (int) (tick % 20);
-    }
-
-    private void startStep(int index) {
-        ChaosProcessingGroup group = groups[index];
-        ChaosChain.Step step = group.currentStep();
-        if (step == null) return;
-        long voltage = 0;
-        for (int i = 0; i < MODULE_SLOTS; i++)
-            voltage = Math.max(voltage, ChaosStructureModuleItem.voltage(workbench.getStackInSlot(i), step.map()));
-        voltage = Math.min(voltage, getMaxInputVoltage());
-        // #tr gtnr.chaos.status.module
-        // # Missing module or insufficient module voltage
-        // # zh_CN 缺少模组或模组电压不足
-        if (voltage < step.recipe().mEUt) {
-            group.status("gtnr.chaos.status.module");
-            return;
-        }
-        long available = getMaxInputEu();
-        for (int i = 0; i < GROUP_COUNT; i++)
-            if (connected(i) && groups[i].enabled()) available -= Math.min(available, groups[i].eut());
-        // #tr gtnr.chaos.status.power
-        // # Waiting for power budget
-        // # zh_CN 等待可用功率
-        if (available < step.recipe().mEUt) {
-            group.status("gtnr.chaos.status.power");
-            return;
-        }
-        ArrayList<MTEHatchInputBus> allBuses = mInputBusses;
-        ArrayList<MTEHatchInput> allFluids = mInputHatches;
-        mInputBusses = new ArrayList<>(
-            allBuses.stream()
-                .filter(h -> dedicatedInputs.getOrDefault(h, index) == index)
-                .toList());
-        mInputHatches = new ArrayList<>(
-            allFluids.stream()
-                .filter(h -> dedicatedInputs.getOrDefault(h, index) == index)
-                .toList());
-        StepLogic logic = new StepLogic(step.recipe());
-        boolean ended = false;
-        try {
-            startRecipeProcessing();
-            ChaosBuffer.View cache = group.cache()
-                .view();
-            List<ItemStack> items = new ArrayList<>(Arrays.asList(cache.items));
-            items.addAll(unique(getStoredInputs()));
-            List<FluidStack> fluids = new ArrayList<>(Arrays.asList(cache.fluids));
-            fluids.addAll(unique(getStoredFluids()));
-            logic.setMachine(this)
-                .setRecipeMap(step.map())
-                .setInputItems(items)
-                .setInputFluids(fluids)
-                .setAvailableVoltage(Math.min(voltage, available))
-                .setAvailableAmperage(1)
-                .setAmperageOC(false)
-                .setMaxParallel(1)
-                .setVoidProtection(false, false);
-            logic.prepareRecipe(available);
-            CheckRecipeResult result = logic.process();
-            // #tr gtnr.chaos.status.inputs
-            // # Missing inputs or input extraction failed
-            // # zh_CN 缺料或输入抽取失败
-            if (!result.wasSuccessful()) {
-                group.status("gtnr.chaos.status.inputs");
-                return;
-            }
-            ChaosBuffer after = cache.after(group.cache(), logic);
-            ChaosBuffer outputs = new ChaosBuffer();
-            outputs.add(logic.getOutputItems(), logic.getOutputFluids());
-            ChaosBuffer reserved = after.copy();
-            reserved.add(outputs);
-            // #tr gtnr.chaos.status.capacity
-            // # Group cache capacity exceeded
-            // # zh_CN 加工组缓存容量不足
-            if (reserved.amount() > capacityPerGroup()) {
-                group.status("gtnr.chaos.status.capacity");
-                return;
-            }
-            if (!RecipeThreadInputPreflight.canCommit(this, logic) || !logic.canCommitInputs()) {
-                group.status("gtnr.chaos.status.inputs");
-                return;
-            }
-            setCheckRecipeResult(CheckRecipeResultRegistry.SUCCESSFUL);
-            if (!logic.commitInputs()) return;
-            ended = true;
-            endRecipeProcessing();
-            // A failed external stocking transaction must never create paid-for outputs.
-            if (!getCheckRecipeResult().wasSuccessful()) {
-                group.status("gtnr.chaos.status.inputs");
-                return;
-            }
-            group.begin(after, outputs, logic.getCalculatedEut(), Math.max(1, logic.getDuration()));
-            updateSlots();
-            markDirty();
-        } finally {
-            try {
-                if (!ended) endRecipeProcessing();
-            } finally {
-                logic.finishRecipe();
-                mInputBusses = allBuses;
-                mInputHatches = allFluids;
-            }
-        }
-    }
-
-    private static <E> List<E> unique(List<E> source) {
-        Set<E> seen = Collections.newSetFromMap(new IdentityHashMap<>());
-        return source.stream()
-            .filter(value -> value != null && seen.add(value))
-            .toList();
-    }
-
-    public long capacityPerGroup() {
-        return BASE_CAPACITY << Math.max(0, Math.min(20, glassTier - 3));
-    }
-
-    public boolean connected(int i) {
-        return credentialHatches[i] != null && credentialHatches[i].getBaseMetaTileEntity() != null
-            && !credentialHatches[i].getBaseMetaTileEntity()
-                .isDead();
-    }
-
-    public boolean hasWork() {
-        return groups != null && Arrays.stream(groups)
-            .anyMatch(group -> group != null && group.busy());
-    }
-
-    public boolean groupBusy(int index) {
-        return index >= 0 && index < GROUP_COUNT && groups[index].busy();
-    }
-
-    public ItemStackHandler workbench() {
-        return workbench;
-    }
-
-    public ChaosProcessingGroup group(int index) {
-        return groups[index];
-    }
-
-    public void toggleGroup(int index) {
-        if (!getBaseMetaTileEntity().isServerSide() || index < 0 || index >= GROUP_COUNT) return;
-        groups[index].setEnabled(!groups[index].enabled());
-        markDirty();
-    }
-
-    public void exportGroup(int index) {
-        if (!getBaseMetaTileEntity().isServerSide() || index < 0 || index >= GROUP_COUNT) return;
-        groups[index].requestExport();
-        markDirty();
-    }
-
-    public String groupText(int index) {
-        ChaosProcessingGroup group = groups[index];
-        // #tr gtnr.chaos.status.disconnected
-        // # Credential hatch disconnected
-        // # zh_CN 未连接凭证仓
-        return (index + 1) + "  "
-            + StatCollector.translateToLocal(
-                connected(index) ? group.enabled() ? group.status() : "gtnr.chaos.status.paused"
-                    : "gtnr.chaos.status.disconnected")
-            + "\n"
-            + (group.stepIndex() + 1)
-            + " | "
-            + group.remaining()
-            + " t | "
-            + group.cache()
-                .amount();
-    }
-
-    public String groupDetails(int index) {
-        ChaosProcessingGroup group = groups[index];
-        // #tr gtnr.chaos.group.capacity
-        // # Cache: %s / %s units
-        // # zh_CN 缓存：%s / %s 单位
-        StringBuilder text = new StringBuilder(
-            StatCollector.translateToLocalFormatted(
-                "gtnr.chaos.group.capacity",
-                group.cache()
-                    .amount(),
-                capacityPerGroup()));
-        try {
-            ChaosChain.Step step = group.currentStep();
-            if (step != null) {
-                text.append('\n')
-                    .append(StatCollector.translateToLocal(step.map().unlocalizedName));
-                // #tr gtnr.chaos.group.requirements
-                // # Required by this step (including non-consumed tools):
-                // # zh_CN 本工序所需（含不消耗的工具）：
-                text.append('\n')
-                    .append(StatCollector.translateToLocal("gtnr.chaos.group.requirements"));
-                for (ItemStack item : step.recipe().mInputs) if (item != null) text.append('\n')
-                    .append(item.stackSize)
-                    .append(" × ")
-                    .append(item.getDisplayName());
-                for (FluidStack fluid : step.recipe().mFluidInputs) if (fluid != null) text.append('\n')
-                    .append(fluid.amount)
-                    .append(" L ")
-                    .append(fluid.getLocalizedName());
-            }
-        } catch (RuntimeException failure) {
-            text.append('\n')
-                .append(StatCollector.translateToLocal("gtnr.chaos.error.recipe"));
-        }
-        return text.toString();
-    }
-
-    public void nextPreset() {
-        if (getBaseMetaTileEntity().isServerSide()) {
-            preset = (preset + 1) % Math.max(
-                1,
-                ChaosPresets.all()
-                    .size());
-            markDirty();
-        }
-    }
-
-    public String presetName() {
-        var presets = ChaosPresets.all();
-        return presets.isEmpty() ? StatCollector.translateToLocal("gtnr.chaos.error.recipe")
-            : StatCollector.translateToLocal(
-                presets.get(Math.floorMod(preset, presets.size()))
-                    .name());
-    }
-
-    public String feedback() {
-        return StatCollector.translateToLocal(feedback);
-    }
-
-    public void bindCredential(boolean custom) {
-        if (!getBaseMetaTileEntity().isServerSide()) return;
-        try {
-            if (workbench.getStackInSlot(CREDENTIAL_OUTPUT) != null) return;
-            ChaosChain chain;
-            if (custom) {
-                List<ItemStack> patterns = new ArrayList<>();
-                for (int i = PATTERN_START; i < INVENTORY_SIZE; i++) patterns.add(workbench.getStackInSlot(i));
-                chain = ChaosPatternCompiler.compile(patterns, getBaseMetaTileEntity().getWorld());
-            } else {
-                var presets = ChaosPresets.all();
-                if (presets.isEmpty()) throw new IllegalArgumentException("gtnr.chaos.error.recipe");
-                chain = presets.get(Math.floorMod(preset, presets.size()));
-            }
-            ItemStack result = ChaosCredentialItem.bind(workbench.getStackInSlot(CREDENTIAL_INPUT), chain);
-            workbench.extractItem(CREDENTIAL_INPUT, 1, false);
-            workbench.setStackInSlot(CREDENTIAL_OUTPUT, result);
-            // #tr gtnr.chaos.status.bound
-            // # Completed
-            // # zh_CN 已完成
-            feedback = "gtnr.chaos.status.bound";
-        } catch (RuntimeException failure) {
-            feedback = errorKey(failure);
-        }
-        markDirty();
-    }
-
-    public void packageModule() {
-        if (!getBaseMetaTileEntity().isServerSide() || workbench.getStackInSlot(MODULE_OUTPUT) != null) return;
-        try {
-            ItemStack casing = workbench.getStackInSlot(CASING_INPUT);
-            if (casing == null || casing.stackSize < 8 || !workbench.isItemValid(CASING_INPUT, casing))
-                // #tr gtnr.chaos.error.module
-                // # Need an empty module, a supported machine and 8 solid steel casings
-                // # zh_CN 需要空模组、支持的机器及 8 个坚固钢机器外壳
-                throw new IllegalArgumentException("gtnr.chaos.error.module");
-            ItemStack result = ChaosStructureModuleItem
-                .pack(workbench.getStackInSlot(MODULE_INPUT), workbench.getStackInSlot(MACHINE_INPUT));
-            workbench.extractItem(MODULE_INPUT, 1, false);
-            workbench.extractItem(MACHINE_INPUT, 1, false);
-            workbench.extractItem(CASING_INPUT, 8, false);
-            workbench.setStackInSlot(MODULE_OUTPUT, result);
-            feedback = "gtnr.chaos.status.bound";
-        } catch (RuntimeException failure) {
-            feedback = errorKey(failure);
-        }
-        markDirty();
-    }
-
-    private static String errorKey(RuntimeException failure) {
-        String message = failure.getMessage();
-        return message != null && message.startsWith("gtnr.chaos.") ? message : "gtnr.chaos.error.recipe";
-    }
-
-    @Override
-    public ITexture[] getTexture(IGregTechTileEntity tile, ForgeDirection side, ForgeDirection facing, int color,
-        boolean active, boolean redstone) {
-        ITexture casing = Textures.BlockIcons.getCasingTextureForId(TEXTURE);
-        if (side != facing) return new ITexture[] { casing };
-        return new ITexture[] { casing, TextureFactory.builder()
-            .addIcon(active ? Textures.BlockIcons.OVERLAY_DTPF_ON : Textures.BlockIcons.OVERLAY_DTPF_OFF)
-            .extFacing()
-            .build() };
+    public void onValueUpdate(byte value) {
+        selectStructure((value & 1) != 0);
     }
 
     @Override
     public String getLocalNameKey() {
-        return "gtnr.machine.bottle_in_chaos.name";
+        return isPrototype() ? PROTOTYPE_NAME_KEY : super.getLocalNameKey();
+    }
+
+    @Override
+    public String getInventoryName() {
+        return getLocalNameKey();
+    }
+
+    @Override
+    protected MultiblockTooltipBuilder createTooltip() {
+        // GT caches this by MetaID; the item-specific hook below supplies the prototype description.
+        return new BottledChaosStandardStructure(this).getTooltip();
+    }
+
+    @Override
+    public void addAdditionalTooltipInformation(ItemStack stack, List<String> tooltip) {
+        super.addAdditionalTooltipInformation(stack, tooltip);
+        if (!isPrototype(stack)) return;
+        if (!stack.hasDisplayName() && !tooltip.isEmpty()) {
+            String name = stack.getDisplayName();
+            String title = tooltip.get(0);
+            if (title.startsWith(name)) {
+                tooltip.set(0, ChaosLocalization.tr(PROTOTYPE_NAME_KEY) + title.substring(name.length()));
+            }
+        }
+        int descriptionLength = getDescription().length;
+        tooltip.subList(tooltip.size() - descriptionLength, tooltip.size())
+            .clear();
+        MultiblockTooltipBuilder prototype = new BottledChaosPrototypeStructure(this).getTooltip();
+        Collections.addAll(
+            tooltip,
+            isDisplaySecondaryDescription() ? prototype.getStructureInformation() : prototype.getInformation());
+    }
+
+    @Override
+    public String[] getStructureDescription(ItemStack stack) {
+        return getMachineStructure().getTooltip()
+            .getStructureHint();
+    }
+
+    @Override
+    public boolean checkMachineMM(IGregTechTileEntity base, ItemStack stack, List<StructureError> errors) {
+        getMachineStructure().reset();
+        return super.checkMachineMM(base, stack, errors);
+    }
+
+    @Override
+    protected boolean checkStructurePieces(List<StructureError> errors) {
+        return getMachineStructure().checkStructurePieces(errors);
+    }
+
+    @Override
+    protected int getProcessingGroupSlot(int left, int back) {
+        return getMachineStructure().getProcessingGroupSlot(left, back);
+    }
+
+    @Override
+    public int getProcessingGroupLimit() {
+        return getMachineStructure().getProcessingGroupLimit();
+    }
+
+    @Override
+    protected int getCredentialHatchLimit(int parallelTier) {
+        return getMachineStructure().getCredentialHatchLimit(parallelTier);
+    }
+
+    @Override
+    protected StructureError getInvalidCapacityRegionError() {
+        return getMachineStructure().getInvalidCapacityRegionError();
+    }
+
+    @Override
+    protected int getCapacityRegionCount() {
+        return getMachineStructure().getCapacityRegionCount();
+    }
+
+    @Override
+    protected int getCapacityRegionBlockCount() {
+        return getMachineStructure().getCapacityRegionBlockCount();
+    }
+
+    @Override
+    protected int getCapacityLevelCount() {
+        return getMachineStructure().getCapacityLevelCount();
+    }
+
+    @Override
+    protected int getCapacityRegion(int x, int y, int z) {
+        return getMachineStructure().getCapacityRegion(x, y, z);
+    }
+
+    @Override
+    public boolean isWirelessMode() {
+        return getMachineStructure().isWirelessMode();
+    }
+
+    @Override
+    public long getMaximumRecipeVoltage() {
+        return getMachineStructure().getMaximumRecipeVoltage();
+    }
+
+    @Override
+    public IStructureDefinition<BottleInChaos> getStructureDefinition() {
+        return getMachineStructure().getStructureDefinition();
+    }
+
+    @Override
+    public void construct(ItemStack stack, boolean hintsOnly) {
+        getMachineStructure().construct(stack, hintsOnly);
+    }
+
+    @Override
+    public int survivalConstruct(ItemStack stack, int budget, ISurvivalBuildEnvironment environment) {
+        return getMachineStructure().survivalConstruct(stack, budget, environment);
+    }
+
+    public boolean checkStructurePiece(String piece, int x, int y, int z, List<StructureError> errors) {
+        return checkPiece(piece, x, y, z, errors);
+    }
+
+    public void buildStructurePiece(String piece, ItemStack stack, boolean hintsOnly, int x, int y, int z) {
+        buildPiece(piece, stack, hintsOnly, x, y, z);
+    }
+
+    public int survivalBuildStructurePiece(String piece, ItemStack stack, int x, int y, int z, int budget,
+        ISurvivalBuildEnvironment environment, boolean checkPlaced, boolean checkMachine) {
+        return survivalBuildPiece(piece, stack, x, y, z, budget, environment, checkPlaced, checkMachine);
     }
 
     @Override
@@ -616,94 +300,8 @@ public final class BottleInChaos extends MTEExtendedPowerMultiBlockBase<BottleIn
     }
 
     @Override
-    public Map<String, Object> getTooltipVars() {
-        return Map.of("groups", GROUP_COUNT, "modules", MODULE_SLOTS, "steps", ChaosChain.MAX_STEPS);
+    public int getParameterModuleLimit(com.xyp.gtneverreset.utils.enums.MachineModuleType type) {
+        return getSupportedModularHatchTypes().contains(type) ? 1 : 0;
     }
 
-    @Override
-    public int getTooltipRecipeThreads() {
-        return GROUP_COUNT;
-    }
-
-    @Override
-    protected MultiblockTooltipBuilder createTooltip() {
-        return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
-            .toolTipFinisher();
-    }
-
-    @Override
-    protected MTEMultiBlockBaseGui<?> getGui() {
-        return new BottleInChaosGui(this);
-    }
-
-    @Override
-    public void saveNBTData(NBTTagCompound tag) {
-        super.saveNBTData(tag);
-        NBTTagList list = new NBTTagList();
-        for (ChaosProcessingGroup group : groups) list.appendTag(group.save());
-        tag.setTag("chaosGroups", list);
-        tag.setTag("chaosWorkbench", workbench.serializeNBT());
-        tag.setInteger("chaosPreset", preset);
-    }
-
-    @Override
-    public void loadNBTData(NBTTagCompound tag) {
-        super.loadNBTData(tag);
-        NBTTagList list = tag.getTagList("chaosGroups", 10);
-        for (int i = 0; i < Math.min(GROUP_COUNT, list.tagCount()); i++)
-            groups[i] = ChaosProcessingGroup.load(list.getCompoundTagAt(i));
-        if (tag.hasKey("chaosWorkbench")) workbench.deserializeNBT(tag.getCompoundTag("chaosWorkbench"));
-        preset = tag.getInteger("chaosPreset");
-    }
-
-    @Override
-    public void setItemNBT(NBTTagCompound tag) {
-        super.setItemNBT(tag);
-        saveNBTData(tag);
-    }
-
-    @Override
-    public void stopMachine(ShutDownReason reason) {
-        // GT stops the controller. Group-owned inputs, work and outputs remain resumable.
-        super.stopMachine(reason);
-    }
-
-    @Override
-    public boolean supportsVoidProtection() {
-        return true;
-    }
-
-    @Override
-    public VoidingMode getDefaultVoidingMode() {
-        return VoidingMode.VOID_NONE;
-    }
-
-    @Override
-    public boolean supportsInputSeparation() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsBatchMode() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsSingleRecipeLocking() {
-        return false;
-    }
-
-    private static final class StepLogic extends RecipeThreadProcessingLogic {
-
-        private final GTRecipe recipe;
-
-        private StepLogic(GTRecipe recipe) {
-            this.recipe = recipe;
-        }
-
-        @Override
-        protected Stream<GTRecipe> findRecipeMatches(RecipeMap<?> map) {
-            return Stream.of(recipe);
-        }
-    }
 }

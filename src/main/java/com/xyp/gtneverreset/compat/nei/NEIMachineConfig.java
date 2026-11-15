@@ -12,6 +12,9 @@ public final class NEIMachineConfig implements IConfigureNEI {
 
     @Override
     public void loadConfig() {
+        com.xyp.gtneverreset.compat.nei.chaos.BottledChaosNEIHandler.register();
+        com.xyp.gtneverreset.compat.nei.chaos.BottledChaosStructureNEIHandler.register();
+        com.xyp.gtneverreset.compat.nei.chaos.BottledChaosPrototypePreview.register();
         API.addRecipeCatalyst(GTNRItemList.LargeFurnace.get(1), new FurnaceRecipeHandler());
         API.addRecipeCatalyst(GTNRItemList.UniversalJointFactory.get(1), RecipeMaps.cutterFakeRecipes.unlocalizedName);
     }

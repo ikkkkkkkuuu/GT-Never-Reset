@@ -47,6 +47,8 @@ public final class ClientLoader {
     }
 
     public static void init() {
+        com.xyp.gtneverreset.client.render.chaos.ChaosCapacityRenderer.register();
+        MinecraftForge.EVENT_BUS.register(new com.xyp.gtneverreset.client.chaos.ChaosTooltipHandler());
         if (ModList.BetterQuesting.isModLoaded()) QuestContextMenuRegistry.register(new QuestSkipMenu());
         MinecraftForge.EVENT_BUS.register(new VeinMiningInputHandler());
         MinecraftForge.EVENT_BUS.register(new DisassemblerTooltip());

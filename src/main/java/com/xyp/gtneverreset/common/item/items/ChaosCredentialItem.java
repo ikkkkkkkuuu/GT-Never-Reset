@@ -53,8 +53,8 @@ public final class ChaosCredentialItem extends Item {
     public void addInformation(ItemStack stack, EntityPlayer player, List<String> lines, boolean advanced) {
         if (!isBound(stack)) {
             // #tr gtnr.chaos.credential.blank
-            // # Bind a preset or AE processing chain in the Bottle in Chaos workbench.
-            // # zh_CN 在混沌中瓶工作区注入预设产线或 AE 加工样板链。
+            // # Legacy credential. Select routes directly in a processing group hatch.
+            // # zh_CN 旧版凭证；请直接在加工组仓选择产线。
             lines.add(StatCollector.translateToLocal("gtnr.chaos.credential.blank"));
             return;
         }
@@ -70,8 +70,8 @@ public final class ChaosCredentialItem extends Item {
                 chain.getTagList("steps", 10)
                     .tagCount()));
         // #tr gtnr.chaos.credential.install
-        // # Install in a credential hatch. Each group retains its own intermediate materials.
-        // # zh_CN 装入凭证仓使用；各加工组独立保存中间物料。
+        // # Preserved for old saves; the machine no longer requires this item.
+        // # zh_CN 保留用于旧存档兼容；机器已不再需要此物品。
         lines.add(StatCollector.translateToLocal("gtnr.chaos.credential.install"));
     }
 }

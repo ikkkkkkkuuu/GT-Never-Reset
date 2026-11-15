@@ -1,42 +1,626 @@
-PASS six real ore presets registered
-PASS preset resolves: gtnr.chaos.preset.iron
-PASS preset resolves: gtnr.chaos.preset.copper
-PASS preset resolves: gtnr.chaos.preset.gold
-PASS preset resolves: gtnr.chaos.preset.tin
-PASS preset resolves: gtnr.chaos.preset.nickel
-PASS preset resolves: gtnr.chaos.preset.lead
-PASS long cache quantities survive NBT
-PASS sliced output is detached and lossless
-PASS two real AE processing patterns compile
-PASS forged AE output rejected
-PASS cross-pool ambiguity rejected without map identifier
-PASS map identifier disambiguates real recipes
-PASS probabilistic fluid output cannot authorize an exact AE promise
-PASS unknown recipe pool rejected
-PASS 11 x 13 x 11 binary bottle structure
-PASS constructed structure matches binary shape
-PASS controller forms with native hatches and two credential groups
-PASS module packaging consumes the machine and eight casings
-PASS AE injection consumes only the blank credential
-PASS two groups cannot spend the same shared input
-PASS power loss pauses paid work
-PASS missing maintenance hatch invalidates structure
-PASS native tick stops incomplete structure without losing work
-PASS structure reforms with retained work
-PASS in-flight progress restored
-PASS installed module cannot be extracted during work
-PASS blocked output retains completed chain
-PASS two-step chain consumes cached intermediate and delivers once after blocked-output reload
-PASS internal intermediate fully consumed
-PASS idle bound group can be exported and unlocked
-PASS dedicated input position forms
-PASS group cannot consume another group's dedicated input
-PASS owner group consumes dedicated input
-PASS export finishes paid step and skips remaining steps without discarding output
-PASS capacity failure occurs before consuming external input
-PASS exporting an idle group does not prevent later reuse
-PASS breaking and placing preserves installed modules
+PASS full preset catalog initialized without TST
+PASS original 29 x 41 x 29 structure retained
+PASS processing group requires no physical credential
+PASS empty processing hatch has an unlocked route
+PASS selected routes survive NBT round trip
+PASS preset and AE recipe pools coexist above the former 64-pool limit
+PASS pool identities above index 63 survive save/load without aliasing
+PASS all missing pool bits survive client synchronization
+PASS all missing pool bits survive NBT persistence
+PASS AE patterns compile against registered recipes
+PASS AE chain plans from external input without supplying its intermediate
+PASS AE chain conserves materials and emits only the final output
+PASS AE chain charges both source steps
+PASS planning does not consume input before commit
+PASS commit consumes the external input once
+PASS AE cyclic sequence compiles with its starting seed retained
+PASS AE cycle cannot start without the physical seed
+PASS forged AE outputs are rejected
+PASS AE pattern configuration survives NBT reload
+PASS removing patterns restores preset mode
+PASS native GTNH source structure catalog is populated
+PASS source structure example resolves its real material bill
+PASS packaged module retains its structure and multiplicity
+PASS missing structure materials cannot authorize a module
+PASS manufacturing recipe exists: 混沌中瓶
+PASS manufacturing recipe exists: 混沌加工组仓
+PASS manufacturing recipe exists: 混沌中瓶机器结构模组
+PASS manufacturing recipe exists: 临界光子
+PASS manufacturing recipe exists: 引力透镜
+PASS manufacturing recipe exists: 白矮星铸锭模具
+PASS manufacturing recipe exists: 炎狱高炉升级芯片
+PASS manufacturing recipe exists: 原型机转换协议
+PASS manufacturing recipe exists: 进阶高能线圈
+PASS paid controller can be packaged by the real workbench transaction
+PASS preview never consumes physical materials
+PASS packaging commits once
+PASS stale packaging preview cannot duplicate modules
+PASS paid structure can be returned to a real ME cell
+PASS unpack preview leaves the original ME cell unchanged
+PASS unpack transaction commits
+PASS ME cell receives exactly the paid controller
+PASS stale ME unload preview cannot duplicate materials
+PASS all 29 original source machine profiles exist independently of TST
+PASS native source material bill resolves: gtnr.chaos.source.GTCM_CRYSTALLINE_INFINITIER:1
+PASS native source module validates on reload: gtnr.chaos.source.GTCM_CRYSTALLINE_INFINITIER:1
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:1
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:1
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:2
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:2
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:3
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:3
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:4
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:4
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:5
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:5
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:6
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:6
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:7
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:7
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:8
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:8
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:9
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:9
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:10
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:10
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:11
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:11
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:12
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:12
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:13
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:13
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:14
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:14
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:15
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:15
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:16
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:16
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:17
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:17
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:18
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:18
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:19
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:19
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:20
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:20
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:21
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:21
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:22
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:22
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:23
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:23
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:24
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:24
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:25
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:25
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:26
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:26
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:27
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:27
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:28
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:28
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:29
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:29
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:30
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:30
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:31
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:31
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:32
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:32
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:33
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:33
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:34
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:34
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:35
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:35
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:36
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:36
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:37
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:37
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:38
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:38
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:39
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:39
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:40
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:40
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:41
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:41
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:42
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:42
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:43
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:43
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:44
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:44
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:45
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:45
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:46
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:46
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:47
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:47
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:48
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:48
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:49
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:49
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:50
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:50
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:51
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:51
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:52
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:52
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:53
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:53
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:54
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:54
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:55
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:55
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:56
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:56
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:57
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:57
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:58
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:58
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:59
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:59
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:60
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:60
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:61
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:61
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:62
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:62
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:63
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:63
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:64
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_HOLY_SEPARATOR:64
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_INTENSIFY_CHEMICAL_DISTORTER:1
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_INTENSIFY_CHEMICAL_DISTORTER:1
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:1
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:1
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:2
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:2
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:3
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:3
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:4
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:4
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:5
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:5
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:6
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:6
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:7
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:7
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:8
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:8
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:9
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:9
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:10
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:10
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:11
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:11
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:12
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:12
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:13
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:13
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:14
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:14
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:15
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:15
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:16
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:16
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:17
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:17
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:18
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:18
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:19
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:19
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:20
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:20
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:21
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:21
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:22
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:22
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:23
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:23
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:24
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:24
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:25
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:25
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:26
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:26
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:27
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:27
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:28
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:28
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:29
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:29
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:30
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:30
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:31
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:31
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:32
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:32
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:33
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:33
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:34
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:34
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:35
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:35
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:36
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:36
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:37
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:37
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:38
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:38
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:39
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:39
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:40
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:40
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:41
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:41
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:42
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:42
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:43
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:43
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:44
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:44
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:45
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:45
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:46
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:46
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:47
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:47
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:48
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:48
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:49
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:49
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:50
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:50
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:51
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:51
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:52
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:52
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:53
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:53
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:54
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:54
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:55
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:55
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:56
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:56
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:57
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:57
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:58
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:58
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:59
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:59
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:60
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:60
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:61
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:61
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:62
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:62
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:63
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:63
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:64
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DOMAIN_CONSTRUCTOR:64
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DRIVE_PRESSURE_FORMER:1
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_DRIVE_PRESSURE_FORMER:1
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_MIXER:1
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MAGNETIC_MIXER:1
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:1
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:1
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:2
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:2
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:3
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:3
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:4
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:4
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:5
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:5
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:6
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:6
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:7
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:7
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:8
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:8
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:9
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:9
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:10
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:10
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:11
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:11
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:12
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:12
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:13
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:13
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:14
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:14
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:15
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:15
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:16
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:16
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:17
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:17
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:18
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:18
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:19
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:19
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:20
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:20
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:21
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:21
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:22
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:22
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:23
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:23
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:24
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:24
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:25
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:25
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:26
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:26
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:27
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:27
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:28
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:28
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:29
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:29
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:30
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:30
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:31
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:31
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:32
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:32
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:33
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:33
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:34
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:34
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:35
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:35
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:36
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:36
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:37
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:37
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:38
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:38
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:39
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:39
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:40
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:40
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:41
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:41
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:42
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:42
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:43
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:43
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:44
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:44
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:45
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:45
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:46
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:46
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:47
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:47
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:48
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:48
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:49
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:49
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:50
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:50
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:51
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:51
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:52
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:52
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:53
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:53
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:54
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:54
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:55
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:55
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:56
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:56
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:57
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:57
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:58
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:58
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:59
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:59
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:60
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:60
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:61
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:61
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:62
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:62
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:63
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:63
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:64
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_MOLECULE_DECONSTRUCTOR:64
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_PHYSICAL_FORM_SWITCHER:1
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_PHYSICAL_FORM_SWITCHER:1
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_PRECISE_HIGH_ENERGY_PHOTONIC_QUANTUM_MASTER:1
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_PRECISE_HIGH_ENERGY_PHOTONIC_QUANTUM_MASTER:1
+PASS native source material bill resolves: gtnr.chaos.source.GT_TILE_ENTITY_SPACE_SCALER:1
+PASS native source module validates on reload: gtnr.chaos.source.GT_TILE_ENTITY_SPACE_SCALER:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_ADVANCED_MEGA_OIL_CRACKER:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_ADVANCED_MEGA_OIL_CRACKER:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_BALL_LIGHTNING:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_BALL_LIGHTNING:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_BIOSPHERE_III:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_BIOSPHERE_III:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_CORE_DEVICE_OF_HUMAN_POWER_GENERATION_FACILITY:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_CORE_DEVICE_OF_HUMAN_POWER_GENERATION_FACILITY:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:2
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:2
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:3
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:3
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:4
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:4
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:5
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:5
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:6
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:6
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:7
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:7
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:8
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:8
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:9
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:9
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:10
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:10
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:11
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:11
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:12
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:12
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:13
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:13
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:14
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:14
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:15
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:15
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:16
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:16
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:17
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:17
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:18
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:18
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:19
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:19
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:20
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:20
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:21
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:21
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:22
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:22
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:23
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:23
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:24
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:24
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:25
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:25
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:26
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:26
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:27
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:27
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:28
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:28
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:29
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:29
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:30
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:30
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:31
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:31
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:32
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:32
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:33
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:33
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:34
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:34
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:35
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:35
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:36
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:36
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:37
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:37
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:38
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:38
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:39
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:39
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:40
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:40
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:41
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:41
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:42
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:42
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:43
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:43
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:44
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:44
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:45
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:45
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:46
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:46
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:47
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:47
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:48
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:48
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:49
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:49
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:50
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:50
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:51
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:51
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:52
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:52
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:53
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:53
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:54
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:54
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:55
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:55
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:56
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:56
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:57
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:57
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:58
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:58
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:59
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:59
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:60
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:60
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:61
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:61
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:62
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:62
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:63
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:63
+PASS native source material bill resolves: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:64
+PASS native source module validates on reload: gtnr.chaos.source.TST_GIANT_VACUUM_DRYING_FURNACE:64
+PASS native source material bill resolves: gtnr.chaos.source.TST_HEPHAESTUS_ATELIER:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_HEPHAESTUS_ATELIER:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_INDISTINCT_TENTACLE:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_INDISTINCT_TENTACLE:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_INDUSTRIAL_MAGNETAR_SEPARATOR:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_INDUSTRIAL_MAGNETAR_SEPARATOR:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_MANUFACTURING_CENTER:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_MANUFACTURING_CENTER:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_MIRACLE_DOOR:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_MIRACLE_DOOR:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_HYPER_THERMAL_CONVECTOR:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_HYPER_THERMAL_CONVECTOR:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_MEGA_MACERATOR:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_MEGA_MACERATOR:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_SCAVENGER:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_SCAVENGER:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_SWELEGFYR_BLAST_FURNACE:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_SWELEGFYR_BLAST_FURNACE:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_SWELEGFYR_BLAST_FURNACE:2
+PASS native source module validates on reload: gtnr.chaos.source.TST_SWELEGFYR_BLAST_FURNACE:2
+PASS native source material bill resolves: gtnr.chaos.source.TST_THERMAL_ENERGY_DEVOURER:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_THERMAL_ENERGY_DEVOURER:1
+PASS native source material bill resolves: gtnr.chaos.source.TST_VACUUM_FILTER_EXTRACTOR:1
+PASS native source module validates on reload: gtnr.chaos.source.TST_VACUUM_FILTER_EXTRACTOR:1
+PASS native source material bill resolves: gtnr.chaos.source.MM_INDISTINCT_TENTACLE_PROTOTYPE_MK2:1
+PASS native source module validates on reload: gtnr.chaos.source.MM_INDISTINCT_TENTACLE_PROTOTYPE_MK2:1
+PASS native source material bill resolves: gtnr.chaos.source.MM_DIMENSIONALLY_TRANSCENDENT_MATTER_PLASMA_FORGE_PROTOTYPE_MK2:1
+PASS native source module validates on reload: gtnr.chaos.source.MM_DIMENSIONALLY_TRANSCENDENT_MATTER_PLASMA_FORGE_PROTOTYPE_MK2:1
+PASS native source material bill resolves: gtnr.chaos.source.MM_LARGE_NEUTRON_OSCILLATOR:1
+PASS native source module validates on reload: gtnr.chaos.source.MM_LARGE_NEUTRON_OSCILLATOR:1
+PASS native controller with photon structure retains the original 256-parallel profile
+PASS complete original structure forms with fifteen processing groups: []
+PASS all fifteen independent processing groups are connected
+PASS four top-tier capacity regions provide 4096 capacity
+PASS blocked output reserves no input and loses no product
+PASS formed machine emits the exact AE output to its real output bus
+PASS formed machine commits the real input bus transaction once
+PASS paused second group retains all of its input while the first group runs
+PASS resumed second group consumes its independent input exactly once
+PASS second processing group produces its own exact output after resume
 PASS controller GUI opens
+PASS original terminal tab exists
+PASS original terminal tab exists
+PASS original terminal tab exists
 PASS tooltip variables resolved
-PASS GUI button synchronizes power toggle to server
 PASS credential hatch GUI opens
+PASS AE editor button exists
+PASS AE editor opens through synchronized UI action
+PASS unlocked preset selector opens without a physical credential

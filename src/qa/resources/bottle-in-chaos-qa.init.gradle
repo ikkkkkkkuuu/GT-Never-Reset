@@ -1,7 +1,31 @@
 // Run with: gradlew.bat -I src/qa/resources/bottle-in-chaos-qa.init.gradle :runClient17 --no-configuration-cache
 gradle.projectsEvaluated {
     def root = gradle.rootProject
+    // Full preset validation needs the normal GTNH recipe-script prerequisites.
+    def pack = root.extensions.getByName('elytraModpackVersion')
+    def qaDependencies = root.layout.buildDirectory.dir('bottle-in-chaos-qa/dependencies').get().asFile
+    qaDependencies.mkdirs()
+    def gravisuite = new File(qaDependencies, 'gravisuite-2.0.3.jar')
+    if (!gravisuite.isFile()) {
+        new URI('https://forum.industrial-craft.net/core/attachment/4519-gravisuite-1-7-10-2-0-3-jar').toURL().withInputStream { input ->
+            gravisuite.withOutputStream { output -> output << input }
+        }
+    }
+    root.dependencies.add('runtimeOnlyNonPublishable', root.dependencies.rfg.deobf(root.files(gravisuite)))
+
+    ['Minecraft-Backpack-Mod', 'Electro-Magic-Tools', 'EnderStorage',
+     'ForbiddenMagic', 'ForgeMultipart', 'Hardcore-Ender-Expansion', 'ironchest', 'Irontanks',
+     'MagicBees', 'OpenBlocks', 'harvestcraft', 'ProjectRed', 'Tainted-Magic', 'ThaumicBoots',
+     'ThaumicHorizons', 'ThaumicTinkerer', 'TinkersConstruct', 'twilightforest', 'WitchingGadgets',
+     'Universal-Singularities', 'MrTJPCore', 'ForgeRelocation',
+     'OpenModsLib', 'Mantle', 'Natura', 'RemoteIO', 'SGCraft', 'Avaritiaddons', 'WitcheryExtras', 'FloodLights', 'Gravitation-Suite-Neo', 'Thaumic_Exploration'].each { mod ->
+        root.dependencies.add('runtimeOnlyNonPublishable', pack.gtnhdev(mod) as String) { transitive = false }
+    }
+    root.dependencies.add('runtimeOnlyNonPublishable', root.dependencies.rfg.deobf('curse.maven:advsolar-362768:2885953'))
+    root.dependencies.add('runtimeOnlyNonPublishable', root.dependencies.rfg.deobf('curse.maven:witchery-69673:2234410'))
+    root.dependencies.add('runtimeOnlyNonPublishable', pack.gtnhdev('OpenComputers') as String)
     root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
+    root.dependencies.add('runtimeOnlyNonPublishable', 'tuhljin.automagy:Automagy-GTNH:0.29.8-GTNH:dev') { transitive = false }
     def fixture = 'BottleInChaosChecks'
     def directoryName = 'bottle-in-chaos-qa'
     def marker = 'gtnr.bottle.chaos.qa'
@@ -32,7 +56,31 @@ gradle.projectsEvaluated {
         doFirst {
             def output = root.file("build/${directoryName}")
             output.mkdirs()
+            // Avoid Gradle's manifest-only classpath shortcut: RFB must see each mod JAR for plugin discovery.
+            def shortClasspath = new File(root.projectDir.parentFile, 'chaos-qa-classpath-' + Integer.toUnsignedString(root.projectDir.absolutePath.hashCode(), 36))
+            shortClasspath.mkdirs()
+            def shortened = classpath.files.collect { source ->
+                if (!source.isFile() || !source.name.endsWith('.jar')) return source
+                def target = new File(shortClasspath, Integer.toUnsignedString(source.absolutePath.hashCode(), 36) + '-' + source.name)
+                if (!target.exists() || target.length() != source.length() || target.lastModified() != source.lastModified()) {
+                    java.nio.file.Files.copy(source.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.StandardCopyOption.COPY_ATTRIBUTES)
+                }
+                return target
+            }
+            classpath = root.files(shortened)
             workingDir.mkdirs()
+            def singularityConfig = new File(workingDir, 'config/eternalsingularity.cfg')
+            singularityConfig.parentFile.mkdirs()
+            singularityConfig.setText('general {\n B:useCompoundSingularities=true\n}\n', 'UTF-8')
+            def txConfig = new File(workingDir, 'config/ThaumicExploration.cfg')
+            txConfig.parentFile.mkdirs()
+            txConfig.setText('enchantment {\n I:Binding=500\n I:Disarming=501\n I:"Night Vision"=502\n}\n', 'UTF-8')
+            def coreConfig = new File(workingDir, 'config/GTNewHorizons/dreamcraft.cfg')
+            coreConfig.parentFile.mkdirs()
+            coreConfig.setText(coreConfig.exists() ? coreConfig.getText('UTF-8').replace('B:CustomFuels=false', 'B:CustomFuels=true') : 'modules {\n B:CustomFuels=true\n}\n', 'UTF-8')
+
+
             java.nio.file.Files.deleteIfExists(new File(workingDir, 'result.txt').toPath())
             new File(workingDir, 'options.txt').setText(
                 'lang:zh_CN\nguiScale:2\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsoundCategory_music:0.0\nmusic:0.0\nsound:0.0\n',

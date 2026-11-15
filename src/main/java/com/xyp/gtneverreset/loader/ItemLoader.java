@@ -5,6 +5,7 @@ import net.minecraftforge.common.MinecraftForge;
 
 import com.xyp.gtneverreset.api.packaged.PackagedCoreRegistry;
 import com.xyp.gtneverreset.common.item.items.ChaosCredentialItem;
+import com.xyp.gtneverreset.common.item.items.ChaosRouteItem;
 import com.xyp.gtneverreset.common.item.items.ChaosStructureModuleItem;
 import com.xyp.gtneverreset.common.item.items.HarvestRing;
 import com.xyp.gtneverreset.common.item.items.ItemAdvancedIOBus;
@@ -33,6 +34,9 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.registry.GameRegistry;
 
 public final class ItemLoader {
+
+    public static ChaosRouteItem chaosRoute;
+    public static ChaosStructureModuleItem chaosModule;
 
     public static final PermanentMagnetRing permanentMagnetRing = new PermanentMagnetRing();
     public static final HarvestRing harvestRing = new HarvestRing();
@@ -76,9 +80,23 @@ public final class ItemLoader {
 
     public static void registerItems() {
         var chaosCredential = new ChaosCredentialItem();
-        var chaosModule = new ChaosStructureModuleItem();
+        chaosCredential.setCreativeTab(null);
+        var chaosComponents = new com.xyp.gtneverreset.common.item.items.ChaosComponentsItem();
+        GameRegistry.registerItem(chaosComponents, "chaos_components");
+        GTNRItemList.ChaosCriticalPhoton.set(chaosComponents.registerVariant(0));
+        GTNRItemList.GravitationalLens.set(chaosComponents.registerVariant(1));
+        GTNRItemList.BallLightningUpgradeChip.set(chaosComponents.registerVariant(2));
+        GTNRItemList.WhiteDwarfMold_Ingot.set(chaosComponents.registerVariant(3));
+        GTNRItemList.SwelegfyrUpgradeChip.set(chaosComponents.registerVariant(4));
+        GTNRItemList.ChaosPrototypeProtocol.set(chaosComponents.registerVariant(5));
+        chaosModule = new ChaosStructureModuleItem();
+        chaosRoute = new ChaosRouteItem();
+        GameRegistry.registerItem(chaosRoute, "chaos_route_selection");
+        for (int meta = 0; meta <= ChaosRouteItem.MAX_META; meta++) chaosRoute.registerVariant(meta);
+        chaosRoute.setCreativeTab(null);
+        chaosModule.registerVariant(0);
         GameRegistry.registerItem(chaosCredential, chaosCredential.REGISTRY_NAME);
-        GameRegistry.registerItem(chaosModule, chaosModule.REGISTRY_NAME);
+        GameRegistry.registerItem(chaosModule, "chaos_structure_module");
         GTNRItemList.ChaosCredential.set(chaosCredential);
         GTNRItemList.ChaosStructureModule.set(chaosModule);
         GameRegistry.registerItem(permanentMagnetRing, "PermanentMagnetRing");

@@ -13,9 +13,20 @@ import gregtech.api.util.GTUtility;
 
 public enum GTNRItemList implements IItemContainer {
 
+    ChaosCriticalPhoton,
+    GravitationalLens,
+    BallLightningUpgradeChip,
+    WhiteDwarfMold_Ingot,
+    SwelegfyrUpgradeChip,
+    ChaosPrototypeProtocol,
+    ChaosCapacityTier1,
+    ChaosCapacityTier2,
+    ChaosCapacityTier3,
+    ChaosCapacityTier4,
+    ChaosCapacityTier5,
+
     VeinMiningPickaxe,
 
-    // region 物品
     ItemWirelessConnector,
     BasicPackagedCore,
     BloodAltarCore,
@@ -36,18 +47,14 @@ public enum GTNRItemList implements IItemContainer {
 
     AdvancedIOBus,
     StockIOInterfacePart,
-    // endregion
 
-    // region 方块
     EddingtonWallCasing,
     WirelessPackagedPatternProvider,
     OverloadedWirelessPatternProvider,
     StockIOInterface,
     FluxPlug,
     FluxPoint,
-    // endregion
 
-    // region 多方块
     LargeOreProcessor,
     LargeFurnace,
     UniversalJointFactory,
@@ -57,9 +64,7 @@ public enum GTNRItemList implements IItemContainer {
     SingularityDataHub,
     LargeBeeBreeder,
     LargeCropBreeder,
-    // endregion
 
-    // region 舱室
     SuperMTEHatchCraftingInputME,
     CircuitMEPatternBuffer,
     CrossRecipeMEPatternBuffer,
@@ -132,9 +137,7 @@ public enum GTNRItemList implements IItemContainer {
     LowSpeedPerfectOverclockController,
     PerfectOverclockController,
     SingularityPerfectOverclockController,
-    // endregion
 
-    // region 单方块机器
     FragmentWorldCollector,
 
     EndCrystalResonatorLV,
@@ -200,9 +203,7 @@ public enum GTNRItemList implements IItemContainer {
     DisassemblerUEV,
     DisassemblerUIV,
     DisassemblerUMV;
-    // endregion
 
-    // region 舱室分组
     public static final GTNRItemList[] THREAD = { ThreadControllerT1, ThreadControllerT2, ThreadControllerT3,
         ThreadControllerT4, ThreadControllerT5, ThreadControllerT6, ThreadControllerT7, ThreadControllerT8 };
 
@@ -239,9 +240,6 @@ public enum GTNRItemList implements IItemContainer {
     public static final GTNRItemList[] OVERCLOCK = { GTNRItemList.LowSpeedPerfectOverclockController,
         GTNRItemList.PerfectOverclockController, GTNRItemList.SingularityPerfectOverclockController };
 
-    // endregion
-
-    // region 单方块机器分组
     public static final GTNRItemList[] DISASSEMBLERS = { null, DisassemblerLV, DisassemblerMV, DisassemblerHV,
         DisassemblerEV, DisassemblerIV, DisassemblerLuV, DisassemblerZPM, DisassemblerUV, DisassemblerUHV,
         DisassemblerUEV, DisassemblerUIV, DisassemblerUMV };
@@ -265,8 +263,6 @@ public enum GTNRItemList implements IItemContainer {
         GTNRItemList.ModernCentrifugeMV, GTNRItemList.ModernCentrifugeHV, GTNRItemList.ModernCentrifugeEV,
         GTNRItemList.ModernCentrifugeIV, GTNRItemList.ModernCentrifugeLuV, GTNRItemList.ModernCentrifugeZPM,
         GTNRItemList.ModernCentrifugeUV };
-
-    // endregion
 
     private ItemStack stack;
 
