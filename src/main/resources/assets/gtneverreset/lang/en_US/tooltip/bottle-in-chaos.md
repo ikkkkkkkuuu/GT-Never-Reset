@@ -1,0 +1,8 @@
+- Select any preset directly in a processing group hatch; no credential is required.
+- Runs the selected chains internally, accounting for the actual source machines, structure modules and power supply.
+- Each group has its own intermediate-material cache. The two positions below its hatch are dedicated inputs.
+- The GUI provides runtime, processing group, recipe pool and module pages, with a structure packaging workbench.
+- Package a controller and its complete structure materials into a module. Unpacking returns the paid materials.
+- Insert processing patterns on the hatch's AE page to define a custom chain. Remove them all to restore presets.
+- AE patterns must match real recipes. Structure modules, power costs and output capacity are still checked.
+- The packaging workbench can read structure materials from storage cells.

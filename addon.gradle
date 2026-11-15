@@ -22,6 +22,11 @@ dependencies { api project(':gtnrlib') }
 sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
 sourceSets.test.java.srcDir("src/qa/contracts")
 
+// The complete source tree exceeds Checkstyle's default 512 MB worker heap.
+tasks.withType(org.gradle.api.plugins.quality.Checkstyle).configureEach {
+    maxHeapSize = '1g'
+}
+
 // Copy task outputs directly: distribution JARs must not pass through RFG dependency transforms.
 tasks.register('collectLibraryArtifacts')
 tasks.named('assemble') { dependsOn 'collectLibraryArtifacts' }

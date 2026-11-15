@@ -1,0 +1,171 @@
+// Run with: gradlew.bat -I src/qa/resources/bottle-in-chaos-qa.init.gradle :runClient17 --no-configuration-cache
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    def preview = root.providers.gradleProperty('chaosPreview').getOrElse('false').toBoolean()
+    def enabled = root.providers.gradleProperty('chaosEnabled').getOrElse('true').toBoolean()
+    def referenceJar = root.providers.gradleProperty('chaosReferenceJar').getOrNull()
+    // Full preset validation needs the normal GTNH recipe-script prerequisites.
+    def pack = root.extensions.getByName('elytraModpackVersion')
+    def qaDependencies = root.layout.buildDirectory.dir('bottle-in-chaos-qa/dependencies').get().asFile
+    qaDependencies.mkdirs()
+    def gravisuite = new File(qaDependencies, 'gravisuite-2.0.3.jar')
+    if (!gravisuite.isFile()) {
+        new URI('https://forum.industrial-craft.net/core/attachment/4519-gravisuite-1-7-10-2-0-3-jar').toURL().withInputStream { input ->
+            gravisuite.withOutputStream { output -> output << input }
+        }
+    }
+    root.dependencies.add('runtimeOnlyNonPublishable', root.dependencies.rfg.deobf(root.files(gravisuite)))
+
+    ['Minecraft-Backpack-Mod', 'Electro-Magic-Tools', 'EnderStorage',
+     'ForbiddenMagic', 'ForgeMultipart', 'Hardcore-Ender-Expansion', 'ironchest', 'Irontanks',
+     'MagicBees', 'OpenBlocks', 'harvestcraft', 'ProjectRed', 'Tainted-Magic', 'ThaumicBoots',
+     'ThaumicHorizons', 'ThaumicTinkerer', 'TinkersConstruct', 'twilightforest', 'WitchingGadgets',
+     'Universal-Singularities', 'MrTJPCore', 'ForgeRelocation',
+     'OpenModsLib', 'Mantle', 'Natura', 'RemoteIO', 'SGCraft', 'Avaritiaddons', 'WitcheryExtras', 'FloodLights', 'Gravitation-Suite-Neo', 'Thaumic_Exploration'].each { mod ->
+        root.dependencies.add('runtimeOnlyNonPublishable', pack.gtnhdev(mod) as String) { transitive = false }
+    }
+    root.dependencies.add('runtimeOnlyNonPublishable', root.dependencies.rfg.deobf('curse.maven:advsolar-362768:2885953'))
+    root.dependencies.add('runtimeOnlyNonPublishable', root.dependencies.rfg.deobf('curse.maven:witchery-69673:2234410'))
+    root.dependencies.add('runtimeOnlyNonPublishable', pack.gtnhdev('OpenComputers') as String)
+    root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
+    root.dependencies.add('runtimeOnlyNonPublishable', 'tuhljin.automagy:Automagy-GTNH:0.29.8-GTNH:dev') { transitive = false }
+    if (referenceJar != null) {
+        root.dependencies.add('testImplementation', root.files(referenceJar))
+        root.dependencies.add('runtimeOnlyNonPublishable', root.files(referenceJar))
+        ['supersolarpanels', 'ThaumicEnergistics', 'AspectRecipeIndex'].each { mod ->
+            root.dependencies.add('runtimeOnlyNonPublishable', pack.gtnhdev(mod) as String) { transitive = false }
+        }
+    }
+    def fixture = referenceJar != null ? 'BottleInChaosVisualChecks' : 'BottleInChaosChecks'
+    def directoryName = !enabled ? 'bottle-in-chaos-disabled' : referenceJar != null ? 'bottle-in-chaos-visual' : preview ? 'bottle-in-chaos-preview' : 'bottle-in-chaos-qa'
+    def marker = 'gtnr.bottle.chaos.qa'
+    def qaDirectory = root.layout.buildDirectory.dir(directoryName)
+
+    root.tasks.named('compileTestJava').configure {
+        options.release.set(17)
+        destinationDirectory.set(qaDirectory.map { it.dir('test-classes') })
+        setSource(root.files("src/qa/java/com/xyp/gtneverreset/qa/${fixture}.java"))
+    }
+    def snapshot = root.tasks.register('snapshotBottleInChaosQA', Sync) {
+        dependsOn root.tasks.named('testClasses')
+        from qaDirectory.map { it.dir('test-classes') }
+        include "**/${fixture}*.class"
+        into qaDirectory.map { it.dir('classes') }
+    }
+    root.tasks.named('runClient17').configure {
+        javaLauncher.set(root.javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) })
+        classpath += root.configurations.testRuntimeClasspath.filter { it.name.startsWith('jvmdowngrader-java-api-') }
+        dependsOn snapshot
+        classpath += root.files(qaDirectory.map { it.dir('classes') })
+        workingDir root.file("build/${directoryName}/run")
+        systemProperty marker, 'true'
+        systemProperty 'gtnr.bottle.chaos.preview', preview.toString()
+        systemProperty 'gtnr.bottle.chaos.expectDisabled', (!enabled).toString()
+        systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
+        systemProperty 'sun.net.client.defaultReadTimeout', '15000'
+        args '--width', '1100', '--height', '740'
+        notCompatibleWithConfigurationCache('isolated live-client verification')
+        doFirst {
+            def output = root.file("build/${directoryName}")
+            output.mkdirs()
+            // Avoid Gradle's manifest-only classpath shortcut: RFB must see each mod JAR for plugin discovery.
+            def shortClasspath = new File(root.projectDir.parentFile, 'chaos-qa-classpath-' + Integer.toUnsignedString((root.projectDir.absolutePath + directoryName).hashCode(), 36))
+            shortClasspath.mkdirs()
+            def shortened = classpath.files.collect { source ->
+                if (!source.isFile() || !source.name.endsWith('.jar')) return source
+                def target = new File(shortClasspath, Integer.toUnsignedString(source.absolutePath.hashCode(), 36) + '-' + source.name)
+                if (!target.exists() || target.length() != source.length() || target.lastModified() != source.lastModified()) {
+                    java.nio.file.Files.copy(source.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.StandardCopyOption.COPY_ATTRIBUTES)
+                }
+                return target
+            }
+            classpath = root.files(shortened)
+            workingDir.mkdirs()
+            def chaosConfig = new File(workingDir, 'config/GTNeverReset/machine.cfg')
+            chaosConfig.parentFile.mkdirs()
+            def chaosConfigText = chaosConfig.exists() ? chaosConfig.getText('UTF-8') : ''
+            if (!enabled) {
+                chaosConfigText = chaosConfigText.replaceAll('(?m)^\\s*B:enableBottleInChaos=(true|false)\\s*$', '')
+            } else if (chaosConfigText.contains('B:enableBottleInChaos=')) {
+                chaosConfigText = chaosConfigText.replaceAll('B:enableBottleInChaos=(true|false)', 'B:enableBottleInChaos=true')
+            } else if (chaosConfigText.contains('bottle_in_chaos {')) {
+                chaosConfigText = chaosConfigText.replace('bottle_in_chaos {', 'bottle_in_chaos {\n    B:enableBottleInChaos=true')
+            } else {
+                chaosConfigText += '\nbottle_in_chaos {\n    B:enableBottleInChaos=true\n}\n'
+            }
+            chaosConfig.setText(chaosConfigText, 'UTF-8')
+            def singularityConfig = new File(workingDir, 'config/eternalsingularity.cfg')
+            singularityConfig.parentFile.mkdirs()
+            singularityConfig.setText('general {\n B:useCompoundSingularities=true\n}\n', 'UTF-8')
+            def txConfig = new File(workingDir, 'config/ThaumicExploration.cfg')
+            txConfig.parentFile.mkdirs()
+            txConfig.setText('enchantment {\n I:Binding=500\n I:Disarming=501\n I:"Night Vision"=502\n}\n', 'UTF-8')
+            def coreConfig = new File(workingDir, 'config/GTNewHorizons/dreamcraft.cfg')
+            coreConfig.parentFile.mkdirs()
+            coreConfig.setText(coreConfig.exists() ? coreConfig.getText('UTF-8').replace('B:CustomFuels=false', 'B:CustomFuels=true') : 'modules {\n B:CustomFuels=true\n}\n', 'UTF-8')
+
+
+            java.nio.file.Files.deleteIfExists(new File(workingDir, 'result.txt').toPath())
+            new File(workingDir, 'options.txt').setText(
+                'lang:zh_CN\nguiScale:2\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsoundCategory_music:0.0\nmusic:0.0\nsound:0.0\n',
+                'UTF-8')
+            if (!preview && System.getProperty('os.name').startsWith('Windows')) {
+                def helper = new File(output, 'HideBottleInChaosClient.ps1')
+                helper.setText('''param([Parameter(Mandatory = $true)][string]$Workspace)
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class BottleInChaosQaWindows {
+    public delegate bool Visitor(IntPtr window, IntPtr data);
+    [DllImport("user32.dll")] public static extern bool EnumWindows(Visitor visitor, IntPtr data);
+    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
+    [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr window, int index);
+    [DllImport("user32.dll")] public static extern int SetWindowLong(IntPtr window, int index, int value);
+    [DllImport("user32.dll")] public static extern bool SetLayeredWindowAttributes(IntPtr window, uint color, byte alpha, uint flags);
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr window, int command);
+}
+'@
+$deadline = [DateTime]::UtcNow.AddMinutes(10)
+$seenClient = $false
+$changed = [Collections.Generic.HashSet[long]]::new()
+while ([DateTime]::UtcNow -lt $deadline) {
+    $clients = @(Get-CimInstance Win32_Process -Filter "Name = 'java.exe' OR Name = 'javaw.exe'" |
+        Where-Object { $_.CommandLine -and $_.CommandLine.Contains('-D__QA_MARKER__=true') -and $_.CommandLine.Contains($Workspace) -and !$_.CommandLine.Contains('-Dgtnr.bottle.chaos.preview=true') })
+    if ($clients.Count -eq 0 -and $seenClient) { break }
+    if ($clients.Count -gt 0) { $seenClient = $true }
+    $clientIds = @($clients | ForEach-Object { [uint32]$_.ProcessId })
+    [BottleInChaosQaWindows]::EnumWindows({
+        param($window, $data)
+        [uint32]$ownerId = 0
+        [void][BottleInChaosQaWindows]::GetWindowThreadProcessId($window, [ref]$ownerId)
+        if ($clientIds -contains $ownerId -and $changed.Add($window.ToInt64())) {
+            [void][BottleInChaosQaWindows]::ShowWindow($window, 0)
+            $style = [BottleInChaosQaWindows]::GetWindowLong($window, -20)
+            $style = ($style -band (-bnot 0x40000)) -bor 0x80800A0
+            [void][BottleInChaosQaWindows]::SetWindowLong($window, -20, $style)
+            [void][BottleInChaosQaWindows]::SetLayeredWindowAttributes($window, 0, 0, 2)
+            [void][BottleInChaosQaWindows]::ShowWindow($window, 4)
+            [Console]::WriteLine("Hidden QA window for process " + $ownerId)
+        }
+        return $true
+    }, [IntPtr]::Zero) | Out-Null
+    Start-Sleep -Milliseconds 30
+}
+'''.replace('__QA_MARKER__', marker), 'UTF-8')
+                new ProcessBuilder('powershell.exe', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
+                    '-ExecutionPolicy', 'Bypass', '-File', helper.absolutePath,
+                    '-Workspace', root.projectDir.absolutePath)
+                    .redirectErrorStream(true)
+                    .redirectOutput(new File(output, 'window-helper.log'))
+                    .start()
+            }
+        }
+        doLast {
+            def result = root.file("build/${directoryName}/run/result.txt")
+            if (!preview && (!result.exists() || result.text.trim() != 'PASS')) {
+                throw new GradleException("${fixture} failed. See the isolated client log and result.txt.")
+            }
+        }
+    }
+}

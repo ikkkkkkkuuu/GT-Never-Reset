@@ -17,6 +17,8 @@ import net.minecraft.item.crafting.ShapelessRecipes;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 
+import com.xyp.gtneverreset.config.ChaosConfig;
+import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.loader.ItemLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
@@ -36,7 +38,42 @@ import thaumcraft.common.config.ConfigBlocks;
 
 public final class CraftingTableRecipes {
 
+    private static void registerChaosMultiUseCores() {
+        registerChaosMultiUseCore(
+            5,
+            new ItemStack[] { ItemList.Machine_IV_Compressor.get(1), ItemList.Machine_IV_Lathe.get(1),
+                ItemList.Machine_IV_Polarizer.get(1), ItemList.Machine_IV_Fermenter.get(1),
+                ItemList.Machine_IV_FluidExtractor.get(1), ItemList.Machine_IV_Extractor.get(1),
+                ItemList.Machine_IV_LaserEngraver.get(1), ItemList.Machine_IV_Autoclave.get(1),
+                ItemList.Machine_IV_FluidSolidifier.get(1) });
+        registerChaosMultiUseCore(
+            6,
+            new ItemStack[] { ItemList.CompressorLuV.get(1), ItemList.LatheLuV.get(1), ItemList.PolarizerLuV.get(1),
+                ItemList.FermenterLuV.get(1), ItemList.FluidExtractorLuV.get(1), ItemList.ExtractorLuV.get(1),
+                ItemList.PrecisionLaserEngraverLuV.get(1), ItemList.AutoclaveLuV.get(1),
+                ItemList.FluidSolidifierLuV.get(1) });
+        registerChaosMultiUseCore(
+            7,
+            new ItemStack[] { ItemList.CompressorZPM.get(1), ItemList.LatheZPM.get(1), ItemList.PolarizerZPM.get(1),
+                ItemList.FermenterZPM.get(1), ItemList.FluidExtractorZPM.get(1), ItemList.ExtractorZPM.get(1),
+                ItemList.PrecisionLaserEngraverZPM.get(1), ItemList.AutoclaveZPM.get(1),
+                ItemList.FluidSolidifierZPM.get(1) });
+        registerChaosMultiUseCore(
+            8,
+            new ItemStack[] { ItemList.CompressorUV.get(1), ItemList.LatheUV.get(1), ItemList.PolarizerUV.get(1),
+                ItemList.FermenterUV.get(1), ItemList.FluidExtractorUV.get(1), ItemList.ExtractorUV.get(1),
+                ItemList.PrecisionLaserEngraverUV.get(1), ItemList.AutoclaveUV.get(1),
+                ItemList.FluidSolidifierUV.get(1) });
+    }
+
+    private static void registerChaosMultiUseCore(int tier, ItemStack[] machines) {
+        GTModHandler
+            .addShapelessCraftingRecipe(new ItemStack(BlockLoader.chaosMultiUseCore, 1, tier), (Object[]) machines);
+        BlockLoader.chaosMultiUseCore.setBreakDrops(tier, machines);
+    }
+
     public static void register() {
+        if (ChaosConfig.enableBottleInChaos) registerChaosMultiUseCores();
         GTModHandler.addCraftingRecipe(
             CustomItemList.hatch_CreativeMaintenance.get(1),
             GTModHandler.RecipeBits.MIRRORED | GTModHandler.RecipeBits.KEEPNBT

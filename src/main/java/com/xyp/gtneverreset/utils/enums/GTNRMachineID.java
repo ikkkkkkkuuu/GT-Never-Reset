@@ -12,7 +12,8 @@ public enum GTNRMachineID {
     LargeBeeBreeder(29405),
     LargeCropBreeder(29406),
     UniversalJointFactory(29407),
-    // 预留：29408–29499（92 个）。
+    BottleInChaos(29408),
+    // 预留：29409–29499（91 个）。
     // endregion
 
     // region 舱室
@@ -87,7 +88,8 @@ public enum GTNRMachineID {
     ThreadControllerT6(29561),
     ThreadControllerT7(29562),
     ThreadControllerT8(29563),
-    // 预留：29564–29599（36 个）。
+    ChaosCredentialHatch(29564),
+    // 预留：29565–29599（35 个）。
     // endregion
 
     // region 单方块机器

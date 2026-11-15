@@ -3,6 +3,7 @@ package com.xyp.gtneverreset.loader.machine;
 import net.minecraft.util.StatCollector;
 
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
+import com.xyp.gtneverreset.common.machine.hatch.ChaosCredentialHatch;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternMirror;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
@@ -17,6 +18,7 @@ import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputHatch;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputSlave;
 import com.xyp.gtneverreset.common.machine.hatch.VaultPortHatch;
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
@@ -25,63 +27,71 @@ import com.xyp.gtneverreset.utils.text.AnimatedText;
 public final class HatchLoader {
 
     public static void registry() {
-        // #tr gtnr.hatch.me_data_access.name
-        // # Data Access Hatch (ME, IV)
-        // # zh_CN 数据访问仓 (ME, IV)
+        if (ChaosConfig.enableBottleInChaos) {
+            GTNRItemList.ChaosCredentialHatch.set(
+                new ChaosCredentialHatch(
+                    GTNRMachineID.ChaosCredentialHatch.id,
+                    "gtneverreset.chaos_credential_hatch",
+                    StatCollector.translateToLocal(ChaosCredentialHatch.NAME_KEY),
+                    8));
+        }
         GTNRItemList.MEDataAccessHatch.set(
             new MEDataAccessHatch(
                 GTNRMachineID.MEDataAccessHatch.id,
                 "gtneverreset.me_data_access",
+                // #tr gtnr.hatch.me_data_access.name
+                // # Data Access Hatch (ME, IV)
+                // # zh_CN 数据访问仓 (ME, IV)
                 StatCollector.translateToLocal("gtnr.hatch.me_data_access.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.MEDataAccessHatch.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.hatch.super_advanced_me_input_hatch.name
-        // # Super Advanced Stocking Input Hatch (ME)
-        // # zh_CN 超级 ME 输入仓
         GTNRItemList.SuperAdvancedMEInputHatch.set(
             new SuperAdvancedMEInputHatch(
                 GTNRMachineID.SuperAdvancedMEInputHatch.id,
                 "gtneverreset.super_advanced_me_input_hatch",
+                // #tr gtnr.hatch.super_advanced_me_input_hatch.name
+                // # Super Advanced Stocking Input Hatch (ME)
+                // # zh_CN 超级 ME 输入仓
                 StatCollector.translateToLocal("gtnr.hatch.super_advanced_me_input_hatch.name")));
         AnimatedTooltipHandler
             .addItemTooltip(GTNRItemList.SuperAdvancedMEInputHatch.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.hatch.super_advanced_me_input_bus.name
-        // # Super Advanced Stocking Input Bus (ME)
-        // # zh_CN 超级 ME 输入总线
         GTNRItemList.SuperAdvancedMEInputBus.set(
             new SuperAdvancedMEInputBus(
                 GTNRMachineID.SuperAdvancedMEInputBus.id,
                 "gtneverreset.super_advanced_me_input_bus",
+                // #tr gtnr.hatch.super_advanced_me_input_bus.name
+                // # Super Advanced Stocking Input Bus (ME)
+                // # zh_CN 超级 ME 输入总线
                 StatCollector.translateToLocal("gtnr.hatch.super_advanced_me_input_bus.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.SuperAdvancedMEInputBus.get(1), AnimatedText.GT_NEVER_RESET);
 
-        // #tr gtnr.hatch.max_capacity_me_output_bus.name
-        // # Max Capacity ME Output Bus
-        // # zh_CN 最大容量 ME 输出总线
         GTNRItemList.MaxCapacityMEOutputBus.set(
             new MaxCapacityMEOutputBus(
                 GTNRMachineID.MaxCapacityMEOutputBus.id,
                 "gtneverreset.max_capacity_me_output_bus",
+                // #tr gtnr.hatch.max_capacity_me_output_bus.name
+                // # Max Capacity ME Output Bus
+                // # zh_CN 最大容量 ME 输出总线
                 StatCollector.translateToLocal("gtnr.hatch.max_capacity_me_output_bus.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.MaxCapacityMEOutputBus.get(1), AnimatedText.GT_NEVER_RESET);
 
-        // #tr gtnr.hatch.max_capacity_me_output_hatch.name
-        // # Max Capacity ME Output Hatch
-        // # zh_CN 最大容量 ME 输出仓
         GTNRItemList.MaxCapacityMEOutputHatch.set(
             new MaxCapacityMEOutputHatch(
                 GTNRMachineID.MaxCapacityMEOutputHatch.id,
                 "gtneverreset.max_capacity_me_output_hatch",
+                // #tr gtnr.hatch.max_capacity_me_output_hatch.name
+                // # Max Capacity ME Output Hatch
+                // # zh_CN 最大容量 ME 输出仓
                 StatCollector.translateToLocal("gtnr.hatch.max_capacity_me_output_hatch.name")));
         AnimatedTooltipHandler
             .addItemTooltip(GTNRItemList.MaxCapacityMEOutputHatch.get(1), AnimatedText.GT_NEVER_RESET);
 
-        // #tr gtnr.hatch.me_output_assembly.name
-        // # ME Output Assembly
-        // # zh_CN ME 输出总成
         GTNRItemList.MEOutputAssembly.set(
             new MEOutputAssembly(
                 GTNRMachineID.MEOutputAssembly.id,
                 "gtneverreset.me_output_assembly",
+                // #tr gtnr.hatch.me_output_assembly.name
+                // # ME Output Assembly
+                // # zh_CN ME 输出总成
                 StatCollector.translateToLocal("gtnr.hatch.me_output_assembly.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.MEOutputAssembly.get(1), AnimatedText.GT_NEVER_RESET);
 
@@ -443,77 +453,77 @@ public final class HatchLoader {
                 3,
                 false));
 
-        // #tr gtnr.hatch.super_pattern.name
-        // # Super Pattern Input Assembly (ME)
-        // # zh_CN 超级样板输入总成 (ME)
         GTNRItemList.SuperMTEHatchCraftingInputME.set(
             new SuperMTEHatchCraftingInputME(
                 GTNRMachineID.SuperCraftingInputME.id,
                 "gtneverreset.super_pattern_input",
+                // #tr gtnr.hatch.super_pattern.name
+                // # Super Pattern Input Assembly (ME)
+                // # zh_CN 超级样板输入总成 (ME)
                 StatCollector.translateToLocal("gtnr.hatch.super_pattern.name"),
                 true));
         AnimatedTooltipHandler
             .addItemTooltip(GTNRItemList.SuperMTEHatchCraftingInputME.get(1), AnimatedText.GT_NEVER_RESET);
-        // #tr gtnr.hatch.circuit_pattern.name
-        // # Circuit Pattern Input Buffer (ME)
-        // # zh_CN 电路样板输入总成 (ME)
         GTNRItemList.CircuitMEPatternBuffer.set(
             new CircuitMEPatternBuffer(
                 GTNRMachineID.CircuitMEPatternBuffer.id,
                 "gtneverreset.circuit_pattern_buffer",
+                // #tr gtnr.hatch.circuit_pattern.name
+                // # Circuit Pattern Input Buffer (ME)
+                // # zh_CN 电路样板输入总成 (ME)
                 StatCollector.translateToLocal("gtnr.hatch.circuit_pattern.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.CircuitMEPatternBuffer.get(1), AnimatedText.GT_NEVER_RESET);
 
-        // #tr gtnr.hatch.cross_recipe_pattern.name
-        // # Super Cross-Recipe Pattern Input Buffer (ME)
-        // # zh_CN 超级跨配方类型样板输入总成 (ME)
         GTNRItemList.CrossRecipeMEPatternBuffer.set(
             new CrossRecipeMEPatternBuffer(
                 GTNRMachineID.CrossRecipeMEPatternBuffer.id,
                 "gtneverreset.cross_recipe_pattern_buffer",
+                // #tr gtnr.hatch.cross_recipe_pattern.name
+                // # Super Cross-Recipe Pattern Input Buffer (ME)
+                // # zh_CN 超级跨配方类型样板输入总成 (ME)
                 StatCollector.translateToLocal("gtnr.hatch.cross_recipe_pattern.name")));
         AnimatedTooltipHandler
             .addItemTooltip(GTNRItemList.CrossRecipeMEPatternBuffer.get(1), AnimatedText.GT_NEVER_RESET);
 
-        // #tr gtnr.hatch.super_mirror.name
-        // # Super Pattern Input Mirror (ME)
-        // # zh_CN 超级样板输入镜像 (ME)
         GTNRItemList.SuperMTEHatchCraftingInputSlave.set(
             new SuperMTEHatchCraftingInputSlave(
                 GTNRMachineID.SuperCraftingInputSlave.id,
                 "gtneverreset.super_pattern_mirror",
+                // #tr gtnr.hatch.super_mirror.name
+                // # Super Pattern Input Mirror (ME)
+                // # zh_CN 超级样板输入镜像 (ME)
                 StatCollector.translateToLocal("gtnr.hatch.super_mirror.name")));
         AnimatedTooltipHandler
             .addItemTooltip(GTNRItemList.SuperMTEHatchCraftingInputSlave.get(1), AnimatedText.GT_NEVER_RESET);
 
-        // #tr gtnr.hatch.circuit_mirror.name
-        // # Circuit Pattern Input Mirror (ME)
-        // # zh_CN 电路样板输入镜像 (ME)
         GTNRItemList.CircuitMEPatternMirror.set(
             new CircuitMEPatternMirror(
                 GTNRMachineID.CircuitMEPatternMirror.id,
                 "gtneverreset.circuit_pattern_mirror",
+                // #tr gtnr.hatch.circuit_mirror.name
+                // # Circuit Pattern Input Mirror (ME)
+                // # zh_CN 电路样板输入镜像 (ME)
                 StatCollector.translateToLocal("gtnr.hatch.circuit_mirror.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.CircuitMEPatternMirror.get(1), AnimatedText.GT_NEVER_RESET);
 
-        // #tr gtnr.hatch.cross_recipe_mirror.name
-        // # Super Cross-Recipe Pattern Input Mirror (ME)
-        // # zh_CN 超级跨配方类型样板输入镜像 (ME)
         GTNRItemList.CrossRecipeMEPatternMirror.set(
             new CrossRecipeMEPatternMirror(
                 GTNRMachineID.CrossRecipeMEPatternMirror.id,
                 "gtneverreset.cross_recipe_pattern_mirror",
+                // #tr gtnr.hatch.cross_recipe_mirror.name
+                // # Super Cross-Recipe Pattern Input Mirror (ME)
+                // # zh_CN 超级跨配方类型样板输入镜像 (ME)
                 StatCollector.translateToLocal("gtnr.hatch.cross_recipe_mirror.name")));
         AnimatedTooltipHandler
             .addItemTooltip(GTNRItemList.CrossRecipeMEPatternMirror.get(1), AnimatedText.GT_NEVER_RESET);
 
-        // #tr gtnr.hatch.vault_port.name
-        // # Vault Port Hatch
-        // # zh_CN 保险库接口
         GTNRItemList.VaultPortHatch.set(
             new VaultPortHatch(
                 GTNRMachineID.VaultPortHatch.id,
                 "gtneverreset.vault_port",
+                // #tr gtnr.hatch.vault_port.name
+                // # Vault Port Hatch
+                // # zh_CN 保险库接口
                 StatCollector.translateToLocal("gtnr.hatch.vault_port.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.VaultPortHatch.get(1), AnimatedText.GT_NEVER_RESET);
     }

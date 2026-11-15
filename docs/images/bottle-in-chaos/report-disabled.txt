@@ -1,0 +1,12 @@
+PASS feature defaults to disabled without a config value
+PASS disabled controller is not registered
+PASS disabled processing hatch is not registered
+PASS disabled structure module is not registered
+PASS disabled capacity block is not registered
+PASS disabled credential item is absent
+PASS disabled capacity block instance is absent
+PASS disabled controller has no meta tile registration
+PASS disabled processing hatch has no meta tile registration
+PASS disabled dedicated recipe maps are absent
+PASS unrelated machines remain registered
+PASS unrelated assembler recipes remain registered

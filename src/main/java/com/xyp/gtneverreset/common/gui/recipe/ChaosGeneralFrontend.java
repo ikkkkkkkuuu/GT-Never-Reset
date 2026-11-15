@@ -1,0 +1,67 @@
+package com.xyp.gtneverreset.common.gui.recipe;
+
+import java.util.List;
+
+import org.jetbrains.annotations.NotNull;
+
+import com.gtnewhorizons.modularui.api.math.Pos2d;
+import com.gtnewhorizons.modularui.api.math.Size;
+
+import gregtech.api.recipe.BasicUIPropertiesBuilder;
+import gregtech.api.recipe.NEIRecipePropertiesBuilder;
+import gregtech.common.gui.modularui.UIHelper;
+
+public class ChaosGeneralFrontend extends ChaosRecipeFrontend {
+
+    private static final int xDirMaxCount = 4;
+    private static final int yOrigin = 8;
+    private final int itemRowCount;
+
+    public ChaosGeneralFrontend(BasicUIPropertiesBuilder uiPropertiesBuilder,
+        NEIRecipePropertiesBuilder neiPropertiesBuilder) {
+        this(uiPropertiesBuilder, neiPropertiesBuilder, new Pos2d(79, 7));
+    }
+
+    protected ChaosGeneralFrontend(BasicUIPropertiesBuilder uiPropertiesBuilder,
+        NEIRecipePropertiesBuilder neiPropertiesBuilder, Pos2d logoPos) {
+        super(uiPropertiesBuilder.logoPos(logoPos), neiPropertiesBuilder);
+        this.itemRowCount = getItemRowCount();
+        // neiProperties.recipeBackgroundSize = new Size(170, 10 + (itemRowCount + getFluidRowCount()) * 18);
+    }
+
+    @Override
+    protected @NotNull NEIRecipePropertiesBuilder modifyNEIProperties(NEIRecipePropertiesBuilder neiPropertiesBuilder) {
+        int itemRowCount = getItemRowCount();
+        int fluidRowCount = getFluidRowCount();
+        return neiPropertiesBuilder.recipeBackgroundSize(new Size(170, 10 + (itemRowCount + getFluidRowCount()) * 18));
+    }
+
+    private int getItemRowCount() {
+        return (Math.max(uiProperties.maxItemInputs, uiProperties.maxItemOutputs) - 1) / xDirMaxCount + 1;
+    }
+
+    private int getFluidRowCount() {
+        return (Math.max(uiProperties.maxFluidInputs, uiProperties.maxFluidOutputs) - 1) / xDirMaxCount + 1;
+    }
+
+    @Override
+    public @NotNull List<Pos2d> getItemInputPositions(int itemInputCount) {
+        return UIHelper.getGridPositions(itemInputCount, 6, yOrigin, xDirMaxCount);
+    }
+
+    @Override
+    public @NotNull List<Pos2d> getItemOutputPositions(int itemOutputCount) {
+        return UIHelper.getGridPositions(itemOutputCount, 98, yOrigin, xDirMaxCount);
+    }
+
+    @Override
+    public @NotNull List<Pos2d> getFluidInputPositions(int fluidInputCount) {
+        return UIHelper.getGridPositions(fluidInputCount, 6, yOrigin + itemRowCount * 18, xDirMaxCount);
+    }
+
+    @Override
+    public @NotNull List<Pos2d> getFluidOutputPositions(int fluidOutputCount) {
+        return UIHelper.getGridPositions(fluidOutputCount, 98, yOrigin + itemRowCount * 18, xDirMaxCount);
+    }
+
+}

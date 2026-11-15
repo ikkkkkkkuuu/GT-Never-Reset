@@ -17,7 +17,7 @@ public final class MultiblockStructureLoader {
 
     /** Returns an independent array so callers can transpose or modify it without changing the cache. */
     public static String[][] load(String name) {
-        if (name == null || !name.matches("[a-z0-9_]+"))
+        if (name == null || !name.matches("[a-z0-9_]+(?:/[a-z0-9_]+)*"))
             throw new IllegalArgumentException("Invalid multiblock resource name: " + name);
         String[][] stored = STRUCTURES.computeIfAbsent(name, MultiblockStructureLoader::readResource);
         String[][] copy = new String[stored.length][];

@@ -1,0 +1,608 @@
+[
+    {
+        "State":  "runtime",
+        "Region":  "main-window-raw",
+        "ComparedPixels":  600320,
+        "DifferentPixels":  3757,
+        "DifferenceBounds":  [
+                                 130,
+                                 58,
+                                 947,
+                                 670
+                             ]
+    },
+    {
+        "State":  "runtime",
+        "Region":  "operation-tab",
+        "ComparedPixels":  5120,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime",
+        "Region":  "pool-module-tabs",
+        "ComparedPixels":  10240,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime",
+        "Region":  "inventory-and-machine-controls",
+        "ComparedPixels":  72944,
+        "DifferentPixels":  196,
+        "DifferenceBounds":  [
+                                 257,
+                                 641,
+                                 285,
+                                 670
+                             ]
+    },
+    {
+        "State":  "runtime",
+        "Region":  "inventory-static-left",
+        "ComparedPixels":  20952,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime",
+        "Region":  "inventory-static-right",
+        "ComparedPixels":  45008,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime",
+        "Region":  "inventory-static-upper-center",
+        "ComparedPixels":  5688,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime",
+        "Region":  "packaging-slots-and-labels",
+        "ComparedPixels":  32536,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime",
+        "Region":  "terminal-content-raw",
+        "ComparedPixels":  302152,
+        "DifferentPixels":  765,
+        "DifferenceBounds":  [
+                                 130,
+                                 148,
+                                 293,
+                                 163
+                             ]
+    },
+    {
+        "State":  "runtime-scrolled",
+        "Region":  "main-window-raw",
+        "ComparedPixels":  600320,
+        "DifferentPixels":  2998,
+        "DifferenceBounds":  [
+                                 257,
+                                 58,
+                                 791,
+                                 670
+                             ]
+    },
+    {
+        "State":  "runtime-scrolled",
+        "Region":  "operation-tab",
+        "ComparedPixels":  5120,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime-scrolled",
+        "Region":  "pool-module-tabs",
+        "ComparedPixels":  10240,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime-scrolled",
+        "Region":  "inventory-and-machine-controls",
+        "ComparedPixels":  72944,
+        "DifferentPixels":  202,
+        "DifferenceBounds":  [
+                                 257,
+                                 641,
+                                 285,
+                                 670
+                             ]
+    },
+    {
+        "State":  "runtime-scrolled",
+        "Region":  "inventory-static-left",
+        "ComparedPixels":  20952,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime-scrolled",
+        "Region":  "inventory-static-right",
+        "ComparedPixels":  45008,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime-scrolled",
+        "Region":  "inventory-static-upper-center",
+        "ComparedPixels":  5688,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime-scrolled",
+        "Region":  "packaging-slots-and-labels",
+        "ComparedPixels":  32536,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "runtime-scrolled",
+        "Region":  "terminal-content-raw",
+        "ComparedPixels":  302152,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "groups",
+        "Region":  "main-window-raw",
+        "ComparedPixels":  600320,
+        "DifferentPixels":  3590,
+        "DifferenceBounds":  [
+                                 132,
+                                 58,
+                                 855,
+                                 670
+                             ]
+    },
+    {
+        "State":  "groups",
+        "Region":  "operation-tab",
+        "ComparedPixels":  5120,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "groups",
+        "Region":  "pool-module-tabs",
+        "ComparedPixels":  10240,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "groups",
+        "Region":  "inventory-and-machine-controls",
+        "ComparedPixels":  72944,
+        "DifferentPixels":  198,
+        "DifferenceBounds":  [
+                                 257,
+                                 641,
+                                 285,
+                                 670
+                             ]
+    },
+    {
+        "State":  "groups",
+        "Region":  "inventory-static-left",
+        "ComparedPixels":  20952,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "groups",
+        "Region":  "inventory-static-right",
+        "ComparedPixels":  45008,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "groups",
+        "Region":  "inventory-static-upper-center",
+        "ComparedPixels":  5688,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "groups",
+        "Region":  "packaging-slots-and-labels",
+        "ComparedPixels":  32536,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "groups",
+        "Region":  "terminal-content-raw",
+        "ComparedPixels":  302152,
+        "DifferentPixels":  596,
+        "DifferenceBounds":  [
+                                 132,
+                                 338,
+                                 526,
+                                 355
+                             ]
+    },
+    {
+        "State":  "pools",
+        "Region":  "main-window-raw",
+        "ComparedPixels":  600320,
+        "DifferentPixels":  2995,
+        "DifferenceBounds":  [
+                                 118,
+                                 58,
+                                 981,
+                                 670
+                             ]
+    },
+    {
+        "State":  "pools",
+        "Region":  "operation-tab",
+        "ComparedPixels":  5120,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools",
+        "Region":  "pool-module-tabs",
+        "ComparedPixels":  10240,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools",
+        "Region":  "inventory-and-machine-controls",
+        "ComparedPixels":  72944,
+        "DifferentPixels":  199,
+        "DifferenceBounds":  [
+                                 257,
+                                 641,
+                                 285,
+                                 670
+                             ]
+    },
+    {
+        "State":  "pools",
+        "Region":  "inventory-static-left",
+        "ComparedPixels":  20952,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools",
+        "Region":  "inventory-static-right",
+        "ComparedPixels":  45008,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools",
+        "Region":  "inventory-static-upper-center",
+        "ComparedPixels":  5688,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools",
+        "Region":  "packaging-slots-and-labels",
+        "ComparedPixels":  32536,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools",
+        "Region":  "terminal-content-raw",
+        "ComparedPixels":  302152,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools-installed",
+        "Region":  "main-window-raw",
+        "ComparedPixels":  600320,
+        "DifferentPixels":  2999,
+        "DifferenceBounds":  [
+                                 118,
+                                 58,
+                                 981,
+                                 670
+                             ]
+    },
+    {
+        "State":  "pools-installed",
+        "Region":  "operation-tab",
+        "ComparedPixels":  5120,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools-installed",
+        "Region":  "pool-module-tabs",
+        "ComparedPixels":  10240,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools-installed",
+        "Region":  "inventory-and-machine-controls",
+        "ComparedPixels":  72944,
+        "DifferentPixels":  203,
+        "DifferenceBounds":  [
+                                 257,
+                                 641,
+                                 285,
+                                 670
+                             ]
+    },
+    {
+        "State":  "pools-installed",
+        "Region":  "inventory-static-left",
+        "ComparedPixels":  20952,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools-installed",
+        "Region":  "inventory-static-right",
+        "ComparedPixels":  45008,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools-installed",
+        "Region":  "inventory-static-upper-center",
+        "ComparedPixels":  5688,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools-installed",
+        "Region":  "packaging-slots-and-labels",
+        "ComparedPixels":  32536,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "pools-installed",
+        "Region":  "terminal-content-raw",
+        "ComparedPixels":  302152,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules",
+        "Region":  "main-window-raw",
+        "ComparedPixels":  600320,
+        "DifferentPixels":  2991,
+        "DifferenceBounds":  [
+                                 118,
+                                 58,
+                                 981,
+                                 670
+                             ]
+    },
+    {
+        "State":  "modules",
+        "Region":  "operation-tab",
+        "ComparedPixels":  5120,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules",
+        "Region":  "pool-module-tabs",
+        "ComparedPixels":  10240,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules",
+        "Region":  "inventory-and-machine-controls",
+        "ComparedPixels":  72944,
+        "DifferentPixels":  203,
+        "DifferenceBounds":  [
+                                 257,
+                                 641,
+                                 285,
+                                 670
+                             ]
+    },
+    {
+        "State":  "modules",
+        "Region":  "inventory-static-left",
+        "ComparedPixels":  20952,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules",
+        "Region":  "inventory-static-right",
+        "ComparedPixels":  45008,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules",
+        "Region":  "inventory-static-upper-center",
+        "ComparedPixels":  5688,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules",
+        "Region":  "packaging-slots-and-labels",
+        "ComparedPixels":  32536,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules",
+        "Region":  "terminal-content-raw",
+        "ComparedPixels":  302152,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules-scrolled",
+        "Region":  "main-window-raw",
+        "ComparedPixels":  600320,
+        "DifferentPixels":  2997,
+        "DifferenceBounds":  [
+                                 118,
+                                 58,
+                                 981,
+                                 670
+                             ]
+    },
+    {
+        "State":  "modules-scrolled",
+        "Region":  "operation-tab",
+        "ComparedPixels":  5120,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules-scrolled",
+        "Region":  "pool-module-tabs",
+        "ComparedPixels":  10240,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules-scrolled",
+        "Region":  "inventory-and-machine-controls",
+        "ComparedPixels":  72944,
+        "DifferentPixels":  201,
+        "DifferenceBounds":  [
+                                 257,
+                                 641,
+                                 285,
+                                 670
+                             ]
+    },
+    {
+        "State":  "modules-scrolled",
+        "Region":  "inventory-static-left",
+        "ComparedPixels":  20952,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules-scrolled",
+        "Region":  "inventory-static-right",
+        "ComparedPixels":  45008,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules-scrolled",
+        "Region":  "inventory-static-upper-center",
+        "ComparedPixels":  5688,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules-scrolled",
+        "Region":  "packaging-slots-and-labels",
+        "ComparedPixels":  32536,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "modules-scrolled",
+        "Region":  "terminal-content-raw",
+        "ComparedPixels":  302152,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "cache-limit",
+        "Region":  "main-window-raw",
+        "ComparedPixels":  600320,
+        "DifferentPixels":  3220,
+        "DifferenceBounds":  [
+                                 118,
+                                 58,
+                                 981,
+                                 670
+                             ]
+    },
+    {
+        "State":  "cache-limit",
+        "Region":  "operation-tab",
+        "ComparedPixels":  5120,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "cache-limit",
+        "Region":  "pool-module-tabs",
+        "ComparedPixels":  10240,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "cache-limit",
+        "Region":  "inventory-and-machine-controls",
+        "ComparedPixels":  72944,
+        "DifferentPixels":  201,
+        "DifferenceBounds":  [
+                                 257,
+                                 641,
+                                 285,
+                                 670
+                             ]
+    },
+    {
+        "State":  "cache-limit",
+        "Region":  "inventory-static-left",
+        "ComparedPixels":  20952,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "cache-limit",
+        "Region":  "inventory-static-right",
+        "ComparedPixels":  45008,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "cache-limit",
+        "Region":  "inventory-static-upper-center",
+        "ComparedPixels":  5688,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "cache-limit",
+        "Region":  "packaging-slots-and-labels",
+        "ComparedPixels":  32536,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    },
+    {
+        "State":  "cache-limit",
+        "Region":  "terminal-content-raw",
+        "ComparedPixels":  302152,
+        "DifferentPixels":  223,
+        "DifferenceBounds":  [
+                                 132,
+                                 338,
+                                 182,
+                                 353
+                             ]
+    },
+    {
+        "State":  "cache-limit",
+        "Region":  "cache-popup",
+        "ComparedPixels":  51168,
+        "DifferentPixels":  0,
+        "DifferenceBounds":  null
+    }
+]

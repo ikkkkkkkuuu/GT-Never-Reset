@@ -3,6 +3,7 @@ package com.xyp.gtneverreset.common.recipe.gregtech;
 import static gregtech.api.enums.GTValues.VP;
 import static gregtech.api.enums.TierEU.RECIPE_LV;
 import static gregtech.api.recipe.RecipeMaps.assemblerRecipes;
+import static gregtech.api.util.GTModHandler.getModItem;
 import static gregtech.api.util.GTRecipeBuilder.SECONDS;
 
 import net.minecraft.init.Blocks;
@@ -13,6 +14,8 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.gtnewhorizon.cropsnh.api.CropsNHItemList;
 import com.gtnewhorizon.cropsnh.init.CropsNHFluids;
+import com.xyp.gtneverreset.config.ChaosConfig;
+import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtnrlib.mod.ModList;
@@ -21,6 +24,7 @@ import cpw.mods.fml.common.Optional;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
+import gregtech.api.enums.Mods;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.api.enums.TierEU;
 import gregtech.api.enums.VoltageIndex;
@@ -28,6 +32,7 @@ import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTRecipeBuilder;
 import gregtech.api.util.GTUtility;
+import gtPlusPlus.core.material.MaterialsAlloy;
 
 public final class AssemblerRecipes {
 
@@ -35,6 +40,11 @@ public final class AssemblerRecipes {
     private static final int MODULE_CIRCUIT = 19;
 
     public static void register() {
+        if (ChaosConfig.enableBottleInChaos) {
+            registerChaosPhotonUpgrades();
+            registerChaosCasings();
+            registerBottleInChaosRecipes();
+        }
         GTRecipeBuilder.builder()
             .itemInputs(
                 GTOreDictUnificator.get(OrePrefixes.wireFine, Materials.Copper, 32),
@@ -385,6 +395,64 @@ public final class AssemblerRecipes {
         }
     }
 
+    private static void registerBottleInChaosRecipes() {
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Titanium, 1),
+                new Object[] { OrePrefixes.circuit.get(Materials.EV), 2 },
+                ItemList.Emitter_EV.get(2),
+                ItemList.Tool_DataStick.get(1),
+                ItemList.Circuit_Chip_Ram.get(16),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Polytetrafluoroethylene, 8))
+            .circuit(11)
+            .fluidInputs(Materials.SolderingAlloy.getMolten(1152))
+            .itemOutputs(GTNRItemList.ChaosStructureModule.get(1))
+            .duration(30 * SECONDS)
+            .eut(TierEU.RECIPE_EV)
+            .addTo(assemblerRecipes);
+
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Tool_DataStick.get(1),
+                new Object[] { OrePrefixes.circuit.get(Materials.ZPM), 1 },
+                ItemList.Circuit_Chip_Ram.get(4),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Polybenzimidazole, 2))
+            .circuit(1)
+            .fluidInputs(MaterialsAlloy.INDALLOY_140.getFluidStack(144))
+            .itemOutputs(GTNRItemList.ChaosPrototypeProtocol.get(1))
+            .duration(20 * 30)
+            .eut(TierEU.RECIPE_ZPM)
+            .addTo(RecipeMaps.assemblerRecipes);
+
+        Materials[] circuitTiers = { Materials.EV, Materials.IV, Materials.LuV, Materials.ZPM, Materials.UV };
+        Materials[] structuralMaterials = { Materials.Titanium, Materials.TungstenSteel, Materials.HSSG,
+            Materials.NaquadahAlloy, Materials.Neutronium };
+        ItemList[] fieldGenerators = { ItemList.Field_Generator_EV, ItemList.Field_Generator_IV,
+            ItemList.Field_Generator_LuV, ItemList.Field_Generator_ZPM, ItemList.Field_Generator_UV };
+        GTNRItemList[] capacityBlocks = { GTNRItemList.ChaosCapacityTier1, GTNRItemList.ChaosCapacityTier2,
+            GTNRItemList.ChaosCapacityTier3, GTNRItemList.ChaosCapacityTier4, GTNRItemList.ChaosCapacityTier5 };
+        int[] batchSizes = { 16, 8, 4, 4, 4 };
+        int[] durations = { 5, 5, 10, 10, 15 };
+        for (int tier = 0; tier < capacityBlocks.length; tier++) {
+            ItemStack base = tier == 0 ? GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Titanium, 4)
+                : capacityBlocks[tier - 1].get(batchSizes[tier]);
+            GTValues.RA.stdBuilder()
+                .itemInputs(
+                    base,
+                    new Object[] { OrePrefixes.circuit.get(circuitTiers[tier]), tier == 0 ? 4 : 8 },
+                    fieldGenerators[tier].get(1),
+                    ItemList.Circuit_Chip_Ram.get(16),
+                    GTOreDictUnificator.get(OrePrefixes.plate, structuralMaterials[tier], 16),
+                    GTOreDictUnificator.get(OrePrefixes.foil, Materials.Polytetrafluoroethylene, 16))
+                .circuit(10)
+                .fluidInputs(Materials.SolderingAlloy.getMolten(1152))
+                .itemOutputs(capacityBlocks[tier].get(batchSizes[tier]))
+                .duration(durations[tier] * SECONDS)
+                .eut(VP[VoltageIndex.EV + tier])
+                .addTo(assemblerRecipes);
+        }
+    }
+
     private static void registerLargeFurnaceRecipes() {
         GTValues.RA.stdBuilder()
             .itemInputs(
@@ -526,6 +594,150 @@ public final class AssemblerRecipes {
             .itemOutputs(GTNRItemList.EddingtonWallCasing.get(2))
             .duration(10 * SECONDS)
             .eut(TierEU.RECIPE_MV)
+            .addTo(RecipeMaps.assemblerRecipes);
+    }
+
+    private static void registerChaosCasings() {
+        if (Mods.GraviSuite.isModLoaded()) {
+            GTValues.RA.stdBuilder()
+                .itemInputs(
+                    GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.NaquadahAlloy, 4),
+                    getModItem(Mods.GraviSuite.ID, "itemSimpleItem", 16, 2),
+                    new Object[] { OrePrefixes.circuit.get(Materials.UV), 4 },
+                    ItemList.Circuit_Parts_Crystal_Chip_Master.get(16),
+                    ItemList.Circuit_Chip_UHPIC.get(16),
+                    GTOreDictUnificator.get(OrePrefixes.wireGt04, Materials.SuperconductorZPM, 8),
+                    GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.TungstenSteel, 6))
+                .circuit(10)
+                .fluidInputs(MaterialsAlloy.INDALLOY_140.getFluidStack(2304))
+                .itemOutputs(new ItemStack(BlockLoader.chaosEnergyMatrix, 4, 0))
+                .duration(20 * 30)
+                .eut(TierEU.RECIPE_ZPM)
+                .addTo(RecipeMaps.assemblerRecipes);
+
+            GTValues.RA.stdBuilder()
+                .itemInputs(
+                    GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.HSSS, 4),
+                    getModItem(Mods.GraviSuite.ID, "itemSimpleItem", 16, 3),
+                    ItemList.Field_Generator_ZPM.get(2),
+                    ItemList.Sensor_ZPM.get(4),
+                    new Object[] { OrePrefixes.circuit.get(Materials.UV), 4 },
+                    GTOreDictUnificator.get(OrePrefixes.ring, Materials.NiobiumTitanium, 16),
+                    GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.Trinium, 6))
+                .circuit(10)
+                .fluidInputs(Materials.Polybenzimidazole.getMolten(2304))
+                .itemOutputs(new ItemStack(BlockLoader.chaosFieldGenerator, 4, 0))
+                .duration(20 * 30)
+                .eut(TierEU.RECIPE_ZPM)
+                .addTo(RecipeMaps.assemblerRecipes);
+        }
+
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.pipeMedium, Materials.Neutronium, 4),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Neutronium, 4),
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Neutronium, 1),
+                GTUtility.getIntegratedCircuit(12))
+            .itemOutputs(new ItemStack(BlockLoader.chaosCasing02, 1, 4))
+            .eut(TierEU.RECIPE_LV)
+            .duration(20 * 5)
+            .addTo(RecipeMaps.assemblerRecipes);
+
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                GTUtility.getIntegratedCircuit(10),
+                MaterialsAlloy.INCONEL_625.getFrameBox(1),
+                GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.PrismaticNaquadah, 1),
+                GTOreDictUnificator.get(OrePrefixes.pipeMedium, Materials.NiobiumTitanium, 8),
+                GTOreDictUnificator.get(OrePrefixes.rotor, Materials.Osmiridium, 2),
+                ItemList.Electric_Pump_ZPM.get(2))
+            .fluidInputs(Materials.SuperCoolant.getFluid(16000))
+            .itemOutputs(new ItemStack(BlockLoader.chaosCasing02, 4, 7))
+            .eut(TierEU.RECIPE_ZPM)
+            .duration(20 * 8)
+            .addTo(RecipeMaps.assemblerRecipes);
+    }
+
+    private static void registerChaosPhotonUpgrades() {
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Casing_Advanced_Iridium.get(1),
+                getModItem("gregtech", "gt.blockmachines", 1, 11100),
+                ItemList.Transformer_MV_LV.get(1),
+                ItemList.Emitter_LV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.lens, Materials.Diamond, 3),
+                ItemList.Field_Generator_LV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.LV, 4),
+                GTUtility.getIntegratedCircuit(10))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(144 * 2))
+            .itemOutputs(new ItemStack(BlockLoader.chaosPhotonUpgrade, 1, 0))
+            .eut(TierEU.RECIPE_LV)
+            .duration(20 * 10)
+            .addTo(RecipeMaps.assemblerRecipes);
+
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Casing_Advanced_Iridium.get(1),
+                getModItem("gregtech", "gt.blockmachines", 1, 11101),
+                ItemList.Transformer_HV_MV.get(1),
+                ItemList.Emitter_MV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.lens, Materials.Diamond, 6),
+                ItemList.Field_Generator_MV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.MV, 4),
+                GTUtility.getIntegratedCircuit(10))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(144 * 8))
+            .itemOutputs(new ItemStack(BlockLoader.chaosPhotonUpgrade, 1, 1))
+            .eut(TierEU.RECIPE_MV)
+            .duration(20 * 20)
+            .addTo(RecipeMaps.assemblerRecipes);
+
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Casing_Advanced_Iridium.get(1),
+                getModItem("gregtech", "gt.blockmachines", 1, 11102),
+                ItemList.Transformer_EV_HV.get(1),
+                ItemList.Emitter_HV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.lens, Materials.Diamond, 12),
+                ItemList.Field_Generator_HV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.HV, 4),
+                GTUtility.getIntegratedCircuit(10))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(144 * 32))
+            .itemOutputs(new ItemStack(BlockLoader.chaosPhotonUpgrade, 1, 2))
+            .eut(TierEU.RECIPE_HV)
+            .duration(20 * 40)
+            .addTo(RecipeMaps.assemblerRecipes);
+
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Casing_Advanced_Iridium.get(1),
+                getModItem("gregtech", "gt.blockmachines", 1, 11103),
+                ItemList.Transformer_IV_EV.get(1),
+                ItemList.Emitter_EV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.lens, Materials.Diamond, 24),
+                ItemList.Field_Generator_EV.get(1),
+                new Object[] { OrePrefixes.circuit.get(Materials.EV), 4 },
+                GTUtility.getIntegratedCircuit(10))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(144 * 128))
+            .itemOutputs(new ItemStack(BlockLoader.chaosPhotonUpgrade, 1, 3))
+            .eut(TierEU.RECIPE_EV)
+            .duration(20 * 80)
+            .addTo(RecipeMaps.assemblerRecipes);
+
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Casing_Advanced_Iridium.get(1),
+                getModItem("gregtech", "gt.blockmachines", 1, 11104),
+                ItemList.Transformer_LuV_IV.get(1),
+                ItemList.Emitter_IV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.lens, Materials.Diamond, 48),
+                ItemList.Field_Generator_IV.get(1),
+                new Object[] { OrePrefixes.circuit.get(Materials.IV), 4 },
+                GTUtility.getIntegratedCircuit(10))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(144 * 512))
+            .itemOutputs(new ItemStack(BlockLoader.chaosPhotonUpgrade, 1, 4))
+
+            .eut(TierEU.RECIPE_IV)
+            .duration(20 * 160)
             .addTo(RecipeMaps.assemblerRecipes);
     }
 }

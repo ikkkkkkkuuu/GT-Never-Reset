@@ -68,19 +68,26 @@ dependencies {
     implementation("org.ow2.asm:asm-commons:9.8")
 
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("ForestryMC") as String)
+    runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Galacticraft") as String)
+    runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Galaxy-Space-GTNH") as String)
+    runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("gendustry") as String)
+    runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Eternal-Singularity") as String)
+    runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Draconic-Evolution") as String)
     // Structure materials used by the bee breeder in development clients and servers.
     runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Chisel") as String) { transitive = false }
     runtimeOnlyNonPublishable("ganymedes01.etfuturum:Et-Futurum-Requiem:${elytraModpackVersion.getModVersions()['Et-Futurum-Requiem']}") { transitive = false }
+    runtimeOnlyNonPublishable(rfg.deobf("curse.maven:biomes-o-plenty-220318:2499612")) { transitive = false }
     runtimeOnlyNonPublishable(rfg.deobf("curse.maven:extra-utilities-225561:2264383")) { transitive = false }
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("BetterQuesting") as String) { transitive = false }
     // CropsNH's dev runtime resolves this optional API before its mod-loaded guard.
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("BetterBuildersWands") as String)
     compileOnlyApi(elytraModpackVersion.gtnhdev("NewHorizonsCoreMod") as String)
-    runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("NewHorizonsCoreMod") as String) { transitive = false }
+    runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("NewHorizonsCoreMod") as String)
     runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Yamcl") as String) { transitive = false }
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("BlockRenderer6343") as String)
 
     compileOnly("org.jetbrains:annotations:26.0.1")
+    compileOnly("com.google.auto.value:auto-value-annotations:1.10.4")
     compileOnly("org.projectlombok:lombok:1.18.42") { transitive = false }
     annotationProcessor("org.projectlombok:lombok:1.18.42")
     compileOnly("com.github.ABKQPO:BetterQuestingAPI:1.1.3:dev") { transitive = false }
