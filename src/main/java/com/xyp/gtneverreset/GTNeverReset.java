@@ -28,8 +28,7 @@ import cpw.mods.fml.common.event.FMLServerStoppingEvent;
         + ModList.ModIds.AE2_FLUID_CRAFT
         + ";required-after:"
         + ModList.ModIds.BAUBLES
-        + ";after:EnderIO;after:miscutils;after:dreamcraft"
-        + ";",
+        + ";after:EnderIO;after:miscutils;after:dreamcraft;after:eternalsingularity;",
     acceptedMinecraftVersions = "[1.7.10]",
     guiFactory = "com.xyp.gtneverreset.config.ConfigGuiFactory")
 public class GTNeverReset {
