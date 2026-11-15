@@ -22,8 +22,8 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.gtnhlib.item.ItemStackNBT;
+import com.xyp.gtneverreset.common.me.MEOutputAcceleration;
 import com.xyp.gtneverreset.common.me.PatternMEOutput;
-import com.xyp.gtneverreset.common.me.PatternMEOutputAcceleration;
 
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;
@@ -213,7 +213,7 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
     }
 
     public boolean hasRecentlyWorkingMEOutputController(int holdTicks) {
-        return PatternMEOutputAcceleration.hasRecentlyWorkingController(watchers, this, holdTicks);
+        return MEOutputAcceleration.hasRecentlyWorkingController(watchers, this, holdTicks);
     }
 
     @Override

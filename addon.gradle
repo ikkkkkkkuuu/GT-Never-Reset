@@ -52,8 +52,8 @@ localContract('checkUniversalWandSearchContracts',
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
 }
 
-localContract('checkPatternMEOutputAcceleration',
-    'com.xyp.gtneverreset.common.me.PatternMEOutputAccelerationContracts') {
+localContract('checkMEOutputAcceleration',
+    'com.xyp.gtneverreset.common.me.MEOutputAccelerationContracts') {
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
 }
 

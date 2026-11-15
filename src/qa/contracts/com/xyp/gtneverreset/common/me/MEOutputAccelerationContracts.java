@@ -8,7 +8,7 @@ import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.security.MachineSource;
 import appeng.api.networking.security.PlayerSource;
 
-public final class PatternMEOutputAccelerationContracts {
+public final class MEOutputAccelerationContracts {
 
     public static void main(String[] args) {
         require(!hasJob(cpu(true, null, new MachineSource(null))), "stock maintenance must not trigger acceleration");
@@ -23,17 +23,17 @@ public final class PatternMEOutputAccelerationContracts {
             hasJob(cpu(true, null, new MachineSource(null)), cpu(true, "player", null)),
             "a mixed network must detect its player order");
         require(!hasJob(), "an idle network must not trigger");
-        require(!PatternMEOutputAcceleration.isWithinHoldTime(0, 0, 100), "a new machine has never worked");
-        require(!PatternMEOutputAcceleration.isWithinHoldTime(10, 20, 100), "a reset machine clock must not trigger");
-        require(PatternMEOutputAcceleration.isWithinHoldTime(20, 20, 0), "zero hold permits the working tick");
-        require(!PatternMEOutputAcceleration.isWithinHoldTime(21, 20, 0), "zero hold excludes the next tick");
-        require(PatternMEOutputAcceleration.isWithinHoldTime(120, 20, 100), "the hold includes its boundary");
-        require(!PatternMEOutputAcceleration.isWithinHoldTime(121, 20, 100), "the hold expires after its boundary");
-        System.out.println("Pattern ME output acceleration contracts passed (14 checks)");
+        require(!MEOutputAcceleration.isWithinHoldTime(0, 0, 100), "a new machine has never worked");
+        require(!MEOutputAcceleration.isWithinHoldTime(10, 20, 100), "a reset machine clock must not trigger");
+        require(MEOutputAcceleration.isWithinHoldTime(20, 20, 0), "zero hold permits the working tick");
+        require(!MEOutputAcceleration.isWithinHoldTime(21, 20, 0), "zero hold excludes the next tick");
+        require(MEOutputAcceleration.isWithinHoldTime(120, 20, 100), "the hold includes its boundary");
+        require(!MEOutputAcceleration.isWithinHoldTime(121, 20, 100), "the hold expires after its boundary");
+        System.out.println("ME output acceleration contracts passed (14 checks)");
     }
 
     private static boolean hasJob(ICraftingCPU... cpus) {
-        return PatternMEOutputAcceleration.hasPlayerJob(List.of(cpus));
+        return MEOutputAcceleration.hasPlayerJob(List.of(cpus));
     }
 
     private static ICraftingCPU cpu(boolean busy, String player, BaseActionSource source) {

@@ -18,6 +18,7 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.common.gui.modularui.hatch.MaxCapacityMEOutputGui;
 import com.xyp.gtneverreset.common.me.FilteredMEOutputTransaction;
+import com.xyp.gtneverreset.common.me.MEOutputAcceleration;
 
 import appeng.api.storage.StorageChannel;
 import gregtech.api.enums.OutputHatchType;
@@ -54,6 +55,12 @@ public class MaxCapacityMEOutputHatch extends MTEHatchOutputME {
     public void onFirstTick(IGregTechTileEntity aBaseMetaTileEntity) {
         super.onFirstTick(aBaseMetaTileEntity);
         forceMaxCapacity();
+    }
+
+    @Override
+    public void onPostTick(IGregTechTileEntity tile, long timer) {
+        super.onPostTick(tile, timer);
+        if (tile.isServerSide()) MEOutputAcceleration.flushOutput(getProvider(), watchers, this);
     }
 
     private void forceMaxCapacity() {

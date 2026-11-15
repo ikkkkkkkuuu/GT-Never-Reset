@@ -35,16 +35,16 @@ public final class GregTechConfig {
     public static boolean requireCleanroom = false;
 
     // #tr gtneverreset.gui.config.general.gregtech.patternMEOutputFastFlush
-    // # Quickly export pattern assembly products
-    // # zh_CN 总成产物快速回网
+    // # Quickly export pattern assembly and maximum-capacity ME outputs
+    // # zh_CN 总成及最大容量 ME 输出快速回网
     @Sync
-    @Comment("三种样板输入总成关联的机器工作期间，仅当同一 ME 网络有玩家提交的合成任务时，每 tick 尝试输出产物。自动补货任务不触发；其他情况沿用 GT 原生周期。")
+    @Comment("三种样板输入总成、最大容量 ME 输出总线和输出仓（含输出总成）关联的机器工作期间，仅当同一 ME 网络有玩家提交的合成任务时，每 tick 尝试输出产物。自动补货任务不触发；其他情况沿用 GT 原生周期。")
     @DefaultBoolean(true)
     public static boolean patternMEOutputFastFlush = true;
 
     // #tr gtneverreset.gui.config.general.gregtech.patternMEOutputFastFlushHoldTicks
-    // # Pattern assembly fast export hold ticks
-    // # zh_CN 总成快速回网停机延续时间
+    // # ME output fast export hold ticks
+    // # zh_CN ME 输出快速回网停机延续时间
     @Sync
     @Comment("机器最后工作后继续允许快速回网的 tick 数，仍要求 ME 网络存在玩家合成任务。100 tick = 5 秒；0 表示仅工作当 tick。")
     @DefaultInt(100)

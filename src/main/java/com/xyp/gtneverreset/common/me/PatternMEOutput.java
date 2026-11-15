@@ -137,7 +137,7 @@ public final class PatternMEOutput {
         boolean fastFlush = GregTechConfig.patternMEOutputFastFlush
             && (items.getCachedAmount() > 0 || fluids.getCachedAmount() > 0)
             && owner.hasRecentlyWorkingMEOutputController(GregTechConfig.patternMEOutputFastFlushHoldTicks)
-            && PatternMEOutputAcceleration.hasPlayerJob(owner.getProxy());
+            && MEOutputAcceleration.hasPlayerJob(owner.getProxy());
         items.tick(timer, fastFlush);
         fluids.tick(timer, fastFlush);
     }
