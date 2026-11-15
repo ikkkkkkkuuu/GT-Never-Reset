@@ -25,8 +25,11 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.common.gui.container.QuickEncodingTerminalContainer;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
+import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
+import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactoryProcessingLogic;
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
+import com.xyp.gtneverreset.common.packet.RecipeIngredientReplacement;
 import com.xyp.gtneverreset.common.packet.RecipeTransferPayload;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -50,6 +53,8 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.GregTechAPI;
+import gregtech.api.enums.ItemList;
+import gregtech.api.enums.Materials;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.recipe.RecipeMaps;
 
@@ -92,6 +97,8 @@ public final class TerminalRecipeChecks {
             }
             checked = true;
             verifyEncoding(player);
+            verifyCuttingEncoding(player, ItemList.Circuit_Silicon_Ingot.get(1));
+            verifyCuttingEncoding(player, ItemList.Circuit_Wafer_NOR.get(1));
             preview = verifyInterfaceDiscovery(player);
         } catch (Throwable error) {
             checked = true;
@@ -238,6 +245,81 @@ public final class TerminalRecipeChecks {
         terminal.getInventoryByName("pattern")
             .setInventorySlotContents(1, untyped);
         encode(terminal, player, null, "reopening untyped pattern clears recipe type");
+        container.onContainerClosed(player);
+    }
+
+    private static void verifyCuttingEncoding(EntityPlayerMP player, ItemStack input) throws Exception {
+        var terminal = terminal(player);
+        var container = new QuickEncodingTerminalContainer(player.inventory, terminal);
+        var recipe = RecipeMaps.cutterRecipes.findRecipeQuery()
+            .items(input)
+            .fluids(Materials.Lubricant.getFluid(1000))
+            .find();
+        require(recipe != null, "native lubricant cutting recipe exists for " + input.getDisplayName());
+        IAEStack<?>[] outputs = java.util.Arrays.stream(recipe.mOutputs)
+            .map(AEItemStack::create)
+            .toArray(IAEStack<?>[]::new);
+        IAEStack<?> water = AEFluidStack.create(Materials.Water.getFluid(28));
+        IAEStack<?> lubricant = AEFluidStack.create(recipe.mFluidInputs[0]);
+        String map = PatternRecipeMap.nameForImport(RecipeMaps.cutterFakeRecipes);
+        transfer(
+            container,
+            new RecipeTransferPayload(
+                false,
+                false,
+                4,
+                false,
+                new IAEStack<?>[] { AEItemStack.create(input), water },
+                outputs,
+                null,
+                map));
+        Method replace = QuickEncodingTerminalContainer.class
+            .getDeclaredMethod("applyRecipeIngredient", RecipeIngredientReplacement.class);
+        replace.setAccessible(true);
+        replace.invoke(container, new RecipeIngredientReplacement(water, lubricant));
+        require(map.equals(terminal.getRecipeMapName()), "NEI coolant alternative preserves cutting recipe map");
+        require(
+            terminal.getAEInventoryByName(StorageName.CRAFTING_INPUT)
+                .getAEStackInSlot(1)
+                .getStackSize() == lubricant.getStackSize(),
+            "coolant alternative uses its own amount");
+        var outputInventory = terminal.getAEInventoryByName(StorageName.CRAFTING_OUTPUT);
+        for (int i = 1; i < outputInventory.getSizeInventory(); i++) outputInventory.putAEStackInSlot(i, null);
+        encode(terminal, player, map, "coolant cycle and byproduct removal");
+        ItemStack pattern = ItemStack.loadItemStackFromNBT(encoded(terminal).writeToNBT(new NBTTagCompound()));
+        provider.onPatternChange(0, pattern);
+        var factory = new UniversalJointFactory("qa.cutter.encoding");
+        factory.setMachineMode(18);
+        var logic = new UniversalJointFactoryProcessingLogic(factory);
+        logic.setMachine(factory)
+            .setRecipeMapSupplier(factory::getRecipeMap)
+            .setAvailableVoltage(512)
+            .setAvailableAmperage(1)
+            .setMaxParallel(1)
+            .setVoidProtection(false, false);
+        require(
+            logic.tryCachePossibleRecipesFromPattern(
+                provider.inventories()
+                    .next()),
+            "encoded coolant variant routes through cross-recipe assembly");
+        ItemStack material = input.copy();
+        FluidStack coolant = recipe.mFluidInputs[0].copy();
+        logic.setInputItems(material)
+            .setInputFluids(coolant);
+        require(
+            logic.process()
+                .wasSuccessful(),
+            "encoded cutting recipe runs with extractor selected");
+        require(material.stackSize == 0 && coolant.amount == 0, "cutting consumes material and selected coolant");
+        require(
+            logic.getOutputItems()[0].isItemEqual(recipe.mOutputs[0])
+                && logic.getOutputItems()[0].stackSize == recipe.mOutputs[0].stackSize,
+            "cutting produces the expected wafers");
+        require(factory.getMachineMode() == 18, "cross-recipe cutting preserves controller mode");
+        terminal.getAEInventoryByName(StorageName.CRAFTING_INPUT)
+            .putAEStackInSlot(0, AEItemStack.create(new ItemStack(Items.gold_ingot)));
+        replace.invoke(container, new RecipeIngredientReplacement(lubricant, water));
+        require(terminal.getRecipeMapName() == null, "NEI cycling cannot restore metadata after unrelated input edit");
         container.onContainerClosed(player);
     }
 

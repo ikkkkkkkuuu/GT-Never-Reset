@@ -748,8 +748,11 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
 
     private void applyRecipeIngredient(RecipeIngredientReplacement replacement) {
         boolean crafting = appliedCraftingModeInitialized ? appliedCraftingMode : isCraftingMode();
+        String recipeMapName = getDualTerminal().getRecipeMapName();
         if (!applyRecipeIngredientToInputs(replacement, crafting)) return;
         if (!crafting) getDualTerminal().replaceArcaneIngredient(replacement.getFrom(), replacement.getTo());
+        // Cycling a NEI alternative keeps the imported recipe's source, including cutter coolant variants.
+        getDualTerminal().setRecipeMapName(recipeMapName);
         patternState.rememberActivePattern(crafting);
         patternState.invalidateLink();
         saveChanges();
