@@ -13,7 +13,7 @@
 
 ## 尺寸、位置、间距
 
-从实际构建后的控件树取得逻辑坐标，完成 [217 项布局比较](images/bottle-in-chaos/comparison/layout.json)。以下位置相对主窗口；像素缩放前的尺寸相同。
+从实际构建后的控件树取得逻辑坐标，完成 [217 项布局比较](images/bottle-in-chaos/comparison/layout-comparison.json)。以下位置相对主窗口；像素缩放前的尺寸相同。
 
 | 控件 | 位置与尺寸 | 结果 |
 | --- | --- | --- |
