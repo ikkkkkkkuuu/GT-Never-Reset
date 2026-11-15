@@ -364,8 +364,8 @@ public final class WildcardFilterChecks {
                 require(
                     selectors.get(1)
                         .getCandidates()
-                        .size() == 1,
-                    "GT++ flag dropdown shows no flags");
+                        .equals(List.of("无标记")),
+                    "GT++ flag fallback remains localized in the Chinese client");
                 Method display = ItemStackSlot.class.getDeclaredMethod("displayStack");
                 display.setAccessible(true);
                 for (DropWidget drop : drops)

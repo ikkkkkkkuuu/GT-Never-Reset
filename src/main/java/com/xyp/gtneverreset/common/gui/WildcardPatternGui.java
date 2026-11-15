@@ -15,6 +15,7 @@ import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTException;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.StatCollector;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.cleanroommc.modularui.api.IThemeApi;
@@ -561,9 +562,7 @@ public class WildcardPatternGui {
             // #tr gtnr.gui.wildcardpattern.no_property
             // # no property
             // # zh_CN 无属性
-            names.add(
-                IKey.lang("gtnr.gui.wildcardpattern.no_property")
-                    .get());
+            names.add(StatCollector.translateToLocal("gtnr.gui.wildcardpattern.no_property"));
         }
         String gtPlusPlus = WildcardMaterials.Property.GTPlusPlus.displayName();
         if (!names.contains(gtPlusPlus)) names.add(gtPlusPlus);
@@ -618,9 +617,7 @@ public class WildcardPatternGui {
             // #tr gtnr.gui.wildcardpattern.no_flag
             // # no flag
             // # zh_CN 无标记
-            names.add(
-                IKey.lang("gtnr.gui.wildcardpattern.no_flag")
-                    .get());
+            names.add(StatCollector.translateToLocal("gtnr.gui.wildcardpattern.no_flag"));
         }
         return names;
     }
