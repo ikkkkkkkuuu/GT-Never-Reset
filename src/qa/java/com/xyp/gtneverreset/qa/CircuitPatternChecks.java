@@ -522,7 +522,10 @@ public final class CircuitPatternChecks {
                 .addTo(RecipeMaps.packagerRecipes);
             require(!ordinaryRecipes.isEmpty(), "ordinary mixed-input test recipe registered");
             var circuitRecipes = GTValues.RA.stdBuilder()
-                .itemInputs(new ItemStack(Items.apple, 2), GTUtility.getIntegratedCircuit(4))
+                .itemInputs(
+                    new ItemStack(Items.apple, 2),
+                    new ItemStack(Items.bone, 0),
+                    GTUtility.getIntegratedCircuit(4))
                 .itemOutputs(new ItemStack(Items.bread))
                 .duration(20)
                 .eut(8)
@@ -544,14 +547,28 @@ public final class CircuitPatternChecks {
                     null));
             var ordinarySlot = masters[0].inventories()
                 .next();
-            var circuitSlot = (CircuitSlot) masters[1].inventories()
+            var circuitHatch = masters[1];
+            var circuitSlot = (CircuitSlot) circuitHatch.inventories()
                 .next();
             require(
                 ordinarySlot.insertItemsAndFluids(delivery(ordinarySlot.getPatternDetails())),
                 "mixed ordinary delivery accepted");
+            int manualSlot = circuitHatch.getManualSlotStart();
+            var circuitTile = circuitHatch.getBaseMetaTileEntity();
+            circuitTile.setInventorySlotContents(manualSlot, new ItemStack(Items.apple, 3));
+            circuitTile.setInventorySlotContents(manualSlot + 1, new ItemStack(Items.bone));
+            var partialDelivery = delivery(circuitSlot.getPatternDetails());
+            partialDelivery.setInventorySlotContents(0, AEItemStack.create(new ItemStack(Items.apple)));
+            require(circuitSlot.insertItemsAndFluids(partialDelivery), "partial circuit delivery accepted");
+            packager.mDualInputHatches.clear();
+            packager.mDualInputHatches.add(circuitHatch);
             require(
-                circuitSlot.insertItemsAndFluids(delivery(circuitSlot.getPatternDetails())),
-                "mixed circuit delivery accepted");
+                !runController(packager).wasSuccessful() && circuitTile.getStackInSlot(manualSlot).stackSize == 3,
+                "manual stacks cannot make up missing ME ingredients");
+            require(circuitSlot.insertItemsAndFluids(partialDelivery), "remaining circuit delivery accepted");
+            circuitTile.setInventorySlotContents(manualSlot + 1, null);
+            require(!runController(packager).wasSuccessful(), "recipe requires the manual catalyst");
+            circuitTile.setInventorySlotContents(manualSlot + 1, new ItemStack(Items.bone));
             packager.mDualInputHatches.clear();
             packager.mDualInputHatches.add(masters[0]);
             packager.mDualInputHatches.add(masters[1]);
@@ -563,6 +580,10 @@ public final class CircuitPatternChecks {
             require(
                 runController(packager).wasSuccessful() && logic(packager).getOutputItems()[0].getItem() == Items.bread,
                 "circuit assembly processes alongside ordinary assembly and cross-recipe mirror");
+            require(
+                circuitSlot.isEmpty() && circuitTile.getStackInSlot(manualSlot).stackSize == 3
+                    && circuitTile.getStackInSlot(manualSlot + 1).stackSize == 1,
+                "circuit assembly consumes only buffered ingredients and preserves the manual slots");
             require(
                 runController(packager).wasSuccessful() && logic(packager).getOutputItems()[0].getItem() == Items.paper,
                 "mixed controller consumes packing through cross-recipe mirror");
