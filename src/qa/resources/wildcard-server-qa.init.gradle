@@ -1,0 +1,36 @@
+// Run with: gradlew.bat -I src/qa/resources/wildcard-server-qa.init.gradle :runServer25 --no-configuration-cache
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    def output = root.layout.buildDirectory.dir('wildcard-server-qa').get().asFile
+    def fixture = root.tasks.register('compileWildcardServerQA', JavaCompile) {
+        dependsOn root.tasks.named('classes')
+        source root.file('src/qa/java/com/xyp/gtneverreset/qa/WildcardServerChecks.java')
+        classpath = root.sourceSets.test.compileClasspath
+        destinationDirectory.set(new File(output, 'classes'))
+        javaCompiler.set(root.javaToolchains.compilerFor(root.java.toolchain))
+        options.compilerArgs += ['-proc:none']
+    }
+    root.tasks.named('runServer25', JavaExec).configure {
+        dependsOn fixture
+        classpath = classpath.filter { !it.name.toLowerCase(Locale.ROOT).startsWith('angelica-') }
+        classpath += root.files(new File(output, 'classes'))
+        workingDir new File(output, 'run')
+        systemProperty 'gtnr.wildcard.server.result', new File(output, 'result.txt').absolutePath
+        args 'nogui'
+        timeout = java.time.Duration.ofMinutes(5)
+        notCompatibleWithConfigurationCache('isolated dedicated-server regression')
+        doFirst {
+            workingDir.mkdirs()
+            java.nio.file.Files.deleteIfExists(new File(output, 'result.txt').toPath())
+            new File(workingDir, 'eula.txt').setText('eula=true\n', 'UTF-8')
+            new File(workingDir, 'server.properties').setText(
+                'server-ip=127.0.0.1\nserver-port=0\nlevel-type=FLAT\nview-distance=2\n', 'UTF-8')
+        }
+        doLast {
+            def result = new File(output, 'result.txt')
+            if (!result.isFile() || result.text.trim() != 'PASS') {
+                throw new GradleException("Wildcard dedicated-server regression failed; see ${output}")
+            }
+        }
+    }
+}
