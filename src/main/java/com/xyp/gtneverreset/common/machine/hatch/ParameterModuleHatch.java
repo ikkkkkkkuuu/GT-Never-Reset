@@ -80,6 +80,7 @@ public final class ParameterModuleHatch extends MTEHatch {
 
     public int getMaximumParameter() {
         if (getModuleType() == MachineModuleType.Overclock) return 1;
+        if (getModuleType() == MachineModuleType.Thread) return 1 << (moduleTier - 1);
         return getModuleType() == MachineModuleType.Parallel ? PARALLEL[moduleTier - 1] : 1 << moduleTier;
     }
 
@@ -122,6 +123,7 @@ public final class ParameterModuleHatch extends MTEHatch {
             case Speed -> speedName();
             case PowerConsumption -> powerName();
             case Overclock -> overclockName();
+            case Thread -> threadName();
             default -> throw new IllegalStateException("Unexpected parameter module");
         };
     }
@@ -159,6 +161,13 @@ public final class ParameterModuleHatch extends MTEHatch {
         return StatCollector.translateToLocalFormatted("gtnr.module.power.name", moduleTier);
     }
 
+    private String threadName() {
+        // #tr gtnr.module.thread.name
+        // # Thread Hatch T%s
+        // # zh_CN 线程仓 T%s
+        return StatCollector.translateToLocalFormatted("gtnr.module.thread.name", moduleTier);
+    }
+
     private String overclockName() {
         if (moduleTier == 1) {
             // #tr gtnr.module.overclock.low.name
@@ -185,14 +194,15 @@ public final class ParameterModuleHatch extends MTEHatch {
         // # zh_CN 调整兼容多方块机器的处理参数
         String purpose = StatCollector.translateToLocal("gtnr.module.parameter.description");
         // #tr gtnr.module.parameter.limit
-        // # One module of each parameter type per machine
-        // # zh_CN 每台机器的每类参数模块限装一个
+        // # Installation limits and stacking rules depend on the machine
+        // # zh_CN 安装数量上限与叠加规则由机器决定
         String limit = StatCollector.translateToLocal("gtnr.module.parameter.limit");
         String effect = switch (getModuleType()) {
             case Parallel -> parallelDescription();
             case Speed -> speedDescription();
             case PowerConsumption -> powerDescription();
             case Overclock -> overclockDescription();
+            case Thread -> threadDescription();
             default -> throw new IllegalStateException("Unexpected parameter module");
         };
         if (dynamic) {
@@ -229,6 +239,13 @@ public final class ParameterModuleHatch extends MTEHatch {
             .translateToLocalFormatted("gtnr.module.power.effect", Math.round(getPowerMultiplier() * 100));
     }
 
+    private String threadDescription() {
+        // #tr gtnr.module.thread.effect
+        // # Adds %s independent recipe threads; each thread consumes its own inputs and EU/t
+        // # zh_CN 增加 %s 条独立配方线程；各线程独立消耗原料与 EU/t
+        return StatCollector.translateToLocalFormatted("gtnr.module.thread.effect", getMaximumParameter());
+    }
+
     private String overclockDescription() {
         // #tr gtnr.module.overclock.effect
         // # Each overclock: processing time / {\\AQUA}%s{\\RESET}, EU/t x {\\YELLOW}%s{\\RESET}
@@ -242,6 +259,7 @@ public final class ParameterModuleHatch extends MTEHatch {
             case Parallel -> "OVERLAY_ParallelController";
             case Speed -> "OVERLAY_SpeedController";
             case PowerConsumption -> "OVERLAY_PowerController";
+            case Thread -> "OVERLAY_ThreadController";
             case Overclock -> "OVERLAY_OverClockController_" + switch (moduleTier) {
                     case 1 -> "Pri";
                     case 2 -> "Adv";

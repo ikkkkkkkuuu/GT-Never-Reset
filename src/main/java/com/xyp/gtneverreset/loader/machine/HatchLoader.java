@@ -365,6 +365,62 @@ public final class HatchLoader {
                 MachineModuleType.PowerConsumption,
                 8,
                 false));
+        GTNRItemList.ThreadControllerT1.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.ThreadControllerT1.id,
+                "ThreadControllerT1",
+                MachineModuleType.Thread,
+                1,
+                false));
+        GTNRItemList.ThreadControllerT2.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.ThreadControllerT2.id,
+                "ThreadControllerT2",
+                MachineModuleType.Thread,
+                2,
+                false));
+        GTNRItemList.ThreadControllerT3.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.ThreadControllerT3.id,
+                "ThreadControllerT3",
+                MachineModuleType.Thread,
+                3,
+                false));
+        GTNRItemList.ThreadControllerT4.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.ThreadControllerT4.id,
+                "ThreadControllerT4",
+                MachineModuleType.Thread,
+                4,
+                false));
+        GTNRItemList.ThreadControllerT5.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.ThreadControllerT5.id,
+                "ThreadControllerT5",
+                MachineModuleType.Thread,
+                5,
+                false));
+        GTNRItemList.ThreadControllerT6.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.ThreadControllerT6.id,
+                "ThreadControllerT6",
+                MachineModuleType.Thread,
+                6,
+                false));
+        GTNRItemList.ThreadControllerT7.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.ThreadControllerT7.id,
+                "ThreadControllerT7",
+                MachineModuleType.Thread,
+                7,
+                false));
+        GTNRItemList.ThreadControllerT8.set(
+            new ParameterModuleHatch(
+                GTNRMachineID.ThreadControllerT8.id,
+                "ThreadControllerT8",
+                MachineModuleType.Thread,
+                8,
+                false));
         GTNRItemList.LowSpeedPerfectOverclockController.set(
             new ParameterModuleHatch(
                 GTNRMachineID.LowSpeedPerfectOverclockController.id,

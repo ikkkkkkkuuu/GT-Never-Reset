@@ -116,6 +116,15 @@ public enum GTNRItemList implements IItemContainer {
     PowerConsumptionControllerT7,
     PowerConsumptionControllerT8,
 
+    ThreadControllerT1,
+    ThreadControllerT2,
+    ThreadControllerT3,
+    ThreadControllerT4,
+    ThreadControllerT5,
+    ThreadControllerT6,
+    ThreadControllerT7,
+    ThreadControllerT8,
+
     LowSpeedPerfectOverclockController,
     PerfectOverclockController,
     SingularityPerfectOverclockController,
@@ -190,6 +199,9 @@ public enum GTNRItemList implements IItemContainer {
     // endregion
 
     // region 舱室分组
+    public static final GTNRItemList[] THREAD = { ThreadControllerT1, ThreadControllerT2, ThreadControllerT3,
+        ThreadControllerT4, ThreadControllerT5, ThreadControllerT6, ThreadControllerT7, ThreadControllerT8 };
+
     public static final GTNRItemList[] STATIC_PARALLEL = { GTNRItemList.StaticParallelControllerT1,
         GTNRItemList.StaticParallelControllerT2, GTNRItemList.StaticParallelControllerT3,
         GTNRItemList.StaticParallelControllerT4, GTNRItemList.StaticParallelControllerT5,

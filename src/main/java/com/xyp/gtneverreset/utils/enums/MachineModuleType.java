@@ -5,7 +5,8 @@ public enum MachineModuleType {
     Parallel,
     Speed,
     PowerConsumption,
-    Overclock;
+    Overclock,
+    Thread;
 
     public String getTranslationKey() {
         return switch (this) {
@@ -25,6 +26,10 @@ public enum MachineModuleType {
             // # Overclock Module
             // # zh_CN 超频模块
             case Overclock -> "gtnr.module.type.overclock";
+            // #tr gtnr.module.type.thread
+            // # Thread Hatch
+            // # zh_CN 线程仓
+            case Thread -> "gtnr.module.type.thread";
         };
     }
 }

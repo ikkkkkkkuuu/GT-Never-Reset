@@ -833,7 +833,7 @@ public class LargeBeeBreeder extends MTEExtendedPowerMultiBlockBase<LargeBeeBree
 
     @Override
     public int getParameterModuleLimit(MachineModuleType type) {
-        return 1;
+        return type == MachineModuleType.Thread ? 0 : 1;
     }
 
     private ParameterModuleHatch parameterModule(MachineModuleType type) {
