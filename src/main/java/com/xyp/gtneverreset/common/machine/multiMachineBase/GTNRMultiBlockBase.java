@@ -701,7 +701,18 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     }
 
     public final int getTotalRecipeThreads() {
-        return Math.max(1, getMaxRecipeThreads());
+        return (int) Math
+            .min(Integer.MAX_VALUE, Math.max(1L, getMaxRecipeThreads()) + Math.max(0L, getThreadModuleBonus()));
+    }
+
+    /** Machines may override aggregation independently of their installation limit. */
+    protected int getThreadModuleBonus() {
+        if (getParameterModuleLimit(MachineModuleType.Thread) <= 0) return 0;
+        long bonus = 0;
+        for (ParameterModuleHatch module : parameterModules) {
+            if (module.getModuleType() == MachineModuleType.Thread) bonus += module.getParameter();
+        }
+        return (int) Math.min(Integer.MAX_VALUE, bonus);
     }
 
     public final int getRunningRecipeThreads() {

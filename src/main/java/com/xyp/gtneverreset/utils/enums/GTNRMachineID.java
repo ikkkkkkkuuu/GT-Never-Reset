@@ -80,8 +80,16 @@ public enum GTNRMachineID {
     MEDataAccessHatch(29553),
     CrossRecipeMEPatternBuffer(29554),
     CrossRecipeMEPatternMirror(29555),
-    ChaosCredentialHatch(29556),
-    // 预留：29557–29599（43 个）。
+    ThreadControllerT1(29556),
+    ThreadControllerT2(29557),
+    ThreadControllerT3(29558),
+    ThreadControllerT4(29559),
+    ThreadControllerT5(29560),
+    ThreadControllerT6(29561),
+    ThreadControllerT7(29562),
+    ThreadControllerT8(29563),
+    ChaosCredentialHatch(29564),
+    // 预留：29565–29599（35 个）。
     // endregion
 
     // region 单方块机器

@@ -324,6 +324,20 @@ public final class AssemblerRecipes {
                 .duration(10 * (i + 1) * SECONDS)
                 .addTo(assemblerRecipes);
 
+            GTValues.RA.stdBuilder()
+                .itemInputs(
+                    hulls[i].get(1),
+                    new Object[] { OrePrefixes.circuit.get(circuits[i]), 4 },
+                    robotArms[i].get(1),
+                    sensors[i].get(1),
+                    GTOreDictUnificator.get(OrePrefixes.plate, materials[i], 2))
+                .circuit(MODULE_CIRCUIT)
+                .fluidInputs(Materials.Tin.getMolten(144))
+                .itemOutputs(GTNRItemList.THREAD[i].get(1))
+                .eut(VP[i + 1])
+                .duration(10 * (i + 1) * SECONDS)
+                .addTo(assemblerRecipes);
+
             registerDynamicRecipe(
                 i,
                 GTNRItemList.STATIC_PARALLEL[i],
