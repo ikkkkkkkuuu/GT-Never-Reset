@@ -94,12 +94,13 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
         return true;
     }
 
-    /** Each pattern supplies its own circuit and molds; only physical manual slots are shared. */
+    /** Manual items are shared catalysts. Only buffered ME inputs supply consumable quantities. */
     @Override
     public ItemStack[] getSharedItems() {
         List<ItemStack> items = new ArrayList<>();
         for (int i = getManualSlotStart(); i < getMoldSlot(); i++) {
-            if (mInventory[i] != null) items.add(mInventory[i]);
+            ItemStack stack = mInventory[i];
+            if (stack != null && stack.stackSize > 0) items.add(GTUtility.copyAmount(0, stack));
         }
         return items.toArray(new ItemStack[0]);
     }
