@@ -14,7 +14,6 @@ import com.xyp.gtneverreset.common.me.wildcard.model.io.PrefixIOComponent;
 import com.xyp.gtneverreset.common.me.wildcard.model.io.SimpleIOComponent;
 
 import gregtech.api.enums.FluidState;
-import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.common.items.ItemIntegratedCircuit;
 
@@ -107,12 +106,10 @@ public final class WildcardRecipeTemplate {
 
     private static FluidIOComponent readFluid(ItemStack stack, FluidStack fluid) {
         FluidIOComponent match = null;
-        for (Materials material : Materials.getAll()) {
-            if (!WildcardMaterials.isExpandableMaterial(material)) continue;
+        for (String materialName : WildcardMaterials.expandableMaterialNames()) {
             for (FluidState state : FLUID_STATES) {
-                if (!WildcardMaterials.hasFluid(material, state)) continue;
                 FluidIOComponent component = new FluidIOComponent(state, fluid.amount);
-                if (!sameIdentity(stack, component.apply(material))) continue;
+                if (!sameIdentity(stack, component.apply(materialName))) continue;
                 if (match != null && match.getState() != state) return null;
                 if (match == null) match = component;
             }
