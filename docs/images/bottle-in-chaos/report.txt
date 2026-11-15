@@ -1,5 +1,5 @@
 PASS full preset catalog initialized without TST
-PASS original 29 x 41 x 29 structure retained
+PASS shortened and inverted 29 x 31 x 29 structure loaded
 PASS processing group requires no physical credential
 PASS empty processing hatch has an unlocked route
 PASS selected routes survive NBT round trip
@@ -25,6 +25,19 @@ PASS EBF rejects an incomplete casing bill
 PASS source structure example resolves its real material bill
 PASS packaged module retains its structure and multiplicity
 PASS missing structure materials cannot authorize a module
+PASS downgraded assembler recipe voltage matches: 混沌中瓶机器结构模组
+PASS obsolete assembly-line recipe removed: 混沌中瓶机器结构模组
+PASS downgraded assembler recipe voltage matches: 混沌中瓶容量方块 I
+PASS obsolete assembly-line recipe removed: 混沌中瓶容量方块 I
+PASS downgraded assembler recipe voltage matches: 混沌中瓶容量方块 II
+PASS obsolete assembly-line recipe removed: 混沌中瓶容量方块 II
+PASS downgraded assembler recipe voltage matches: 混沌中瓶容量方块 III
+PASS obsolete assembly-line recipe removed: 混沌中瓶容量方块 III
+PASS downgraded assembler recipe voltage matches: 混沌中瓶容量方块 IV
+PASS obsolete assembly-line recipe removed: 混沌中瓶容量方块 IV
+PASS downgraded assembler recipe voltage matches: 混沌中瓶容量方块 V
+PASS obsolete assembly-line recipe removed: 混沌中瓶容量方块 V
+PASS NEI processing recipes no longer display credentials
 PASS manufacturing recipe exists: 混沌中瓶
 PASS manufacturing recipe exists: 混沌加工组仓
 PASS manufacturing recipe exists: 混沌中瓶机器结构模组
@@ -609,7 +622,7 @@ PASS native source module validates on reload: gtnr.chaos.source.MM_DIMENSIONALL
 PASS native source material bill resolves: gtnr.chaos.source.MM_LARGE_NEUTRON_OSCILLATOR:1
 PASS native source module validates on reload: gtnr.chaos.source.MM_LARGE_NEUTRON_OSCILLATOR:1
 PASS native controller with photon structure retains the original 256-parallel profile
-PASS complete original structure forms with fifteen processing groups: []
+PASS shortened inverted structure forms with fifteen processing groups: []
 PASS all fifteen independent processing groups are connected
 PASS four top-tier capacity regions provide 4096 capacity
 PASS blocked output reserves no input and loses no product

@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.common.recipe.gregtech;
 
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import gregtech.api.enums.GTValues;
@@ -13,6 +14,7 @@ public final class LaserEngraverRecipes {
     private LaserEngraverRecipes() {}
 
     public static void register() {
+        if (!ChaosConfig.enableBottleInChaos) return;
         GTValues.RA.stdBuilder()
             .itemInputs(ItemList.QuantumStar.get(1), GregtechItemList.Laser_Lens_Special.get(0))
             .itemOutputs(GTNRItemList.ChaosCriticalPhoton.get(64))

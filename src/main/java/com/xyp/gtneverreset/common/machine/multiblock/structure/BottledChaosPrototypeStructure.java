@@ -9,7 +9,6 @@ import static com.xyp.gtneverreset.common.machine.multiMachineBase.ChaosModuleMa
 import static com.xyp.gtneverreset.common.machine.multiMachineBase.ChaosModuleMachineBase.ModuleElement.ParallelController;
 import static com.xyp.gtneverreset.common.machine.multiMachineBase.ChaosModuleMachineBase.ModuleElement.PowerConsumptionController;
 import static com.xyp.gtneverreset.common.machine.multiMachineBase.ChaosModuleMachineBase.ModuleElement.SpeedController;
-import static goodgenerator.loader.Loaders.compactFusionCoil;
 import static gregtech.api.enums.HatchElement.Energy;
 import static gregtech.api.enums.HatchElement.ExoticEnergy;
 import static gregtech.api.enums.HatchElement.InputBus;
@@ -23,7 +22,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
@@ -33,8 +31,8 @@ import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.common.block.blocks.BlockChaosCapacity;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.BottleInChaosMachineBase;
 import com.xyp.gtneverreset.common.machine.multiblock.BottleInChaos;
-import com.xyp.gtneverreset.loader.BlockLoader;
 
+import bartworks.API.BorosilicateGlass;
 import gregtech.api.GregTechAPI;
 import gregtech.api.casing.Casings;
 import gregtech.api.enums.GTValues;
@@ -48,7 +46,6 @@ import gregtech.api.structure.error.StructureErrors;
 import gregtech.api.util.HatchElementBuilder;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.common.blocks.ItemMachines;
-import gtPlusPlus.core.material.MaterialsElements;
 import tectech.thing.metaTileEntity.hatch.MTEHatchEnergyTunnel;
 
 public final class BottledChaosPrototypeStructure extends BottledChaosStructure {
@@ -252,20 +249,15 @@ public final class BottledChaosPrototypeStructure extends BottledChaosStructure 
                 .addShape(STRUCTURE_PIECE_CAPACITY_EXTENSION, transpose(CAPACITY_EXTENSION))
                 .addShape(STRUCTURE_PIECE_CAPACITY_BASE_TOP, transpose(CAPACITY_BASE_TOP))
                 .addShape(STRUCTURE_PIECE_CAPACITY_TOP, transpose(CAPACITY_TOP))
-                .addElement('A', Casings.BorosilicateGlassAny.asElement())
-                .addElement(
-                    'B',
-                    ofBlock(
-                        Block.getBlockFromItem(
-                            MaterialsElements.getInstance().GERMANIUM.getFrameBox(1)
-                                .getItem()),
-                        0))
-                .addElement('C', ofBlock(compactFusionCoil, 0))
-                .addElement('D', Casings.AdvancedIridiumPlatedMachineCasing.asElement())
-                .addElement('E', Casings.RadiantNaquadahAlloyCasing.asElement())
-                .addElement('F', Casings.HighPowerCasing.asElement())
-                .addElement('G', ofBlock(GregTechAPI.sBlockCasingsDyson, 9))
-                .addElement('H', ofBlock(BlockLoader.chaosCasing02, 2))
+                .addChannel(BlockChaosCapacity.STRUCTURE_CHANNEL, 1, getCapacityLevelCount() + 1)
+                .addElement('A', ofBlock(BorosilicateGlass.getGlassBlock(), 0))
+                .addElement('B', ofFrame(Materials.TungstenSteel))
+                .addElement('C', Casings.TPVCoilBlock.asElement())
+                .addElement('D', Casings.RobustTungstenSteelMachineCasing.asElement())
+                .addElement('E', Casings.StableTitaniumMachineCasing.asElement())
+                .addElement('F', Casings.EVMachineCasing.asElement())
+                .addElement('G', Casings.Firebricks.asElement())
+                .addElement('H', Casings.RobustTungstenSteelMachineCasing.asElement())
                 .addElement(
                     'I',
                     withChannel(

@@ -8,11 +8,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.dreammaster.item.NHItemList;
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import bartworks.common.loaders.ItemRegistry;
-import bartworks.system.material.WerkstoffLoader;
 import goodgenerator.items.GGMaterial;
 import goodgenerator.util.ItemRefer;
 import gregtech.api.enums.GTValues;
@@ -37,6 +37,7 @@ public final class AssemblyLineRecipes {
     private AssemblyLineRecipes() {}
 
     public static void register() {
+        if (!ChaosConfig.enableBottleInChaos) return;
         registerChaosPhotonUpgrades();
         registerChaosGenerators();
         registerChaosCasings();
@@ -106,28 +107,6 @@ public final class AssemblyLineRecipes {
             .requireMods(Mods.AppliedEnergistics2, Mods.AE2FluidCraft, Mods.OpenComputers)
             .addTo(GTRecipeConstants.AssemblyLine);
 
-        GTValues.RA.stdBuilder()
-            .metadata(RESEARCH_ITEM, getModItem(Mods.AppliedEnergistics2.ID, "tile.BlockSpatialPylon", 1))
-            .metadata(SCANNING, new Scanning(20 * 30, TierEU.RECIPE_ZPM))
-            .itemInputs(
-                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.NaquadahAlloy, 1),
-                new Object[] { OrePrefixes.circuit.get(Materials.UV), 2 },
-                getModItem(Mods.AppliedEnergistics2.ID, "item.ItemMultiMaterial", 4, 34), // 128^3 spatial components.
-                ItemList.Emitter_ZPM.get(4),
-
-                ItemList.Tool_DataOrb.get(64),
-                ItemList.Circuit_Chip_Ram.get(64),
-                MaterialsAlloy.LAURENIUM.getFoil(64),
-                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Polybenzimidazole, 8))
-            .fluidInputs(
-                MaterialsAlloy.INDALLOY_140.getFluidStack(1152),
-                WerkstoffLoader.LiquidHelium.getFluidOrGas(64000),
-                Materials.SuperCoolant.getFluid(16000))
-            .itemOutputs(GTNRItemList.ChaosStructureModule.get(1))
-            .duration(20 * 30)
-            .eut(TierEU.RECIPE_UV)
-            .requireMods(Mods.AppliedEnergistics2)
-            .addTo(GTRecipeConstants.AssemblyLine);
     }
 
     private static void registerChaosCasings() {

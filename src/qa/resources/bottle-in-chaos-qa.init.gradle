@@ -2,6 +2,7 @@
 gradle.projectsEvaluated {
     def root = gradle.rootProject
     def preview = root.providers.gradleProperty('chaosPreview').getOrElse('false').toBoolean()
+    def enabled = root.providers.gradleProperty('chaosEnabled').getOrElse('true').toBoolean()
     def referenceJar = root.providers.gradleProperty('chaosReferenceJar').getOrNull()
     // Full preset validation needs the normal GTNH recipe-script prerequisites.
     def pack = root.extensions.getByName('elytraModpackVersion')
@@ -36,7 +37,7 @@ gradle.projectsEvaluated {
         }
     }
     def fixture = referenceJar != null ? 'BottleInChaosVisualChecks' : 'BottleInChaosChecks'
-    def directoryName = referenceJar != null ? 'bottle-in-chaos-visual' : preview ? 'bottle-in-chaos-preview' : 'bottle-in-chaos-qa'
+    def directoryName = !enabled ? 'bottle-in-chaos-disabled' : referenceJar != null ? 'bottle-in-chaos-visual' : preview ? 'bottle-in-chaos-preview' : 'bottle-in-chaos-qa'
     def marker = 'gtnr.bottle.chaos.qa'
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
 
@@ -59,6 +60,7 @@ gradle.projectsEvaluated {
         workingDir root.file("build/${directoryName}/run")
         systemProperty marker, 'true'
         systemProperty 'gtnr.bottle.chaos.preview', preview.toString()
+        systemProperty 'gtnr.bottle.chaos.expectDisabled', (!enabled).toString()
         systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
         systemProperty 'sun.net.client.defaultReadTimeout', '15000'
         args '--width', '1100', '--height', '740'
@@ -80,6 +82,19 @@ gradle.projectsEvaluated {
             }
             classpath = root.files(shortened)
             workingDir.mkdirs()
+            def chaosConfig = new File(workingDir, 'config/GTNeverReset/machine.cfg')
+            chaosConfig.parentFile.mkdirs()
+            def chaosConfigText = chaosConfig.exists() ? chaosConfig.getText('UTF-8') : ''
+            if (!enabled) {
+                chaosConfigText = chaosConfigText.replaceAll('(?m)^\\s*B:enableBottleInChaos=(true|false)\\s*$', '')
+            } else if (chaosConfigText.contains('B:enableBottleInChaos=')) {
+                chaosConfigText = chaosConfigText.replaceAll('B:enableBottleInChaos=(true|false)', 'B:enableBottleInChaos=true')
+            } else if (chaosConfigText.contains('bottle_in_chaos {')) {
+                chaosConfigText = chaosConfigText.replace('bottle_in_chaos {', 'bottle_in_chaos {\n    B:enableBottleInChaos=true')
+            } else {
+                chaosConfigText += '\nbottle_in_chaos {\n    B:enableBottleInChaos=true\n}\n'
+            }
+            chaosConfig.setText(chaosConfigText, 'UTF-8')
             def singularityConfig = new File(workingDir, 'config/eternalsingularity.cfg')
             singularityConfig.parentFile.mkdirs()
             singularityConfig.setText('general {\n B:useCompoundSingularities=true\n}\n', 'UTF-8')

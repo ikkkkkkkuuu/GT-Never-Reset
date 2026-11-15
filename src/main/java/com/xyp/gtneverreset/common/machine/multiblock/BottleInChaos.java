@@ -10,6 +10,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import com.gtnewhorizon.structurelib.alignment.constructable.ChannelDataAccessor;
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
+import com.xyp.gtneverreset.common.block.blocks.BlockChaosCapacity;
 import com.xyp.gtneverreset.common.crafting.chaos.ChaosLocalization;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.BottleInChaosMachineBase;
 import com.xyp.gtneverreset.common.machine.multiblock.structure.BottledChaosPrototypeStructure;
@@ -76,6 +77,9 @@ public class BottleInChaos extends BottleInChaosMachineBase<BottleInChaos>
 
     @Override
     public void onPreviewConstruct(ItemStack trigger) {
+        if (!ChannelDataAccessor.hasSubChannel(trigger, BlockChaosCapacity.STRUCTURE_CHANNEL)) {
+            ChannelDataAccessor.setChannelData(trigger, BlockChaosCapacity.STRUCTURE_CHANNEL, 2);
+        }
         // GuideNH imports controllers by meta ID; select the NBT variant only in its preview world.
         if (ChannelDataAccessor.hasSubChannel(trigger, BottledChaosPrototypeStructure.PREVIEW_CHANNEL)
             && getBaseMetaTileEntity() != null

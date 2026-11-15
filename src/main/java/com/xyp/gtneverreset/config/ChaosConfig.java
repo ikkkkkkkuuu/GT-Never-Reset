@@ -11,6 +11,10 @@ import com.gtnewhorizon.gtnhlib.config.Config;
     categoryCulling = false)
 public final class ChaosConfig {
 
+    @Config.Comment("Enable Bottle in Chaos, its dedicated blocks, items, hatches and recipes. Restart required.")
+    @Config.DefaultBoolean(false)
+    public static boolean enableBottleInChaos = false;
+
     @Config.Sync
     @Config.Comment("Bottle in Chaos: BottledChaosChainedProcessingSeconds. Restart required.")
     @Config.DefaultInt(20)

@@ -14,6 +14,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.gtnewhorizon.cropsnh.api.CropsNHItemList;
 import com.gtnewhorizon.cropsnh.init.CropsNHFluids;
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
@@ -39,9 +40,11 @@ public final class AssemblerRecipes {
     private static final int MODULE_CIRCUIT = 19;
 
     public static void register() {
-        registerChaosPhotonUpgrades();
-        registerChaosCasings();
-        registerBottleInChaosRecipes();
+        if (ChaosConfig.enableBottleInChaos) {
+            registerChaosPhotonUpgrades();
+            registerChaosCasings();
+            registerBottleInChaosRecipes();
+        }
         GTRecipeBuilder.builder()
             .itemInputs(
                 GTOreDictUnificator.get(OrePrefixes.wireFine, Materials.Copper, 32),
@@ -395,6 +398,21 @@ public final class AssemblerRecipes {
     private static void registerBottleInChaosRecipes() {
         GTValues.RA.stdBuilder()
             .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Titanium, 1),
+                new Object[] { OrePrefixes.circuit.get(Materials.EV), 2 },
+                ItemList.Emitter_EV.get(2),
+                ItemList.Tool_DataStick.get(1),
+                ItemList.Circuit_Chip_Ram.get(16),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Polytetrafluoroethylene, 8))
+            .circuit(11)
+            .fluidInputs(Materials.SolderingAlloy.getMolten(1152))
+            .itemOutputs(GTNRItemList.ChaosStructureModule.get(1))
+            .duration(30 * SECONDS)
+            .eut(TierEU.RECIPE_EV)
+            .addTo(assemblerRecipes);
+
+        GTValues.RA.stdBuilder()
+            .itemInputs(
                 ItemList.Tool_DataStick.get(1),
                 new Object[] { OrePrefixes.circuit.get(Materials.ZPM), 1 },
                 ItemList.Circuit_Chip_Ram.get(4),
@@ -406,65 +424,33 @@ public final class AssemblerRecipes {
             .eut(TierEU.RECIPE_ZPM)
             .addTo(RecipeMaps.assemblerRecipes);
 
-        GTValues.RA.stdBuilder()
-            .itemInputs(
-                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.NaquadahAlloy, 4),
-                new Object[] { OrePrefixes.circuit.get(Materials.ZPM), 4 },
-                getModItem(Mods.AppliedEnergistics2.ID, "item.ItemMultiMaterial", 16, 37), // 16k storage components.
-
-                ItemList.Field_Generator_LuV.get(1),
-                ItemList.Circuit_Parts_Crystal_Chip_Elite.get(16),
-                ItemList.Tool_DataOrb.get(16),
-
-                GTOreDictUnificator.get(OrePrefixes.wireFine, Materials.NiobiumTitanium, 64),
-                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Polybenzimidazole, 16))
-            .circuit(10)
-            .fluidInputs(MaterialsAlloy.INDALLOY_140.getFluidStack(1152))
-            .itemOutputs(GTNRItemList.ChaosCapacityTier1.get(16))
-            .duration(20 * 5)
-            .eut(TierEU.RECIPE_ZPM)
-            .requireMods(Mods.AppliedEnergistics2)
-            .addTo(RecipeMaps.assemblerRecipes);
-
-        GTValues.RA.stdBuilder()
-            .itemInputs(
-                GTNRItemList.ChaosCapacityTier1.get(8),
-                new Object[] { OrePrefixes.circuit.get(Materials.UV), 8 },
-                getModItem(Mods.AppliedEnergistics2.ID, "item.ItemMultiMaterial", 8, 59), // 4096k storage components.
-
-                ItemList.Sensor_UV.get(2),
-                ItemList.Circuit_Chip_NeuroCPU.get(16),
-                ItemList.Gravistar.get(4),
-
-                MaterialsAlloy.QUANTUM.getPlate(8),
-                GTOreDictUnificator.get(OrePrefixes.foil, Materials.EnrichedHolmium, 16))
-            .circuit(10)
-            .fluidInputs(MaterialsAlloy.INDALLOY_140.getFluidStack(2304))
-            .itemOutputs(GTNRItemList.ChaosCapacityTier2.get(8))
-            .duration(20 * 5)
-            .eut(TierEU.RECIPE_UV)
-            .requireMods(Mods.AppliedEnergistics2)
-            .addTo(RecipeMaps.assemblerRecipes);
-
-        GTValues.RA.stdBuilder()
-            .itemInputs(
-                GTNRItemList.ChaosCapacityTier2.get(4),
-                new Object[] { OrePrefixes.circuit.get(Materials.UEV), 8 },
-                ItemList.Field_Generator_UHV.get(1),
-
-                getModItem(Mods.AppliedEnergistics2.ID, "item.ItemMultiMaterial", 4, 60), // 16384k storage components.
-                ItemList.UHV_Coil.get(4),
-                ItemList.Gravistar.get(16),
-
-                MaterialsAlloy.ABYSSAL.getPlate(16),
-                ItemList.Naquarite_Universal_Insulator_Foil.get(16))
-            .circuit(10)
-            .fluidInputs(Materials.RadoxPolymer.getMolten(1152))
-            .itemOutputs(GTNRItemList.ChaosCapacityTier3.get(4))
-            .duration(20 * 10)
-            .eut(TierEU.RECIPE_UHV)
-            .requireMods(Mods.AppliedEnergistics2)
-            .addTo(RecipeMaps.assemblerRecipes);
+        Materials[] circuitTiers = { Materials.EV, Materials.IV, Materials.LuV, Materials.ZPM, Materials.UV };
+        Materials[] structuralMaterials = { Materials.Titanium, Materials.TungstenSteel, Materials.HSSG,
+            Materials.NaquadahAlloy, Materials.Neutronium };
+        ItemList[] fieldGenerators = { ItemList.Field_Generator_EV, ItemList.Field_Generator_IV,
+            ItemList.Field_Generator_LuV, ItemList.Field_Generator_ZPM, ItemList.Field_Generator_UV };
+        GTNRItemList[] capacityBlocks = { GTNRItemList.ChaosCapacityTier1, GTNRItemList.ChaosCapacityTier2,
+            GTNRItemList.ChaosCapacityTier3, GTNRItemList.ChaosCapacityTier4, GTNRItemList.ChaosCapacityTier5 };
+        int[] batchSizes = { 16, 8, 4, 4, 4 };
+        int[] durations = { 5, 5, 10, 10, 15 };
+        for (int tier = 0; tier < capacityBlocks.length; tier++) {
+            ItemStack base = tier == 0 ? GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Titanium, 4)
+                : capacityBlocks[tier - 1].get(batchSizes[tier]);
+            GTValues.RA.stdBuilder()
+                .itemInputs(
+                    base,
+                    new Object[] { OrePrefixes.circuit.get(circuitTiers[tier]), tier == 0 ? 4 : 8 },
+                    fieldGenerators[tier].get(1),
+                    ItemList.Circuit_Chip_Ram.get(16),
+                    GTOreDictUnificator.get(OrePrefixes.plate, structuralMaterials[tier], 16),
+                    GTOreDictUnificator.get(OrePrefixes.foil, Materials.Polytetrafluoroethylene, 16))
+                .circuit(10)
+                .fluidInputs(Materials.SolderingAlloy.getMolten(1152))
+                .itemOutputs(capacityBlocks[tier].get(batchSizes[tier]))
+                .duration(durations[tier] * SECONDS)
+                .eut(VP[VoltageIndex.EV + tier])
+                .addTo(assemblerRecipes);
+        }
     }
 
     private static void registerLargeFurnaceRecipes() {

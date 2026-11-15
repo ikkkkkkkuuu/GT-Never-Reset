@@ -2,6 +2,7 @@ package com.xyp.gtneverreset.common.recipe.gregtech;
 
 import net.minecraft.item.ItemStack;
 
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
@@ -20,6 +21,7 @@ public final class SpaceAssemblerRecipes {
     private SpaceAssemblerRecipes() {}
 
     public static void register() {
+        if (!ChaosConfig.enableBottleInChaos) return;
         registerChaosPhotonUpgrades();
         GTValues.RA.stdBuilder()
             .itemInputs(GregtechItemList.SpaceTimeContinuumRipper.get(1), GregtechItemList.Laser_Lens_Special.get(4))

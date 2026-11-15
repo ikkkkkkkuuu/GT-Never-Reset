@@ -42,6 +42,7 @@ import gregtech.api.recipe.RecipeMap;
 public final class BottleInChaosChecks {
 
     private static final boolean PREVIEW = Boolean.getBoolean("gtnr.bottle.chaos.preview");
+    private static final boolean EXPECT_DISABLED = Boolean.getBoolean("gtnr.bottle.chaos.expectDisabled");
 
     private final StringBuilder report = new StringBuilder();
     private boolean launched, checked, opened, finished;
@@ -84,7 +85,7 @@ public final class BottleInChaosChecks {
             }
             if (stage == 1) {
                 player.closeScreen();
-                player.playerNetServerHandler.setPlayerLocation(42, 103, -48, 40, 14);
+                player.playerNetServerHandler.setPlayerLocation(42, 84, -48, 40, 14);
                 stage = 2;
             }
             if (stage == 3 && tile.isAllowedToWork()) {
@@ -113,6 +114,12 @@ public final class BottleInChaosChecks {
             mc.gameSettings.pauseOnLostFocus = false;
             if (!launched && mc.theWorld == null && mc.currentScreen != null && ++menuTicks > 100) {
                 launched = true;
+                if (EXPECT_DISABLED) {
+                    verifyDisabledRegistration();
+                    capture("chaos-disabled.png");
+                    finish(null);
+                    return;
+                }
                 mc.launchIntegratedServer(
                     "chaos-" + System.currentTimeMillis(),
                     "Chaos QA",
@@ -203,6 +210,44 @@ public final class BottleInChaosChecks {
         }
     }
 
+    private void verifyDisabledRegistration() {
+        require(
+            !com.xyp.gtneverreset.config.ChaosConfig.enableBottleInChaos,
+            "feature defaults to disabled without a config value");
+        require(!GTNRItemList.BottleInChaos.hasBeenSet(), "disabled controller is not registered");
+        require(!GTNRItemList.ChaosCredentialHatch.hasBeenSet(), "disabled processing hatch is not registered");
+        require(!GTNRItemList.ChaosStructureModule.hasBeenSet(), "disabled structure module is not registered");
+        require(!GTNRItemList.ChaosCapacityTier1.hasBeenSet(), "disabled capacity block is not registered");
+        require(com.xyp.gtneverreset.loader.ItemLoader.chaosRoute == null, "disabled credential item is absent");
+        require(
+            com.xyp.gtneverreset.loader.BlockLoader.chaosCapacity == null,
+            "disabled capacity block instance is absent");
+        require(
+            GregTechAPI.METATILEENTITIES[GTNRMachineID.BottleInChaos.id] == null,
+            "disabled controller has no meta tile registration");
+        require(
+            GregTechAPI.METATILEENTITIES[GTNRMachineID.ChaosCredentialHatch.id] == null,
+            "disabled processing hatch has no meta tile registration");
+        require(
+            RecipeMap.ALL_RECIPE_MAPS.keySet()
+                .stream()
+                .noneMatch(
+                    key -> key.startsWith("gtnr.bottleinchaos.") || key.startsWith("gtnr.chaos.")
+                        || key.startsWith("gtnr.recipe.chaos_")),
+            "disabled dedicated recipe maps are absent");
+        require(
+            GTNRItemList.LargeFurnace.hasBeenSet() && GTNRItemList.MEDataAccessHatch.hasBeenSet(),
+            "unrelated machines remain registered");
+        require(
+            gregtech.api.recipe.RecipeMaps.assemblerRecipes.getAllRecipes()
+                .stream()
+                .anyMatch(
+                    recipe -> java.util.Arrays.stream(recipe.mOutputs)
+                        .anyMatch(
+                            output -> output != null && output.isItemEqual(GTNRItemList.MEDataAccessHatch.get(1)))),
+            "unrelated assembler recipes remain registered");
+    }
+
     private void verify(EntityPlayerMP player) throws Exception {
         World world = player.worldObj;
         require(
@@ -210,13 +255,22 @@ public final class BottleInChaosChecks {
             "full preset catalog initialized without TST");
         String[][] shape = MultiblockStructureLoader.load("bottle_in_chaos");
         require(
-            shape.length == 41 && shape[0].length == 29 && shape[0][0].length() == 29,
-            "original 29 x 41 x 29 structure retained");
+            shape.length == 31 && shape[0].length == 29 && shape[0][0].length() == 29,
+            "shortened and inverted 29 x 31 x 29 structure loaded");
         tile = place(world, 0, 80, 0, GTNRMachineID.BottleInChaos.id);
         tile.setFrontFacing(ForgeDirection.NORTH);
         tile.disableWorking();
         machine = (BottleInChaos) tile.getMetaTileEntity();
         machine.construct(new ItemStack(Items.feather, 64), false);
+        player.capabilities.allowFlying = true;
+        player.capabilities.isFlying = true;
+        player.sendPlayerAbilities();
+        if (PREVIEW) {
+            verifyFormation(world, shape);
+            processingVerified = true;
+            player.playerNetServerHandler.setPlayerLocation(0.5, 80, -4, 0, 0);
+            return;
+        }
         var hatchTile = place(world, -3, 80, -3, GTNRMachineID.ChaosCredentialHatch.id);
         var hatch = (ChaosCredentialHatch) hatchTile.getMetaTileEntity();
         require(hatch.getStackInSlot(0) == null, "processing group requires no physical credential");
@@ -239,16 +293,16 @@ public final class BottleInChaosChecks {
     }
 
     private void verifyFormation(World world, String[][] shape) {
-        var blocks = com.xyp.gtneverreset.loader.BlockLoader.chaosCasing02;
+        var blocks = GregTechAPI.sBlockCasings4;
         var central = new java.util.ArrayList<int[]>();
         for (int layer = 0; layer < shape.length; layer++) {
             for (int row = 0; row < shape[layer].length; row++) {
                 for (int column = 0; column < shape[layer][row].length(); column++) {
                     char symbol = shape[layer][row].charAt(column);
-                    int x = column - 14, y = 115 - layer, z = row - 12;
+                    int x = column - 14, y = 85 - layer, z = row - 12;
                     if (symbol == 'U') place(world, x, y, z, GTNRMachineID.ChaosCredentialHatch.id);
                     if (symbol == 'V' || symbol == 'W' || symbol == 'X' || symbol == 'Y')
-                        world.setBlock(x, y, z, blocks, 2, 3);
+                        world.setBlock(x, y, z, blocks, 0, 3);
                     if (symbol == 'Y') central.add(new int[] { x, y, z });
                 }
             }
@@ -272,7 +326,7 @@ public final class BottleInChaosChecks {
         }
         var errors = new java.util.ArrayList<gregtech.api.structure.error.StructureError>();
         machine.checkMachine(tile, null, errors);
-        require(errors.isEmpty(), "complete original structure forms with fifteen processing groups: " + errors);
+        require(errors.isEmpty(), "shortened inverted structure forms with fifteen processing groups: " + errors);
         machine.mMachine = true;
         require(
             machine.getInstalledCredentialHatchCount() == 15,
@@ -558,6 +612,30 @@ public final class BottleInChaosChecks {
     }
 
     private void verifyManufacturing() {
+        ItemStack[] evOutputs = { GTNRItemList.ChaosStructureModule.get(1), GTNRItemList.ChaosCapacityTier1.get(1),
+            GTNRItemList.ChaosCapacityTier2.get(1), GTNRItemList.ChaosCapacityTier3.get(1),
+            GTNRItemList.ChaosCapacityTier4.get(1), GTNRItemList.ChaosCapacityTier5.get(1) };
+        for (int index = 0; index < evOutputs.length; index++) {
+            ItemStack expected = evOutputs[index];
+            long expectedVoltage = gregtech.api.enums.GTValues.VP[gregtech.api.enums.VoltageIndex.EV
+                + Math.max(0, index - 1)];
+            require(
+                gregtech.api.recipe.RecipeMaps.assemblerRecipes.getAllRecipes()
+                    .stream()
+                    .anyMatch(
+                        recipe -> recipe.mEUt == expectedVoltage && java.util.Arrays.stream(recipe.mOutputs)
+                            .anyMatch(output -> output != null && output.isItemEqual(expected))),
+                "downgraded assembler recipe voltage matches: " + expected.getDisplayName());
+            require(
+                gregtech.api.util.GTRecipe.RecipeAssemblyLine.sAssemblylineRecipes.stream()
+                    .noneMatch(recipe -> recipe.mOutput != null && recipe.mOutput.isItemEqual(expected)),
+                "obsolete assembly-line recipe removed: " + expected.getDisplayName());
+        }
+        require(
+            com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps.BottledChaosRecipes.getAllRecipes()
+                .stream()
+                .allMatch(recipe -> recipe.mSpecialItems == null),
+            "NEI processing recipes no longer display credentials");
         var outputs = new java.util.HashSet<com.xyp.gtneverreset.common.crafting.chaos.material.ChaosItemKey>();
         for (var map : RecipeMap.ALL_RECIPE_MAPS.values())
             for (var recipe : map.getAllRecipes()) for (var output : recipe.mOutputs) if (output != null)

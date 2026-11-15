@@ -13,7 +13,6 @@ import com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipePage;
 import com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeProcessor;
 import com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeResources.CredentialModel;
 import com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeResources.CredentialRoutes;
-import com.xyp.gtneverreset.common.item.items.ChaosRouteItem;
 import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
 
 import gregtech.api.enums.GTValues;
@@ -107,15 +106,6 @@ public final class ChaosProcessingRecipes {
                 }
                 var route = CredentialRoutes.get(display.tagIndex());
                 if (route == null) throw new IllegalStateException("missing credential route " + display.tagIndex());
-                long routeMask = display.requiredTagMask();
-                int requiredWeight = ChaosRouteItem.getRequiredWeight(routeMask);
-                ItemStack credential = null;
-                for (int meta = 0; meta <= ChaosRouteItem.MAX_META; meta++) {
-                    credential = ChaosRouteItem.createCredential(meta, routeMask, requiredWeight);
-                    if (credential != null) break;
-                }
-                if (credential == null)
-                    throw new IllegalStateException("no credential frame can hold route " + display.tagIndex());
                 var recipeBuilder = GTValues.RA.stdBuilder();
                 recipeBuilder.recipeCategory(categoryForRoute(display));
                 if (alternativeInputs == null) recipeBuilder.itemInputsUnsafe(itemInputs);
@@ -123,7 +113,6 @@ public final class ChaosProcessingRecipes {
                 registered += recipeBuilder.fluidInputs(fluidInputs)
                     .itemOutputs(itemOutputs)
                     .fluidOutputs(fluidOutputs)
-                    .special(credential)
                     .metadata(BottledChaosRecipeMetadata.DISPLAY_BATCH, display)
                     .duration((int) Math.min(Integer.MAX_VALUE, Math.ceil(plan.durationTicks())))
                     .eut(display.baseEUt())

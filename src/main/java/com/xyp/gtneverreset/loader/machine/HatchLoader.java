@@ -18,6 +18,7 @@ import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputHatch;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputSlave;
 import com.xyp.gtneverreset.common.machine.hatch.VaultPortHatch;
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
@@ -26,12 +27,14 @@ import com.xyp.gtneverreset.utils.text.AnimatedText;
 public final class HatchLoader {
 
     public static void registry() {
-        GTNRItemList.ChaosCredentialHatch.set(
-            new ChaosCredentialHatch(
-                GTNRMachineID.ChaosCredentialHatch.id,
-                "gtneverreset.chaos_credential_hatch",
-                StatCollector.translateToLocal(ChaosCredentialHatch.NAME_KEY),
-                8));
+        if (ChaosConfig.enableBottleInChaos) {
+            GTNRItemList.ChaosCredentialHatch.set(
+                new ChaosCredentialHatch(
+                    GTNRMachineID.ChaosCredentialHatch.id,
+                    "gtneverreset.chaos_credential_hatch",
+                    StatCollector.translateToLocal(ChaosCredentialHatch.NAME_KEY),
+                    8));
+        }
         GTNRItemList.MEDataAccessHatch.set(
             new MEDataAccessHatch(
                 GTNRMachineID.MEDataAccessHatch.id,

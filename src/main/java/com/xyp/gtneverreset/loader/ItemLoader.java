@@ -24,6 +24,7 @@ import com.xyp.gtneverreset.common.machine.packaged.AssemblyLineAdapter;
 import com.xyp.gtneverreset.common.machine.packaged.CircuitAssemblyLineAdapter;
 import com.xyp.gtneverreset.compat.bloodmagic.BloodMagicCompat;
 import com.xyp.gtneverreset.compat.thaumcraft.ThaumcraftCompat;
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.mod.ModList;
 
@@ -79,26 +80,28 @@ public final class ItemLoader {
     public static final ItemUniversalWand universalWand = new ItemUniversalWand();
 
     public static void registerItems() {
-        var chaosCredential = new ChaosCredentialItem();
-        chaosCredential.setCreativeTab(null);
-        var chaosComponents = new com.xyp.gtneverreset.common.item.items.ChaosComponentsItem();
-        GameRegistry.registerItem(chaosComponents, "chaos_components");
-        GTNRItemList.ChaosCriticalPhoton.set(chaosComponents.registerVariant(0));
-        GTNRItemList.GravitationalLens.set(chaosComponents.registerVariant(1));
-        GTNRItemList.BallLightningUpgradeChip.set(chaosComponents.registerVariant(2));
-        GTNRItemList.WhiteDwarfMold_Ingot.set(chaosComponents.registerVariant(3));
-        GTNRItemList.SwelegfyrUpgradeChip.set(chaosComponents.registerVariant(4));
-        GTNRItemList.ChaosPrototypeProtocol.set(chaosComponents.registerVariant(5));
-        chaosModule = new ChaosStructureModuleItem();
-        chaosRoute = new ChaosRouteItem();
-        GameRegistry.registerItem(chaosRoute, "chaos_route_selection");
-        for (int meta = 0; meta <= ChaosRouteItem.MAX_META; meta++) chaosRoute.registerVariant(meta);
-        chaosRoute.setCreativeTab(null);
-        chaosModule.registerVariant(0);
-        GameRegistry.registerItem(chaosCredential, chaosCredential.REGISTRY_NAME);
-        GameRegistry.registerItem(chaosModule, "chaos_structure_module");
-        GTNRItemList.ChaosCredential.set(chaosCredential);
-        GTNRItemList.ChaosStructureModule.set(chaosModule);
+        if (ChaosConfig.enableBottleInChaos) {
+            var chaosCredential = new ChaosCredentialItem();
+            chaosCredential.setCreativeTab(null);
+            var chaosComponents = new com.xyp.gtneverreset.common.item.items.ChaosComponentsItem();
+            GameRegistry.registerItem(chaosComponents, "chaos_components");
+            GTNRItemList.ChaosCriticalPhoton.set(chaosComponents.registerVariant(0));
+            GTNRItemList.GravitationalLens.set(chaosComponents.registerVariant(1));
+            GTNRItemList.BallLightningUpgradeChip.set(chaosComponents.registerVariant(2));
+            GTNRItemList.WhiteDwarfMold_Ingot.set(chaosComponents.registerVariant(3));
+            GTNRItemList.SwelegfyrUpgradeChip.set(chaosComponents.registerVariant(4));
+            GTNRItemList.ChaosPrototypeProtocol.set(chaosComponents.registerVariant(5));
+            chaosModule = new ChaosStructureModuleItem();
+            chaosRoute = new ChaosRouteItem();
+            GameRegistry.registerItem(chaosRoute, "chaos_route_selection");
+            for (int meta = 0; meta <= ChaosRouteItem.MAX_META; meta++) chaosRoute.registerVariant(meta);
+            chaosRoute.setCreativeTab(null);
+            chaosModule.registerVariant(0);
+            GameRegistry.registerItem(chaosCredential, chaosCredential.REGISTRY_NAME);
+            GameRegistry.registerItem(chaosModule, "chaos_structure_module");
+            GTNRItemList.ChaosCredential.set(chaosCredential);
+            GTNRItemList.ChaosStructureModule.set(chaosModule);
+        }
         GameRegistry.registerItem(permanentMagnetRing, "PermanentMagnetRing");
         GameRegistry.registerItem(harvestRing, "HarvestRing");
         GameRegistry.registerItem(wirelessConnector, "packaged_wireless_connector");

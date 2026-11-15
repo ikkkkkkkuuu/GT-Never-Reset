@@ -5,14 +5,13 @@ import static gregtech.api.util.GTRecipeConstants.NANITE_TIERS;
 import net.minecraft.item.ItemStack;
 
 import com.dreammaster.item.NHItemList;
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.loader.BlockLoader;
-import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import gregtech.api.enums.CondensateType;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
-import gregtech.api.enums.Mods;
 import gregtech.api.enums.NaniteTier;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.api.enums.TierEU;
@@ -27,75 +26,8 @@ public final class CondensateAssemblerRecipes {
     private CondensateAssemblerRecipes() {}
 
     public static void register() {
+        if (!ChaosConfig.enableBottleInChaos) return;
         registerChaosGenerators();
-        GTValues.RA.stdBuilder()
-            .itemInputs(
-                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.ProtoHalkonite, 4),
-                NHItemList.CircuitUIV.get(8),
-                ItemList.MetaMaterial_ResonanceChamber1.get(8),
-                ItemList.MetaMaterial_FieldManipulator1.get(8),
-
-                GregtechItemList.CosmicFabricManipulator.get(2),
-                ItemList.Field_Generator_UIV.get(2),
-                ItemList.EnergisedTesseract.get(16),
-                ItemList.StableBosonContainmentUnit.get(4),
-
-                ItemList.ZPM2.get(1),
-                GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.SixPhasedCopper, 4),
-                GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.Creon, 4),
-                GTOreDictUnificator.get(OrePrefixes.plate, Materials.RadoxPolymer, 16))
-            .metadata(
-                NANITE_TIERS,
-                new NaniteTier[] { NaniteTier.Gold, NaniteTier.Transcendent, NaniteTier.Gold, NaniteTier.Transcendent,
-
-                    NaniteTier.Transcendent, NaniteTier.Transcendent, NaniteTier.Gold, NaniteTier.Transcendent,
-
-                    NaniteTier.Transcendent, NaniteTier.Gold, NaniteTier.Transcendent, NaniteTier.Gold })
-            .fluidInputs(
-                CondensateType.Bedrockium.getEntangled(9216),
-                CondensateType.CelestialTungsten.getEntangled(4608),
-                CondensateType.Neutronium.getEntangled(9216),
-                CondensateType.CosmicNeutronium.getEntangled(9216))
-            .itemOutputs(GTNRItemList.ChaosCapacityTier4.get(4))
-            .duration(20 * 10)
-            .eut(TierEU.RECIPE_UIV)
-            .requireMods(Mods.NewHorizonsCoreMod)
-            .addTo(TecTechRecipeMaps.condensateAssemblingRecipes);
-
-        GTValues.RA.stdBuilder()
-            .itemInputs(
-                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.MHDCSM, 4),
-                GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.Eternity, 8),
-                NHItemList.CircuitMAX.get(8),
-                ItemList.MetaMaterial_ResonanceChamber4.get(4),
-
-                ItemList.MetaMaterial_Shielding3.get(8),
-                ItemList.MetaMaterial_Waveguide3.get(8),
-                ItemList.MetaMaterial_SensorArray4.get(4),
-                ItemList.Field_Generator_UXV.get(2),
-
-                ItemList.ZPM3.get(1),
-                GregtechItemList.SpaceTimeContinuumRipper.get(1),
-                ItemList.PseudoStar.get(4),
-                GTOreDictUnificator.get(OrePrefixes.foil, Materials.MagMatter, 16))
-            .metadata(
-                NANITE_TIERS,
-                new NaniteTier[] { NaniteTier.Eternity, NaniteTier.Eternity, NaniteTier.MagMatter,
-                    NaniteTier.BlackDwarf,
-
-                    NaniteTier.Eternity, NaniteTier.Eternity, NaniteTier.BlackDwarf, NaniteTier.Universium,
-
-                    NaniteTier.Eternity, NaniteTier.Universium, NaniteTier.BlackDwarf, NaniteTier.MagMatter })
-            .fluidInputs(
-                CondensateType.BoundlessCosmicSolder.getEntangled(16000),
-                CondensateType.SpaceTime.getEntangled(9216),
-                CondensateType.Space.getEntangled(9216),
-                CondensateType.QuarkGluonPlasma.getEntangled(32000))
-            .itemOutputs(GTNRItemList.ChaosCapacityTier5.get(4))
-            .duration(20 * 15)
-            .eut(TierEU.RECIPE_UXV)
-            .requireMods(Mods.NewHorizonsCoreMod)
-            .addTo(TecTechRecipeMaps.condensateAssemblingRecipes);
     }
 
     private static void registerChaosGenerators() {

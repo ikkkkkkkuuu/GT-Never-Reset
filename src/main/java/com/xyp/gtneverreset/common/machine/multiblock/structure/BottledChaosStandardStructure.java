@@ -13,19 +13,20 @@ import static gregtech.api.enums.HatchElement.InputBus;
 import static gregtech.api.enums.HatchElement.InputHatch;
 import static gregtech.api.enums.HatchElement.OutputBus;
 import static gregtech.api.enums.HatchElement.OutputHatch;
-import static gregtech.api.structure.error.StructureErrorRegistry.ENERGY_TIER_EXCEED_GLASS;
-import static gregtech.api.util.GTStructureUtility.chainAllGlasses;
+import static gregtech.api.util.GTStructureUtility.extractMTEs;
 import static gregtech.api.util.GTStructureUtility.ofFrame;
+import static gregtech.api.util.GTStructureUtility.ofGenericMTETiered;
 
 import java.util.List;
 
-import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.ImmutableList;
+import com.gtnewhorizon.structurelib.structure.AutoPlaceEnvironment;
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.IStructureElement;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
@@ -33,17 +34,19 @@ import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.common.block.blocks.BlockChaosCapacity;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.BottleInChaosMachineBase;
 import com.xyp.gtneverreset.common.machine.multiblock.BottleInChaos;
-import com.xyp.gtneverreset.loader.BlockLoader;
 
+import bartworks.API.BorosilicateGlass;
 import gregtech.api.GregTechAPI;
 import gregtech.api.casing.Casings;
 import gregtech.api.enums.GTValues;
+import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.VoltageIndex;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
-import gregtech.api.metatileentity.implementations.MTEHatch;
+import gregtech.api.metatileentity.implementations.MTEBasicHull;
 import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrors;
+import gregtech.api.util.GTStructureUtility.ProxyStructureElement;
 import gregtech.api.util.HatchElementBuilder;
 import gregtech.api.util.MultiblockTooltipBuilder;
 
@@ -51,10 +54,10 @@ public final class BottledChaosStandardStructure extends BottledChaosStructure {
 
     private static final String STRUCTURE_PIECE_MAIN = "main";
     private static final int HORIZONTAL_OFFSET = 14;
-    private static final int VERTICAL_OFFSET = 35;
+    private static final int VERTICAL_OFFSET = 5;
     private static final int DEPTH_OFFSET = 12;
     private static final int CAPACITY_REGION_COUNT = 4;
-    private static final int CAPACITY_REGION_BLOCK_COUNT = 64;
+    private static final int CAPACITY_REGION_BLOCK_COUNT = 24;
     private static final int CAPACITY_LEVEL_COUNT = 5;
 
     // spotless:off
@@ -66,8 +69,6 @@ public final class BottledChaosStandardStructure extends BottledChaosStructure {
     private static IStructureDefinition<BottleInChaos> structureDefinition;
     private static MultiblockTooltipBuilder tooltip;
     private int generatorLevel = -1;
-    private int minimumUpgradeGlassTier;
-    private int maximumUpgradeGlassTier;
 
     public BottledChaosStandardStructure(BottleInChaos machine) {
         super(machine);
@@ -95,38 +96,11 @@ public final class BottledChaosStandardStructure extends BottledChaosStructure {
     @Override
     public void reset() {
         generatorLevel = -1;
-        minimumUpgradeGlassTier = Integer.MAX_VALUE;
-        maximumUpgradeGlassTier = 0;
     }
 
     @Override
     public boolean checkStructurePieces(List<StructureError> errors) {
-        return checkPiece(STRUCTURE_PIECE_MAIN, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors)
-            && checkMachineTier(errors);
-    }
-
-    private boolean checkMachineTier(List<StructureError> errors) {
-        if (minimumUpgradeGlassTier < VoltageIndex.UHV + generatorLevel
-            || maximumUpgradeGlassTier != minimumUpgradeGlassTier) {
-            // #tr gtnr.machine.BottleInChaos.structure_error.upgrade_glass_mismatch
-            // # Shaft and capacity-region glass must share a tier no lower than the machine tier.
-            // # zh_CN 主轴与容量区玻璃须同级, 且不得低于机器等级.
-            errors.add(StructureErrors.of("gtnr.machine.BottleInChaos.structure_error.upgrade_glass_mismatch"));
-            return false;
-        }
-        for (MTEHatch hatch : machine.mEnergyHatches) {
-            if (hatch.mTier > minimumUpgradeGlassTier) {
-                errors.add(ENERGY_TIER_EXCEED_GLASS);
-                return false;
-            }
-        }
-        for (MTEHatch hatch : machine.getExoticEnergyHatches()) {
-            if (hatch.mTier > minimumUpgradeGlassTier) {
-                errors.add(ENERGY_TIER_EXCEED_GLASS);
-                return false;
-            }
-        }
-        return true;
+        return checkPiece(STRUCTURE_PIECE_MAIN, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors);
     }
 
     @Override
@@ -204,40 +178,32 @@ public final class BottledChaosStandardStructure extends BottledChaosStructure {
                 .addShape(STRUCTURE_PIECE_MAIN, transpose(SHAPE))
                 // GuideNH retains only channels discovered from the registered controller's structure.
                 .addChannel(BottledChaosPrototypeStructure.PREVIEW_CHANNEL, 1, 1)
-                .addElement('A', Casings.BorosilicateGlassAny.asElement())
-                .addElement('a', chainAllGlasses(-1, (machine, tier) -> {
-                    ((BottledChaosStandardStructure) machine.getMachineStructure()).minimumUpgradeGlassTier = Math.min(
-                        ((BottledChaosStandardStructure) machine.getMachineStructure()).minimumUpgradeGlassTier,
-                        tier);
-                    ((BottledChaosStandardStructure) machine.getMachineStructure()).maximumUpgradeGlassTier = Math.max(
-                        ((BottledChaosStandardStructure) machine.getMachineStructure()).maximumUpgradeGlassTier,
-                        tier);
-                },
-                    // Collect all tiers; checkMachine validates uniform glass and machine/energy hatch tier limits.
-                    machine -> -1))
-                .addElement('B', Casings.SuperconductingCoilBlock.asElement())
-                .addElement('C', Casings.ContainmentFieldMachineCasing.asElement())
-                .addElement('D', Casings.AdvancedIridiumPlatedMachineCasing.asElement())
-                .addElement('E', Casings.RadiantNaquadahAlloyCasing.asElement())
-                .addElement('F', Casings.AdvancedFilterCasing.asElement())
+                .addChannel(BlockChaosCapacity.STRUCTURE_CHANNEL, 1, getCapacityLevelCount() + 1)
+                .addElement('A', ofBlock(BorosilicateGlass.getGlassBlock(), 0))
+                .addElement('a', ofBlock(BorosilicateGlass.getGlassBlock(), 0))
+                .addElement('B', Casings.TPVCoilBlock.asElement())
+                .addElement('C', Casings.IVMachineCasing.asElement())
+                .addElement('D', Casings.RobustTungstenSteelMachineCasing.asElement())
+                .addElement('E', Casings.StableTitaniumMachineCasing.asElement())
+                .addElement('F', Casings.FilterMachineCasing.asElement())
                 .addElement(
                     'G',
                     withChannel(
                         BlockChaosCapacity.STRUCTURE_CHANNEL,
                         BottleInChaosMachineBase.<BottleInChaos>capacityElement()))
-                .addElement('H', Casings.HighPowerCasing.asElement())
+                .addElement('H', Casings.EVMachineCasing.asElement())
                 .addElement('I', Casings.IronFence.asElement())
-                .addElement('J', ofFrame(Materials.Neutronium))
-                .addElement('K', ofFrame(Materials.NaquadahAlloy))
-                .addElement('L', ofBlock(GregTechAPI.sBlockCasingsDyson, 9))
-                .addElement('M', ofBlock(BlockLoader.chaosCasing01, 1))
-                .addElement('N', ofBlock(BlockLoader.chaosCasing02, 2))
-                .addElement('O', ofBlock(BlockLoader.chaosCasing02, 4))
-                .addElement('P', ofBlock(BlockLoader.chaosCasing02, 7))
-                .addElement('Q', ofBlock(BlockLoader.chaosCasing02, 8))
-                .addElement('R', ofBlock(BlockLoader.chaosGlass, 0))
-                .addElement('S', withChannel("energymatrix", generatorElement(BlockLoader.chaosEnergyMatrix)))
-                .addElement('T', withChannel("fieldgeneratortier", generatorElement(BlockLoader.chaosFieldGenerator)))
+                .addElement('J', ofFrame(Materials.Iron))
+                .addElement('K', ofFrame(Materials.TungstenSteel))
+                .addElement('L', Casings.Firebricks.asElement())
+                .addElement('M', Casings.FrostProofMachineCasing.asElement())
+                .addElement('N', Casings.RobustTungstenSteelMachineCasing.asElement())
+                .addElement('O', Casings.TungstensteelPipeCasing.asElement())
+                .addElement('P', Casings.FrostProofMachineCasing.asElement())
+                .addElement('Q', Casings.RobustTungstenSteelMachineCasing.asElement())
+                .addElement('R', ofBlock(BorosilicateGlass.getGlassBlock(), 0))
+                .addElement('S', withChannel("energymatrix", generatorCasingElement()))
+                .addElement('T', withChannel("fieldgeneratortier", generatorHullElement()))
                 .addElement('U', threadElement(0))
                 .addElement('V', threadElement(1))
                 .addElement('W', threadElement(2))
@@ -258,14 +224,55 @@ public final class BottledChaosStandardStructure extends BottledChaosStructure {
         return GTValues.V[generatorLevel >= 4 ? VoltageIndex.MAX : VoltageIndex.UHV + Math.max(0, generatorLevel)];
     }
 
-    private static IStructureElement<BottleInChaos> generatorElement(Block block) {
+    private static IStructureElement<BottleInChaos> generatorCasingElement() {
         return ofBlocksTiered(
-            (candidate, meta) -> candidate == block && meta >= 0 && meta <= 4 ? meta : null,
-            ImmutableList
-                .of(Pair.of(block, 0), Pair.of(block, 1), Pair.of(block, 2), Pair.of(block, 3), Pair.of(block, 4)),
+            (candidate, meta) -> candidate == GregTechAPI.sBlockCasings1 && meta >= 4 && meta <= 8 ? meta - 4 : null,
+            ImmutableList.of(
+                Pair.of(GregTechAPI.sBlockCasings1, 4),
+                Pair.of(GregTechAPI.sBlockCasings1, 5),
+                Pair.of(GregTechAPI.sBlockCasings1, 6),
+                Pair.of(GregTechAPI.sBlockCasings1, 7),
+                Pair.of(GregTechAPI.sBlockCasings1, 8)),
             -1,
             (machine, level) -> ((BottledChaosStandardStructure) machine.getMachineStructure()).generatorLevel = level,
             machine -> ((BottledChaosStandardStructure) machine.getMachineStructure()).generatorLevel);
+    }
+
+    private static IStructureElement<BottleInChaos> generatorHullElement() {
+        ItemStack[] hulls = { ItemList.Hull_EV.get(1), ItemList.Hull_IV.get(1), ItemList.Hull_LuV.get(1),
+            ItemList.Hull_ZPM.get(1), ItemList.Hull_UV.get(1) };
+        IStructureElement<BottleInChaos> element = ofGenericMTETiered(MTEBasicHull.class, (machine, hull, tier) -> {
+            BottledChaosStandardStructure structure = (BottledChaosStandardStructure) machine.getMachineStructure();
+            int level = tier - 1;
+            if (structure.generatorLevel != -1 && structure.generatorLevel != level) return false;
+            structure.generatorLevel = level;
+            return true;
+        }, extractMTEs(MTEBasicHull.class, hulls));
+        return new ProxyStructureElement<BottleInChaos, IStructureElement<BottleInChaos>>(element) {
+
+            private ItemStack selectedHull(ItemStack trigger) {
+                return hulls[Math.max(0, Math.min(hulls.length - 1, trigger.stackSize - 1))];
+            }
+
+            @Override
+            public boolean couldBeValid(BottleInChaos machine, World world, int x, int y, int z, ItemStack trigger) {
+                return world.getTileEntity(x, y, z) instanceof IGregTechTileEntity tile
+                    && tile.getMetaTileID() == selectedHull(trigger).getItemDamage();
+            }
+
+            @Override
+            public BlocksToPlace getBlocksToPlace(BottleInChaos machine, World world, int x, int y, int z,
+                ItemStack trigger, AutoPlaceEnvironment environment) {
+                return BlocksToPlace.create(selectedHull(trigger).copy());
+            }
+
+            @Override
+            public PlaceResult survivalPlaceBlock(BottleInChaos machine, World world, int x, int y, int z,
+                ItemStack trigger, AutoPlaceEnvironment environment) {
+                if (couldBeValid(machine, world, x, y, z, trigger)) return PlaceResult.SKIP;
+                return super.survivalPlaceBlock(machine, world, x, y, z, trigger, environment);
+            }
+        };
     }
 
     @Override

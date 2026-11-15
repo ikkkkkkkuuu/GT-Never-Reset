@@ -15,6 +15,7 @@ import com.xyp.gtneverreset.common.machine.multiblock.LargeOreProcessor;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.text.AnimatedText;
@@ -27,15 +28,17 @@ import gregtech.api.util.GTUtility;
 public final class MultiblockLoader {
 
     public static void registry() {
-        // #tr gtnr.machine.bottle_in_chaos.name
-        // # Bottle in Chaos
-        // # zh_CN 混沌中瓶
-        GTNRItemList.BottleInChaos.set(
-            new BottleInChaos(
-                GTNRMachineID.BottleInChaos.id,
-                "gtneverreset.bottle_in_chaos",
-                StatCollector.translateToLocal("gtnr.machine.bottle_in_chaos.name")));
-        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.BottleInChaos.get(1), AnimatedText.GT_NEVER_RESET);
+        if (ChaosConfig.enableBottleInChaos) {
+            // #tr gtnr.machine.bottle_in_chaos.name
+            // # Bottle in Chaos
+            // # zh_CN 混沌中瓶
+            GTNRItemList.BottleInChaos.set(
+                new BottleInChaos(
+                    GTNRMachineID.BottleInChaos.id,
+                    "gtneverreset.bottle_in_chaos",
+                    StatCollector.translateToLocal("gtnr.machine.bottle_in_chaos.name")));
+            AnimatedTooltipHandler.addItemTooltip(GTNRItemList.BottleInChaos.get(1), AnimatedText.GT_NEVER_RESET);
+        }
         // #tr gtnr.machine.large_ore_processor.name
         // # Large Ore Processor
         // # zh_CN 大型矿石处理机

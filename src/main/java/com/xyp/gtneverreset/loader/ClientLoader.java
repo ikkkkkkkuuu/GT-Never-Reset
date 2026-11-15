@@ -25,6 +25,7 @@ import com.xyp.gtneverreset.compat.bloodmagic.BloodMagicCompat;
 import com.xyp.gtneverreset.compat.nei.NEIWirelessTerminalConfig;
 import com.xyp.gtneverreset.compat.nei.WildcardRecipeImport;
 import com.xyp.gtneverreset.compat.thaumcraft.ThaumcraftCompat;
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtnrlib.mod.ModList;
@@ -47,8 +48,10 @@ public final class ClientLoader {
     }
 
     public static void init() {
-        com.xyp.gtneverreset.client.render.chaos.ChaosCapacityRenderer.register();
-        MinecraftForge.EVENT_BUS.register(new com.xyp.gtneverreset.client.chaos.ChaosTooltipHandler());
+        if (ChaosConfig.enableBottleInChaos) {
+            com.xyp.gtneverreset.client.render.chaos.ChaosCapacityRenderer.register();
+            MinecraftForge.EVENT_BUS.register(new com.xyp.gtneverreset.client.chaos.ChaosTooltipHandler());
+        }
         if (ModList.BetterQuesting.isModLoaded()) QuestContextMenuRegistry.register(new QuestSkipMenu());
         MinecraftForge.EVENT_BUS.register(new VeinMiningInputHandler());
         MinecraftForge.EVENT_BUS.register(new DisassemblerTooltip());

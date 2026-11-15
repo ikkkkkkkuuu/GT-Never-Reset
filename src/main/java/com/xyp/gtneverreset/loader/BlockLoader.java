@@ -23,6 +23,7 @@ import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityStockIOInterface;
 import com.xyp.gtneverreset.common.flux.FluxTransferScheduler;
 import com.xyp.gtneverreset.common.world.FluxChunkLoading;
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.utils.enums.BlockIcons;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.mod.ModList;
@@ -69,7 +70,7 @@ public final class BlockLoader {
             ModList.GTNeverReset.getResourcePath("overloaded_wireless_pattern_provider"));
         GTNRItemList.OverloadedWirelessPatternProvider.set(new ItemStack(overloadedProvider));
         registerFluxBlocks();
-        registerChaosBlocks();
+        if (ChaosConfig.enableBottleInChaos) registerChaosBlocks();
     }
 
     private static void registerChaosBlocks() {

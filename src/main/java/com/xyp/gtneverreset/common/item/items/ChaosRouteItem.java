@@ -162,8 +162,8 @@ public final class ChaosRouteItem extends ChaosMetaItem {
                 getCapacity(stack)));
         if (!isBound(stack)) {
             // #tr item.gtnr.bottleinchaos.credential.tooltip.empty
-            // # Write route tags in the controller's credential injection area.
-            // # zh_CN 在主机的凭证注入区域写入路线标签.
+            // # Legacy item; select routes directly in a processing group hatch. No credential is required.
+            // # zh_CN 旧版物品；请直接在加工组仓选择产线，无需凭证。
             lines.add(StatCollector.translateToLocal("item.gtnr.bottleinchaos.credential.tooltip.empty"));
         } else {
             long displayTagMask = stack.getTagCompound()

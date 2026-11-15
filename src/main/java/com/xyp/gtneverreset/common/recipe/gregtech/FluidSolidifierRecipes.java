@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.common.recipe.gregtech;
 
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import gregtech.api.enums.GTValues;
@@ -12,6 +13,7 @@ public final class FluidSolidifierRecipes {
     private FluidSolidifierRecipes() {}
 
     public static void register() {
+        if (!ChaosConfig.enableBottleInChaos) return;
         GTValues.RA.stdBuilder()
             .itemInputs(Materials.Neutronium.getIngots(1))
             .fluidInputs(Materials.WhiteDwarfMatter.getMolten(576))

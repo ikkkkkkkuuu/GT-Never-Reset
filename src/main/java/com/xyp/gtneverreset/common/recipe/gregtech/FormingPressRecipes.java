@@ -2,6 +2,7 @@ package com.xyp.gtneverreset.common.recipe.gregtech;
 
 import net.minecraft.item.ItemStack;
 
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.loader.BlockLoader;
 
 import gregtech.api.enums.GTValues;
@@ -17,6 +18,7 @@ public final class FormingPressRecipes {
     private FormingPressRecipes() {}
 
     public static void register() {
+        if (!ChaosConfig.enableBottleInChaos) return;
         GTValues.RA.stdBuilder()
             .itemInputs(
                 GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Bedrockium, 1),

@@ -1839,9 +1839,9 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
 
     public static <M extends BottleInChaosMachineBase<M>> IStructureElement<M> hatchElement(
         HatchElementBuilder<M> builder, int hint) {
-        return builder.casingIndex(BlockLoader.chaosCasing02.getTextureIndex(2))
+        return builder.casingIndex(gregtech.api.casing.Casings.RobustTungstenSteelMachineCasing.getTextureId())
             .hint(hint)
-            .buildAndChain(BlockLoader.chaosCasing02, 2);
+            .buildAndChain(GregTechAPI.sBlockCasings4, 0);
     }
 
     public static <M extends BottleInChaosMachineBase<M>> IStructureElement<M> threadElement(int kind) {

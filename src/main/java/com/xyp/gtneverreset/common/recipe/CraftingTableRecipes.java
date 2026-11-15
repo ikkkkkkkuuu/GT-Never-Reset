@@ -17,6 +17,7 @@ import net.minecraft.item.crafting.ShapelessRecipes;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 
+import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.loader.ItemLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -72,7 +73,7 @@ public final class CraftingTableRecipes {
     }
 
     public static void register() {
-        registerChaosMultiUseCores();
+        if (ChaosConfig.enableBottleInChaos) registerChaosMultiUseCores();
         GTModHandler.addCraftingRecipe(
             CustomItemList.hatch_CreativeMaintenance.get(1),
             GTModHandler.RecipeBits.MIRRORED | GTModHandler.RecipeBits.KEEPNBT
