@@ -35,6 +35,7 @@ public final class AssemblerRecipes {
     private static final int MODULE_CIRCUIT = 19;
 
     public static void register() {
+        registerBottleInChaosRecipes();
         GTRecipeBuilder.builder()
             .itemInputs(
                 GTOreDictUnificator.get(OrePrefixes.wireFine, Materials.Copper, 32),
@@ -369,6 +370,52 @@ public final class AssemblerRecipes {
                 .duration(10 * (i + 1) * SECONDS)
                 .addTo(assemblerRecipes);
         }
+    }
+
+    private static void registerBottleInChaosRecipes() {
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Hull_UV.get(1),
+                ItemList.Field_Generator_UV.get(2),
+                ItemList.Electric_Pump_UV.get(4),
+                ItemList.Casing_SolidSteel.get(16),
+                new Object[] { OrePrefixes.circuit.get(Materials.UV), 4 })
+            .fluidInputs(Materials.SolderingAlloy.getMolten(2304))
+            .itemOutputs(GTNRItemList.BottleInChaos.get(1))
+            .duration(120 * SECONDS)
+            .eut(TierEU.RECIPE_UV)
+            .addTo(assemblerRecipes);
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                ItemList.Hull_UV.get(1),
+                ItemList.Sensor_UV.get(1),
+                new Object[] { OrePrefixes.circuit.get(Materials.ZPM), 2 })
+            .fluidInputs(Materials.SolderingAlloy.getMolten(576))
+            .itemOutputs(GTNRItemList.ChaosCredentialHatch.get(1))
+            .duration(30 * SECONDS)
+            .eut(TierEU.RECIPE_ZPM)
+            .addTo(assemblerRecipes);
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                Materials.Europium.getPlates(2),
+                new Object[] { OrePrefixes.circuit.get(Materials.ZPM), 1 },
+                GTUtility.getIntegratedCircuit(7))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(144))
+            .itemOutputs(GTNRItemList.ChaosCredential.get(1))
+            .duration(20 * SECONDS)
+            .eut(TierEU.RECIPE_ZPM)
+            .addTo(assemblerRecipes);
+        GTValues.RA.stdBuilder()
+            .itemInputs(
+                Materials.Europium.getPlates(4),
+                ItemList.Emitter_ZPM.get(1),
+                new Object[] { OrePrefixes.circuit.get(Materials.ZPM), 1 },
+                GTUtility.getIntegratedCircuit(8))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(576))
+            .itemOutputs(GTNRItemList.ChaosStructureModule.get(1))
+            .duration(30 * SECONDS)
+            .eut(TierEU.RECIPE_ZPM)
+            .addTo(assemblerRecipes);
     }
 
     private static void registerLargeFurnaceRecipes() {

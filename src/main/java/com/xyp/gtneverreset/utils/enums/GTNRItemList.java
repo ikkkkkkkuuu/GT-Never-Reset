@@ -31,6 +31,8 @@ public enum GTNRItemList implements IItemContainer {
     WirelessPowerCard,
     WildcardPattern,
     StableEndCrystal,
+    ChaosCredential,
+    ChaosStructureModule,
 
     AdvancedIOBus,
     StockIOInterfacePart,
@@ -49,6 +51,7 @@ public enum GTNRItemList implements IItemContainer {
     LargeOreProcessor,
     LargeFurnace,
     UniversalJointFactory,
+    BottleInChaos,
     QuantumComputer,
     AssemblerMatrix,
     SingularityDataHub,
@@ -70,6 +73,7 @@ public enum GTNRItemList implements IItemContainer {
     MEOutputAssembly,
     VaultPortHatch,
     MEDataAccessHatch,
+    ChaosCredentialHatch,
 
     StaticParallelControllerT1,
     StaticParallelControllerT2,

@@ -4,6 +4,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.xyp.gtneverreset.api.packaged.PackagedCoreRegistry;
+import com.xyp.gtneverreset.common.item.items.ChaosCredentialItem;
+import com.xyp.gtneverreset.common.item.items.ChaosStructureModuleItem;
 import com.xyp.gtneverreset.common.item.items.HarvestRing;
 import com.xyp.gtneverreset.common.item.items.ItemAdvancedIOBus;
 import com.xyp.gtneverreset.common.item.items.ItemPackagedCore;
@@ -73,6 +75,12 @@ public final class ItemLoader {
     public static final ItemUniversalWand universalWand = new ItemUniversalWand();
 
     public static void registerItems() {
+        var chaosCredential = new ChaosCredentialItem();
+        var chaosModule = new ChaosStructureModuleItem();
+        GameRegistry.registerItem(chaosCredential, chaosCredential.REGISTRY_NAME);
+        GameRegistry.registerItem(chaosModule, chaosModule.REGISTRY_NAME);
+        GTNRItemList.ChaosCredential.set(chaosCredential);
+        GTNRItemList.ChaosStructureModule.set(chaosModule);
         GameRegistry.registerItem(permanentMagnetRing, "PermanentMagnetRing");
         GameRegistry.registerItem(harvestRing, "HarvestRing");
         GameRegistry.registerItem(wirelessConnector, "packaged_wireless_connector");

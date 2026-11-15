@@ -1,0 +1,42 @@
+PASS six real ore presets registered
+PASS preset resolves: gtnr.chaos.preset.iron
+PASS preset resolves: gtnr.chaos.preset.copper
+PASS preset resolves: gtnr.chaos.preset.gold
+PASS preset resolves: gtnr.chaos.preset.tin
+PASS preset resolves: gtnr.chaos.preset.nickel
+PASS preset resolves: gtnr.chaos.preset.lead
+PASS long cache quantities survive NBT
+PASS sliced output is detached and lossless
+PASS two real AE processing patterns compile
+PASS forged AE output rejected
+PASS cross-pool ambiguity rejected without map identifier
+PASS map identifier disambiguates real recipes
+PASS probabilistic fluid output cannot authorize an exact AE promise
+PASS unknown recipe pool rejected
+PASS 11 x 13 x 11 binary bottle structure
+PASS constructed structure matches binary shape
+PASS controller forms with native hatches and two credential groups
+PASS module packaging consumes the machine and eight casings
+PASS AE injection consumes only the blank credential
+PASS two groups cannot spend the same shared input
+PASS power loss pauses paid work
+PASS missing maintenance hatch invalidates structure
+PASS native tick stops incomplete structure without losing work
+PASS structure reforms with retained work
+PASS in-flight progress restored
+PASS installed module cannot be extracted during work
+PASS blocked output retains completed chain
+PASS two-step chain consumes cached intermediate and delivers once after blocked-output reload
+PASS internal intermediate fully consumed
+PASS idle bound group can be exported and unlocked
+PASS dedicated input position forms
+PASS group cannot consume another group's dedicated input
+PASS owner group consumes dedicated input
+PASS export finishes paid step and skips remaining steps without discarding output
+PASS capacity failure occurs before consuming external input
+PASS exporting an idle group does not prevent later reuse
+PASS breaking and placing preserves installed modules
+PASS controller GUI opens
+PASS tooltip variables resolved
+PASS GUI button synchronizes power toggle to server
+PASS credential hatch GUI opens

@@ -20,6 +20,24 @@ import gregtech.api.recipe.maps.LargeNEIFrontend;
 
 public final class GTNRRecipeMaps {
 
+    // #tr gtnr.recipe.chaos_credential
+    // # Bottle in Chaos: credential workbench (select preset; marker not consumed)
+    // # zh_CN 混沌中瓶：凭证工作区（选择预设；标志物不消耗）
+    public static final RecipeMap<RecipeMapBackend> CHAOS_CREDENTIAL_RECIPES = RecipeMapBuilder
+        .of("gtnr.recipe.chaos_credential")
+        .maxIO(2, 1, 0, 0)
+        .minInputs(1, 0)
+        .build();
+
+    // #tr gtnr.recipe.chaos_module
+    // # Bottle in Chaos: structure packaging workbench
+    // # zh_CN 混沌中瓶：结构封装工作区
+    public static final RecipeMap<RecipeMapBackend> CHAOS_MODULE_RECIPES = RecipeMapBuilder
+        .of("gtnr.recipe.chaos_module")
+        .maxIO(3, 1, 0, 0)
+        .minInputs(1, 0)
+        .build();
+
     public static final RecipeMap<RecipeMapBackend> DISASSEMBLER_RECIPES = RecipeMapBuilder
         // #tr gtnr.recipe.disassembler
         // # Disassembler

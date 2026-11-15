@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.loader;
 
+import com.xyp.gtneverreset.common.crafting.chaos.ChaosPresets;
 import com.xyp.gtneverreset.common.machine.multiblock.bee.BeeBreedingTiers;
 import com.xyp.gtneverreset.common.recipe.CraftingTableRecipes;
 import com.xyp.gtneverreset.common.recipe.FurnaceRecipes;
@@ -7,6 +8,8 @@ import com.xyp.gtneverreset.common.recipe.gregtech.AssemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.BenderRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.BlastFurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.ExtruderRecipes;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.ChaosCredentialRecipes;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.ChaosStructureModuleRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.DisassemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernNonCellRecipes;
@@ -53,5 +56,8 @@ public final class RecipeLoader implements IContentLoader {
         ModernNonCellRecipes.registerLateRecipes();
         FragmentWorldCollectorRecipes.scheduleRecipes();
         DisassemblerRecipes.register();
+        ChaosPresets.initialize();
+        ChaosCredentialRecipes.register();
+        ChaosStructureModuleRecipes.register();
     }
 }

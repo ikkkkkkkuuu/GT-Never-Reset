@@ -3,6 +3,7 @@ package com.xyp.gtneverreset.loader.machine;
 import net.minecraft.util.StatCollector;
 
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
+import com.xyp.gtneverreset.common.machine.hatch.ChaosCredentialHatch;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternMirror;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
@@ -25,6 +26,11 @@ import com.xyp.gtneverreset.utils.text.AnimatedText;
 public final class HatchLoader {
 
     public static void registry() {
+        GTNRItemList.ChaosCredentialHatch.set(
+            new ChaosCredentialHatch(
+                GTNRMachineID.ChaosCredentialHatch.id,
+                "gtneverreset.chaos_credential_hatch",
+                StatCollector.translateToLocal(ChaosCredentialHatch.NAME_KEY)));
         // #tr gtnr.hatch.me_data_access.name
         // # Data Access Hatch (ME, IV)
         // # zh_CN 数据访问仓 (ME, IV)
