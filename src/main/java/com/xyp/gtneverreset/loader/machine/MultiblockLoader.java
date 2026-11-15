@@ -7,6 +7,7 @@ import net.minecraft.util.StatCollector;
 
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
+import com.xyp.gtneverreset.common.machine.multiblock.FusionPowerPlant;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeBeeBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeCropBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeFurnace;
@@ -26,6 +27,14 @@ import gregtech.api.util.GTUtility;
 public final class MultiblockLoader {
 
     public static void registry() {
+        // #tr gtnr.machine.fusion_power_plant.name
+        // # Fusion Power Plant (Prototype)
+        // # zh_CN 聚变电站（测试型）
+        GTNRItemList.FusionPowerPlant.set(
+            new FusionPowerPlant(
+                GTNRMachineID.FusionPowerPlant.id,
+                "gtneverreset.fusion_power_plant",
+                StatCollector.translateToLocal("gtnr.machine.fusion_power_plant.name")));
         // #tr gtnr.machine.large_ore_processor.name
         // # Large Ore Processor
         // # zh_CN 大型矿石处理机

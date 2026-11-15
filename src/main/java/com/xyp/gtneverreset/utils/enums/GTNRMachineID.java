@@ -12,7 +12,8 @@ public enum GTNRMachineID {
     LargeBeeBreeder(29405),
     LargeCropBreeder(29406),
     UniversalJointFactory(29407),
-    // 预留：29408–29499（92 个）。
+    FusionPowerPlant(29408),
+    // 预留：29409–29499（91 个）。
     // endregion
 
     // region 舱室

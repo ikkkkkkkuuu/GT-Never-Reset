@@ -54,6 +54,7 @@ public enum GTNRItemList implements IItemContainer {
     SingularityDataHub,
     LargeBeeBreeder,
     LargeCropBreeder,
+    FusionPowerPlant,
     // endregion
 
     // region 舱室

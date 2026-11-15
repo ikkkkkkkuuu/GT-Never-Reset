@@ -1,0 +1,14 @@
+Upstream: https://github.com/v3rysp3d/GTNH-Beyond-the-Stars
+Commit: 3c6e1d49e2b9d3d46a6336cdcd561f67daa536b5
+License: MIT (see LICENSE.txt)
+
+FusionPowerPlantGui adapts the compact controller layout, palette, badge/bar/gauge
+painting and stepper approach from:
+- src/main/java/com/nateyburr/beyondthestars/machines/gui/BTSControllerGui.java
+- src/main/java/com/nateyburr/beyondthestars/machines/gui/BTSGuiKit.java
+- src/main/java/com/nateyburr/beyondthestars/machines/gui/KitDraw.java
+- src/main/java/com/nateyburr/beyondthestars/machines/quasar/MTEQuasarEngineGui.java
+
+The adaptation keeps only local GUI drawing helpers and uses GTNR's own fusion
+state, localization, synchronization, controls and existing GregTech textures.
+The reference's simulation, row serialization, recipes and assets are not ported.
