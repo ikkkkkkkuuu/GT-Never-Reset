@@ -56,6 +56,7 @@ import com.glodblock.github.common.item.ItemFluidPacket;
 import com.xyp.gtneverreset.api.mixinHelper.ITerminalVisibilityToggle;
 import com.xyp.gtneverreset.common.gui.modularui.hatch.SuperMTEHatchCraftingInputMEGui;
 import com.xyp.gtneverreset.common.me.ChatComponentInterfaceNameSuffix;
+import com.xyp.gtneverreset.common.me.MEOutputAcceleration;
 import com.xyp.gtneverreset.common.me.MoldDataManager;
 import com.xyp.gtneverreset.common.me.PatternMEOutput;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
@@ -562,6 +563,15 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
         for (SuperMTEHatchCraftingInputSlave mirror : getProxyHatches()) {
             mirror.notifyMEOutputSpaceChanged();
         }
+    }
+
+    public boolean hasRecentlyWorkingMEOutputController(int holdTicks) {
+        if (MEOutputAcceleration.hasRecentlyWorkingController(watchers, this, holdTicks)) return true;
+        for (SuperMTEHatchCraftingInputSlave mirror : getProxyHatches()) {
+            if (mirror.isValid() && mirror.getMaster() == this
+                && mirror.hasRecentlyWorkingMEOutputController(holdTicks)) return true;
+        }
+        return false;
     }
 
     public void addProxyHatch(SuperMTEHatchCraftingInputSlave proxy) {

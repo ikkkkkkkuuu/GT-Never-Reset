@@ -15,6 +15,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.common.machine.hatch.MEOutputCapacityOverride;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
+import com.xyp.gtneverreset.config.GregTechConfig;
 
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.storage.IMEInventory;
@@ -131,10 +132,14 @@ public final class PatternMEOutput {
         });
     }
 
-    /** Runs the native cache flush cadence and capacity-change notifications on the server. */
+    /** Runs player-order acceleration alongside the native retry cadence and capacity notifications. */
     public void tick(long timer) {
-        items.onPostTick(owner.getBaseMetaTileEntity(), timer);
-        fluids.onPostTick(owner.getBaseMetaTileEntity(), timer);
+        boolean fastFlush = GregTechConfig.patternMEOutputFastFlush
+            && (items.getCachedAmount() > 0 || fluids.getCachedAmount() > 0)
+            && owner.hasRecentlyWorkingMEOutputController(GregTechConfig.patternMEOutputFastFlushHoldTicks)
+            && MEOutputAcceleration.hasPlayerJob(owner.getProxy());
+        items.tick(timer, fastFlush);
+        fluids.tick(timer, fastFlush);
     }
 
     /** Explicitly retries exporting products, using the same powered insertion as native ME outputs. */
@@ -236,6 +241,7 @@ public final class PatternMEOutput {
     private final class Provider<T extends IAEStack<T>> extends MTEHatchOutputMEBase<T> {
 
         private final Environment<T> environment;
+        private boolean flushedThisTick;
 
         Provider(Environment<T> environment) {
             super(environment);
@@ -246,6 +252,20 @@ public final class PatternMEOutput {
         @Override
         public AENetworkProxy getProxy() {
             return owner.getProxy();
+        }
+
+        void tick(long timer, boolean fastFlush) {
+            flushedThisTick = false;
+            super.onPostTick(owner.getBaseMetaTileEntity(), timer);
+            if (fastFlush && !flushedThisTick && !cache.isEmpty()) {
+                flushCachedStack();
+            }
+        }
+
+        @Override
+        public void flushCachedStack() {
+            flushedThisTick = true;
+            super.flushCachedStack();
         }
 
         void saveCache(NBTTagCompound tag, String key) {

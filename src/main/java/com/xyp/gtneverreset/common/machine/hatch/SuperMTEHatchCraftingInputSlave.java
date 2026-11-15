@@ -22,6 +22,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.gtnhlib.item.ItemStackNBT;
+import com.xyp.gtneverreset.common.me.MEOutputAcceleration;
 import com.xyp.gtneverreset.common.me.PatternMEOutput;
 
 import gregtech.api.enums.GTValues;
@@ -209,6 +210,10 @@ public class SuperMTEHatchCraftingInputSlave extends MTEHatchInputBus
     /** Notifies this mirror's controllers when the shared ME output cache gains space. */
     public void notifyMEOutputSpaceChanged() {
         notifyWatchers();
+    }
+
+    public boolean hasRecentlyWorkingMEOutputController(int holdTicks) {
+        return MEOutputAcceleration.hasRecentlyWorkingController(watchers, this, holdTicks);
     }
 
     @Override

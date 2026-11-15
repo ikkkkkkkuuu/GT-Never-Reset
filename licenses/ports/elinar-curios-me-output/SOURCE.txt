@@ -1,0 +1,14 @@
+ME output acceleration eligibility adapted from ElinarCurios.
+Upstream: https://github.com/salieelinar/ElinarCurios
+Commit: 352dd3f1066cceb18fea377215413d78c1bfaacd
+Source: src/main/java/elinarcurios/meout/MEOutputFlushHandler.java
+Author: salieelinar (ElinarCurios contributors).
+License: GNU Lesser General Public License v3, as specified in upstream LICENSES/NOTICE.
+License text: LICENSE-LGPL3.txt.
+
+GT-Never-Reset applies player-job and recent-machine-work eligibility to the
+three pattern input assemblies' integrated item/fluid outputs and maximum-capacity
+ME output buses/hatches (including the derived combined output assembly). It uses existing
+controller watchers and mirror bindings, with weak per-grid server-tick caching,
+instead of scanning loaded worlds. Native powered insertion and fallback retries
+remain in GregTech's output providers.

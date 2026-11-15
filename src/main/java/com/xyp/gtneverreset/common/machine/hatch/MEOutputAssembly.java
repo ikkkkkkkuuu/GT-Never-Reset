@@ -24,6 +24,7 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.common.gui.modularui.hatch.MaxCapacityMEOutputGui;
+import com.xyp.gtneverreset.common.me.MEOutputAcceleration;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.mod.ModList;
 
@@ -72,7 +73,10 @@ public class MEOutputAssembly extends MaxCapacityMEOutputBus {
     @Override
     public void onPostTick(IGregTechTileEntity tile, long tick) {
         super.onPostTick(tile, tick);
-        if (tile.isServerSide()) getFluidOutput().tick(tick);
+        if (tile.isServerSide()) {
+            getFluidOutput().tick(tick);
+            MEOutputAcceleration.flushOutput(getFluidOutput().getProvider(), watchers, this);
+        }
     }
 
     @Override
