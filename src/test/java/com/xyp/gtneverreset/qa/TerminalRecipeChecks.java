@@ -23,6 +23,7 @@ import net.minecraft.world.WorldType;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 import com.xyp.gtneverreset.common.gui.container.QuickEncodingTerminalContainer;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
@@ -57,6 +58,7 @@ import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.recipe.RecipeMaps;
+import gregtech.api.util.GTRecipe;
 
 @Mod(
     modid = "terminalrecipeqa",
@@ -70,6 +72,14 @@ public final class TerminalRecipeChecks {
     private int ticks, frames, networkTicks;
     private volatile PacketInterfaceTerminalUpdate preview;
     private volatile Throwable failure;
+    private volatile int transportStage;
+    private int transportTicks;
+    private DualTerminalGuiObject transportTerminal;
+    private QuickEncodingTerminalContainer transportContainer;
+    private QuickEncodingTerminalGui transportGui;
+    private RecipeTransferPayload transportRecipe;
+    private IAEStack<?> transportWater, transportLubricant;
+    private GTRecipe transportCuttingRecipe;
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
@@ -95,11 +105,57 @@ public final class TerminalRecipeChecks {
                 if (++networkTicks > 200) throw new AssertionError("ME network did not become active");
                 return;
             }
-            checked = true;
-            verifyEncoding(player);
-            verifyCuttingEncoding(player, ItemList.Circuit_Silicon_Ingot.get(1));
-            verifyCuttingEncoding(player, ItemList.Circuit_Wafer_NOR.get(1));
-            preview = verifyInterfaceDiscovery(player);
+            if (transportStage == 0) {
+                verifyEncoding(player);
+                verifyCuttingEncoding(player, ItemList.Circuit_Silicon_Ingot.get(1));
+                verifyCuttingEncoding(player, ItemList.Circuit_Wafer_NOR.get(1));
+                preview = verifyInterfaceDiscovery(player);
+                prepareTransportCheck(player);
+            } else if (transportStage == 2) {
+                player.openContainer = transportContainer;
+                transportContainer.addCraftingToCrafters(player);
+                transportContainer.detectAndSendChanges();
+                transportStage = 3;
+            } else if (transportStage == 4 && transportTerminal.getRecipeMapName() != null) {
+                require(
+                    RecipeMaps.cutterRecipes.unlocalizedName.equals(transportTerminal.getRecipeMapName()),
+                    "real C2S NEI transfer establishes cutter recipe map");
+                transportStage = 5;
+            } else if (transportStage == 6 && encoded(transportTerminal) != null) {
+                require(
+                    RecipeMaps.cutterRecipes.unlocalizedName.equals(PatternRecipeMap.name(encoded(transportTerminal))),
+                    "real C2S coolant cycle and byproduct removal preserve encoded recipe map");
+                provider.onPatternChange(0, encoded(transportTerminal).copy());
+                var factory = new UniversalJointFactory("qa.cutter.transport");
+                factory.setMachineMode(18);
+                var logic = new UniversalJointFactoryProcessingLogic(factory);
+                logic.setMachine(factory)
+                    .setRecipeMapSupplier(factory::getRecipeMap)
+                    .setAvailableVoltage(512)
+                    .setAvailableAmperage(1)
+                    .setMaxParallel(1)
+                    .setVoidProtection(false, false);
+                require(
+                    logic.tryCachePossibleRecipesFromPattern(
+                        provider.inventories()
+                            .next()),
+                    "network-encoded pattern enters cross-recipe assembly");
+                ItemStack material = transportCuttingRecipe.mInputs[0].copy();
+                FluidStack coolant = transportCuttingRecipe.mFluidInputs[0].copy();
+                logic.setInputItems(material)
+                    .setInputFluids(coolant);
+                require(
+                    logic.process()
+                        .wasSuccessful() && material.stackSize == 0
+                        && coolant.amount == 0,
+                    "network-encoded NOR pattern cuts and consumes exact inputs in extractor mode");
+                require(
+                    logic.getOutputItems()[0].isItemEqual(transportCuttingRecipe.mOutputs[0])
+                        && logic.getOutputItems()[0].stackSize == transportCuttingRecipe.mOutputs[0].stackSize,
+                    "network-encoded NOR pattern produces expected chips");
+                checked = true;
+                transportStage = 7;
+            }
         } catch (Throwable error) {
             checked = true;
             failure = error;
@@ -138,6 +194,101 @@ public final class TerminalRecipeChecks {
                     .maybeStack(64)
                     .get());
         return terminal;
+    }
+
+    private void prepareTransportCheck(EntityPlayerMP player) throws Exception {
+        transportTerminal = terminal(player);
+        var grid = provider.getProxy()
+            .getNode()
+            .getGrid();
+        field(WirelessTerminalGuiObject.class, "targetGrid").set(transportTerminal, grid);
+        field(WirelessTerminalGuiObject.class, "infinityRange").setBoolean(transportTerminal, true);
+        var accessPoint = Proxy.newProxyInstance(
+            IWirelessAccessPoint.class.getClassLoader(),
+            new Class<?>[] { IWirelessAccessPoint.class },
+            (proxy, method, args) -> method.getName()
+                .equals("getGrid") ? grid
+                    : provider.getProxy()
+                        .getNode());
+        field(WirelessTerminalGuiObject.class, "myWap").set(transportTerminal, accessPoint);
+        transportContainer = new QuickEncodingTerminalContainer(player.inventory, transportTerminal);
+        transportContainer.windowId = 71;
+        transportContainer.setPowerSource(
+            provider.getProxy()
+                .getEnergy());
+        ItemStack wafer = ItemList.Circuit_Wafer_NOR.get(1);
+        transportCuttingRecipe = RecipeMaps.cutterRecipes.findRecipeQuery()
+            .items(wafer)
+            .fluids(Materials.Lubricant.getFluid(1000))
+            .find();
+        GTRecipe waterRecipe = RecipeMaps.cutterRecipes.findRecipeQuery()
+            .items(wafer)
+            .fluids(Materials.Water.getFluid(10000))
+            .find();
+        require(transportCuttingRecipe != null && waterRecipe != null, "native NOR coolant variants exist");
+        transportWater = AEFluidStack.create(waterRecipe.mFluidInputs[0]);
+        transportLubricant = AEFluidStack.create(transportCuttingRecipe.mFluidInputs[0]);
+        transportRecipe = new RecipeTransferPayload(
+            false,
+            false,
+            4,
+            false,
+            new IAEStack<?>[] { AEItemStack.create(wafer), transportWater },
+            java.util.Arrays.stream(waterRecipe.mOutputs)
+                .map(AEItemStack::create)
+                .toArray(IAEStack<?>[]::new),
+            null,
+            PatternRecipeMap.nameForImport(RecipeMaps.cutterFakeRecipes));
+        transportStage = 1;
+    }
+
+    private boolean checkClientTransport(Minecraft mc) throws Exception {
+        if (transportStage == 0) return true;
+        if (transportStage == 8) return false;
+        if (transportStage == 1) {
+            transportGui = new QuickEncodingTerminalGui(mc.thePlayer.inventory, terminal(mc.thePlayer));
+            mc.displayGuiScreen(transportGui);
+            transportGui.inventorySlots.windowId = 71;
+            mc.thePlayer.openContainer = transportGui.inventorySlots;
+            transportStage = 2;
+        } else if (transportStage == 3 && ++transportTicks >= 10) {
+            transportGui.transferRecipe(transportRecipe, null);
+            transportStage = 4;
+        } else if (transportStage == 5) {
+            var container = (QuickEncodingTerminalContainer) transportGui.inventorySlots;
+            if (container.inputsSync.get()
+                .getAEStackInSlot(1) == null) return true;
+            // Same public entry point as Shift + mouse wheel, using the real AE2 C2S transport and sync flush.
+            transportGui.replaceRecipeIngredient(transportWater, transportLubricant);
+            for (int i = 1; i < DualTerminalGuiObject.PATTERN_SLOT_COUNT; i++) {
+                container.updateVirtualSlot(StorageName.CRAFTING_OUTPUT, i, null);
+            }
+            container.quickEncodeAction.send();
+            transportStage = 6;
+        } else if (transportStage == 7) {
+            var terminal = (DualTerminalGuiObject) ((QuickEncodingTerminalContainer) transportGui.inventorySlots)
+                .getTarget();
+            ItemStack received = encoded(terminal);
+            if (received == null) return true;
+            require(
+                RecipeMaps.cutterRecipes.unlocalizedName.equals(PatternRecipeMap.name(received)),
+                "client receives encoded cutter recipe map over S2C");
+            require(
+                received.getTooltip(mc.thePlayer, false)
+                    .stream()
+                    .anyMatch(line -> ((String) line).contains("配方池")),
+                "client encoded-pattern tooltip displays recipe map");
+            ScreenShotHelper.saveScreenshot(
+                new File("."),
+                "terminal-cutter-network-encoding.png",
+                mc.displayWidth,
+                mc.displayHeight,
+                mc.getFramebuffer());
+            transportStage = 8;
+            mc.displayGuiScreen(null);
+            return false;
+        }
+        return true;
     }
 
     private static RecipeTransferPayload recipe(String map, boolean encode) {
@@ -396,6 +547,7 @@ public final class TerminalRecipeChecks {
             if (failure != null) throw new AssertionError("Server checks failed", failure);
             if (mc.thePlayer == null) return;
             if (++ticks > 1800) throw new AssertionError("QA timeout");
+            if (checkClientTransport(mc)) return;
             if (preview == null) return;
             if (!(mc.currentScreen instanceof GuiInterfaceTerminal)) {
                 var gui = new GuiInterfaceTerminal(mc.thePlayer.inventory, terminal(mc.thePlayer));

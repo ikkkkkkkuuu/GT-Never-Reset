@@ -364,8 +364,9 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
 
     public void requestRecipeIngredientReplacement(IAEStack<?> from, IAEStack<?> to) {
         RecipeIngredientReplacement replacement = new RecipeIngredientReplacement(from, to);
-        applyRecipeIngredientToInputs(replacement, isCraftingMode());
+        // AE flushes dirty inventories before actions; send before prediction so the server still sees the old input.
         replaceRecipeIngredientAction.send(replacement);
+        applyRecipeIngredientToInputs(replacement, isCraftingMode());
     }
 
     public void requestPlaceEncodedPattern(InterfacePatternTarget target) {
