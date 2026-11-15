@@ -154,7 +154,6 @@ final class BottledChaosHatchPage {
             skin::buttonText,
             BottledChaosHatchControls.Action.values());
         for (int i = 0; i < controls.size(); i++) {
-            BottledChaosHatchControls.Action action = BottledChaosHatchControls.Action.values()[i];
             page.child(
                 controls.get(i)
                     .pos(164 + i * 53, 120)
@@ -163,9 +162,7 @@ final class BottledChaosHatchPage {
                     .hoverBackground(skin.HOVER)
                     .setEnabledIf(
                         widget -> current.get()
-                            .getBoolean("installed")
-                            && (action != BottledChaosHatchControls.Action.ROUTES || current.get()
-                                .getBoolean("hasCredential"))));
+                            .getBoolean("installed")));
         }
         page.child(label(() -> fit(family(current.get()), 268), 268).pos(7, 146));
         page.child(label(() -> {

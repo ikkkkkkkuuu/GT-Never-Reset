@@ -171,7 +171,8 @@ public final class BottledChaosHatchControls {
             });
             manager.syncValue(id + action.name(), interaction);
             buttons.add(
-                new ActionButton().size(18, 18)
+                new ActionButton().name(id + action.name())
+                    .size(18, 18)
                     .syncHandler(interaction)
                     .onMouseReleased(mouse -> {
                         if (mouse != 0) return false;

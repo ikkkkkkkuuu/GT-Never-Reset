@@ -1,6 +1,8 @@
 // Run with: gradlew.bat -I src/qa/resources/bottle-in-chaos-qa.init.gradle :runClient17 --no-configuration-cache
 gradle.projectsEvaluated {
     def root = gradle.rootProject
+    def preview = root.providers.gradleProperty('chaosPreview').getOrElse('false').toBoolean()
+    def referenceJar = root.providers.gradleProperty('chaosReferenceJar').getOrNull()
     // Full preset validation needs the normal GTNH recipe-script prerequisites.
     def pack = root.extensions.getByName('elytraModpackVersion')
     def qaDependencies = root.layout.buildDirectory.dir('bottle-in-chaos-qa/dependencies').get().asFile
@@ -26,8 +28,15 @@ gradle.projectsEvaluated {
     root.dependencies.add('runtimeOnlyNonPublishable', pack.gtnhdev('OpenComputers') as String)
     root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
     root.dependencies.add('runtimeOnlyNonPublishable', 'tuhljin.automagy:Automagy-GTNH:0.29.8-GTNH:dev') { transitive = false }
-    def fixture = 'BottleInChaosChecks'
-    def directoryName = 'bottle-in-chaos-qa'
+    if (referenceJar != null) {
+        root.dependencies.add('testImplementation', root.files(referenceJar))
+        root.dependencies.add('runtimeOnlyNonPublishable', root.files(referenceJar))
+        ['supersolarpanels', 'ThaumicEnergistics', 'AspectRecipeIndex'].each { mod ->
+            root.dependencies.add('runtimeOnlyNonPublishable', pack.gtnhdev(mod) as String) { transitive = false }
+        }
+    }
+    def fixture = referenceJar != null ? 'BottleInChaosVisualChecks' : 'BottleInChaosChecks'
+    def directoryName = referenceJar != null ? 'bottle-in-chaos-visual' : preview ? 'bottle-in-chaos-preview' : 'bottle-in-chaos-qa'
     def marker = 'gtnr.bottle.chaos.qa'
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
 
@@ -49,6 +58,7 @@ gradle.projectsEvaluated {
         classpath += root.files(qaDirectory.map { it.dir('classes') })
         workingDir root.file("build/${directoryName}/run")
         systemProperty marker, 'true'
+        systemProperty 'gtnr.bottle.chaos.preview', preview.toString()
         systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
         systemProperty 'sun.net.client.defaultReadTimeout', '15000'
         args '--width', '1100', '--height', '740'
@@ -57,7 +67,7 @@ gradle.projectsEvaluated {
             def output = root.file("build/${directoryName}")
             output.mkdirs()
             // Avoid Gradle's manifest-only classpath shortcut: RFB must see each mod JAR for plugin discovery.
-            def shortClasspath = new File(root.projectDir.parentFile, 'chaos-qa-classpath-' + Integer.toUnsignedString(root.projectDir.absolutePath.hashCode(), 36))
+            def shortClasspath = new File(root.projectDir.parentFile, 'chaos-qa-classpath-' + Integer.toUnsignedString((root.projectDir.absolutePath + directoryName).hashCode(), 36))
             shortClasspath.mkdirs()
             def shortened = classpath.files.collect { source ->
                 if (!source.isFile() || !source.name.endsWith('.jar')) return source
@@ -85,7 +95,7 @@ gradle.projectsEvaluated {
             new File(workingDir, 'options.txt').setText(
                 'lang:zh_CN\nguiScale:2\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsoundCategory_music:0.0\nmusic:0.0\nsound:0.0\n',
                 'UTF-8')
-            if (System.getProperty('os.name').startsWith('Windows')) {
+            if (!preview && System.getProperty('os.name').startsWith('Windows')) {
                 def helper = new File(output, 'HideBottleInChaosClient.ps1')
                 helper.setText('''param([Parameter(Mandatory = $true)][string]$Workspace)
 Add-Type @'
@@ -106,7 +116,7 @@ $seenClient = $false
 $changed = [Collections.Generic.HashSet[long]]::new()
 while ([DateTime]::UtcNow -lt $deadline) {
     $clients = @(Get-CimInstance Win32_Process -Filter "Name = 'java.exe' OR Name = 'javaw.exe'" |
-        Where-Object { $_.CommandLine -and $_.CommandLine.Contains('-D__QA_MARKER__=true') -and $_.CommandLine.Contains($Workspace) })
+        Where-Object { $_.CommandLine -and $_.CommandLine.Contains('-D__QA_MARKER__=true') -and $_.CommandLine.Contains($Workspace) -and !$_.CommandLine.Contains('-Dgtnr.bottle.chaos.preview=true') })
     if ($clients.Count -eq 0 -and $seenClient) { break }
     if ($clients.Count -gt 0) { $seenClient = $true }
     $clientIds = @($clients | ForEach-Object { [uint32]$_.ProcessId })
@@ -138,7 +148,7 @@ while ([DateTime]::UtcNow -lt $deadline) {
         }
         doLast {
             def result = root.file("build/${directoryName}/run/result.txt")
-            if (!result.exists() || result.text.trim() != 'PASS') {
+            if (!preview && (!result.exists() || result.text.trim() != 'PASS')) {
                 throw new GradleException("${fixture} failed. See the isolated client log and result.txt.")
             }
         }

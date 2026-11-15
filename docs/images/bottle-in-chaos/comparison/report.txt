@@ -1,0 +1,40 @@
+PASS original 48 module slots
+PASS formed 0: []
+PASS port 48 module slots
+PASS formed 1: []
+PASS open 0
+PASS captured original-runtime
+PASS scrolling list found
+PASS scroll offset advances
+PASS captured original-runtime-scrolled
+PASS captured original-groups
+PASS aligned pool page 0 row 0
+PASS captured original-pools
+PASS aligned pool page 1 row 2
+PASS captured original-pools-installed
+PASS captured original-modules
+PASS scrolling list found
+PASS scroll offset advances
+PASS captured original-modules-scrolled
+PASS captured original-cache-limit
+PASS open 1
+PASS captured port-runtime
+PASS scrolling list found
+PASS scroll offset advances
+PASS captured port-runtime-scrolled
+PASS captured port-groups
+PASS aligned pool page 0 row 0
+PASS captured port-pools
+PASS aligned pool page 1 row 2
+PASS captured port-pools-installed
+PASS captured port-modules
+PASS scrolling list found
+PASS scroll offset advances
+PASS captured port-modules-scrolled
+PASS captured port-cache-limit
+PASS captured port-empty-group
+PASS empty processing group retains enabled route selector
+PASS route selector passes pointer hit testing
+PASS route selector accepts press
+PASS route selector accepts release
+PASS captured port-empty-group-routes

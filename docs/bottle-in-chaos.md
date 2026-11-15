@@ -57,7 +57,7 @@ AE 链以真实注册配方校验输入输出、数量、NBT、耗时与功率�
 
 ## 验证状态
 
-2026-11-15 的独立客户端夹具通过 626 项断言，未安装 TST。验证覆盖：
+2026-11-15 的独立客户端夹具通过 629 项断言，未安装 TST。验证覆盖：
 
 - 完整预设初始化、75 条源链的 113 个来源替代、29 类独立来源方案的材料清单与模组 NBT 恢复。
 - 超过 64 个配方池的身份、NBT 和客户端同步；不会发生位掩码别名。
@@ -78,5 +78,11 @@ AE 链以真实注册配方校验输入输出、数量、NBT、耗时与功率�
 ![免凭证选线](images/bottle-in-chaos/presets.png)
 
 测试入口：`gradlew.bat -I src/qa/resources/bottle-in-chaos-qa.init.gradle :runClient17 --no-configuration-cache`。测试实例位于 `build/bottle-in-chaos-qa/run`，后台透明、点击穿透、静音且不显示任务栏按钮，由游戏内夹具操作。
+
+用户可见预览：在上述命令中加入 `-PchaosPreview=true`。它使用独立的 `build/bottle-in-chaos-preview/run`，保持界面开放供操作；后台验证使用独立实例与 classpath，不会隐藏或接管预览窗口。
+
+[原版运行画面逐项对照](bottle-in-chaos-gui-verification.md)记录窗口、控件、字体颜色、列表滚动和弹窗的实际比较。修复了未选择产线时主界面选线按钮被禁用的问题。
+
+工业高炉封装需要控制器 ×1、同种加热线圈 ×16、耐热机械方块 ×17。空结构模组放入载体槽，控制器和材料放入材料槽，取出产物后装入“结构模组”页；材料必须恰好匹配，仓室位置计入相应替代机壳。材料状态文字增加悬停说明。
 
 来源和许可位于 `licenses/ports/tst-bottled-chaos/`，随 JAR 分发。

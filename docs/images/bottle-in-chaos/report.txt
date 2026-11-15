@@ -19,6 +19,9 @@ PASS forged AE outputs are rejected
 PASS AE pattern configuration survives NBT reload
 PASS removing patterns restores preset mode
 PASS native GTNH source structure catalog is populated
+PASS EBF accepts one controller, 16 coils and 17 heat-proof casings
+PASS EBF rejects one excess heat-proof casing
+PASS EBF rejects an incomplete casing bill
 PASS source structure example resolves its real material bill
 PASS packaged module retains its structure and multiplicity
 PASS missing structure materials cannot authorize a module

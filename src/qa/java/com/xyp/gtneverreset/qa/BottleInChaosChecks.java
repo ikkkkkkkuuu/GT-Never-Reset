@@ -41,6 +41,8 @@ import gregtech.api.recipe.RecipeMap;
 @Mod(modid = "bottleinchaosqa", name = "Bottle in Chaos QA", version = "1", dependencies = "after:gtneverreset")
 public final class BottleInChaosChecks {
 
+    private static final boolean PREVIEW = Boolean.getBoolean("gtnr.bottle.chaos.preview");
+
     private final StringBuilder report = new StringBuilder();
     private boolean launched, checked, opened, finished;
     private volatile boolean ready;
@@ -117,7 +119,7 @@ public final class BottleInChaosChecks {
                     new WorldSettings(42, WorldSettings.GameType.CREATIVE, false, false, WorldType.FLAT));
             }
             if (failure != null) throw new AssertionError("server verification", failure);
-            if (ticks > 1800) throw new AssertionError("GUI timeout");
+            if (!PREVIEW && ticks > 1800) throw new AssertionError("GUI timeout");
         } catch (Throwable error) {
             finish(error);
         }
@@ -128,6 +130,13 @@ public final class BottleInChaosChecks {
         if (event.phase != TickEvent.Phase.END || !ready || finished) return;
         Minecraft mc = Minecraft.getMinecraft();
         try {
+            if (PREVIEW) {
+                if (opened && mc.currentScreen instanceof GuiContainerWrapper && frames++ == 60) {
+                    capture("chaos-preview.png");
+                    Files.writeString(Path.of("preview-ready.txt"), "Controller GUI ready for interactive inspection");
+                }
+                return;
+            }
             if (stage == 0 && mc.currentScreen instanceof GuiContainerWrapper gui && ++frames > 60) {
                 capture(capturedPage == 0 ? "chaos-gui.png" : "chaos-tab-" + capturedPage + ".png");
                 if (capturedPage < 3) {
@@ -508,6 +517,26 @@ public final class BottleInChaosChecks {
     private void verifyModuleMaterials() {
         var rules = com.xyp.gtneverreset.common.crafting.chaos.machine.BottledChaosStructureCatalog.displayRules();
         require(rules.size() > 100, "native GTNH source structure catalog is populated");
+        ItemStack furnace = gregtech.api.enums.ItemList.Machine_Multi_BlastFurnace.get(1);
+        ItemStack[] furnaceMaterials = { furnace, new ItemStack(GregTechAPI.sBlockCasings5, 16, 0),
+            new ItemStack(GregTechAPI.sBlockCasings1, 17, 11) };
+        require(
+            !com.xyp.gtneverreset.common.crafting.chaos.machine.BottledChaosStructureCatalog
+                .matches(furnace, furnaceMaterials)
+                .isEmpty(),
+            "EBF accepts one controller, 16 coils and 17 heat-proof casings");
+        furnaceMaterials[2].stackSize = 18;
+        require(
+            com.xyp.gtneverreset.common.crafting.chaos.machine.BottledChaosStructureCatalog
+                .matches(furnace, furnaceMaterials)
+                .isEmpty(),
+            "EBF rejects one excess heat-proof casing");
+        furnaceMaterials[2].stackSize = 10;
+        require(
+            com.xyp.gtneverreset.common.crafting.chaos.machine.BottledChaosStructureCatalog
+                .matches(furnace, furnaceMaterials)
+                .isEmpty(),
+            "EBF rejects an incomplete casing bill");
         var rule = rules.stream()
             .filter(
                 r -> r.controller()

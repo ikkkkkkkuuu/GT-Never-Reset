@@ -861,6 +861,7 @@ gtnr.machine.BottleInChaos.gui.runtime_tab=Operation
 gtnr.machine.BottleInChaos.gui.pools_tab=Recipe Pools
 gtnr.machine.BottleInChaos.gui.modules_tab=Modules
 gtnr.machine.BottleInChaos.gui.credential_injection=Structure Packaging / Unpacking
+gtnr.chaos.packaging.material_help=Follow the NEI packaging recipe, including casing replacements. Use exact amounts.
 gtnr.machine.BottleInChaos.gui.credential_injection.missing_target=Insert a structure module.
 gtnr.machine.BottleInChaos.gui.credential_injection.frame=Carrier
 gtnr.machine.BottleInChaos.gui.credential_injection.target=Structure module

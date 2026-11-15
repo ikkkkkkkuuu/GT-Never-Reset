@@ -861,6 +861,7 @@ gtnr.machine.BottleInChaos.gui.runtime_tab=运行信息
 gtnr.machine.BottleInChaos.gui.pools_tab=配方池
 gtnr.machine.BottleInChaos.gui.modules_tab=结构模组
 gtnr.machine.BottleInChaos.gui.credential_injection=结构封装 / 拆封
+gtnr.chaos.packaging.material_help=请查看模组的 NEI 封装配方。仓室位置也要计入对应机壳，不能多放材料。
 gtnr.machine.BottleInChaos.gui.credential_injection.missing_target=请放入结构模组。
 gtnr.machine.BottleInChaos.gui.credential_injection.frame=载体
 gtnr.machine.BottleInChaos.gui.credential_injection.target=结构模组

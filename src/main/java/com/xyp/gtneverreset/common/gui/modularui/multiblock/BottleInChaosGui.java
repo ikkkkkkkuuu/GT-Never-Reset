@@ -514,6 +514,16 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
                     .size(PACKAGING_WIDTH, 9)
                     .shadow(false)
                     .color(skin::workspaceMuted)
+                    .tooltipBuilder(tooltip -> {
+                        tooltip.addLine(IKey.lang(status.getStringValue()));
+                        tooltip.addLine(
+                            IKey.lang(
+                                // #tr gtnr.chaos.packaging.material_help
+                                // # Follow the NEI packaging recipe, including casing replacements. Use exact amounts.
+                                // # zh_CN 请查看模组的 NEI 封装配方。仓室位置也要计入对应机壳，不能多放材料。
+                                "gtnr.chaos.packaging.material_help"));
+                    })
+                    .tooltipAutoUpdate(true)
                     .setEnabledIf(
                         widget -> !status.getStringValue()
                             .isEmpty()
