@@ -42,6 +42,7 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
 
     private static final int AUTO_OUTPUT_INTERVAL = 20;
     private static final int LEGACY_CHEMICAL_ITEM_SLOTS = 2;
+    private static final int TANK_CAPACITY_MULTIPLIER = 100;
 
     private final FluidStack[] inputFluids;
     private final FluidStack[] outputFluids;
@@ -63,7 +64,7 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
             itemOutputs,
             true,
             true,
-            getCapacityForTier(tier),
+            getCapacityForTier(tier) * TANK_CAPACITY_MULTIPLIER,
             sound,
             SpecialEffects.NONE,
             textures.getOverlays(),
