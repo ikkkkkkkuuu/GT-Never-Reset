@@ -398,6 +398,20 @@ public final class AssemblerRecipes {
     private static void registerBottleInChaosRecipes() {
         GTValues.RA.stdBuilder()
             .itemInputs(
+                ItemList.Hull_IV.get(1),
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.TungstenSteel, 8),
+                new Object[] { OrePrefixes.circuit.get(Materials.IV), 4 },
+                ItemList.Field_Generator_IV.get(1),
+                ItemList.Emitter_IV.get(2),
+                ItemList.Sensor_IV.get(2))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(2304))
+            .itemOutputs(GTNRItemList.BottleInChaos.get(1))
+            .duration(60 * SECONDS)
+            .eut(TierEU.RECIPE_IV)
+            .addTo(assemblerRecipes);
+
+        GTValues.RA.stdBuilder()
+            .itemInputs(
                 GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Titanium, 1),
                 new Object[] { OrePrefixes.circuit.get(Materials.EV), 2 },
                 ItemList.Emitter_EV.get(2),

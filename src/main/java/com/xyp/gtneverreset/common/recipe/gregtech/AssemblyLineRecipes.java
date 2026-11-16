@@ -42,39 +42,6 @@ public final class AssemblyLineRecipes {
         registerChaosGenerators();
         registerChaosCasings();
         registerChaosSourceComponents();
-        GTValues.RA.stdBuilder()
-            .metadata(RESEARCH_ITEM, getModItem(Mods.AppliedEnergistics2.ID, "tile.BlockCraftingMonitor", 1))
-            .metadata(SCANNING, new Scanning(20 * 120, TierEU.RECIPE_ZPM))
-            .itemInputs(
-                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.NaquadahAlloy, 8),
-                ItemList.Machine_Multi_Assemblyline.get(1),
-                ItemList.Quantum_Chest_MV.get(4),
-                getModItem(Mods.AppliedEnergistics2.ID, "tile.BlockCraftingUnit", 8, 3), // 16x co-processors.
-
-                getModItem(Mods.AppliedEnergistics2.ID, "tile.BlockWirelessHub", 4),
-                new Object[] { OrePrefixes.circuit.get(Materials.UV), 8 },
-                ItemList.Circuit_Parts_Crystal_Chip_Master.get(16),
-                ItemList.Tool_DataOrb.get(64),
-
-                ItemList.Field_Generator_ZPM.get(2),
-                ItemList.Emitter_ZPM.get(4),
-                ItemList.Sensor_ZPM.get(4),
-                ItemList.Robot_Arm_ZPM.get(4),
-
-                ItemList.Conveyor_Module_ZPM.get(8),
-                GTOreDictUnificator.get(OrePrefixes.wireGt04, Materials.SuperconductorZPM, 16),
-                MaterialsAlloy.TANTALLOY_61.getBolt(32),
-                MaterialsAlloy.ZERON_100.getPlateDense(8))
-            .fluidInputs(
-                MaterialsAlloy.INDALLOY_140.getFluidStack(9216),
-                Materials.Polybenzimidazole.getMolten(4608),
-                Materials.SuperCoolant.getFluid(32000),
-                Materials.UUMatter.getFluid(8000))
-            .itemOutputs(GTNRItemList.BottleInChaos.get(1))
-            .duration(20 * 1800)
-            .eut(TierEU.RECIPE_UV)
-            .requireMods(Mods.AppliedEnergistics2)
-            .addTo(GTRecipeConstants.AssemblyLine);
 
         GTValues.RA.stdBuilder()
             .metadata(RESEARCH_ITEM, ItemList.Hatch_DataAccess_LuV.get(1))
