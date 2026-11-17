@@ -695,7 +695,8 @@
     "UnknowWater",
     "Nitrogen",
     "Oxygen",
-    "Ammonia"
+    "Ammonia",
+    "Hydrogen"
   ],
   "fluidAmounts": [
     1000,
@@ -726,12 +727,13 @@
     600,
     3000,
     3000,
+    3000,
     3000
   ],
   "dimensionCounts": [
     [
       22,
-      9
+      10
     ],
     [
       12,
@@ -826,7 +828,8 @@
       5,
       26,
       27,
-      28
+      28,
+      29
     ],
     [
       22,
