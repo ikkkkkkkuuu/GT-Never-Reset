@@ -24,6 +24,7 @@ import com.gtnewhorizons.modularui.common.fluid.FluidStackTank;
 import com.xyp.gtneverreset.common.gui.modularui.singleblock.ModernFluidMachineGui;
 import com.xyp.gtneverreset.common.me.stockio.StockIORecipeBridge;
 import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
+import com.xyp.gtneverreset.config.GregTechConfig;
 import com.xyp.gtneverreset.utils.enums.ModernMachineTextures;
 
 import gregtech.GTMod;
@@ -64,7 +65,7 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
             itemOutputs,
             true,
             true,
-            getCapacityForTier(tier) * TANK_CAPACITY_MULTIPLIER,
+            getCapacityForTier(tier),
             sound,
             SpecialEffects.NONE,
             textures.getOverlays(),
@@ -142,6 +143,11 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
 
     public FluidStackTank[] getOutputTanks() {
         return outputTanks;
+    }
+
+    @Override
+    public int getCapacity() {
+        return GregTechConfig.enableModernFluidTankBoost ? mTankCapacity * TANK_CAPACITY_MULTIPLIER : mTankCapacity;
     }
 
     @Override
@@ -226,17 +232,19 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
         }
         if (recipe.mNeedsEmptyOutput && (!isOutputEmpty() || getDrainableStack() != null)) return false;
         FluidStack[] simulated = copyFluids(outputFluids);
+        int capacity = getCapacity();
         for (FluidStack fluid : recipe.mFluidOutputs) {
-            if (!insertOutput(simulated, fluid)) return false;
+            if (!insertOutput(simulated, fluid, capacity)) return false;
         }
         return canOutput(recipe.mOutputs);
     }
 
     @Override
     public void endProcess() {
+        // A recipe reserved this space before consuming inputs, possibly before the capacity boost was disabled.
+        int reservedCapacityLimit = mTankCapacity * TANK_CAPACITY_MULTIPLIER;
         for (FluidStack fluid : pendingFluids) {
-            // Capacity was reserved before consuming inputs; output tanks cannot be filled externally.
-            if (!insertOutput(outputFluids, fluid))
+            if (!insertOutput(outputFluids, fluid, reservedCapacityLimit))
                 throw new IllegalStateException("reserved fluid output no longer fits");
         }
         Arrays.fill(pendingFluids, null);
@@ -426,6 +434,8 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
     }
 
     private int fill(FluidStackTank tank, FluidStack fluid, boolean commit) {
+        // A tank loaded from a save can still hold more than the current capacity.
+        if (tank.getFluidAmount() >= tank.getCapacity()) return 0;
         int filled = tank.fill(fluid, commit);
         if (commit && filled > 0) inventoryChanged();
         return filled;
@@ -437,16 +447,16 @@ public final class ModernFluidMachine extends MTEBasicMachineWithRecipe {
         return drained;
     }
 
-    private boolean insertOutput(FluidStack[] slots, FluidStack fluid) {
+    private static boolean insertOutput(FluidStack[] slots, FluidStack fluid, int capacity) {
         if (fluid == null || fluid.amount <= 0) return true;
         for (int i = 0; i < slots.length; i++) {
             if (slots[i] != null && slots[i].isFluidEqual(fluid)) {
-                if ((long) slots[i].amount + fluid.amount > getCapacity()) return false;
+                if ((long) slots[i].amount + fluid.amount > capacity) return false;
                 slots[i].amount += fluid.amount;
                 return true;
             }
         }
-        if (fluid.amount > getCapacity()) return false;
+        if (fluid.amount > capacity) return false;
         for (int i = 0; i < slots.length; i++) {
             if (slots[i] == null || slots[i].amount <= 0) {
                 slots[i] = fluid.copy();
