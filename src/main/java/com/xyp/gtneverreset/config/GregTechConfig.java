@@ -26,6 +26,14 @@ public final class GregTechConfig {
     @DefaultBoolean(true)
     public static boolean enableBrickedBlastFurnaceAutomation = true;
 
+    // #tr gtneverreset.gui.config.general.gregtech.enableModernFluidTankBoost
+    // # Increase GTM fluid tank capacity
+    // # zh_CN 扩大 GTM 小机器流体槽容量
+    @Sync
+    @Comment("开启后，GTM 小机器每个流体输入槽和输出槽的容量为原来的 100 倍。关闭后恢复原容量，已存入的流体仍可取出。")
+    @DefaultBoolean(true)
+    public static boolean enableModernFluidTankBoost = true;
+
     // #tr gtneverreset.gui.config.general.gregtech.requireCleanroom
     // # Require a cleanroom
     // # zh_CN 要求超净间
