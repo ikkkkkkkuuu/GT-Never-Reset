@@ -27,12 +27,19 @@ import gregtech.api.enums.Materials;
 import gregtech.api.enums.Mods;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.api.enums.StoneType;
+import gregtech.api.recipe.RecipeMetadataKey;
+import gregtech.api.recipe.metadata.SimpleRecipeMetadataKey;
 import gregtech.api.util.GTModHandler;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTRecipeBuilder;
 import gregtech.api.util.GTUtility;
 
 public final class FragmentWorldCollectorRecipes {
+
+    public static final int DRILL_INPUT_INDEX = 1;
+    public static final int DRILL_CONSUMPTION_SCALE = 1_000_000;
+    public static final RecipeMetadataKey<Integer> DRILL_CONSUMPTION_CHANCE = SimpleRecipeMetadataKey
+        .create(Integer.class, "gtneverreset.fragment_world_drill_consumption_chance");
 
     private static final ModsItemlist[] DIMENSIONS = { ModsItemlist.DimensionOverworld, ModsItemlist.DimensionNether,
         ModsItemlist.DimensionEnd, ModsItemlist.DimensionTwilight, ModsItemlist.DimensionMoon,
@@ -46,6 +53,7 @@ public final class FragmentWorldCollectorRecipes {
         ModsItemlist.TritonStone };
     private static final Materials[] DRILLS = { Materials.Steel, Materials.Titanium, Materials.NaquadahAlloy,
         Materials.Neutronium, Materials.Infinity };
+    private static final int[] DRILL_CONSUMPTION_CHANCES = { 100, 90, 80, 70, 60 };
     private static final int[] FLUID_MULTIPLIERS = { 1, 16, 128, 1024 };
     private static final Set<String> unavailable = new LinkedHashSet<>();
     private static boolean loaded;
@@ -81,10 +89,11 @@ public final class FragmentWorldCollectorRecipes {
                     FluidStack output = fluid(data.fluids[fluid], amount);
                     ItemStack head = GTOreDictUnificator.get(OrePrefixes.toolHeadDrill, DRILLS[drill], 1);
                     if (output == null || head == null) continue;
+                    // The collector rolls drill consumption separately for rates below GT's 0.01% resolution.
                     GTRecipeBuilder.builder()
-                        .itemInputs(
-                            new ItemStack[] { DIMENSIONS[dimension].get(0), head, circuit(index + 1) },
-                            new int[] { 10000, 100 - drill * 10, 10000 })
+                        .itemInputs(DIMENSIONS[dimension].get(0), head, circuit(index + 1))
+                        .inputChances(10000, 0, 10000)
+                        .metadata(DRILL_CONSUMPTION_CHANCE, DRILL_CONSUMPTION_CHANCES[drill])
                         .itemOutputs(DIMENSIONS[dimension].get(1))
                         .outputChances(50)
                         .fluidOutputs(output)

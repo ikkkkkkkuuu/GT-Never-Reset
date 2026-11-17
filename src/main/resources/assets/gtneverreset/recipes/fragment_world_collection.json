@@ -692,7 +692,10 @@
     "Benzene",
     "Methane",
     "CharcoalByproducts",
-    "UnknowWater"
+    "UnknowWater",
+    "Nitrogen",
+    "Oxygen",
+    "Ammonia"
   ],
   "fluidAmounts": [
     1000,
@@ -720,12 +723,15 @@
     1600,
     2500,
     2600,
-    600
+    600,
+    3000,
+    3000,
+    3000
   ],
   "dimensionCounts": [
     [
       22,
-      6
+      9
     ],
     [
       12,
@@ -817,7 +823,10 @@
       2,
       3,
       4,
-      5
+      5,
+      26,
+      27,
+      28
     ],
     [
       22,
