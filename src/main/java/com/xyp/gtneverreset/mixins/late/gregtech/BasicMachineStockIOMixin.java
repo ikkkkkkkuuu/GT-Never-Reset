@@ -12,10 +12,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.xyp.gtneverreset.common.machine.basicMachine.FragmentWorldCollector;
 import com.xyp.gtneverreset.common.me.stockio.StockIORecipeBridge;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEBasicMachine;
+import gregtech.api.util.GTRecipe;
 
 /** Keeps the native recipe checks while committing one adjacent ME interface's simulated inputs. */
 @Mixin(value = MTEBasicMachine.class, remap = false)
@@ -51,13 +53,19 @@ public abstract class BasicMachineStockIOMixin {
         return StockIORecipeBridge.fluidInputs((MTEBasicMachine) (Object) this, local);
     }
 
-    @ModifyArg(
+    @WrapOperation(
         method = "checkRecipe(Z)I",
         at = @At(
             value = "INVOKE",
-            target = "Lgregtech/api/util/GTRecipe;isRecipeInputEqual(Z[Lnet/minecraftforge/fluids/FluidStack;[Lnet/minecraft/item/ItemStack;)Z"),
-        index = 1)
-    private FluidStack[] gtnr$stockIOFluidConsumption(FluidStack[] local) {
-        return StockIORecipeBridge.fluidInputs((MTEBasicMachine) (Object) this, local);
+            target = "Lgregtech/api/util/GTRecipe;isRecipeInputEqual(Z[Lnet/minecraftforge/fluids/FluidStack;[Lnet/minecraft/item/ItemStack;)Z"))
+    private boolean gtnr$consumeRecipeInputs(GTRecipe recipe, boolean consume, FluidStack[] localFluids,
+        ItemStack[] items, Operation<Boolean> original) {
+        MTEBasicMachine machine = (MTEBasicMachine) (Object) this;
+        FluidStack[] fluids = StockIORecipeBridge.fluidInputs(machine, localFluids);
+        boolean matched = original.call(recipe, consume, fluids, items);
+        if (matched && consume && machine instanceof FragmentWorldCollector collector) {
+            collector.consumeDrillHead(recipe, items);
+        }
+        return matched;
     }
 }
