@@ -282,6 +282,7 @@ public final class BottleInChaosChecks {
         hatch.loadNBTData(saved);
         require(hatch.getSelectedRoutes() == 2, "selected routes survive NBT round trip");
         verifyPoolMasks();
+        verifyChemicalRoutes();
         verifyCustomRoutes(hatch, world);
         verifyModuleMaterials();
         verifyManufacturing();
@@ -566,6 +567,38 @@ public final class BottleInChaosChecks {
         }
         copy.readFromNBT(result.writeToNBT(new NBTTagCompound()));
         require(result.equals(copy), "all missing pool bits survive NBT persistence");
+    }
+
+    /** The wood and petrochemical presets keep one tag each while publishing every registered input variant. */
+    private void verifyChemicalRoutes() {
+        int wood = com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeResources.CredentialModel
+            .indexForTag("wood");
+        int petrochemical = com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeResources.CredentialModel
+            .indexForTag("petrochemical");
+        require(wood >= 0 && petrochemical >= 0, "wood and petrochemical route tags are registered");
+        require(
+            com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeResources.CredentialModel
+                .getRequiredWeight((1L << wood) | (1L << petrochemical)) > 0,
+            "wood and petrochemical routes publish capacity costs");
+        var displays = com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeProcessor.displayRecipes();
+        var woodRows = displays.stream()
+            .filter(display -> display.tagIndex() == wood)
+            .toList();
+        var petrochemicalRows = displays.stream()
+            .filter(display -> display.tagIndex() == petrochemical)
+            .toList();
+        require(woodRows.size() == 1, "wood route publishes one distillation recipe");
+        require(
+            woodRows.get(0)
+                .plan()
+                .itemOutputs()
+                .size() == 1
+                && woodRows.get(0)
+                    .plan()
+                    .fluidOutputs()
+                    .size() == 16,
+            "wood route exposes ash and sixteen distillation fluids");
+        require(petrochemicalRows.size() == 11, "petrochemical route publishes eleven oil and tar recipes");
     }
 
     private void verifyModuleMaterials() {

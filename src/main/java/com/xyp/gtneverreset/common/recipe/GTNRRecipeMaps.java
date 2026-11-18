@@ -424,6 +424,29 @@ public final class GTNRRecipeMaps {
             builder -> BottledChaosRecipes.getDefaultRecipeCategory().handlerInfoCreator.apply(builder)
                 .setDisplayStack(GregtechItemList.Controller_IsaMill.get(1)))
         : null;
+    public static final RecipeCategory BottledChaosWoodCategory = ChaosConfig.enableBottleInChaos ? new RecipeCategory(
+        // #tr gtnr.bottleinchaos.recipe.category.wood.name
+        // # Wood Chemical Processing
+        // # zh_CN 木化
+        "gtnr.bottleinchaos.recipe.category.wood.name",
+        BottledChaosRecipes,
+        RecipeCategorySetting::getDefault,
+        builder -> BottledChaosRecipes.getDefaultRecipeCategory().handlerInfoCreator.apply(builder)
+            .setDisplayStack(Materials.AshDark.getDust(1)))
+        : null;
+
+    public static final RecipeCategory BottledChaosPetrochemicalCategory = ChaosConfig.enableBottleInChaos
+        ? new RecipeCategory(
+            // #tr gtnr.bottleinchaos.recipe.category.petrochemical.name
+            // # Petrochemical Processing
+            // # zh_CN 石化
+            "gtnr.bottleinchaos.recipe.category.petrochemical.name",
+            BottledChaosRecipes,
+            RecipeCategorySetting::getDefault,
+            builder -> BottledChaosRecipes.getDefaultRecipeCategory().handlerInfoCreator.apply(builder)
+                .setDisplayStack(Materials.Oil.getCells(1)))
+        : null;
+
     public static final RecipeMap<ChaosRecipeBackend> ChaosRouteRecipes = ChaosConfig.enableBottleInChaos
         ? RecipeMapBuilder
             // #tr gtnr.bottleinchaos.recipe.credential.name

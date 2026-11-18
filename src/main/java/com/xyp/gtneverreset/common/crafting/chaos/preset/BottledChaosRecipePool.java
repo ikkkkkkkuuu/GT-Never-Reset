@@ -54,6 +54,8 @@ import gregtech.api.enums.TierEU;
 public final class BottledChaosRecipePool {
 
     public static void registerRecipeChains(BottledChaosRecipeCatalog catalog) {
+        BottledChaosWoodPreset.registerRecipeChains(catalog);
+        BottledChaosPetrochemicalPreset.registerRecipeChains(catalog);
         BottledChaosTitaniumPreset.registerRecipeChains(catalog);
         BottledChaosTungstenPreset.registerRecipeChains(catalog);
         BottledChaosIndiumPreset.registerRecipeChains(catalog);

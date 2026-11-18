@@ -60,6 +60,9 @@ public final class BottledChaosRecipeResources {
     public static final int PLATINUM_LEAVES_PER_POWDER = 4;
     private static final Map<ChaosItemKey, ChaosItemKey> UNIFIED_DUSTS = new HashMap<>();
     private static final List<ItemStack> FRUIT_INPUTS = GTOreDictUnificator.getOresImmutable("listAllfruit");
+    /** Wildcard vanilla log markers; together the wood route accepts every vanilla wood type. */
+    public static final ChaosItemKey WoodLog = ChaosItemKey.createAsWildcard(new ItemStack(Blocks.log));
+    public static final ChaosItemKey WoodLog2 = ChaosItemKey.createAsWildcard(new ItemStack(Blocks.log2));
 
     /** Tag identities and runtime indexes; capacity costs are published by route registration. */
     public static final class CredentialModel {
@@ -79,6 +82,9 @@ public final class BottledChaosRecipeResources {
         // Material bindings stay in CredentialRoutes and are not initialized with this metadata.
         // spotless:off
         private static final TagDefinition[] DEFINITIONS = {
+            // MV and EV chemical families.
+            new TagDefinition("wood", true, "wood", BottledChaosRecipePage.WOOD),
+            new TagDefinition("petrochemical", true, "petrochemical", BottledChaosRecipePage.PETROCHEMICAL),
             // LuV families.
             new TagDefinition("titanium", true, "titanium", BottledChaosRecipePage.TITANIUM),
             new TagDefinition("tungsten", true, "tungsten", BottledChaosRecipePage.TUNGSTEN),
@@ -289,6 +295,8 @@ public final class BottledChaosRecipeResources {
 
         static {
             // spotless:off
+            register("wood", WoodLog, WoodLog);
+            register("petrochemical", Materials.Oil.getFluid(1).getFluid(), Materials.Oil.getFluid(1).getFluid());
             if (CredentialModel.HAS_HONEYCOMBS) register("honeycomb", recipeItemId(GTBees.combs.getStackForType(CombType.INDIUM, 1)), recipeItemId(GTBees.combs.getStackForType(CombType.INDIUM, 1)));
             register("titanium", RutileDust, TitaniumIngot);
             register("tungsten", CalciumTungstateDust, TungstenTrioxideDust);
@@ -648,6 +656,7 @@ public final class BottledChaosRecipeResources {
     public static final ChaosItemKey MytrylDust = dust(Materials.Mytryl);
     public static final ChaosItemKey RubyDust = dust(Materials.Ruby);
     public static final ChaosItemKey AshDust = dust(Materials.Ash);
+    public static final ChaosItemKey AshDarkDust = dust(Materials.AshDark);
     public static final ChaosItemKey EnergiumDust = ChaosItemKey.create(ItemList.IC2_Energium_Dust.get(1));
     public static final ChaosItemKey StemCells = ChaosItemKey.create(ItemList.Circuit_Chip_Stemcell.get(1));
     public static final ChaosItemKey BioCells = ChaosItemKey.create(ItemList.Circuit_Chip_Biocell.get(1));
@@ -959,6 +968,39 @@ public final class BottledChaosRecipeResources {
     public static final Fluid PropionicAcid = Objects.requireNonNull(GTPPFluids.PropionicAcid, "PropionicAcid");
     public static final Fluid FermentationBase = Objects.requireNonNull(GTPPFluids.FermentationBase, "FermentationBase");
     public static final Fluid AceticAnhydride = fluid(MaterialMisc.ACETIC_ANHYDRIDE.getFluidStack(1));
+
+    // Wood-chemical and petrochemical fluids used by the GTNL wood and petrochemical routes.
+    public static final Fluid Creosote = fluid(Materials.Creosote.getFluid(1));
+    public static final Fluid WoodTar = fluid(Materials.WoodTar.getFluid(1));
+    public static final Fluid Toluene = fluid(Materials.Toluene.getFluid(1));
+    public static final Fluid MethylAcetate = fluid(Materials.MethylAcetate.getFluid(1));
+    public static final Fluid Ethanol = fluid(Materials.Ethanol.getFluid(1));
+    public static final Fluid CoalGas = fluid(new FluidStack(GTPPFluids.CoalGas, 1));
+    public static final Fluid III_Dimethylbenzene = fluid(Materials.IIIDimethylbenzene.getFluid(1));
+    public static final Fluid IVDimethylbenzene = fluid(Materials.IVDimethylbenzene.getFluid(1));
+    public static final Fluid Oil = fluid(Materials.Oil.getFluid(1));
+    public static final Fluid LightOil = fluid(Materials.OilLight.getFluid(1));
+    public static final Fluid MediumOil = fluid(Materials.OilMedium.getFluid(1));
+    public static final Fluid HeavyOil = fluid(Materials.OilHeavy.getFluid(1));
+    public static final Fluid ExtraHeavyOil = fluid(Materials.OilExtraHeavy.getFluid(1));
+    public static final Fluid Naphtha = fluid(Materials.Naphtha.getFluid(1));
+    public static final Fluid LightFuel = fluid(Materials.LightFuel.getFluid(1));
+    public static final Fluid HeavyFuel = fluid(Materials.HeavyFuel.getFluid(1));
+    public static final Fluid Lubricant = fluid(Materials.Lubricant.getFluid(1));
+    public static final Fluid NaturalGas = fluid(Materials.Gas.getGas(1));
+    public static final Fluid HeliumGas = fluid(Materials.Helium.getGas(1));
+    public static final Fluid PropaneGas = fluid(Materials.Propane.getGas(1));
+    public static final Fluid PropeneGas = fluid(Materials.Propene.getGas(1));
+    public static final Fluid EthaneGas = fluid(Materials.Ethane.getGas(1));
+    public static final Fluid ButaneGas = fluid(Materials.Butane.getGas(1));
+    public static final Fluid ButeneGas = fluid(Materials.Butene.getGas(1));
+    public static final Fluid ButadieneGas = fluid(Materials.Butadiene.getGas(1));
+    public static final Fluid Octane = fluid(Materials.Octane.getFluid(1));
+    public static final Fluid CoalTar = fluid(new FluidStack(GTPPFluids.CoalTar, 1));
+    public static final Fluid CoalTarOil = fluid(new FluidStack(GTPPFluids.CoalTarOil, 1));
+    public static final Fluid Ethylbenzene = fluid(new FluidStack(GTPPFluids.Ethylbenzene, 1));
+    public static final Fluid Kerosene = fluid(new FluidStack(GTPPFluids.Kerosene, 1));
+    public static final Fluid Naphthalene = fluid(new FluidStack(GTPPFluids.Naphthalene, 1));
 
     // Mixture fluids currently used by recipes.
     public static final Fluid BauxiteSlurry = fluid(Materials.BauxiteSlurry.getFluid(1));

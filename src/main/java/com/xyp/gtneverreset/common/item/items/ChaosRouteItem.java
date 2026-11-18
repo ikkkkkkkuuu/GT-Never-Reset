@@ -199,6 +199,14 @@ public final class ChaosRouteItem extends ChaosMetaItem {
     }
 
     public static List<String> getRouteKeyList(ItemStack stack) {
+        // #tr gtnr.bottleinchaos.shared.route.wood
+        // # Wood Chemical Processing
+        // # zh_CN 木化
+
+        // #tr gtnr.bottleinchaos.shared.route.petrochemical
+        // # Petrochemical Processing
+        // # zh_CN 石化
+
         // #tr gtnr.bottleinchaos.shared.route.honeycomb
         // # Honeycomb Processing
         // # zh_CN 蜂窝处理
