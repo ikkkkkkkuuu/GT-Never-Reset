@@ -1043,8 +1043,8 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         });
         // ME extraction failures follow GT's failure-consumption semantics: never award outputs.
         if (!checkRecipeResult.wasSuccessful()) {
-            if (inputs.wirelessPaid.signum() > 0)
-                addEUToGlobalEnergyMap(getBaseMetaTileEntity().getOwnerUuid(), inputs.wirelessPaid);
+            var owner = getBaseMetaTileEntity().getOwnerUuid();
+            if (owner != null && inputs.wirelessPaid.signum() > 0) addEUToGlobalEnergyMap(owner, inputs.wirelessPaid);
             return checkRecipeResult;
         }
         if (!result.wasSuccessful()) return result;
@@ -1234,6 +1234,12 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         // Both modes accept the same checked deltas; only the transaction decides when to apply them.
         if (isWirelessMode() && !inputs.deferred() && !inputs.probeOnly) {
             var owner = getBaseMetaTileEntity().getOwnerUuid();
+            if (owner == null) {
+                // #tr gtnr.machine.BottleInChaos.result.missing_owner
+                // # This machine has no owner and cannot use the wireless network.
+                // # zh_CN 该机器没有所有者，无法使用无线电网。
+                return ChaosTextResult.ofFailure("gtnr.machine.BottleInChaos.result.missing_owner");
+            }
             strongCheckOrAddUser(owner);
             if (!addEUToGlobalEnergyMap(
                 owner,

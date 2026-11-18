@@ -1336,6 +1336,7 @@ gtnr.machine.BottleInChaos.result.credential_changed=此加工组的产线已变
 gtnr.machine.BottleInChaos.result.insufficient_power_share=此加工组分配到的电力不足.
 gtnr.machine.BottleInChaos.result.capacity_exceeded=已选产线超过主机容量。
 gtnr.machine.BottleInChaos.result.unbound=此加工组没有有效产线。
+gtnr.machine.BottleInChaos.result.missing_owner=该机器没有所有者，无法使用无线电网。
 gtnr.machine.BottleInChaos.result.insufficient_wireless_energy=无线电网电量不足.
 gtnr.machine.BottleInChaos.gui.cache_exported=完成.
 gtnr.machine.BottleInChaos.capacity_region=容量区（空气或容量方块）

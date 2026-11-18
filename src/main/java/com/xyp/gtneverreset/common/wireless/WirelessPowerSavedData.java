@@ -132,6 +132,7 @@ public final class WirelessPowerSavedData extends WorldSavedData {
     }
 
     public String name(UUID id) {
+        if (id == null) return "";
         MinecraftServer server = MinecraftServer.getServer();
         GameProfile profile = server == null ? null
             : server.func_152358_ax()
@@ -146,8 +147,10 @@ public final class WirelessPowerSavedData extends WorldSavedData {
     public List<UUID> sources() {
         List<UUID> sources = new ArrayList<>();
         for (UUID player : GlobalVariableStorage.GlobalEnergy.keySet()) {
+            // GT accepts a null owner in its wireless energy map; such an entry has no name or identity.
+            if (player == null) continue;
             UUID leader = SpaceProjectManager.getLeader(player);
-            if (!sources.contains(leader)) sources.add(leader);
+            if (leader != null && !sources.contains(leader)) sources.add(leader);
         }
         sources.sort(
             Comparator.comparing(this::name, String.CASE_INSENSITIVE_ORDER)

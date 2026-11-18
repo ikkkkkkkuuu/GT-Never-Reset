@@ -1336,6 +1336,7 @@ gtnr.machine.BottleInChaos.result.credential_changed=The selected route for this
 gtnr.machine.BottleInChaos.result.insufficient_power_share=This processing group does not have enough allocated power.
 gtnr.machine.BottleInChaos.result.capacity_exceeded=Selected routes exceed the machine capacity.
 gtnr.machine.BottleInChaos.result.unbound=This processing group has no valid selected route.
+gtnr.machine.BottleInChaos.result.missing_owner=This machine has no owner and cannot use the wireless network.
 gtnr.machine.BottleInChaos.result.insufficient_wireless_energy=Insufficient wireless energy.
 gtnr.machine.BottleInChaos.gui.cache_exported=Complete.
 gtnr.machine.BottleInChaos.capacity_region=Capacity region (air or capacity blocks)
