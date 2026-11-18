@@ -11,6 +11,7 @@ import net.minecraft.util.StatCollector;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.cleanroommc.modularui.api.IMuiScreen;
+import com.cleanroommc.modularui.screen.ModularContainer;
 import com.xyp.gtneverreset.common.gui.WildcardPatternGui.RecipeImportSyncHandler;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.compat.ae2fc.FluidDropCompat;
@@ -37,10 +38,10 @@ public final class WildcardRecipeImport {
     }
 
     private static RecipeImportSyncHandler target(GuiContainer firstGui) {
-        if (!(firstGui instanceof IMuiScreen screen) || screen.getScreen()
-            .getSyncManager() == null) return null;
-        return screen.getScreen()
-            .getSyncManager()
+        // Client-only ModularUI screens have no sync manager and throw when it is requested.
+        if (!(firstGui instanceof IMuiScreen) || !(firstGui.inventorySlots instanceof ModularContainer container)
+            || container.isClientOnly()) return null;
+        return container.getSyncManager()
             .getMainPSM()
             .findSyncHandlerNullable("wildcardImport", RecipeImportSyncHandler.class);
     }
