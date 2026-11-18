@@ -67,6 +67,9 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
 
     private static final int RECIPE_CHECK_INTERVAL = 5;
     private static final int MAX_STARTS_PER_TICK = 8;
+    private static final long THREAD_FILL_BUDGET_NANOS = 5_000_000L;
+    private static final long THREAD_DIVERSITY_BUDGET_NANOS = 1_000_000L;
+    private static final long THREAD_SHARE_BUDGET_NANOS = 2_000_000L;
     private static final int HEAT_PROBE_DURATION = 400;
     private static final int HEAT_PROBE_EUT = 8;
     private static final int FIRST_HEAT_PROBE = 127;
@@ -90,6 +93,10 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     private int preparingThread = -1;
     private boolean useRemainingPower;
     private boolean paused = true;
+    private boolean pendingThreadFill;
+    private boolean singleCraftThread;
+    private boolean allowThreadPowerBorrow = true;
+    private long threadStartBudget = -1;
     private RecipeThreadTask pendingTask;
     private TooltipProbeState tooltipProbeState;
 
@@ -177,25 +184,34 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         return new RecipeThreadProcessingLogic();
     }
 
+    /** Opt-in for machines that should fill every free thread from one recipe-check trigger. */
+    protected boolean usesInstantThreadFill() {
+        return false;
+    }
+
     @Override
     protected void setupProcessingLogic(ProcessingLogic logic) {
         super.setupProcessingLogic(logic);
-        long power = availableThreadPower();
+        RecipeThreadProcessingLogic threadedLogic = (RecipeThreadProcessingLogic) logic;
+        long power = threadStartBudget >= 0 ? Math.min(threadStartBudget, remainingPower()) : availableThreadPower();
         long voltage = Math.min(power, Math.max(0, Math.min(getMaxInputVoltage(), getMachineVoltageLimit())));
         logic.setAvailableVoltage(voltage)
             .setAvailableAmperage(voltage == 0 ? 0 : Math.max(1, power / voltage))
             .setAmperageOC(false)
-            .setMaxParallelSupplier(this::getTrueParallel)
+            .setMaxParallelSupplier(singleCraftThread ? () -> 1 : this::getTrueParallel)
             .setSpeedBonus(1D / getSpeedMultiplier())
             .setEuModifier(getEUtMultiplier())
             .setOverclock(getOverclockTimeReduction(), getOverclockPowerIncrease());
-        if (preparingThread >= 0) ((RecipeThreadProcessingLogic) logic).prepareRecipe(power);
+        threadedLogic.setSuppressOverclock(singleCraftThread);
+        if (singleCraftThread) logic.setBatchSize(1);
+        if (preparingThread >= 0) threadedLogic.prepareRecipe(power);
     }
 
     @Override
     protected CheckRecipeResult doCheckRecipe() {
-        CheckRecipeResult result = patternScheduler
-            .checkNext(mDualInputHatches, (RecipeThreadProcessingLogic) processingLogic);
+        RecipeThreadProcessingLogic logic = (RecipeThreadProcessingLogic) processingLogic;
+        if (patternScheduler.hasSelection()) return patternScheduler.processSelected(logic);
+        CheckRecipeResult result = patternScheduler.checkNext(mDualInputHatches, logic);
         return result.wasSuccessful() ? result : super.doCheckRecipe();
     }
 
@@ -215,7 +231,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         try {
             setupProcessingLogic(logic);
             CheckRecipeResult result = postCheckRecipe(doCheckRecipe(), logic);
-            if (!result.wasSuccessful() && availableThreadPower() < remainingPower()) {
+            if (!result.wasSuccessful() && allowThreadPowerBorrow && availableThreadPower() < remainingPower()) {
                 logic.finishRecipe();
                 useRemainingPower = true;
                 setupProcessingLogic(logic);
@@ -226,7 +242,9 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             if (eut < 0 || !logic.canCommitInputs()) return CheckRecipeResultRegistry.INTERNAL_ERROR;
             CheckRecipeResult inputResult = RecipeThreadInputPreflight.check(this, logic);
             if (!inputResult.wasSuccessful()) return inputResult;
-            if (eut > availableThreadPower()) return CheckRecipeResultRegistry.insufficientPower(eut);
+            long eutLimit = threadStartBudget >= 0 ? Math.min(threadStartBudget, remainingPower())
+                : availableThreadPower();
+            if (eut > eutLimit) return CheckRecipeResultRegistry.insufficientPower(eut);
             RecipeThreadTask task = new RecipeThreadTask(
                 slot,
                 eut,
@@ -292,15 +310,169 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             && (completed || tick % RECIPE_CHECK_INTERVAL == 0
                 || tile.hasInventoryBeenModified()
                 || tile.hasWorkJustBeenEnabled()
-                || shouldCheckRecipeThisTick(tick))) {
-            for (int attempt = 0; attempt < MAX_STARTS_PER_TICK; attempt++) {
-                int slot = firstFreeThread();
-                if (slot < 0) break;
-                preparingThread = slot;
-                if (!checkRecipe()) break;
+                || shouldCheckRecipeThisTick(tick)
+                || pendingThreadFill)) {
+            if (usesInstantThreadFill()) {
+                pendingThreadFill = fillRecipeThreads();
+            } else {
+                pendingThreadFill = false;
+                for (int attempt = 0; attempt < MAX_STARTS_PER_TICK; attempt++) {
+                    int slot = firstFreeThread();
+                    if (slot < 0) break;
+                    preparingThread = slot;
+                    if (!checkRecipe()) break;
+                }
             }
         }
         updateThreadDisplay();
+    }
+
+    /**
+     * Starts all currently affordable threads in one pass. When there are fewer pattern types than free slots, every
+     * type gets one base-cost craft first and the remaining slots use fair shares; otherwise fair shares run first and
+     * one-craft starts give refused expensive types a chance. The pattern list is snapshotted once per pass.
+     */
+    private boolean fillRecipeThreads() {
+        if (firstFreeThread() < 0) return false;
+        long start = System.nanoTime();
+        long deadline = start + THREAD_FILL_BUDGET_NANOS;
+        long shareDeadline = Math.min(deadline, start + THREAD_SHARE_BUDGET_NANOS);
+        patternScheduler.beginPass(mDualInputHatches);
+        boolean started = false;
+        try {
+            int entries = patternScheduler.entryCount();
+            if (entries == 0) {
+                started = fillOrdinary(deadline, false);
+                if (firstFreeThread() >= 0 && System.nanoTime() < deadline) started |= fillOneCraft(deadline);
+                return firstFreeThread() >= 0 && started && System.nanoTime() >= deadline;
+            } else if (entries < freeThreadCount()) {
+                // Fewer types than slots: give every type one craft first, then spend the rest on parallels.
+                started = fillDiversity(Math.min(deadline, start + THREAD_DIVERSITY_BUDGET_NANOS));
+                if (firstFreeThread() >= 0 && System.nanoTime() < deadline) started |= fillWithShares(deadline);
+                if (firstFreeThread() >= 0 && System.nanoTime() < deadline) started |= fillOneCraft(deadline);
+                if (firstFreeThread() >= 0 && System.nanoTime() < deadline) started |= fillOrdinary(deadline, false);
+                return firstFreeThread() >= 0 && started && System.nanoTime() >= deadline;
+            } else {
+                started = fillWithShares(shareDeadline);
+                boolean shareCut = started && firstFreeThread() >= 0 && System.nanoTime() >= shareDeadline;
+                if (!shareCut && firstFreeThread() >= 0 && System.nanoTime() < deadline)
+                    started |= fillOneCraft(deadline);
+                if (firstFreeThread() >= 0 && System.nanoTime() < deadline) started |= fillOrdinary(deadline, false);
+                return firstFreeThread() >= 0 && (shareCut || (started && System.nanoTime() >= deadline));
+            }
+        } finally {
+            patternScheduler.endPass();
+            resetThreadStart();
+        }
+    }
+
+    private boolean fillDiversity(long deadline) {
+        int[] order = patternScheduler.passOrder();
+        boolean started = false;
+        for (int i = 0; i < order.length && firstFreeThread() >= 0 && System.nanoTime() < deadline; i++) {
+            int index = order[i];
+            if (!patternScheduler.isStocked(index)) continue;
+            long budget = remainingPower();
+            if (budget <= 0) break;
+            if (startSelected(index, budget, true)) started = true;
+        }
+        if (!started) patternScheduler.advanceCursor();
+        return started;
+    }
+
+    private boolean fillWithShares(long deadline) {
+        int[] order = patternScheduler.passOrder();
+        if (order.length == 0) return fillOrdinary(deadline, false);
+        boolean started = false;
+        boolean[] failed = new boolean[order.length];
+        while (firstFreeThread() >= 0 && System.nanoTime() < deadline) {
+            boolean progress = false;
+            boolean refused = false;
+            for (int i = 0; i < order.length && firstFreeThread() >= 0 && System.nanoTime() < deadline; i++) {
+                if (failed[i]) continue;
+                int index = order[i];
+                if (!patternScheduler.isStocked(index)) {
+                    failed[i] = true;
+                    continue;
+                }
+                if (startSelected(index, -1, false)) {
+                    started = true;
+                    progress = true;
+                } else {
+                    failed[i] = true;
+                    refused = true;
+                }
+            }
+            // Let the one-craft pass give refused types a chance before filling every slot with duplicates.
+            if (!progress || refused) break;
+        }
+        return started;
+    }
+
+    private boolean fillOneCraft(long deadline) {
+        int[] order = patternScheduler.passOrder();
+        if (order.length == 0) return fillOrdinary(deadline, true);
+        boolean started = false;
+        boolean[] failed = new boolean[order.length];
+        while (firstFreeThread() >= 0 && remainingPower() > 0 && System.nanoTime() < deadline) {
+            boolean progress = false;
+            for (int i = 0; i < order.length && firstFreeThread() >= 0 && System.nanoTime() < deadline; i++) {
+                if (failed[i]) continue;
+                int index = order[i];
+                if (!patternScheduler.isStocked(index)) {
+                    failed[i] = true;
+                    continue;
+                }
+                long budget = remainingPower();
+                if (budget <= 0) break;
+                if (startSelected(index, budget, true)) {
+                    started = true;
+                    progress = true;
+                } else {
+                    failed[i] = true;
+                }
+            }
+            if (!progress) break;
+        }
+        if (!started) patternScheduler.advanceCursor();
+        return started;
+    }
+
+    private boolean fillOrdinary(long deadline, boolean oneCraft) {
+        boolean started = false;
+        while (firstFreeThread() >= 0 && System.nanoTime() < deadline) {
+            threadStartBudget = oneCraft ? remainingPower() : -1;
+            singleCraftThread = oneCraft;
+            allowThreadPowerBorrow = false;
+            boolean success;
+            try {
+                success = checkRecipe();
+            } finally {
+                resetThreadStart();
+            }
+            if (!success) break;
+            started = true;
+        }
+        return started;
+    }
+
+    private boolean startSelected(int index, long budget, boolean oneCraft) {
+        threadStartBudget = budget;
+        singleCraftThread = oneCraft;
+        allowThreadPowerBorrow = false;
+        patternScheduler.select(index);
+        try {
+            return checkRecipe();
+        } finally {
+            patternScheduler.clearSelection();
+            resetThreadStart();
+        }
+    }
+
+    private void resetThreadStart() {
+        threadStartBudget = -1;
+        singleCraftThread = false;
+        allowThreadPowerBorrow = true;
     }
 
     @Override
@@ -331,6 +503,9 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         pendingTask = null;
         preparingThread = -1;
         useRemainingPower = false;
+        pendingThreadFill = false;
+        patternScheduler.endPass();
+        resetThreadStart();
         paused = true;
         updateThreadDisplay();
         markDirty();
@@ -342,6 +517,13 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             if (!threadTasks.containsKey(thread)) return thread;
         }
         return -1;
+    }
+
+    private int freeThreadCount() {
+        int total = getTotalRecipeThreads();
+        int occupied = 0;
+        for (int thread : threadTasks.keySet()) if (thread < total) occupied++;
+        return Math.max(0, total - occupied);
     }
 
     private long usedThreadPower() {
@@ -376,6 +558,9 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         for (ParameterModuleHatch hatch : parameterModules) hatch.setWorking(false);
         clearCraftingIcons(parameterModules);
         parameterModules.clear();
+        pendingThreadFill = false;
+        patternScheduler.endPass();
+        resetThreadStart();
     }
 
     @Override
@@ -683,6 +868,9 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
                 throw new IllegalStateException("Duplicate saved recipe thread");
             }
         }
+        pendingThreadFill = false;
+        patternScheduler.endPass();
+        resetThreadStart();
         paused = true;
         updateThreadDisplay();
     }

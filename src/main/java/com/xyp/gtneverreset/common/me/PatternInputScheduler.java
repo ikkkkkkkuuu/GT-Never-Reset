@@ -22,6 +22,8 @@ import gregtech.common.tileentities.machines.IDualInputInventoryWithPattern;
 public final class PatternInputScheduler {
 
     private int cursor;
+    private List<Entry> passEntries;
+    private int selectedIndex = -1;
 
     private record Entry(IDualInputInventory inventory, ItemStack[] shared) {
 
@@ -45,19 +47,73 @@ public final class PatternInputScheduler {
         return entries;
     }
 
+    /** Builds the snapshot reused by every start in one fill pass. */
+    public void beginPass(List<IDualInputHatch> hatches) {
+        passEntries = entries(hatches);
+        selectedIndex = -1;
+    }
+
+    public void endPass() {
+        passEntries = null;
+        selectedIndex = -1;
+    }
+
+    public int entryCount() {
+        return passEntries == null ? 0 : passEntries.size();
+    }
+
+    /** Iterates the snapshot from the persistent cursor so repeated passes still rotate recipe types. */
+    public int[] passOrder() {
+        int size = entryCount();
+        int[] order = new int[size];
+        for (int i = 0; i < size; i++) order[i] = (cursor + i) % size;
+        return order;
+    }
+
+    public boolean isStocked(int index) {
+        return passEntries != null && index >= 0
+            && index < passEntries.size()
+            && !passEntries.get(index)
+                .inventory()
+                .isEmpty();
+    }
+
+    public void select(int index) {
+        selectedIndex = index;
+    }
+
+    public void clearSelection() {
+        selectedIndex = -1;
+    }
+
+    /** Moves the next pass to the following pattern when a bounded pass could not start any thread. */
+    public void advanceCursor() {
+        if (passEntries != null && !passEntries.isEmpty()) cursor = (cursor + 1) % passEntries.size();
+    }
+
+    public boolean hasSelection() {
+        return passEntries != null && selectedIndex >= 0 && selectedIndex < passEntries.size();
+    }
+
+    public CheckRecipeResult processSelected(RecipeThreadProcessingLogic logic) {
+        if (!hasSelection()) return CheckRecipeResultRegistry.NO_RECIPE;
+        Entry entry = passEntries.get(selectedIndex);
+        if (entry.inventory()
+            .isEmpty()) return CheckRecipeResultRegistry.NO_RECIPE;
+        CheckRecipeResult found = processEntry(entry, logic);
+        if (found.wasSuccessful()) cursor = (selectedIndex + 1) % passEntries.size();
+        return found;
+    }
+
     public CheckRecipeResult checkNext(List<IDualInputHatch> hatches, RecipeThreadProcessingLogic logic) {
-        List<Entry> entries = entries(hatches);
+        List<Entry> entries = passEntries != null ? passEntries : entries(hatches);
         CheckRecipeResult result = CheckRecipeResultRegistry.NO_RECIPE;
         for (int i = 0; i < entries.size(); i++) {
             int index = (cursor + i) % entries.size();
             Entry entry = entries.get(index);
-            logic.resetPatternInventory();
-            if (entry.inventory() instanceof IDualInputInventoryWithPattern pattern
-                && !logic.tryCachePossibleRecipesFromPattern(pattern)) continue;
-            var inputs = entry.inputs();
-            logic.setInputItems(inputs.items())
-                .setInputFluids(inputs.fluids());
-            CheckRecipeResult found = logic.process();
+            if (entry.inventory()
+                .isEmpty()) continue;
+            CheckRecipeResult found = processEntry(entry, logic);
             if (found.wasSuccessful()) {
                 cursor = (index + 1) % entries.size();
                 return found;
@@ -66,5 +122,15 @@ public final class PatternInputScheduler {
         }
         logic.resetPatternInventory();
         return result;
+    }
+
+    private CheckRecipeResult processEntry(Entry entry, RecipeThreadProcessingLogic logic) {
+        logic.resetPatternInventory();
+        if (entry.inventory() instanceof IDualInputInventoryWithPattern pattern
+            && !logic.tryCachePossibleRecipesFromPattern(pattern)) return CheckRecipeResultRegistry.NO_RECIPE;
+        var inputs = entry.inputs();
+        logic.setInputItems(inputs.items())
+            .setInputFluids(inputs.fluids());
+        return logic.process();
     }
 }

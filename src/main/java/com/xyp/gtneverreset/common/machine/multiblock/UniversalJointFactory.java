@@ -181,6 +181,11 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
     }
 
     @Override
+    protected boolean usesInstantThreadFill() {
+        return true;
+    }
+
+    @Override
     public RecipeMap<?> getRecipeMap() {
         return processingRecipeMap == null ? RECIPE_MAPS.get(Math.floorMod(machineMode, RECIPE_MAPS.size()))
             : processingRecipeMap;
