@@ -11,6 +11,8 @@ public enum BottledChaosRecipePage {
 
     // spotless:off
     DEFAULT(() -> GTNRRecipeMaps.BottledChaosRecipes.getDefaultRecipeCategory()),
+    WOOD(() -> GTNRRecipeMaps.BottledChaosWoodCategory),
+    PETROCHEMICAL(() -> GTNRRecipeMaps.BottledChaosPetrochemicalCategory),
     TITANIUM(() -> GTNRRecipeMaps.BottledChaosTitaniumCategory),
     TUNGSTEN(() -> GTNRRecipeMaps.BottledChaosTungstenCategory),
     INDIUM(() -> GTNRRecipeMaps.BottledChaosIndiumCategory),
