@@ -59,6 +59,8 @@ import gregtech.api.util.ParallelHelper;
 @IMetaTileEntity.SkipGenerateDescription
 public final class StarCoreStripper extends GTNRMultiBlockBase<StarCoreStripper> implements ISurvivalConstructable {
 
+    // The bottom is 111 blocks below the controller. Keep the whole preview within the dummy world's build height.
+    public static final int PREVIEW_CONTROLLER_Y = 192;
     private static final String PIECE = "main";
     private static final int OFFSET_X = 61, OFFSET_Y = 11, OFFSET_Z = 2;
     private static final Casings CASING = Casings.AdvancedIridiumPlatedMachineCasing;
