@@ -4,13 +4,19 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
+import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
@@ -22,17 +28,25 @@ import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
 import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtnrlib.mod.ModList;
 
+import bwcrossmod.galacticgreg.VoidMinerUtility;
+import galacticgreg.api.enums.DimensionDef.DimNames;
 import gregtech.api.GregTechAPI;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.Mods;
 import gregtech.api.enums.OrePrefixes;
 import gregtech.api.enums.StoneType;
+import gregtech.api.interfaces.IOreMaterial;
 import gregtech.api.recipe.RecipeMetadataKey;
 import gregtech.api.recipe.metadata.SimpleRecipeMetadataKey;
 import gregtech.api.util.GTModHandler;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTRecipeBuilder;
 import gregtech.api.util.GTUtility;
+import gregtech.common.WorldgenGTOreLayer;
+import gregtech.common.ores.OreInfo;
+import gregtech.common.ores.OreManager;
+import gtneioreplugin.plugin.block.ModBlocks;
+import gtneioreplugin.util.DimensionHelper;
 
 public final class FragmentWorldCollectorRecipes {
 
@@ -55,6 +69,8 @@ public final class FragmentWorldCollectorRecipes {
         Materials.Neutronium, Materials.Infinity };
     private static final int[] DRILL_CONSUMPTION_CHANCES = { 100, 90, 80, 70, 60 };
     private static final int[] FLUID_MULTIPLIERS = { 1, 16, 128, 1024 };
+    private static final int CIRCUITS_PER_PAGE = 24;
+    private static final int DEEP_DARK_GROUP_SIZE = 8;
     private static final Set<String> unavailable = new LinkedHashSet<>();
     private static boolean loaded;
 
@@ -67,42 +83,20 @@ public final class FragmentWorldCollectorRecipes {
         if (loaded || !Mods.NEIOrePlugin.isModLoaded()) return;
         loaded = true;
         Data data = readData();
+        Map<Block, Integer> reservedCircuits = new HashMap<>();
         for (int dimension = 0; dimension < DIMENSIONS.length; dimension++) {
-            if (DIMENSIONS[dimension].get(1) == null) continue;
-            int ores = data.dimensionCounts[dimension][0];
-            for (int index = 0; index < ores; index++) {
-                int vein = data.dimensionMaps[dimension][index];
-                Outputs output = new Outputs();
-                output.add(DIMENSIONS[dimension].get(1), 50);
-                for (int slot = 0; slot < 4; slot++) {
-                    output.add(ore(data.ores[vein][slot], data.oreCounts[vein][slot]), 10000);
-                }
-                addRock(output, dimension);
-                output.apply(
-                    base(dimension, dimension == 0 ? index + 2 : index + 1).duration(24000 / data.oreCounts[vein][4]))
-                    .addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
-            }
-            for (int index = 0; index < data.dimensionCounts[dimension][1]; index++) {
-                int fluid = data.dimensionMaps[dimension][ores + index];
-                for (int drill = 0; drill < DRILLS.length; drill++) {
-                    int amount = drill == 4 ? Integer.MAX_VALUE : data.fluidAmounts[fluid] * FLUID_MULTIPLIERS[drill];
-                    FluidStack output = fluid(data.fluids[fluid], amount);
-                    ItemStack head = GTOreDictUnificator.get(OrePrefixes.toolHeadDrill, DRILLS[drill], 1);
-                    if (output == null || head == null) continue;
-                    // The collector rolls drill consumption separately for rates below GT's 0.01% resolution.
-                    GTRecipeBuilder.builder()
-                        .itemInputs(DIMENSIONS[dimension].get(0), head, circuit(index + 1))
-                        .inputChances(10000, 0, 10000)
-                        .metadata(DRILL_CONSUMPTION_CHANCE, DRILL_CONSUMPTION_CHANCES[drill])
-                        .itemOutputs(DIMENSIONS[dimension].get(1))
-                        .outputChances(50)
-                        .fluidOutputs(output)
-                        .duration(200)
-                        .eut(8)
-                        .addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
-                }
-            }
+            ModsItemlist marker = DIMENSIONS[dimension];
+            if (marker.get(1) == null) continue;
+            addLegacyDimension(data, dimension, marker);
+            int lastOreCircuit = data.dimensionCounts[dimension][0] + (dimension == 0 ? 1 : 0);
+            // Twilight circuit 10 already selects Damascus steel.
+            reservedCircuits.put(marker.getBlock(), dimension == 3 ? Math.max(10, lastOreCircuit) : lastOreCircuit);
         }
+        if (ModsItemlist.BarnardaCDirt.get(1) != null) {
+            addLegacyDimension(data, 15, ModsItemlist.BarnardaCDirt);
+            addBarnardPlants(ModsItemlist.BarnardaCDirt);
+        }
+        addRegisteredVeins(reservedCircuits);
         addSpecialRecipes();
         GTNeverReset.LOG.info(
             "registered {} fragment world collection recipes; unavailable source outputs: {}",
@@ -111,9 +105,48 @@ public final class FragmentWorldCollectorRecipes {
             unavailable);
     }
 
+    private static void addLegacyDimension(Data data, int dimension, ModsItemlist marker) {
+        int ores = data.dimensionCounts[dimension][0];
+        for (int index = 0; index < ores; index++) {
+            int vein = data.dimensionMaps[dimension][index];
+            Outputs output = new Outputs();
+            output.add(marker.get(1), 50);
+            for (int slot = 0; slot < 4; slot++) {
+                output.add(ore(data.ores[vein][slot], data.oreCounts[vein][slot]), 10000);
+            }
+            addRock(output, dimension);
+            output.apply(base(marker, dimension == 0 ? index + 2 : index + 1).duration(24000 / data.oreCounts[vein][4]))
+                .addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
+        }
+        for (int index = 0; index < data.dimensionCounts[dimension][1]; index++) {
+            int fluid = data.dimensionMaps[dimension][ores + index];
+            for (int drill = 0; drill < DRILLS.length; drill++) {
+                int amount = drill == 4 ? Integer.MAX_VALUE : data.fluidAmounts[fluid] * FLUID_MULTIPLIERS[drill];
+                FluidStack output = fluid(data.fluids[fluid], amount);
+                ItemStack head = GTOreDictUnificator.get(OrePrefixes.toolHeadDrill, DRILLS[drill], 1);
+                if (output == null || head == null) continue;
+                // The collector rolls drill consumption separately for rates below GT's 0.01% resolution.
+                GTRecipeBuilder.builder()
+                    .itemInputs(marker.get(0), head, circuit(index + 1))
+                    .inputChances(10000, 0, 10000)
+                    .metadata(DRILL_CONSUMPTION_CHANCE, DRILL_CONSUMPTION_CHANCES[drill])
+                    .itemOutputs(marker.get(1))
+                    .outputChances(50)
+                    .fluidOutputs(output)
+                    .duration(200)
+                    .eut(8)
+                    .addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
+            }
+        }
+    }
+
     private static GTRecipeBuilder base(int dimension, int circuit) {
+        return base(DIMENSIONS[dimension], circuit);
+    }
+
+    private static GTRecipeBuilder base(ModsItemlist marker, int circuit) {
         return GTRecipeBuilder.builder()
-            .itemInputs(DIMENSIONS[dimension].get(0), circuit(circuit))
+            .itemInputs(marker.get(0), circuit(circuit))
             .eut(8)
             .duration(200);
     }
@@ -144,6 +177,109 @@ public final class FragmentWorldCollectorRecipes {
         } else if (dimension < 15) {
             output.add(PLANET_ROCKS[dimension - 4].get(64), 10000);
         } else output.add(new ItemStack(Blocks.stone, 64), 10000);
+    }
+
+    private static void addRegisteredVeins(Map<Block, Integer> reservedCircuits) {
+        List<WorldgenGTOreLayer> veins = new ArrayList<>(WorldgenGTOreLayer.sList);
+        veins.sort(Comparator.comparing(vein -> vein.mWorldGenName));
+        for (DimensionHelper.Dimension dimension : DimensionHelper.getAllDim()) {
+            Block display = ModBlocks.getBlock(dimension.abbr());
+            if (display == null) continue;
+            int index = reservedCircuits.getOrDefault(display, 0);
+            List<ItemStack> markers = new ArrayList<>();
+            markers.add(new ItemStack(display, 0));
+            ModsItemlist alternate = switch (dimension.internalName()) {
+                case DimNames.DEEPDARK -> ModsItemlist.DarkPortal;
+                case DimNames.EVERGLADES -> ModsItemlist.ContainmentFrame;
+                case DimNames.ROSS128B -> ModsItemlist.HeavyDutyPlateTier3;
+                case DimNames.ROSS128BA -> ModsItemlist.HeavyDutyPlateTier5;
+                case DimNames.BARNARDC -> ModsItemlist.BarnardaCDirt;
+                default -> null;
+            };
+            if (alternate != null) {
+                ItemStack marker = alternate.get(0);
+                if (marker != null) markers.add(marker);
+            }
+            for (WorldgenGTOreLayer vein : veins) {
+                if (!vein.getAllowedDimensions()
+                    .contains(dimension.internalName()) || vein.mWeight <= 0) continue;
+                ItemStack[] ores = { veinOre(vein.mPrimary, 48), veinOre(vein.mSecondary, 32),
+                    veinOre(vein.mBetween, 32), veinOre(vein.mSporadic, 16) };
+                int selector = index++;
+                if (Arrays.asList(ores)
+                    .contains(null)) continue;
+                for (ItemStack marker : markers) {
+                    veinRecipe(marker, selector).itemOutputs(ores)
+                        .duration(Math.max(1, 24000 / vein.mWeight))
+                        .addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
+                }
+            }
+            if (DimNames.DEEPDARK.equals(dimension.internalName())) addDeepDarkDrops(markers, index);
+        }
+    }
+
+    private static ItemStack veinOre(IOreMaterial material, int amount) {
+        String name = material.getInternalName();
+        ItemStack stack = oreDictionary("rawOre" + name, amount);
+        if (stack != null) return stack;
+        stack = oreDictionary("crushed" + name, amount);
+        if (stack != null) return stack;
+        try (OreInfo<IOreMaterial> info = OreInfo.getNewInfo()) {
+            info.material = material;
+            for (var stone : material.getValidStones()) {
+                info.stoneType = stone;
+                stack = OreManager.getStack(info, amount);
+                if (stack != null) return stack;
+            }
+        }
+        unavailable.add("vein ore:" + name);
+        return null;
+    }
+
+    // The ghost circuit has 24 numbered settings. Page selectors share the spare physical slot with fluid drills.
+    private static GTRecipeBuilder veinRecipe(ItemStack marker, int index) {
+        int page = index / CIRCUITS_PER_PAGE;
+        ItemStack selection = circuit(index % CIRCUITS_PER_PAGE + 1);
+        GTRecipeBuilder recipe = GTRecipeBuilder.builder()
+            .eut(8)
+            .duration(200);
+        if (page == 0) return recipe.itemInputs(marker.copy(), selection);
+        return recipe.itemInputs(marker.copy(), new ItemStack(Blocks.stained_glass, 0, page - 1), selection);
+    }
+
+    private static void addDeepDarkDrops(List<ItemStack> markers, int index) {
+        var drops = VoidMinerUtility.dropMapsByDimName.get(DimNames.DEEPDARK);
+        if (drops == null) return;
+        var entries = new ArrayList<>(
+            drops.getInternalMap()
+                .entrySet());
+        entries.removeIf(entry -> entry.getValue() <= 0);
+        entries.sort(
+            Map.Entry.comparingByKey(
+                Comparator.comparing(
+                    (GTUtility.ItemId id) -> Item.itemRegistry.getNameForObject(id.item())
+                        .toString())
+                    .thenComparingInt(GTUtility.ItemId::metaData)));
+        double maxWeight = entries.stream()
+            .mapToDouble(Map.Entry::getValue)
+            .max()
+            .orElse(1);
+        for (int start = 0; start < entries.size(); start += DEEP_DARK_GROUP_SIZE) {
+            Outputs output = new Outputs();
+            for (int i = start; i < Math.min(start + DEEP_DARK_GROUP_SIZE, entries.size()); i++) {
+                var entry = entries.get(i);
+                int chance = Math.max(1, (int) Math.round(10000 * (entry.getValue() / maxWeight)));
+                output.add(
+                    entry.getKey()
+                        .getItemStack(16),
+                    chance);
+            }
+            for (ItemStack marker : markers) {
+                output.apply(veinRecipe(marker, index))
+                    .addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
+            }
+            index++;
+        }
     }
 
     private static ItemStack ore(String name, int amount) {
@@ -179,6 +315,7 @@ public final class FragmentWorldCollectorRecipes {
             default -> name;
         };
         Materials material = switch (name) {
+            case "NetherAir" -> Materials.NetherAir;
             case "NaturalGas" -> Materials.NaturalGas;
             case "Helium3" -> Materials.Helium3;
             case "HydrochloricAcid" -> Materials.HydrochloricAcid;
@@ -276,21 +413,25 @@ public final class FragmentWorldCollectorRecipes {
         frost.apply(base(14, 0))
             .addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
 
-        Outputs barnard = new Outputs();
-        barnard.add(DIMENSIONS[15].get(1), 50);
-        barnard.add(ModsItemlist.BarnardaCLog.get(1), 500);
-        barnard.add(ModsItemlist.BarnardaCLeaves.get(1), 9500);
-        GTRecipeBuilder plants = barnard.apply(base(15, 0));
-        FluidStack air = fluid("BarnardaAir", 16000);
-        if (air != null) plants.fluidOutputs(air)
-            .fluidOutputChances(2000);
-        plants.addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
+        addBarnardPlants(DIMENSIONS[15]);
 
         // Twilight now has nine ore circuits; keep the Damascus steel conversion on its own circuit.
         base(3, 10).itemInputs(DIMENSIONS[3].get(0), Materials.Steel.getDust(1), circuit(10))
             .fluidInputs(Materials.Lubricant.getFluid(100))
             .itemOutputs(Materials.DamascusSteel.getDust(1))
             .addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
+    }
+
+    private static void addBarnardPlants(ModsItemlist marker) {
+        Outputs barnard = new Outputs();
+        barnard.add(marker.get(1), 50);
+        barnard.add(ModsItemlist.BarnardaCLog.get(1), 500);
+        barnard.add(ModsItemlist.BarnardaCLeaves.get(1), 9500);
+        GTRecipeBuilder plants = barnard.apply(base(marker, 0));
+        FluidStack air = fluid("BarnardaAir", 16000);
+        if (air != null) plants.fluidOutputs(air)
+            .fluidOutputChances(2000);
+        plants.addTo(GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES);
     }
 
     private static Data readData() {

@@ -876,6 +876,9 @@ public enum ModsItemlist {
     // 月岩
     MoonStone(Mods.GalacticraftCore.ID, "tile.moonBlock", 4),
 
+    // 三阶重型装甲板
+    HeavyDutyPlateTier3(Mods.GalacticraftMars.ID, "item.itemBasicAsteroids", 0),
+
     // 3阶火箭
     Tier3Rocket(Mods.GalacticraftMars.ID, "item.itemTier3Rocket", 0),
 
@@ -887,6 +890,9 @@ public enum ModsItemlist {
 
     // 火星石
     MarsStone(Mods.GalacticraftMars.ID, "tile.mars", 9),
+
+    // 巴纳德 C 泥土
+    BarnardaCDirt(Mods.GalaxySpace.ID, "barnardaCdirt"),
 
     // 巴纳德C树木原木
     BarnardaCLog(Mods.GalaxySpace.ID, "barnardaClog", 0),
@@ -1028,6 +1034,9 @@ public enum ModsItemlist {
 
     // 能量核心 [UHV]
     BufferCoreUHV(Mods.GTPlusPlus.ID, "item.itemBufferCore10", 0),
+
+    // 遏制框架
+    ContainmentFrame(Mods.GTPlusPlusEverglades.ID, "blockDarkWorldPortalFrame"),
 
     // 末影粉末
     EndPowder(Mods.HardcoreEnderExpansion.ID, "end_powder", 0),
@@ -1274,6 +1283,9 @@ public enum ModsItemlist {
 
     // 漆黑世界
     DimensionDeepDark(Mods.NEIOrePlugin.ID, "blockDimensionDisplay_DD"),
+
+    // 五阶重型装甲板
+    HeavyDutyPlateTier5(Mods.NewHorizonsCoreMod.ID, "HeavyDutyPlateTier5"),
 
     // 高能量流电路
     HighEnergyFlowCircuit(Mods.NewHorizonsCoreMod.ID, "HighEnergyFlowCircuit"),
