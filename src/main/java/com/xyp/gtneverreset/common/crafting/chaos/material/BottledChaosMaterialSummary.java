@@ -8,10 +8,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 
 import com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeProcessor;
+import com.xyp.gtneverreset.common.item.items.ChaosRouteItem;
 
 import gregtech.api.util.GTUtility;
 
@@ -29,9 +31,10 @@ public final class BottledChaosMaterialSummary {
 
     /** Actual exports and pending carry are separate presentation sources; never merge carry into final products. */
     public static NBTTagCompound forJob(BottledChaosOutputBuffer outputs, BottledChaosOutputBuffer pendingCache,
-        long tagMask) {
+        ItemStack authorization) {
+        long tagMask = ChaosRouteItem.getRouteMask(authorization);
         var amounts = outputAmounts(outputs);
-        var priorities = outputPriorities(amounts, tagMask, false);
+        var priorities = jobOutputPriorities(amounts, authorization);
         NBTTagCompound summary = summarize(amounts, priorities, Integer.MAX_VALUE, 0);
         Map<Object, BigInteger> intermediates = new LinkedHashMap<>();
         outputAmounts(pendingCache).forEach((key, amount) -> intermediates.put(key, BigInteger.valueOf(amount)));
@@ -48,9 +51,18 @@ public final class BottledChaosMaterialSummary {
     }
 
     /** Only terminal targets of the authorized chain, never intermediate materials or unmarked coproducts. */
-    public static NBTTagCompound forFinalJob(BottledChaosOutputBuffer outputs, long tagMask) {
+    public static NBTTagCompound forFinalJob(BottledChaosOutputBuffer outputs, ItemStack authorization) {
         var amounts = outputAmounts(outputs);
-        return summarize(amounts, outputPriorities(amounts, tagMask, false), Integer.MAX_VALUE, 0);
+        return summarize(amounts, jobOutputPriorities(amounts, authorization), Integer.MAX_VALUE, 0);
+    }
+
+    private static Map<Object, Integer> jobOutputPriorities(Map<Object, Long> amounts, ItemStack authorization) {
+        if (!ChaosRouteItem.hasPatternAuthorization(authorization))
+            return outputPriorities(amounts, ChaosRouteItem.getRouteMask(authorization), false);
+        // The private AE graph folds its steps into one route with explicit net outputs.
+        Map<Object, Integer> roles = new LinkedHashMap<>();
+        for (Object key : amounts.keySet()) roles.put(key, 0);
+        return roles;
     }
 
     private static Map<Object, Long> outputAmounts(BottledChaosOutputBuffer outputs) {

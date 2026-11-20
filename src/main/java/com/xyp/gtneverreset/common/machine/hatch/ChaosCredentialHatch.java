@@ -1,11 +1,13 @@
 package com.xyp.gtneverreset.common.machine.hatch;
 
+import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
@@ -13,10 +15,16 @@ import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.client.chaos.BottledChaosStatusText;
 import com.xyp.gtneverreset.common.crafting.chaos.ChaosLocalization;
 import com.xyp.gtneverreset.common.crafting.chaos.material.BottledChaosMaterialCache;
+import com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeProcessor;
+import com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeResources.CredentialModel;
+import com.xyp.gtneverreset.common.gui.modularui.hatch.ChaosCredentialHatchGui;
 import com.xyp.gtneverreset.common.item.items.ChaosRouteItem;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.BottleInChaosMachineBase;
+import com.xyp.gtneverreset.common.me.ChaosPatternCompiler;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -46,7 +54,7 @@ public class ChaosCredentialHatch extends ChaosRouteHatchBase {
     private boolean clearRunningStateRequested;
     private BottleInChaosMachineBase<?> controller;
     private int processingGroup = -1;
-    private com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeProcessor.CustomRoutes customRoutes;
+    private BottledChaosRecipeProcessor.CustomRoutes customRoutes;
     private boolean customRoutesDirty = true;
 
     public boolean hasCustomPatterns() {
@@ -54,20 +62,19 @@ public class ChaosCredentialHatch extends ChaosRouteHatchBase {
         return false;
     }
 
-    public com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeProcessor.CustomRoutes getCustomRoutes() {
+    public BottledChaosRecipeProcessor.CustomRoutes getCustomRoutes() {
         if (customRoutesDirty) {
             customRoutesDirty = false;
             customRoutes = null;
             if (hasCustomPatterns()) {
                 try {
-                    var chain = com.xyp.gtneverreset.common.me.ChaosPatternCompiler.compile(
-                        java.util.Arrays.asList(mInventory)
+                    var chain = ChaosPatternCompiler.compile(
+                        Arrays.asList(mInventory)
                             .subList(1, mInventory.length),
                         getBaseMetaTileEntity().getWorld());
-                    customRoutes = com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeProcessor
-                        .compileCustom(chain);
+                    customRoutes = BottledChaosRecipeProcessor.compileCustom(chain);
                 } catch (IllegalArgumentException | ArithmeticException failure) {
-                    com.xyp.gtneverreset.GTNeverReset.LOG.debug("invalid custom chaos route", failure);
+                    GTNeverReset.LOG.debug("invalid custom chaos route", failure);
                 }
             }
         }
@@ -112,22 +119,23 @@ public class ChaosCredentialHatch extends ChaosRouteHatchBase {
 
     @Override
     public ItemStack getAuthorizationStack() {
-        boolean custom = hasCustomPatterns();
-        ItemStack state = ChaosRouteItem.createCredential(
+        if (!hasCustomPatterns()) return ChaosRouteItem.createCredential(
             ChaosRouteItem.MAX_META,
-            custom ? 1 : selectedRoutes,
-            custom ? 1 : ChaosRouteItem.getRequiredWeight(selectedRoutes));
-        if (custom) {
-            net.minecraft.nbt.NBTTagList patterns = new net.minecraft.nbt.NBTTagList();
-            for (int slot = 1; slot < mInventory.length; slot++) if (mInventory[slot] != null) {
-                NBTTagCompound pattern = mInventory[slot].writeToNBT(new NBTTagCompound());
-                pattern.setInteger("slot", slot);
-                patterns.appendTag(pattern);
-            }
-            state.getTagCompound()
-                .setTag("chaosCustomPatterns", patterns);
+            selectedRoutes,
+            ChaosRouteItem.getRequiredWeight(selectedRoutes));
+        NBTTagList patterns = new NBTTagList();
+        for (int slot = 1; slot < mInventory.length; slot++) {
+            if (mInventory[slot] == null) continue;
+            NBTTagCompound pattern = mInventory[slot].writeToNBT(new NBTTagCompound());
+            pattern.setInteger("slot", slot);
+            patterns.appendTag(pattern);
         }
-        return state;
+        return ChaosRouteItem.createPatternAuthorization(patterns);
+    }
+
+    public long executionMask(ItemStack authorization) {
+        if (ChaosRouteItem.hasPatternAuthorization(authorization) && getCustomRoutes() == null) return 0;
+        return ChaosRouteItem.executionMask(authorization);
     }
 
     public long getSelectedRoutes() {
@@ -136,8 +144,7 @@ public class ChaosCredentialHatch extends ChaosRouteHatchBase {
 
     public void setSelectedRoutes(long routes) {
         if (getBaseMetaTileEntity() == null || !getBaseMetaTileEntity().isServerSide()) return;
-        long valid = routes
-            & com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeResources.CredentialModel.ALL_ROUTE_MASK;
+        long valid = routes & CredentialModel.ALL_ROUTE_MASK;
         if (routes != valid || ChaosRouteItem.getRequiredWeight(valid) > 1024 || selectedRoutes == valid) return;
         selectedRoutes = valid;
         onContentsChanged(0);
@@ -146,15 +153,13 @@ public class ChaosCredentialHatch extends ChaosRouteHatchBase {
 
     private void saveSelectedRoutes(NBTTagCompound nbt) {
         NBTTagCompound routes = new NBTTagCompound();
-        com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeResources.CredentialModel
-            .writeRouteMask(routes, selectedRoutes);
+        CredentialModel.writeRouteMask(routes, selectedRoutes);
         nbt.setTag(SELECTED_ROUTES_NBT, routes);
     }
 
     private void loadSelectedRoutes(NBTTagCompound nbt) {
         if (nbt.hasKey(SELECTED_ROUTES_NBT, 10)) {
-            selectedRoutes = com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeResources.CredentialModel
-                .readRouteMask(nbt.getCompoundTag(SELECTED_ROUTES_NBT));
+            selectedRoutes = CredentialModel.readRouteMask(nbt.getCompoundTag(SELECTED_ROUTES_NBT));
         }
     }
 
@@ -251,7 +256,7 @@ public class ChaosCredentialHatch extends ChaosRouteHatchBase {
     public void getWailaBody(ItemStack itemStack, List<String> currentTip, IWailaDataAccessor accessor,
         IWailaConfigHandler config) {
         super.getWailaBody(itemStack, currentTip, accessor, config);
-        BottleInChaosMachineBase.appendCredentialHatchWaila(
+        BottledChaosStatusText.appendCredentialHatchWaila(
             currentTip,
             accessor.getNBTData()
                 .getCompoundTag(INFORMATION_NBT),
@@ -299,7 +304,6 @@ public class ChaosCredentialHatch extends ChaosRouteHatchBase {
 
     @Override
     public ModularPanel buildUI(PosGuiData guiData, PanelSyncManager syncManager, UISettings uiSettings) {
-        return com.xyp.gtneverreset.common.gui.modularui.hatch.ChaosCredentialHatchGui
-            .build(this, guiData, syncManager, uiSettings);
+        return ChaosCredentialHatchGui.build(this, guiData, syncManager, uiSettings);
     }
 }

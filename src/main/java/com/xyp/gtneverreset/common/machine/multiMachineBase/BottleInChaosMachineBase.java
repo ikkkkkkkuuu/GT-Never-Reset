@@ -29,10 +29,9 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -57,9 +56,11 @@ import com.google.common.collect.ImmutableList;
 import com.gtnewhorizon.structurelib.alignment.IAlignmentLimits;
 import com.gtnewhorizon.structurelib.structure.IStructureElement;
 import com.gtnewhorizon.structurelib.structure.IStructureElementCheckOnly;
+import com.xyp.gtneverreset.client.chaos.BottledChaosStatusText;
 import com.xyp.gtneverreset.common.crafting.chaos.BottledChaosCrafting;
 import com.xyp.gtneverreset.common.crafting.chaos.machine.BottledChaosMachineConfiguration;
 import com.xyp.gtneverreset.common.crafting.chaos.machine.BottledChaosMachineParameters;
+import com.xyp.gtneverreset.common.crafting.chaos.material.BottledChaosInputReservation;
 import com.xyp.gtneverreset.common.crafting.chaos.material.BottledChaosMaterialSummary;
 import com.xyp.gtneverreset.common.crafting.chaos.material.BottledChaosOutputBuffer;
 import com.xyp.gtneverreset.common.crafting.chaos.processing.BottledChaosPowerAllocator;
@@ -75,7 +76,6 @@ import com.xyp.gtneverreset.common.item.items.ChaosRouteItem;
 import com.xyp.gtneverreset.common.item.items.ChaosStructureModuleItem;
 import com.xyp.gtneverreset.common.machine.hatch.ChaosCredentialHatch;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
-import com.xyp.gtneverreset.common.me.ChaosStorageCellInputs.InputSource;
 import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
@@ -97,7 +97,6 @@ import gregtech.api.metatileentity.implementations.MTEHatchInputBus;
 import gregtech.api.recipe.RecipeMap;
 import gregtech.api.recipe.check.CheckRecipeResult;
 import gregtech.api.recipe.check.CheckRecipeResultRegistry;
-import gregtech.api.recipe.check.SimpleCheckRecipeResult;
 import gregtech.api.render.TextureFactory;
 import gregtech.api.structure.error.ErrorType;
 import gregtech.api.structure.error.StructureError;
@@ -113,8 +112,6 @@ import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
 import gregtech.common.tileentities.machines.IDualInputHatch;
 import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
-import mcp.mobius.waila.api.SpecialChars;
-import mcp.mobius.waila.overlay.tooltiprenderers.TTRenderStack;
 
 /** Shared processing, inventories and UI for the independently defined Bottle in Chaos controllers. */
 public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBase<T>>
@@ -201,9 +198,10 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
     private int cacheExportSlot = -1;
     private long cacheExportResultExpiresAt;
     private int processingGroupMask;
-    private final long[] powerBudgets = new long[THREAD_COUNT];
+    private final BottledChaosPowerAllocator powerAllocation = new BottledChaosPowerAllocator(THREAD_COUNT);
     private final boolean[] advancing = new boolean[THREAD_COUNT];
     private final BottledChaosUpkeep structureUpkeep = new BottledChaosUpkeep();
+    private final CheckRecipeResult[] tickPermissions = new CheckRecipeResult[THREAD_COUNT];
     private final boolean[] runnable = new boolean[THREAD_COUNT];
     private final ArrayList<MTEHatchInputBus> centralInputBuses = new ArrayList<>();
     private final ArrayList<MTEHatchInput> centralInputHatches = new ArrayList<>();
@@ -214,7 +212,11 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
     private int upkeepGroupMask = -1;
     private long upkeepRetryTick;
     private CheckRecipeResult upkeepFailure = CheckRecipeResultRegistry.SUCCESSFUL;
-    private long statusSummaryTick = Long.MIN_VALUE;
+    private long summaryTick = Long.MIN_VALUE;
+    private NBTTagCompound groupActivity;
+    private NBTTagCompound groupOutputs;
+    private NBTTagCompound hatchOverview;
+    private NBTTagCompound poolUsage;
     private NBTTagCompound statusSummary;
     private int capacity;
     private int allocatedCapacity = -1;
@@ -228,10 +230,6 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
     private int validInputGroupMask;
     private int requestedExecutionSlot = -1;
     private boolean overCapacity;
-    private boolean concentratedPower;
-    private boolean activeConcentratedPower;
-    private int powerRoundMask;
-    private boolean powerAllocationPending = true;
     private int credentialHatchLimit;
 
     protected BottleInChaosMachineBase(int id, String name, String nameRegional) {
@@ -264,19 +262,13 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         NBTTagList jobs = new NBTTagList();
         for (BottledChaosThread thread : threads) jobs.appendTag(thread.save());
         nbt.setTag(THREAD_NBT, jobs);
-        nbt.setBoolean("bottledChaosConcentratedPower", concentratedPower);
-        nbt.setBoolean("bottledChaosActiveConcentratedPower", activeConcentratedPower);
-        nbt.setInteger("bottledChaosPowerRound", powerRoundMask);
-        NBTTagCompound budgets = new NBTTagCompound();
-        for (int slot = 0; slot < THREAD_COUNT; slot++) {
-            budgets.setLong(Integer.toString(slot), powerBudgets[slot]);
-        }
-        nbt.setTag("bottledChaosRoundBudgets", budgets);
+        powerAllocation.save(nbt);
     }
 
     @Override
     public void loadNBTData(NBTTagCompound nbt) {
         super.loadNBTData(nbt);
+        summaryTick = Long.MIN_VALUE;
         batchMode = true;
         machineConfiguration.load(nbt);
         structureUpkeep.load(nbt.getTagList("bottledChaosUpkeep", 10));
@@ -288,19 +280,12 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         }
         NBTTagList jobs = nbt.getTagList(THREAD_NBT, 10);
         for (int i = 0; i < THREAD_COUNT; i++) threads[i].load(jobs.getCompoundTagAt(i));
-        concentratedPower = nbt.getBoolean("bottledChaosConcentratedPower");
-        activeConcentratedPower = nbt.getBoolean("bottledChaosActiveConcentratedPower");
-        powerRoundMask = nbt.getInteger("bottledChaosPowerRound") & ((1 << THREAD_COUNT) - 1);
-        NBTTagCompound budgets = nbt.getCompoundTag("bottledChaosRoundBudgets");
-        for (int slot = 0; slot < THREAD_COUNT; slot++) {
-            powerBudgets[slot] = Math.max(0, budgets.getLong(Integer.toString(slot)));
-        }
+        powerAllocation.load(nbt);
         authorizationDirty = true;
         inputGroupingDirty = true;
         Arrays.fill(inputPeerMasks, 0);
         Arrays.fill(credentialCosts, 0);
         Arrays.fill(powerWeights, 0);
-        powerAllocationPending = true;
         allocatedCapacity = -1;
         inputPower = -1;
     }
@@ -477,16 +462,10 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         if (parallelControllerCount == 1) {
             ParameterModuleHatch controller = parallelControllers.iterator()
                 .next();
-            {
-                ParameterModuleHatch hatch = controller;
-                parallelTier = Math.min(BottledChaosMachineConfiguration.MAX_CONTROLLER_TIER, Math.max(0, hatch.mTier));
-            }
+            parallelTier = Math
+                .min(BottledChaosMachineConfiguration.MAX_CONTROLLER_TIER, Math.max(0, controller.mTier));
         }
         credentialHatchLimit = getCredentialHatchLimit(parallelTier);
-        machineConfiguration.setModuleSlotLimit(
-            BottledChaosMachineConfiguration.BASE_MODULE_SLOTS
-                + parallelTier * BottledChaosMachineConfiguration.MODULE_SLOTS_PER_TIER);
-        dropMachineModules(machineConfiguration.getModuleSlotLimit());
         int installedCredentialHatches = 0;
         for (int i = 0; i < THREAD_COUNT; i++) {
             if (credentialHatches[i] != null) installedCredentialHatches++;
@@ -508,6 +487,10 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                     credentialHatchLimit));
             return false;
         }
+        machineConfiguration.setModuleSlotLimit(
+            BottledChaosMachineConfiguration.BASE_MODULE_SLOTS
+                + parallelTier * BottledChaosMachineConfiguration.MODULE_SLOTS_PER_TIER);
+        dropMachineModules(machineConfiguration.getModuleSlotLimit());
         for (int slot = 0; slot < THREAD_COUNT; slot++) {
             if (credentialHatches[slot] != null) credentialHatches[slot].bindController(this, slot);
         }
@@ -567,11 +550,11 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
     }
 
     public boolean isConcentratedPowerEnabled() {
-        return concentratedPower;
+        return powerAllocation.concentratedRequested();
     }
 
     public boolean isConcentratedPowerActive() {
-        return activeConcentratedPower;
+        return powerAllocation.concentrated();
     }
 
     public abstract boolean isWirelessMode();
@@ -598,9 +581,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
 
     public void setConcentratedPowerEnabled(boolean enabled) {
         if (isWirelessMode()) return;
-        if (concentratedPower == enabled) return;
-        concentratedPower = enabled;
-        authorizationDirty = true;
+        if (!powerAllocation.requestConcentrated(enabled)) return;
         scheduleRecipeCheckImmediate();
         markDirty();
     }
@@ -609,51 +590,34 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         BottledChaosThread thread = threads[slot];
         return thread.isBusy() && thread.progress < thread.duration
             && !isThreadExecutionDisabled(slot)
-            && validGroup(slot)
-            && matchingCredentials[slot]
-            && (thread.isWireless() || thread.recipeVoltage <= getMaximumRecipeVoltage())
-            && poolMask.and(thread.requiredPools)
-                .equals(thread.requiredPools);
+            && checkJobAuthorization(slot).wasSuccessful();
     }
 
-    private void refreshPowerRound() {
-        if (isWirelessMode()) return;
+    private void refreshPowerRound(CheckRecipeResult[] permissions) {
+        boolean wireless = isWirelessMode();
+        if (wireless && permissions == null) return;
+        int authorized = 0;
         for (int slot = 0; slot < THREAD_COUNT; slot++) {
-            if ((powerRoundMask & (1 << slot)) != 0 && (!hasAuthorizedWork(slot) || threads[slot].isWireless())) {
-                powerRoundMask &= ~(1 << slot);
-                if (activeConcentratedPower || powerWeights[slot] == 0) powerBudgets[slot] = 0;
-                markDirty();
-            }
+            BottledChaosThread thread = threads[slot];
+            boolean participates = thread.isBusy() && !isThreadExecutionDisabled(slot);
+            CheckRecipeResult result = participates ? checkJobAuthorization(slot) : null;
+            if (permissions != null) permissions[slot] = result;
+            if (result != null && result.wasSuccessful() && !thread.isWireless() && thread.progress < thread.duration)
+                authorized |= 1 << slot;
         }
-        if (concentratedPower != activeConcentratedPower) {
-            if (powerRoundMask != 0) return;
-            activeConcentratedPower = concentratedPower;
-            Arrays.fill(powerBudgets, 0);
-            authorizationDirty = true;
-            refreshAllocation();
+        if (wireless) return;
+        if (powerAllocation.retireFinished(authorized, powerWeights)) markDirty();
+        if (powerAllocation.refreshRound(authorized, inputPower, powerWeights)) {
+            for (BottledChaosThread thread : threads) thread.nextCheckTick = 0;
             markDirty();
         }
-        if (activeConcentratedPower) return;
-        for (int slot = 0; slot < THREAD_COUNT; slot++) {
-            if (!threads[slot].isWireless() && hasAuthorizedWork(slot) && (powerRoundMask & (1 << slot)) == 0)
-                powerAllocationPending = true;
-        }
-        if (!powerAllocationPending || powerRoundMask != 0) return;
-        // Paid jobs retain their original EU/t and finish in compatible rounds before new reservations apply.
-        for (int slot = 0; slot < THREAD_COUNT; slot++)
-            if (!threads[slot].isWireless() && hasAuthorizedWork(slot)) return;
-        long[] budgets = BottledChaosPowerAllocator.proportionalBudgets(inputPower, powerWeights);
-        System.arraycopy(budgets, 0, powerBudgets, 0, THREAD_COUNT);
-        powerAllocationPending = false;
-        for (BottledChaosThread thread : threads) thread.nextCheckTick = 0;
-        markDirty();
     }
 
     private boolean isWaitingForPowerRound(int slot) {
-        if (isWirelessMode() || threads[slot].isWireless()) return false;
-        return (activeConcentratedPower || powerAllocationPending || concentratedPower != activeConcentratedPower)
-            && (powerRoundMask & (1 << slot)) == 0
-            && threads[slot].progress < threads[slot].duration;
+        BottledChaosThread thread = threads[slot];
+        return !isWirelessMode() && !thread.isWireless()
+            && thread.progress < thread.duration
+            && powerAllocation.waitingForRound(slot);
     }
 
     private boolean validGroup(int slot) {
@@ -685,8 +649,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                 if (!ItemStack.areItemStacksEqual(credential, installedCredentials[slot])) {
                     installedCredentials[slot] = credential == null ? null : credential.copy();
                     // Credential changes also discard recipe-search caches, never already-paid jobs.
-                    threadLogics[slot] = new BottledChaosProcessingLogic();
-                    if (!threads[slot].isBusy()) threads[slot].resetResult();
+                    resetGroupSearch(slot);
                     inputGroupsChanged = true;
                 }
                 matchingCredentials[slot] = ItemStack
@@ -696,9 +659,8 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             for (int slot = 0; slot < THREAD_COUNT; slot++) {
                 ChaosCredentialHatch hatch = credentialHatches[slot];
                 if (hatch != null && installedCredentials[slot] != null) required = required.or(
-                    BottledChaosRecipeProcessor.requiredPoolMask(
-                        hatch.getCustomRoutes(),
-                        ChaosRouteItem.getRouteMask(installedCredentials[slot])));
+                    BottledChaosRecipeProcessor
+                        .requiredPoolMask(hatch.getCustomRoutes(), hatch.executionMask(installedCredentials[slot])));
                 if (threads[slot].isBusy()) required = required.or(threads[slot].requiredPools);
             }
             machineConfiguration.updateRequiredPools(required);
@@ -710,7 +672,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             for (int slot = 0; slot < THREAD_COUNT; slot++) {
                 credentialCosts[slot] = validGroup(slot) && !isThreadExecutionDisabled(slot)
                     && ChaosRouteItem.isBound(installedCredentials[slot])
-                        ? ChaosRouteItem.getRequiredWeight(ChaosRouteItem.getRouteMask(installedCredentials[slot]))
+                        ? ChaosRouteItem.authorizationWeight(installedCredentials[slot])
                             * (Integer.bitCount(getInputPeerMask(slot)) + 1)
                         : 0;
                 powerWeights[slot] = credentialCosts[slot] > 0 && (!threads[slot].isBusy() || matchingCredentials[slot])
@@ -725,15 +687,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         inputPower = power;
         allocatedCapacity = capacity;
         overCapacity = capacity <= 0 || getBottledChaosUsedCapacity() > capacity;
-        if (isWirelessMode()) {
-            powerRoundMask = 0;
-            powerAllocationPending = false;
-            Arrays.fill(powerBudgets, 0);
-            for (BottledChaosThread thread : threads) thread.nextCheckTick = 0;
-            return;
-        }
-        if (!activeConcentratedPower) powerAllocationPending = !Arrays
-            .equals(powerBudgets, BottledChaosPowerAllocator.proportionalBudgets(inputPower, powerWeights));
+        powerAllocation.updateSupply(isWirelessMode(), inputPower, powerWeights);
         for (BottledChaosThread thread : threads) thread.nextCheckTick = 0;
     }
 
@@ -747,7 +701,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         if (!isCredentialHatchConnected(hatch, slot)) return;
         requestedExecutionSlot = enabled ? slot : -1;
         authorizationDirty = true;
-        statusSummaryTick = Long.MIN_VALUE;
+        summaryTick = Long.MIN_VALUE;
         scheduleRecipeCheckImmediate();
         markDirty();
     }
@@ -800,14 +754,18 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             if (inputGroupingDirty || inputPeerMasks[slot] != peers[slot]
                 || ((validInputGroupMask ^ newValidInputGroupMask) & (1 << slot)) != 0) {
                 // Input membership invalidates searches, never a thread's already-consumed job.
-                threadLogics[slot] = new BottledChaosProcessingLogic();
-                if (!threads[slot].isBusy()) threads[slot].resetResult();
-                threads[slot].nextCheckTick = 0;
+                resetGroupSearch(slot);
             }
             inputPeerMasks[slot] = peers[slot];
         }
         validInputGroupMask = newValidInputGroupMask;
         inputGroupingDirty = false;
+    }
+
+    private void resetGroupSearch(int slot) {
+        threadLogics[slot] = new BottledChaosProcessingLogic();
+        if (!threads[slot].isBusy()) threads[slot].resetResult();
+        threads[slot].nextCheckTick = 0;
     }
 
     private int getInputPeerMask(int slot) {
@@ -819,7 +777,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         return peers;
     }
 
-    private CheckRecipeResult canRunThread(int slot) {
+    private CheckRecipeResult checkJobAuthorization(int slot) {
         BottledChaosThread thread = threads[slot];
         if (!validGroup(slot) || !matchingCredentials[slot]) {
             // #tr gtnr.machine.BottleInChaos.result.credential_changed
@@ -833,10 +791,16 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             .equals(thread.requiredPools)) {
             return BottledChaosProcessingLogic.missingPools(thread.requiredPools, poolMask, true);
         }
+        return CheckRecipeResultRegistry.SUCCESSFUL;
+    }
+
+    private CheckRecipeResult canRunThread(int slot, CheckRecipeResult authorization) {
+        if (!authorization.wasSuccessful()) return authorization;
+        BottledChaosThread thread = threads[slot];
         if (thread.isWireless() || thread.progress >= thread.duration) return CheckRecipeResultRegistry.SUCCESSFUL;
         if (isWirelessMode()) return CheckRecipeResultRegistry.insufficientPower(thread.eut);
         if (thread.eut > inputPower) return CheckRecipeResultRegistry.insufficientPower(thread.eut);
-        if (!isWaitingForPowerRound(slot) && thread.eut > powerBudgets[slot]) {
+        if (!isWaitingForPowerRound(slot) && thread.eut > powerAllocation.budget(slot)) {
             // #tr gtnr.machine.BottleInChaos.result.insufficient_power_share
             // # This processing group does not have enough allocated power.
             // # zh_CN 此加工组分配到的电力不足.
@@ -850,7 +814,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         if (!mMachine) return ChaosTextResult.ofFailure("GT5U.gui.multimachine.incomplete_structure");
         if (!getBaseMetaTileEntity().isAllowedToWork()) return CheckRecipeResultRegistry.NO_RECIPE;
         refreshAllocation();
-        refreshPowerRound();
+        refreshPowerRound(null);
         // #tr gtnr.machine.BottleInChaos.result.capacity_exceeded
         // # Selected routes exceed the machine capacity.
         // # zh_CN 已选产线超过主机容量。
@@ -863,10 +827,9 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                     || result == CheckRecipeResultRegistry.FLUID_OUTPUT_FULL))
                 return result;
         }
-        if (!isWirelessMode() && (activeConcentratedPower || powerAllocationPending))
-            return checkPowerRoundProcessing(!activeConcentratedPower);
-        if (!isWirelessMode() && concentratedPower != activeConcentratedPower)
-            return CheckRecipeResultRegistry.SUCCESSFUL;
+        if (!isWirelessMode() && powerAllocation.needsRound())
+            return checkPowerRoundProcessing(!powerAllocation.concentrated());
+        if (!isWirelessMode() && powerAllocation.modeChanging()) return CheckRecipeResultRegistry.SUCCESSFUL;
         CheckRecipeResult failure = null;
         boolean hasWork = false;
         for (int slot = 0; slot < THREAD_COUNT; slot++) {
@@ -888,7 +851,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
     }
 
     private CheckRecipeResult checkPowerRoundProcessing(boolean resumeOnly) {
-        if (powerRoundMask != 0) return CheckRecipeResultRegistry.SUCCESSFUL;
+        if (powerAllocation.roundActive()) return CheckRecipeResultRegistry.SUCCESSFUL;
         int candidates = 0;
         int paidCandidates = 0;
         for (int slot = 0; slot < THREAD_COUNT; slot++) {
@@ -913,20 +876,29 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             if (dual instanceof MTEHatchInputBus bus && !roundBuses.contains(bus)) roundBuses.add(bus);
         }
         mInputBusses = roundBuses;
-        InputTransaction inputs = null;
+        SchedulingAttempt inputs = null;
         long[] budgets = null;
         CheckRecipeResult failure = CheckRecipeResultRegistry.NO_RECIPE;
         try {
             startRecipeProcessing();
             // Multiple groups need a full-power eligibility probe before sharing power. A lone group already
             // receives that same budget in the real pass, so do not plan its complete chain twice.
+            GroupInputs[] scopes = new GroupInputs[THREAD_COUNT];
+            for (int slot = 0; slot < THREAD_COUNT; slot++) {
+                if ((candidates & (1 << slot)) != 0 && !threads[slot].isBusy()) scopes[slot] = groupInputs(slot);
+            }
+            RoundInputs sources = new RoundInputs();
             boolean probeCandidates = Integer.bitCount(candidates) > 1;
             for (int slot = 0; probeCandidates && slot < THREAD_COUNT; slot++) {
                 if ((candidates & (1 << slot)) == 0) continue;
                 CheckRecipeResult result = threads[slot].isBusy()
                     ? threads[slot].eut <= inputPower ? CheckRecipeResultRegistry.SUCCESSFUL
                         : CheckRecipeResultRegistry.insufficientPower(threads[slot].eut)
-                    : prepareScopedThread(slot, inputPower, new InputTransaction(false, true));
+                    : prepareThread(
+                        slot,
+                        scopes[slot],
+                        inputPower,
+                        new SchedulingAttempt(SchedulingMode.PROBE, sources));
                 if (!result.wasSuccessful()) {
                     candidates &= ~(1 << slot);
                     failure = result;
@@ -940,27 +912,20 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                     if ((candidates & (1 << slot)) != 0) weights[slot] = powerWeights[slot];
                 }
                 budgets = BottledChaosPowerAllocator.proportionalBudgets(inputPower, weights);
-                inputs = new InputTransaction();
+                inputs = new SchedulingAttempt(SchedulingMode.ROUND, sources);
                 int failed = -1;
                 for (int slot = 0; slot < THREAD_COUNT; slot++) {
                     if ((candidates & (1 << slot)) == 0) continue;
                     CheckRecipeResult result = threads[slot].isBusy()
                         ? threads[slot].eut <= budgets[slot] ? CheckRecipeResultRegistry.SUCCESSFUL
                             : CheckRecipeResultRegistry.insufficientPower(threads[slot].eut)
-                        : prepareScopedThread(slot, budgets[slot], inputs);
+                        : prepareThread(slot, scopes[slot], budgets[slot], inputs);
                     if (!result.wasSuccessful()) {
                         failed = slot;
                         failure = result;
                         // Prefer a feasible higher-priority subset when simultaneous base power does not fit.
-                        if ("insufficient_power".equals(result.getID())) {
-                            for (int candidate = THREAD_COUNT - 1; candidate >= 0; candidate--) {
-                                if ((candidates & (1 << candidate)) != 0) {
-                                    failed = candidate;
-                                    break;
-                                }
-                            }
-                        }
                         if ("insufficient_power".equals(result.getID()) && Integer.bitCount(candidates) > 1) {
+                            failed = Integer.SIZE - 1 - Integer.numberOfLeadingZeros(candidates);
                             setThreadSearchResult(failed, CheckRecipeResultRegistry.SUCCESSFUL);
                             threads[failed].status = BottledChaosStatus.WAITING_POWER.key();
                         } else {
@@ -968,13 +933,20 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                         }
                         break;
                     }
-                    if (!threads[slot].isBusy()) inputs.prepared[slot] = true;
+                    if (!threads[slot].isBusy()) {
+                        inputs.preparedMask |= 1 << slot;
+                        if (inputs.testedOutput != threadLogics[slot].getPreparedPlan()
+                            .outputPlan()) {
+                            inputs.outputReservation = null;
+                        }
+                        inputs.testedOutput = null;
+                    }
                 }
                 if (failed < 0) break;
                 candidates &= ~(1 << failed);
                 inputs = null;
             }
-            setCheckRecipeResult(candidates == 0 ? failure : commitInputs(inputs));
+            setCheckRecipeResult(candidates == 0 ? failure : commitInputs(inputs.materials));
             if (candidates != 0 && checkRecipeResult.wasSuccessful()) updateSlots();
         } finally {
             try {
@@ -991,11 +963,10 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             return checkRecipeResult;
         }
         if (candidates == 0) return failure;
-        powerRoundMask = candidates;
-        System.arraycopy(budgets, 0, powerBudgets, 0, THREAD_COUNT);
+        powerAllocation.startRound(candidates, budgets);
         for (int slot = 0; slot < THREAD_COUNT; slot++) {
             if ((candidates & (1 << slot)) == 0) continue;
-            if (inputs.prepared[slot]) commitPreparedThread(slot);
+            if (inputs.isPrepared(slot)) commitPreparedThread(slot);
             threads[slot].activate();
         }
         markDirty();
@@ -1006,17 +977,26 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         threads[slot].searched(result, schedulerTick + 20);
     }
 
-    private CheckRecipeResult prepareScopedThread(int slot, long budget, InputTransaction inputs) {
-        return withGroupInputs(slot, () -> prepareThread(slot, budget, inputs));
-    }
-
-    private <T> T withGroupInputs(int slot, Supplier<T> action) {
-        ArrayList<IDualInputHatch> duals = getScopedDualInputHatches(slot, mDualInputHatches);
-        return withInputs(
-            getScopedInputBuses(slot, mInputBusses, duals),
-            getScopedInputHatches(slot, mInputHatches),
-            duals,
-            action);
+    private GroupInputs groupInputs(int slot) {
+        int mask = (1 << slot) | getInputPeerMask(slot);
+        var buses = new ArrayList<MTEHatchInputBus>();
+        var hatches = new ArrayList<MTEHatchInput>();
+        for (int input = 0; input < threadInputs.length; input++) {
+            if ((mask & (1 << (input / 2))) == 0) continue;
+            MTEHatch dedicated = threadInputs[input];
+            if (dedicated instanceof MTEHatchInputBus bus) addInputReference(buses, bus);
+            if (dedicated instanceof MTEHatchInput hatch) addInputReference(hatches, hatch);
+        }
+        for (MTEHatchInputBus bus : centralInputBuses) addInputReference(buses, bus);
+        for (MTEHatchInput hatch : centralInputHatches) addInputReference(hatches, hatch);
+        var duals = new ArrayList<IDualInputHatch>();
+        for (IDualInputHatch dual : mDualInputHatches) {
+            if (isDedicatedInput(dual) && !containsReference(buses, dual) && !containsReference(hatches, dual))
+                continue;
+            addInputReference(duals, dual);
+            if (dual instanceof MTEHatchInputBus bus) addInputReference(buses, bus);
+        }
+        return new GroupInputs(buses, hatches, duals);
     }
 
     private CheckRecipeResult startThread(int slot) {
@@ -1027,14 +1007,15 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             // # zh_CN 此加工组没有有效产线。
             return ChaosTextResult.ofFailure("gtnr.machine.BottleInChaos.result.unbound");
         }
-        if (!isWirelessMode() && powerBudgets[slot] <= 0)
+        if (!isWirelessMode() && powerAllocation.budget(slot) <= 0)
             return ChaosTextResult.ofFailure("gtnr.machine.BottleInChaos.result.insufficient_power_share");
 
-        InputTransaction inputs = new InputTransaction(false, false);
-        CheckRecipeResult result = withGroupInputs(slot, () -> {
+        SchedulingAttempt inputs = new SchedulingAttempt(SchedulingMode.SINGLE, new RoundInputs());
+        GroupInputs scope = groupInputs(slot);
+        CheckRecipeResult result = withInputs(scope.buses, scope.hatches, scope.duals, () -> {
             try {
                 startRecipeProcessing();
-                CheckRecipeResult prepared = prepareThread(slot, powerBudgets[slot], inputs);
+                CheckRecipeResult prepared = prepareThread(slot, scope, powerAllocation.budget(slot), inputs);
                 setCheckRecipeResult(prepared);
                 return prepared;
             } finally {
@@ -1056,7 +1037,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         BottledChaosProcessingLogic logic = threadLogics[slot];
         BottledChaosThread thread = threads[slot];
         thread.begin(installedCredentials[slot], logic);
-        if (!thread.isWireless()) powerRoundMask |= 1 << slot;
+        if (!thread.isWireless()) powerAllocation.joinRound(slot);
         matchingCredentials[slot] = true;
         upkeepDirty = poolUsersDirty = true;
         BottledChaosRecipeProcessor.PreparedPlan prepared = logic.getPreparedPlan();
@@ -1066,64 +1047,13 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         markDirty();
     }
 
-    private ArrayList<MTEHatchInputBus> getScopedInputBuses(int slot, List<MTEHatchInputBus> allBuses,
-        List<IDualInputHatch> duals) {
-        ArrayList<MTEHatchInputBus> scoped = new ArrayList<>();
-        int groupMask = (1 << slot) | getInputPeerMask(slot);
-        for (int input = 0; input < threadInputs.length; input++) {
-            int peer = input / 2;
-            if ((groupMask & (1 << peer)) != 0 && validGroup(peer)
-                && threadInputs[input] instanceof MTEHatchInputBus bus) addInputReference(scoped, bus);
-        }
-        for (MTEHatchInputBus bus : allBuses) {
-            if (!isDedicatedInput(bus)) addInputReference(scoped, bus);
-        }
-        // Include the scoped crafting buffers in the bus lifecycle as well.
-        for (IDualInputHatch dual : duals) {
-            if (dual instanceof MTEHatchInputBus bus) addInputReference(scoped, bus);
-        }
-        return scoped;
+    private static <T> void addInputReference(List<T> inputs, T input) {
+        if (input != null && !containsReference(inputs, input)) inputs.add(input);
     }
 
-    private ArrayList<IDualInputHatch> getScopedDualInputHatches(int slot, List<IDualInputHatch> allHatches) {
-        ArrayList<IDualInputHatch> scoped = new ArrayList<>();
-        int groupMask = (1 << slot) | getInputPeerMask(slot);
-        for (IDualInputHatch hatch : allHatches) {
-            if (!isDedicatedInput(hatch)) {
-                addInputReference(scoped, hatch);
-                continue;
-            }
-            for (int peer = 0; peer < THREAD_COUNT; peer++) {
-                if ((groupMask & (1 << peer)) != 0 && validGroup(peer)
-                    && (hatch == threadInputs[peer * 2] || hatch == threadInputs[peer * 2 + 1])) {
-                    addInputReference(scoped, hatch);
-                    break;
-                }
-            }
-        }
-        return scoped;
-    }
-
-    private ArrayList<MTEHatchInput> getScopedInputHatches(int slot, List<MTEHatchInput> allHatches) {
-        ArrayList<MTEHatchInput> scoped = new ArrayList<>();
-        int groupMask = (1 << slot) | getInputPeerMask(slot);
-        for (int input = 0; input < threadInputs.length; input++) {
-            int peer = input / 2;
-            if ((groupMask & (1 << peer)) != 0 && validGroup(peer)
-                && threadInputs[input] instanceof MTEHatchInput hatch) addInputReference(scoped, hatch);
-        }
-        for (MTEHatchInput hatch : allHatches) {
-            if (!isDedicatedInput(hatch)) addInputReference(scoped, hatch);
-        }
-        return scoped;
-    }
-
-    private static <T> void addInputReference(List<T> scoped, T input) {
-        if (input == null) return;
-        for (T existing : scoped) {
-            if (existing == input) return;
-        }
-        scoped.add(input);
+    private static boolean containsReference(List<?> inputs, Object input) {
+        for (Object existing : inputs) if (existing == input) return true;
+        return false;
     }
 
     private boolean isDedicatedInput(Object hatch) {
@@ -1133,20 +1063,19 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         return false;
     }
 
-    private CheckRecipeResult prepareThread(int slot, long budget, InputTransaction inputs) {
-        InputTransaction.View common = withNonDualInputs(
-            mInputBusses,
-            mInputHatches,
-            () -> captureInputs(inputs, true));
-        InputTransaction.View central = withCentralInputs(() -> captureInputs(inputs, false));
+    private CheckRecipeResult prepareThread(int slot, GroupInputs scope, long budget, SchedulingAttempt inputs) {
+        var common = inputs.sources.ordinary.computeIfAbsent(
+            scope,
+            group -> withNonDualInputs(group.buses, group.hatches, () -> captureInputs(inputs.sources.registry, true)));
+        var central = inputs.sources.centralFluids();
         CheckRecipeResult result = CheckRecipeResultRegistry.NO_RECIPE;
         // Each pattern remains isolated; only ordinary and shared inputs are common to every attempt.
-        for (IDualInputHatch dual : mDualInputHatches) {
+        for (IDualInputHatch dual : scope.duals) {
             ItemStack[] sharedItems = dual.getSharedItems();
             for (var iterator = dual.inventories(); iterator.hasNext();) {
                 var inventory = iterator.next();
                 if (inventory.isEmpty()) continue;
-                InputTransaction.View pattern = common.copy();
+                BottledChaosInputReservation.View pattern = common.copy();
                 if (sharedItems != null) for (ItemStack item : sharedItems) pattern.add(item);
                 ItemStack[] items = inventory.getItemInputs();
                 if (items != null) for (ItemStack item : items) pattern.add(item);
@@ -1162,21 +1091,21 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
     }
 
     /** Capture the caller's ordinary-input scope; dual inventories are added only by prepareThread(). */
-    private InputTransaction.View captureInputs(InputTransaction inputs, boolean includeItems) {
-        InputTransaction.View view = inputs.new View();
+    private BottledChaosInputReservation.View captureInputs(BottledChaosInputReservation registry,
+        boolean includeItems) {
+        BottledChaosInputReservation.View view = registry.new View();
         if (includeItems) getNativeItemSources().forEach(view::add);
         getNativeFluidSources().forEach(view::add);
-        view.limits.keySet()
-            .removeIf(source -> source.owner == mInventory[1]);
+        view.excludeOwner(mInventory[1]);
         return view;
     }
 
-    private CheckRecipeResult prepareThread(int slot, InputTransaction.View recipe, InputTransaction.View central,
-        long budget, InputTransaction inputs) {
+    private CheckRecipeResult prepareThread(int slot, BottledChaosInputReservation.View recipe,
+        BottledChaosInputReservation.View central, long budget, SchedulingAttempt inputs) {
         processingGroupMask = 1 << slot;
-        InputTransaction candidate = inputs.fork();
-        InputTransaction.Snapshot working = candidate.snapshot(recipe);
-        InputTransaction.Snapshot supply = candidate.snapshot(central);
+        BottledChaosInputReservation candidate = inputs.materials.fork();
+        BottledChaosInputReservation.Snapshot working = candidate.snapshot(recipe);
+        BottledChaosInputReservation.Snapshot supply = candidate.snapshot(central);
 
         BottledChaosProcessingLogic logic = threadLogics[slot];
         logic.clear();
@@ -1196,7 +1125,6 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                     Math.max(0, inputPower),
                     working.itemStacks(),
                     supply.fluidStacks())));
-        logic.setMaterialCache(credentialHatches[slot].getMaterialCache(), plan -> reserveThreadOutputs(plan, inputs));
         logic.setInputs(working.getInputItems(), working.getInputFluids());
         logic.setMaxParallel(1);
         logic.setBatchSize(getMaxBatchSize());
@@ -1208,7 +1136,13 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         logic.setAvailableAmperage(1);
         logic.setAmperageOC(true);
         logic.setVoidProtection(protectsExcessItem(), protectsExcessFluid());
-        CheckRecipeResult result = logic.process();
+        CheckRecipeResult result;
+        logic.setMaterialCache(credentialHatches[slot].getMaterialCache(), inputs::checkOutputs);
+        try {
+            result = logic.process();
+        } finally {
+            logic.setMaterialCache(null, null);
+        }
         if (!result.wasSuccessful()) return result;
         if (!isWirelessMode() && (logic.getCalculatedEut() < 0 || logic.getCalculatedEut() > budget)) {
             return ChaosTextResult.ofFailure("gtnr.machine.BottleInChaos.result.insufficient_power_share");
@@ -1226,13 +1160,13 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         List<BottledChaosUpkeep.ItemDemand> roundItems = logic.getPreparedPlan()
             .roundItems();
         if (!roundItems.isEmpty()) {
-            supply = candidate.snapshot(withCentralInputs(() -> captureInputs(inputs, true)));
+            supply = candidate.snapshot(inputs.sources.centralItems());
             result = BottledChaosUpkeep.consumeRoundItems(roundItems, supply.getInputItems());
             if (!result.wasSuccessful()) return result;
             candidate.accept(supply);
         }
         // Both modes accept the same checked deltas; only the transaction decides when to apply them.
-        if (isWirelessMode() && !inputs.deferred() && !inputs.probeOnly) {
+        if (isWirelessMode() && inputs.mode == SchedulingMode.SINGLE) {
             var owner = getBaseMetaTileEntity().getOwnerUuid();
             if (owner == null) {
                 // #tr gtnr.machine.BottleInChaos.result.missing_owner
@@ -1251,11 +1185,11 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                 return ChaosTextResult.ofFailure("gtnr.machine.BottleInChaos.result.insufficient_wireless_energy");
             }
         }
-        if (!inputs.probeOnly) {
-            inputs.accept(candidate);
-            if (!inputs.deferred()) {
+        if (inputs.mode != SchedulingMode.PROBE) {
+            inputs.materials.accept(candidate);
+            if (inputs.mode == SchedulingMode.SINGLE) {
                 if (isWirelessMode()) inputs.wirelessPaid = logic.getWirelessCost();
-                result = commitInputs(inputs);
+                result = commitInputs(inputs.materials);
                 inputs.commitFailed = !result.wasSuccessful();
                 if (result.wasSuccessful()) updateSlots();
                 return result;
@@ -1264,28 +1198,10 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         return CheckRecipeResultRegistry.SUCCESSFUL;
     }
 
-    private CheckRecipeResult commitInputs(InputTransaction inputs) {
+    private CheckRecipeResult commitInputs(BottledChaosInputReservation inputs) {
         CheckRecipeResult result = inputs.commit();
         if (!result.wasSuccessful()) stopMachine(ShutDownReasonRegistry.CRITICAL_NONE);
         return result;
-    }
-
-    /** Shared output reservation used by every candidate, including family fallback and concentrated probes. */
-    private CheckRecipeResult reserveThreadOutputs(BottledChaosRecipeProcessor.Plan plan, InputTransaction inputs) {
-        BottledChaosOutputBuffer.Transaction reservation = BottledChaosOutputBuffer.Transaction.forRecipeOutputs(this);
-        CheckRecipeResult result = reserveRunningOutputs(reservation);
-        if (!result.wasSuccessful()) return result;
-        BottledChaosOutputBuffer candidate = new BottledChaosOutputBuffer();
-        if (inputs.deferred()) {
-            for (int i = 0; i < THREAD_COUNT; i++) {
-                if (!inputs.isPrepared(i)) continue;
-                candidate.set(threadLogics[i].getLongItemOutputs(), threadLogics[i].getLongFluidOutputs());
-                result = reservation.reserve(candidate);
-                if (!result.wasSuccessful()) return result;
-            }
-        }
-        candidate.set(plan.itemOutputs(), plan.fluidOutputs());
-        return reservation.reserve(candidate);
     }
 
     private CheckRecipeResult reserveRunningOutputs(BottledChaosOutputBuffer.Transaction reservation) {
@@ -1338,158 +1254,78 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         return cacheExportSlot;
     }
 
-    /** Shared reservations belong to this scheduling attempt; source access stays in the existing input adapters. */
-    private static final class InputTransaction {
+    private record GroupInputs(ArrayList<MTEHatchInputBus> buses, ArrayList<MTEHatchInput> hatches,
+        ArrayList<IDualInputHatch> duals) {}
 
-        private final Map<Object, Map<Object, InputSource>> sources;
-        private final Map<InputSource, Long> reserved = new LinkedHashMap<>();
-        private final boolean[] prepared;
-        private final boolean probeOnly;
+    private enum SchedulingMode {
+        SINGLE,
+        ROUND,
+        PROBE
+    }
+
+    /** Input identities and observed amounts are scoped to one GT start/end processing call. */
+    private final class RoundInputs {
+
+        private final BottledChaosInputReservation registry = new BottledChaosInputReservation();
+        private final Map<GroupInputs, BottledChaosInputReservation.View> ordinary = new HashMap<>();
+        private BottledChaosInputReservation.View centralFluids;
+        private BottledChaosInputReservation.View centralItems;
+
+        private BottledChaosInputReservation.View centralFluids() {
+            if (centralFluids == null) centralFluids = withCentralInputs(() -> captureInputs(registry, false));
+            return centralFluids;
+        }
+
+        private BottledChaosInputReservation.View centralItems() {
+            if (centralItems == null) centralItems = withCentralInputs(() -> captureInputs(registry, true));
+            return centralItems;
+        }
+    }
+
+    private final class SchedulingAttempt {
+
+        private final RoundInputs sources;
+        private final BottledChaosInputReservation materials;
+        private BottledChaosOutputBuffer.Transaction outputReservation;
+        private BottledChaosRecipeProcessor.Plan testedOutput;
+        private final SchedulingMode mode;
+        private int preparedMask;
         private boolean commitFailed;
         private BigInteger wirelessPaid = BigInteger.ZERO;
 
-        private InputTransaction() {
-            this(true, false);
+        private SchedulingAttempt(SchedulingMode mode, RoundInputs sources) {
+            this.mode = mode;
+            this.sources = sources;
+            materials = sources.registry.fork();
         }
 
-        private InputTransaction(boolean deferred, boolean probeOnly) {
-            sources = new IdentityHashMap<>();
-            prepared = deferred ? new boolean[THREAD_COUNT] : null;
-            this.probeOnly = probeOnly;
-        }
-
-        private InputTransaction(InputTransaction original) {
-            sources = original.sources;
-            prepared = original.prepared;
-            probeOnly = original.probeOnly;
-            reserved.putAll(original.reserved);
-        }
-
-        private boolean deferred() {
-            return prepared != null;
+        private CheckRecipeResult checkOutputs(BottledChaosRecipeProcessor.Plan plan) {
+            // A GT output simulation is mutable. Extend only a prefix accepted by the scheduler.
+            // Failed, replaced or speculative plans must restart from the accepted jobs.
+            var reservation = outputReservation;
+            if (reservation == null || testedOutput != null) {
+                reservation = BottledChaosOutputBuffer.Transaction.forRecipeOutputs(BottleInChaosMachineBase.this);
+                CheckRecipeResult result = reserveRunningOutputs(reservation);
+                if (!result.wasSuccessful()) return result;
+                for (int i = 0; i < THREAD_COUNT; i++) {
+                    if (!isPrepared(i)) continue;
+                    result = reservation
+                        .reserve(threadLogics[i].getLongItemOutputs(), threadLogics[i].getLongFluidOutputs());
+                    if (!result.wasSuccessful()) return result;
+                }
+            }
+            outputReservation = null;
+            testedOutput = null;
+            var result = reservation.reserve(plan.itemOutputs(), plan.fluidOutputs());
+            if (result.wasSuccessful() && mode == SchedulingMode.ROUND) {
+                outputReservation = reservation;
+                testedOutput = plan;
+            }
+            return result;
         }
 
         private boolean isPrepared(int slot) {
-            return deferred() && prepared[slot];
-        }
-
-        private InputTransaction fork() {
-            return new InputTransaction(this);
-        }
-
-        private final class View {
-
-            private final Map<InputSource, Long> limits = new LinkedHashMap<>();
-
-            private View copy() {
-                View copy = new View();
-                copy.limits.putAll(limits);
-                return copy;
-            }
-
-            private void add(ItemStack stack) {
-                add(InputSource.of(stack, stack));
-            }
-
-            private void add(FluidStack stack) {
-                add(InputSource.of(stack, stack));
-            }
-
-            private void add(InputSource input) {
-                if (input == null) return;
-                long limit = input.amount;
-                InputSource source = input.register(sources);
-                if (source != null) limits.merge(source, limit, Math::max);
-            }
-        }
-
-        private Snapshot snapshot(View view) {
-            return new Snapshot(view, reserved);
-        }
-
-        private void accept(Snapshot snapshot) {
-            for (int i = 0; i < snapshot.sources.size(); i++) {
-                long remaining = i < snapshot.items.length ? snapshot.items[i].stackSize()
-                    : snapshot.fluids[i - snapshot.items.length].amount();
-                long used = snapshot.initial[i] - remaining;
-                if (used < 0 || remaining < 0) throw new IllegalStateException("Invalid input reservation");
-                if (used > 0) reserved.merge(snapshot.sources.get(i), used, Math::addExact);
-            }
-        }
-
-        private void accept(InputTransaction candidate) {
-            reserved.clear();
-            reserved.putAll(candidate.reserved);
-        }
-
-        private CheckRecipeResult commit() {
-            for (var entry : reserved.entrySet()) {
-                if (entry.getKey().available.getAsLong() < entry.getValue()) return extractionFailure(entry.getKey());
-            }
-            // A short real extraction follows GT's non-rollback semantics; never retry an already debited candidate.
-            for (var entry : reserved.entrySet()) {
-                if (entry.getKey().extract.applyAsLong(entry.getValue()) != entry.getValue()) {
-                    reserved.clear();
-                    return extractionFailure(entry.getKey());
-                }
-            }
-            reserved.clear();
-            return CheckRecipeResultRegistry.SUCCESSFUL;
-        }
-
-        private static CheckRecipeResult extractionFailure(InputSource source) {
-            return SimpleCheckRecipeResult.ofFailurePersistOnShutdown(
-                source.template instanceof ItemStack ? "stocking_bus_fail_extraction"
-                    : "stocking_hatch_fail_extraction");
-        }
-
-        private static final class Snapshot {
-
-            private final List<InputSource> sources = new ArrayList<>();
-            private final ItemStackLong[] items;
-            private final FluidStackLong[] fluids;
-            private final long[] initial;
-
-            private Snapshot(View view, Map<InputSource, Long> reserved) {
-                for (InputSource source : view.limits.keySet())
-                    if (source.template instanceof ItemStack) sources.add(source);
-                int itemCount = sources.size();
-                for (InputSource source : view.limits.keySet())
-                    if (source.template instanceof FluidStack) sources.add(source);
-                items = new ItemStackLong[itemCount];
-                fluids = new FluidStackLong[sources.size() - itemCount];
-                initial = new long[sources.size()];
-                for (int i = 0; i < sources.size(); i++) {
-                    InputSource source = sources.get(i);
-                    initial[i] = Math
-                        .min(view.limits.get(source), Math.max(0, source.amount - reserved.getOrDefault(source, 0L)));
-                    if (i < itemCount) items[i] = new ItemStackLong(((ItemStack) source.template).copy(), initial[i]);
-                    else fluids[i - itemCount] = new FluidStackLong(((FluidStack) source.template).copy(), initial[i]);
-                }
-            }
-
-            private ItemStackLong[] getInputItems() {
-                return items;
-            }
-
-            private FluidStackLong[] getInputFluids() {
-                return fluids;
-            }
-
-            /** Bounded copies for structure parameter checks only, never for recipe allocation. */
-            private ItemStack[] itemStacks() {
-                ItemStack[] result = new ItemStack[items.length];
-                for (int i = 0; i < result.length; i++) result[i] = GTUtility
-                    .copyAmountUnsafe((int) Math.min(Integer.MAX_VALUE, items[i].stackSize()), items[i].itemStack());
-                return result;
-            }
-
-            private FluidStack[] fluidStacks() {
-                FluidStack[] result = new FluidStack[fluids.length];
-                for (int i = 0; i < result.length; i++) result[i] = GTUtility
-                    .copyAmount((int) Math.min(Integer.MAX_VALUE, fluids[i].amount()), fluids[i].fluidStack());
-                return result;
-            }
+            return (preparedMask & (1 << slot)) != 0;
         }
     }
 
@@ -1514,7 +1350,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
     @Override
     protected void runMachine(IGregTechTileEntity base, long tick) {
         schedulerTick = tick;
-        statusSummaryTick = Long.MIN_VALUE;
+        summaryTick = Long.MIN_VALUE;
         runningPower = BigInteger.ZERO;
         if (base.isAllowedToWork()) processingGroupMask = 0;
         boolean controlsChanged = false;
@@ -1535,7 +1371,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         }
         if (controlsChanged) markDirty();
         refreshAllocation();
-        refreshPowerRound();
+        refreshPowerRound(tickPermissions);
         // Like GT, disabling work prevents new recipes; stopMachine clears this running marker on faults.
         lEUt = 0;
         if (overCapacity) {
@@ -1553,11 +1389,11 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         for (int i = 0; i < THREAD_COUNT; i++) {
             BottledChaosThread thread = threads[i];
             if (!thread.isBusy()) continue;
-            if (isThreadExecutionDisabled(i)) {
+            if (tickPermissions[i] == null) {
                 thread.pause();
                 continue;
             }
-            CheckRecipeResult result = canRunThread(i);
+            CheckRecipeResult result = canRunThread(i, tickPermissions[i]);
             if (!result.wasSuccessful()) {
                 thread.fail(result);
                 failure = result;
@@ -1589,7 +1425,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         for (int i = 0; i < THREAD_COUNT; i++) {
             BottledChaosThread thread = threads[i];
             if (!thread.isBusy()) continue;
-            if (isThreadExecutionDisabled(i)) continue;
+            if (tickPermissions[i] == null) continue;
             if (advancing[i]) {
                 thread.advance();
                 progressed = true;
@@ -1631,8 +1467,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         boolean shouldSearch = completed || tick % 20 == 0 || base.hasWorkJustBeenEnabled();
         if (shouldSearch) {
             CheckRecipeResult result = base.isAllowedToWork() ? checkProcessing()
-                : !isWirelessMode() && (activeConcentratedPower || powerAllocationPending)
-                    ? checkPowerRoundProcessing(true)
+                : !isWirelessMode() && powerAllocation.needsRound() ? checkPowerRoundProcessing(true)
                     : CheckRecipeResultRegistry.NO_RECIPE;
             if (failure == null) setCheckRecipeResult(result);
             for (BottledChaosThread thread : threads) {
@@ -1736,8 +1571,8 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         BottledChaosUpkeep.Transaction payment;
         startRecipeProcessing();
         try {
-            InputTransaction inputs = new InputTransaction(false, false);
-            InputTransaction.Snapshot supply = inputs.snapshot(captureInputs(inputs, false));
+            BottledChaosInputReservation upkeepInputs = new BottledChaosInputReservation();
+            var supply = upkeepInputs.snapshot(captureInputs(upkeepInputs, false));
             payment = structureUpkeep.prepare(supply.getInputFluids());
             setCheckRecipeResult(payment.result());
             if (checkRecipeResult.wasSuccessful()) {
@@ -1746,8 +1581,8 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                     return false;
                 }
                 payment.commitInputs();
-                inputs.accept(supply);
-                setCheckRecipeResult(commitInputs(inputs));
+                upkeepInputs.accept(supply);
+                setCheckRecipeResult(commitInputs(upkeepInputs));
             }
         } finally {
             endRecipeProcessing();
@@ -1912,7 +1747,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             levels.add(ofBlock(BlockLoader.chaosCapacity, tier));
         }
         IStructureElementCheckOnly<M> check = (machine, world, x, y, z) -> {
-            if (world.getBlock(x, y, z) != BlockLoader.chaosCapacity) return true;
+            if (world.getBlock(x, y, z) != BlockLoader.chaosCapacity) return world.isAirBlock(x, y, z);
             int tier = world.getBlockMetadata(x, y, z);
             if (tier < 0 || tier >= machine.getCapacityLevelCount()) return false;
             int region = machine.getCapacityRegion(x, y, z);
@@ -1951,8 +1786,10 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         return isCredentialHatchConnected(credentialHatches[slot], slot) ? credentialHatches[slot] : null;
     }
 
-    /** Always synchronized while the host GUI is open; switching pages never clears the overview. */
+    /** Built on demand and shared by open hatch pages in this server tick. */
     public NBTTagCompound getCredentialHatchSummary() {
+        refreshSummaryTick();
+        if (hatchOverview != null) return hatchOverview;
         NBTTagCompound summary = new NBTTagCompound();
         summary.setInteger("capacity", capacity);
         NBTTagList hatches = new NBTTagList();
@@ -1960,6 +1797,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             hatches.appendTag(getCredentialHatchInformation(getManagedCredentialHatch(slot), this, slot, false));
         }
         summary.setTag("hatches", hatches);
+        hatchOverview = summary;
         return summary;
     }
 
@@ -1978,10 +1816,12 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         boolean installed = hatch != null && hatch.isValid();
         data.setBoolean("installed", installed);
         if (!installed) return data;
-        ItemStack credential = hatch.getAuthorizationStack();
+        boolean connected = controller != null && controller.isCredentialHatchConnected(hatch, slot);
+        ItemStack credential = connected && !controller.authorizationDirty ? controller.installedCredentials[slot]
+            : hatch.getAuthorizationStack();
         data.setBoolean("enabled", hatch.isExecutionEnabled());
         data.setBoolean("hasCredential", ChaosRouteItem.getCapacity(credential) > 0);
-        data.setString("family", hatch.hasCustomPatterns() ? "AE" : ChaosRouteItem.getDisplayRouteKeys(credential));
+        data.setString("family", ChaosRouteItem.getDisplayRouteKeys(credential));
         data.setString("tags", String.join(", ", ChaosRouteItem.getRouteKeyList(credential)));
         data.setInteger(
             "cacheTypes",
@@ -1994,7 +1834,6 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         if (details) data.setTag(
             "cache",
             BottledChaosMaterialSummary.forCache(hatch.getMaterialCache(), ChaosRouteItem.getRouteMask(credential)));
-        boolean connected = controller != null && controller.isCredentialHatchConnected(hatch, slot);
         data.setBoolean("connected", connected);
         if (!connected) return data;
         controller.writeProcessingGroupInformation(data, slot);
@@ -2003,8 +1842,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         BottledChaosThread thread = controller.threads[slot];
         if (details) data.setTag(
             "outputs",
-            BottledChaosMaterialSummary
-                .forJob(thread.outputs, thread.pendingCache, ChaosRouteItem.getRouteMask(thread.credential)));
+            BottledChaosMaterialSummary.forJob(thread.outputs, thread.pendingCache, thread.credential));
         return data;
     }
 
@@ -2034,7 +1872,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             data.setDouble(
                 "powerRatio",
                 inputPower > 0 && powerWeights[slot] > 0 && !isWaitingForPowerRound(slot)
-                    ? (double) powerBudgets[slot] / inputPower
+                    ? (double) powerAllocation.budget(slot) / inputPower
                     : 0);
         }
     }
@@ -2057,9 +1895,8 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                     : threads[slot].status;
             if (BottledChaosStatus.IDLE.key()
                 .equals(status) && powerWeights[slot] > 0
-                && powerRoundMask != 0
-                && (activeConcentratedPower || powerAllocationPending
-                    || concentratedPower != activeConcentratedPower)) {
+                && powerAllocation.roundActive()
+                && (powerAllocation.needsRound() || powerAllocation.modeChanging())) {
                 status = BottledChaosStatus.WAITING_POWER.key();
             }
             job.setString("status", status);
@@ -2067,147 +1904,6 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             return;
         }
         job.setString("status", status);
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static String getCredentialHatchBoundInputs(int peers) {
-        return StatCollector.translateToLocalFormatted(
-            // #tr gtnr.machine.BottleInChaosRecipeTokenHatch.gui.bound_inputs
-            // # Bound to %s
-            // # zh_CN 与%s绑定
-            "gtnr.machine.BottleInChaosRecipeTokenHatch.gui.bound_inputs",
-            formatProcessingGroups(peers));
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static String getCredentialHatchTitle(NBTTagCompound data) {
-        if (data == null || !data.getBoolean("connected")) return "#-";
-        int peers = data.getInteger("boundSlots");
-        return "#" + data.getInteger("slot") + (peers == 0 ? "" : " | " + getCredentialHatchBoundInputs(peers));
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static void appendCredentialHatchWaila(List<String> currentTip, NBTTagCompound data, boolean showCache) {
-        currentTip.add(
-            EnumChatFormatting.WHITE + getCredentialHatchTitle(data)
-                + (data.getBoolean("connected")
-                    ? " | " + getStatusColor(data.getString("status")) + getWailaStatusText(data)
-                    : "")
-                + EnumChatFormatting.RESET);
-        if (showCache) {
-            String keys = data.getString("tags");
-            if (!keys.isEmpty()) {
-                for (String key : keys.split(", "))
-                    currentTip.add(EnumChatFormatting.WHITE + StatCollector.translateToLocal(key));
-            } else {
-                currentTip.add(EnumChatFormatting.WHITE + localizeKeyList(data.getString("family")));
-            }
-        } else {
-            currentTip.add(EnumChatFormatting.WHITE + localizeKeyList(data.getString("family")));
-        }
-        int duration = data.getInteger("duration");
-        if (!data.getBoolean("connected")) {
-            currentTip.add(
-                EnumChatFormatting.YELLOW
-                    // #tr gtnr.machine.BottleInChaosRecipeTokenHatch.info.disconnected
-                    // # Not connected to a formed Bottle in Chaos controller.
-                    // # zh_CN 未连接到成型的混沌中瓶主机.
-                    + StatCollector.translateToLocal("gtnr.machine.BottleInChaosRecipeTokenHatch.info.disconnected"));
-            if (!showCache) return;
-        } else {
-            String blockedRoute = getBlockedRouteText(data);
-            if (!blockedRoute.isEmpty()) currentTip.add(blockedRoute);
-            BigInteger eut = processingGroupPower(data);
-            byte energyTier = (byte) data.getLong("energyTier");
-            currentTip.add(
-                EnumChatFormatting.WHITE
-                    + (energyTier > 0
-                        ? StatCollector.translateToLocalFormatted(
-                            "GT5U.waila.energy.use_with_amperage",
-                            formatNumber(eut),
-                            processingGroupAmperage(data),
-                            GTUtility.getColoredTierNameFromTier(energyTier))
-                        : StatCollector.translateToLocalFormatted(
-                            "GT5U.waila.energy.use",
-                            formatNumber(eut),
-                            GTUtility.getColoredTierNameFromVoltage(eut.longValue())))
-                    + EnumChatFormatting.WHITE
-                    + " | "
-                    + EnumChatFormatting.AQUA
-                    + StatCollector.translateToLocalFormatted(
-                        // #tr gtnr.machine.BottleInChaosRecipeTokenHatch.gui.power_share
-                        // # Power share: %s%%
-                        // # zh_CN 电力份额: %s%%
-                        "gtnr.machine.BottleInChaosRecipeTokenHatch.gui.power_share",
-                        String.format(Locale.ROOT, "%.2f", data.getDouble("powerRatio") * 100)));
-            if (duration > 0) {
-                currentTip.add(GTWaila.getMachineProgressString(duration, data.getInteger("progress")));
-            }
-        }
-        NBTTagCompound outputs = showCache ? data.getCompoundTag("cache") : data.getCompoundTag("outputs");
-        if (showCache) {
-            currentTip.add(
-                EnumChatFormatting.GOLD + StatCollector.translateToLocalFormatted(
-                    // #tr gtnr.machine.BottleInChaosRecipeTokenHatch.gui.cached_materials
-                    // # Cached materials (%s types):
-                    // # zh_CN 缓存材料(%s种):
-                    "gtnr.machine.BottleInChaosRecipeTokenHatch.gui.cached_materials",
-                    formatNumber(outputs.getInteger("total"))));
-            currentTip.addAll(getMaterialSummaryLines(outputs, true));
-        } else {
-            appendMaterialSummary(currentTip, getProcessingGroupOutputTitle(data), outputs);
-            appendMaterialSummary(
-                currentTip,
-                // #tr gtnr.machine.BottleInChaos.info.intermediate_outputs
-                // # Intermediate products:
-                // # zh_CN 中间产物:
-                StatCollector.translateToLocal("gtnr.machine.BottleInChaos.info.intermediate_outputs"),
-                outputs.getCompoundTag("intermediates"));
-            appendMaterialSummary(
-                currentTip,
-                // #tr gtnr.machine.BottleInChaos.info.byproducts
-                // # Byproducts:
-                // # zh_CN 副产物:
-                StatCollector.translateToLocal("gtnr.machine.BottleInChaos.info.byproducts"),
-                outputs.getCompoundTag("byproducts"));
-        }
-    }
-
-    @SideOnly(Side.CLIENT)
-    private static void appendMaterialSummary(List<String> lines, String title, NBTTagCompound materials) {
-        if (materials.getInteger("total") <= 0) return;
-        lines.add(EnumChatFormatting.WHITE + title);
-        lines.addAll(getMaterialSummaryLines(materials, true));
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static List<String> getMaterialSummaryLines(NBTTagCompound materials, boolean wailaIcons) {
-        List<String> lines = new ArrayList<>();
-        NBTTagList entries = materials.getTagList("entries", 10);
-        int shown = 0;
-        for (int i = 0; i < entries.tagCount(); i++) {
-            NBTTagCompound entry = entries.getCompoundTagAt(i);
-            ItemStack item = entry.hasKey("item", 10) ? ItemStack.loadItemStackFromNBT(entry.getCompoundTag("item"))
-                : null;
-            FluidStack fluid = entry.hasKey("fluid", 10)
-                ? FluidStack.loadFluidStackFromNBT(entry.getCompoundTag("fluid"))
-                : null;
-            if (item == null && fluid == null) continue;
-            lines.add(
-                (wailaIcons
-                    ? "  "
-                        + TTRenderStack.create(item != null ? item : GTUtility.getFluidDisplayStack(fluid, false), true)
-                    : "") + formatGroupOutput(item, fluid, entry));
-            shown++;
-        }
-        if (materials.getInteger("total") > shown) lines.add(
-            StatCollector
-                .translateToLocalFormatted("GT5U.waila.producing.andmore", materials.getInteger("total") - shown));
-        return lines;
-    }
-
-    public static String getWailaStatusText(NBTTagCompound job) {
-        return BottledChaosResultData.displayText(job, "status");
     }
 
     private static boolean isFailure(CheckRecipeResult result) {
@@ -2233,12 +1929,6 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         return isFailure(global) && (processingGroupMask & (1 << slot)) != 0 ? global : threads[slot].result();
     }
 
-    public static String formatProcessingGroups(int mask) {
-        StringJoiner groups = new StringJoiner(", ");
-        for (int slot = 0; slot < THREAD_COUNT; slot++) if ((mask & (1 << slot)) != 0) groups.add("#" + (slot + 1));
-        return groups.toString();
-    }
-
     public int getRecipePoolUsers(int poolSlot) {
         if (poolUsersDirty) {
             Arrays.fill(recipePoolUsers, 0);
@@ -2254,7 +1944,8 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                 BigInteger required = threads[slot].isBusy() ? threads[slot].requiredPools
                     : BottledChaosRecipeProcessor.displayPoolMask(
                         credentialHatches[slot] == null ? null : credentialHatches[slot].getCustomRoutes(),
-                        ChaosRouteItem.getRouteMask(installedCredentials[slot]),
+                        credentialHatches[slot] == null ? 0
+                            : credentialHatches[slot].executionMask(installedCredentials[slot]),
                         parameters);
                 required = BottledChaosMachineConfiguration.withDependencies(required);
                 for (int pool = 0; pool < BottledChaosMachineConfiguration.poolCount(); pool++) {
@@ -2264,9 +1955,20 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                     if (!installed.testBit(pool)) missingRecipePools = missingRecipePools.setBit(display);
                 }
             }
+            poolUsage = null;
             poolUsersDirty = false;
         }
         return recipePoolUsers[poolSlot];
+    }
+
+    public NBTTagCompound getRecipePoolUsage() {
+        getRecipePoolUsers(0);
+        if (poolUsage == null) {
+            poolUsage = new NBTTagCompound();
+            poolUsage
+                .setIntArray("users", Arrays.copyOf(recipePoolUsers, BottledChaosMachineConfiguration.poolCount()));
+        }
+        return poolUsage;
     }
 
     public BigInteger getMissingRecipePoolMask() {
@@ -2320,14 +2022,19 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             : result;
     }
 
-    public NBTTagCompound getBottledChaosStatusSummary() {
-        IGregTechTileEntity base = getBaseMetaTileEntity();
-        long tick = base == null ? schedulerTick
+    private void refreshSummaryTick() {
+        var base = getBaseMetaTileEntity();
+        long tick = base == null || base.getWorld() == null ? schedulerTick
             : base.getWorld()
                 .getTotalWorldTime();
-        if (statusSummary != null && statusSummaryTick == tick) return statusSummary;
-        statusSummary = buildBottledChaosStatusSummary();
-        statusSummaryTick = tick;
+        if (summaryTick == tick) return;
+        summaryTick = tick;
+        statusSummary = groupActivity = groupOutputs = hatchOverview = null;
+    }
+
+    public NBTTagCompound getBottledChaosStatusSummary() {
+        refreshSummaryTick();
+        if (statusSummary == null) statusSummary = buildBottledChaosStatusSummary();
         return statusSummary;
     }
 
@@ -2356,10 +2063,10 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                 CheckRecipeResult result;
                 if (!validGroup(slot)) {
                     result = ChaosTextResult.ofFailure("GT5U.gui.multimachine.incomplete_structure");
-                } else if (!ChaosRouteItem.isBound(hatch.getAuthorizationStack())) {
+                } else if (!ChaosRouteItem.isBound(installedCredentials[slot])) {
                     result = ChaosTextResult.ofFailure("gtnr.machine.BottleInChaos.result.unbound");
                 } else if (threads[slot].isBusy()) {
-                    result = canRunThread(slot);
+                    result = canRunThread(slot, checkJobAuthorization(slot));
                     if (result.wasSuccessful()) {
                         if (threads[slot].progress < threads[slot].duration && !isWaitingForPowerRound(slot)) {
                             usage += threads[slot].eut;
@@ -2410,8 +2117,26 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
         tag.setTag(THREAD_NBT, getProcessingGroupSummary().getTagList(THREAD_NBT, 10));
     }
 
-    /** Shared server snapshot for the runtime tab and controller Waila. */
+    /** Waila uses a combined snapshot. The runtime page synchronizes changing progress separately from products. */
     public NBTTagCompound getProcessingGroupSummary() {
+        NBTTagCompound summary = (NBTTagCompound) getProcessingGroupActivity().copy();
+        NBTTagList jobs = summary.getTagList(THREAD_NBT, 10);
+        for (int i = 0; i < jobs.tagCount(); i++) {
+            NBTTagCompound job = jobs.getCompoundTagAt(i);
+            job.setTag("outputs", groupOutputs.getCompoundTag(Integer.toString(job.getInteger("slot"))));
+        }
+        return summary;
+    }
+
+    public NBTTagCompound getProcessingGroupOutputs() {
+        getProcessingGroupActivity();
+        return groupOutputs;
+    }
+
+    public NBTTagCompound getProcessingGroupActivity() {
+        refreshSummaryTick();
+        if (groupActivity != null) return groupActivity;
+        NBTTagCompound outputs = new NBTTagCompound();
         NBTTagCompound summary = new NBTTagCompound();
         summary.setInteger(WAILA_CAPACITY, capacity);
         NBTTagList jobs = new NBTTagList();
@@ -2420,13 +2145,14 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             BottledChaosThread thread = threads[i];
             NBTTagCompound job = new NBTTagCompound();
             writeProcessingGroupInformation(job, i);
-            ItemStack family = ChaosRouteItem
-                .getRecipeFamily(thread.isBusy() ? thread.credential : installedCredentials[i]);
-            job.setString("family", ChaosRouteItem.getDisplayRouteKeys(family));
-            job.setTag("outputs", thread.getFinalOutputSummary());
+            ItemStack family = thread.isBusy() ? thread.credential : installedCredentials[i];
+            job.setString("family", ChaosRouteItem.getDisplayRouteKeys(ChaosRouteItem.isBound(family) ? family : null));
+            if (thread.isBusy()) outputs.setTag(Integer.toString(i + 1), thread.getFinalOutputSummary());
             jobs.appendTag(job);
         }
         summary.setTag(THREAD_NBT, jobs);
+        groupOutputs = outputs;
+        groupActivity = summary;
         return summary;
     }
 
@@ -2467,21 +2193,7 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
             currentTip.add(
                 EnumChatFormatting.WHITE + StatCollector.translateToLocal(BottledChaosStatus.CAPACITY_EXCEEDED.key()));
         }
-        List<Integer> groups = new ArrayList<>();
-        for (int i = 0; i < getProcessingGroupCount(tag); i++) groups.add(i);
-        groups.sort(
-            (first, second) -> processingGroupPower(getProcessingGroupData(tag, second))
-                .compareTo(processingGroupPower(getProcessingGroupData(tag, first))));
-        List<Integer> shown = groups.subList(0, Math.min(5, groups.size()));
-        shown.sort(Integer::compare);
-        for (int index : shown) currentTip.addAll(getProcessingGroupLines(tag, index));
-        if (groups.size() > shown.size()) currentTip.add(
-            StatCollector.translateToLocalFormatted(
-                // #tr gtnr.machine.BottleInChaos.waila.more_processing_groups
-                // # And %d More Processing Groups...
-                // # zh_CN 并且还有 %d 个加工组...
-                "gtnr.machine.BottleInChaos.waila.more_processing_groups",
-                groups.size() - shown.size()));
+        BottledChaosStatusText.appendProcessingGroups(currentTip, tag);
     }
 
     public static int getProcessingGroupCount(NBTTagCompound summary) {
@@ -2492,185 +2204,10 @@ public abstract class BottleInChaosMachineBase<T extends BottleInChaosMachineBas
                     .tagCount());
     }
 
-    @SideOnly(Side.CLIENT)
-    public static List<String> getProcessingGroupLines(NBTTagCompound summary, int index) {
-        return getProcessingGroupLines(summary, index, true);
-    }
-
     public static NBTTagCompound getProcessingGroupData(NBTTagCompound summary, int index) {
         return index < 0 || index >= getProcessingGroupCount(summary) ? new NBTTagCompound()
             : summary.getTagList(THREAD_NBT, 10)
                 .getCompoundTagAt(index);
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static List<String> getProcessingGroupLines(NBTTagCompound summary, int index, boolean waila) {
-        List<String> lines = new ArrayList<>();
-        if (index < 0 || index >= getProcessingGroupCount(summary)) return lines;
-        NBTTagList jobs = summary.getTagList(THREAD_NBT, 10);
-        NBTTagCompound job = jobs.getCompoundTagAt(index);
-        String energy = waila ? "" : getProcessingGroupEnergyText(job);
-        String separator = EnumChatFormatting.WHITE + (waila ? SpecialChars.TAB : " | ");
-        String share = waila ? SpecialChars.ALIGNRIGHT + EnumChatFormatting.AQUA
-        // #tr gtnr.machine.BottleInChaos.info.input_share
-        // # Power share: %s
-        // # zh_CN 电力份额: %s
-            + StatCollector.translateToLocalFormatted("gtnr.machine.BottleInChaos.info.input_share", "")
-            + SpecialChars.TAB
-            + EnumChatFormatting.AQUA
-            + getProcessingGroupShareValue(job) : getProcessingGroupShareText(summary, job);
-        lines.add(
-            EnumChatFormatting.WHITE + "#"
-                + job.getInteger("slot")
-                + (waila ? separator : " ")
-                + localizeKeyList(job.getString("family"))
-                + separator
-                + share
-                + (energy.isEmpty() ? "" : separator + energy)
-                + separator
-                + getStatusColor(job.getString("status"))
-                + getWailaStatusText(job)
-                + EnumChatFormatting.RESET);
-        String blockedRoute = getBlockedRouteText(job);
-        if (!blockedRoute.isEmpty()) lines.add(blockedRoute);
-        if (waila && job.getInteger("duration") > 0) {
-            lines.add(GTWaila.getMachineProgressString(job.getInteger("duration"), job.getInteger("progress")));
-        }
-        String outputs = getProcessingGroupOutputText(job, waila);
-        if (!outputs.isEmpty()) lines.add(outputs);
-        return lines;
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static String getProcessingGroupShareText(NBTTagCompound summary, NBTTagCompound job) {
-        return EnumChatFormatting.AQUA + StatCollector.translateToLocalFormatted(
-            "gtnr.machine.BottleInChaos.info.input_share",
-            getProcessingGroupShareValue(job));
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static String getProcessingGroupShareValue(NBTTagCompound job) {
-        return String.format(Locale.ROOT, "%.2f%%", job.getDouble("powerRatio") * 100);
-    }
-
-    private static BigInteger processingGroupPower(NBTTagCompound job) {
-        byte[] power = job.getByteArray("power");
-        return power.length == 0 ? BigInteger.ZERO : new BigInteger(1, power);
-    }
-
-    private static BigInteger processingGroupAmperage(NBTTagCompound job) {
-        BigInteger voltage = BigInteger.valueOf(GTValues.V[(int) job.getLong("energyTier")]);
-        return processingGroupPower(job).add(voltage)
-            .subtract(BigInteger.ONE)
-            .divide(voltage);
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static String getProcessingGroupEnergyText(NBTTagCompound job) {
-        return processingGroupPower(job).signum() <= 0 ? ""
-            : getProcessingGroupPowerText(job) + " " + getProcessingGroupVoltageText(job);
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static String getProcessingGroupPowerText(NBTTagCompound job) {
-        BigInteger eut = processingGroupPower(job);
-        if (eut.signum() <= 0) return "";
-        return EnumChatFormatting.YELLOW + String.format(Locale.ROOT, "%.1e", eut.doubleValue())
-            .replace("e+0", "e")
-            .replace("e+", "e") + EnumChatFormatting.WHITE + " EU/t";
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static String getProcessingGroupVoltageText(NBTTagCompound job) {
-        if (processingGroupPower(job).signum() <= 0) return "";
-        byte tier = (byte) job.getLong("energyTier");
-        return EnumChatFormatting.WHITE + "("
-            + processingGroupAmperage(job)
-            + "A "
-            + GTUtility.getColoredTierNameFromTier(tier)
-            + EnumChatFormatting.WHITE
-            + ")";
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static String getBlockedRouteText(NBTTagCompound job) {
-        return job.hasKey("blockedRoute", 10) ? EnumChatFormatting.YELLOW + StatCollector.translateToLocalFormatted(
-            // #tr gtnr.machine.BottleInChaos.info.partial_route_blocked
-            // # Some routes blocked: %s
-            // # zh_CN 部分路线受阻: %s
-            "gtnr.machine.BottleInChaos.info.partial_route_blocked",
-            BottledChaosResultData.read(job.getCompoundTag("blockedRoute"))
-                .getDisplayString())
-            : "";
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static String getProcessingGroupOutputTitle(NBTTagCompound job) {
-        return StatCollector.translateToLocal(
-            job.getInteger("duration") > 0 && job.getInteger("progress") >= job.getInteger("duration")
-                // #tr gtnr.machine.BottleInChaos.info.pending_outputs
-                // # Pending outputs:
-                // # zh_CN 待输出:
-                ? "gtnr.machine.BottleInChaos.info.pending_outputs"
-                : "GT5U.waila.producing");
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static String getProcessingGroupOutputText(NBTTagCompound job) {
-        return getProcessingGroupOutputText(job, false);
-    }
-
-    @SideOnly(Side.CLIENT)
-    private static String getProcessingGroupOutputText(NBTTagCompound job, boolean waila) {
-        String outputs = formatGroupOutputs(job.getCompoundTag("outputs"), waila);
-        return outputs.isEmpty() ? "" : EnumChatFormatting.WHITE + getProcessingGroupOutputTitle(job) + " " + outputs;
-    }
-
-    @SideOnly(Side.CLIENT)
-    private static String formatGroupOutputs(NBTTagCompound outputs, boolean waila) {
-        NBTTagList entries = outputs.getTagList("entries", 10);
-        StringJoiner text = new StringJoiner(EnumChatFormatting.WHITE + ", ");
-        int shown = 0;
-        int limit = waila ? BottledChaosMaterialSummary.GROUP_OUTPUT_LIMIT : entries.tagCount();
-        for (int i = 0; i < Math.min(limit, entries.tagCount()); i++) {
-            NBTTagCompound entry = entries.getCompoundTagAt(i);
-            ItemStack item = entry.hasKey("item", 10) ? ItemStack.loadItemStackFromNBT(entry.getCompoundTag("item"))
-                : null;
-            FluidStack fluid = entry.hasKey("fluid", 10)
-                ? FluidStack.loadFluidStackFromNBT(entry.getCompoundTag("fluid"))
-                : null;
-            if (item == null && fluid == null) continue;
-            text.add(formatGroupOutput(item, fluid, entry));
-            shown++;
-        }
-        if (outputs.getInteger("total") > shown) text.add(
-            waila
-                ? StatCollector
-                    .translateToLocalFormatted("GT5U.waila.producing.andmore", outputs.getInteger("total") - shown)
-                : "...");
-        return text.toString();
-    }
-
-    @SideOnly(Side.CLIENT)
-    public static String formatGroupOutput(ItemStack item, FluidStack fluid, NBTTagCompound entry) {
-        return EnumChatFormatting.AQUA + (item != null ? item.getDisplayName() : fluid.getLocalizedName())
-            + EnumChatFormatting.WHITE
-            + " x "
-            + EnumChatFormatting.GOLD
-            + formatNumber(new BigInteger(entry.getString("amount")))
-            + (fluid == null ? "" : "L")
-            + EnumChatFormatting.RESET;
-    }
-
-    public static String localizeKeyList(String keys) {
-        StringJoiner localized = new StringJoiner(", ");
-        for (String key : keys.split(", ")) localized.add(StatCollector.translateToLocal(key));
-        return localized.toString();
-    }
-
-    public static EnumChatFormatting getStatusColor(String status) {
-        return BottledChaosStatus.fromKey(status)
-            .textColor();
     }
 
     @Override

@@ -52,8 +52,8 @@ public final class BottledChaosThread {
 
     /** Paid-job materials are stable until completion; do not traverse the recipe graph each GUI tick. */
     public NBTTagCompound getFinalOutputSummary() {
-        if (finalOutputSummary == null) finalOutputSummary = BottledChaosMaterialSummary
-            .forFinalJob(outputs, ChaosRouteItem.getRouteMask(credential));
+        if (finalOutputSummary == null)
+            finalOutputSummary = BottledChaosMaterialSummary.forFinalJob(outputs, credential);
         return finalOutputSummary;
     }
 
@@ -182,6 +182,7 @@ public final class BottledChaosThread {
     public void load(NBTTagCompound tag) {
         finalOutputSummary = null;
         credential = GTUtility.loadItem(tag, "credential");
+        ChaosRouteItem.migratePatternAuthorization(credential);
         requiredPools = BottledChaosMachineConfiguration.maskFromKeys(tag.getString("recipePools"));
         recipeVoltage = tag.getLong("recipeVoltage");
         eut = Math.max(0, tag.getLong("eut"));

@@ -84,7 +84,7 @@ public final class BottledChaosProcessingLogic extends ChaosLongProcessingLogic 
     }
 
     public void setAuthorization(ItemStack credential, BigInteger poolMask) {
-        routeMask = ChaosRouteItem.isBound(credential) ? ChaosRouteItem.getRouteMask(credential) : 0;
+        routeMask = ChaosRouteItem.isBound(credential) ? ChaosRouteItem.executionMask(credential) : 0;
         pools = poolMask;
     }
 

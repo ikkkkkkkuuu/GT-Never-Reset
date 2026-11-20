@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.StatCollector;
 
@@ -69,6 +70,44 @@ public final class ChaosRouteItem extends ChaosMetaItem {
         return isBound(stack) ? stack.copy() : null;
     }
 
+    private static final String CUSTOM_PATTERNS = "chaosCustomPatterns";
+
+    public static ItemStack createPatternAuthorization(NBTTagList patterns) {
+        ItemStack stack = createEmptyFrame(MAX_META);
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setTag(CUSTOM_PATTERNS, patterns);
+        stack.setTagCompound(tag);
+        return stack;
+    }
+
+    public static boolean hasPatternAuthorization(ItemStack stack) {
+        return getCapacity(stack) > 0 && stack.hasTagCompound()
+            && stack.getTagCompound()
+                .hasKey(CUSTOM_PATTERNS, 9)
+            && stack.getTagCompound()
+                .getTagList(CUSTOM_PATTERNS, 10)
+                .tagCount() > 0;
+    }
+
+    /** Old paid AE jobs stored the name and weight of whichever preset occupied bit zero. */
+    public static void migratePatternAuthorization(ItemStack stack) {
+        if (hasPatternAuthorization(stack)) {
+            stack.getTagCompound()
+                .removeTag(CredentialModel.TAGS_NBT_KEY);
+            stack.getTagCompound()
+                .removeTag(CredentialModel.OCCUPIED_WEIGHT_NBT_KEY);
+        }
+    }
+
+    /** A custom graph has exactly one local route, independent of the global preset catalog. */
+    public static long executionMask(ItemStack stack) {
+        return hasPatternAuthorization(stack) ? 1L : getRouteMask(stack);
+    }
+
+    public static int authorizationWeight(ItemStack stack) {
+        return hasPatternAuthorization(stack) ? 1 : getRequiredWeight(getRouteMask(stack));
+    }
+
     public static ItemStack createEmptyFrame(int meta) {
         return meta >= 0 && meta <= MAX_META ? new ItemStack(ItemLoader.chaosRoute, 1, meta) : null;
     }
@@ -125,6 +164,7 @@ public final class ChaosRouteItem extends ChaosMetaItem {
     }
 
     public static boolean isBound(ItemStack stack) {
+        if (hasPatternAuthorization(stack)) return true;
         int weight = getOccupiedWeight(stack);
         long mask = getRouteMask(stack);
         return mask != 0 && weight >= getRequiredWeight(mask) && weight <= getCapacity(stack);
@@ -191,10 +231,7 @@ public final class ChaosRouteItem extends ChaosMetaItem {
 
     /** Grouped names for compact summaries; the item tooltip retains every tag in registration order. */
     public static String getDisplayRouteKeys(ItemStack stack) {
-        if (stack != null && stack.hasTagCompound()
-            && stack.getTagCompound()
-                .hasKey("chaosCustomPatterns", 9))
-            return "AE";
+        if (hasPatternAuthorization(stack)) return "AE";
         return String.join(", ", CredentialModel.groupedTranslationKeys(getRouteMask(stack)));
     }
 
@@ -431,6 +468,7 @@ public final class ChaosRouteItem extends ChaosMetaItem {
         // # Quark-Gluon Plasma
         // # zh_CN 夸克胶子等离子体
         List<String> keys = new ArrayList<>();
+        if (hasPatternAuthorization(stack)) return java.util.Collections.singletonList("AE");
         long mask = isBound(stack) ? getRouteMask(stack) : 0;
         for (int index : CredentialModel.displayOrder()) {
             if ((mask & (1L << index)) != 0) keys.add(CredentialModel.translationKey(index));

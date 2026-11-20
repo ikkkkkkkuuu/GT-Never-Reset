@@ -24,6 +24,7 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.TextWidget;
+import com.xyp.gtneverreset.client.chaos.BottledChaosStatusText;
 import com.xyp.gtneverreset.common.crafting.chaos.processing.BottledChaosStatus;
 import com.xyp.gtneverreset.common.machine.hatch.ChaosCredentialHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.BottleInChaosMachineBase;
@@ -55,8 +56,8 @@ final class BottledChaosHatchPage {
         manager.syncValue("bottledChaosSelectedHatch", selected);
         boolean[] receivedSummary = { false };
         GenericSyncValue<NBTTagCompound, ?> summary = GenericSyncValue.builder(NBTTagCompound.class)
-            .getter(machine::getCredentialHatchSummary)
-            .setter(tag -> receivedSummary[0] = true)
+            .getter(() -> open.getAsBoolean() ? machine.getCredentialHatchSummary() : BottleInChaosGui.EMPTY_PAGE)
+            .setter(tag -> receivedSummary[0] = tag.hasKey("hatches"))
             .adapter(ByteBufAdapters.NBT)
             .copy(tag -> (NBTTagCompound) tag.copy())
             .build();
@@ -69,7 +70,7 @@ final class BottledChaosHatchPage {
         GenericSyncValue<NBTTagCompound, ?> details = GenericSyncValue.builder(NBTTagCompound.class)
             .getter(
                 () -> open.getAsBoolean() ? machine.getCredentialHatchDetails(hovered.getIntValue())
-                    : new NBTTagCompound())
+                    : BottleInChaosGui.EMPTY_PAGE)
             .adapter(ByteBufAdapters.NBT)
             .copy(tag -> (NBTTagCompound) tag.copy())
             .build();
@@ -166,7 +167,7 @@ final class BottledChaosHatchPage {
         }
         page.child(label(() -> fit(family(current.get()), 268), 268).pos(7, 146));
         page.child(label(() -> {
-            String share = BottleInChaosMachineBase.getProcessingGroupShareValue(current.get());
+            String share = BottledChaosStatusText.getProcessingGroupShareValue(current.get());
             int peers = current.get()
                 .getInteger("boundSlots");
             return fit(
@@ -176,7 +177,7 @@ final class BottledChaosHatchPage {
                         : EnumChatFormatting.GRAY + " | "
                             + StatCollector.translateToLocalFormatted(
                                 "gtnr.machine.BottleInChaosRecipeTokenHatch.gui.bound_inputs",
-                                BottleInChaosMachineBase.formatProcessingGroups(peers))),
+                                BottledChaosStatusText.formatProcessingGroups(peers))),
                 418);
         }, 418).pos(7, 161)
             .setEnabledIf(
@@ -219,7 +220,7 @@ final class BottledChaosHatchPage {
     }
 
     private static String family(NBTTagCompound data) {
-        return BottleInChaosMachineBase.localizeKeyList(
+        return BottledChaosStatusText.localizeKeyList(
             data.getBoolean("installed") ? data.getString("family") : "gtnr.machine.BottleInChaos.gui.module_missing");
     }
 
@@ -239,7 +240,7 @@ final class BottledChaosHatchPage {
         // # zh_CN 缓存: %s种
         lines.add(StatCollector.translateToLocalFormatted("gtnr.machine.BottleInChaos.gui.cache_count", count));
         if (details != null && details.getBoolean("connected") && details.getInteger("slot") == slot + 1) {
-            lines.addAll(BottleInChaosMachineBase.getMaterialSummaryLines(details.getCompoundTag("cache"), false));
+            lines.addAll(BottledChaosStatusText.getMaterialSummaryLines(details.getCompoundTag("cache"), false));
         } else lines.add(StatCollector.translateToLocal("gtnr.machine.BottleInChaos.gui.loading"));
         return lines;
     }
@@ -265,10 +266,10 @@ final class BottledChaosHatchPage {
     }
 
     private static String status(NBTTagCompound data) {
-        String blockedRoute = BottleInChaosMachineBase.getBlockedRouteText(data);
+        String blockedRoute = BottledChaosStatusText.getBlockedRouteText(data);
         return data.getBoolean("installed")
-            ? BottleInChaosMachineBase.getStatusColor(data.getString("status"))
-                + BottleInChaosMachineBase.getWailaStatusText(data)
+            ? BottledChaosStatusText.getStatusColor(data.getString("status"))
+                + BottledChaosStatusText.getWailaStatusText(data)
                 + (blockedRoute.isEmpty() ? "" : "\n" + blockedRoute)
             : BottledChaosStatus.UNINSTALLED.textColor()
                 + StatCollector.translateToLocal(BottledChaosStatus.UNINSTALLED.key());
