@@ -158,7 +158,11 @@ public final class BottledChaosOutputBuffer {
         }
 
         public CheckRecipeResult reserve(BottledChaosOutputBuffer buffer) {
-            for (ItemStackLong entry : buffer.items) {
+            return reserve(buffer.items, buffer.fluids);
+        }
+
+        public CheckRecipeResult reserve(List<ItemStackLong> items, List<FluidStackLong> fluids) {
+            for (ItemStackLong entry : items) {
                 long remaining = entry.stackSize();
                 for (var transaction : meItems) {
                     remaining -= transaction.reserve(entry.itemStack(), remaining);
@@ -172,7 +176,7 @@ public final class BottledChaosOutputBuffer {
                 }
                 if (remaining > 0 && protectItems) return CheckRecipeResultRegistry.ITEM_OUTPUT_FULL;
             }
-            for (FluidStackLong entry : buffer.fluids) {
+            for (FluidStackLong entry : fluids) {
                 long remaining = entry.amount();
                 for (var transaction : meFluids) {
                     remaining -= transaction.reserve(entry.fluidStack(), remaining);

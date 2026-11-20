@@ -5,7 +5,6 @@ import static com.xyp.gtneverreset.common.crafting.chaos.machine.BottledChaosMac
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -85,19 +84,6 @@ public final class BottledChaosMachineDescriptions {
     /** The GUI receives numeric host-dependent values from the server, while translating locally. */
     public static List<String> describeForGui(ItemStack controller, Structure structure, RecipeMap<?> pool,
         int quantitySpeedExponent, NBTTagCompound runtime) {
-        if (runtime.getBoolean("debug")) {
-            return Arrays.asList(
-                EnumChatFormatting.GRAY
-                    + text("parallel", EnumChatFormatting.GOLD + number(runtime.getLong("parallel"))),
-                EnumChatFormatting.GRAY + text("eu", EnumChatFormatting.YELLOW + number(runtime.getDouble("eu"))),
-                EnumChatFormatting.GRAY + text(
-                    "time",
-                    EnumChatFormatting.GREEN
-                        + number(runtime.getDouble("time") / (1d + Math.max(0, quantitySpeedExponent)))),
-                EnumChatFormatting.GRAY + text(
-                    "oc",
-                    EnumChatFormatting.AQUA + clock(runtime.getDouble("power"), runtime.getDouble("divisor"))));
-        }
         List<String> lines = describe(controller, structure, pool, quantitySpeedExponent, true, runtime);
         // #tr item.gtnr.bottleinchaos.machine_module.info.source_machine
         // # Source machine: %s

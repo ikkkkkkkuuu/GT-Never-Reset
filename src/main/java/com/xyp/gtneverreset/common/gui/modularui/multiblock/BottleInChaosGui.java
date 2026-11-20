@@ -57,6 +57,7 @@ import com.cleanroommc.modularui.widgets.layout.Grid;
 import com.cleanroommc.modularui.widgets.slot.ItemSlot;
 import com.cleanroommc.modularui.widgets.slot.ModularSlot;
 import com.cleanroommc.modularui.widgets.slot.SlotGroup;
+import com.xyp.gtneverreset.client.chaos.BottledChaosStatusText;
 import com.xyp.gtneverreset.common.crafting.chaos.machine.BottledChaosMachineConfiguration;
 import com.xyp.gtneverreset.common.crafting.chaos.machine.BottledChaosMachineDescriptions;
 import com.xyp.gtneverreset.common.crafting.chaos.result.BottledChaosResultData;
@@ -95,6 +96,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
     private static final int MODULE_UNUSED = 0xFFD16C6C;
     private static final int MODULE_WARNING = 0xFFFF7777;
     private final BottledChaosGuiSkin skin = new BottledChaosGuiSkin();
+    static final NBTTagCompound EMPTY_PAGE = new NBTTagCompound();
     private IntSyncValue terminalPage;
     private int terminalPageIndex;
 
@@ -129,17 +131,25 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
         syncManager.syncValue(
             "bottledChaosStatusSummary",
             GenericSyncValue.builder(NBTTagCompound.class)
-                .getter(multiblock::getBottledChaosStatusSummary)
+                .getter(() -> terminalPageIndex == 0 ? multiblock.getBottledChaosStatusSummary() : EMPTY_PAGE)
                 .adapter(ByteBufAdapters.NBT)
                 .copy(tag -> (NBTTagCompound) tag.copy())
                 .build());
         syncManager.syncValue(
             "bottledChaosProcessingGroups",
             GenericSyncValue.builder(NBTTagCompound.class)
-                .getter(multiblock::getProcessingGroupSummary)
+                .getter(() -> terminalPageIndex == 0 ? multiblock.getProcessingGroupActivity() : EMPTY_PAGE)
                 .adapter(ByteBufAdapters.NBT)
                 .copy(tag -> (NBTTagCompound) tag.copy())
                 .build());
+        syncManager.syncValue(
+            "bottledChaosGroupOutputs",
+            GenericSyncValue.builder(NBTTagCompound.class)
+                .getter(() -> terminalPageIndex == 0 ? multiblock.getProcessingGroupOutputs() : EMPTY_PAGE)
+                .adapter(ByteBufAdapters.NBT)
+                .copy(tag -> (NBTTagCompound) tag.copy())
+                .build());
+        syncManager.syncValue("bottledChaosWireless", new BooleanSyncValue(multiblock::isWirelessMode));
         syncManager.syncValue(
             "bottledChaosCacheExportResult",
             GenericSyncValue.builder(CheckRecipeResult.class)
@@ -208,8 +218,17 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
                 .setEnabledIf(widget -> !CheckRecipeResultRegistry.NONE.equals(cacheExport.getValue())));
         GenericSyncValue<NBTTagCompound, ?> groups = syncManager
             .findSyncHandler("bottledChaosProcessingGroups", GenericSyncValue.class);
+        GenericSyncValue<NBTTagCompound, ?> outputs = syncManager
+            .findSyncHandler("bottledChaosGroupOutputs", GenericSyncValue.class);
         for (int i = 0; i < multiblock.getProcessingGroupLimit(); i++) {
             int index = i;
+            Supplier<NBTTagCompound> group = () -> BottleInChaosMachineBase
+                .getProcessingGroupData(groups.getValue(), index);
+            Supplier<NBTTagCompound> products = () -> outputs.getValue()
+                .getCompoundTag(
+                    Integer.toString(
+                        group.get()
+                            .getInteger("slot")));
             terminal.child(new Flow(GuiAxis.Y) {
 
                 @Override
@@ -229,7 +248,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
                 .child(groupHeader(groups::getValue, index))
                 .child(
                     IKey.dynamic(
-                        () -> BottleInChaosMachineBase.getBlockedRouteText(
+                        () -> BottledChaosStatusText.getBlockedRouteText(
                             BottleInChaosMachineBase.getProcessingGroupData(groups.getValue(), index)))
                         .asWidget()
                         .fullWidth()
@@ -272,11 +291,10 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
                 .child(
                     new ParentWidget<>().fullWidth()
                         .height(12)
-                        .background(new DynamicDrawable(() -> groupOutput(groups.getValue(), index)))
+                        .background(new DynamicDrawable(() -> groupOutput(group.get(), products.get())))
                         .disableHoverBackground()
                         .setEnabledIf(
-                            widget -> BottleInChaosMachineBase.getProcessingGroupData(groups.getValue(), index)
-                                .getCompoundTag("outputs")
+                            widget -> products.get()
                                 .getTagList("entries", 10)
                                 .tagCount() > 0)));
         }
@@ -289,18 +307,18 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
             () -> EnumChatFormatting.WHITE + "#"
                 + job.get()
                     .getInteger("slot"),
-            () -> EnumChatFormatting.WHITE + BottleInChaosMachineBase.localizeKeyList(
+            () -> EnumChatFormatting.WHITE + BottledChaosStatusText.localizeKeyList(
                 job.get()
                     .getString("family")),
             () -> EnumChatFormatting.AQUA
                 + StatCollector.translateToLocalFormatted("gtnr.machine.BottleInChaos.info.input_share", ""),
-            () -> EnumChatFormatting.AQUA + BottleInChaosMachineBase.getProcessingGroupShareValue(job.get()),
-            () -> BottleInChaosMachineBase.getProcessingGroupPowerText(job.get()),
-            () -> BottleInChaosMachineBase.getProcessingGroupVoltageText(job.get()),
-            () -> BottleInChaosMachineBase.getStatusColor(
+            () -> EnumChatFormatting.AQUA + BottledChaosStatusText.getProcessingGroupShareValue(job.get()),
+            () -> BottledChaosStatusText.getProcessingGroupPowerText(job.get()),
+            () -> BottledChaosStatusText.getProcessingGroupVoltageText(job.get()),
+            () -> BottledChaosStatusText.getStatusColor(
                 job.get()
                     .getString("status"))
-                + BottleInChaosMachineBase.getWailaStatusText(job.get()));
+                + BottledChaosStatusText.getWailaStatusText(job.get()));
         // Left-align IDs at the # anchor; keep names in a separate fixed column.
         // Reserve the same columns in every row, including paused groups without current power use.
         // The label ends at a fixed colon anchor; percentages grow rightward in their own column.
@@ -330,12 +348,10 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
     }
 
     @SideOnly(Side.CLIENT)
-    private static RichText groupOutput(NBTTagCompound summary, int index) {
-        NBTTagCompound job = BottleInChaosMachineBase.getProcessingGroupData(summary, index);
-        NBTTagCompound outputs = job.getCompoundTag("outputs");
+    private static RichText groupOutput(NBTTagCompound job, NBTTagCompound outputs) {
         NBTTagList entries = outputs.getTagList("entries", 10);
         var font = TextRenderer.getFontRenderer();
-        String title = EnumChatFormatting.WHITE + BottleInChaosMachineBase.getProcessingGroupOutputTitle(job) + " ";
+        String title = EnumChatFormatting.WHITE + BottledChaosStatusText.getProcessingGroupOutputTitle(job) + " ";
         RichText line = new RichText().alignment(Alignment.CenterLeft)
             .textColor(0xFFFFFFFF)
             .textShadow(false)
@@ -362,7 +378,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
                     icon.asIcon()
                         .size(12))
                 .add(" ");
-            String text = BottleInChaosMachineBase.formatGroupOutput(item, fluid, entry);
+            String text = BottledChaosStatusText.formatGroupOutput(item, fluid, entry);
             boolean more = i + 1 < entries.tagCount() || outputs.getInteger("total") > entries.tagCount();
             // Reserve an ellipsis for subsequent outputs, measuring icons as well as text.
             if (font.getStringWidth(text) + (more ? font.getStringWidth("...") : 0) > remaining) {
@@ -385,7 +401,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
         NBTTagList entries = summary.getTagList("entries", 10);
         for (int i = 0; i < entries.tagCount(); i++) {
             NBTTagCompound entry = entries.getCompoundTagAt(i);
-            String slots = BottleInChaosMachineBase.formatProcessingGroups(entry.getInteger("slots"));
+            String slots = BottledChaosStatusText.formatProcessingGroups(entry.getInteger("slots"));
             lines.add(
                 (summary.getBoolean("errors") ? EnumChatFormatting.RED
                     : "gt.interact.desc.mb.running".equals(entry.getString("key")) ? EnumChatFormatting.GOLD
@@ -1016,7 +1032,8 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
         private int selectedRow = -1;
         private final GenericSyncValue<BigInteger, ?> required;
         private final GenericSyncValue<BigInteger, ?> missing;
-        private final IntSyncValue[] users = new IntSyncValue[BottledChaosMachineConfiguration.poolCount()];
+        private final int poolCount = BottledChaosMachineConfiguration.poolCount();
+        private final GenericSyncValue<NBTTagCompound, ?> usage;
         private final IntSyncValue selected;
         private final IntSyncValue source;
         private int selectedSource;
@@ -1037,20 +1054,20 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
             client = syncManager.isClient();
             required = GenericSyncValue.builder(BigInteger.class)
                 .getter(
-                    () -> multiblock.getMachineConfiguration()
-                        .requiredPoolMask())
+                    () -> panelOpen.getAsBoolean() ? multiblock.getMachineConfiguration()
+                        .requiredPoolMask() : BigInteger.ZERO)
                 .adapter(ByteBufAdapters.BIG_INT)
                 .copy(value -> value)
                 .build();
             syncManager.syncValue("bottledChaosRequiredPools", required);
             missing = GenericSyncValue.builder(BigInteger.class)
-                .getter(multiblock::getMissingRecipePoolMask)
+                .getter(() -> panelOpen.getAsBoolean() ? multiblock.getMissingRecipePoolMask() : BigInteger.ZERO)
                 .adapter(ByteBufAdapters.BIG_INT)
                 .copy(value -> value)
                 .build();
             syncManager.syncValue("bottledChaosMissingPools", missing);
             selected = new IntSyncValue(() -> selectedSlot, value -> {
-                if (value < -1 || value >= users.length) return;
+                if (value < -1 || value >= poolCount) return;
                 selectedSlot = value;
                 lastSnapshotTick = Long.MIN_VALUE;
             }).allowC2S();
@@ -1079,16 +1096,26 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
                 .copy(tag -> (NBTTagCompound) tag.copy())
                 .build();
             syncManager.syncValue("bottledChaosModuleParameters", parameters);
+            usage = GenericSyncValue.builder(NBTTagCompound.class)
+                .getter(() -> panelOpen.getAsBoolean() ? multiblock.getRecipePoolUsage() : EMPTY_PAGE)
+                .adapter(ByteBufAdapters.NBT)
+                .copy(tag -> (NBTTagCompound) tag.copy())
+                .build();
+            syncManager.syncValue("bottledChaosPoolUsers", usage);
             BigInteger water = BigInteger.ZERO;
-            for (int slot = 0; slot < users.length; slot++) {
-                final int poolSlot = slot;
-                users[slot] = new IntSyncValue(() -> multiblock.getRecipePoolUsers(poolSlot));
-                syncManager.syncValue("bottledChaosPoolUsers" + slot, users[slot]);
+            for (int slot = 0; slot < poolCount; slot++) {
                 if (BottledChaosMachineConfiguration.isPurificationPlantSlot(slot)) plantSlot = slot;
                 if (BottledChaosMachineConfiguration.isPurificationPool(BottledChaosMachineConfiguration.pool(slot)))
                     water = water.setBit(slot);
             }
             waterPools = water;
+        }
+
+        private int users(int slot) {
+            var tag = usage.getValue();
+            if (!tag.hasKey("users")) return 0;
+            int[] groups = tag.getIntArray("users");
+            return slot >= 0 && slot < groups.length ? groups[slot] : 0;
         }
 
         private ItemStack stack(int slot) {
@@ -1111,12 +1138,12 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
 
         private int row(int row) {
             BigInteger visible = BigInteger.ZERO;
-            for (int slot = 0; slot < users.length; slot++)
+            for (int slot = 0; slot < poolCount; slot++)
                 if (BottledChaosMachineConfiguration.displayPoolSlot(slot) == slot
-                    && (stack(slot) != null || users[slot].getIntValue() != 0)) visible = visible.setBit(slot);
+                    && (stack(slot) != null || users(slot) != 0)) visible = visible.setBit(slot);
             BigInteger missing = BigInteger.ZERO, used = BigInteger.ZERO;
-            for (int slot = 0; slot < users.length; slot++) {
-                if (users[slot].getIntValue() != 0) {
+            for (int slot = 0; slot < poolCount; slot++) {
+                if (users(slot) != 0) {
                     if (isMissing(slot)) missing = missing.setBit(slot);
                     else used = used.setBit(slot);
                 }
@@ -1135,7 +1162,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
             rows.clear();
             for (BigInteger section : new BigInteger[] { visible.and(missing), visible.andNot(missing)
                 .and(used), visible.andNot(missing.or(used)) })
-                for (int pool = 0; pool < users.length; pool++) if (section.testBit(pool)) rows.add(pool);
+                for (int pool = 0; pool < poolCount; pool++) if (section.testBit(pool)) rows.add(pool);
             int selectedIndex = rows.indexOf(selectedRow);
             if (selectedIndex >= 0) page = selectedIndex / PAGE_SIZE;
             page = Math.min(page, pageCount() - 1);
@@ -1167,7 +1194,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
         }
 
         private String groups(int slot) {
-            int mask = users[slot].getIntValue();
+            int mask = users(slot);
             // #tr gtnr.machine.BottleInChaos.gui.pool_unused
             // # No processing group uses this recipe pool.
             // # zh_CN 没有加工组使用此配方池.
@@ -1177,7 +1204,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
                     // # Processing groups: %s
                     // # zh_CN 加工组: %s
                     "gtnr.machine.BottleInChaos.gui.pool_users",
-                    BottleInChaosMachineBase.formatProcessingGroups(mask));
+                    BottledChaosStatusText.formatProcessingGroups(mask));
         }
 
         private String rowName(int row) {
@@ -1193,7 +1220,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
 
         private int rowStateColor(int row) {
             int slot = row(row);
-            return slot >= 0 && (isMissing(slot) || users[slot].getIntValue() == 0) ? MODULE_UNUSED : MODULE_WARNING;
+            return slot >= 0 && (isMissing(slot) || users(slot) == 0) ? MODULE_UNUSED : MODULE_WARNING;
         }
 
         private boolean isMissing(int slot) {
@@ -1208,7 +1235,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
             // # Not installed
             // # zh_CN 未安装
             if (isMissing(slot)) return StatCollector.translateToLocal("gtnr.machine.BottleInChaos.gui.module_missing");
-            if (users[slot].getIntValue() == 0)
+            if (users(slot) == 0)
                 // #tr gtnr.machine.BottleInChaos.gui.module_unused
                 // # Unused
                 // # zh_CN 未使用
@@ -1220,7 +1247,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
                 // # zh_CN 主净化厂数量不足
                 state = StatCollector.translateToLocal("gtnr.machine.BottleInChaos.gui.plant_shortage");
             if (slot == plantSlot && quantity(slot) > 0) {
-                for (int pool = 0; pool < users.length; pool++) if (waterPools.and(required.getValue())
+                for (int pool = 0; pool < poolCount; pool++) if (waterPools.and(required.getValue())
                     .testBit(pool) && quantity(pool) > quantity(slot))
                     return StatCollector.translateToLocal("gtnr.machine.BottleInChaos.gui.plant_shortage");
             }
@@ -1239,7 +1266,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
             // # zh_CN 暂无配方池.
             if (slot < 0) return StatCollector.translateToLocal("gtnr.machine.BottleInChaos.gui.module_empty");
             NBTTagCompound data = parameters.getValue();
-            String result = users[slot].getIntValue() == 0 ? "" : groups(slot);
+            String result = users(slot) == 0 ? "" : groups(slot);
             if (data == null || data.getInteger("slot") != slot) return result;
             if (BottledChaosMachineConfiguration.isPurificationPlantSlot(slot))
                 return result + (result.isEmpty() ? "" : "\n\n")
@@ -1406,20 +1433,17 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
 
     @SuppressWarnings("unchecked")
     private IWidget createPowerAllocationButton(PanelSyncManager syncManager) {
-        GenericSyncValue<NBTTagCompound, ?> status = syncManager
-            .findSyncHandler("bottledChaosStatusSummary", GenericSyncValue.class);
-        BooleanSupplier wireless = () -> status.getValue() != null && status.getValue()
-            .getBoolean("wireless");
+        BooleanSyncValue wireless = syncManager.findSyncHandler("bottledChaosWireless", BooleanSyncValue.class);
         BooleanSyncValue mode = syncManager.findSyncHandler("bottledChaosConcentratedPower", BooleanSyncValue.class);
         BooleanSyncValue activeMode = syncManager
             .findSyncHandler("bottledChaosActiveConcentratedPower", BooleanSyncValue.class);
         return createDisableableToggleButton(
             mode,
-            () -> !wireless.getAsBoolean(),
+            () -> !wireless.getBoolValue(),
             GTGuiTextures.OVERLAY_BUTTON_INPUT_SEPARATION_OFF,
             GTGuiTextures.OVERLAY_BUTTON_INPUT_SEPARATION_ON,
             tooltip -> {
-                if (wireless.getAsBoolean()) {
+                if (wireless.getBoolValue()) {
                     tooltip.addLine(IKey.lang("gtnr.machine.BottleInChaos.info.wireless_mode"));
                     return;
                 }

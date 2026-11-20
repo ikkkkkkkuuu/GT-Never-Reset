@@ -16,10 +16,10 @@ import com.cleanroommc.modularui.utils.serialization.ByteBufAdapters;
 import com.cleanroommc.modularui.value.sync.GenericSyncValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
+import com.xyp.gtneverreset.client.chaos.BottledChaosStatusText;
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.BottledChaosHatchControls;
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.ChaosTextLayout;
 import com.xyp.gtneverreset.common.machine.hatch.ChaosCredentialHatch;
-import com.xyp.gtneverreset.common.machine.multiMachineBase.BottleInChaosMachineBase;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -113,7 +113,7 @@ public final class ChaosCredentialHatchGui {
                     tooltip -> tooltip.addLine(
                         information.getValue() != null && information.getValue()
                             .getBoolean("connected")
-                                ? BottleInChaosMachineBase.getCredentialHatchTitle(information.getValue())
+                                ? BottledChaosStatusText.getCredentialHatchTitle(information.getValue())
                                 : StatCollector
                                     .translateToLocal("gtnr.machine.BottleInChaosRecipeTokenHatch.info.disconnected")))
                 .tooltipAutoUpdate(true)
@@ -124,7 +124,7 @@ public final class ChaosCredentialHatchGui {
     @SideOnly(Side.CLIENT)
     private static String getFittedHatchDisplayText(NBTTagCompound data) {
         return ChaosTextLayout.ellipsize(
-            BottleInChaosMachineBase.getCredentialHatchTitle(data),
+            BottledChaosStatusText.getCredentialHatchTitle(data),
             140,
             TextRenderer.getFontRenderer()::getStringWidth);
     }

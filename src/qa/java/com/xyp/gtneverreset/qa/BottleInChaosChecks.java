@@ -10,15 +10,27 @@ import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
+import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.cleanroommc.modularui.api.RecipeViewerSettings;
+import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.screen.GuiContainerWrapper;
+import com.cleanroommc.modularui.screen.UISettings;
+import com.cleanroommc.modularui.value.sync.IntSyncValue;
+import com.cleanroommc.modularui.value.sync.ModularSyncManager;
+import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.cleanroommc.modularui.value.sync.ValueSyncHandler;
+import com.cleanroommc.modularui.widget.WidgetTree;
 import com.xyp.gtneverreset.common.crafting.chaos.*;
+import com.xyp.gtneverreset.common.crafting.chaos.processing.BottledChaosPowerAllocator;
+import com.xyp.gtneverreset.common.gui.modularui.multiblock.BottleInChaosGui;
 import com.xyp.gtneverreset.common.item.items.*;
 import com.xyp.gtneverreset.common.machine.hatch.ChaosCredentialHatch;
 import com.xyp.gtneverreset.common.machine.multiblock.BottleInChaos;
@@ -37,6 +49,7 @@ import gregtech.api.GregTechAPI;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.metatileentity.implementations.*;
 import gregtech.api.recipe.RecipeMap;
+import io.netty.buffer.Unpooled;
 
 @Mod(modid = "bottleinchaosqa", name = "Bottle in Chaos QA", version = "1", dependencies = "after:gtneverreset")
 public final class BottleInChaosChecks {
@@ -53,8 +66,12 @@ public final class BottleInChaosChecks {
     private BottleInChaos machine;
     private BaseMetaTileEntity inputBus, outputBus, energyHatch;
     private boolean processingVerified;
+    private boolean waitingForRoundOutputs;
+    private PanelSyncManager[] viewers;
+    private final long[] viewerBytes = new long[2];
+    private int viewerTicks;
     private int processingTicks;
-    private boolean secondGroupStarted, outputBlockVerified;
+    private boolean secondGroupStarted, outputBlockVerified, legacyJobReloaded, competingGroups;
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
@@ -145,6 +162,14 @@ public final class BottleInChaosChecks {
                 return;
             }
             if (stage == 0 && mc.currentScreen instanceof GuiContainerWrapper gui && ++frames > 60) {
+                var panel = gui.getScreen()
+                    .getSyncManager()
+                    .getMainPSM();
+                require(
+                    pageData(panel, "bottledChaosProcessingGroups").hasKey("bottledChaosThreads") == (capturedPage == 0)
+                        && pageData(panel, "bottledChaosHatchSummary").hasKey("hatches") == (capturedPage == 1)
+                        && pageData(panel, "bottledChaosPoolUsers").hasKey("users") == (capturedPage == 2),
+                    "client receives the synchronized data for terminal page " + capturedPage);
                 capture(capturedPage == 0 ? "chaos-gui.png" : "chaos-tab-" + capturedPage + ".png");
                 if (capturedPage < 3) {
                     var tab = find(
@@ -282,6 +307,7 @@ public final class BottleInChaosChecks {
         hatch.loadNBTData(saved);
         require(hatch.getSelectedRoutes() == 2, "selected routes survive NBT round trip");
         verifyPoolMasks();
+        verifyPowerRounds();
         verifyChemicalRoutes();
         verifyCustomRoutes(hatch, world);
         verifyModuleMaterials();
@@ -296,11 +322,13 @@ public final class BottleInChaosChecks {
     private void verifyFormation(World world, String[][] shape) {
         var blocks = GregTechAPI.sBlockCasings4;
         var central = new java.util.ArrayList<int[]>();
+        var capacityBlocks = new java.util.ArrayList<int[]>();
         for (int layer = 0; layer < shape.length; layer++) {
             for (int row = 0; row < shape[layer].length; row++) {
                 for (int column = 0; column < shape[layer][row].length(); column++) {
                     char symbol = shape[layer][row].charAt(column);
                     int x = column - 14, y = 85 - layer, z = row - 12;
+                    if (symbol == 'G') capacityBlocks.add(new int[] { x, y, z });
                     if (symbol == 'U') place(world, x, y, z, GTNRMachineID.ChaosCredentialHatch.id);
                     if (symbol == 'V' || symbol == 'W' || symbol == 'X' || symbol == 'Y')
                         world.setBlock(x, y, z, blocks, 0, 3);
@@ -326,6 +354,20 @@ public final class BottleInChaosChecks {
             if (i == 4) energyHatch = placed;
         }
         var errors = new java.util.ArrayList<gregtech.api.structure.error.StructureError>();
+        if (!PREVIEW) {
+            for (int[] pos : capacityBlocks) world.setBlockToAir(pos[0], pos[1], pos[2]);
+            machine.checkMachine(tile, null, errors);
+            require(
+                errors.isEmpty() && machine.getBottledChaosCapacity() == 4,
+                "empty capacity regions form at minimum capacity");
+            int[] first = capacityBlocks.get(0);
+            world.setBlock(first[0], first[1], first[2], net.minecraft.init.Blocks.stone);
+            machine.checkMachine(tile, null, errors);
+            require(!errors.isEmpty(), "a foreign block in an otherwise empty capacity region prevents formation");
+            for (int[] pos : capacityBlocks)
+                world.setBlock(pos[0], pos[1], pos[2], com.xyp.gtneverreset.loader.BlockLoader.chaosCapacity, 4, 3);
+            errors.clear();
+        }
         machine.checkMachine(tile, null, errors);
         require(errors.isEmpty(), "shortened inverted structure forms with fifteen processing groups: " + errors);
         machine.mMachine = true;
@@ -382,6 +424,35 @@ public final class BottleInChaosChecks {
 
     private void verifyLiveProcessing() throws Exception {
         energyHatch.increaseStoredEnergyUnits(64000, true);
+        if (waitingForRoundOutputs) {
+            if (viewerTicks < 24) sampleViewers();
+            if (viewerTicks < 24) return;
+            if (countItems(outputBus, Items.blaze_powder) != 64) {
+                if (++processingTicks > 600) throw new AssertionError(
+                    "near-full round delivery timeout: outputs=" + countItems(outputBus, Items.blaze_powder)
+                        + ", state="
+                        + machine.getProcessingGroupSummary());
+                return;
+            }
+            require(
+                countItems(inputBus, Items.dye) == 1,
+                "fourteen jobs deliver into fourteen free spaces and leave the fifteenth input");
+            tile.disableWorking();
+            processingVerified = true;
+            return;
+        }
+        if (competingGroups) {
+            if (++processingTicks < 120) return;
+            int products = countItems(outputBus, Items.blaze_powder) + countItems(outputBus, Items.magma_cream);
+            require(
+                countItems(inputBus, Items.apple) == 0 && products == 1,
+                "two concentrated groups competing for one shared input deliver exactly one product");
+            benchmarkSharedRound();
+            competingGroups = false;
+            waitingForRoundOutputs = true;
+            processingTicks = 0;
+            return;
+        }
         if (!outputBlockVerified) {
             if (++processingTicks < 80) return;
             require(countItems(inputBus, Items.apple) == 2, "blocked output reserves no input and loses no product");
@@ -389,6 +460,31 @@ public final class BottleInChaosChecks {
                 outputBus.setInventorySlotContents(slot, null);
             outputBlockVerified = true;
             processingTicks = 0;
+        }
+        if (!legacyJobReloaded && countItems(inputBus, Items.apple) < 2
+            && countItems(outputBus, Items.blaze_powder) == 0) {
+            NBTTagCompound save = new NBTTagCompound();
+            machine.saveNBTData(save);
+            NBTTagCompound job = save.getTagList("bottledChaosThreads", 10)
+                .getCompoundTagAt(0);
+            ItemStack paid = gregtech.api.util.GTUtility.loadItem(job, "credential");
+            require(ChaosRouteItem.hasPatternAuthorization(paid), "paid AE job uses an independent pattern identity");
+            NBTTagList oldTags = new NBTTagList();
+            oldTags.appendTag(new net.minecraft.nbt.NBTTagString("titanium"));
+            paid.getTagCompound()
+                .setTag("bottledChaosTags", oldTags);
+            paid.getTagCompound()
+                .setInteger("bottledChaosOccupiedWeight", 1);
+            gregtech.api.util.GTUtility.saveItem(job, "credential", paid);
+            machine.loadNBTData(save);
+            var group = machine.getProcessingGroupSummary()
+                .getTagList("bottledChaosThreads", 10)
+                .getCompoundTagAt(0);
+            require(
+                group.getCompoundTag("outputs")
+                    .getInteger("total") == 1,
+                "a restored AE job displays its own result independent of the preset catalog");
+            legacyJobReloaded = true;
         }
         if (secondGroupStarted) {
             int total = 0;
@@ -401,8 +497,23 @@ public final class BottleInChaosChecks {
                     countItems(inputBus, Items.melon) == 0,
                     "resumed second group consumes its independent input exactly once");
                 require(total == 3, "second processing group produces its own exact output after resume");
-                tile.disableWorking();
-                processingVerified = true;
+                var map = gregtech.api.recipe.RecipeMaps.wiremillRecipes;
+                var second = machine.getManagedCredentialHatch(1);
+                second.setInventorySlotContents(
+                    1,
+                    pattern(new ItemStack(Items.apple), new ItemStack(Items.blaze_powder), map));
+                second.setInventorySlotContents(
+                    2,
+                    pattern(new ItemStack(Items.blaze_powder), new ItemStack(Items.magma_cream), map));
+                second.onContentsChanged(1);
+                require(
+                    second.getCustomRoutes() != null && machine.isConcentratedPowerActive(),
+                    "both distinct AE routes are eligible for a concentrated power round");
+                for (int slot = 0; slot < outputBus.getSizeInventory(); slot++)
+                    outputBus.setInventorySlotContents(slot, null);
+                inputBus.setInventorySlotContents(0, new ItemStack(Items.apple));
+                competingGroups = true;
+                processingTicks = 0;
             } else if (++processingTicks > 600) throw new AssertionError("second group resume timeout");
             return;
         }
@@ -412,6 +523,7 @@ public final class BottleInChaosChecks {
             if (item != null && item.getItem() == Items.blaze_powder) produced += item.stackSize;
         }
         if (produced >= 2) {
+            require(legacyJobReloaded, "a paid legacy AE job resumes across preset reordering");
             require(produced == 2, "formed machine emits the exact AE output to its real output bus");
             require(
                 countItems(inputBus, Items.apple) == 0,
@@ -419,6 +531,7 @@ public final class BottleInChaosChecks {
             require(
                 countItems(inputBus, Items.melon) == 3,
                 "paused second group retains all of its input while the first group runs");
+            machine.setConcentratedPowerEnabled(true);
             machine.getManagedCredentialHatch(1)
                 .setExecutionEnabled(true);
             secondGroupStarted = true;
@@ -430,6 +543,154 @@ public final class BottleInChaosChecks {
                     .toString());
             throw new AssertionError("actual processing timeout: " + machine.getProcessingGroupSummary());
         }
+    }
+
+    private void benchmarkSharedRound() throws Exception {
+        World world = tile.getWorld();
+        world.setBlockToAir(inputBus.xCoord, inputBus.yCoord, inputBus.zCoord);
+        inputBus = place(
+            world,
+            inputBus.xCoord,
+            inputBus.yCoord,
+            inputBus.zCoord,
+            gregtech.api.enums.ItemList.Hatch_Input_Bus_IV.get(1)
+                .getItemDamage());
+        world.setBlockToAir(energyHatch.xCoord, energyHatch.yCoord, energyHatch.zCoord);
+        energyHatch = place(
+            world,
+            energyHatch.xCoord,
+            energyHatch.yCoord,
+            energyHatch.zCoord,
+            gregtech.api.enums.ItemList.Hatch_Energy_EV.get(1)
+                .getItemDamage());
+        machine.checkStructure(true, tile);
+        require(machine.mMachine, "stress fixture forms with a shared sixteen-slot input bus");
+        require(
+            machine.getOutputBusses()
+                .size() == 1 && inputBus.getSizeInventory() >= 15,
+            "stress fixture has one physical output bus and room for fifteen distinct inputs");
+        var map = gregtech.api.recipe.RecipeMaps.wiremillRecipes;
+        for (int slot = 0; slot < 15; slot++) {
+            ItemStack dye = new ItemStack(Items.dye, 1, slot);
+            ItemStack product = new ItemStack(Items.blaze_powder);
+            gregtech.api.enums.GTValues.RA.stdBuilder()
+                .itemInputs(dye.copy())
+                .itemOutputs(product.copy())
+                .duration(40)
+                .eut(8)
+                .addTo(map);
+            var hatch = machine.getManagedCredentialHatch(slot);
+            hatch.setInventorySlotContents(2, null);
+            hatch.setInventorySlotContents(1, pattern(dye, product, map));
+            hatch.onContentsChanged(1);
+            hatch.setExecutionEnabled(true);
+            if (hatch.getCustomRoutes() == null) throw new AssertionError("stress pattern " + slot);
+        }
+        for (int slot = 0; slot < outputBus.getSizeInventory(); slot++)
+            outputBus.setInventorySlotContents(slot, new ItemStack(net.minecraft.init.Blocks.cobblestone, 64));
+        outputBus.setInventorySlotContents(0, new ItemStack(Items.blaze_powder, 50));
+        NBTTagCompound before = new NBTTagCompound();
+        machine.saveNBTData(before);
+        var allocations = (com.sun.management.ThreadMXBean) java.lang.management.ManagementFactory.getThreadMXBean();
+        long[] nanos = new long[9], bytes = new long[9];
+        for (int sample = -3; sample < nanos.length; sample++) {
+            machine.loadNBTData(before);
+            for (int slot = 0; slot < 15; slot++)
+                inputBus.setInventorySlotContents(slot, new ItemStack(Items.dye, 1, slot));
+            if (countItems(inputBus, Items.dye) != 15) throw new AssertionError("stress fixture input setup");
+            long allocation = allocations.getCurrentThreadAllocatedBytes();
+            long start = System.nanoTime();
+            var result = machine.checkProcessingMM();
+            long elapsed = System.nanoTime() - start;
+            if (sample >= 0) {
+                nanos[sample] = elapsed;
+                bytes[sample] = allocations.getCurrentThreadAllocatedBytes() - allocation;
+            }
+            int left = countItems(inputBus, Items.dye);
+            if (!result.wasSuccessful() || left != 1) throw new AssertionError(
+                "stress round: " + result.getID()
+                    + ", remaining "
+                    + left
+                    + ", input bus="
+                    + inputBus.getSizeInventory()
+                    + ", jobs="
+                    + machine.getProcessingGroupSummary());
+        }
+        energyHatch.increaseStoredEnergyUnits(64000, true);
+        tile.enableWorking();
+        EntityPlayerMP player = (EntityPlayerMP) world.playerEntities.get(0);
+        viewers = new PanelSyncManager[] { openTestViewer(player),
+            openTestViewer(FakePlayerFactory.getMinecraft((net.minecraft.world.WorldServer) world)) };
+        require(
+            countItems(inputBus, Items.dye) == 1,
+            "fifteen competing groups reserve exactly fourteen outputs in every measured round");
+        Files.writeString(
+            Path.of("shared-round-benchmark.txt"),
+            "nanos=" + java.util.Arrays.toString(nanos) + "\nbytes=" + java.util.Arrays.toString(bytes));
+    }
+
+    private PanelSyncManager openTestViewer(EntityPlayerMP player) {
+        var sync = new ModularSyncManager(false);
+        var panelSync = new PanelSyncManager(sync, true);
+        var settings = new UISettings(RecipeViewerSettings.DUMMY);
+        var data = new PosGuiData(player, tile.xCoord, tile.yCoord, tile.zCoord);
+        var panel = new BottleInChaosGui<>(machine).build(data, panelSync, settings);
+        WidgetTree.collectSyncValues(panelSync, panel);
+        settings.createContainer()
+            .construct(player, sync, settings, panel.getName(), data);
+        sync.onOpen();
+        return panelSync;
+    }
+
+    /** Serialize the changed page values of two server-side sessions, excluding packet headers. */
+    private void sampleViewers() throws Exception {
+        int secondPage = viewerTicks < 8 ? 2 : viewerTicks < 16 ? 1 : 0;
+        viewers[1].findSyncHandler("bottledChaosTerminalPage", IntSyncValue.class)
+            .setIntValue(secondPage, true, false);
+        for (int i = 0; i < viewers.length; i++) {
+            var panel = viewers[i];
+            PacketBuffer buffer = new PacketBuffer(Unpooled.buffer());
+            try {
+                for (String key : new String[] { "bottledChaosStatusSummary", "bottledChaosProcessingGroups",
+                    "bottledChaosGroupOutputs", "bottledChaosHatchSummary", "bottledChaosPoolUsers",
+                    "bottledChaosWireless", "bottledChaosRequiredPools", "bottledChaosMissingPools",
+                    "bottledChaosModuleParameters" }) {
+                    writeChanged(panel, key, buffer, viewerTicks == 0);
+                }
+                viewerBytes[i] += buffer.readableBytes();
+            } finally {
+                buffer.release();
+            }
+            int page = i == 0 ? 0 : secondPage;
+            if (pageData(panel, "bottledChaosHatchSummary").hasKey("hatches") != (page == 1)
+                || pageData(panel, "bottledChaosProcessingGroups").hasKey("bottledChaosThreads") != (page == 0))
+                throw new AssertionError("viewer " + i + " received the wrong data for page " + page);
+        }
+        if (++viewerTicks == 24) {
+            for (var panel : viewers) {
+                panel.getModularSyncManager()
+                    .onClose();
+                panel.getModularSyncManager()
+                    .dispose();
+            }
+            Files.writeString(
+                Path.of("page-payload-bytes.txt"),
+                "runtime=" + viewerBytes[0] + "\nswitching=" + viewerBytes[1]);
+            require(
+                viewerBytes[0] > 0 && viewerBytes[1] > 0,
+                "two independent server GUI sessions serialize their page data over 24 ticks");
+        }
+    }
+
+    private static NBTTagCompound pageData(PanelSyncManager panel, String name) {
+        return (NBTTagCompound) panel.findSyncHandler(name, ValueSyncHandler.class)
+            .getValue();
+    }
+
+    private static void writeChanged(PanelSyncManager panel, String key, PacketBuffer buffer, boolean initial)
+        throws Exception {
+        ValueSyncHandler<?, ?> value = panel.findSyncHandler(key, ValueSyncHandler.class);
+        if (value.updateCacheFromSource(initial)) value.write(buffer);
     }
 
     private static int countItems(BaseMetaTileEntity inventory, net.minecraft.item.Item type) {
@@ -536,6 +797,40 @@ public final class BottleInChaosChecks {
         require(
             !hatch.hasCustomPatterns() && hatch.getCustomRoutes() == null,
             "removing patterns restores preset mode");
+    }
+
+    private void verifyPowerRounds() {
+        var power = new BottledChaosPowerAllocator(2);
+        int[] weights = { 2, 1 };
+        power.updateSupply(false, 90, weights);
+        power.refreshRound(0, 90, weights);
+        require(power.budget(0) == 60 && power.budget(1) == 30, "wired groups share EU/t proportionally");
+        power.joinRound(0);
+        power.requestConcentrated(true);
+        power.refreshRound(1, 90, weights);
+        require(!power.concentrated() && power.budget(0) == 60, "a mode change preserves the paid round budget");
+
+        NBTTagCompound saved = new NBTTagCompound();
+        power.save(saved);
+        power = new BottledChaosPowerAllocator(2);
+        power.load(saved);
+        require(
+            power.roundActive() && power.modeChanging() && power.budget(0) == 60,
+            "an active round and its pending mode change survive save/load");
+        power.retireFinished(0, weights);
+        power.refreshRound(0, 90, weights);
+        require(power.concentrated() && power.budget(0) == 0, "concentrated power begins at the round boundary");
+        power.startRound(2, new long[] { 0, 90 });
+        power.requestConcentrated(false);
+        power.retireFinished(0, weights);
+        power.refreshRound(0, 90, weights);
+        require(
+            !power.concentrated() && power.budget(1) == 30,
+            "ordinary power shares return after a concentrated round");
+        power.updateSupply(true, 90, weights);
+        require(
+            !power.roundActive() && power.budget(0) == 0 && power.budget(1) == 0,
+            "wireless mode clears the wired round and both budgets");
     }
 
     private void verifyPoolMasks() {
