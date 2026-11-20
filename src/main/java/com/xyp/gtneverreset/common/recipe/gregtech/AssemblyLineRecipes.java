@@ -36,7 +36,32 @@ public final class AssemblyLineRecipes {
 
     private AssemblyLineRecipes() {}
 
+    private static void registerStarCoreStripper() {
+        GTValues.RA.stdBuilder()
+            .metadata(RESEARCH_ITEM, GTNRItemList.FragmentWorldCollector.get(1))
+            .metadata(SCANNING, new Scanning(20 * 60, TierEU.RECIPE_UV))
+            .itemInputs(
+                GTNRItemList.FragmentWorldCollector.get(4),
+                ItemList.Hull_MAX.get(8),
+                ItemList.Field_Generator_UHV.get(16),
+                ItemList.Sensor_UHV.get(16),
+                ItemList.Emitter_UHV.get(16),
+                ItemList.Electric_Pump_UHV.get(16),
+                ItemList.Robot_Arm_UHV.get(16),
+                ItemList.Electric_Motor_UHV.get(16),
+                new Object[] { OrePrefixes.circuit.get(Materials.UHV), 16 },
+                Materials.Neutronium.getPlates(64),
+                ItemList.Casing_Advanced_Iridium.get(64),
+                ItemList.Casing_Fusion_Coil.get(32))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(18432))
+            .itemOutputs(GTNRItemList.StarCoreStripper.get(1))
+            .duration(4800)
+            .eut(TierEU.RECIPE_UHV)
+            .addTo(GTRecipeConstants.AssemblyLine);
+    }
+
     public static void register() {
+        registerStarCoreStripper();
         if (!ChaosConfig.enableBottleInChaos) return;
         registerChaosPhotonUpgrades();
         registerChaosGenerators();

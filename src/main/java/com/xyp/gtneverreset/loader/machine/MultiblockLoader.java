@@ -14,6 +14,7 @@ import com.xyp.gtneverreset.common.machine.multiblock.LargeFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeOreProcessor;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
+import com.xyp.gtneverreset.common.machine.multiblock.StarCoreStripper;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
 import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -28,6 +29,15 @@ import gregtech.api.util.GTUtility;
 public final class MultiblockLoader {
 
     public static void registry() {
+        // #tr gtnr.machine.star_core_stripper.name
+        // # Star Core Stripper
+        // # zh_CN 星核剥离装置
+        GTNRItemList.StarCoreStripper.set(
+            new StarCoreStripper(
+                GTNRMachineID.StarCoreStripper.id,
+                "gtneverreset.star_core_stripper",
+                StatCollector.translateToLocal("gtnr.machine.star_core_stripper.name")));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.StarCoreStripper.get(1), AnimatedText.GT_NEVER_RESET);
         if (ChaosConfig.enableBottleInChaos) {
             // #tr gtnr.machine.bottle_in_chaos.name
             // # Bottle in Chaos
