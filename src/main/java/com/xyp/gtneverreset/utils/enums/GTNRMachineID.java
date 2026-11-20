@@ -13,7 +13,8 @@ public enum GTNRMachineID {
     LargeCropBreeder(29406),
     UniversalJointFactory(29407),
     BottleInChaos(29408),
-    // 预留：29409–29499（91 个）。
+    StarCoreStripper(29409),
+    // 预留：29410–29499（90 个）。
     // endregion
 
     // region 舱室

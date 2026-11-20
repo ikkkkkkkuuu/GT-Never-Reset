@@ -1,9 +1,5 @@
 package com.xyp.gtneverreset.common.machine.basicMachine;
 
-import static com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes.DRILL_CONSUMPTION_CHANCE;
-import static com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes.DRILL_CONSUMPTION_SCALE;
-import static com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes.DRILL_INPUT_INDEX;
-
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.fluids.FluidStack;
@@ -14,6 +10,7 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.common.gui.modularui.singleblock.FragmentWorldCollectorGui;
 import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectionBackend;
 import com.xyp.gtneverreset.utils.enums.BlockIcons;
 
 import gregtech.api.enums.Textures;
@@ -25,7 +22,6 @@ import gregtech.api.metatileentity.implementations.MTEBasicMachine;
 import gregtech.api.recipe.RecipeMap;
 import gregtech.api.render.TextureFactory;
 import gregtech.api.util.GTRecipe;
-import gregtech.api.util.GTUtility;
 
 public final class FragmentWorldCollector extends MTEBasicMachine {
 
@@ -48,16 +44,7 @@ public final class FragmentWorldCollector extends MTEBasicMachine {
     }
 
     public void consumeDrillHead(GTRecipe recipe, ItemStack[] inputs) {
-        int chance = recipe.getMetadataOrDefault(DRILL_CONSUMPTION_CHANCE, 0);
-        if (chance == 0 || getBaseMetaTileEntity().getRandomNumber(DRILL_CONSUMPTION_SCALE) >= chance) return;
-
-        ItemStack drill = recipe.mInputs[DRILL_INPUT_INDEX];
-        for (ItemStack input : inputs) {
-            if (input != null && input.stackSize > 0 && GTUtility.areStacksEqual(input, drill)) {
-                input.stackSize--;
-                return;
-            }
-        }
+        FragmentWorldCollectionBackend.consumeDrillHeads(recipe, inputs, 1, getBaseMetaTileEntity()::getRandomNumber);
     }
 
     @Override

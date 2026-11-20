@@ -51,6 +51,11 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("thaumcraft.MixinPackagedCrucible");
         }
         if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
+            if (FMLLaunchHandler.side()
+                .isClient() && loadedMods.contains("blockrenderer6343")) {
+                mixins.add("blockrenderer.StarCorePreviewPlacementMixin");
+                mixins.add("blockrenderer.StarCorePreviewSceneMixin");
+            }
             PatternRecipeCallTransformer.register();
             mixins.add("gregtech.UniversalWandAssemblyAccelerationMixin");
             mixins.add("gregtech.UniversalWandBasicAccelerationEnergyMixin");

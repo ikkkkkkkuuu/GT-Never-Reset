@@ -55,6 +55,7 @@ public enum GTNRItemList implements IItemContainer {
     FluxPlug,
     FluxPoint,
 
+    StarCoreStripper,
     LargeOreProcessor,
     LargeFurnace,
     UniversalJointFactory,

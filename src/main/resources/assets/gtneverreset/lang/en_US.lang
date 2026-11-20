@@ -1843,6 +1843,7 @@ gtnr.hatch.super_mirror.name=Super Pattern Input Mirror (ME)
 gtnr.hatch.circuit_mirror.name=Circuit Pattern Input Mirror (ME)
 gtnr.hatch.cross_recipe_mirror.name=Super Cross-Recipe Pattern Input Mirror (ME)
 gtnr.hatch.vault_port.name=Vault Port Hatch
+gtnr.machine.star_core_stripper.name=Star Core Stripper
 gtnr.machine.bottle_in_chaos.name=Bottle in Chaos
 gtnr.machine.large_ore_processor.name=Large Ore Processor
 gtnr.machine.large_furnace.name=Large Furnace
