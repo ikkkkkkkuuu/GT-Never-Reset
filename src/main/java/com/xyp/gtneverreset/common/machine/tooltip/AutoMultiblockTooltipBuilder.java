@@ -18,6 +18,7 @@ import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 
 import gregtech.api.enums.HatchElement;
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
+import gregtech.api.recipe.RecipeMap;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.api.util.tooltip.TooltipHelper;
 
@@ -25,6 +26,7 @@ public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder
 
     public static final EnumChatFormatting HATCH_COLOR = EnumChatFormatting.GREEN;
     public static final EnumChatFormatting MECHANIC_COLOR = EnumChatFormatting.LIGHT_PURPLE;
+    private static final int RECIPE_MAPS_PER_LINE = 3;
     private final List<List<String>> pendingGroups = new ArrayList<>();
 
     @Override
@@ -104,6 +106,24 @@ public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder
         if (structure != null) addStructure(structure);
         for (String note : info.structureNotes()) addStructureInfo(note);
         addParameterModules(info.moduleLimits());
+        return this;
+    }
+
+    public AutoMultiblockTooltipBuilder addRecipeMaps(List<RecipeMap<?>> maps) {
+        if (maps.isEmpty()) return this;
+        List<String> names = maps.stream()
+            .map(map -> StatCollector.translateToLocal(map.unlocalizedName))
+            .toList();
+        List<String> lines = new ArrayList<>();
+        // #tr gtnr.machine.tooltip.recipe_maps
+        // # Available recipe maps
+        // # zh_CN 可用配方池
+        lines.add(StatCollector.translateToLocal("gtnr.machine.tooltip.recipe_maps"));
+        for (int start = 0; start < names.size(); start += RECIPE_MAPS_PER_LINE) {
+            int end = Math.min(start + RECIPE_MAPS_PER_LINE, names.size());
+            lines.add(String.join(" / ", names.subList(start, end)));
+        }
+        pendingGroups.add(lines);
         return this;
     }
 

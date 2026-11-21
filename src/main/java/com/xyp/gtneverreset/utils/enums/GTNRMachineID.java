@@ -14,7 +14,8 @@ public enum GTNRMachineID {
     UniversalJointFactory(29407),
     BottleInChaos(29408),
     StarCoreStripper(29409),
-    // 预留：29410–29499（90 个）。
+    HadronCatalyticRefinery(29410),
+    // 预留：29411–29499（89 个）。
     // endregion
 
     // region 舱室

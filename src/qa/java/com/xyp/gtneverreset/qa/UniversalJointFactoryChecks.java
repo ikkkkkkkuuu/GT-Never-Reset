@@ -30,8 +30,8 @@ import com.xyp.gtneverreset.api.me.RecipeMapPatternInventory;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeProcessingLogic;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
-import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactoryProcessingLogic;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -164,10 +164,10 @@ public final class UniversalJointFactoryChecks {
                     text.contains("32") && text.contains("64") && !text.contains("{var:"),
                     "automatic tooltip values resolved");
                 require(
-                    !text.contains("可用配方类型") && !text.contains("Recipe types:")
+                    text.contains(net.minecraft.util.StatCollector.translateToLocal("gtnr.machine.tooltip.recipe_maps"))
                         && !text.contains("不接受参数")
                         && !text.contains("Does not accept parameter"),
-                    "tooltip omits recipe list and obsolete module restriction");
+                    "tooltip lists available recipe maps and omits obsolete module restriction");
                 require(
                     text.contains("20%") && text.contains("10%")
                         && (text.contains("减少") || text.contains("decreases"))
@@ -585,7 +585,7 @@ public final class UniversalJointFactoryChecks {
             .duration(200)
             .eut(8)
             .addTo(RecipeMaps.compressorRecipes);
-        UniversalJointFactoryProcessingLogic logic = new UniversalJointFactoryProcessingLogic(factory);
+        CrossRecipeProcessingLogic logic = new CrossRecipeProcessingLogic(factory);
         logic.setMachine(factory)
             .setRecipeMapSupplier(factory::getRecipeMap)
             .setAvailableVoltage(32)

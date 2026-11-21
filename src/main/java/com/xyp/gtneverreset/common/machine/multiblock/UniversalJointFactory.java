@@ -25,10 +25,8 @@ import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructa
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
-import com.xyp.gtneverreset.common.gui.modularui.multiblock.UniversalJointFactoryGui;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
-import com.xyp.gtneverreset.common.machine.multiMachineBase.GTNRMultiBlockBase;
-import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeMultiblockBase;
 import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
@@ -45,7 +43,7 @@ import gregtech.api.structure.error.StructureError;
 import gregtech.api.util.GTUtility;
 
 @IMetaTileEntity.SkipGenerateDescription
-public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJointFactory>
+public final class UniversalJointFactory extends CrossRecipeMultiblockBase<UniversalJointFactory>
     implements ISurvivalConstructable {
 
     private static final int BASE_PARALLELS = 64;
@@ -95,7 +93,6 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
     }
 
     private IStructureDefinition<UniversalJointFactory> structureDefinition;
-    private RecipeMap<?> processingRecipeMap;
 
     public UniversalJointFactory(int id, String name, String regionalName) {
         super(id, name, regionalName);
@@ -176,26 +173,6 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
     }
 
     @Override
-    protected RecipeThreadProcessingLogic createRecipeThreadProcessingLogic() {
-        return new UniversalJointFactoryProcessingLogic(this);
-    }
-
-    @Override
-    protected boolean usesInstantThreadFill() {
-        return true;
-    }
-
-    @Override
-    public RecipeMap<?> getRecipeMap() {
-        return processingRecipeMap == null ? RECIPE_MAPS.get(Math.floorMod(machineMode, RECIPE_MAPS.size()))
-            : processingRecipeMap;
-    }
-
-    void setProcessingRecipeMap(RecipeMap<?> map) {
-        processingRecipeMap = map;
-    }
-
-    @Override
     public List<RecipeMap<?>> getAvailableRecipeMaps() {
         return RECIPE_MAPS;
     }
@@ -229,31 +206,6 @@ public final class UniversalJointFactory extends GTNRMultiBlockBase<UniversalJoi
         // # Universal processing / cross-recipe threads
         // # zh_CN 通用加工 / 跨配方线程
         return StatCollector.translateToLocal("gtnr.machine.universal_joint_factory.recipe_type");
-    }
-
-    @Override
-    protected UniversalJointFactoryGui getGui() {
-        return new UniversalJointFactoryGui(this);
-    }
-
-    @Override
-    public boolean supportsMachineModeSwitch() {
-        return true;
-    }
-
-    @Override
-    public int nextMachineMode() {
-        return (getMachineMode() + 1) % RECIPE_MAPS.size();
-    }
-
-    @Override
-    public void setMachineMode(int index) {
-        if (index >= 0 && index < RECIPE_MAPS.size()) super.setMachineMode(index);
-    }
-
-    @Override
-    public String getMachineModeKey() {
-        return getRecipeMap().unlocalizedName;
     }
 
     @Override

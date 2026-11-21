@@ -1,4 +1,4 @@
-package com.xyp.gtneverreset.common.machine.multiblock;
+package com.xyp.gtneverreset.common.machine.multiMachineBase;
 
 import java.util.stream.Stream;
 
@@ -26,13 +26,13 @@ import gregtech.api.util.GTRecipe;
 import gregtech.common.tileentities.machines.IDualInputInventoryWithPattern;
 import gregtech.common.tileentities.machines.MTEHatchCraftingInputME;
 
-public final class UniversalJointFactoryProcessingLogic extends RecipeThreadProcessingLogic {
+public final class CrossRecipeProcessingLogic extends RecipeThreadProcessingLogic {
 
-    private final UniversalJointFactory controller;
+    private final CrossRecipeMultiblockBase<?> controller;
     private ICraftingPatternDetails pattern;
     private RecipeMap<?> patternRecipeMap;
 
-    public UniversalJointFactoryProcessingLogic(UniversalJointFactory controller) {
+    public CrossRecipeProcessingLogic(CrossRecipeMultiblockBase<?> controller) {
         this.controller = controller;
     }
 
@@ -43,7 +43,8 @@ public final class UniversalJointFactoryProcessingLogic extends RecipeThreadProc
         patternRecipeMap = null;
         if (inventory instanceof RecipeMapPatternInventory mapped && mapped.getRecipeMapName() != null) {
             RecipeMap<?> requested = PatternRecipeMap.resolve(mapped.getRecipeMapName());
-            if (requested == null || !UniversalJointFactory.RECIPE_MAPS.contains(requested)) return false;
+            if (requested == null || !controller.getAvailableRecipeMaps()
+                .contains(requested)) return false;
             patternRecipeMap = requested;
         }
         pattern = inventory instanceof SuperMTEHatchCraftingInputME.PatternSlot<?>slot ? slot.getPatternDetails()
