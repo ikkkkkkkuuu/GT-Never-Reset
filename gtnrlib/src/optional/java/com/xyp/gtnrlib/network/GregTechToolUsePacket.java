@@ -75,20 +75,29 @@ public abstract class GregTechToolUsePacket extends ClientboundPacket {
     @Override
     @SideOnly(Side.CLIENT)
     public void handleClient(Minecraft mc) {
-        var connection = mc.getNetHandler();
-        if (connection == null) return;
-        runInWorld(mc, () -> {
-            var player = mc.thePlayer;
-            if (mc.getNetHandler() != connection || player == null || player.dimension != dimension) return;
-            boolean offhand = Loader.isModLoaded("backhand") && BackhandAnimationCompat.slot(player) == slot;
-            if (!offhand && player.inventory.currentItem != slot) return;
-            if (!matches(offhand ? BackhandAnimationCompat.heldItem(player) : player.getHeldItem(), tool)) return;
-            var actions = offhand ? FirstPersonItemActions.OFFHAND : FirstPersonItemActions.INSTANCE;
-            if (tool == IDMetaTool01.WRENCH) actions.trigger("gtneverreset:wrench_turn");
-            else if (tool == IDMetaTool01.SCREWDRIVER) actions.trigger("gtnrlib:screwdriver_turn");
-            else if (!offhand && HmiFirstPerson.INSTANCE.handheldTool() instanceof GregTechWireCutterAnimation)
-                HmiFirstPerson.INSTANCE.swing("gtneverreset:wire_cutter_snip");
-        });
+        ClientHandler.handle(this, mc);
+    }
+
+    @SideOnly(Side.CLIENT)
+    private static final class ClientHandler {
+
+        private static void handle(GregTechToolUsePacket packet, Minecraft mc) {
+            var connection = mc.getNetHandler();
+            if (connection == null) return;
+            runInWorld(mc, () -> {
+                var player = mc.thePlayer;
+                if (mc.getNetHandler() != connection || player == null || player.dimension != packet.dimension) return;
+                boolean offhand = Loader.isModLoaded("backhand") && BackhandAnimationCompat.slot(player) == packet.slot;
+                if (!offhand && player.inventory.currentItem != packet.slot) return;
+                if (!matches(offhand ? BackhandAnimationCompat.heldItem(player) : player.getHeldItem(), packet.tool))
+                    return;
+                var actions = offhand ? FirstPersonItemActions.OFFHAND : FirstPersonItemActions.INSTANCE;
+                if (packet.tool == IDMetaTool01.WRENCH) actions.trigger("gtneverreset:wrench_turn");
+                else if (packet.tool == IDMetaTool01.SCREWDRIVER) actions.trigger("gtnrlib:screwdriver_turn");
+                else if (!offhand && HmiFirstPerson.INSTANCE.handheldTool() instanceof GregTechWireCutterAnimation)
+                    HmiFirstPerson.INSTANCE.swing("gtneverreset:wire_cutter_snip");
+            });
+        }
     }
 
     public static final class WrenchTurn extends GregTechToolUsePacket {
