@@ -8,11 +8,16 @@ import java.util.function.Predicate;
 /** A target-local state layer. Predicates inspect an owner-supplied snapshot in declared priority order. */
 public final class AnimationStates<T> {
 
-    public record State<T> (String clipId, Predicate<T> when, double fade) {
+    public record State<T> (String clipId, Predicate<T> when, double fade, AnimationPlayer.Transition transition) {
+
+        public State(String clipId, Predicate<T> when, double fade) {
+            this(clipId, when, fade, AnimationPlayer.Transition.CROSS_FADE);
+        }
 
         public State {
             Objects.requireNonNull(clipId);
             Objects.requireNonNull(when);
+            Objects.requireNonNull(transition);
             AnimationClip.validTime(fade);
         }
     }
@@ -46,10 +51,13 @@ public final class AnimationStates<T> {
         }
         if (current == next && asset == clip) return;
         double position = handle != null && current == next && handle.active() ? handle.time() : 0;
-        if (handle != null) handle.stop(current.fade);
+        if (next == null) {
+            if (handle != null && current != null) handle.stop(current.fade);
+        } else if (handle != null && handle.active()) {
+            handle = player.transition(handle, asset, next.fade, AnimationPlayer.RotationBlend.EULER, next.transition);
+        } else handle = player.play(asset, next.fade, priority);
         clip = asset;
         current = next;
-        handle = next == null ? null : player.play(clip, next.fade, priority);
         if (position > 0) handle.seek(position);
     }
 

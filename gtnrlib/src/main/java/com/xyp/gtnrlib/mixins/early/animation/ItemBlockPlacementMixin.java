@@ -14,6 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
+import com.xyp.gtnrlib.compat.backhand.BackhandAnimationCompat;
+
+import cpw.mods.fml.common.Loader;
 
 @Mixin(ItemBlock.class)
 public abstract class ItemBlockPlacementMixin {
@@ -24,6 +27,10 @@ public abstract class ItemBlockPlacementMixin {
         if (!world.isRemote || !result.getReturnValue() || player != Minecraft.getMinecraft().thePlayer) return;
         // Backhand temporarily selects its extra inventory slot while using the offhand.
         int slot = player.inventory.currentItem;
+        if (Loader.isModLoaded("backhand") && BackhandAnimationCompat.selected(player)) {
+            FirstPersonItemActions.OFFHAND.trigger("place");
+            return;
+        }
         if (slot < 0 || slot >= InventoryPlayer.getHotbarSize()) return;
         FirstPersonItemActions.INSTANCE.trigger("place");
         FirstPersonAnimations.INSTANCE.trigger("useitem");

@@ -13,6 +13,9 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
+import com.xyp.gtnrlib.compat.backhand.BackhandAnimationCompat;
+
+import cpw.mods.fml.common.Loader;
 
 // Backhand overwrites right click at priority 1000 and moves the accepted block swing into its helper.
 @Mixin(value = Minecraft.class, priority = 1001)
@@ -23,7 +26,9 @@ public abstract class MinecraftAttackMixin {
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/EntityClientPlayerMP;swingItem()V"),
         require = 0)
     private void gtnrlib$blockUseSwing(EntityClientPlayerMP player, Operation<Void> vanilla) {
-        if (HmiFirstPerson.INSTANCE.enabled()) HmiFirstPerson.INSTANCE.duringBlockUseSwing(() -> vanilla.call(player));
+        var hand = Loader.isModLoaded("backhand") && BackhandAnimationCompat.selected(player) ? HmiFirstPerson.OFFHAND
+            : HmiFirstPerson.INSTANCE;
+        if (hand.enabled()) hand.duringBlockUseSwing(() -> vanilla.call(player));
         else vanilla.call(player);
     }
 

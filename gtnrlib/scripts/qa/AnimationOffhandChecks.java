@@ -8,6 +8,7 @@ import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
 
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
+import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.config.GTNRLibConfig;
 
@@ -68,7 +69,21 @@ final class AnimationOffhandChecks {
                     mc,
                     "offhand-" + stack.getItem()
                         .getUnlocalizedName());
-                checks.require(HmiFirstPerson.INSTANCE.enabled(), "offhand item renders without disabling animation");
+                if (stack.getItem() != Items.filled_map) checks.require(
+                    String.valueOf(net.minecraft.item.Item.itemRegistry.getNameForObject(stack.getItem()))
+                        .equals(HmiFirstPerson.OFFHAND.itemId()),
+                    "animated offhand uses the equipped item profile");
+                if (stack.getItem() == Items.bow) {
+                    BackhandUtils
+                        .useOffhandItem(player, false, () -> player.setItemInUse(stack, stack.getMaxItemUseDuration()));
+                    player.ticksExisted++;
+                    checks.draw(mc, "offhand-bow-draw");
+                    checks.require(
+                        using(HmiFirstPerson.OFFHAND) && !using(HmiFirstPerson.INSTANCE),
+                        "drawing the offhand bow leaves the main sword idle");
+                    player.clearItemInUse();
+                    ((IBackhandPlayer) player).setOffhandItemInUse(false);
+                }
             }
             var food = new ItemStack(Items.apple);
             checks.equip(mc, food.copy());
@@ -76,21 +91,56 @@ final class AnimationOffhandChecks {
             BackhandUtils.useOffhandItem(player, false, () -> player.setItemInUse(food, food.getMaxItemUseDuration()));
             player.ticksExisted++;
             checks.draw(mc, "offhand-eating");
-            // The dev JAR relocates LuaJ; inspect the frame without binding the fixture to its unshaded descriptor.
-            Object frame = HmiFirstPerson.INSTANCE.program()
-                .getClass()
-                .getField("frame")
-                .get(HmiFirstPerson.INSTANCE.program());
-            Object using = frame.getClass()
-                .getMethod("get", String.class)
-                .invoke(frame, "using");
             checks.require(
-                !(boolean) using.getClass()
-                    .getMethod("toboolean")
-                    .invoke(using),
-                "offhand eating does not animate identical main-hand food");
+                using(HmiFirstPerson.OFFHAND) && !using(HmiFirstPerson.INSTANCE),
+                "only the offhand animates eating with identical food in both hands");
             player.clearItemInUse();
             ((IBackhandPlayer) player).setOffhandItemInUse(false);
+            var mainFood = player.getHeldItem();
+            player.setItemInUse(mainFood, mainFood.getMaxItemUseDuration());
+            player.ticksExisted++;
+            checks.draw(mc, "main-eating-offhand-idle");
+            checks.require(
+                using(HmiFirstPerson.INSTANCE) && !using(HmiFirstPerson.OFFHAND),
+                "only the main hand animates eating with identical food in both hands");
+            player.clearItemInUse();
+            var dye = new ItemStack(Items.dye, 1, 13);
+            checks.equip(mc, dye.copy());
+            setOffhand(mc, dye);
+            var previousHit = mc.objectMouseOver;
+            try {
+                mc.objectMouseOver = null;
+                checks.draw(mc, "offhand-dye-rest");
+                BackhandUtils.useOffhandItem(player, false, () -> player.swingItem());
+                checks.require(
+                    FirstPersonItemActions.OFFHAND.playing("attack")
+                        && !FirstPersonItemActions.INSTANCE.playing("attack"),
+                    "an accepted Backhand swing selects only the offhand JSON clip");
+                player.ticksExisted += 2;
+                checks.draw(mc, "offhand-dye-swing");
+                checks.require(
+                    FirstPersonItemActions.OFFHAND.grip(false)
+                        .m30() > .05f
+                        && Math.abs(
+                            FirstPersonItemActions.INSTANCE.grip(false)
+                                .m30())
+                            < .001f,
+                    "only the swinging offhand receives the bound arm track");
+                player.isSwingInProgress = false;
+                player.swingItem();
+                checks.require(
+                    FirstPersonItemActions.OFFHAND.playing("attack")
+                        && FirstPersonItemActions.INSTANCE.playing("attack"),
+                    "both hands can play the same clip independently");
+                setOffhand(mc, new ItemStack(Blocks.torch));
+                checks.draw(mc, "offhand-switched-during-main-swing");
+                checks.require(
+                    !FirstPersonItemActions.OFFHAND.playing("attack")
+                        && FirstPersonItemActions.INSTANCE.playing("attack"),
+                    "changing the offhand clears only its outgoing clip");
+            } finally {
+                mc.objectMouseOver = previousHit;
+            }
             setOffhand(mc, null);
             checks.draw(mc, "offhand-removed");
             checks.require(
@@ -101,6 +151,10 @@ final class AnimationOffhandChecks {
             checks
                 .require(FirstPersonAnimations.offhandOwnsLeftArm(.5f), "Backhand empty-hand preference owns left arm");
             BackhandConfigClient.RenderEmptyOffhandAtRest = false;
+            if (Boolean.getBoolean("gtnrlib.animation.qa.toolMods"))
+                Class.forName("com.xyp.gtnrlib.qa.AnimationWrenchChecks")
+                    .getMethod("verifyOffhandTools", AnimationClientChecks.class, Minecraft.class)
+                    .invoke(null, checks, mc);
             AnimationBlockUseChecks.verify(mc);
             checks.require(true, "offhand placement preserves main-hand action isolation");
         } finally {
@@ -114,7 +168,21 @@ final class AnimationOffhandChecks {
         }
     }
 
-    private static void setOffhand(Minecraft mc, ItemStack stack) {
+    private static boolean using(HmiFirstPerson hand) throws Exception {
+        // The fixture also runs against the development JAR with relocated LuaJ descriptors.
+        Object frame = hand.program()
+            .getClass()
+            .getField("frame")
+            .get(hand.program());
+        Object value = frame.getClass()
+            .getMethod("get", String.class)
+            .invoke(frame, "using");
+        return (boolean) value.getClass()
+            .getMethod("toboolean")
+            .invoke(value);
+    }
+
+    static void setOffhand(Minecraft mc, ItemStack stack) {
         BackhandUtils.setPlayerOffhandItem(mc.thePlayer, stack);
         for (int i = 0; i < 8; i++) BackhandUtils
             .useOffhandItem(mc.thePlayer, false, () -> BackhandRenderHelper.itemRenderer.updateEquippedItem());

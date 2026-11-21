@@ -81,9 +81,14 @@ public abstract class ItemRendererMixin implements FirstPersonAnimations.Equippe
         cancellable = true,
         require = 0)
     private void gtnrlib$hmi(float partial, CallbackInfo ci) {
-        if (!gtnrlib$mainHand()) return;
         float dip = 1 - (prevEquippedProgress + (equippedProgress - prevEquippedProgress) * partial);
-        if (HmiPoseRenderer.render((ItemRenderer) (Object) this, itemToRender, partial, dip)) {
+        var renderer = (ItemRenderer) (Object) this;
+        if (!gtnrlib$mainHand()) {
+            if (Loader.isModLoaded("backhand") && BackhandAnimationCompat.canAnimate(renderer, itemToRender)
+                && HmiPoseRenderer.renderOffhand(renderer, itemToRender, partial, dip)) ci.cancel();
+            return;
+        }
+        if (HmiPoseRenderer.render(renderer, itemToRender, partial, dip)) {
             if (Loader.isModLoaded("backhand")) BackhandAnimationCompat.render(partial);
             ci.cancel();
         }
