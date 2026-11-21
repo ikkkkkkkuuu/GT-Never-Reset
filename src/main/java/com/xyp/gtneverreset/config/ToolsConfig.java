@@ -30,4 +30,13 @@ public class ToolsConfig {
     @DefaultDouble(10.0)
     @RangeDouble(min = 1.0)
     public static double craftingDurabilityMultiplier = 10.0;
+
+    @Config.RequiresMcRestart
+    @Config.DefaultBoolean(false)
+    @Config.Comment("Register the multiblock projector. Enable on both the client and server before starting the game.")
+    // #tr gtneverreset.gui.config.general.tools.enableMultiblockProjector
+    // # Register multiblock projector
+    // # zh_CN 注册多方块投影仪
+    @Config.LangKey("gtneverreset.gui.config.general.tools.enableMultiblockProjector")
+    public static boolean enableMultiblockProjector = false;
 }

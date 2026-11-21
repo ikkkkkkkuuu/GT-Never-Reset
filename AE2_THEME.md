@@ -12,6 +12,13 @@ GTNRLib provides light, dark and purple-highlighted dark AE2 themes for ModularU
 | [GTNRListWidget](gtnrlib/src/main/java/com/xyp/gtnrlib/gui/widget/GTNRListWidget.java) | List layout, initial scroll position and persistent scroll-bar integration. |
 | [IPersistentScrollbar](gtnrlib/src/main/java/com/xyp/gtnrlib/gui/widget/IPersistentScrollbar.java) | Extension contract for scroll data that retains an inactive track. |
 | [NumberEntry](gtnrlib/src/main/java/com/xyp/gtnrlib/gui/widget/NumberEntry.java) | Bounded integer input, expression parsing, step buttons and validation feedback. |
+| [IconRowList](gtnrlib/src/main/java/com/xyp/gtnrlib/gui/widget/IconRowList.java) | Scrollable rows with icons, details, toggles, dropdowns and number entries. Use revealSelected() to scroll to the selection. |
+| [ListRow](gtnrlib/src/main/java/com/xyp/gtnrlib/gui/widget/ListRow.java) | Themed list row that can contain other widgets. |
+| [VerticalButtonBar](gtnrlib/src/main/java/com/xyp/gtnrlib/gui/widget/VerticalButtonBar.java) | Vertical icon toolbar with selection feedback. |
+| [ActionButton](gtnrlib/src/main/java/com/xyp/gtnrlib/gui/widget/ActionButton.java) | Text and icon buttons with enabled and selected states. |
+| [ValueStepper](gtnrlib/src/main/java/com/xyp/gtnrlib/gui/widget/ValueStepper.java) | Mouse and scroll-wheel cycling through discrete values. |
+| [CycleDropdown](gtnrlib/src/main/java/com/xyp/gtnrlib/gui/widget/CycleDropdown.java) | Cycles or opens a list of options with optional icons. |
+| [GhostItemSlot](gtnrlib/src/main/java/com/xyp/gtnrlib/gui/widget/GhostItemSlot.java) | Accepts dragged item stacks without transferring inventory items. |
 
 ## Theme Selection
 

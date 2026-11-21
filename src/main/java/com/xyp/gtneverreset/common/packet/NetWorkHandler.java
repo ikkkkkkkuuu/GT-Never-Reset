@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.config.ToolsConfig;
 import com.xyp.gtnrlib.network.GregTechToolUsePacket;
 import com.xyp.gtnrlib.network.PayloadHandler;
 import com.xyp.gtnrlib.network.ServerboundPacket;
@@ -141,6 +142,13 @@ public final class NetWorkHandler {
             Side.CLIENT);
         // Older servers send these two acknowledgements on the original host channel.
         nextPacketId = GregTechToolUsePacket.register(CHANNEL, nextPacketId);
+        if (ToolsConfig.enableMultiblockProjector) {
+            registerServerbound(OpenProjectorPacket.class);
+            registerServerbound(ProjectorPlanPacket.class);
+        } else {
+            // Reserve both IDs when the item is disabled so later packets keep their IDs.
+            nextPacketId += 2;
+        }
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);
