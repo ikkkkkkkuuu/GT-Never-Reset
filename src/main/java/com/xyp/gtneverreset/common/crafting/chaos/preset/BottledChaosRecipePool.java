@@ -64,6 +64,7 @@ public final class BottledChaosRecipePool {
         BottledChaosNanoExtractionPreset.registerRecipeChains(catalog);
         BottledChaosNaquadahPreset.registerRecipeChains(catalog);
         BottledChaosNaquadahFuelPreset.registerRecipeChains(catalog);
+        BottledChaosFuelRefiningPreset.registerRecipeChains(catalog);
         BottledChaosFusionPreset.registerRecipeChains(catalog);
         BottledChaosNetheritePreset.registerRecipeChains(catalog);
         BottledChaosIsaMillPreset.registerRecipeChains(catalog);

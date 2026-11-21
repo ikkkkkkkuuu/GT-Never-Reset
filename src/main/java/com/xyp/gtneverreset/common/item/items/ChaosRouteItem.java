@@ -320,6 +320,18 @@ public final class ChaosRouteItem extends ChaosMetaItem {
         // # Naquadria
         // # zh_CN 超能硅岩
 
+        // #tr gtnr.bottleinchaos.shared.route.rocket_fuel
+        // # Rocket Fuel
+        // # zh_CN 火箭燃料
+
+        // #tr gtnr.bottleinchaos.shared.route.naquadah_fuel_1
+        // # Naquadah Fuel I
+        // # zh_CN 硅岩燃料 I
+
+        // #tr gtnr.bottleinchaos.shared.route.naquadah_fuel_2
+        // # Naquadah Fuel II
+        // # zh_CN 硅岩燃料 II
+
         // #tr gtnr.bottleinchaos.shared.route.naquadah_fuel_preparation
         // # Naquadah Fuel Precursors
         // # zh_CN 硅岩燃料前置
