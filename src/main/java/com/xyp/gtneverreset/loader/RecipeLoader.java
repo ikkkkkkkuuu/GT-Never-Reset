@@ -9,8 +9,10 @@ import com.xyp.gtneverreset.common.recipe.gregtech.BlastFurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.ExtruderRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.DisassemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.LightningProcessorRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernNonCellRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.OreProcessingRecipes;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.SatelliteRockBreakingRecipes;
 import com.xyp.gtneverreset.compat.etfuturum.EtFuturumCompat;
 import com.xyp.gtneverreset.config.ChaosConfig;
 
@@ -51,6 +53,8 @@ public final class RecipeLoader implements IContentLoader {
     }
 
     public static void registerRecipes() {
+        SatelliteRockBreakingRecipes.register();
+        LightningProcessorRecipes.loadRecipes();
         CraftingTableRecipes.register();
         AssemblerRecipes.register();
         com.xyp.gtneverreset.common.recipe.gregtech.SpaceAssemblerRecipes.register();

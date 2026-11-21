@@ -10,6 +10,7 @@ import com.xyp.gtneverreset.common.block.blocks.BlockChaosCapacity;
 import com.xyp.gtneverreset.common.block.blocks.BlockChaosCasing;
 import com.xyp.gtneverreset.common.block.blocks.BlockEddingtonCasing;
 import com.xyp.gtneverreset.common.block.blocks.BlockFluxConnector;
+import com.xyp.gtneverreset.common.block.blocks.BlockLightHunterCasing;
 import com.xyp.gtneverreset.common.block.blocks.BlockOverloadedProvider;
 import com.xyp.gtneverreset.common.block.blocks.BlockPackagedProvider;
 import com.xyp.gtneverreset.common.block.blocks.BlockStockIOInterface;
@@ -46,6 +47,7 @@ public final class BlockLoader {
 
     public static void registerBlocks() {
         BlockIcons.registerIcons();
+        BlockLightHunterCasing.register();
         eddingtonWallCasing = new BlockEddingtonCasing();
         GameRegistry.registerBlock(eddingtonWallCasing, BlockEddingtonCasing.REGISTRY_NAME);
         GTNRItemList.EddingtonWallCasing.set(new ItemStack(eddingtonWallCasing));

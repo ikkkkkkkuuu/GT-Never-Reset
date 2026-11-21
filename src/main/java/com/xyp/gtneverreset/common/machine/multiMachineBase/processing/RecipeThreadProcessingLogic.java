@@ -18,7 +18,6 @@ import gregtech.api.util.ParallelHelper;
 public class RecipeThreadProcessingLogic extends ProcessingLogic {
 
     private boolean preparing;
-    private boolean suppressOverclock;
     private long availablePower = Long.MAX_VALUE;
     private final Map<ItemStack, ItemStack> itemCopies = new IdentityHashMap<>();
     private final Map<FluidStack, FluidStack> fluidCopies = new IdentityHashMap<>();
@@ -64,19 +63,6 @@ public class RecipeThreadProcessingLogic extends ProcessingLogic {
     /** Builds the same calculator as real processing, without searching for or consuming a recipe. */
     public final OverclockCalculator createTooltipOverclockCalculator(@Nonnull GTRecipe recipe) {
         return createOverclockCalculator(recipe);
-    }
-
-    /** Keeps a one-craft start at its base EU/t so it leaves power for the other recipe types. */
-    public final void setSuppressOverclock(boolean suppress) {
-        suppressOverclock = suppress;
-    }
-
-    @Override
-    @Nonnull
-    protected OverclockCalculator createOverclockCalculator(@Nonnull GTRecipe recipe) {
-        OverclockCalculator calculator = super.createOverclockCalculator(recipe);
-        if (suppressOverclock) calculator.setMaxOverclocks(0);
-        return calculator;
     }
 
     @Override

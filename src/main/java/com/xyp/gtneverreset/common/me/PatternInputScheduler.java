@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.common.me;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -23,7 +24,9 @@ public final class PatternInputScheduler {
 
     private int cursor;
     private List<Entry> passEntries;
+    private final ArrayDeque<Integer> candidates = new ArrayDeque<>();
     private int selectedIndex = -1;
+    private boolean startedInPass;
 
     private record Entry(IDualInputInventory inventory, ItemStack[] shared) {
 
@@ -50,45 +53,36 @@ public final class PatternInputScheduler {
     /** Builds the snapshot reused by every start in one fill pass. */
     public void beginPass(List<IDualInputHatch> hatches) {
         passEntries = entries(hatches);
-        selectedIndex = -1;
+        int count = passEntries.size();
+        for (int i = 0; i < count; i++) candidates.addLast((cursor + i) % count);
+        startedInPass = false;
     }
 
     public void endPass() {
         passEntries = null;
         selectedIndex = -1;
+        candidates.clear();
     }
 
-    public int entryCount() {
-        return passEntries == null ? 0 : passEntries.size();
+    public boolean inPass() {
+        return passEntries != null;
     }
 
-    /** Iterates the snapshot from the persistent cursor so repeated passes still rotate recipe types. */
-    public int[] passOrder() {
-        int size = entryCount();
-        int[] order = new int[size];
-        for (int i = 0; i < size; i++) order[i] = (cursor + i) % size;
-        return order;
+    public boolean selectNext() {
+        Integer next = candidates.pollFirst();
+        selectedIndex = next == null ? -1 : next;
+        return next != null;
     }
 
-    public boolean isStocked(int index) {
-        return passEntries != null && index >= 0
-            && index < passEntries.size()
-            && !passEntries.get(index)
+    public void finishSelection(boolean started) {
+        if (started || !startedInPass) cursor = (selectedIndex + 1) % passEntries.size();
+        if (started) {
+            startedInPass = true;
+            if (!passEntries.get(selectedIndex)
                 .inventory()
-                .isEmpty();
-    }
-
-    public void select(int index) {
-        selectedIndex = index;
-    }
-
-    public void clearSelection() {
+                .isEmpty()) candidates.addLast(selectedIndex);
+        }
         selectedIndex = -1;
-    }
-
-    /** Moves the next pass to the following pattern when a bounded pass could not start any thread. */
-    public void advanceCursor() {
-        if (passEntries != null && !passEntries.isEmpty()) cursor = (cursor + 1) % passEntries.size();
     }
 
     public boolean hasSelection() {
@@ -100,13 +94,11 @@ public final class PatternInputScheduler {
         Entry entry = passEntries.get(selectedIndex);
         if (entry.inventory()
             .isEmpty()) return CheckRecipeResultRegistry.NO_RECIPE;
-        CheckRecipeResult found = processEntry(entry, logic);
-        if (found.wasSuccessful()) cursor = (selectedIndex + 1) % passEntries.size();
-        return found;
+        return processEntry(entry, logic);
     }
 
     public CheckRecipeResult checkNext(List<IDualInputHatch> hatches, RecipeThreadProcessingLogic logic) {
-        List<Entry> entries = passEntries != null ? passEntries : entries(hatches);
+        List<Entry> entries = entries(hatches);
         CheckRecipeResult result = CheckRecipeResultRegistry.NO_RECIPE;
         for (int i = 0; i < entries.size(); i++) {
             int index = (cursor + i) % entries.size();
