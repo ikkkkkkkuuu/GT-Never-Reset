@@ -74,6 +74,7 @@ public final class AssemblerRecipes {
         registerModuleHatchRecipes();
         registerLargeFurnaceRecipes();
         registerUniversalJointFactoryRecipe();
+        registerHadronCatalyticRefineryRecipe();
         if (ModList.Forestry.isModLoaded()) registerLargeBeeBreederRecipes();
         if (ModList.CropsNH.isModLoaded()) registerLargeCropBreederRecipes();
         registerFluxConnectorRecipes();
@@ -493,6 +494,25 @@ public final class AssemblerRecipes {
             .itemOutputs(GTNRItemList.UniversalJointFactory.get(1))
             .duration(30 * SECONDS)
             .eut(RECIPE_LV)
+            .addTo(assemblerRecipes);
+    }
+
+    private static void registerHadronCatalyticRefineryRecipe() {
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                ItemList.Machine_IV_Mixer.get(4),
+                ItemList.Machine_IV_Autoclave.get(4),
+                ItemList.Machine_IV_Extractor.get(4),
+                ItemList.Machine_IV_Distillery.get(4),
+                ItemList.Machine_IV_FluidHeater.get(4),
+                ItemList.Robot_Arm_IV.get(8),
+                ItemList.Field_Generator_IV.get(4),
+                new Object[] { OrePrefixes.circuit.get(Materials.IV), 16 },
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.TungstenSteel, 8))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(2304))
+            .itemOutputs(GTNRItemList.HadronCatalyticRefinery.get(1))
+            .duration(60 * SECONDS)
+            .eut(TierEU.RECIPE_IV)
             .addTo(assemblerRecipes);
     }
 

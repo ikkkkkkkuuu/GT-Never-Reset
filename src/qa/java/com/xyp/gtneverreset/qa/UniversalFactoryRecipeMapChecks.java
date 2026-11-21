@@ -3,30 +3,39 @@ package com.xyp.gtneverreset.qa;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ScreenShotHelper;
+import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
+import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.cleanroommc.modularui.screen.GuiContainerWrapper;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeProcessingLogic;
+import com.xyp.gtneverreset.common.machine.multiblock.HadronCatalyticRefinery;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
-import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactoryProcessingLogic;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 
 import appeng.api.AEApi;
+import appeng.container.ContainerNull;
+import appeng.util.inv.MEInventoryCrafting;
 import appeng.util.item.AEFluidStack;
 import appeng.util.item.AEItemStack;
 import codechicken.nei.recipe.GuiCraftingRecipe;
@@ -45,6 +54,7 @@ import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.recipe.check.SingleRecipeCheck;
 import gregtech.api.util.GTModHandler;
 import gregtech.api.util.GTRecipe;
+import gregtech.api.util.GTRecipeBuilder;
 
 @Mod(
     modid = "universalfactoryrecipemapqa",
@@ -57,8 +67,10 @@ public final class UniversalFactoryRecipeMapChecks {
     private boolean launched, checked, opened, finished;
     private volatile boolean ready;
     private volatile Throwable failure;
-    private int ticks, frames, serverTicks, neiStage;
-    private BaseMetaTileEntity tile;
+    private int ticks, frames, serverTicks;
+    private volatile int neiStage;
+    private BaseMetaTileEntity tile, refineryTile, refineryEnergy;
+    private boolean refineryAdvanced, refineryFinished;
     private UniversalJointFactory factory;
 
     @Mod.EventHandler
@@ -87,6 +99,7 @@ public final class UniversalFactoryRecipeMapChecks {
                 factory.fixAllIssues();
                 var hatch = (CrossRecipeMEPatternBuffer) place(world, 1, GTNRMachineID.CrossRecipeMEPatternBuffer.id)
                     .getMetaTileEntity();
+                verifyRefinery(world, player);
                 verifyIndustrialRecipes(factory, hatch);
                 verifyCutting(factory, hatch);
                 factory.setMachineMode(3);
@@ -95,6 +108,41 @@ public final class UniversalFactoryRecipeMapChecks {
                 player.sendPlayerAbilities();
                 player.playerNetServerHandler.setPlayerLocation(0.5, 80, -3, 0, 0);
                 ready = true;
+            }
+            if (ready && !refineryFinished) {
+                refineryEnergy.increaseStoredEnergyUnits(8192, true);
+                var refinery = (HadronCatalyticRefinery) refineryTile.getMetaTileEntity();
+                if (!refineryAdvanced && refinery.getRunningRecipeThreads() == 32
+                    && refinery.getRecipeThreadTasks()
+                        .stream()
+                        .allMatch(task -> task.getProgress() > 0)) {
+                    require(
+                        refinery.getRecipeMap() == RecipeMaps.autoclaveRecipes,
+                        "32 powered jobs advanced together while the selected mode remained autoclave");
+                    refineryAdvanced = true;
+                }
+                if (refineryAdvanced && refinery.getRecipeThreadTasks()
+                    .isEmpty()) {
+                    var products = refinery.mOutputHatches.stream()
+                        .map(hatch -> hatch.getFluid())
+                        .filter(java.util.Objects::nonNull)
+                        .toList();
+                    require(
+                        products.stream()
+                            .anyMatch(Materials.Hydrogen.getGas(16)::isFluidStackIdentical)
+                            && products.stream()
+                                .anyMatch(Materials.Oxygen.getGas(17)::isFluidStackIdentical),
+                        "all 33 orders finish and deliver exact fluid amounts to the output hatches");
+                    refineryFinished = true;
+                }
+            }
+            if (neiStage == 4 && refineryFinished) {
+                player.closeScreen();
+                player.playerNetServerHandler.setPlayerLocation(32.5, 80, -3, 0, 0);
+                require(
+                    ((HadronCatalyticRefinery) refineryTile.getMetaTileEntity()).onRightclick(refineryTile, player),
+                    "refinery GUI opened");
+                neiStage = 5;
             }
             if (ready && !opened && ++serverTicks >= 60) {
                 require(factory.onRightclick(tile, player), "factory GUI opened after regression checks");
@@ -111,7 +159,10 @@ public final class UniversalFactoryRecipeMapChecks {
         Minecraft mc = Minecraft.getMinecraft();
         try {
             mc.gameSettings.pauseOnLostFocus = false;
-            if (!launched && mc.currentScreen instanceof GuiMainMenu) {
+            if (!launched && mc.currentScreen != null
+                && (mc.currentScreen instanceof GuiMainMenu || mc.currentScreen.getClass()
+                    .getName()
+                    .equals("galaxyspace.core.gui.GSGuiMainMenu"))) {
                 launched = true;
                 mc.launchIntegratedServer(
                     "factory-recipe-map-" + System.currentTimeMillis(),
@@ -129,8 +180,8 @@ public final class UniversalFactoryRecipeMapChecks {
     public void render(TickEvent.RenderTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !ready || finished) return;
         Minecraft mc = Minecraft.getMinecraft();
-        if (!(mc.currentScreen instanceof GuiContainerWrapper || mc.currentScreen instanceof GuiCraftingRecipe)
-            || ++frames < 40) return;
+        if (!(mc.currentScreen instanceof GuiContainerWrapper || mc.currentScreen instanceof GuiCraftingRecipe
+            || mc.currentScreen instanceof RecipeMapTooltipScreen) || ++frames < 40) return;
         try {
             frames = 0;
             if (neiStage == 0) {
@@ -139,6 +190,39 @@ public final class UniversalFactoryRecipeMapChecks {
                     GuiCraftingRecipe.openRecipeGui(RecipeMaps.mixerNonCellRecipes.unlocalizedName),
                     "industrial mixer NEI page opened");
                 neiStage = 1;
+                return;
+            }
+            if (neiStage == 4) return;
+            if (neiStage == 5) {
+                if (!(mc.currentScreen instanceof GuiContainerWrapper)) return;
+                ScreenShotHelper.saveScreenshot(
+                    new File("."),
+                    "hadron-refinery.png",
+                    mc.displayWidth,
+                    mc.displayHeight,
+                    mc.getFramebuffer());
+                mc.displayGuiScreen(
+                    new RecipeMapTooltipScreen(
+                        checkedTooltip(GTNRItemList.UniversalJointFactory, factory.getAvailableRecipeMaps())));
+                neiStage = 6;
+                return;
+            }
+            if (neiStage == 6 || neiStage == 7) {
+                ScreenShotHelper.saveScreenshot(
+                    new File("."),
+                    neiStage == 6 ? "factory-recipe-maps.png" : "refinery-recipe-maps.png",
+                    mc.displayWidth,
+                    mc.displayHeight,
+                    mc.getFramebuffer());
+                if (neiStage == 6) {
+                    var refinery = (HadronCatalyticRefinery) refineryTile.getMetaTileEntity();
+                    mc.displayGuiScreen(
+                        new RecipeMapTooltipScreen(
+                            checkedTooltip(GTNRItemList.HadronCatalyticRefinery, refinery.getAvailableRecipeMaps())));
+                    neiStage = 7;
+                } else {
+                    finish(null);
+                }
                 return;
             }
             ScreenShotHelper.saveScreenshot(
@@ -162,10 +246,149 @@ public final class UniversalFactoryRecipeMapChecks {
                 neiStage = 3;
                 return;
             }
-            finish(null);
+            neiStage = 4;
         } catch (Throwable error) {
             finish(error);
         }
+    }
+
+    private List<String> checkedTooltip(GTNRItemList item, List<RecipeMap<?>> maps) {
+        List<String> tooltip = item.get(1)
+            .getTooltip(Minecraft.getMinecraft().thePlayer, false);
+        var plain = tooltip.stream()
+            .map(EnumChatFormatting::getTextWithoutFormattingCodes)
+            .toList();
+        int header = plain.indexOf(StatCollector.translateToLocal("gtnr.machine.tooltip.recipe_maps"));
+        require(header >= 0, item + " shows recipe map heading in ordinary item tooltip");
+        List<String> names = maps.stream()
+            .map(map -> StatCollector.translateToLocal(map.unlocalizedName))
+            .toList();
+        List<String> shown = new ArrayList<>();
+        for (int i = header + 1; i < plain.size() && shown.size() < names.size(); i++) {
+            shown.addAll(
+                Arrays.asList(
+                    plain.get(i)
+                        .split(" / ")));
+        }
+        require(shown.equals(names), item + " lists all " + names.size() + " maps in mode order");
+        return tooltip;
+    }
+
+    private static final class RecipeMapTooltipScreen extends GuiScreen {
+
+        private final List<String> lines;
+
+        private RecipeMapTooltipScreen(List<String> lines) {
+            this.lines = lines;
+        }
+
+        @Override
+        public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+            drawDefaultBackground();
+            drawHoveringText(lines, 20, 20, fontRendererObj);
+        }
+    }
+
+    private void verifyRefinery(World world, EntityPlayerMP player) {
+        final int x = 32;
+        refineryTile = place(world, x, GTNRMachineID.HadronCatalyticRefinery.id);
+        refineryTile.setFrontFacing(ForgeDirection.NORTH);
+        refineryTile.setOwnerName(player.getCommandSenderName());
+        refineryTile.setOwnerUuid(player.getUniqueID());
+        refineryTile.disableWorking();
+        var refinery = (HadronCatalyticRefinery) refineryTile.getMetaTileEntity();
+        refinery.fixAllIssues();
+        refinery.construct(new ItemStack(net.minecraft.init.Items.stick), false);
+        refineryEnergy = place(
+            world,
+            x - 3,
+            ItemList.Hatch_Energy_MV.get(1)
+                .getItemDamage());
+        place(
+            world,
+            x - 2,
+            ItemList.Hatch_Input_Bus_LV.get(1)
+                .getItemDamage());
+        place(
+            world,
+            x - 1,
+            ItemList.Hatch_Output_LV.get(1)
+                .getItemDamage());
+        place(
+            world,
+            x + 1,
+            ItemList.Hatch_Maintenance.get(1)
+                .getItemDamage());
+        place(
+            world,
+            x + 3,
+            ItemList.Hatch_Output_LV.get(1)
+                .getItemDamage());
+        var hatch = (CrossRecipeMEPatternBuffer) place(world, x + 2, GTNRMachineID.CrossRecipeMEPatternBuffer.id)
+            .getMetaTileEntity();
+        require(refinery.checkStructure(true, refineryTile), "refinery forms with its cross-recipe pattern buffer");
+        require(
+            refinery.getSpeedMultiplier() == 3 && refinery.getEUtMultiplier() == 0.85
+                && refinery.getTotalRecipeThreads() == 32,
+            "refinery base speed, EU/t and threads");
+        require(
+            RecipeMaps.assemblerRecipes.getAllRecipes()
+                .stream()
+                .anyMatch(
+                    recipe -> recipe.mOutputs.length == 1 && recipe.mInputs.length == 9
+                        && recipe.mEUt == gregtech.api.enums.TierEU.RECIPE_IV
+                        && recipe.mDuration == 1200
+                        && GTNRItemList.HadronCatalyticRefinery.isStackEqual(recipe.mOutputs[0])),
+            "IV controller is craftable");
+        var maps = new RecipeMap<?>[] { RecipeMaps.mixerNonCellRecipes, RecipeMaps.distillationTowerRecipes };
+        var outputs = new FluidStack[] { Materials.Hydrogen.getGas(1), Materials.Oxygen.getGas(1) };
+        for (int i = 0; i < maps.length; i++) {
+            GTRecipe recipe = GTRecipeBuilder.builder()
+                .fluidInputs(Materials.Argon.getGas(37))
+                .fluidOutputs(outputs[i])
+                .duration(300)
+                .eut(8)
+                .addTo(maps[i])
+                .iterator()
+                .next();
+            hatch.onPatternChange(i, pattern(recipe, maps[i].unlocalizedName));
+        }
+        var slots = hatch.inventories();
+        for (int i = 0; i < maps.length; i++) {
+            var delivery = new MEInventoryCrafting(new ContainerNull(), 1, 1);
+            delivery.setInventorySlotContents(0, AEFluidStack.create(Materials.Argon.getGas(37 * (i == 0 ? 16 : 17))));
+            require(
+                slots.next()
+                    .insertItemsAndFluids(delivery),
+                "refinery accepts fluid order " + i);
+        }
+        refinery.setMachineMode(
+            refinery.getAvailableRecipeMaps()
+                .indexOf(RecipeMaps.autoclaveRecipes));
+        for (int i = 0; i < 32; i++) require(
+            refinery.checkProcessing()
+                .wasSuccessful(),
+            "refinery starts thread " + i);
+        require(
+            !refinery.checkProcessing()
+                .wasSuccessful(),
+            "refinery holds 33rd job at thread limit");
+        var fluids = new ArrayList<FluidStack>();
+        refinery.getRecipeThreadTasks()
+            .forEach(
+                task -> task.getOutputs()
+                    .appendDisplayFluids(fluids));
+        for (FluidStack output : outputs) require(
+            fluids.stream()
+                .filter(output::isFluidEqual)
+                .count() == 16,
+            "16 simultaneous jobs for " + output.getLocalizedName());
+        require(
+            refinery.getRecipeThreadTasks()
+                .size() == 32 && refinery.getRecipeMap() == RecipeMaps.autoclaveRecipes,
+            "concurrent mixer and distillation orders preserve the selected autoclave mode");
+        refineryEnergy.increaseStoredEnergyUnits(8192, true);
+        refineryTile.enableWorking();
     }
 
     private static RecipeMap<?>[][] industrialMaps() {
@@ -201,7 +424,7 @@ public final class UniversalFactoryRecipeMapChecks {
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("native recipe missing: " + name));
             factory.setMachineMode(18);
-            UniversalJointFactoryProcessingLogic logic = new UniversalJointFactoryProcessingLogic(factory);
+            CrossRecipeProcessingLogic logic = new CrossRecipeProcessingLogic(factory);
             logic.setMachine(factory)
                 .setRecipeMapSupplier(factory::getRecipeMap)
                 .setAvailableVoltage(Math.max(32, recipe.mEUt))
@@ -315,7 +538,7 @@ public final class UniversalFactoryRecipeMapChecks {
     private void verifyCuttingRecipe(UniversalJointFactory factory, CrossRecipeMEPatternBuffer hatch, GTRecipe recipe) {
         hatch.onPatternChange(0, pattern(recipe, RecipeMaps.cutterFakeRecipes.unlocalizedName));
         require(
-            !new UniversalJointFactoryProcessingLogic(factory).tryCachePossibleRecipesFromPattern(
+            !new CrossRecipeProcessingLogic(factory).tryCachePossibleRecipesFromPattern(
                 hatch.inventories()
                     .next()),
             "old display-map cutting pattern requires re-encoding");
@@ -323,7 +546,7 @@ public final class UniversalFactoryRecipeMapChecks {
             boolean usePattern = map != null;
             factory.setMachineMode(usePattern ? 18 : 3);
             factory.setSingleRecipeCheck(null);
-            UniversalJointFactoryProcessingLogic logic = new UniversalJointFactoryProcessingLogic(factory);
+            CrossRecipeProcessingLogic logic = new CrossRecipeProcessingLogic(factory);
             logic.setMachine(factory)
                 .setRecipeMapSupplier(factory::getRecipeMap)
                 .setAvailableVoltage(32)

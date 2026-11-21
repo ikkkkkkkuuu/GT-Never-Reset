@@ -8,6 +8,7 @@ import net.minecraft.util.StatCollector;
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
 import com.xyp.gtneverreset.common.machine.multiblock.BottleInChaos;
+import com.xyp.gtneverreset.common.machine.multiblock.HadronCatalyticRefinery;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeBeeBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeCropBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeFurnace;
@@ -76,6 +77,15 @@ public final class MultiblockLoader {
                 "gtneverreset.universal_joint_factory",
                 StatCollector.translateToLocal("gtnr.machine.universal_joint_factory.name")));
         AnimatedTooltipHandler.addItemTooltip(GTNRItemList.UniversalJointFactory.get(1), AnimatedText.GT_NEVER_RESET);
+        // #tr gtnr.machine.hadron_catalytic_refinery.name
+        // # Hadron Catalytic Refinery
+        // # zh_CN 强子流态催化精炼塔
+        GTNRItemList.HadronCatalyticRefinery.set(
+            new HadronCatalyticRefinery(
+                GTNRMachineID.HadronCatalyticRefinery.id,
+                "gtneverreset.hadron_catalytic_refinery",
+                StatCollector.translateToLocal("gtnr.machine.hadron_catalytic_refinery.name")));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.HadronCatalyticRefinery.get(1), AnimatedText.GT_NEVER_RESET);
         // #tr gtnr.machine.quantum_computer.name
         // # Quantum Computer
         // # zh_CN 量子计算机

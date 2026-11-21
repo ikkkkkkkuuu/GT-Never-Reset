@@ -141,9 +141,14 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
 
     protected final void checkHatchMin(List<StructureError> errors,
         IHatchElement<? super GTNRMultiBlockBase<T>> element, int min) {
-        if (StructureTooltipHooks.onCheckHatches(this, min, StructureTooltipHooks.UNLIMITED, element)) return;
+        checkHatchRange(errors, element, min, StructureTooltipHooks.UNLIMITED);
+    }
+
+    protected final void checkHatchRange(List<StructureError> errors,
+        IHatchElement<? super GTNRMultiBlockBase<T>> element, int min, int max) {
+        if (StructureTooltipHooks.onCheckHatches(this, min, max, element)) return;
         int count = Math.toIntExact(element.count(this));
-        if (count >= min) return;
+        if (count >= min && count <= max) return;
         List<String> keys = element.getDescriptionLangKeys();
         TranslatableText name = TranslatableText.lang(keys.get(0));
         for (int i = 1; i < keys.size(); i++) {
@@ -152,7 +157,12 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             // # zh_CN %s或%s
             name = TranslatableText.lang("gtnr.structure.hatch.alternative", name, TranslatableText.lang(keys.get(i)));
         }
-        errors.add(StructureErrors.hatchCount(ErrorType.TOO_FEW, name, count, min));
+        errors.add(
+            StructureErrors.hatchCount(
+                count < min ? ErrorType.TOO_FEW : ErrorType.TOO_MANY,
+                name,
+                count,
+                count < min ? min : max));
     }
 
     @Override
