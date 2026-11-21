@@ -6,9 +6,11 @@
 
 从 Mods → GTNRLib → Config 关闭“第一人称手臂动画”，立即恢复原版手臂和持物表现，无需重启或重载资源。对应 `config/GTNeverReset/GTNRLib/gtnrlib.cfg` 的 `client.enableFirstPersonAnimations`，默认为 `true`，只影响本机。它同时控制内置动作、导入的动画包和物品动作绑定；重新开启后继续使用已加载的动画资源。原有 `builtInFirstPerson` 仅决定资源重载时是否加载内置动作。
 
-空手出拳、剑的地面连击和空中挥砍、镐和其他采掘工具、双手拉弓与松弦、进食、饮用和换物都使用同一个播放器。它分别求主手、物品和辅助手的姿势，再按当前握点合成呼吸、步态、转头滞后和垂直惯性。起跳后仍能挥剑、挖掘或拉弓，收招时回到角色当时的移动姿势。同一帧重复绘制不会重复推进运动。辅助手可参与持弓及双手工具动作，动画物品使用 1.7.10 的主手槽。
+空手出拳、剑的地面连击和空中挥砍、镐和其他采掘工具、双手拉弓与松弦、进食、饮用和换物都使用同一个播放器。它分别求主手、物品和辅助手的姿势，再按当前握点合成呼吸、步态、转头滞后和垂直惯性。起跳后仍能挥剑、挖掘或拉弓，收招时回到角色当时的移动姿势。同一帧重复绘制不会重复推进运动。辅助手可参与持弓及双手工具动作，默认持物来自 1.7.10 的主手槽。
 
-安装 Backhand 时，保留主手动画并绘制其副手物品。副手使用 Backhand 原有的挥动、使用与换物动作，不套用主手的动画状态；副手占用左臂时隐藏动画的辅助手，地图仍遵守 Backhand 的双手占用规则。双手持有同种物品时，副手使用也不会触发主手的进食、拉弓或自定义使用动作。Backhand 是可选依赖，无需安装即可使用默认动画。
+安装 Backhand 后，左手使用独立的第一人称播放器。副手的握持、移动、挥动、进食、拉弓和换物由副手槽及其使用状态驱动。同一份物品 JSON 绑定可分别在两手播放；在副手播放时，主握手轨道随画面镜像到左臂。例如双手都拿苹果时，哪只手进食，哪只手抬起。副手空闲时遵循 Backhand 的空手显示设置。副手占用左臂时，主手动作让出辅助手。
+
+GT 手动扳手和螺丝刀支持左手握姿，服务端操作确认按使用的槽位播放。双手地图、神秘测量计、需要同时控制两臂的专用模型，以及使用原生专用绘制的物品继续走 Backhand 的渲染入口。未安装 Backhand 时可独立使用主手动画。
 
 - 匠魂弩用右手稳住弩托，左手钩住弦中央，向后拉到卡榫。弦的两端固定在弩臂上，中央随手拉成 V 形，松手取箭时仍扣在卡榫上。左手随后从左下方举箭，快速对槽压入。弦保留当前材质，箭头、箭杆和箭羽来自实际选中的弹药。总装填时间由这把弩决定。射出时弦弹回，双手短促后坐，有弹药就开始下一轮装填。潜行右键可取消装填或卸下弩箭。
 - 普通 GT 手动扳手在服务端确认右键操作成功后向准星探出。扳口就位后，手带着扳柄绕扳口转过约 55°，再略微抽开、回到握持位置。单次动作长 0.45 秒，连续成功操作会衔接下一次拧动。
@@ -65,6 +67,10 @@ HMI 5.1.1 在第一人称画面中按 `thirdperson_righthand` 提交物品。0.1
 `damage` 省略时匹配该注册名的全部元数据。精确元数据优先，然后查同物品的通配绑定。一次只替换所选触发行为，未绑定的行为继续使用默认姿势。可用触发有 `attack`（点击空气或攻击实体）、`mining`（对准方块挥动）、`place`（ItemBlock 成功放置）、`interact`（右键交互产生挥动）、`use`（物品开始持续使用）。`use` 支持持续片段，松开时淡出。已有的模组专用触发同样可写进 JSON，例如 `gtneverreset:wrench_turn`、`gtneverreset:wire_cutter_snip`。全新的业务事件需由其提供者发出一次 `FirstPersonItemActions.INSTANCE.trigger("域:事件")`。
 
 `wrist` 同时带动主手和物品；`right_arm`、`left_arm`、`item` 可分别添加局部变换。位移使用游戏单位，角度使用度，时间使用秒。切换堆栈或卸载世界时清理播放状态。库内的 [扳手绑定](src/main/resources/assets/gtneverreset/animations/first_person.json) 和 [拧腕曲线](src/main/resources/assets/gtneverreset/animations/wrench_turn.json) 是实际发行的例子。剪线钳的双柄、铰点与握点由库内的 GT 模型提供，其前伸和开合幅度在 [剪线钳曲线](src/main/resources/assets/gtneverreset/animations/wire_cutter.json) 内调整。这三份 JSON 随 GTNRLib 发行，保留原来的 `assets/gtneverreset/animations/` 路径和动作 ID，以便旧资源包继续覆盖。新的内置动作在 `gtnrlib/src/main/resources/assets/gtnrlib/animations/` 维护。
+
+连续触发物品动作时，播放器在同一层内交叉淡化。两个片段都写入的通道直接在两种姿势间过渡，只有一方写入的通道会与当前底层姿势混合。绑定中可添加 `"rotationBlend": "shortest"`，让旋转按最短弧过渡。例如绕 Z 轴从 +179° 到 −179° 时只转 2°。省略该字段或填写 `"euler"` 时，继续按欧拉角分量混合。片段内部的关键帧插值仍由轨道决定，支持作者编排的整圈转动。
+
+物品绑定可用 `"transition": "match_velocity"` 指定打断方式。首次触发仍按 `fadeIn` 起手；打断正在播放的动作时，手腕从当时的位置沿原方向继续移动，再接入新片段。衔接时间取 `fadeIn` 与 0.08 秒中的较大值。省略该字段或使用 `"cross_fade"` 时沿用原有交叉淡化。该设置可与 `"rotationBlend": "shortest"` 同时使用。
 
 绑定可用 `fadeIn` 和 `fadeOut` 指定进入和收回所需的秒数。法杖的 `use` 片段循环播放，按下时用 0.25 秒进入引导姿势，松开时用 0.28 秒从当时的姿势收回。
 
@@ -199,6 +205,10 @@ if (library.reload(logger::warn)) {
 }
 ```
 
+Java 调用方切换同一覆盖层时，可以用 `playback = player.crossFade(playback, nextClip, 0.1, AnimationPlayer.RotationBlend.SLERP_ZYX)`。传入当前播放器的活动覆盖层，返回的新句柄沿用原优先级和通道掩码。`AnimationRig` 使用 ZYX 顺序，第一人称物品局部矩阵使用 XYZ 顺序，按实际渲染顺序选择 `SLERP_ZYX` 或 `SLERP_XYZ`。`EULER` 保留逐分量混合。
+
+需要保留打断时速度的覆盖层可调用 `player.transition(playback, nextClip, seconds, rotation, AnimationPlayer.Transition.MATCH_VELOCITY)` 并保存返回的句柄。使用状态机时，在目标 `AnimationStates.State` 的第四个构造参数传入 `MATCH_VELOCITY` 即可；三参数构造仍使用交叉淡化。引擎在该层位置采样当前姿势及 1 毫秒后的姿势以估计速度，衔接时间使用现实秒。上层继续独立叠加，新片段从起点正常推进并派发标记。时长为零时立即切换。连续放置与空手连击共用这个入口。
+
 `NativeAnimationResource` 位于 `com.xyp.gtnrlib.animation.resource`。原生 v1 资源的最小示例：
 
 ```json
@@ -255,7 +265,7 @@ if (library.reload(logger::warn)) {
 
 默认动作结果及截图写入库 build 的 `animation-qa/{library-defaults,library-mods-defaults,host-defaults}`，每次启动从空资源包目录直接进入独立世界。附加的旧示例／可选原包测试使用另外的实例。开发者可给 `:gtnrlib:checkLibraryContracts` 传入 `-PhmiRelease=<原包绝对路径>` 运行逐帧对照。要重新生成内置数值资源，使用同一参数和 `-I gtnrlib/scripts/animation-qa.init.gradle :gtnrlib:captureDefaultPoses`，输出在库 build 的 `animation-qa/default-poses.gz`。
 
-副手专项夹具 `-PanimationQaOffhand` 检查动画开关、副手单次绘制、主手状态隔离、地图、进食、空手显示配置和放置方块，输出到 `animation-qa/library-defaults-backhand`。省略 `-PanimationQaBackhand` 验证不安装该模组时的启动和动画；追加 `-PanimationQaAngelica` 可在独立实例中同时加载 Angelica，结果目录追加 `-angelica`。这些检查不启用第三方光影包。
+副手专项夹具 `-PanimationQaOffhand` 检查动画开关、副手单次绘制、同物品双手独立挥动、双向进食隔离、切换副手、地图、空手显示配置和放置方块，输出到 `animation-qa/library-defaults-backhand`。省略 `-PanimationQaBackhand` 验证不安装该模组时的启动和动画；追加 `-PanimationQaAngelica` 可在独立实例中同时加载 Angelica，结果目录追加 `-angelica`。这些检查不启用第三方光影包。
 
 Windows 客户端夹具在库 run 目录内启动独立静音实例，守护脚本隐藏窗口并设置点击穿透。它通过集成服务器和游戏帧缓冲操作，结果与 PNG 写入库 build 目录的 `animation-qa/{library,host}`。其中 `screenshots/world-grip.png` 和 `world-empty.png` 来自正常游戏帧。隔离绘制使用陆地上的 70° 手部投影，并临时在测试皮肤的腕部与袖口加上不同颜色的标记。夹具分别检查单手和双手姿势，要求两处标记可见且按对应方向分开，并核对禁用后的持剑、空手画面与原版逐像素一致。
 

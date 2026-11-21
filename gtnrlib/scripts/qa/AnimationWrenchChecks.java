@@ -20,6 +20,7 @@ import org.joml.Vector3f;
 import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.compat.gregtech.GregTechWrenchAnimation;
+import com.xyp.gtnrlib.network.GregTechToolUsePacket;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -33,6 +34,8 @@ import gregtech.api.metatileentity.implementations.MTECable;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.common.items.IDMetaTool01;
 import gregtech.common.items.MetaGeneratedTool01;
+import io.netty.buffer.Unpooled;
+import xonin.backhand.api.core.BackhandUtils;
 
 /** Host-only integrated-server checks. The normal GT interaction manager delivers the acknowledgement. */
 public final class AnimationWrenchChecks implements Runnable {
@@ -57,6 +60,35 @@ public final class AnimationWrenchChecks implements Runnable {
 
     private static ItemStack wrench(Materials material) {
         return MetaGeneratedTool01.INSTANCE.getToolWithStats(IDMetaTool01.WRENCH.ID, 1, material, Materials.Wood, null);
+    }
+
+    public static void verifyOffhandTools(AnimationClientChecks qa, Minecraft mc) throws Exception {
+        var player = mc.thePlayer;
+        for (boolean screwdriver : new boolean[] { false, true }) {
+            var tool = screwdriver ? AnimationToolChecks.screwdriver() : wrench(Materials.Steel);
+            qa.equip(mc, tool.copy());
+            AnimationOffhandChecks.setOffhand(mc, tool);
+            qa.draw(mc, "offhand-gt-" + (screwdriver ? "screwdriver" : "wrench"));
+            qa.require(
+                HmiFirstPerson.OFFHAND.handheldTool() != null && HmiFirstPerson.OFFHAND.handheldTool()
+                    .supportsOffhand(),
+                "GT offhand uses its dedicated grip");
+            GregTechToolUsePacket packet = screwdriver ? new GregTechToolUsePacket.ScrewdriverTurn()
+                : new GregTechToolUsePacket.WrenchTurn();
+            var data = Unpooled.buffer(5);
+            try {
+                data.writeInt(player.dimension)
+                    .writeByte(BackhandUtils.getOffhandSlot(player));
+                packet.fromBytes(data);
+            } finally {
+                data.release();
+            }
+            packet.handleClient(mc);
+            String action = screwdriver ? AnimationToolChecks.SCREWDRIVER_TURN : "gtneverreset:wrench_turn";
+            qa.require(
+                FirstPersonItemActions.OFFHAND.playing(action) && !FirstPersonItemActions.INSTANCE.playing(action),
+                "confirmed GT tool slot selects only the offhand: " + action);
+        }
     }
 
     @Override

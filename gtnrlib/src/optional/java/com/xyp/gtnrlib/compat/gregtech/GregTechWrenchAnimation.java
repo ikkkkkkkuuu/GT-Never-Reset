@@ -37,6 +37,11 @@ public final class GregTechWrenchAnimation implements HmiItemBindings.HandheldTo
     }
 
     @Override
+    public boolean supportsOffhand() {
+        return true;
+    }
+
+    @Override
     public Matrix4fc spriteMount() {
         return GRIP;
     }

@@ -5,6 +5,8 @@
       "duration": 0.3,
       "tracks": [{"bone":"wrist","property":"rotation","keys":[
         {"time":0,"value":[0,0,0]}, {"time":0.14,"value":[15,10,-40]}, {"time":0.3,"value":[0,0,0]}
+      ]}, {"bone":"right_arm","property":"position","keys":[
+        {"time":0,"value":[0,0,0]}, {"time":0.3,"value":[0.3,0,0]}
       ]}]
     }
   }

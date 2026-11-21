@@ -27,6 +27,7 @@ import com.xyp.gtnrlib.api.animation.AnimationClip;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Channel;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Property;
 import com.xyp.gtnrlib.api.animation.AnimationPlayer;
+import com.xyp.gtnrlib.compat.backhand.BackhandAnimationCompat;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -35,15 +36,17 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class FirstPersonItemActions {
 
-    public static final FirstPersonItemActions INSTANCE = new FirstPersonItemActions();
+    public static final FirstPersonItemActions INSTANCE = new FirstPersonItemActions(false);
+    public static final FirstPersonItemActions OFFHAND = new FirstPersonItemActions(true);
     private static final double BLEND = .08;
     private static final Set<String> BONES = Set.of("wrist", "item", "left_arm", "right_arm");
     private static final Bone WRIST = new Bone("wrist"), ITEM = new Bone("item"), MAIN = new Bone("right_arm"),
         SUPPORT = new Bone("left_arm");
+    private static Map<Key, Binding> rules = Map.of();
+    private final boolean offhand;
     private final Matrix4f local = new Matrix4f(), changeOfBasis = new Matrix4f();
     private final Matrix4f leftGrip = new Matrix4f(), rightGrip = new Matrix4f();
     private final AnimationPlayer player = new AnimationPlayer(marker -> {});
-    private Map<Key, Binding> rules = Map.of();
     private AnimationPlayer.Playback action;
     private Key selected;
     private EntityPlayer owner, useOwner;
@@ -53,7 +56,21 @@ public final class FirstPersonItemActions {
     private int slot, dimension, startedTick;
     private double tick;
 
-    private FirstPersonItemActions() {}
+    private FirstPersonItemActions(boolean offhand) {
+        this.offhand = offhand;
+    }
+
+    ItemStack held(EntityPlayer p) {
+        return offhand ? BackhandAnimationCompat.heldItem(p) : p.getHeldItem();
+    }
+
+    private int currentSlot(EntityPlayer p) {
+        return offhand ? BackhandAnimationCompat.slot(p) : p.inventory.currentItem;
+    }
+
+    private boolean enabled() {
+        return (offhand ? HmiFirstPerson.OFFHAND : HmiFirstPerson.INSTANCE).enabled();
+    }
 
     void reload(IResourceManager resources) throws IOException {
         var next = new HashMap<Key, Binding>();
@@ -83,11 +100,9 @@ public final class FirstPersonItemActions {
                 }
             }
         }
-        useOwner = null;
-        useStack = null;
-        overridesUse = false;
         rules = Map.copyOf(next);
-        clear();
+        reset();
+        OFFHAND.reset();
     }
 
     private static void loadBinding(com.google.gson.JsonObject json, IResourceManager resources,
@@ -127,16 +142,27 @@ public final class FirstPersonItemActions {
             .getAsDouble() : BLEND;
         if (!Double.isFinite(fadeIn) || fadeIn < 0 || !Double.isFinite(fadeOut) || fadeOut < 0)
             throw new IllegalArgumentException("Invalid first-person fade for " + key);
-        rules.put(key, new Binding(clip, fadeIn, fadeOut));
+        var rotation = json.has("rotationBlend") ? switch (json.get("rotationBlend")
+            .getAsString()) {
+            case "shortest" -> AnimationPlayer.RotationBlend.SLERP_XYZ;
+            case "euler" -> AnimationPlayer.RotationBlend.EULER;
+            default -> throw new IllegalArgumentException("Unknown rotationBlend for " + key);
+        } : AnimationPlayer.RotationBlend.EULER;
+        var transition = json.has("transition") ? switch (json.get("transition")
+            .getAsString()) {
+            case "match_velocity" -> AnimationPlayer.Transition.MATCH_VELOCITY;
+            case "cross_fade" -> AnimationPlayer.Transition.CROSS_FADE;
+            default -> throw new IllegalArgumentException("Unknown transition for " + key);
+        } : AnimationPlayer.Transition.CROSS_FADE;
+        rules.put(key, new Binding(clip, fadeIn, fadeOut, rotation, transition));
     }
 
     /** Play a named accepted action on the currently held stack. Unknown item/action pairs fall through. */
     public boolean trigger(String trigger) {
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
-        if (!HmiFirstPerson.INSTANCE.enabled() || p == null || mc.gameSettings.thirdPersonView != 0 || rules.isEmpty())
-            return false;
-        var stack = p.getHeldItem();
+        if (!enabled() || p == null || mc.gameSettings.thirdPersonView != 0 || rules.isEmpty()) return false;
+        var stack = held(p);
         String id = id(stack);
         Key key = new Key(id, stack == null ? -1 : stack.getItemDamage(), trigger);
         var binding = rules.get(key);
@@ -148,14 +174,18 @@ public final class FirstPersonItemActions {
         if (!matches(p, stack)) clear();
         advance(p.ticksExisted);
         boolean chaining = action != null && action.active();
-        if (chaining) action.stop(BLEND);
         owner = p;
         dimension = p.dimension;
-        slot = p.inventory.currentItem;
+        slot = currentSlot(p);
         selected = key;
         startedTick = p.ticksExisted;
         tick = Math.max(tick, p.ticksExisted);
-        action = player.play(binding.clip, chaining ? Math.max(BLEND, binding.fadeIn) : binding.fadeIn);
+        if (chaining) action = player
+            .transition(action, binding.clip, Math.max(BLEND, binding.fadeIn), binding.rotation, binding.transition);
+        else {
+            action = player.play(binding.clip, binding.fadeIn);
+            action.rotationBlend(binding.rotation);
+        }
         action.fadeOutAtEnd(binding.fadeOut);
         return true;
     }
@@ -163,7 +193,7 @@ public final class FirstPersonItemActions {
     void apply(ItemStack stack, float partial, Matrix4f main, Matrix4f support, Matrix4f item) {
         if (action == null) return;
         var p = Minecraft.getMinecraft().thePlayer;
-        if (!matches(p, p.getHeldItem())) {
+        if (!matches(p, held(p))) {
             clear();
             return;
         }
@@ -198,30 +228,30 @@ public final class FirstPersonItemActions {
     }
 
     boolean observeUse(EntityPlayer p) {
-        var active = p == null || FirstPersonAnimations.usingOffhandItem() ? null : p.getItemInUse();
+        var active = p == null || FirstPersonAnimations.usingOffhandItem() != offhand ? null : p.getItemInUse();
         int damage = active == null ? 0 : active.getItemDamage();
-        int currentSlot = p == null ? -1 : p.inventory.currentItem;
+        int currentSlot = p == null ? -1 : currentSlot(p);
         if (active != useStack || p != useOwner || currentSlot != useSlot || damage != useDamage) {
             if (playing("use")) action.stop(rules.get(selected).fadeOut);
             useOwner = p;
             useSlot = currentSlot;
             useStack = active;
             useDamage = damage;
-            overridesUse = active != null && active.isItemEqual(p.getHeldItem()) && trigger("use");
+            overridesUse = active != null && active.isItemEqual(held(p)) && trigger("use");
         }
         return overridesUse;
     }
 
     boolean startedThisTick(String name, EntityPlayer p) {
-        return playing(name) && startedTick == p.ticksExisted && matches(p, p.getHeldItem());
+        return playing(name) && startedTick == p.ticksExisted && matches(p, held(p));
     }
 
     void tick() {
         var mc = Minecraft.getMinecraft();
-        var p = mc.gameSettings.thirdPersonView == 0 && HmiFirstPerson.INSTANCE.enabled() ? mc.thePlayer : null;
+        var p = mc.gameSettings.thirdPersonView == 0 && enabled() ? mc.thePlayer : null;
         observeUse(p);
         if (action == null) return;
-        if (p == null || !matches(p, p.getHeldItem())) clear();
+        if (p == null || !matches(p, held(p))) clear();
         else advance(p.ticksExisted);
     }
 
@@ -235,13 +265,20 @@ public final class FirstPersonItemActions {
     private boolean matches(EntityPlayer p, ItemStack stack) {
         return selected != null && owner == p
             && p.dimension == dimension
-            && p.inventory.currentItem == slot
+            && currentSlot(p) == slot
             && selected.item.equals(id(stack))
             && (selected.damage < 0 || stack != null && stack.getItemDamage() == selected.damage);
     }
 
     private static String id(ItemStack stack) {
         return stack == null ? "minecraft:air" : String.valueOf(Item.itemRegistry.getNameForObject(stack.getItem()));
+    }
+
+    private void reset() {
+        useOwner = null;
+        useStack = null;
+        overridesUse = false;
+        clear();
     }
 
     void clear() {
@@ -278,5 +315,6 @@ public final class FirstPersonItemActions {
 
     private record Key(String item, int damage, String trigger) {}
 
-    private record Binding(AnimationClip clip, double fadeIn, double fadeOut) {}
+    private record Binding(AnimationClip clip, double fadeIn, double fadeOut, AnimationPlayer.RotationBlend rotation,
+        AnimationPlayer.Transition transition) {}
 }

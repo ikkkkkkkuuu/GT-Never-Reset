@@ -8,8 +8,10 @@ import net.minecraftforge.common.util.FakePlayer;
 
 import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
+import com.xyp.gtnrlib.compat.backhand.BackhandAnimationCompat;
 import com.xyp.gtnrlib.compat.gregtech.GregTechWireCutterAnimation;
 
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -17,7 +19,7 @@ import gregtech.common.items.IDMetaTool01;
 import gregtech.common.items.MetaGeneratedTool01;
 import io.netty.buffer.ByteBuf;
 
-/** Each tool acknowledgement carries the dimension and hotbar slot where it was used. */
+/** Each tool acknowledgement carries the dimension and inventory slot where it was used. */
 public abstract class GregTechToolUsePacket extends ClientboundPacket {
 
     private final IDMetaTool01 tool;
@@ -77,14 +79,14 @@ public abstract class GregTechToolUsePacket extends ClientboundPacket {
         if (connection == null) return;
         runInWorld(mc, () -> {
             var player = mc.thePlayer;
-            if (mc.getNetHandler() != connection || player == null
-                || player.dimension != dimension
-                || player.inventory.currentItem != slot
-                || !matches(player.getHeldItem(), tool)) return;
-            if (tool == IDMetaTool01.WRENCH) FirstPersonItemActions.INSTANCE.trigger("gtneverreset:wrench_turn");
-            else if (tool == IDMetaTool01.SCREWDRIVER)
-                FirstPersonItemActions.INSTANCE.trigger("gtnrlib:screwdriver_turn");
-            else if (HmiFirstPerson.INSTANCE.handheldTool() instanceof GregTechWireCutterAnimation)
+            if (mc.getNetHandler() != connection || player == null || player.dimension != dimension) return;
+            boolean offhand = Loader.isModLoaded("backhand") && BackhandAnimationCompat.slot(player) == slot;
+            if (!offhand && player.inventory.currentItem != slot) return;
+            if (!matches(offhand ? BackhandAnimationCompat.heldItem(player) : player.getHeldItem(), tool)) return;
+            var actions = offhand ? FirstPersonItemActions.OFFHAND : FirstPersonItemActions.INSTANCE;
+            if (tool == IDMetaTool01.WRENCH) actions.trigger("gtneverreset:wrench_turn");
+            else if (tool == IDMetaTool01.SCREWDRIVER) actions.trigger("gtnrlib:screwdriver_turn");
+            else if (!offhand && HmiFirstPerson.INSTANCE.handheldTool() instanceof GregTechWireCutterAnimation)
                 HmiFirstPerson.INSTANCE.swing("gtneverreset:wire_cutter_snip");
         });
     }

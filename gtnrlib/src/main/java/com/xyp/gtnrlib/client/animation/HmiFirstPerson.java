@@ -47,7 +47,10 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class HmiFirstPerson {
 
-    public static final HmiFirstPerson INSTANCE = new HmiFirstPerson();
+    public static final HmiFirstPerson INSTANCE = new HmiFirstPerson(false);
+    public static final HmiFirstPerson OFFHAND = new HmiFirstPerson(true);
+    private final boolean offhand;
+    private final FirstPersonItemActions actions;
     public final Matrix4f right = new Matrix4f(), left = new Matrix4f(), item = new Matrix4f();
     private HmiPoseProgram.Scripts scripts;
     private HmiPoseProgram program;
@@ -68,7 +71,10 @@ public final class HmiFirstPerson {
     private boolean repeatStroke;
     private int strokeSlot;
 
-    private HmiFirstPerson() {}
+    private HmiFirstPerson(boolean offhand) {
+        this.offhand = offhand;
+        actions = offhand ? FirstPersonItemActions.OFFHAND : FirstPersonItemActions.INSTANCE;
+    }
 
     public void install(HmiPoseProgram.Scripts next) throws IOException {
         var ready = next == null ? null : new HmiPoseProgram(next);
@@ -153,16 +159,16 @@ public final class HmiFirstPerson {
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
         if (p == null || mc.gameSettings.thirdPersonView != 0) return;
-        var stack = p.getHeldItem();
+        var stack = actions.held(p);
         boolean holdingTool = p == player && tool != null
             && stack != null
             && stack.getItem() == lastItem
             && stack.getItemDamage() == lastDamage;
-        if (blockUseSwing && (holdingTool && tool.handlesBlockUseSwing()
-            || FirstPersonItemActions.INSTANCE.startedThisTick("place", p))) return;
+        if (blockUseSwing && (holdingTool && tool.handlesBlockUseSwing() || actions.startedThisTick("place", p)))
+            return;
         boolean mining = !blockUseSwing && mc.objectMouseOver != null
             && mc.objectMouseOver.typeOfHit == MovingObjectType.BLOCK;
-        if (FirstPersonItemActions.INSTANCE.trigger(
+        if (actions.trigger(
             confirmedAction != null ? confirmedAction : blockUseSwing ? "interact" : mining ? "mining" : "attack")) {
             clearStroke();
             swingStart = Double.NEGATIVE_INFINITY;
@@ -220,7 +226,6 @@ public final class HmiFirstPerson {
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
         if (p == null || mc.gameSettings.thirdPersonView != 0 || p.isInvisible()) return false;
-        var actions = FirstPersonItemActions.INSTANCE;
         boolean customUse = actions.observeUse(p);
         HmiItemBindings.HandheldTool selected = null;
         ToolGrip grip = ToolGrip.resolve(stack);
@@ -231,6 +236,9 @@ public final class HmiFirstPerson {
                 && MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.FIRST_PERSON_MAP) != null) return false;
             renderer = MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON);
             selected = HmiItemBindings.tool(stack, renderer);
+            // These adapters can own both arms and read their main-hand tool state directly.
+            if (offhand && selected != null
+                && (!selected.supportsOffhand() || selected instanceof HmiItemBindings.TwoHandedModel)) return false;
             if (renderer != null) {
                 if (selected == null && grip == null
                     && !OreGrip.isMaterial(stack)
@@ -277,7 +285,7 @@ public final class HmiFirstPerson {
             frame.set("age", p.ticksExisted);
             boolean using = stack != null && p.getItemInUse() != null
                 && stack.isItemEqual(p.getItemInUse())
-                && !FirstPersonAnimations.usingOffhandItem();
+                && offhand == FirstPersonAnimations.usingOffhandItem();
             frame.set(
                 "using",
                 LuaValue.valueOf(
@@ -327,7 +335,7 @@ public final class HmiFirstPerson {
             }
             program.pose(false, HmiPoseProgram.EMPTY, progress, 0, changed, (swings & 1) != 0, hit, seconds);
             left.set(program.armMatrix);
-            FirstPersonItemActions.INSTANCE.apply(stack, partial, right, left, item);
+            actions.apply(stack, partial, right, left, item);
             return true;
         } catch (Exception ex) {
             GTNRLib.LOG.error("HMI pose failed for {}. Reload resources to retry.", id, ex);

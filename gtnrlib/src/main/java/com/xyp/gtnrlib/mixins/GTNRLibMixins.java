@@ -15,6 +15,7 @@ public enum GTNRLibMixins implements IMixins {
         .addClientMixins(
             "animation.ItemRendererMixin",
             "animation.LocalSwingMixin",
+            "animation.OffhandSwingMixin",
             "animation.MinecraftAttackMixin",
             "animation.ItemBlockPlacementMixin")
         .setPhase(Phase.EARLY)),
