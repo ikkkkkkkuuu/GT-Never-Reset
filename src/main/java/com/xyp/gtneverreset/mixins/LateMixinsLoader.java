@@ -176,6 +176,9 @@ public final class LateMixinsLoader implements ILateMixinLoader {
                 "appliedenergistics2.quantum.MixinGuiCraftConfirm",
                 "appliedenergistics2.quantum.MixinGuiCraftingTree"));
         mixins.add("appliedenergistics2.LargeInterfaceTerminalEntryMixin");
+        if (loadedMods.contains(ModList.AE2Thing.ID)) {
+            mixins.add("ae2thing.TerminalPickBlockMixin");
+        }
         if (loadedMods.contains(ModList.ModIds.NOT_ENOUGH_ITEMS)) {
             mixins.add("nei.TerminalPanelWidgetMixin");
             mixins.add("nei.TerminalBookmarkSlotMixin");
