@@ -1,0 +1,516 @@
+package com.xyp.gtneverreset.client.projector;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Predicate;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.MathHelper;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.StatCollector;
+import net.minecraft.util.Vec3;
+import net.minecraft.world.World;
+import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.event.world.WorldEvent;
+
+import com.gtnewhorizon.gtnhlib.compat.BaublesCompat;
+import com.gtnewhorizon.gtnhlib.util.AboveHotbarHUD;
+import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
+import com.gtnewhorizon.structurelib.event.BlockChangeNotifier;
+import com.xyp.gtneverreset.common.item.items.MultiblockProjector;
+import com.xyp.gtneverreset.common.packet.NetWorkHandler;
+import com.xyp.gtneverreset.common.packet.OpenProjectorPacket;
+import com.xyp.gtneverreset.common.packet.ProjectorPlanPacket;
+import com.xyp.gtneverreset.common.projector.ProjectorMachines;
+import com.xyp.gtneverreset.common.projector.ProjectorOrientation;
+import com.xyp.gtneverreset.common.projector.ProjectorPlan;
+import com.xyp.gtneverreset.common.projector.ProjectorServer;
+import com.xyp.gtneverreset.common.projector.ProjectorSimulation;
+import com.xyp.gtneverreset.common.projector.ProjectorStructure;
+import com.xyp.gtneverreset.common.projector.ProjectorStructure.Choice;
+
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+
+@SideOnly(Side.CLIENT)
+public class ProjectorClient {
+
+    public static final String LANG = "gtneverreset.projector.";
+    public static final int REACH = 128, SEGMENT = 64, FLOAT_WARNING = 3, COMPLETE_TICKS = 40, HUD_TICKS = 10,
+        BLOCK_PREVIEW_LIMIT = 20_000;
+    private static final int CLICK_GAP = 6, MAX_IN_FLIGHT = 16, SPOT_TICKS = 40;
+    private static final ArrayDeque<NBTTagCompound> inFlight = new ArrayDeque<>();
+
+    public static int location = Integer.MIN_VALUE;
+    public static ProjectorPlan plan;
+    public static ProjectorStructure structure;
+    public static ExtendedFacing facing = ExtendedFacing.DEFAULT;
+    public static int x, y, z;
+    public static boolean visible, placed, followed, unloadedGround, tooHigh, tooLow;
+    public static int floating;
+    public static int completeTicks;
+    public static int[] focus = new int[0];
+    public static int focusColor;
+    public static final ProjectorCheck CHECK = new ProjectorCheck();
+    public static final ProjectorGround GROUND = new ProjectorGround();
+    private static NBTTagCompound planTag;
+    private static boolean listening;
+    private static long lastClick, ticks, spotTick;
+    private static int[] spot;
+    private static int spotMachine;
+
+    ProjectorClient() {}
+
+    public static void registerListener() {
+        if (listening) return;
+        listening = true;
+        BlockChangeNotifier
+            .addListener((world, chunk, blockX, blockY, blockZ, oldBlock, newBlock, oldMeta, newMeta) -> {
+                if (!world.isRemote || world != Minecraft.getMinecraft().theWorld) return;
+                CHECK.blockChanged(world, blockX, blockY, blockZ);
+                GROUND.invalidate(blockX, blockZ);
+            });
+    }
+
+    @SubscribeEvent
+    public void tick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null || mc.thePlayer == null) {
+            reset();
+            return;
+        }
+        ticks++;
+        ProjectorStructures.tick();
+        findActive(mc.thePlayer);
+        visible = false;
+        if (plan == null || !plan.hasMachine()
+            || plan.state == ProjectorPlan.State.IDLE
+            || plan.isPlaced() && plan.dimension != mc.thePlayer.dimension) {
+            CHECK.clear();
+            ProjectorRenderer.release();
+            completeTicks = 0;
+            followed = false;
+            if (location == 0 && plan != null && plan.state == ProjectorPlan.State.IDLE && ticks % HUD_TICKS == 0)
+                AboveHotbarHUD.renderTextAboveHotbar(
+                    // #tr gtneverreset.projector.idle
+                    // # Right-click: open the projector
+                    // # zh_CN 右键：打开投影仪界面
+                    EnumChatFormatting.WHITE + StatCollector.translateToLocal(LANG + "idle"),
+                    HUD_TICKS + 5,
+                    true,
+                    false);
+            return;
+        }
+        structure = ProjectorStructures.get(plan.settings());
+        updatePlacement(mc);
+        if (structure != null && placed && visible) {
+            CHECK.update(mc.theWorld, structure, facing, x, y, z);
+            updateCompletion();
+        } else {
+            CHECK.clear();
+        }
+        if (ticks % HUD_TICKS == 0) showStatus();
+    }
+
+    @SubscribeEvent
+    public void unload(WorldEvent.Unload event) {
+        if (event.world.isRemote) reset();
+    }
+
+    private static void reset() {
+        location = Integer.MIN_VALUE;
+        plan = null;
+        planTag = null;
+        inFlight.clear();
+        spot = null;
+        focus = new int[0];
+        structure = null;
+        visible = false;
+        CHECK.clear();
+        GROUND.clear();
+        ProjectorStructures.clear();
+        ProjectorRenderer.release();
+    }
+
+    private static void findActive(EntityPlayer player) {
+        ItemStack held = player.getCurrentEquippedItem();
+        if (held != null && held.getItem() instanceof MultiblockProjector) {
+            use(0, held);
+            return;
+        }
+        IInventory worn = BaublesCompat.getBaubles(player);
+        if (worn != null) {
+            for (int slot = 0; slot < worn.getSizeInventory(); slot++) {
+                ItemStack stack = worn.getStackInSlot(slot);
+                if (stack == null || !(stack.getItem() instanceof MultiblockProjector)) continue;
+                use(-slot - 1, stack);
+                if (plan.state != ProjectorPlan.State.IDLE) return;
+            }
+        }
+        location = Integer.MIN_VALUE;
+        plan = null;
+        planTag = null;
+    }
+
+    private static void use(int slot, ItemStack stack) {
+        NBTTagCompound tag = stack.getTagCompound() == null ? null
+            : stack.getTagCompound()
+                .getCompoundTag(ProjectorPlan.TAG);
+        if (slot != location || plan == null || tag != planTag) {
+            boolean stale = slot == location && plan != null && isStaleEcho(tag);
+            planTag = tag;
+            if (!stale) plan = ProjectorPlan.read(stack);
+        }
+        location = slot;
+    }
+
+    // The server echoes every edit; an echo of an older edit arriving after newer ones would undo them.
+    private static boolean isStaleEcho(NBTTagCompound tag) {
+        if (tag == null || inFlight.isEmpty()) return false;
+        if (tag.equals(inFlight.peekLast())) {
+            inFlight.clear();
+            return false;
+        }
+        while (!inFlight.isEmpty()) {
+            if (inFlight.removeFirst()
+                .equals(tag)) return true;
+        }
+        return false;
+    }
+
+    public static void send(ProjectorPlan next) {
+        send(location, next);
+    }
+
+    public static void send(int slot, ProjectorPlan next) {
+        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        ItemStack stack = player == null || slot == Integer.MIN_VALUE ? null
+            : ProjectorServer.projectorAt(player, slot);
+        if (stack == null) return;
+        next.write(stack);
+        if (slot == location) {
+            plan = next;
+            planTag = stack.getTagCompound()
+                .getCompoundTag(ProjectorPlan.TAG);
+            inFlight.addLast((NBTTagCompound) planTag.copy());
+            if (inFlight.size() > MAX_IN_FLIGHT) inFlight.removeFirst();
+        }
+        NetWorkHandler.sendToServer(new ProjectorPlanPacket(slot, next.writeToNBT()));
+    }
+
+    public static String frontLabel(ForgeDirection front) {
+        String side = front == ForgeDirection.UP ? "up" : front == ForgeDirection.DOWN ? "down" : "horizontal";
+        return StatCollector.translateToLocalFormatted(
+            // #tr gtneverreset.projector.pose.front
+            // # Front: %s
+            // # zh_CN 正面：%s
+            LANG + "pose.front",
+            // #tr gtneverreset.projector.pose.front.up
+            // # up
+            // # zh_CN 朝上
+            // #tr gtneverreset.projector.pose.front.down
+            // # down
+            // # zh_CN 朝下
+            // #tr gtneverreset.projector.pose.front.horizontal
+            // # horizontal
+            // # zh_CN 水平
+            StatCollector.translateToLocal(LANG + "pose.front." + side));
+    }
+
+    public static Predicate<ExtendedFacing> validFacings() {
+        return ProjectorMachines.validFacings(plan.machine);
+    }
+
+    public static int quadrant(EntityPlayer player) {
+        return MathHelper.floor_double(player.rotationYaw * 4.0 / 360.0 + 0.5) & 3;
+    }
+
+    public static ExtendedFacing followFacing(ExtendedFacing stored, EntityPlayer player) {
+        return ProjectorOrientation.rotateY(stored, quadrant(player), validFacings());
+    }
+
+    public static void reorient(ProjectorPlan next, ExtendedFacing target, ProjectorStructure shape) {
+        if (next.state == ProjectorPlan.State.LOCKED && next.centerPivot && shape != null) {
+            int[] before = shape.worldBounds(next.facing), after = shape.worldBounds(target);
+            next.x += Math.floorDiv(before[0] + before[3] - after[0] - after[3], 2);
+            next.y = Math.max(0, Math.min(255, next.y + Math.floorDiv(before[1] + before[4] - after[1] - after[4], 2)));
+            next.z += Math.floorDiv(before[2] + before[5] - after[2] - after[5], 2);
+        }
+        next.facing = target;
+    }
+
+    public static ExtendedFacing initialFacing(int machine) {
+        Predicate<ExtendedFacing> valid = ProjectorMachines.validFacings(machine);
+        return ProjectorOrientation.withFront(ProjectorOrientation.canonical(valid), ForgeDirection.NORTH, valid);
+    }
+
+    public static void rightClick(boolean sneaking) {
+        Minecraft mc = Minecraft.getMinecraft();
+        EntityPlayer player = mc.thePlayer;
+        if (player == null) return;
+        long now = mc.theWorld.getTotalWorldTime();
+        boolean repeated = now - lastClick < CLICK_GAP;
+        lastClick = now;
+        if (repeated) return;
+        findActive(player);
+        if (location != 0 || plan == null) return;
+        act(player, sneaking);
+    }
+
+    public static void lockKey(boolean sneaking) {
+        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        if (player == null) return;
+        findActive(player);
+        if (location == Integer.MIN_VALUE || plan == null) return;
+        act(player, sneaking);
+    }
+
+    private static void act(EntityPlayer player, boolean sneaking) {
+        ProjectorPlan next = plan.copy();
+        switch (plan.state) {
+            case IDLE -> {
+                if (!sneaking) open();
+            }
+            case FOLLOW -> {
+                if (sneaking) {
+                    next.state = ProjectorPlan.State.IDLE;
+                    send(next);
+                } else if (visible && structure != null && !tooHigh && !tooLow) {
+                    next.facing = facing;
+                    next.dimension = player.dimension;
+                    next.x = x;
+                    next.y = y;
+                    next.z = z;
+                    next.state = ProjectorPlan.State.LOCKED;
+                    send(next);
+                }
+            }
+            case LOCKED -> {
+                if (sneaking) {
+                    next.facing = ProjectorOrientation.rotateY(plan.facing, -quadrant(player), validFacings());
+                    next.state = ProjectorPlan.State.FOLLOW;
+                    send(next);
+                } else open();
+            }
+            case ANCHORED -> {
+                if (sneaking) {
+                    next.state = ProjectorPlan.State.IDLE;
+                    send(next);
+                } else open();
+            }
+        }
+    }
+
+    public static void open() {
+        if (location != Integer.MIN_VALUE) NetWorkHandler.sendToServer(new OpenProjectorPacket(location));
+    }
+
+    public static void openAt(ProjectorStructure shown, int cell) {
+        spot = new int[] { shown.a[cell], shown.b[cell], shown.c[cell] };
+        spotMachine = plan.machine;
+        spotTick = ticks;
+        open();
+    }
+
+    // The interface only opens once the server answers, so the chosen spot waits here until then.
+    public static int[] takeSpot(int machine) {
+        int[] taken = ticks - spotTick <= SPOT_TICKS && machine == spotMachine ? spot : null;
+        spot = null;
+        return taken;
+    }
+
+    private static void updatePlacement(Minecraft mc) {
+        EntityPlayer player = mc.thePlayer;
+        tooHigh = tooLow = unloadedGround = false;
+        floating = 0;
+        placed = plan.isPlaced();
+        if (placed) {
+            followed = false;
+            facing = plan.facing;
+            x = plan.x;
+            y = plan.y;
+            z = plan.z;
+            visible = true;
+            return;
+        }
+        facing = followFacing(plan.facing, player);
+        MovingObjectPosition hit = trace(mc.theWorld, player);
+        if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
+            visible = followed;
+            return;
+        }
+        int[] bounds = structure == null ? new int[6] : structure.worldBounds(facing);
+        int pivotX = plan.centerPivot ? Math.floorDiv(bounds[0] + bounds[3], 2) : 0;
+        int pivotZ = plan.centerPivot ? Math.floorDiv(bounds[2] + bounds[5], 2) : 0;
+        if (plan.groundSnap) {
+            snap(mc.theWorld, hit.blockX - pivotX, hit.blockZ - pivotZ, hit.blockY, bounds);
+        } else {
+            ForgeDirection side = ForgeDirection.getOrientation(hit.sideHit);
+            x = hit.blockX + side.offsetX - pivotX;
+            z = hit.blockZ + side.offsetZ - pivotZ;
+            y = hit.blockY + side.offsetY + plan.verticalOffset;
+        }
+        tooHigh = y + bounds[4] > 255;
+        tooLow = y + bounds[1] < 0;
+        followed = visible = true;
+    }
+
+    private static void snap(World world, int column, int row, int hitY, int[] bounds) {
+        GROUND.fit((bounds[3] - bounds[0] + 1) * (bounds[5] - bounds[2] + 1));
+        int highest = Integer.MIN_VALUE, lowest = Integer.MAX_VALUE;
+        for (int gx = column + bounds[0]; gx <= column + bounds[3]; gx++) {
+            for (int gz = row + bounds[2]; gz <= row + bounds[5]; gz++) {
+                int height = GROUND.height(world, gx, gz);
+                if (height == ProjectorGround.UNLOADED) {
+                    unloadedGround = true;
+                    continue;
+                }
+                highest = Math.max(highest, height);
+                lowest = Math.min(lowest, height);
+            }
+        }
+        if (highest == Integer.MIN_VALUE) highest = lowest = hitY;
+        x = column;
+        z = row;
+        y = highest + 1 - bounds[1] + Math.max(0, plan.verticalOffset);
+        floating = y + bounds[1] - (lowest + 1);
+    }
+
+    public static void chunkReceived(int chunkX, int chunkZ) {
+        CHECK.chunkReceived(chunkX, chunkZ);
+        GROUND.invalidateChunk(chunkX, chunkZ);
+    }
+
+    public static Vec3 eye(EntityPlayer player) {
+        return Vec3.createVectorHelper(player.posX, player.posY + player.getEyeHeight(), player.posZ);
+    }
+
+    public static MovingObjectPosition trace(World world, EntityPlayer player) {
+        Vec3 start = eye(player);
+        Vec3 look = player.getLook(1.0f);
+        for (int from = 0; from < REACH; from += SEGMENT) {
+            Vec3 segmentStart = start.addVector(look.xCoord * from, look.yCoord * from, look.zCoord * from);
+            int to = Math.min(REACH, from + SEGMENT);
+            Vec3 segmentEnd = start.addVector(look.xCoord * to, look.yCoord * to, look.zCoord * to);
+            MovingObjectPosition hit = world.func_147447_a(segmentStart, segmentEnd, false, true, false);
+            if (hit != null) return hit;
+        }
+        return null;
+    }
+
+    private static void updateCompletion() {
+        if (!CHECK.isComplete()) {
+            completeTicks = 0;
+            return;
+        }
+        if (++completeTicks < COMPLETE_TICKS) return;
+        completeTicks = 0;
+        ProjectorPlan next = plan.copy();
+        next.state = ProjectorPlan.State.IDLE;
+        AboveHotbarHUD.renderTextAboveHotbar(
+            // #tr gtneverreset.projector.complete
+            // # Every block is in place, projection closed
+            // # zh_CN 方块已全部搭齐，投影已收起
+            EnumChatFormatting.GREEN + StatCollector.translateToLocal(LANG + "complete"),
+            60,
+            true,
+            true);
+        send(next);
+    }
+
+    private static void showStatus() {
+        String text;
+        if (structure == null) {
+            ProjectorSimulation running = ProjectorStructures.running(plan.settings());
+            // #tr gtneverreset.projector.simulating
+            // # Working out the structure: round %s
+            // # zh_CN 正在推算结构：第 %s 轮
+            text = StatCollector.translateToLocalFormatted(LANG + "simulating", running == null ? 0 : running.rounds);
+        } else if (!structure.failure.isEmpty()) {
+            text = EnumChatFormatting.RED + StatCollector
+                // #tr gtneverreset.projector.failure
+                // # Simulation failed: %s
+                // # zh_CN 模拟失败：%s
+                .translateToLocalFormatted(LANG + "failure", StatCollector.translateToLocal(structure.failure));
+        } else if (tooHigh || tooLow) {
+            // #tr gtneverreset.projector.too_high
+            // # Does not fit: the top is above y 255
+            // # zh_CN 放不下：顶部超过 y 255
+            // #tr gtneverreset.projector.too_low
+            // # Does not fit: the bottom is below y 0
+            // # zh_CN 放不下：底部低于 y 0
+            text = EnumChatFormatting.RED + StatCollector.translateToLocal(LANG + (tooHigh ? "too_high" : "too_low"));
+        } else if (!placed) {
+            // #tr gtneverreset.projector.follow
+            // # Right-click to lock · sneak-right-click to cancel · R rotates · N display
+            // # zh_CN 右键锁定 · 潜行右键取消 · R 旋转 · N 切换显示
+            text = location == 0 ? StatCollector.translateToLocal(LANG + "follow") : ProjectorInput.wornFollowHint();
+            if (floating >= FLOAT_WARNING) text = StatCollector.translateToLocalFormatted(
+                // #tr gtneverreset.projector.joined
+                // # %s · %s
+                // # zh_CN %s · %s
+                LANG + "joined",
+                text,
+                // #tr gtneverreset.projector.floating
+                // # floating %s blocks
+                // # zh_CN 悬空 %s 格
+                StatCollector.translateToLocalFormatted(LANG + "floating", floating));
+            if (unloadedGround) text = StatCollector.translateToLocalFormatted(
+                LANG + "joined",
+                text,
+                // #tr gtneverreset.projector.unloaded_ground
+                // # some chunks are not loaded, height may be off
+                // # zh_CN 有区块未加载，高度可能不准
+                StatCollector.translateToLocal(LANG + "unloaded_ground"));
+        } else if (!CHECK.scanned) {
+            // #tr gtneverreset.projector.checking
+            // # Checking blocks...
+            // # zh_CN 正在校对方块……
+            text = StatCollector.translateToLocal(LANG + "checking");
+        } else if (CHECK.isComplete()) {
+            // #tr gtneverreset.projector.all_placed
+            // # Every block is in place
+            // # zh_CN 方块已全部搭齐
+            text = EnumChatFormatting.GREEN + StatCollector.translateToLocal(LANG + "all_placed");
+        } else {
+            // #tr gtneverreset.projector.locked
+            // # Missing %s · wrong %s · not loaded %s
+            // # zh_CN 缺 %s · 错 %s · 未加载 %s
+            text = StatCollector.translateToLocalFormatted(LANG + "locked", CHECK.missing, CHECK.wrong, CHECK.unloaded);
+        }
+        AboveHotbarHUD.renderTextAboveHotbar(EnumChatFormatting.WHITE + text, HUD_TICKS + 5, true, false);
+    }
+
+    public static List<ItemStack> carried(EntityPlayer player) {
+        List<ItemStack> stacks = new ArrayList<>();
+        if (player == null) return stacks;
+        for (ItemStack stack : player.inventory.mainInventory) {
+            if (stack != null && stack.getItem() != null) stacks.add(stack);
+        }
+        IInventory worn = BaublesCompat.getBaubles(player);
+        if (worn != null) {
+            for (int slot = 0; slot < worn.getSizeInventory(); slot++) {
+                ItemStack stack = worn.getStackInSlot(slot);
+                if (stack != null && stack.getItem() != null) stacks.add(stack);
+            }
+        }
+        return stacks;
+    }
+
+    public static Int2IntOpenHashMap inventory(EntityPlayer player) {
+        Int2IntOpenHashMap have = new Int2IntOpenHashMap();
+        for (ItemStack stack : carried(player))
+            have.addTo(Choice.idOf(stack.getItem(), stack.getItemDamage()), stack.stackSize);
+        return have;
+    }
+}

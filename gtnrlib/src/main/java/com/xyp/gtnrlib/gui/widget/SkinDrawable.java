@@ -121,9 +121,32 @@ public class SkinDrawable implements IDrawable, IJsonSerializable {
     }
 
     public void draw(int x, int y, int width, int height, int glowColor) {
+        draw(x, y, width, height, glowColor, Color.WHITE.main);
+    }
+
+    /**
+     * Tells whether the skin has a glow layer, the only part of it that takes a color.
+     *
+     * @return whether a glow texture is set
+     */
+    public boolean hasGlow() {
+        return glow != null;
+    }
+
+    /**
+     * Draws the skin with its texture multiplied by a color, such as grey to darken a disabled control.
+     *
+     * @param x         left edge
+     * @param y         top edge
+     * @param width     width in pixels
+     * @param height    height in pixels
+     * @param glowColor ARGB color of the glow layer, or zero for none
+     * @param tint      ARGB color the texture layer is multiplied by; opaque white draws it unchanged
+     */
+    public void draw(int x, int y, int width, int height, int glowColor, int tint) {
         if (texture == null || width <= 0 || height <= 0) return;
         List<Piece> pieces = pieces(x, y, width, height);
-        layer(texture, Color.WHITE.main, pieces);
+        layer(texture, tint, pieces);
         if (glow != null && glowColor != 0) layer(glow, glowColor, pieces);
         GlStateManager.color(1, 1, 1, 1);
         GlStateManager.disableBlend();

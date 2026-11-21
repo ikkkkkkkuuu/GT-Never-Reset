@@ -14,6 +14,7 @@ import com.xyp.gtneverreset.common.item.items.ItemStockIOInterface;
 import com.xyp.gtneverreset.common.item.items.ItemUniversalWand;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessConnector;
 import com.xyp.gtneverreset.common.item.items.ItemWirelessDualInterfaceTerminal;
+import com.xyp.gtneverreset.common.item.items.MultiblockProjector;
 import com.xyp.gtneverreset.common.item.items.PermanentMagnetRing;
 import com.xyp.gtneverreset.common.item.items.StableEndCrystalItem;
 import com.xyp.gtneverreset.common.item.items.VeinMiningPickaxe;
@@ -25,6 +26,7 @@ import com.xyp.gtneverreset.common.machine.packaged.CircuitAssemblyLineAdapter;
 import com.xyp.gtneverreset.compat.bloodmagic.BloodMagicCompat;
 import com.xyp.gtneverreset.compat.thaumcraft.ThaumcraftCompat;
 import com.xyp.gtneverreset.config.ChaosConfig;
+import com.xyp.gtneverreset.config.ToolsConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtnrlib.mod.ModList;
 
@@ -101,6 +103,9 @@ public final class ItemLoader {
             GameRegistry.registerItem(chaosModule, "chaos_structure_module");
             GTNRItemList.ChaosCredential.set(chaosCredential);
             GTNRItemList.ChaosStructureModule.set(chaosModule);
+        }
+        if (ToolsConfig.enableMultiblockProjector) {
+            GameRegistry.registerItem(new MultiblockProjector(), "multiblock_projector");
         }
         GameRegistry.registerItem(permanentMagnetRing, "PermanentMagnetRing");
         GameRegistry.registerItem(harvestRing, "HarvestRing");

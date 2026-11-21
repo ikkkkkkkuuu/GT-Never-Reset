@@ -146,3 +146,16 @@ The 5.1.1 playback adapter reads the four pose/model scripts and selected model 
 GTNRLib 0.1.23 includes numerical local pose and mount observations obtained from the same verified 5.1.1 release. The offline capture tool and the in-game spring, gait, blending and playback code were written for this repository. The 35 default first-person meshes are independently authored and use the installed Minecraft block atlas. Running the default player requires only the distributed mod.
 
 For 0.1.24 the held-model display context was checked against the release's `HeldItemRendererMixin`, the Minecraft 1.21.11 client models and Mojang's client mappings. The right-hand submission uses intermediary field `field_4320`. The grip check separately measures the legacy skin and extruded sprite at draw time. [Fabric 1.21.11 display-context mapping](https://maven.fabricmc.net/docs/yarn-1.21.11%2Bbuild.4/net/minecraft/item/ItemDisplayContext.html#THIRD_PERSON_RIGHT_HAND)
+
+## Projector widgets and voxel rendering
+
+GTNLLib PR #9, commit a031414153094efb0271bd71f2dabed25c83d859, supplies the AE2-themed
+widgets, icon atlas updates, block mesh, block view and voxel outline code. Adapted to
+GTNRLib's packages, existing widget APIs and generated translations.
+https://github.com/GTNotLeisure/GTNLLib/pull/9
+The code is covered by GPL-3.0.txt. See AE2-gui-theme-NOTICE.txt for the theme assets.
+
+Updated the shared widgets to GTNLLib commit 427ab43e63ee8f663c3f8daead861134305241a5
+and the panel skin API, drawing helpers and associated tests to commit
+61b4118176b9ac0a94e0f90ffe4fcccf88770f03. Adaptations preserve GTNRLib's existing
+widget entry points, translations and color utility.

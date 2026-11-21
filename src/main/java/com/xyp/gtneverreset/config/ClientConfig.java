@@ -122,4 +122,60 @@ public class ClientConfig {
         @LangKey("gtneverreset.gui.config.general.client.wireless_terminal.button_theme")
         public String buttonTheme = "auto";
     }
+
+    @Config.Comment("Projector preview: outline connected hatch spots as one shape instead of one box per block")
+    // #tr gtneverreset.gui.config.client.projector_merge_outlines
+    // # Projector: Join Hatch Outlines
+    // # zh_CN 投影仪：仓位描边连接内边
+    // #tr gtneverreset.gui.config.client.projector_merge_outlines.tooltip
+    // # In the projector preview, outline touching hatch spots as one shape instead of one box per block.
+    // # zh_CN 投影仪预览里相连的仓位只描外轮廓，不再每格各描一个框。
+    @Config.LangKey("gtneverreset.gui.config.client.projector_merge_outlines")
+    @Config.DefaultBoolean(true)
+    public static boolean projectorMergeOutlines = true;
+
+    @Config.Comment("Projector preview: hatch spot outlines show through the blocks in front of them")
+    // #tr gtneverreset.gui.config.client.projector_outlines_through_blocks
+    // # Projector: Outlines Through Blocks
+    // # zh_CN 投影仪：仓位描边透视
+    // #tr gtneverreset.gui.config.client.projector_outlines_through_blocks.tooltip
+    // # In the projector preview, show hatch spot outlines even behind blocks in front of them.
+    // # zh_CN 投影仪预览里被前面方块挡住的仓位描边也显示出来。
+    @Config.LangKey("gtneverreset.gui.config.client.projector_outlines_through_blocks")
+    @Config.DefaultBoolean(false)
+    public static boolean projectorOutlinesThroughBlocks = false;
+
+    @Config.Comment("Projector preview: outline hatch spots on every page, not only on the hatch page")
+    // #tr gtneverreset.gui.config.client.projector_hatch_outlines
+    // # Projector: Hatch Outlines
+    // # zh_CN 投影仪：仓室描边
+    // #tr gtneverreset.gui.config.client.projector_hatch_outlines.tooltip
+    // # In the projector preview, outline the hatch spots on every page, not only on the hatch page.
+    // # zh_CN 投影仪预览里在每一页都描出仓位，不只在仓室页。
+    @Config.LangKey("gtneverreset.gui.config.client.projector_hatch_outlines")
+    @Config.DefaultBoolean(true)
+    public static boolean projectorHatchOutlines = true;
+
+    @Config.Comment("Projector: changing a hatch's model or tier also changes the other spots of the same kind")
+    // #tr gtneverreset.gui.config.client.projector_same_kind
+    // # Projector: Same Kind Together
+    // # zh_CN 投影仪：同类仓位一起改
+    // #tr gtneverreset.gui.config.client.projector_same_kind.tooltip
+    // # Changing a hatch's model or tier also changes the other spots of the same kind.
+    // # zh_CN 改一个仓的型号或等级时，同一种类的其他仓位一起改。
+    @Config.LangKey("gtneverreset.gui.config.client.projector_same_kind")
+    @Config.DefaultBoolean(true)
+    public static boolean projectorSameKind = true;
+
+    @Config.Comment("Projector: choosing a casing changes its whole group of spots, not only the chosen spot")
+    // #tr gtneverreset.gui.config.client.projector_same_casing
+    // # Projector: Whole Casing Group
+    // # zh_CN 投影仪：同组外壳一起换
+    // #tr gtneverreset.gui.config.client.projector_same_casing.tooltip
+    // # Choosing a casing changes its whole group of spots; when off, only the chosen spot changes.
+    // # zh_CN 换外壳时整组外壳位一起换，关掉时只换选中的那一格。
+    @Config.LangKey("gtneverreset.gui.config.client.projector_same_casing")
+    @Config.DefaultBoolean(false)
+    public static boolean projectorSameCasing = false;
+
 }

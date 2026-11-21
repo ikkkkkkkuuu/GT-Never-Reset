@@ -18,11 +18,8 @@ import com.cleanroommc.modularui.widget.Widget;
 import com.google.gson.JsonObject;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
-@SideOnly(Side.CLIENT)
 public class AE2ButtonDrawable implements IDrawable, IJsonSerializable {
 
     public static final String TYPE = "gtnrlib:ae2_button";
