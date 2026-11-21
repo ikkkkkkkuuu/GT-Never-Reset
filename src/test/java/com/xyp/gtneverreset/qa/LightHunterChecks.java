@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.SimpleTexture;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
@@ -17,6 +18,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
@@ -45,6 +47,8 @@ import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.util.GTRecipeBuilder;
 import gregtech.common.misc.WirelessNetworkManager;
+import tectech.Reference;
+import tectech.rendering.EOH.EOHTileEntitySR;
 
 @Mod(modid = "lighthunterqa", name = "Light Hunter QA", version = "1", dependencies = "after:gtneverreset")
 public final class LightHunterChecks {
@@ -178,7 +182,7 @@ public final class LightHunterChecks {
                 player.capabilities.allowFlying = true;
                 player.capabilities.isFlying = true;
                 player.sendPlayerAbilities();
-                player.playerNetServerHandler.setPlayerLocation(56, 111, 92, 26, 14);
+                player.playerNetServerHandler.setPlayerLocation(118, 111, 117, 84, 12);
                 ready = true;
             }
             if (opened && !voltageSynced && satellite.getVoltage() == 4_500_000_001L) {
@@ -352,8 +356,25 @@ public final class LightHunterChecks {
     public void render(TickEvent.RenderTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !ready || finished) return;
         Minecraft mc = Minecraft.getMinecraft();
-        if (!galaxyCaptured && LightHunterSpaceStationRenderer.getBeamFrames() > 25
-            && LightHunterSpaceStationRenderer.getLastPlanetCount() == 13) {
+        if (!galaxyCaptured && LightHunterSpaceStationRenderer.getBeamFrames() > 25) {
+            try {
+                require(
+                    LightHunterSpaceStationRenderer.isAvailable()
+                        && LightHunterSpaceStationRenderer.getLastPlanetCount() == 13
+                        && LightHunterSpaceStationRenderer.getLastBeamPassCount() == 2,
+                    "station draws thirteen planets and both beam layers");
+                var textures = mc.getTextureManager();
+                for (var location : List.of(
+                    EOHTileEntitySR.STAR_LAYER_0,
+                    EOHTileEntitySR.STAR_LAYER_1,
+                    EOHTileEntitySR.STAR_LAYER_2,
+                    new ResourceLocation(Reference.MODID, "models/spaceLayer.png"))) {
+                    require(textures.getTexture(location) instanceof SimpleTexture, "station loaded " + location);
+                }
+            } catch (Throwable error) {
+                finish(error);
+                return;
+            }
             ScreenShotHelper.saveScreenshot(
                 new File("."),
                 "station-galaxy.png",

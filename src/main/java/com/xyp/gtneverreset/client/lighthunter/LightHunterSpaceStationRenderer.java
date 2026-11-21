@@ -14,11 +14,13 @@ import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
+import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.world.WorldEvent;
 
+import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
@@ -37,14 +39,16 @@ import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import gregtech.common.render.shader.SharedShaders;
+import tectech.Reference;
+import tectech.rendering.EOH.EOHRenderingUtils;
 
 @SideOnly(Side.CLIENT)
 public final class LightHunterSpaceStationRenderer implements IResourceManagerReloadListener {
 
     private static final LightHunterSpaceStationRenderer INSTANCE = new LightHunterSpaceStationRenderer();
     private static final String DOMAIN = GTNeverReset.MODID;
-    private static final ResourceLocation STAR_TEXTURE = texture("star_layer_1");
-    private static final ResourceLocation BEAM_TEXTURE = texture("space_layer");
+    private static final ResourceLocation BEAM_TEXTURE = new ResourceLocation(Reference.MODID, "models/spaceLayer.png");
     private static final String[] PLANET_NAMES = { "the_nether", "overworld", "the_end", "ceres", "enceladus",
         "ganymede", "io", "mars", "mercury", "moon", "pluto", "titan", "venus" };
     private static final ResourceLocation[] PLANET_TEXTURES = new ResourceLocation[PLANET_NAMES.length];
@@ -58,7 +62,7 @@ public final class LightHunterSpaceStationRenderer implements IResourceManagerRe
     private static final Map<Object, BeamCommand> PENDING = new IdentityHashMap<>();
     private static final FloatBuffer MATRIX_BUFFER = BufferUtils.createFloatBuffer(16);
     private static final float[] MATRIX = new float[16];
-    private static LightHunterModelMesh starModel;
+    private static final Matrix4f STAR_TRANSFORM = new Matrix4f();
     private static ShaderProgram beamShader;
     private static boolean initialized, queued, failed;
     private static long renderedFrames, beamFrames;
@@ -103,13 +107,12 @@ public final class LightHunterSpaceStationRenderer implements IResourceManagerRe
         float tick = worldTick + partialTicks;
         GlState state = new GlState();
         try {
-            ensureModels();
             Profile profile = profile(seed);
-            GL11.glTranslated(x, y, z);
             prepareSolid();
             double[] center = LightHunterSpaceStationMath
                 .rotatedOffset(-LightHunterSpaceStationMath.STAR_DISTANCE, 0, 0, horizontal.ordinal());
-            renderStar(center, profile.starRotation, tick);
+            renderStar(x + center[0], y + center[1], z + center[2], profile.starRotation, tick);
+            GL11.glTranslated(x, y, z);
             renderOrbits(center, profile, tick);
             lastPlanetCount = profile.orbits.length;
             renderedFrames++;
@@ -132,7 +135,7 @@ public final class LightHunterSpaceStationRenderer implements IResourceManagerRe
     }
 
     public static boolean isAvailable() {
-        return !failed && starModel != null && beamShader != null && beamShader.getProgram() != 0;
+        return !failed && SharedShaders.ready() && beamShader != null && beamShader.getProgram() != 0;
     }
 
     public static long getRenderedFrames() {
@@ -178,12 +181,6 @@ public final class LightHunterSpaceStationRenderer implements IResourceManagerRe
             manager.registerReloadListener(INSTANCE);
     }
 
-    private static void ensureModels() throws Exception {
-        if (starModel == null)
-            starModel = LightHunterModelMesh.load(new ResourceLocation(DOMAIN, "models/lighthunter/star.obj"));
-
-    }
-
     private static void prepareSolid() {
         if (GLContext.getCapabilities().OpenGL20) GL20.glUseProgram(0);
         OpenGlHelper.setActiveTexture(OpenGlHelper.lightmapTexUnit);
@@ -224,18 +221,11 @@ public final class LightHunterSpaceStationRenderer implements IResourceManagerRe
         GL11.glRotatef(rotation.angle(tick), rotation.x, rotation.y, rotation.z);
     }
 
-    private static void renderStar(double[] center, Rotation rotation, float tick) {
-        GL11.glPushMatrix();
-        GL11.glTranslated(center[0], center[1], center[2]);
-        GL11.glScalef(
-            LightHunterSpaceStationMath.STAR_SCALE,
-            LightHunterSpaceStationMath.STAR_SCALE,
-            LightHunterSpaceStationMath.STAR_SCALE);
-        rotate(rotation, tick);
-
-        bind(STAR_TEXTURE);
-        starModel.draw();
-        GL11.glPopMatrix();
+    private static void renderStar(double x, double y, double z, Rotation rotation, float tick) {
+        STAR_TRANSFORM.translation((float) x, (float) y, (float) z)
+            .rotate((float) Math.toRadians(rotation.angle(tick)), rotation.x, rotation.y, rotation.z);
+        EOHRenderingUtils
+            .renderEOHStar(STAR_TRANSFORM, ItemRenderType.ENTITY, tick, LightHunterSpaceStationMath.STAR_RADIUS);
     }
 
     private static void renderOrbits(double[] center, Profile profile, float tick) {
@@ -408,9 +398,7 @@ public final class LightHunterSpaceStationRenderer implements IResourceManagerRe
 
     @Override
     public void onResourceManagerReload(IResourceManager manager) {
-        if (starModel != null) starModel.release();
         if (beamShader != null) beamShader.close();
-        starModel = null;
         beamShader = null;
         PENDING.clear();
         failed = false;
