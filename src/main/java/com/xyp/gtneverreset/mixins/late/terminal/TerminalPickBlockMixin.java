@@ -1,4 +1,4 @@
-package com.xyp.gtneverreset.mixins.late.ae2thing;
+package com.xyp.gtneverreset.mixins.late.terminal;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
 
 @Pseudo
-@Mixin(targets = "com.asdflj.ae2thing.loader.KeybindLoader", remap = false)
+@Mixin(targets = { "com.asdflj.ae2thing.loader.KeybindLoader", "com.asdflj.wtct.loader.KeybindLoader" }, remap = false)
 public abstract class TerminalPickBlockMixin {
 
     @Inject(method = "getTargetBlock", at = @At("HEAD"), cancellable = true, require = 0)
