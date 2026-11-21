@@ -41,6 +41,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.xyp.gtnrlib.config.GTNRLibConfig;
+import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.LivePalette;
 import com.xyp.gtnrlib.gui.theme.MetalSkin;
 import com.xyp.gtnrlib.gui.theme.PaletteThemes;
@@ -98,6 +99,8 @@ public class ThemeContracts {
 
     static void run() throws Exception {
         DrawableSerialization.init();
+        // Register widget theme keys before MUI2 constructs the default theme on its first reload.
+        AE2Theme.register();
         PaletteThemes.register(SAMPLE_THEME, SAMPLE);
         reloadThemes(SAMPLE_THEME);
         ITheme theme = IThemeApi.get()

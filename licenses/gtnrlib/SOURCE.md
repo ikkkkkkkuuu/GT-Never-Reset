@@ -154,3 +154,8 @@ widgets, icon atlas updates, block mesh, block view and voxel outline code. Adap
 GTNRLib's packages, existing widget APIs and generated translations.
 https://github.com/GTNotLeisure/GTNLLib/pull/9
 The code is covered by GPL-3.0.txt. See AE2-gui-theme-NOTICE.txt for the theme assets.
+
+Updated the shared widgets to GTNLLib commit 427ab43e63ee8f663c3f8daead861134305241a5
+and the panel skin API, drawing helpers and associated tests to commit
+61b4118176b9ac0a94e0f90ffe4fcccf88770f03. Adaptations preserve GTNRLib's existing
+widget entry points, translations and color utility.

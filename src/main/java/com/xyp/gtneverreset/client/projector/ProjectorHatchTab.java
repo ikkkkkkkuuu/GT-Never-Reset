@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.StatCollector;
 
@@ -24,7 +25,6 @@ import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.value.ObjectValue;
 import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
-import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.config.ClientConfig;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
@@ -42,7 +42,8 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class ProjectorHatchTab {
 
     private static final String LANG = ProjectorGui.LANG;
-    private static final int HEADER_HEIGHT = 26, CARD_HEIGHT = HEADER_HEIGHT + 4 * ROW + 2;
+    private static final int HEADER_HEIGHT = 26, CARD_HEIGHT = HEADER_HEIGHT + 5 * ROW + 2, NAME_Y = 9, TEXT_INSET = 17,
+        ICON_WIDTH = 19;
 
     private final ProjectorGui gui;
     private final ProjectorHatchPage hatches;
@@ -94,8 +95,18 @@ public class ProjectorHatchTab {
                     // # Tier
                     // # zh_CN 等级
                     LANG + "hatch_level",
-                    new ValueStepper(hatches::tierLabel, hatches::stepTier).size(CONTROL, SMALL)
+                    new ValueStepper(hatches::tierLabel, hatches::stepTier).wheel(true)
+                        .size(CONTROL, SMALL)
                         .setEnabledIf(w -> model.getAsBoolean() && hatches.hasTiers())))
+            .child(
+                gui.controlRow(
+                    // #tr gtneverreset.projector.gui.hatch_amperes
+                    // # Amperage
+                    // # zh_CN 电流
+                    LANG + "hatch_amperes",
+                    new ValueStepper(hatches::amperesLabel, hatches::stepAmperes).wheel(true)
+                        .size(CONTROL, SMALL)
+                        .setEnabledIf(w -> model.getAsBoolean() && hatches.hasAmperes())))
             .child(
                 new ParentWidget<>().size(wellWidth, ROW)
                     .child(
@@ -137,7 +148,7 @@ public class ProjectorHatchTab {
     }
 
     private CycleDropdown<String> casingDropdown() {
-        CycleDropdown<String> dropdown = new CycleDropdown<>(MENU + "casing", String.class);
+        CycleDropdown<String> dropdown = new CycleDropdown<>(MENU + "casing", String.class).wheel(true);
         dropdown.optionToWidget((key, forShown) -> blockOption(key))
             .value(new ObjectValue.Dynamic<>(String.class, hatches::casingKey, hatches::chooseCasing))
             .menuWidth(MENU_WIDTH)
@@ -147,7 +158,7 @@ public class ProjectorHatchTab {
     }
 
     private CycleDropdown<String> blockDropdown() {
-        CycleDropdown<String> dropdown = new CycleDropdown<>(MENU + "block", String.class);
+        CycleDropdown<String> dropdown = new CycleDropdown<>(MENU + "block", String.class).wheel(true);
         dropdown.optionToWidget((key, forShown) -> blockOption(key))
             .value(new ObjectValue.Dynamic<>(String.class, hatches::blockKey, hatches::chooseBlock))
             .menuWidth(MENU_WIDTH)
@@ -165,7 +176,7 @@ public class ProjectorHatchTab {
     }
 
     private CycleDropdown<Object> kindDropdown() {
-        CycleDropdown<Object> dropdown = new CycleDropdown<>(MENU + "kind", Object.class);
+        CycleDropdown<Object> dropdown = new CycleDropdown<>(MENU + "kind", Object.class).wheel(true);
         dropdown
             .optionToWidget(
                 (kind, forShown) -> CycleDropdown.iconOption(hatches.kindIcon(kind), hatches.kindName(kind)))
@@ -177,12 +188,12 @@ public class ProjectorHatchTab {
     }
 
     private CycleDropdown<Integer> variantDropdown() {
-        CycleDropdown<Integer> dropdown = new CycleDropdown<>(MENU + "variant", Integer.class);
+        CycleDropdown<Integer> dropdown = new CycleDropdown<>(MENU + "variant", Integer.class).wheel(true);
         dropdown
             .optionToWidget(
                 (first, forShown) -> CycleDropdown.iconOption(
-                    first == null ? null : ProjectorMachines.stackOf(first),
-                    first == null ? "" : ProjectorHatchPage.variantName(first)))
+                    first == null ? null : hatches.variantIcon(first),
+                    first == null ? "" : hatches.variantLabel(first)))
             .value(new ObjectValue.Dynamic<>(Integer.class, hatches::variant, hatches::chooseVariant))
             .menuWidth(MENU_WIDTH)
             .size(CONTROL, SMALL)
@@ -246,16 +257,25 @@ public class ProjectorHatchTab {
 
         @Override
         public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
-            int width = getArea().width;
+            FontRenderer font = Minecraft.getMinecraft().fontRenderer;
+            int left = TEXT_INSET, right = getArea().width - TEXT_INSET;
+            String name = hatches.nameLine();
+            if (name.isEmpty()) {
+                String hint = trim(hatches.placeLine(), right - left);
+                AE2Theme.text(hint, left + (right - left - font.getStringWidth(hint)) / 2, NAME_Y, gui.muted, false);
+                return;
+            }
             ItemStack icon = hatches.icon();
-            if (icon != null) new ItemDrawable(icon).draw(context, 17, 5, 16, 16, widgetTheme.getTheme());
-            int text = gui.variant == null ? IconRowList.TEXT : gui.variant.colors.text();
-            int left = icon == null ? 17 : 36, right = width - 17;
             String count = hatches.countLine();
-            int countWidth = count.isEmpty() ? 0 : Minecraft.getMinecraft().fontRenderer.getStringWidth(count) + 3;
-            AE2Theme.text(trim(hatches.placeLine(), right - left - countWidth), left, 4, gui.muted, false);
-            if (!count.isEmpty()) AE2Theme.text(count, right - countWidth + 3, 4, gui.muted, false);
-            AE2Theme.text(trim(hatches.nameLine(), right - left), left, 15, text, false);
+            int countWidth = count.isEmpty() ? 0 : font.getStringWidth(count) + 3;
+            int iconWidth = icon == null ? 0 : ICON_WIDTH;
+            String shown = trim(name, right - left - countWidth - iconWidth);
+            int group = iconWidth + font.getStringWidth(shown);
+            int start = Math.max(left, Math.min(left + (right - left - group) / 2, right - countWidth - group));
+            if (icon != null) new ItemDrawable(icon).draw(context, start, 5, 16, 16, widgetTheme.getTheme());
+            int text = gui.variant == null ? IconRowList.TEXT : gui.variant.colors.text();
+            AE2Theme.text(shown, start + iconWidth, NAME_Y, text, false);
+            if (!count.isEmpty()) AE2Theme.text(count, right - countWidth + 3, NAME_Y, gui.muted, false);
         }
     }
 }

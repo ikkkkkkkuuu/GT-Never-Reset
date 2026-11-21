@@ -1,7 +1,10 @@
 package com.xyp.gtnrlib.gui.widget;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
+
+import org.jetbrains.annotations.NotNull;
 
 import com.cleanroommc.modularui.api.UpOrDown;
 import com.cleanroommc.modularui.api.drawable.IKey;
@@ -9,21 +12,23 @@ import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
-
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import com.xyp.gtnrlib.gui.theme.ae2.AE2Draw;
 
 /**
- * Steps through a list of named values: {@code <} and {@code >} buttons around the current value's name, and the
- * mouse wheel anywhere over it. It holds no values itself; the step callback moves the owner's selection, so it suits
- * values that are not numbers, such as voltage tiers. For numbers use {@link NumberEntry}.
+ * Steps through a list of named values: {@code <} and {@code >} buttons around the current value's name, and, after
+ * {@link #wheel(boolean) wheel(true)}, the mouse wheel anywhere over it. It holds no values itself; the step callback
+ * moves the owner's selection, so it suits values that are not numbers, such as voltage tiers. For numbers use
+ * {@link NumberEntry}. While {@link #available(BooleanSupplier)} reports false the arrows look disabled, the name is
+ * greyed out, and clicks and the wheel do nothing. It can be built on either side, so it also works in GUIs the server
+ * opens.
  */
-@SideOnly(Side.CLIENT)
 public class ValueStepper extends ParentWidget<ValueStepper> implements Interactable {
 
     /** Width of each arrow button in pixels. */
     public static final int ARROW_WIDTH = 12;
     private final IntConsumer step;
+    private BooleanSupplier available = () -> true;
+    private boolean wheel;
 
     /**
      * Creates a stepper; the caller sets its size, and the arrows fill its height.
@@ -39,18 +44,53 @@ public class ValueStepper extends ParentWidget<ValueStepper> implements Interact
                 .childPadding(1)
                 .child(
                     ActionButton.text(() -> "<", () -> step.accept(-1))
+                        .available(this::isAvailable)
                         .width(ARROW_WIDTH)
                         .heightRel(1f))
                 .child(
                     IKey.dynamic(value)
                         .asWidget()
+                        .color(() -> AE2Draw.panelTextColor(this, isAvailable()))
                         .alignment(Alignment.Center)
                         .expanded()
                         .heightRel(1f))
                 .child(
                     ActionButton.text(() -> ">", () -> step.accept(1))
+                        .available(this::isAvailable)
                         .width(ARROW_WIDTH)
                         .heightRel(1f)));
+    }
+
+    /**
+     * Sets when the stepper can be used.
+     *
+     * @param available supplier read every frame and on every input
+     * @return this stepper
+     */
+    public ValueStepper available(BooleanSupplier available) {
+        this.available = available;
+        return this;
+    }
+
+    /**
+     * Sets whether the mouse wheel over the stepper steps it. Off by default, so the wheel goes to the widgets around
+     * it, such as a scrolling list.
+     *
+     * @param wheel true to step one value per wheel notch
+     * @return this stepper
+     */
+    public ValueStepper wheel(boolean wheel) {
+        this.wheel = wheel;
+        return this;
+    }
+
+    private boolean isAvailable() {
+        return available.getAsBoolean();
+    }
+
+    @Override
+    public @NotNull Result onMousePressed(int mouseButton) {
+        return isAvailable() ? Result.IGNORE : Result.STOP;
     }
 
     @Override
@@ -60,6 +100,7 @@ public class ValueStepper extends ParentWidget<ValueStepper> implements Interact
 
     @Override
     public boolean onMouseScroll(UpOrDown scrollDirection, int amount) {
+        if (!wheel || !isAvailable()) return false;
         step.accept(scrollDirection.modifier);
         return true;
     }

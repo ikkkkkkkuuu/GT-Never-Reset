@@ -20,7 +20,6 @@ import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.widgets.TextWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.xyp.gtneverreset.GTNeverReset;
-import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure.Choice;
@@ -44,9 +43,9 @@ public class ProjectorSpotScreen extends ModularScreen {
     public static final String LANG = "gtneverreset.projector.spot.";
     private static final String NAME = "projector_spot";
     private static final int PAD = 7, TOP = 6, LINE = 10, ROW = IconRowList.ROW, VISIBLE = 7, KIND_WIDTH = 76,
-        MODEL_WIDTH = 150, TIER_WIDTH = 40, CHOICE_WIDTH = 160, GAP = 2, BUTTON = 16, BUTTON_WIDTH = 60,
-        CONFIRM_WIDTH = 50, SWITCH_ROW_WIDTH = 120, CROSSHAIR_GAP = 12, SCREEN_MARGIN = 4, HATCH_COLOR = 0x40D8FF,
-        GROUP_COLOR = 0xB070FF, PLAIN_MUTED = 0xFF808080;
+        MODEL_WIDTH = 150, TIER_WIDTH = 40, AMPERES_WIDTH = 64, CHOICE_WIDTH = 160, GAP = 2, BUTTON = 16,
+        BUTTON_WIDTH = 60, CONFIRM_WIDTH = 50, SWITCH_ROW_WIDTH = 120, CROSSHAIR_GAP = 12, SCREEN_MARGIN = 4,
+        HATCH_COLOR = 0x40D8FF, GROUP_COLOR = 0xB070FF, PLAIN_MUTED = 0xFF808080;
     private static final int SCROLL = IconRowList.AE2_SCROLL_COLUMN;
 
     private final int location;
@@ -69,8 +68,9 @@ public class ProjectorSpotScreen extends ModularScreen {
     public static void openHatch(ProjectorStructure shown, int cell) {
         ProjectorPlan working = ProjectorClient.plan.copy();
         ProjectorHatchPage hatches = new ProjectorHatchPage(() -> shown, working, () -> cell, spot -> {});
-        int kinds = KIND_WIDTH + SCROLL, models = MODEL_WIDTH + SCROLL, tiers = TIER_WIDTH + SCROLL;
-        int inner = kinds + GAP + models + GAP + tiers, listHeight = 2 + VISIBLE * ROW;
+        int kinds = KIND_WIDTH + SCROLL, models = MODEL_WIDTH + SCROLL, tiers = TIER_WIDTH + SCROLL,
+            amperes = AMPERES_WIDTH + SCROLL;
+        int inner = kinds + GAP + models + GAP + tiers + GAP + amperes, listHeight = 2 + VISIBLE * ROW;
         ModularPanel panel = panel(inner, listHeight + 4 + ROW);
         // #tr gtneverreset.projector.spot.hatch
         // # Hatch spot
@@ -89,6 +89,10 @@ public class ProjectorSpotScreen extends ModularScreen {
             new IconRowList(() -> tierRows(hatches)).revealSelected()
                 .pos(PAD + kinds + GAP + models + GAP, top)
                 .size(tiers, listHeight));
+        panel.child(
+            new IconRowList(() -> amperesRows(hatches)).revealSelected()
+                .pos(PAD + kinds + GAP + models + GAP + tiers + GAP, top)
+                .size(amperes, listHeight));
         int bottom = top + listHeight + 4;
         BooleanSupplier casing = () -> ProjectorHatchPage.CASING.equals(hatches.kind());
         panel.child(
@@ -369,20 +373,31 @@ public class ProjectorSpotScreen extends ModularScreen {
         Integer current = hatches.variant();
         for (int id : hatches.variants()) rows.add(
             Row.item(
-                ProjectorMachines.stackOf(id),
-                ProjectorHatchPage.variantName(id),
+                hatches.variantIcon(id),
+                hatches.variantLabel(id),
                 null,
                 current != null && current == id,
                 () -> hatches.chooseVariant(id)));
         return rows;
     }
 
-    private static List<Row> tierRows(ProjectorHatchPage hatches) {
-        List<Integer> tiers = ProjectorHatchPage.CASING.equals(hatches.kind()) ? List.of() : hatches.tiers();
-        if (tiers.size() < 2)
+    private static List<Row> amperesRows(ProjectorHatchPage hatches) {
+        List<Integer> amperes = ProjectorHatchPage.CASING.equals(hatches.kind()) ? List.of() : hatches.amperes();
+        if (amperes.size() < 2)
             // #tr gtneverreset.projector.spot.no_tier
             // # —
             // # zh_CN —
+            return List.of(Row.item(null, StatCollector.translateToLocal(LANG + "no_tier"), null, false, null));
+        List<Row> rows = new ArrayList<>();
+        int held = hatches.held();
+        for (int id : amperes) rows
+            .add(Row.item(null, ProjectorHatchPage.amperesName(id), null, id == held, () -> hatches.chooseAmperes(id)));
+        return rows;
+    }
+
+    private static List<Row> tierRows(ProjectorHatchPage hatches) {
+        List<Integer> tiers = ProjectorHatchPage.CASING.equals(hatches.kind()) ? List.of() : hatches.tiers();
+        if (tiers.size() < 2)
             return List.of(Row.item(null, StatCollector.translateToLocal(LANG + "no_tier"), null, false, null));
         List<Row> rows = new ArrayList<>();
         int held = hatches.held();

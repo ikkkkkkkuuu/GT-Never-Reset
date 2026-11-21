@@ -2,6 +2,7 @@ package com.xyp.gtnrlib.gui.widget;
 
 import java.util.function.BooleanSupplier;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import com.cleanroommc.modularui.api.ITheme;
@@ -23,6 +24,7 @@ import com.cleanroommc.modularui.utils.GlStateManager;
 import com.cleanroommc.modularui.utils.JsonHelper;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.google.gson.JsonObject;
+import com.xyp.gtnrlib.gui.theme.ae2.AE2Switches;
 import com.xyp.gtnrlib.utils.TextRenderUtils;
 
 public class SlideSwitch extends ButtonWidget<SlideSwitch> {
@@ -30,6 +32,7 @@ public class SlideSwitch extends ButtonWidget<SlideSwitch> {
     private static final int LABEL_Y = 1, LABEL_END = 2;
     private static final float INACTIVE_ALPHA = 0.5F;
 
+    private final AE2Switches.SwitchHover hover = new AE2Switches.SwitchHover();
     private BooleanSupplier on = () -> false, live = () -> true, available = () -> true;
     private IKey label = IKey.EMPTY;
 
@@ -43,9 +46,32 @@ public class SlideSwitch extends ButtonWidget<SlideSwitch> {
         return this;
     }
 
-    public SlideSwitch availableWhen(BooleanSupplier available) {
+    /**
+     * Sets when the switch can be used. An unavailable switch is drawn faded, shows no hover and swallows clicks.
+     *
+     * @param available supplier read every frame and on every click
+     * @return this switch
+     */
+    public SlideSwitch available(BooleanSupplier available) {
         this.available = available;
         return this;
+    }
+
+    /**
+     * Same as {@link #available(BooleanSupplier)}.
+     *
+     * @param available supplier read every frame and on every click
+     * @return this switch
+     * @deprecated use {@link #available(BooleanSupplier)}, the name every GTNRLib widget uses
+     */
+    @Deprecated
+    public SlideSwitch availableWhen(BooleanSupplier available) {
+        return available(available);
+    }
+
+    @Override
+    public @NotNull Result onMousePressed(int mouseButton) {
+        return available.getAsBoolean() ? super.onMousePressed(mouseButton) : Result.STOP;
     }
 
     public SlideSwitch label(IKey label) {
@@ -87,11 +113,12 @@ public class SlideSwitch extends ButtonWidget<SlideSwitch> {
     @Override
     public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
         Theme colors = colors(widgetTheme.getTheme());
-        LayoutTheme style = LayoutTheme.of(context.getTheme());
+        LayoutTheme style = LayoutTheme.of(getPanel().getTheme());
         boolean on = this.on.getAsBoolean(), open = available.getAsBoolean(), lit = on && open && live.getAsBoolean();
         int width = getArea().w(), height = getArea().h(), switchWidth = style.switchWidth,
             switchHeight = style.switchHeight, top = (height - switchHeight) / 2, labelX = labelX(style);
-        UITexture sprite = colors.sprite(on, open && isHovering());
+        boolean hovered = hover.lit(isHovering(), on);
+        UITexture sprite = colors.sprite(on, open && hovered);
         if (sprite != null) {
             GlStateManager.color(1, 1, 1, open ? 1 : INACTIVE_ALPHA);
             sprite.draw(0, top, switchWidth, switchHeight);
@@ -104,15 +131,18 @@ public class SlideSwitch extends ButtonWidget<SlideSwitch> {
             if (colors.knobSkin != null) colors.knobSkin.draw(knobX, top, switchHeight, switchHeight, knob);
             else GuiDraw.drawRect(knobX, top, switchHeight, switchHeight, knob);
         }
-        TextRenderUtils.drawTextFitted(
+        int color = textColor(colors, on, lit, open);
+        boolean shadow = lit && colors.getTextShadow();
+        if (sprite != null) AE2Switches.checkboxLabel(label.get(), labelX, top, width - labelX, color, shadow);
+        else TextRenderUtils.drawTextFitted(
             label.get(),
             labelX,
             LABEL_Y,
             width - labelX,
             height,
             Alignment.CenterLeft,
-            textColor(colors, on, lit, open),
-            lit && colors.getTextShadow(),
+            color,
+            shadow,
             style.textScale);
     }
 

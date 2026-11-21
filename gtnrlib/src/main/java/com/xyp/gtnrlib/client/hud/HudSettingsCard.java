@@ -264,7 +264,8 @@ public class HudSettingsCard extends ParentWidget<HudSettingsCard> {
             Arrays.asList(Size.fill(), Size.fixed(SLIDER_WIDTH)),
             Arrays.asList(
                 Layout.label(IKey.lang(lang), style),
-                new StepSlider().value(getter, setter)
+                new StepSlider().wheel(true)
+                    .value(getter, setter)
                     .range(min, max, steps)
                     .milestones(MILESTONES)
                     .format(format)

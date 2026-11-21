@@ -9,17 +9,16 @@ import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.layout.IViewportStack;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
-import com.xyp.gtnrlib.gui.theme.AE2Theme.Icon;
-
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import com.xyp.gtnrlib.gui.theme.ae2.AE2Buttons;
+import com.xyp.gtnrlib.gui.theme.ae2.IconSource;
 
 /**
- * A button drawn by the active theme: a text button ({@link AE2Theme#button} with {@link AE2Theme#label}) or a
- * toolbar icon button ({@link AE2Theme#iconButton}). It reacts to the left mouse button only. While it is not
- * available it looks disabled and swallows left clicks, so they never reach a widget below it.
+ * A button drawn by the active theme: a text button ({@link AE2Buttons#button} with {@link AE2Buttons#label}) or a
+ * toolbar icon button ({@link AE2Buttons#iconButton}). It reacts to the left mouse button only, unless a mouse handler
+ * set afterwards replaces the action. While it is not available it looks disabled, shows no hover and swallows every
+ * mouse button, so clicks never reach a widget below it. An icon button takes the mouse on its whole frame; AE2's react
+ * only on the 16-by-16 icon square. It can be built on either side, so it also works in GUIs the server opens.
  */
-@SideOnly(Side.CLIENT)
 public class ActionButton extends ButtonWidget<ActionButton> {
 
     private BooleanSupplier available = () -> true, selected = () -> false;
@@ -27,16 +26,17 @@ public class ActionButton extends ButtonWidget<ActionButton> {
     /**
      * Creates a text button. The caller sets its size.
      *
-     * @param label  supplier of the label, read every frame; trimmed to the button width
+     * @param label  supplier of the label, read every frame; under AE2 themes a label wider than the button scrolls
+     *               inside it, other themes trim it to the button width
      * @param action run on a left click while the button is available
      * @return the button
      */
     public static ActionButton text(Supplier<String> label, Runnable action) {
         ActionButton button = new ActionButton();
-        IDrawable look = AE2Theme.button(button, button::isAvailable, button::isSelected);
+        IDrawable look = AE2Buttons.button(button, button::isAvailable, button::isSelected);
         return button.background(look)
             .hoverBackground(look)
-            .overlay(AE2Theme.label(button, label, button::isAvailable, button::isSelected))
+            .overlay(AE2Buttons.label(button, label, button::isAvailable, button::isSelected))
             .onClick(action);
     }
 
@@ -44,13 +44,14 @@ public class ActionButton extends ButtonWidget<ActionButton> {
      * Creates a toolbar icon button of the standard {@link AE2Theme#ICON_BUTTON_WIDTH} by
      * {@link AE2Theme#ICON_BUTTON_HEIGHT} size.
      *
-     * @param icon   supplier of the icon, read every frame
+     * @param icon   supplier of the icon, read every frame: a built-in {@code Icon}, or any texture or item through
+     *               {@link IconSource#of}
      * @param action run on a left click while the button is available
      * @return the button
      */
-    public static ActionButton icon(Supplier<Icon> icon, Runnable action) {
+    public static ActionButton icon(Supplier<? extends IconSource> icon, Runnable action) {
         ActionButton button = new ActionButton();
-        IDrawable look = AE2Theme.iconButton(button, icon, button::isAvailable, button::isSelected);
+        IDrawable look = AE2Buttons.iconButton(button, icon, button::isAvailable, button::isSelected);
         return button.background(look)
             .hoverBackground(look)
             .size(AE2Theme.ICON_BUTTON_WIDTH, AE2Theme.ICON_BUTTON_HEIGHT)
@@ -102,6 +103,6 @@ public class ActionButton extends ButtonWidget<ActionButton> {
 
     @Override
     public @NotNull Result onMousePressed(int button) {
-        return button == 0 && !isAvailable() ? Result.STOP : super.onMousePressed(button);
+        return isAvailable() ? super.onMousePressed(button) : Result.STOP;
     }
 }

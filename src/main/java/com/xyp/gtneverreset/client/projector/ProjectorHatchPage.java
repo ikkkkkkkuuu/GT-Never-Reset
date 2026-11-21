@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntConsumer;
+import java.util.function.IntPredicate;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
@@ -17,6 +18,8 @@ import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
+import com.xyp.gtneverreset.common.projector.ProjectorEnergyHatches;
+import com.xyp.gtneverreset.common.projector.ProjectorEnergyHatches.Flow;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
@@ -29,6 +32,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.HatchElement;
+import gregtech.api.util.GTUtility;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 @SideOnly(Side.CLIENT)
@@ -150,6 +154,8 @@ public class ProjectorHatchPage {
     public String kindName(Object kind) {
         if (kind == null) return "";
         if (CASING.equals(kind)) return StatCollector.translateToLocal(LANG + "casing");
+        if (kind instanceof Flow flow)
+            return (flow == Flow.INPUT ? HatchElement.Energy : HatchElement.Dynamo).getDisplayName();
         if (kind instanceof HatchElement element) return element.getDisplayName();
         HatchSlot slot = slot();
         Map<String, List<Integer>> variants = slot == null ? null : groups(slot).get(kind);
@@ -188,12 +194,56 @@ public class ProjectorHatchPage {
         if (last == null || variants == null) return 0;
         if (accepts(slot, last)) return last;
         List<Integer> ids = ProjectorMachines.prototype(last) == null ? null : variants.get(modelKey(last));
-        return ids == null ? 0 : closestTier(ids, ProjectorMachines.tier(last));
+        return ids == null ? 0 : closest(ids, last);
     }
 
     public List<Integer> tiers() {
-        List<Integer> tiers = tiersOfHeld();
-        return tiers == null ? Collections.emptyList() : tiers;
+        List<Integer> ids = modelOfHeld();
+        if (ids == null) return Collections.emptyList();
+        return energyHeld() ? ProjectorEnergyHatches.tierChoices(ids, heldId()) : ids;
+    }
+
+    public List<Integer> amperes() {
+        List<Integer> ids = modelOfHeld();
+        if (ids == null || !energyHeld()) return Collections.emptyList();
+        return ProjectorEnergyHatches.amperesChoices(ids, heldId());
+    }
+
+    public boolean hasAmperes() {
+        return amperes().size() > 1;
+    }
+
+    public String amperesLabel() {
+        return energyHeld() ? amperesName(heldId()) : "";
+    }
+
+    public void stepAmperes(int step) {
+        int id = heldId();
+        stepWithin(
+            amperes(),
+            step,
+            choice -> ProjectorEnergyHatches.amperes(choice) == ProjectorEnergyHatches.amperes(id)
+                && ProjectorEnergyHatches.isLaser(choice) == ProjectorEnergyHatches.isLaser(id));
+    }
+
+    public void chooseAmperes(int id) {
+        ProjectorStructure current = structure.get();
+        if (current != null && amperes().contains(id) && id != heldId()) setModel(current, selected.getAsInt(), id);
+    }
+
+    public static String amperesName(int id) {
+        String amperes = ProjectorEnergyHatches.amperesLabel(ProjectorEnergyHatches.amperes(id));
+        return ProjectorEnergyHatches.isLaser(id)
+            // #tr gtneverreset.projector.gui.laser_amperes
+            // # %s Laser
+            // # zh_CN %s 激光
+            ? StatCollector.translateToLocalFormatted(LANG + "laser_amperes", amperes)
+            : amperes;
+    }
+
+    private boolean energyHeld() {
+        int id = heldId();
+        return id > 0 && ProjectorEnergyHatches.flowOf(id) != null;
     }
 
     public int held() {
@@ -423,8 +473,8 @@ public class ProjectorHatchPage {
     }
 
     public Integer variant() {
-        List<Integer> tiers = tiersOfHeld();
-        return tiers == null ? null : tiers.get(0);
+        List<Integer> ids = modelOfHeld();
+        return ids == null ? null : ids.get(0);
     }
 
     public void chooseVariant(int first) {
@@ -433,13 +483,36 @@ public class ProjectorHatchPage {
         int id = heldId();
         if (variants == null || current == null || id <= 0) return;
         List<Integer> ids = variants.get(modelKey(first));
-        if (ids != null && !ids.contains(id))
-            setModel(current, selected.getAsInt(), closestTier(ids, ProjectorMachines.tier(id)));
+        if (ids != null && !ids.contains(id)) setModel(current, selected.getAsInt(), closest(ids, id));
+    }
+
+    public String variantLabel(int first) {
+        String model = ProjectorEnergyHatches.flowOf(first) == null ? null : ProjectorEnergyHatches.modelOf(first);
+        if (ProjectorEnergyHatches.WIRED.equals(model) || ProjectorEnergyHatches.WIRELESS.equals(model))
+            // #tr gtneverreset.projector.gui.wired
+            // # Wired
+            // # zh_CN 有线
+            // #tr gtneverreset.projector.gui.wireless
+            // # Wireless
+            // # zh_CN 无线
+            return StatCollector.translateToLocal(LANG + model);
+        return variantName(nearestOfModel(first));
+    }
+
+    public ItemStack variantIcon(int first) {
+        return ProjectorMachines.stackOf(nearestOfModel(first));
+    }
+
+    // Models that join hatches of different names show the one closest to the held hatch.
+    private int nearestOfModel(int first) {
+        Map<String, List<Integer>> variants = variantsOfHeld();
+        List<Integer> ids = variants == null ? null : variants.get(modelKey(first));
+        int held = heldId();
+        return ids == null || held <= 0 ? first : closest(ids, held);
     }
 
     public boolean hasTiers() {
-        List<Integer> tiers = tiersOfHeld();
-        return tiers != null && tiers.size() > 1;
+        return tiers().size() > 1;
     }
 
     public String tierLabel() {
@@ -448,12 +521,20 @@ public class ProjectorHatchPage {
     }
 
     public void stepTier(int step) {
-        List<Integer> tiers = tiersOfHeld();
+        int tier = ProjectorMachines.tier(heldId());
+        stepWithin(tiers(), step, choice -> ProjectorMachines.tier(choice) == tier);
+    }
+
+    // A hatch that copies another mod's hatch at the same parameters is not itself among the choices.
+    private void stepWithin(List<Integer> choices, int step, IntPredicate sameAsHeld) {
         ProjectorStructure current = structure.get();
         int id = heldId();
-        if (tiers == null || current == null || id <= 0) return;
-        int position = Math.max(0, Math.min(tiers.size() - 1, tiers.indexOf(id) + step));
-        if (tiers.get(position) != id) setModel(current, selected.getAsInt(), tiers.get(position));
+        if (choices.isEmpty() || current == null || id <= 0) return;
+        int index = choices.indexOf(id);
+        for (int i = 0; index < 0 && i < choices.size(); i++) if (sameAsHeld.test(choices.get(i))) index = i;
+        if (index < 0) return;
+        int position = Math.max(0, Math.min(choices.size() - 1, index + step));
+        if (position != index) setModel(current, selected.getAsInt(), choices.get(position));
     }
 
     public List<Row> spotRows() {
@@ -499,10 +580,15 @@ public class ProjectorHatchPage {
         return slot == null || id <= 0 ? null : groups(slot).get(kindKey(id));
     }
 
-    private List<Integer> tiersOfHeld() {
+    private List<Integer> modelOfHeld() {
         Map<String, List<Integer>> variants = variantsOfHeld();
         int id = heldId();
         return variants == null ? null : variants.get(modelKey(id));
+    }
+
+    private int closest(List<Integer> ids, int id) {
+        return ProjectorEnergyHatches.flowOf(id) != null ? ProjectorEnergyHatches.closest(ids, id)
+            : closestTier(ids, ProjectorMachines.tier(id));
     }
 
     private int closestTier(List<Integer> ids, int tier) {
@@ -555,16 +641,31 @@ public class ProjectorHatchPage {
                 .computeIfAbsent(modelKey(id), key -> new ArrayList<>())
                 .add(id);
         }
-        for (Map<String, List<Integer>> variants : kinds.values()) {
+        for (Map.Entry<Object, Map<String, List<Integer>>> kind : kinds.entrySet()) {
+            Map<String, List<Integer>> variants = kind.getValue();
             if (variants == null) continue;
-            for (List<Integer> ids : variants.values()) ids.sort(Comparator.comparingInt(ProjectorMachines::tier));
+            boolean energy = kind.getKey() instanceof Flow;
+            for (List<Integer> ids : variants.values())
+                ids.sort(energy ? ProjectorEnergyHatches.order() : Comparator.comparingInt(ProjectorMachines::tier));
+            if (energy) kind.setValue(plainModelsFirst(variants));
         }
         groupedFor = slot;
         grouped = kinds;
         return kinds;
     }
 
+    private static Map<String, List<Integer>> plainModelsFirst(Map<String, List<Integer>> variants) {
+        Map<String, List<Integer>> ordered = new LinkedHashMap<>();
+        for (String model : new String[] { ProjectorEnergyHatches.WIRED, ProjectorEnergyHatches.WIRELESS }) {
+            if (variants.containsKey(model)) ordered.put(model, variants.get(model));
+        }
+        ordered.putAll(variants);
+        return ordered;
+    }
+
     private static Object kindKey(int id) {
+        Flow flow = ProjectorEnergyHatches.flowOf(id);
+        if (flow != null) return flow;
         HatchElement element = ProjectorMachines.kindOf(id);
         return element != null ? element
             : ProjectorMachines.prototype(id)
@@ -573,6 +674,10 @@ public class ProjectorHatchPage {
 
     // GT gives some hatches of one class different names, such as the auto maintenance hatch, and those are not tiers.
     private static String modelKey(int id) {
+        String energy = ProjectorEnergyHatches.flowOf(id) == null ? null : ProjectorEnergyHatches.modelOf(id);
+        if (energy != null) return energy;
+        String series = ProjectorMachines.seriesOf(id);
+        if (series != null) return series;
         return ProjectorMachines.prototype(id)
             .getClass()
             .getName() + "|"
@@ -588,15 +693,20 @@ public class ProjectorHatchPage {
     }
 
     public static String tierName(int id) {
-        int tier = ProjectorMachines.tier(id);
-        return tier >= 0 && tier < GTValues.VN.length ? GTValues.VN[tier] : "";
+        return coloredTier(ProjectorMachines.tier(id));
+    }
+
+    public static String coloredTier(int tier) {
+        return tier >= 0 && tier < GTValues.VN.length && tier < GTValues.TIER_COLORS.length
+            ? GTUtility.getColoredTierNameFromTier((byte) tier)
+            : "";
     }
 
     public static String variantName(int id) {
         String name = ProjectorMachines.stackOf(id)
             .getDisplayName();
-        String tier = tierName(id);
-        if (!tier.isEmpty()) name = name.replace(tier, "");
+        int tier = ProjectorMachines.tier(id);
+        if (tier >= 0 && tier < GTValues.VN.length) name = name.replace(GTValues.VN[tier], "");
         return name.replace("()", "")
             .replace("（）", "")
             .replaceAll("\\s+", " ")
@@ -650,6 +760,9 @@ public class ProjectorHatchPage {
 
     private String placeWords(int[] world, int[] bounds) {
         ForgeDirection front = working.facing.getDirection();
+        // #tr gtneverreset.projector.gui.place.center
+        // # middle
+        // # zh_CN 中间
         if (front.offsetY != 0) return StatCollector.translateToLocal(LANG + "place.center");
         double x = world[0] - (bounds[0] + bounds[3]) / 2.0, z = world[2] - (bounds[2] + bounds[5]) / 2.0;
         double depth = x * front.offsetX + z * front.offsetZ, side = x * front.offsetZ - z * front.offsetX;
@@ -669,9 +782,6 @@ public class ProjectorHatchPage {
         // #tr gtneverreset.projector.gui.place.left
         // # left
         // # zh_CN 左
-        // #tr gtneverreset.projector.gui.place.center
-        // # middle
-        // # zh_CN 中间
         // #tr gtneverreset.projector.gui.place.right
         // # right
         // # zh_CN 右

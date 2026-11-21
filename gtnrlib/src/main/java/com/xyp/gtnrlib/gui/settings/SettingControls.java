@@ -72,7 +72,8 @@ public class SettingControls {
                 Arrays.asList(
                     Layout.label(IKey.lang(lang), style)
                         .tooltipBuilder(tooltip -> tooltip.addLine(IKey.lang(lang + TOOLTIP))),
-                    new StepSlider().value(this::value, this::set)
+                    new StepSlider().wheel(true)
+                        .value(this::value, this::set)
                         .range(min, max, steps())
                         .format(format)
                         .tagWidth(tagWidth)

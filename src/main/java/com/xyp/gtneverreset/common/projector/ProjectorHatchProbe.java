@@ -7,6 +7,8 @@ import java.util.function.Predicate;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.structurelib.structure.AutoPlaceEnvironment;
 import com.gtnewhorizon.structurelib.structure.IStructureElement;
@@ -72,6 +74,7 @@ public class ProjectorHatchProbe {
             }
             // Legacy optional hatch adders only offer their casing for placement but still accept hatches.
             if (candidates.isEmpty()) candidates = tryHatchesInPlace(element, x, y, z);
+            else candidates = usable(element, candidates, x, y, z);
             if (candidates.isEmpty()) return -1;
         } else {
             if (!world.isAirBlock(x, y, z) || simulation.checks(element, x, y, z)) return -1;
@@ -158,9 +161,32 @@ public class ProjectorHatchProbe {
         return candidates;
     }
 
+    // The placement filter is only a hint; the machine's own hatch adder decides what its structure check keeps.
+    private IntArrayList usable(IStructureElement<Object> element, IntArrayList candidates, int x, int y, int z) {
+        Block block = world.getBlock(x, y, z);
+        int meta = world.getBlockMetadata(x, y, z);
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile != null && !(tile instanceof IGregTechTileEntity)) return candidates;
+        IGregTechTileEntity original = (IGregTechTileEntity) tile;
+        int originalId = original == null ? 0 : original.getMetaTileID();
+        ForgeDirection facing = original == null ? null : original.getFrontFacing();
+        IntArrayList usable = new IntArrayList(candidates.size());
+        for (int id : candidates) {
+            if (tryHatch(element, id, x, y, z)) usable.add(id);
+        }
+        world.setBlockToAir(x, y, z);
+        if (originalId > 0) {
+            simulation.placeMachine(originalId, x, y, z);
+            if (world.getTileEntity(x, y, z) instanceof IGregTechTileEntity restored) restored.setFrontFacing(facing);
+        } else if (block != Blocks.air) world.setBlock(x, y, z, block, meta, 2);
+        // Adders that keep their hatch in a field of their own refuse every later one; keep the filter's list then.
+        return usable.isEmpty() ? candidates : usable;
+    }
+
     private boolean tryHatch(IStructureElement<Object> element, int id, int x, int y, int z) {
         world.setBlockToAir(x, y, z);
         simulation.placeMachine(id, x, y, z);
+        if (simulation.machine instanceof MTEMultiBlockBase multiblock) multiblock.clearHatches();
         return simulation.checks(element, x, y, z);
     }
 

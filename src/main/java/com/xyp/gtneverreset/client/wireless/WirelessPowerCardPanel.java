@@ -57,6 +57,7 @@ import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Colors;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Icon;
 import com.xyp.gtnrlib.gui.widget.CycleDropdown;
+import com.xyp.gtnrlib.gui.widget.RowScrollbar;
 
 import appeng.core.localization.ColorUtils;
 import cpw.mods.fml.relauncher.Side;
@@ -77,7 +78,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
     private final String themeId = ScreenThemeConfig.wirelessPowerCard.themeId;
     private final AE2Theme.Variant variant = AE2Theme.variant(themeId);
     private final int scrollWidth = AE2Theme.scrollbarWidth(variant);
-    private final WirelessCardScrollbar scrollbar;
+    private final RowScrollbar scrollbar;
     private final Session session;
     private final boolean details;
     private final IPanelHandler detailsPanel;
@@ -109,10 +110,9 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         detailsPanel = details ? null
             : IPanelHandler.simple(this, (parent, player) -> new WirelessPowerCardPanel(session, true), true);
         if (details) child(ButtonWidget.panelCloseButton());
-        scrollbar = new WirelessCardScrollbar(
-            variant,
-            this::view,
-            this::scrollReady,
+        scrollbar = new RowScrollbar(
+            () -> view().getInteger("scroll"),
+            () -> scrollReady() ? view().getInteger("maxScroll") : 0,
             offset -> session.request(SCROLL_TO, Integer.toString(offset)));
         child(scrollbar);
         // #tr gtnr.power.gui.back
@@ -349,8 +349,8 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         ySize = layout.height() - (details ? ROW_TOP - 60 : 0);
         visibleRows = layout.rows();
         size(xSize, ySize);
-        scrollbar.pos(xSize - 10 - scrollWidth, rowTop() - 2)
-            .size(scrollWidth, visibleRows * ROW_HEIGHT + 2);
+        scrollbar.pos(xSize - 10 - scrollWidth, rowTop() - 3)
+            .size(scrollWidth, visibleRows * ROW_HEIGHT + 4);
         // NEI keeps two shortcut buttons in the lower-left corner at large GUI scales.
         footerLeft = height - ySize < 40 ? Math.max(10, 46 - (width - xSize) / 2) : 10;
         back.pos(footerLeft, ySize - 27)

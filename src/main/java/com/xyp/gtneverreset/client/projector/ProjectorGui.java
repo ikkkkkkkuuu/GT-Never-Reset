@@ -31,7 +31,6 @@ import com.cleanroommc.modularui.screen.RichTooltip;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widget.Widget;
-import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.GTNeverReset;
@@ -49,11 +48,14 @@ import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Icon;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
+import com.xyp.gtnrlib.gui.theme.ae2.AE2Draw;
+import com.xyp.gtnrlib.gui.theme.ae2.AE2Panels;
 import com.xyp.gtnrlib.gui.widget.ActionButton;
 import com.xyp.gtnrlib.gui.widget.FadingNotice;
 import com.xyp.gtnrlib.gui.widget.IconRowList;
 import com.xyp.gtnrlib.gui.widget.IconRowList.Row;
 import com.xyp.gtnrlib.gui.widget.ListRow;
+import com.xyp.gtnrlib.gui.widget.PageTabs;
 import com.xyp.gtnrlib.gui.widget.VerticalButtonBar;
 
 import cpw.mods.fml.relauncher.Side;
@@ -111,7 +113,7 @@ public class ProjectorGui extends ModularPanel {
     public ProjectorGui(PlayerInventoryGuiData data) {
         super(NAME);
         size(WIDTH, HEIGHT);
-        background(AE2Theme.panelBackground(BODY_LEFT, BODY_RIGHT)).disableThemeBackground(true)
+        background(AE2Panels.panelBackground(this, BODY_LEFT, BODY_RIGHT)).disableThemeBackground(true)
             .disableHoverThemeBackground(true);
         variant = AE2Theme.variant(themeId);
         muted = variant == null ? PLAIN_MUTED : variant.colors.muted();
@@ -186,7 +188,7 @@ public class ProjectorGui extends ModularPanel {
     }
 
     public IDrawable well() {
-        return AE2Theme.well(wellWidth, PLAIN_WELL);
+        return AE2Panels.well(wellWidth, PLAIN_WELL);
     }
 
     public ListRow controlRow(String key, Widget<?> control) {
@@ -296,22 +298,12 @@ public class ProjectorGui extends ModularPanel {
     }
 
     private void buildTabs() {
+        PageTabs tabs = new PageTabs(() -> page, index -> page = index);
         for (int i = 0; i < TAB_ICONS.length; i++) {
             int index = i;
-            ButtonWidget<?> tab = new ButtonWidget<>();
-            IDrawable look = AE2Theme.pageTab(tab, () -> TAB_ICONS[index], () -> page == index);
-            child(
-                tab.background(look)
-                    .hoverBackground(look)
-                    .disableHoverThemeBackground(true)
-                    .pos(WIDTH - BODY_RIGHT - AE2Theme.PAGE_TAB_INSET, TABS_TOP + i * AE2Theme.PAGE_TAB_PITCH)
-                    .size(AE2Theme.PAGE_TAB_SIZE, AE2Theme.PAGE_TAB_SIZE)
-                    .tooltipBuilder(tooltip -> tooltip.addLine(StatCollector.translateToLocal(LANG + TAB_NAMES[index])))
-                    .onMousePressed(mouse -> {
-                        page = index;
-                        return true;
-                    }));
+            tabs.tab(() -> TAB_ICONS[index], () -> StatCollector.translateToLocal(LANG + TAB_NAMES[index]));
         }
+        child(tabs.pos(WIDTH - BODY_RIGHT - AE2Theme.PAGE_TAB_INSET, TABS_TOP));
     }
 
     private IWidget toolbar() {
@@ -636,12 +628,13 @@ public class ProjectorGui extends ModularPanel {
             ProjectorStructure structure = finishedStructure();
             if (structure == null || !hasProblem(structure) && !structure.checked) return;
             boolean good = !hasProblem(structure) && structure.formed;
-            AE2Theme.drawTintedIcon(good ? Icon.CHECKMARK : Icon.EXCLAMATION, x, y, good ? goodColor : badColor);
+            AE2Draw.drawTintedIcon(good ? Icon.CHECKMARK : Icon.EXCLAMATION, x, y, good ? goodColor : badColor);
         };
         return new Widget<>().size(AE2Theme.ICON_SIZE, AE2Theme.ICON_SIZE)
             .top(STATUS_INSET)
             .right(STATUS_INSET)
-            .background(look)
+            // Sibling backgrounds are all drawn before the preview, which would paint over this one.
+            .overlay(look)
             .disableThemeBackground(true)
             .disableHoverThemeBackground(true)
             .tooltipAutoUpdate(true)

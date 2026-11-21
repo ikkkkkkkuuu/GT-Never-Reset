@@ -3,6 +3,7 @@ package com.xyp.gtnrlib.gui.widget;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.OptionalLong;
+import java.util.function.BooleanSupplier;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.regex.Pattern;
@@ -16,24 +17,25 @@ import org.jetbrains.annotations.Nullable;
 import com.cleanroommc.modularui.api.UpOrDown;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
+import com.cleanroommc.modularui.theme.WidgetTheme;
 import com.cleanroommc.modularui.theme.WidgetThemeEntry;
+import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.utils.MathUtils;
 import com.cleanroommc.modularui.utils.ParseResult;
 import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widget.sizer.Unit.Measure;
-import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
+import com.xyp.gtnrlib.gui.theme.ae2.AE2Look;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 /**
- * Client-side integer input with a text field, validation feedback and step controls.
+ * Integer input with a text field, validation feedback and step controls. It can be built on either side, so it also
+ * works in GUIs the server opens.
  * <p>
  * The layout follows the widget's size. From {@link #HEIGHT} pixels up the entry shows AE2's four pairs of step
  * buttons above and below the text field, stretched to the width; the default size is {@link #WIDTH} by
@@ -46,17 +48,26 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
  * characters.
  * <p>
  * Step button sizes are 1, 10, 100 and 1000, or 1, 16, 32 and 64 while Shift or Ctrl is held. The {@code <} and
- * {@code >} buttons and the mouse wheel over the text field step by 1, or by 10 while Shift is held. Steps are
- * clamped to the configured bounds. Increasing a value of one by a step larger than one selects that step value.
+ * {@code >} buttons step by 1, or by 10 while Shift is held, and so does the mouse wheel over the text field after
+ * {@link #wheel(boolean) wheel(true)}. The wheel steps only while the pointer is over the text field, even after the
+ * player has clicked into it; elsewhere, or with the wheel off, it is left to the widgets under the pointer, such as a
+ * list around the entry. Steps are clamped to the configured bounds.
+ * Increasing a value of one by a step larger than one selects that step value.
  * Invalid input is treated as zero when applying a step. Right-clicking the text field sets the reset value,
  * clamped to the bounds, so the default reset value of zero becomes one when the minimum is one.
  * <p>
+ * While {@link #available(BooleanSupplier)} reports false the entry looks disabled like AE2's: the buttons are drawn
+ * disabled and the text field gets AE2's dark uneditable background and grey text; clicks, typing and the wheel do
+ * nothing.
+ * <p>
  * {@link #isInputValid()} describes the input. Inherited {@link #isValid()} describes the MUI2 widget lifecycle.
  * <p>
- * For example, {@code new NumberEntry(Variant.LIGHT).bounds(1, 1_000_000).value(64)} creates a bounded input with an
- * initial value of 64.
+ * Invalid text is drawn in the error color of the theme the entry is drawn with: AE2's input error color under AE2
+ * themes, a plain red otherwise.
+ * <p>
+ * For example, {@code new NumberEntry().bounds(1, 1_000_000).value(64)} creates a bounded input with an initial value
+ * of 64.
  */
-@SideOnly(Side.CLIENT)
 public class NumberEntry extends ParentWidget<NumberEntry> {
 
     /** Default widget dimensions in GUI pixels; lower entries use the single-row layout. */
@@ -70,23 +81,31 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
     private static final String LANG = "gtnrlib.gui.number_entry.";
     private static final Pattern INTEGER = Pattern.compile("-?\\d+");
 
-    private final @Nullable Variant variant;
     private final Field field = new Field();
     private final Warning warning = new Warning();
     private final List<String> messages = new ObjectArrayList<>();
     private String text = "0";
     private long min, max = Long.MAX_VALUE, value, reset;
-    private boolean inputValid = true;
+    private boolean inputValid = true, wheel;
     private LongConsumer listener = ignored -> {};
+    private BooleanSupplier available = () -> true;
 
     /**
-     * Creates an entry with value zero and inclusive bounds from zero to {@link Long#MAX_VALUE}.
+     * Same as {@link #NumberEntry()}.
      *
-     * @param variant palette for validation feedback, or {@code null} for the default error color and light icon;
-     *                button and text-field styling follows the containing panel's theme
+     * @param variant ignored; the entry, its validation feedback included, follows the theme it is drawn with
+     * @deprecated use {@link #NumberEntry()}
      */
+    @Deprecated
     public NumberEntry(@Nullable Variant variant) {
-        this.variant = variant;
+        this();
+    }
+
+    /**
+     * Creates an entry with value zero and inclusive bounds from zero to {@link Long#MAX_VALUE}. Buttons, text field
+     * and validation feedback follow the theme the entry is drawn with.
+     */
+    public NumberEntry() {
         size(WIDTH, HEIGHT);
         for (int i = 0; i < STEPS.length; i++) {
             int index = i;
@@ -145,6 +164,27 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
     public NumberEntry resetValue(long reset) {
         this.reset = reset;
         return this;
+    }
+
+    /**
+     * Sets when the entry can be used; it looks disabled and ignores input otherwise, and gives up keyboard focus.
+     *
+     * @param available supplier read every frame and on every input
+     * @return this widget
+     */
+    public NumberEntry available(BooleanSupplier available) {
+        this.available = available;
+        return this;
+    }
+
+    private boolean isAvailable() {
+        return available.getAsBoolean();
+    }
+
+    @Override
+    public void onUpdate() {
+        super.onUpdate();
+        if (!isAvailable() && isEditing()) getContext().removeFocus();
     }
 
     /**
@@ -231,6 +271,29 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
     }
 
     /**
+     * Sets where the text sits inside the field, such as {@link Alignment#Center} for a centred number.
+     *
+     * @param alignment placement of the text inside the field; MUI2's default is {@link Alignment#CenterLeft}
+     * @return this widget
+     */
+    public NumberEntry textAlignment(Alignment alignment) {
+        field.setTextAlignment(alignment);
+        return this;
+    }
+
+    /**
+     * Sets whether the mouse wheel over the text field steps the value by 1, or by 10 while Shift is held. Off by
+     * default, so the wheel goes to the widgets around the entry, such as a scrolling list.
+     *
+     * @param wheel true to let the wheel step the value
+     * @return this widget
+     */
+    public NumberEntry wheel(boolean wheel) {
+        this.wheel = wheel;
+        return this;
+    }
+
+    /**
      * Returns the accepted value of the current text.
      *
      * @return the integer value, or an empty result while the input is invalid
@@ -252,31 +315,15 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
         return isInputValid();
     }
 
-    private ButtonWidget<?> step(int index, int sign) {
-        ButtonWidget<?> button = new ButtonWidget<>();
-        IDrawable background = AE2Theme.button(button, () -> true, () -> false);
-        return button.background(background)
-            .hoverBackground(background)
-            .overlay(AE2Theme.label(button, () -> (sign > 0 ? "+" : "-") + steps()[index], () -> true, () -> false))
-            .onMousePressed(mouse -> {
-                if (mouse != 0) return false;
-                add(sign * steps()[index]);
-                return true;
-            })
+    private ActionButton step(int index, int sign) {
+        return ActionButton.text(() -> (sign > 0 ? "+" : "-") + steps()[index], () -> add(sign * steps()[index]))
+            .available(this::isAvailable)
             .setEnabledIf(widget -> !compact());
     }
 
-    private ButtonWidget<?> arrow(int sign) {
-        ButtonWidget<?> button = new ButtonWidget<>();
-        IDrawable background = AE2Theme.button(button, () -> true, () -> false);
-        return button.background(background)
-            .hoverBackground(background)
-            .overlay(AE2Theme.label(button, () -> sign > 0 ? ">" : "<", () -> true, () -> false))
-            .onMousePressed(mouse -> {
-                if (mouse != 0) return false;
-                add(sign * fineStep());
-                return true;
-            })
+    private ActionButton arrow(int sign) {
+        return ActionButton.text(() -> sign > 0 ? ">" : "<", () -> add(sign * fineStep()))
+            .available(this::isAvailable)
             .setEnabledIf(widget -> compact());
     }
 
@@ -332,7 +379,6 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
         // # zh_CN 最大为 %s
         else if (number.compareTo(BigDecimal.valueOf(max)) > 0) messages.add(tr("max", max));
         inputValid = messages.isEmpty();
-        field.error(inputValid ? null : variant == null ? PLAIN_ERROR : variant.colors.error());
         if (!inputValid) return;
         value = number.longValueExact();
         if (!INTEGER.matcher(text.strip())
@@ -373,19 +419,46 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
 
         @Override
         public @NotNull Result onMousePressed(int mouseButton) {
+            if (!isAvailable()) return Result.STOP;
             if (mouseButton != 1 || !isHovering()) return super.onMousePressed(mouseButton);
             reset();
             return Result.SUCCESS;
         }
 
         @Override
+        public @NotNull Result onKeyPressed(char character, int keyCode) {
+            return isAvailable() ? super.onKeyPressed(character, keyCode) : Result.IGNORE;
+        }
+
+        @Override
         public boolean onMouseScroll(UpOrDown scrollDirection, int amount) {
+            // Why: MUI2 offers the wheel to the focused field first, wherever the pointer is.
+            if (!wheel || !isAvailable() || !isHovering()) return false;
             add(scrollDirection.modifier * fineStep());
             return true;
         }
 
-        private void error(@Nullable Integer color) {
+        @Override
+        public @Nullable IDrawable getThemeBackground(WidgetThemeEntry<?> widgetTheme, WidgetTheme activeTheme) {
+            Variant shown = isAvailable() ? null
+                : AE2Look.of(this)
+                    .variant();
+            return shown == null ? super.getThemeBackground(widgetTheme, activeTheme) : shown.textFieldDisabled;
+        }
+
+        @Override
+        public void preDraw(ModularGuiContext context, boolean transformed) {
+            Integer color = textColor;
+            if (!isAvailable()) textColor = AE2Theme.FIELD_DISABLED_TEXT;
+            else if (!inputValid) textColor = errorColor();
+            super.preDraw(context, transformed);
             textColor = color;
+        }
+
+        private int errorColor() {
+            Variant variant = AE2Look.of(this)
+                .variant();
+            return variant == null ? PLAIN_ERROR : variant.colors.error();
         }
     }
 
@@ -397,8 +470,9 @@ public class NumberEntry extends ParentWidget<NumberEntry> {
 
         @Override
         public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
-            (variant == null ? Variant.LIGHT : variant).invalid
-                .draw(0, 0, AE2Theme.VALIDATION_ICON_SIZE, AE2Theme.VALIDATION_ICON_SIZE);
+            Variant variant = AE2Look.of(this)
+                .variant();
+            (variant == null ? Variant.LIGHT : variant).invalid.draw(0, 0, AE2Theme.ICON_SIZE, AE2Theme.ICON_SIZE);
         }
     }
 }
