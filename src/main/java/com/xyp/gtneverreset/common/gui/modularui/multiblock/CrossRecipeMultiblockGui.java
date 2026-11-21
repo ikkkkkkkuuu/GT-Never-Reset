@@ -4,9 +4,9 @@ import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeMultibloc
 
 import gregtech.api.modularui2.GTGuiTextures;
 
-public final class CrossRecipeMultiblockGui extends GTNRMultiBlockBaseGui<CrossRecipeMultiblockBase<?>> {
+public class CrossRecipeMultiblockGui<T extends CrossRecipeMultiblockBase<?>> extends GTNRMultiBlockBaseGui<T> {
 
-    public CrossRecipeMultiblockGui(CrossRecipeMultiblockBase<?> multiblock) {
+    public CrossRecipeMultiblockGui(T multiblock) {
         super(multiblock);
         for (int mode = 0; mode < multiblock.getAvailableRecipeMaps()
             .size(); mode++) {

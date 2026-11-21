@@ -26,7 +26,7 @@ import gregtech.api.util.GTRecipe;
 import gregtech.common.tileentities.machines.IDualInputInventoryWithPattern;
 import gregtech.common.tileentities.machines.MTEHatchCraftingInputME;
 
-public final class CrossRecipeProcessingLogic extends RecipeThreadProcessingLogic {
+public class CrossRecipeProcessingLogic extends RecipeThreadProcessingLogic {
 
     private final CrossRecipeMultiblockBase<?> controller;
     private ICraftingPatternDetails pattern;

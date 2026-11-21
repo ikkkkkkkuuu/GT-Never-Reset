@@ -53,8 +53,8 @@ public abstract class CrossRecipeMultiblockBase<T extends CrossRecipeMultiblockB
     }
 
     @Override
-    protected CrossRecipeMultiblockGui getGui() {
-        return new CrossRecipeMultiblockGui(this);
+    protected CrossRecipeMultiblockGui<?> getGui() {
+        return new CrossRecipeMultiblockGui<>(this);
     }
 
     @Override
