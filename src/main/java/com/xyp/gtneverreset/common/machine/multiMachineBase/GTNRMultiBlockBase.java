@@ -306,6 +306,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
                 markDirty();
             }
         }
+        if (completed) setLastWorkingTick(getTotalRuntimeInTicks());
         if (!paused && tile.isAllowedToWork()
             && (completed || tick % RECIPE_CHECK_INTERVAL == 0
                 || tile.hasInventoryBeenModified()
