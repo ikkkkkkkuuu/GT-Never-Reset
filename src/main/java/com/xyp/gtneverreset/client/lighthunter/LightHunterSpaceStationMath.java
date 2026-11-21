@@ -8,7 +8,7 @@ public final class LightHunterSpaceStationMath {
     public static final int ORBIT_SEGMENTS = 128;
     public static final double STAR_DISTANCE = 206;
     public static final double BEAM_DISTANCE = 174;
-    public static final float STAR_SCALE = 0.20F;
+    public static final float STAR_RADIUS = 14.8F;
     public static final float BEAM_RADIUS = 0.85F;
     public static final int CULLING_RADIUS = 56;
     private static final float TAU = (float) (2 * Math.PI);
