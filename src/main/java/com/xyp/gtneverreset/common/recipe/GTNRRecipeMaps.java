@@ -304,6 +304,18 @@ public final class GTNRRecipeMaps {
             .build()
         : null;
 
+    public static final RecipeCategory BottledChaosRocketFuelCategory = ChaosConfig.enableBottleInChaos
+        ? new RecipeCategory(
+            // #tr gtnr.bottleinchaos.recipe.category.rocket_fuel.name
+            // # Rocket Fuel
+            // # zh_CN 火箭燃料
+            "gtnr.bottleinchaos.recipe.category.rocket_fuel.name",
+            BottledChaosRecipes,
+            RecipeCategorySetting::getDefault,
+            builder -> BottledChaosRecipes.getDefaultRecipeCategory().handlerInfoCreator.apply(builder)
+                .setDisplayStack(Materials.Carbon.getDust(1)))
+        : null;
+
     public static final RecipeCategory BottledChaosNaquadahFuelCategory = ChaosConfig.enableBottleInChaos
         ? new RecipeCategory(
             // #tr gtnr.bottleinchaos.recipe.category.naquadah_fuel.name

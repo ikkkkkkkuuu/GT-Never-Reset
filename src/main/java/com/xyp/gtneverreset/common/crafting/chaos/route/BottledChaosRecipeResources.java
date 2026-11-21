@@ -145,7 +145,10 @@ public final class BottledChaosRecipeResources {
             new TagDefinition("eternity", HAS_ETERNITY && ChaosConfig.BottledChaosCycleRecipes, "eternity", BottledChaosRecipePage.DEFAULT),
             new TagDefinition("phonon_medium", ChaosConfig.BottledChaosCycleRecipes, "phonon_medium", BottledChaosRecipePage.DEFAULT),
             new TagDefinition("magmatter", true, "magmatter", BottledChaosRecipePage.DEFAULT),
-            new TagDefinition("quark_gluon_plasma", true, "quark_gluon_plasma", BottledChaosRecipePage.DEFAULT)
+            new TagDefinition("quark_gluon_plasma", true, "quark_gluon_plasma", BottledChaosRecipePage.DEFAULT),
+            new TagDefinition("rocket_fuel", true, "rocket_fuel", BottledChaosRecipePage.ROCKET_FUEL),
+            new TagDefinition("naquadah_fuel_1", true, "naquadah_fuel_1", BottledChaosRecipePage.NAQUADAH_FUEL),
+            new TagDefinition("naquadah_fuel_2", true, "naquadah_fuel_2", BottledChaosRecipePage.NAQUADAH_FUEL)
         };
         // spotless:on
         private static final TagDefinition[] ACTIVE = Arrays.stream(DEFINITIONS)
@@ -296,6 +299,9 @@ public final class BottledChaosRecipeResources {
         static {
             // spotless:off
             register("wood", WoodLog, WoodLog);
+            register("rocket_fuel", CarbonDust, GTPPFluids.RP1RocketFuel);
+            register("naquadah_fuel_1", GGMaterial.lightNaquadahFuel.getFluidOrGas(1).getFluid(), GGMaterial.naquadahBasedFuelMkI.getFluidOrGas(1).getFluid());
+            register("naquadah_fuel_2", GGMaterial.lightNaquadahFuel.getFluidOrGas(1).getFluid(), GGMaterial.naquadahBasedFuelMkII.getFluidOrGas(1).getFluid());
             register("petrochemical", Materials.Oil.getFluid(1).getFluid(), Materials.Oil.getFluid(1).getFluid());
             if (CredentialModel.HAS_HONEYCOMBS) register("honeycomb", recipeItemId(GTBees.combs.getStackForType(CombType.INDIUM, 1)), recipeItemId(GTBees.combs.getStackForType(CombType.INDIUM, 1)));
             register("titanium", RutileDust, TitaniumIngot);
