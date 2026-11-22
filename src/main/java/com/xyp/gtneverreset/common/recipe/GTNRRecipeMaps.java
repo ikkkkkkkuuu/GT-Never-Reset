@@ -477,6 +477,17 @@ public final class GTNRRecipeMaps {
                 .setDisplayStack(Materials.Oil.getCells(1)))
         : null;
 
+    public static final RecipeCategory BottledChaosPbiCategory = ChaosConfig.enableBottleInChaos ? new RecipeCategory(
+        // #tr gtnr.bottleinchaos.recipe.category.pbi.name
+        // # Polybenzimidazole (PBI)
+        // # zh_CN 聚苯并咪唑（PBI）
+        "gtnr.bottleinchaos.recipe.category.pbi.name",
+        BottledChaosRecipes,
+        RecipeCategorySetting::getDefault,
+        builder -> BottledChaosRecipes.getDefaultRecipeCategory().handlerInfoCreator.apply(builder)
+            .setDisplayStack(Materials.Polybenzimidazole.getPlates(1)))
+        : null;
+
     public static final RecipeMap<ChaosRecipeBackend> ChaosRouteRecipes = ChaosConfig.enableBottleInChaos
         ? RecipeMapBuilder
             // #tr gtnr.bottleinchaos.recipe.credential.name
