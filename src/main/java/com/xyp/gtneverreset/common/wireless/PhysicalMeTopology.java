@@ -1,7 +1,5 @@
 package com.xyp.gtneverreset.common.wireless;
 
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +22,9 @@ import appeng.api.networking.IGridNode;
 import appeng.api.parts.IPart;
 import appeng.api.parts.IPartHost;
 import appeng.api.util.DimensionalCoord;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.Reference2BooleanOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 
 public class PhysicalMeTopology implements PhysicalClusterTracker.Topology<IGridNode> {
 
@@ -43,8 +44,8 @@ public class PhysicalMeTopology implements PhysicalClusterTracker.Topology<IGrid
         }
     }
 
-    private final Map<IGridNode, NodeRef> references = new IdentityHashMap<>();
-    private final Map<IGridNode, Boolean> live = new IdentityHashMap<>();
+    private final Map<IGridNode, NodeRef> references = new Reference2ObjectOpenHashMap<>();
+    private final Reference2BooleanOpenHashMap<IGridNode> live = new Reference2BooleanOpenHashMap<>();
 
     void beginScan() {
         live.clear();
@@ -87,7 +88,7 @@ public class PhysicalMeTopology implements PhysicalClusterTracker.Topology<IGrid
 
     @Override
     public Iterable<IGridNode> neighbours(IGridNode node) {
-        List<IGridNode> result = new ArrayList<>();
+        List<IGridNode> result = new ObjectArrayList<>();
         for (IGridConnection connection : node.getConnections()) {
             if (WirelessChannelManager.isOwned(connection)) continue;
             IGridNode other = connection.getOtherSide(node);
