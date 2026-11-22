@@ -439,7 +439,7 @@ public final class UniversalWandGui {
         // # Acceleration
         // # zh_CN 时间加速
         panel.child(tab(tabs, 4, "acceleration", aeTabs));
-        if (data.isClient()) AE2Theme.sliderHandles(panel, ScreenThemeConfig.universalWand.themeId);
+        if (data.isClient()) AE2Theme.polish(panel, ScreenThemeConfig.universalWand.themeId);
         return panel;
     }
 

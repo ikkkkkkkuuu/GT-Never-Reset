@@ -56,7 +56,9 @@ import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Colors;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Icon;
+import com.xyp.gtnrlib.gui.widget.CloseButton;
 import com.xyp.gtnrlib.gui.widget.CycleDropdown;
+import com.xyp.gtnrlib.gui.widget.ThemedButton;
 
 import appeng.core.localization.ColorUtils;
 import cpw.mods.fml.relauncher.Side;
@@ -108,7 +110,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         this.details = details;
         detailsPanel = details ? null
             : IPanelHandler.simple(this, (parent, player) -> new WirelessPowerCardPanel(session, true), true);
-        if (details) child(ButtonWidget.panelCloseButton());
+        if (details) child(CloseButton.panelCorner());
         scrollbar = new WirelessCardScrollbar(
             variant,
             this::view,
@@ -128,7 +130,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             () -> tr("gtnr.power.gui.refresh"),
             () -> session.request(REFRESH, ""),
             () -> true);
-        sourceLink = new CardButton().background(IDrawable.EMPTY)
+        sourceLink = new ThemedButton().background(IDrawable.EMPTY)
             .hoverBackground(IDrawable.EMPTY)
             .onMousePressed(mouse -> {
                 if (mouse == 0) session.request(SOURCES, "");
@@ -224,7 +226,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
                 () -> row(index).getString("id"),
                 () -> !selected(index));
             select[i].setEnabledIf(widget -> sources() && hasRow(index));
-            sourceRows[i] = new CardButton().background(IDrawable.EMPTY)
+            sourceRows[i] = new ThemedButton().background(IDrawable.EMPTY)
                 .hoverBackground(IDrawable.EMPTY)
                 .onMousePressed(mouse -> {
                     if (mouse == 0) session.request(SELECT, row(index).getString("id"));
@@ -271,7 +273,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             highlight[i].setEnabledIf(widget -> device(index));
             power[i] = toggle(() -> !row(index).getBoolean("paused"), PAUSE, () -> row(index).getString("id"));
             power[i].setEnabledIf(widget -> device(index));
-            deviceRows[i] = new CardButton().background(IDrawable.EMPTY)
+            deviceRows[i] = new ThemedButton().background(IDrawable.EMPTY)
                 .hoverBackground(IDrawable.EMPTY)
                 .onMousePressed(mouse -> {
                     var row = row(index);
@@ -315,7 +317,6 @@ public final class WirelessPowerCardPanel extends ModularPanel {
     }
 
     public ModularScreen screen() {
-        AE2Theme.useMenuTheme(themeId, GTNeverReset.MODID, NAME, DIMENSION_MENU);
         return new ModularScreen(GTNeverReset.MODID, this) {
 
             @Override
@@ -652,17 +653,18 @@ public final class WirelessPowerCardPanel extends ModularPanel {
     private void drawRow(int index, boolean highlighted) {
         NBTTagCompound row = row(index);
         int y = rowTop() + index * ROW_HEIGHT;
-        Colors colors = variant == null ? null : (highlighted ? AE2Theme.Variant.LIGHT : variant).colors;
-        int textColor = colors == null ? ColorUtils.guiTextColorGray.getColor() : colors.text();
+        Colors colors = variant == null ? null : variant.rowColors(highlighted);
+        int textColor = colors == null ? ColorUtils.guiTextColorGray.getColor()
+            : highlighted ? variant.highlightText : colors.text();
         int secondary = colors == null ? textColor : colors.secondary();
         if (highlighted) {
-            drawRect(9, y, rowRight(), y + ROW_HEIGHT - 1, variant == null ? 0x60ffffff : AE2Theme.HIGHLIGHT);
+            drawRect(9, y, rowRight(), y + ROW_HEIGHT - 1, variant == null ? 0x60ffffff : variant.highlight);
             drawRect(
                 9,
                 y + ROW_HEIGHT - 2,
                 rowRight(),
                 y + ROW_HEIGHT - 1,
-                variant == null ? 0x40000000 : AE2Theme.HIGHLIGHT_SHADOW);
+                variant == null ? 0x40000000 : variant.highlightShadow);
         }
         drawRect(
             9,
@@ -822,16 +824,12 @@ public final class WirelessPowerCardPanel extends ModularPanel {
 
     private ButtonWidget<?> button(Supplier<String> label, int action, Supplier<String> target,
         BooleanSupplier available) {
-        CardButton button = actionButton(() -> session.request(action, target.get()), available);
-        IDrawable look = AE2Theme.button(button, available, () -> false);
-        button.background(look)
-            .hoverBackground(look)
-            .overlay(AE2Theme.label(button, label, available, () -> false));
-        return button;
+        ThemedButton button = actionButton(() -> session.request(action, target.get()), available);
+        return button.label(label, available);
     }
 
-    private CardButton iconButton(Icon icon, Supplier<String> label, Runnable action, BooleanSupplier available) {
-        CardButton button = actionButton(action, available);
+    private ThemedButton iconButton(Icon icon, Supplier<String> label, Runnable action, BooleanSupplier available) {
+        ThemedButton button = actionButton(action, available);
         button.background(IDrawable.EMPTY)
             .hoverBackground(IDrawable.EMPTY)
             .overlay(
@@ -842,8 +840,8 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         return button;
     }
 
-    private CardButton actionButton(Runnable action, BooleanSupplier available) {
-        CardButton button = new CardButton().onMousePressed(mouse -> {
+    private ThemedButton actionButton(Runnable action, BooleanSupplier available) {
+        ThemedButton button = new ThemedButton().onMousePressed(mouse -> {
             if (mouse == 0 && available.getAsBoolean()) action.run();
             return true;
         });
@@ -931,15 +929,6 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             .setScale(2, RoundingMode.HALF_UP)
             .stripTrailingZeros()
             .toPlainString() : String.format(Locale.ROOT, "%.3e", value);
-    }
-
-    private static final class CardButton extends ButtonWidget<CardButton> {
-
-        @Override
-        public boolean canBeSeen(IViewportStack stack) {
-            // ModularUI draws a dragged panel with ignoreEnabled=true, including its hidden children.
-            return isEnabled() && super.canBeSeen(stack);
-        }
     }
 
     private static final class Portrait {
