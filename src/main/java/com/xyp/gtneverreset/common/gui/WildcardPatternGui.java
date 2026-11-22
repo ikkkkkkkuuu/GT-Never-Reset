@@ -66,6 +66,8 @@ import com.xyp.gtneverreset.common.me.wildcard.model.io.SimpleIOComponent;
 import com.xyp.gtneverreset.compat.ae2fc.FluidDropCompat;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
+import com.xyp.gtnrlib.gui.theme.AE2Theme;
+import com.xyp.gtnrlib.gui.theme.ScreenTheme;
 import com.xyp.gtnrlib.gui.widget.ItemStackSlot;
 import com.xyp.gtnrlib.gui.widget.ScrollingDropdown;
 
@@ -85,6 +87,7 @@ public class WildcardPatternGui {
     private static final int PANEL_W = 196;
     private static final int TAB_WIDTH = 24;
     private static final int PREVIEW_HEIGHT = 80;
+    private static final int CARD_WIDTH = 152;
     private static final int EDITOR_HEIGHT = 128;
     private static final int PANEL_H = 238;
 
@@ -210,6 +213,15 @@ public class WildcardPatternGui {
             pages.height(height);
             panel.scheduleResize();
         });
+        if (data.isClient() && ScreenThemeConfig.wildcardPattern != ScreenTheme.DEFAULT) {
+            int listWidth = CARD_WIDTH + AE2Theme.SCROLLBAR_WIDTH;
+            pages.width(listWidth);
+            inputCards.width(listWidth);
+            outputCards.width(listWidth);
+            filterCards.width(listWidth)
+                .scrollDirection(new VerticalScrollData(false, AE2Theme.SCROLLBAR_WIDTH));
+            AE2Theme.polish(panel, ScreenThemeConfig.wildcardPattern.themeId);
+        }
         return panel;
     }
 
@@ -279,12 +291,14 @@ public class WildcardPatternGui {
 
     private IWidget buildIOPage(boolean input) {
         List<IWildcardIOComponent> list = input ? inputs : outputs;
-        ListWidget<IWidget, ?> cards = new ListWidget<>().pos(0, 3)
+        ListWidget<IWidget, ?> cards = new ListWidget<>().showScrollShadows(false)
+            .pos(0, 3)
             .size(158, EDITOR_HEIGHT - 26);
         if (input) inputCards = cards;
         else outputCards = cards;
         rebuildIOCards(cards, list);
-        return new ParentWidget<>().size(158, EDITOR_HEIGHT)
+        return new ParentWidget<>().widthRel(1f)
+            .height(EDITOR_HEIGHT)
             .child(cards)
             .child(
                 // #tr gtnr.gui.wildcardpattern.single
@@ -324,7 +338,7 @@ public class WildcardPatternGui {
 
     private IWidget ioCard(ListWidget<IWidget, ?> cards, List<IWildcardIOComponent> list, int index) {
         IWildcardIOComponent component = list.get(index);
-        ParentWidget<?> row = new ParentWidget<>().size(152, 25)
+        ParentWidget<?> row = new ParentWidget<>().size(CARD_WIDTH, 25)
             .background(component instanceof PrefixIOComponent ? PREFIX_ROW : FIXED_ROW);
         if (component instanceof PrefixIOComponent prefix) row.child(prefixEditor(prefix));
         else if (component instanceof SimpleIOComponent simple) row.child(simpleEditor(simple));
@@ -436,12 +450,14 @@ public class WildcardPatternGui {
     }
 
     private IWidget buildFilterPage() {
-        ListWidget<IWidget, ?> cards = new ListWidget<>().pos(0, 3)
+        ListWidget<IWidget, ?> cards = new ListWidget<>().showScrollShadows(false)
+            .pos(0, 3)
             .size(158, EDITOR_HEIGHT - 26)
             .scrollDirection(new VerticalScrollData(false, 4));
         filterCards = cards;
         rebuildFilterCards(cards);
-        return new ParentWidget<>().size(158, EDITOR_HEIGHT)
+        return new ParentWidget<>().widthRel(1f)
+            .height(EDITOR_HEIGHT)
             .child(cards)
             .child(
                 // #tr gtnr.gui.wildcardpattern.filter_name
@@ -483,7 +499,7 @@ public class WildcardPatternGui {
 
     private IWidget filterCard(ListWidget<IWidget, ?> cards, int index) {
         IWildcardFilterComponent component = filters.get(index);
-        ParentWidget<?> row = new ParentWidget<>().size(152, 25);
+        ParentWidget<?> row = new ParentWidget<>().size(CARD_WIDTH, 25);
         if (component instanceof PropertyFilterComponent property) {
             row.background(filterBackground(component, 0xFFFFFF33, 0xFFFF8800))
                 .child(propertyEditor(property));

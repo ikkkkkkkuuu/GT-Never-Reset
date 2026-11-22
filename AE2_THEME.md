@@ -22,7 +22,7 @@ GTNRLib provides light, dark and purple-highlighted dark AE2 themes for ModularU
 | `ScreenTheme.AE2_DARK` | `gtnrlib:ae2_dark` | `gtnrlib:ae2_dark_menu` |
 | `ScreenTheme.AE2_DARK_PURPLE` | `gtnrlib:ae2_dark_purple` | `gtnrlib:ae2_dark_purple_menu` |
 
-GTNRLib registers these themes during client initialization. Apply the selected identifier through MUI2's screen theme registration. `AE2Theme.useMenuTheme` maps named child menu panels to the matching menu theme.
+GTNRLib registers these themes during client initialization. Apply the selected identifier through MUI2's screen theme registration. `CycleDropdown` selects the menu theme from its owning panel when opened. Other named child menus can use `AE2Theme.useMenuTheme`. Call `AE2Theme.polish(panel, themeId)` after constructing a client panel to apply slider handles and scroll track colors, including to separately constructed dialogs.
 
 The purple dark theme shares the dark palette and replaces AE2's light-blue selection with fluix purple. Custom selection drawing should read `Variant.highlight`, `highlightTop`, `highlightShadow` and `highlightText` instead of the `AE2Theme.HIGHLIGHT` constants, so it matches every variant.
 

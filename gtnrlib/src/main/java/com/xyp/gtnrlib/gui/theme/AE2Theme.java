@@ -29,6 +29,7 @@ import com.cleanroommc.modularui.utils.Color;
 import com.cleanroommc.modularui.utils.GlStateManager;
 import com.cleanroommc.modularui.utils.JsonBuilder;
 import com.cleanroommc.modularui.utils.Platform;
+import com.cleanroommc.modularui.widget.AbstractScrollWidget;
 import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.SliderWidget;
 import com.xyp.gtnrlib.GTNRLib;
@@ -281,6 +282,18 @@ public class AE2Theme {
         float u = index % LEGACY_CELLS * ICON_SIZE / (float) SHEET,
             v = index / LEGACY_CELLS * ICON_SIZE / (float) SHEET, span = ICON_SIZE / (float) SHEET;
         GuiDraw.drawTexture(legacyStates(variant), x, y, x + size, y + size, u, v, u + span, v + span, true);
+    }
+
+    public static void polish(IWidget root, @Nullable String themeId) {
+        Variant variant = variant(themeId);
+        if (variant != null) polish(root, variant, new AE2ButtonDrawable(State.NORMAL, variant.folder));
+    }
+
+    private static void polish(IWidget widget, Variant variant, IDrawable handle) {
+        if (widget instanceof SliderWidget slider) slider.sliderTexture(handle);
+        if (widget instanceof AbstractScrollWidget<?, ?>scroll) scroll.getScrollArea()
+            .setScrollBarBackgroundColor(variant.colors.outline());
+        for (IWidget child : widget.getChildren()) polish(child, variant, handle);
     }
 
     public static void sliderHandles(IWidget root, @Nullable String themeId) {
@@ -681,6 +694,10 @@ public class AE2Theme {
                 .build();
         }
 
+        public Colors rowColors(boolean selected) {
+            return selected && this != DARK_PURPLE ? LIGHT.colors : colors;
+        }
+
         public WheelStyle.Builder wheel(WheelStyle.Builder style) {
             return style.discColor(WHEEL_DISC_ALPHA | colors.panel & 0xFFFFFF)
                 .lineColor(colors.line)
@@ -787,6 +804,7 @@ public class AE2Theme {
                 .textFieldHintColor(colors.placeholder)
                 .textFieldMarkedColor(FIELD_SELECTION)
                 .background(IThemeApi.SCROLLBAR, scroller)
+                .defaultWidth(IThemeApi.SCROLLBAR, SCROLLBAR_WIDTH)
                 .widgetTheme(
                     SlideSwitch.Theme.KEY,
                     new SlideSwitch.Theme.Builder().text(colors.text, colors.muted, colors.text)
