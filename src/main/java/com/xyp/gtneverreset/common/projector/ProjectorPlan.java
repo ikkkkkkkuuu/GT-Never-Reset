@@ -48,6 +48,7 @@ public class ProjectorPlan {
     public final TreeMap<String, Integer> channels = new TreeMap<>();
     public int hatchTier = DEFAULT_HATCH_TIER;
     public final TreeMap<Long, Integer> overrides = new TreeMap<>();
+    public final TreeMap<Long, Integer> batchOverrides = new TreeMap<>();
     public final TreeMap<String, String> choices = new TreeMap<>();
     public final TreeMap<Long, String> cellChoices = new TreeMap<>();
     public ExtendedFacing facing = ExtendedFacing.DEFAULT;
@@ -94,6 +95,7 @@ public class ProjectorPlan {
         master = 1;
         channels.clear();
         overrides.clear();
+        batchOverrides.clear();
         choices.clear();
         cellChoices.clear();
     }
@@ -172,15 +174,8 @@ public class ProjectorPlan {
             channelTag.setInteger(entry.getKey(), entry.getValue());
         tag.setTag("Channels", channelTag);
         tag.setInteger("HatchTier", hatchTier);
-        NBTTagList overrideList = new NBTTagList();
-        for (Map.Entry<Long, Integer> entry : overrides.entrySet()) {
-            if (overrideList.tagCount() >= MAX_OVERRIDES) break;
-            NBTTagCompound overrideTag = new NBTTagCompound();
-            overrideTag.setLong("Pos", entry.getKey());
-            overrideTag.setInteger("Id", entry.getValue());
-            overrideList.appendTag(overrideTag);
-        }
-        tag.setTag("Overrides", overrideList);
+        tag.setTag("Overrides", writeOverrides(overrides));
+        if (!batchOverrides.isEmpty()) tag.setTag("BatchOverrides", writeOverrides(batchOverrides));
         NBTTagList choiceList = new NBTTagList();
         for (Map.Entry<String, String> entry : choices.entrySet()) {
             if (choiceList.tagCount() >= MAX_CHOICES) break;
@@ -212,6 +207,27 @@ public class ProjectorPlan {
         return tag;
     }
 
+    private static NBTTagList writeOverrides(Map<Long, Integer> overrides) {
+        NBTTagList overrideList = new NBTTagList();
+        for (Map.Entry<Long, Integer> entry : overrides.entrySet()) {
+            if (overrideList.tagCount() >= MAX_OVERRIDES) break;
+            NBTTagCompound overrideTag = new NBTTagCompound();
+            overrideTag.setLong("Pos", entry.getKey());
+            overrideTag.setInteger("Id", entry.getValue());
+            overrideList.appendTag(overrideTag);
+        }
+        return overrideList;
+    }
+
+    private static void readOverrides(NBTTagCompound tag, String name, Map<Long, Integer> overrides) {
+        overrides.clear();
+        NBTTagList overrideList = tag.getTagList(name, Constants.NBT.TAG_COMPOUND);
+        for (int i = 0; i < overrideList.tagCount() && overrides.size() < MAX_OVERRIDES; i++) {
+            NBTTagCompound overrideTag = overrideList.getCompoundTagAt(i);
+            overrides.put(overrideTag.getLong("Pos"), Math.max(CASING, overrideTag.getInteger("Id")));
+        }
+    }
+
     public void readFromNBT(NBTTagCompound tag) {
         batch.read(tag);
         batchProjection = tag.hasKey("BatchProjection") ? tag.getBoolean("BatchProjection") : batch.machines() > 1;
@@ -226,12 +242,8 @@ public class ProjectorPlan {
         }
         hatchTier = tag.hasKey("HatchTier") ? clamp(tag.getInteger("HatchTier"), 0, MAX_HATCH_TIER)
             : DEFAULT_HATCH_TIER;
-        overrides.clear();
-        NBTTagList overrideList = tag.getTagList("Overrides", Constants.NBT.TAG_COMPOUND);
-        for (int i = 0; i < overrideList.tagCount() && overrides.size() < MAX_OVERRIDES; i++) {
-            NBTTagCompound overrideTag = overrideList.getCompoundTagAt(i);
-            overrides.put(overrideTag.getLong("Pos"), Math.max(CASING, overrideTag.getInteger("Id")));
-        }
+        readOverrides(tag, "Overrides", overrides);
+        readOverrides(tag, "BatchOverrides", batchOverrides);
         choices.clear();
         NBTTagList choiceList = tag.getTagList("Choices", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < choiceList.tagCount() && choices.size() < MAX_CHOICES; i++) {

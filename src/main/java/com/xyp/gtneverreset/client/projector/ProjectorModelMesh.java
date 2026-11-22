@@ -15,6 +15,7 @@ import org.lwjgl.opengl.GL11;
 
 import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
+import com.xyp.gtneverreset.common.projector.ProjectorBatchHatches;
 import com.xyp.gtneverreset.common.projector.ProjectorOrientation;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
 import com.xyp.gtnrlib.client.fx.world.FxBlockMesh;
@@ -62,6 +63,13 @@ final class ProjectorModelMesh extends FxBlockMesh {
         int src = array.originals[cell];
         int[][] pos = array.template.simulationPositions();
         int sx = pos[0][src], sy = pos[1][src], sz = pos[2][src];
+        var edit = array.editAt(cell);
+        var sourceWorld = edit == null ? array.template.world : edit.world();
+        if (edit != null) {
+            sx = edit.x();
+            sy = ProjectorBatchHatches.SAMPLE_Y;
+            sz = 0;
+        }
         Transform transform = transforms.computeIfAbsent(array.copyPoses[cell], pose -> {
             ExtendedFacing local = ProjectorOrientation.changeBasis(pose, array.baseFacing, array.canonical);
             FloatBuffer result = BufferUtils.createFloatBuffer(16);
@@ -84,12 +92,12 @@ final class ProjectorModelMesh extends FxBlockMesh {
             // side for a mirrored copy without replacing that enclosing orientation.
             if (transform.mirrored()) GL11.glCullFace(GL11.GL_FRONT);
             GL11.glTranslatef(-sx - 0.5f, -sy - 0.5f, -sz - 0.5f);
-            machineView.source = array.template.world;
+            machineView.source = sourceWorld;
             machineView.cells.clear();
             machineView.cells.put(FxVoxelOutline.pack(sx, sy, sz), 0);
             renderer.blockAccess = machineView;
             renderer.renderAllFaces = true;
-            if (player != null) player.worldObj = array.template.world;
+            if (player != null) player.worldObj = sourceWorld;
             tess.startDrawingQuads();
             try {
                 renderer.renderBlockByRenderType(block, sx, sy, sz);

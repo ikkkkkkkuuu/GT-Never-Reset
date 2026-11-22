@@ -283,7 +283,9 @@ public class ProjectorRenderer {
         int[] out = new int[3];
         for (int i = 0; i < cells.length && i < MAX_WRONG_BOXES; i++) {
             int cell = cells[i];
-            if (check.structure instanceof ProjectorBatchPreview array && cell >= 0 && cell < array.template.size) {
+            if (!ProjectorClient.focusInArray && check.structure instanceof ProjectorBatchPreview array
+                && cell >= 0
+                && cell < array.template.size) {
                 cell = ProjectorClient.focusPose == null ? array.atOrigin(cell)
                     : array.onCopy(cell, ProjectorClient.focusPose, ProjectorClient.focusOffset, out);
 

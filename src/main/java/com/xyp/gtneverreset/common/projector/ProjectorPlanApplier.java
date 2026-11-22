@@ -137,6 +137,8 @@ public class ProjectorPlanApplier {
             int id = world.getTileEntity(x, y, z) instanceof IGregTechTileEntity tile ? tile.getMetaTileID() : 0;
             IStructureElement<Object> element = simulation.elements.get(cells[i]);
             Integer slot = element == null ? null : simulation.slotOfElement.get(element);
+            if (slot != null && slot >= 0) structure.hatchFront[i] = (byte) simulation.outward(x, y, z)
+                .ordinal();
             Integer choice = element == null ? null : simulation.choiceOfElement.get(element);
             ItemStack item = id > 0 ? ProjectorMachines.stackOf(id)
                 : block == Blocks.air ? null : simulation.itemOf(block, meta, x, y, z);

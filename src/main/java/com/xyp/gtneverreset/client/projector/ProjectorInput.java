@@ -191,7 +191,8 @@ public class ProjectorInput {
     }
 
     private static boolean openSpot(ProjectorStructure shown, int cell, ItemStack clicked, boolean ghost) {
-        if (shown instanceof ProjectorBatchPreview array) {
+        ProjectorClient.focusInArray = shown instanceof ProjectorBatchPreview && shown.slotAt(cell) != null;
+        if (shown instanceof ProjectorBatchPreview array && !ProjectorClient.focusInArray) {
             int original = array.originals[cell];
             array.copyOrigin(cell, ProjectorClient.focusOffset);
             ProjectorClient.focusPose = array.copyPoses[cell];

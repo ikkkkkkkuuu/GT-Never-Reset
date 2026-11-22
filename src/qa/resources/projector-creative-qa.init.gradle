@@ -2,7 +2,7 @@
 gradle.projectsEvaluated {
     def root = gradle.rootProject
     root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
-    def fixture = root.hasProperty('projectorSurvivalChecks') ? 'ProjectorSurvivalChecks' : root.hasProperty('projectorMirrorChecks') ? 'ProjectorMirrorChecks' : 'ProjectorCreativeChecks'
+    def fixture = root.hasProperty('projectorBatchHatchChecks') ? 'ProjectorBatchHatchChecks' : root.hasProperty('projectorSurvivalChecks') ? 'ProjectorSurvivalChecks' : root.hasProperty('projectorMirrorChecks') ? 'ProjectorMirrorChecks' : 'ProjectorCreativeChecks'
     root.spotless.java { target root.file("src/qa/java/com/xyp/gtneverreset/qa/${fixture}.java") }
     def directoryName = 'projector-creative-qa'
     def marker = 'gtnr.projector.creative.qa'

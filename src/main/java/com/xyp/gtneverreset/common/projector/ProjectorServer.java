@@ -30,6 +30,8 @@ public class ProjectorServer {
         if (plan.hasMachine() && !ProjectorMachines.isSupported(plan.machine)) plan.clear();
         plan.overrides.values()
             .removeIf(id -> id != ProjectorPlan.CASING && !ProjectorMachines.isHatch(id));
+        plan.batchOverrides.values()
+            .removeIf(id -> id != ProjectorPlan.CASING && !ProjectorMachines.isHatch(id));
         plan.write(stack);
         WirelessCardInventory.sync(player, stack);
     }

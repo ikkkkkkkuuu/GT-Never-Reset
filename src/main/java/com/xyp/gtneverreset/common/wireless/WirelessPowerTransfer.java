@@ -36,7 +36,7 @@ public final class WirelessPowerTransfer {
     }
 
     public static boolean connectPlaced(BaseMetaTileEntity tile, EntityPlayer player, UUID source) {
-        // MM places beyond GUI interaction range. Check the newly placed receiver's access rules directly.
+        // A placement tool can build beyond GUI reach. The queued placement already identifies the exact new tile.
         return tile.getTimer() > 1 && tile.canAccessData()
             && tile.playerOwnsThis(player, false)
             && tile.getMetaTileEntity()

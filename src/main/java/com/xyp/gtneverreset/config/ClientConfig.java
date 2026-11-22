@@ -167,6 +167,17 @@ public class ClientConfig {
     @Config.DefaultBoolean(true)
     public static boolean projectorSameKind = true;
 
+    @Config.Comment("Apply hatch model and tier changes to all hatches of the same kind in the projector array")
+    // #tr gtneverreset.gui.config.client.projector_batch_same_kind
+    // # Projector: Edit matching hatches in the array
+    // # zh_CN 投影仪：批量阵列同类仓位一起改
+    // #tr gtneverreset.gui.config.client.projector_batch_same_kind.tooltip
+    // # Enable to apply a model or tier change to every hatch of that kind in the array.
+    // # zh_CN 开启后，切换型号或等级会同时修改阵列中已选的同类仓室。
+    @Config.LangKey("gtneverreset.gui.config.client.projector_batch_same_kind")
+    @Config.DefaultBoolean(false)
+    public static boolean projectorBatchSameKind;
+
     @Config.Comment("Projector: choosing a casing changes its whole group of spots, not only the chosen spot")
     // #tr gtneverreset.gui.config.client.projector_same_casing
     // # Projector: Whole Casing Group
