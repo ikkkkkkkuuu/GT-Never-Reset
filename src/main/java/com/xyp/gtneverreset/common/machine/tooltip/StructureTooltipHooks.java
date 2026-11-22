@@ -7,11 +7,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import net.minecraft.util.StatCollector;
+
 import com.gtnewhorizon.structurelib.structure.IStructureElement;
 import com.gtnewhorizon.structurelib.structure.StructureUtility;
 
 import gregtech.api.interfaces.IHatchElement;
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
+import gregtech.api.util.HatchElementBuilder;
 
 public final class StructureTooltipHooks {
 
@@ -22,6 +25,13 @@ public final class StructureTooltipHooks {
     public static <T> IStructureElement<T> describeAsHatch(IStructureElement<T> element, String... nameKeys) {
         HATCH_KEYS.addAll(Arrays.asList(nameKeys));
         return StructureUtility.withDescription(Arrays.asList(nameKeys), element);
+    }
+
+    public static <T> IStructureElement<T> describeAsHatch(HatchElementBuilder<T> builder, String nameKey) {
+        HATCH_KEYS.add(nameKey);
+        return builder.description(() -> nameKey)
+            .cacheHint(() -> StatCollector.translateToLocal(nameKey))
+            .build();
     }
 
     public static boolean isHatchKey(String key) {
