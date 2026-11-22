@@ -1,24 +1,23 @@
-package com.xyp.gtneverreset.mixins.late.terminal;
+package com.xyp.gtneverreset.mixins.late.ae2thing;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.asdflj.ae2thing.loader.KeybindLoader;
 import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
 
-@Pseudo
-@Mixin(targets = { "com.asdflj.ae2thing.loader.KeybindLoader", "com.asdflj.wtct.loader.KeybindLoader" }, remap = false)
-public abstract class TerminalPickBlockMixin {
+@Mixin(value = KeybindLoader.class, remap = false)
+public abstract class KeybindLoaderMixin {
 
     @Inject(method = "getTargetBlock", at = @At("HEAD"), cancellable = true, require = 0)
     private static void gtnr$preferDualTerminal(CallbackInfoReturnable<ItemStack> cir) {
-        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
-        if (player != null && WirelessTerminalSession.findDualInterfaceTerminal(player) >= 0) cir.setReturnValue(null);
+        if (WirelessTerminalSession.findDualInterfaceTerminal(Minecraft.getMinecraft().thePlayer) >= 0) {
+            cir.setReturnValue(null);
+        }
     }
 }
