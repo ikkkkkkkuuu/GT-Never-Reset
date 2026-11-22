@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import gregtech.common.misc.GlobalVariableStorage;
+import gregtech.common.misc.WirelessNetworkManager;
 
 public final class WirelessPowerContracts {
 
@@ -25,8 +26,27 @@ public final class WirelessPowerContracts {
                 .equals(first.toString().substring(0, 8)),
             "an unknown player name must fall back to the UUID prefix");
 
+        UUID missing = UUID.randomUUID();
+        long missingBalance = WirelessNetworkManager.getUserEU(missing).longValueExact();
+        require(WirelessPowerTransfer.offeredAmperes(32, 1, 32, missingBalance) == 0, "missing source offers no EU");
+        require(!GlobalVariableStorage.GlobalEnergy.containsKey(missing), "reading a missing source must not create it");
+        checkTransferRate();
         GlobalVariableStorage.GlobalEnergy.clear();
-        System.out.println("Wireless power contracts passed (4 checks)");
+        System.out.println("Wireless power contracts passed");
+    }
+
+    private static void checkTransferRate() {
+        WirelessPowerTransfer.TransferRate rate = new WirelessPowerTransfer.TransferRate();
+        long[] accepted = new long[120];
+        for (int tick = 0; tick < accepted.length; tick++) {
+            if (tick >= 4 && tick < 35) accepted[tick] = (tick + 1) * 32L;
+            if (tick == 44 || tick == 64 || tick == 91) accepted[tick] = 128;
+            if (accepted[tick] > 0) rate.record(tick, accepted[tick]);
+
+            long total = 0;
+            for (int sample = Math.max(0, tick - 19); sample <= tick; sample++) total += accepted[sample];
+            require(rate.average(tick) == total / 20.0, "incorrect average EU/t at tick " + tick);
+        }
     }
 
     private static void require(boolean condition, String message) {

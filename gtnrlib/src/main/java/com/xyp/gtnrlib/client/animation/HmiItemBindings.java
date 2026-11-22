@@ -39,6 +39,11 @@ public final class HmiItemBindings {
             return false;
         }
 
+        /** Whether a single-hand adapter can also render in Backhand's independent mirrored pass. */
+        default boolean supportsOffhand() {
+            return false;
+        }
+
         /** Optional complete mount for a native Forge model, before Forge applies its equipped render helper. */
         default Matrix4fc equippedMount(ItemStack stack) {
             return null;

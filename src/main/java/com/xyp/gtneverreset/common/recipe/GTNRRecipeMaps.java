@@ -40,6 +40,24 @@ import gtnhlanth.common.register.LanthItemList;
 
 public final class GTNRRecipeMaps {
 
+    public static final RecipeMap<RecipeMapBackend> LightHunterRockBreakingRecipes = RecipeMapBuilder
+        // #tr gtnr.recipe.satellite_rock_breaking
+        // # Satellite Rock Breaking
+        // # zh_CN 卫星岩石粉碎
+        .of("gtnr.recipe.satellite_rock_breaking")
+        .maxIO(2, 1, 2, 0)
+        .neiHandlerInfo(b -> b.setDisplayStack(GTNRItemList.MineralProcessingSatelliteMkI.get(1)))
+        .build();
+    public static final RecipeMap<RecipeMapBackend> LightningProcessorRecipes = RecipeMapBuilder
+        // #tr gtnr.recipe.satellite_lightning
+        // # Lightning Processing
+        // # zh_CN 闪电处理
+        .of("gtnr.recipe.satellite_lightning")
+        .maxIO(6, 1, 6, 1)
+        .minInputs(0, 1)
+        .neiHandlerInfo(b -> b.setDisplayStack(GTNRItemList.AssemblySatelliteMkI.get(1)))
+        .build();
+
     public static final RecipeMap<RecipeMapBackend> CHAOS_CREDENTIAL_RECIPES = ChaosConfig.enableBottleInChaos
         ? RecipeMapBuilder
             // #tr gtnr.recipe.chaos_credential
@@ -302,6 +320,18 @@ public final class GTNRRecipeMaps {
             .neiHandlerInfo(builder -> builder.setDisplayStack(GTNRItemList.BottleInChaos.get(1)))
             .useSpecialSlot()
             .build()
+        : null;
+
+    public static final RecipeCategory BottledChaosRocketFuelCategory = ChaosConfig.enableBottleInChaos
+        ? new RecipeCategory(
+            // #tr gtnr.bottleinchaos.recipe.category.rocket_fuel.name
+            // # Rocket Fuel
+            // # zh_CN 火箭燃料
+            "gtnr.bottleinchaos.recipe.category.rocket_fuel.name",
+            BottledChaosRecipes,
+            RecipeCategorySetting::getDefault,
+            builder -> BottledChaosRecipes.getDefaultRecipeCategory().handlerInfoCreator.apply(builder)
+                .setDisplayStack(Materials.Carbon.getDust(1)))
         : null;
 
     public static final RecipeCategory BottledChaosNaquadahFuelCategory = ChaosConfig.enableBottleInChaos

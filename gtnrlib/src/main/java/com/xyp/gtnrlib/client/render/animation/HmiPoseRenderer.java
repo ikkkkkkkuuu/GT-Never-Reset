@@ -32,6 +32,7 @@ import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.client.animation.ToolGrip;
 import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
 
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -39,7 +40,8 @@ import cpw.mods.fml.relauncher.SideOnly;
 public final class HmiPoseRenderer {
 
     private static final FloatBuffer BUFFER = BufferUtils.createFloatBuffer(16);
-    private static final HmiFirstPerson HMI = HmiFirstPerson.INSTANCE;
+    private static final HmiPoseRenderer MAIN = new HmiPoseRenderer(false);
+    private static final HmiPoseRenderer OFFHAND = new HmiPoseRenderer(true);
     private static final ResourceLocation MAP = new ResourceLocation("textures/map/map_background.png");
     // The 5.1.1 hand pass submits held items with THIRD_PERSON_RIGHT_HAND.
     private static final Matrix4fc HANDHELD = display(0, 4, .5f, 0, -90, 55, .85f);
@@ -49,6 +51,14 @@ public final class HmiPoseRenderer {
     private static HmiItemModels models;
     private static IIcon bowIcon;
     private static ItemStack mountedStack;
+
+    private final boolean offhand;
+    private final HmiFirstPerson pose;
+
+    private HmiPoseRenderer(boolean offhand) {
+        this.offhand = offhand;
+        pose = offhand ? HmiFirstPerson.OFFHAND : HmiFirstPerson.INSTANCE;
+    }
 
     /** True only inside Forge's first-person draw with the adapter's native model mount active. */
     public static boolean renderingMountedStack(ItemStack stack) {
@@ -62,14 +72,22 @@ public final class HmiPoseRenderer {
     public static void install(HmiPoseProgram.Scripts scripts) throws IOException {
         var next = scripts == null || scripts == HmiPoseProgram.Scripts.BUILT_IN ? null
             : new HmiItemModels(scripts.assets());
-        HMI.install(scripts);
+        MAIN.pose.install(scripts);
+        if (Loader.isModLoaded("backhand")) OFFHAND.pose.install(scripts);
         if (models != null) models.close();
         models = next;
     }
 
     public static boolean render(ItemRenderer renderer, ItemStack stack, float partial, float dip) {
-        if (!HMI.enabled() || FirstPersonAnimations.INSTANCE.applies(stack) || !HMI.sample(stack, partial, dip))
-            return false;
+        return !FirstPersonAnimations.INSTANCE.applies(stack) && MAIN.renderHand(renderer, stack, partial, dip);
+    }
+
+    public static boolean renderOffhand(ItemRenderer renderer, ItemStack stack, float partial, float dip) {
+        return OFFHAND.renderHand(renderer, stack, partial, dip);
+    }
+
+    private boolean renderHand(ItemRenderer renderer, ItemStack stack, float partial, float dip) {
+        if (!pose.enabled() || !pose.sample(stack, partial, dip)) return false;
         GL11.glPushAttrib(
             GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT
                 | GL11.GL_TEXTURE_BIT
@@ -83,25 +101,25 @@ public final class HmiPoseRenderer {
                 // Preserve the reference's wide-screen grip framing on narrower legacy windows.
                 float aspect = (float) mc.displayWidth / mc.displayHeight;
                 GL11.glTranslated(-.40 * Math.max(0, 16f / 9 - aspect), 0, -.10);
-                if (HMI.handheldTool() instanceof HmiItemBindings.TwoHandedModel rig) {
-                    apply(HMI.item);
+                if (pose.handheldTool() instanceof HmiItemBindings.TwoHandedModel rig) {
+                    apply(pose.item);
                     try {
                         rig.renderGripped(
                             stack,
-                            HMI.forgeRenderer(),
+                            pose.forgeRenderer(),
                             partial,
                             left -> {
                                 if (!left || !FirstPersonAnimations.offhandOwnsLeftArm(partial)) gripHand(left);
                             });
                     } catch (RuntimeException ex) {
-                        HMI.disableTool(stack, ex);
+                        pose.disableTool(stack, ex);
                         return false;
                     }
                 } else {
                     arm(false, stack != null);
-                    if (!FirstPersonAnimations.offhandOwnsLeftArm(partial)) arm(true, false);
+                    if (!offhand && !FirstPersonAnimations.offhandOwnsLeftArm(partial)) arm(true, false);
                     if (stack != null) {
-                        apply(HMI.item);
+                        apply(pose.item);
                         if (stack.getItem() instanceof ItemMap map) map(mc, stack, map);
                         else {
                             GL11.glPushMatrix();
@@ -127,11 +145,11 @@ public final class HmiPoseRenderer {
         return true;
     }
 
-    private static void arm(boolean left, boolean holding) {
+    private void arm(boolean left, boolean holding) {
         int side = left ? -1 : 1;
         GL11.glPushMatrix();
         try {
-            apply(left ? HMI.left : HMI.right);
+            apply(left ? pose.left : pose.right);
             if (holding) {
                 GL11.glTranslated(1.5 * side, -.3, -.6);
                 GL11.glTranslated(.5 * side, .5, .5);
@@ -148,7 +166,17 @@ public final class HmiPoseRenderer {
             GL11.glRotatef(200, 1, 0, 0);
             GL11.glRotatef(-135 * side, 0, 1, 0);
             GL11.glTranslated(5.6 * side, 0, 0);
-            FirstPersonArmRenderer.render(left, side * .1f);
+            if (offhand) {
+                // Backhand already mirrors the scene. Unmirror the mesh to draw the actual left sleeve and armor.
+                GL11.glPushAttrib(GL11.GL_POLYGON_BIT);
+                try {
+                    GL11.glScalef(-1, 1, 1);
+                    GL11.glCullFace(GL11.GL_BACK);
+                    FirstPersonArmRenderer.render(true, -.1f);
+                } finally {
+                    GL11.glPopAttrib();
+                }
+            } else FirstPersonArmRenderer.render(left, side * .1f);
         } finally {
             GL11.glPopMatrix();
         }
@@ -175,15 +203,16 @@ public final class HmiPoseRenderer {
         GL11.glMultMatrix(matrix.get(BUFFER));
     }
 
-    private static void draw(ItemRenderer renderer, Minecraft mc, ItemStack stack) {
-        int used = mc.thePlayer.isUsingItem() && !FirstPersonAnimations.usingOffhandItem()
+    private void draw(ItemRenderer renderer, Minecraft mc, ItemStack stack) {
+        int used = mc.thePlayer.isUsingItem() && offhand == FirstPersonAnimations.usingOffhandItem()
             ? mc.thePlayer.getItemInUseDuration()
             : -1;
-        var tool = HMI.handheldTool();
-        var custom = HMI.forgeRenderer();
+        var tool = pose.handheldTool();
+        var custom = pose.forgeRenderer();
         if (models == null
-            ? DefaultItemModels.draw(HMI.itemId(), HMI.modelVariant(), used, mc.thePlayer.ticksExisted, HMI.program())
-            : models.draw(HMI.itemId(), HMI.modelVariant(), used, mc.thePlayer.ticksExisted, HMI.program())) return;
+            ? DefaultItemModels
+                .draw(pose.itemId(), pose.modelVariant(), used, mc.thePlayer.ticksExisted, pose.program())
+            : models.draw(pose.itemId(), pose.modelVariant(), used, mc.thePlayer.ticksExisted, pose.program())) return;
         var mount = tool == null ? null : tool.equippedMount(stack);
         if (mount != null) {
             apply(mount);
@@ -200,11 +229,11 @@ public final class HmiPoseRenderer {
         boolean cube = held instanceof ItemBlock && RenderBlocks.renderItemIn3d(
             Block.getBlockFromItem(held)
                 .getRenderType());
-        if (HMI.blockPose()) blockMount(held);
-        else apply(switch (HMI.itemId()) {
+        if (pose.blockPose()) blockMount(held);
+        else apply(switch (pose.itemId()) {
             case "minecraft:bow" -> BOW;
             case "minecraft:fishing_rod", "minecraft:carrot_on_a_stick" -> ROD;
-            default -> HMI.displayGrip() != null || tool != null ? HANDHELD : GENERATED;
+            default -> pose.displayGrip() != null || tool != null ? HANDHELD : GENERATED;
         });
         // Forge already centers models that request its equipped-block helper.
         boolean blockHelper = custom != null && tool == null
@@ -215,7 +244,7 @@ public final class HmiPoseRenderer {
             GL11.glRotatef(180, 0, 1, 0);
             GL11.glTranslated(-.5, -.5, .03125);
             if (tool != null && tool.spriteMount() != null) apply(tool.spriteMount());
-            else if (!HMI.blockPose()) centerHandle(HMI.displayGrip());
+            else if (!pose.blockPose()) centerHandle(pose.displayGrip());
             GL11.glTranslated(.9375, .0625, 0);
             GL11.glRotatef(25, 0, 0, 1);
             GL11.glRotatef(-50, 0, 1, 0);
@@ -232,7 +261,7 @@ public final class HmiPoseRenderer {
             int rgb = held.getColorFromItemStack(stack, pass);
             GL11.glColor4f((rgb >> 16 & 255) / 255f, (rgb >> 8 & 255) / 255f, (rgb & 255) / 255f, 1);
             if (held == Items.bow) {
-                int stage = HMI.program()
+                int stage = pose.program()
                     .bowStage();
                 bowIcon = stage < 0 ? held.getIconFromDamage(stack.getItemDamage())
                     : Items.bow.getItemIconForUseDuration(stage);
@@ -258,9 +287,9 @@ public final class HmiPoseRenderer {
         GL11.glTranslatef(across / 16, across / 16, depth / 16);
     }
 
-    private static void blockMount(Item held) {
+    private void blockMount(Item held) {
         GL11.glTranslated(.22, .25, .2);
-        if (Block.getBlockFromItem(held) instanceof net.minecraft.block.BlockTorch || HMI.isLantern()) {
+        if (Block.getBlockFromItem(held) instanceof net.minecraft.block.BlockTorch || pose.isLantern()) {
             GL11.glTranslated(-.05, 0, 0);
             GL11.glScalef(1.75f, 1.75f, 1.75f);
         } else GL11.glTranslated(-.25, -.05, 0);
@@ -268,11 +297,11 @@ public final class HmiPoseRenderer {
         GL11.glTranslated(-.4, .05, -.2);
     }
 
-    private static void glow(ItemStack stack) {
-        var glow = HMI.program()
+    private void glow(ItemStack stack) {
+        var glow = pose.program()
             .glow();
         if (glow == null) return;
-        if (HMI.blockPose()) {
+        if (pose.blockPose()) {
             blockMount(stack.getItem());
             GL11.glTranslated(-.5, -.5, -.5);
         }
@@ -288,13 +317,13 @@ public final class HmiPoseRenderer {
         if (bindParticle(glow.texture())) quad(x, y, z, radius);
     }
 
-    private static void drawScreenParticles() {
-        int count = HMI.program()
+    private void drawScreenParticles() {
+        int count = pose.program()
             .screenParticleCount();
         if (count == 0) return;
         particleBlend(GL11.GL_ONE_MINUS_SRC_ALPHA);
         for (int i = 0; i < count; i++) {
-            var p = HMI.program()
+            var p = pose.program()
                 .screenParticle(i);
             if (!bindParticle(p.texture())) continue;
             GL11.glColor4f(1, 1, 1, p.alpha());
@@ -350,5 +379,4 @@ public final class HmiPoseRenderer {
             .func_148250_a(data, false);
     }
 
-    private HmiPoseRenderer() {}
 }

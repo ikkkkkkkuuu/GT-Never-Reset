@@ -36,6 +36,11 @@ public final class GregTechScrewdriverAnimation implements HmiItemBindings.Handh
     }
 
     @Override
+    public boolean supportsOffhand() {
+        return true;
+    }
+
+    @Override
     public Matrix4fc spriteMount() {
         return GRIP;
     }

@@ -14,6 +14,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.gtnewhorizon.cropsnh.api.CropsNHItemList;
 import com.gtnewhorizon.cropsnh.init.CropsNHFluids;
+import com.xyp.gtneverreset.common.block.blocks.BlockLightHunterCasing.Variant;
 import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -21,6 +22,7 @@ import com.xyp.gtneverreset.utils.enums.ModsItemlist;
 import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.common.Optional;
+import gregtech.api.casing.Casings;
 import gregtech.api.enums.GTValues;
 import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
@@ -40,6 +42,7 @@ public final class AssemblerRecipes {
     private static final int MODULE_CIRCUIT = 19;
 
     public static void register() {
+        registerLightHunterCasings();
         if (ChaosConfig.enableBottleInChaos) {
             registerChaosPhotonUpgrades();
             registerChaosCasings();
@@ -74,6 +77,7 @@ public final class AssemblerRecipes {
         registerModuleHatchRecipes();
         registerLargeFurnaceRecipes();
         registerUniversalJointFactoryRecipe();
+        registerHadronCatalyticRefineryRecipe();
         if (ModList.Forestry.isModLoaded()) registerLargeBeeBreederRecipes();
         if (ModList.CropsNH.isModLoaded()) registerLargeCropBreederRecipes();
         registerFluxConnectorRecipes();
@@ -496,6 +500,25 @@ public final class AssemblerRecipes {
             .addTo(assemblerRecipes);
     }
 
+    private static void registerHadronCatalyticRefineryRecipe() {
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                ItemList.Machine_IV_Mixer.get(4),
+                ItemList.Machine_IV_Autoclave.get(4),
+                ItemList.Machine_IV_Extractor.get(4),
+                ItemList.Machine_IV_Distillery.get(4),
+                ItemList.Machine_IV_FluidHeater.get(4),
+                ItemList.Robot_Arm_IV.get(8),
+                ItemList.Field_Generator_IV.get(4),
+                new Object[] { OrePrefixes.circuit.get(Materials.IV), 16 },
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.TungstenSteel, 8))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(2304))
+            .itemOutputs(GTNRItemList.HadronCatalyticRefinery.get(1))
+            .duration(60 * SECONDS)
+            .eut(TierEU.RECIPE_IV)
+            .addTo(assemblerRecipes);
+    }
+
     private static void registerLargeBeeBreederRecipes() {
         GTRecipeBuilder.builder()
             .itemInputs(
@@ -753,5 +776,179 @@ public final class AssemblerRecipes {
             .eut(TierEU.RECIPE_IV)
             .duration(20 * 160)
             .addTo(RecipeMaps.assemblerRecipes);
+    }
+
+    private static void registerLightHunterCasings() {
+        GTRecipeBuilder.builder()
+            .itemInputs(ItemList.Energy_Cluster.get(1))
+            .circuit(24)
+            .itemOutputs(Variant.UHV_ULTIMATE_BATTERY.stack(1))
+            .duration(50)
+            .eut(16)
+            .addTo(assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(Variant.UHV_ULTIMATE_BATTERY.stack(1))
+            .circuit(25)
+            .itemOutputs(ItemList.Energy_Cluster.get(1))
+            .duration(50)
+            .eut(16)
+            .addTo(assemblerRecipes);
+
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                Casings.AdvancedComputerCasing.toStack(4),
+                ItemList.Circuit_CosmicComputer.get(16),
+                ItemList.Field_Generator_UXV.get(4))
+            .fluidInputs(Materials.TranscendentMetal.getMolten(576))
+            .itemOutputs(Variant.SUPER_COMPUTATION_COMPONENT.stack(4))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(RecipeMaps.assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                Casings.DimensionalBridgeGenerator.toStack(1),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Infinity, 4),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.UXV, 1))
+            .fluidInputs(Materials.SpaceTime.getMolten(144))
+            .itemOutputs(Variant.MODULE_CONNECTOR.stack(1))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(RecipeMaps.assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Tritanium, 4),
+                GTOreDictUnificator.get(OrePrefixes.plateDouble, Materials.DraconiumAwakened, 8),
+                GTOreDictUnificator.get(OrePrefixes.foil, Materials.Infinity, 16))
+            .fluidInputs(Materials.Tritanium.getMolten(576))
+            .itemOutputs(Variant.DRAGON_STRENGTH_TRITANIUM_CASING.stack(4))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(RecipeMaps.assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Neutronium, 4),
+                GTOreDictUnificator.get(OrePrefixes.plateDouble, Materials.CosmicNeutronium, 8),
+                GTOreDictUnificator.get(OrePrefixes.foil, Materials.SpaceTime, 16))
+            .fluidInputs(Materials.Eternity.getMolten(576))
+            .itemOutputs(Variant.ECHO_CASING.stack(4))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(RecipeMaps.assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                ItemList.Transdimensional_Alignment_Matrix.get(1),
+                ItemList.Field_Generator_UXV.get(4),
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Infinity, 1))
+            .fluidInputs(Materials.SpaceTime.getMolten(144))
+            .itemOutputs(Variant.HYPER_CORE.stack(1))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(RecipeMaps.assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Neutronium, 1),
+                GTOreDictUnificator.get(OrePrefixes.pipeMedium, Materials.Neutronium, 4),
+                GTOreDictUnificator.get(OrePrefixes.foil, Materials.CosmicNeutronium, 8))
+            .fluidInputs(Materials.Neutronium.getMolten(144))
+            .itemOutputs(Variant.NEUTRONIUM_PIPE_CASING.stack(4))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UHV)
+            .addTo(RecipeMaps.assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                Casings.FusionMachineCasingMKIV.toStack(4),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.CosmicNeutronium, 8),
+                GTOreDictUnificator.get(OrePrefixes.foil, Materials.Infinity, 16))
+            .fluidInputs(Materials.TranscendentMetal.getMolten(576))
+            .itemOutputs(Variant.FUSION_CASING_MK_V.stack(4))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(RecipeMaps.assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                Casings.ContainmentFieldGenerator.toStack(4),
+                GTOreDictUnificator.get(OrePrefixes.foil, Materials.SpaceTime, 8),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Infinity, 4))
+            .fluidInputs(Materials.MHDCSM.getMolten(144))
+            .itemOutputs(Variant.RESTRAINT_DEVICE.stack(4))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(RecipeMaps.assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                Casings.ForceFieldGlass.toStack(4),
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Neutronium, 2),
+                ItemList.Emitter_UV.get(1),
+                GTUtility.getIntegratedCircuit(6))
+            .fluidInputs(Materials.Polybenzimidazole.getMolten(576))
+            .itemOutputs(Variant.FUSION_GLASS.stack(4))
+            .duration(200)
+            .eut(TierEU.RECIPE_UV)
+            .requiresCleanRoom()
+            .addTo(RecipeMaps.assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                Casings.LuVSolenoidSuperconductorCoil.toStack(1),
+                Materials.NiobiumTitanium.getPlates(2),
+                Materials.BorosilicateGlass.getDust(8),
+                new Object[] { OrePrefixes.circuit.get(Materials.LuV), 1 })
+            .fluidInputs(Materials.Europium.getMolten(144))
+            .itemOutputs(Variant.IMPROVED_SUPERCONDUCTOR.stack(1))
+            .duration(200)
+            .eut(TierEU.RECIPE_LuV)
+            .requiresCleanRoom()
+            .addTo(RecipeMaps.assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.NaquadahAlloy, 1),
+                Materials.Naquadria.getPlates(6),
+                GTUtility.getIntegratedCircuit(6))
+            .itemOutputs(Variant.HYPER_MECHANICAL.stack(2))
+            .duration(50)
+            .eut(16)
+            .addTo(RecipeMaps.assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Naquadria, 1),
+                Materials.NaquadahAlloy.getPlates(4),
+                Materials.Naquadah.getPlates(4),
+                Materials.NaquadahEnriched.getPlates(4),
+                GTUtility.getIntegratedCircuit(6))
+            .fluidInputs(Materials.Naquadria.getMolten(576))
+            .itemOutputs(Variant.ENHANCED_HYPER_CASING.stack(1))
+            .duration(50)
+            .eut(16)
+            .addTo(assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                MaterialsAlloy.TRINIUM_NAQUADAH_CARBON.getFrameBox(1),
+                GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.NaquadahAlloy, 1),
+                MaterialsAlloy.TRINIUM_NAQUADAH_CARBON.getPlate(6))
+            .fluidInputs(Materials.Naquadria.getMolten(576))
+            .itemOutputs(Variant.EXTREME_DENSITY_CASING.stack(1))
+            .duration(200)
+            .eut(120)
+            .addTo(assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Neutronium, 1),
+                ItemList.Gravistar.get(1),
+                ItemList.Neutron_Reflector.get(2),
+                MaterialsAlloy.TRINIUM_NAQUADAH_CARBON.getPlate(10))
+            .fluidInputs(Materials.Neutronium.getMolten(576))
+            .itemOutputs(Variant.GRAVITY_STABILIZATION_CASING.stack(1))
+            .duration(400)
+            .eut(480)
+            .addTo(assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.NaquadahAlloy, 1),
+                MaterialsAlloy.ABYSSAL.getPlate(2),
+                Materials.NaquadahEnriched.getPlates(4),
+                GTUtility.getIntegratedCircuit(6))
+            .itemOutputs(Variant.ATOMIC_CASING.stack(1))
+            .duration(50)
+            .eut(16)
+            .addTo(assemblerRecipes);
     }
 }

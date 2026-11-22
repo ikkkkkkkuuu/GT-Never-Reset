@@ -1,21 +1,20 @@
 package com.xyp.gtneverreset.common.wireless;
 
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.xyp.gtneverreset.common.wireless.PhysicalClusterTracker.Cluster;
 import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Entrance;
-import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.networking.IGridNode;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 
 public class WirelessEntranceIndex {
 
     private final PhysicalClusterTracker<IGridNode, WirelessFrequency> tracker;
-    private final Map<Cluster<IGridNode, WirelessFrequency>, List<Entrance>> byCluster = new IdentityHashMap<>();
-    private final Map<IGridNode, List<Entrance>> byNode = new IdentityHashMap<>();
+    private final Map<Cluster<IGridNode, WirelessFrequency>, List<Entrance>> byCluster = new Reference2ObjectOpenHashMap<>();
+    private final Map<IGridNode, List<Entrance>> byNode = new Reference2ObjectOpenHashMap<>();
     private List<Entrance> entrances;
     private List<Cluster<IGridNode, WirelessFrequency>> clusters;
 
@@ -25,12 +24,12 @@ public class WirelessEntranceIndex {
 
     List<Entrance> forCluster(Cluster<IGridNode, WirelessFrequency> cluster) {
         refresh();
-        return byCluster.getOrDefault(cluster, ImmutableCollections.listOf());
+        return byCluster.getOrDefault(cluster, List.of());
     }
 
     List<Entrance> atNode(IGridNode node) {
         refresh();
-        return byNode.getOrDefault(node, ImmutableCollections.listOf());
+        return byNode.getOrDefault(node, List.of());
     }
 
     private void refresh() {
@@ -40,14 +39,14 @@ public class WirelessEntranceIndex {
         byCluster.clear();
         byNode.clear();
         for (Entrance entrance : currentEntrances) {
-            byNode.computeIfAbsent(entrance.targetNode(), ignored -> new ArrayList<>())
+            byNode.computeIfAbsent(entrance.targetNode(), ignored -> new ObjectArrayList<>())
                 .add(entrance);
             Cluster<IGridNode, WirelessFrequency> cluster = tracker.clusterOf(entrance.targetNode());
-            if (cluster != null) byCluster.computeIfAbsent(cluster, ignored -> new ArrayList<>())
+            if (cluster != null) byCluster.computeIfAbsent(cluster, ignored -> new ObjectArrayList<>())
                 .add(entrance);
         }
-        byCluster.replaceAll((cluster, entries) -> ImmutableCollections.copyList(entries));
-        byNode.replaceAll((node, entries) -> ImmutableCollections.copyList(entries));
+        byCluster.replaceAll((cluster, entries) -> List.copyOf(entries));
+        byNode.replaceAll((node, entries) -> List.copyOf(entries));
         entrances = currentEntrances;
         clusters = currentClusters;
     }

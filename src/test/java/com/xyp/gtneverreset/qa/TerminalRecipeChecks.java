@@ -26,8 +26,8 @@ import net.minecraftforge.fluids.FluidStack;
 import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 import com.xyp.gtneverreset.common.gui.container.QuickEncodingTerminalContainer;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeProcessingLogic;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
-import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactoryProcessingLogic;
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.common.packet.RecipeIngredientReplacement;
@@ -128,7 +128,7 @@ public final class TerminalRecipeChecks {
                 provider.onPatternChange(0, encoded(transportTerminal).copy());
                 var factory = new UniversalJointFactory("qa.cutter.transport");
                 factory.setMachineMode(18);
-                var logic = new UniversalJointFactoryProcessingLogic(factory);
+                var logic = new CrossRecipeProcessingLogic(factory);
                 logic.setMachine(factory)
                     .setRecipeMapSupplier(factory::getRecipeMap)
                     .setAvailableVoltage(512)
@@ -441,7 +441,7 @@ public final class TerminalRecipeChecks {
         provider.onPatternChange(0, pattern);
         var factory = new UniversalJointFactory("qa.cutter.encoding");
         factory.setMachineMode(18);
-        var logic = new UniversalJointFactoryProcessingLogic(factory);
+        var logic = new CrossRecipeProcessingLogic(factory);
         logic.setMachine(factory)
             .setRecipeMapSupplier(factory::getRecipeMap)
             .setAvailableVoltage(512)

@@ -1,7 +1,6 @@
 package com.xyp.gtneverreset.common.wireless;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +23,6 @@ import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Address;
 import com.xyp.gtneverreset.common.wireless.WirelessLinkData.Claim;
 import com.xyp.gtneverreset.common.wireless.WirelessLinkData.Slot;
 import com.xyp.gtneverreset.common.wireless.WirelessOperations.Result;
-import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.networking.IGridNode;
 import appeng.api.parts.IPart;
@@ -33,6 +31,7 @@ import appeng.api.parts.PartItemStack;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ReferenceLinkedOpenHashSet;
 
 public class WirelessCopiedLinks {
@@ -66,7 +65,7 @@ public class WirelessCopiedLinks {
             CopiedLink link = CopiedLink.capture(source, part);
             if (link != null) links.put(side, link);
         });
-        return links.isEmpty() ? null : ImmutableCollections.copyMap(links);
+        return links.isEmpty() ? null : Map.copyOf(links);
     }
 
     public static <T> Map<ForgeDirection, T> rotate(Map<ForgeDirection, T> links,
@@ -75,7 +74,7 @@ public class WirelessCopiedLinks {
         Map<ForgeDirection, T> rotated = new EnumMap<>(ForgeDirection.class);
         links.forEach(
             (side, source) -> rotated.put(side == ForgeDirection.UNKNOWN ? side : rotation.apply(side), source));
-        return ImmutableCollections.copyMap(rotated);
+        return Map.copyOf(rotated);
     }
 
     public static void pasted(EntityPlayer player, TileEntity tile, Map<ForgeDirection, CopiedLink> links) {
@@ -145,14 +144,14 @@ public class WirelessCopiedLinks {
                         frequencies.iterator()
                             .next()));
         }
-        return links.isEmpty() ? null : ImmutableCollections.copyMap(links);
+        return links.isEmpty() ? null : Map.copyOf(links);
     }
 
     static boolean enqueue(UUID player, Address position, TileEntity tile, IPart part, WirelessFrequency source) {
         if (waiting >= MAX_PENDING || PLAYER_WAITING.getInt(player) >= MAX_PENDING_PER_PLAYER) return false;
         Pending pending = new Pending(player, position, tile, part, source);
         QUEUE.enqueue(pending);
-        WAITING.computeIfAbsent(block(position), ignored -> new ArrayList<>())
+        WAITING.computeIfAbsent(block(position), ignored -> new ObjectArrayList<>())
             .add(pending);
         waiting++;
         PLAYER_WAITING.addTo(player, 1);
@@ -177,7 +176,7 @@ public class WirelessCopiedLinks {
                 if (pending.targets(node) && pending.stillPasted(current)) group.add(pending);
             }
         }
-        return new ArrayList<>(group);
+        return new ObjectArrayList<>(group);
     }
 
     private static boolean agree(WirelessFrequency source, List<Pending> group) {
@@ -201,7 +200,7 @@ public class WirelessCopiedLinks {
         if (WirelessClusterManager.isLinked(pending.source, node)) return false;
         if (claimBudget <= 0) return true;
         claimBudget--;
-        List<Pending> group = new ArrayList<>();
+        List<Pending> group = new ObjectArrayList<>();
         Result result;
         try {
             result = WirelessOperations.claim(player, pending.source, target, nodes -> {

@@ -123,6 +123,27 @@ final class AnimationMovementChecks {
             p.ticksExisted += 3;
             qa.draw(mc, "json-wrist-attack");
             qa.require(!start.equals(hmi.item, .01f), "generic JSON action moves the rendered item");
+            hmi.sample(dye, 0, 0);
+            float atInput = actions.grip(false)
+                .m30();
+            hmi.sample(dye, .002f, 0);
+            float outgoingStep = actions.grip(false)
+                .m30() - atInput;
+            qa.require(outgoingStep > .00009f, "JSON arm is moving at the interruption");
+            qa.require(actions.trigger("attack"), "JSON attack interrupts its active clip");
+            hmi.sample(dye, 0, 0);
+            qa.require(
+                Math.abs(
+                    actions.grip(false)
+                        .m30() - atInput)
+                    < .000001f,
+                "JSON interruption keeps the arm position");
+            hmi.sample(dye, .002f, 0);
+            float incomingStep = actions.grip(false)
+                .m30() - atInput;
+            qa.require(
+                Math.abs(incomingStep - outgoingStep) < outgoingStep * .02f,
+                "JSON interruption keeps the arm velocity: " + outgoingStep + " -> " + incomingStep);
             dye.setItemDamage(12);
             hmi.sample(dye, .75f, 0);
             qa.require(

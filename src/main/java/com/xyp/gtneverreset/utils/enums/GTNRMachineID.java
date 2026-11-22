@@ -14,7 +14,25 @@ public enum GTNRMachineID {
     UniversalJointFactory(29407),
     BottleInChaos(29408),
     StarCoreStripper(29409),
-    // 预留：29410–29499（90 个）。
+    HadronCatalyticRefinery(29410),
+    MetalFormingSatelliteMkI(29411),
+    MetalFormingSatelliteMkII(29412),
+    MetalFormingSatelliteMkIII(29413),
+    MetalFormingSatelliteMkIV(29414),
+    MineralProcessingSatelliteMkI(29415),
+    MineralProcessingSatelliteMkII(29416),
+    MineralProcessingSatelliteMkIII(29417),
+    MineralProcessingSatelliteMkIV(29418),
+    FluidProcessingSatelliteMkI(29419),
+    FluidProcessingSatelliteMkII(29420),
+    FluidProcessingSatelliteMkIII(29421),
+    FluidProcessingSatelliteMkIV(29422),
+    AssemblySatelliteMkI(29423),
+    AssemblySatelliteMkII(29424),
+    AssemblySatelliteMkIII(29425),
+    AssemblySatelliteMkIV(29426),
+    LightHunterSpaceStation(29427),
+    // 预留：29428–29499（72 个）。
     // endregion
 
     // region 舱室

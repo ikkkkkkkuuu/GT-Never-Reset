@@ -19,8 +19,8 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.cleanroommc.modularui.screen.GuiContainerWrapper;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeProcessingLogic;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
-import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactoryProcessingLogic;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 
@@ -139,7 +139,7 @@ public final class UniversalFactoryNonCellChecks {
         FluidStack chlorine = Materials.Chlorine.getGas(1000);
         for (boolean usePattern : new boolean[] { false, true }) {
             factory.setMachineMode(usePattern ? 18 : 15);
-            UniversalJointFactoryProcessingLogic logic = new UniversalJointFactoryProcessingLogic(factory);
+            CrossRecipeProcessingLogic logic = new CrossRecipeProcessingLogic(factory);
             logic.setMachine(factory)
                 .setRecipeMapSupplier(factory::getRecipeMap)
                 .setAvailableVoltage(32)

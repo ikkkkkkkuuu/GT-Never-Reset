@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -42,6 +41,7 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.GregTechAPI;
+import gregtech.api.enums.ItemList;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
@@ -164,7 +164,7 @@ public final class ThreadHatchChecks {
             new RecipeThreadTask(
                 2,
                 8,
-                100,
+                3,
                 1,
                 new RecipeThreadOutputs(new ItemStack[] { new ItemStack(Items.diamond) }, new FluidStack[0])).save());
         tag.setTag("gtnrRecipeThreads", tasks);
@@ -207,6 +207,29 @@ public final class ThreadHatchChecks {
                 .get(0)
                 .getProgress() == 2,
             "restored task resumes after hatch returns");
+        machine.tick();
+        require(
+            machine.getRecipeThreadTasks()
+                .get(0)
+                .isFinished() && machine.getLastWorkingTick() == 0,
+            "blocked output keeps the finished task without recording delivery");
+        BaseMetaTileEntity output = place(
+            world,
+            13,
+            ItemList.Hatch_Output_Bus_LV.get(1)
+                .getItemDamage());
+        require(machine.addOutputBusToMachineList(output, 16), "attach output bus for delivery retry");
+        machine.tick();
+        long deliveredAt = machine.getTotalRuntimeInTicks();
+        require(
+            machine.getRecipeThreadTasks()
+                .isEmpty()
+                && output.getStackInSlot(0)
+                    .getItem() == Items.diamond
+                && machine.getLastWorkingTick() == deliveredAt,
+            "successful delivery records the controller tick");
+        machine.tick();
+        require(machine.getLastWorkingTick() == deliveredAt, "idle tick preserves the last delivery time");
     }
 
     @SubscribeEvent
@@ -215,8 +238,9 @@ public final class ThreadHatchChecks {
         Minecraft mc = Minecraft.getMinecraft();
         try {
             mc.gameSettings.pauseOnLostFocus = false;
-            if (!launched && mc.currentScreen instanceof GuiMainMenu) {
+            if (!launched && mc.theWorld == null && mc.currentScreen != null && ++ticks > 80) {
                 launched = true;
+                ticks = 0;
                 mc.launchIntegratedServer(
                     "thread-hatch-" + System.currentTimeMillis(),
                     "Thread Hatch QA",
@@ -347,7 +371,7 @@ public final class ThreadHatchChecks {
 
         private void tick() {
             mMachine = true;
-            runMachine(getBaseMetaTileEntity(), 1);
+            runMachine(getBaseMetaTileEntity(), ++mTotalRunTime);
         }
 
         @Override

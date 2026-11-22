@@ -67,10 +67,8 @@ public final class WirelessPowerTransfer {
             tile.markDirty();
             return;
         }
-        connection.observed(tile, 0);
-        if (connection.paused() || !supports(tile)
-            || !tile.canAcceptEnergyThisTick()
-            || !WirelessPowerSavedData.sourceExists(connection.source)) return;
+        connection.observeTile(tile);
+        if (connection.paused() || !supports(tile) || !tile.canAcceptEnergyThisTick()) return;
         long voltage = tile.getInputVoltage();
         long room = Math.max(0, tile.getEUCapacity() - tile.getStoredEU());
         if (room < voltage) return;
@@ -93,7 +91,10 @@ public final class WirelessPowerTransfer {
         } finally {
             if (accepted < reserved)
                 WirelessNetworkManager.addEUToGlobalEnergyMap(connection.source, reserved - accepted);
-            connection.observed(tile, accepted);
+            if (accepted > 0) connection.recordTransfer(
+                tile.getWorld()
+                    .getTotalWorldTime(),
+                accepted);
         }
     }
 
@@ -152,9 +153,8 @@ public final class WirelessPowerTransfer {
             if (lastTick == Long.MIN_VALUE || tick < lastTick || tick - lastTick >= WINDOW_TICKS) {
                 Arrays.fill(samples, 0);
             } else {
-                for (int offset = 1; offset <= tick - lastTick; offset++) samples[index(lastTick + offset)] = 0;
+                for (int offset = 1; offset < tick - lastTick; offset++) samples[index(lastTick + offset)] = 0;
             }
-            // The transfer path first records zero, then replaces it with the amount actually accepted this tick.
             samples[index(tick)] = Math.max(0, transferred);
             lastTick = tick;
         }

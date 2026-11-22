@@ -18,6 +18,7 @@ import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 
 import gregtech.api.enums.HatchElement;
 import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
+import gregtech.api.recipe.RecipeMap;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.api.util.tooltip.TooltipHelper;
 
@@ -25,6 +26,7 @@ public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder
 
     public static final EnumChatFormatting HATCH_COLOR = EnumChatFormatting.GREEN;
     public static final EnumChatFormatting MECHANIC_COLOR = EnumChatFormatting.LIGHT_PURPLE;
+    private static final int RECIPE_MAPS_PER_LINE = 3;
     private final List<List<String>> pendingGroups = new ArrayList<>();
 
     @Override
@@ -43,13 +45,24 @@ public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder
     }
 
     public AutoMultiblockTooltipBuilder addAutoTooltip(MTEEnhancedMultiBlockBase<?> machine, String keyPrefix) {
+        return addAutoTooltip(machine, keyPrefix, false);
+    }
+
+    public AutoMultiblockTooltipBuilder addAutoTooltipWithRecipeMapFooter(MTEEnhancedMultiBlockBase<?> machine) {
+        return addAutoTooltip(machine, MultiblockTooltipReader.keyPrefixOf(machine), true);
+    }
+
+    private AutoMultiblockTooltipBuilder addAutoTooltip(MTEEnhancedMultiBlockBase<?> machine, String keyPrefix,
+        boolean recipeMapFooter) {
         MultiblockTooltipReader.InfoSummary info = MultiblockTooltipReader.readInfo(machine, keyPrefix);
         if (info == null) return this;
         StructureSummary structure = info.structure();
         PerformanceSummary performance = info.performance();
         TooltipStats stats = performance == null ? null : performance.stats();
-        if (info.machineType() != null && !info.machineType()
-            .isEmpty()) addMachineType(info.machineType());
+        if (!recipeMapFooter && info.machineType() != null
+            && !info.machineType()
+                .isEmpty())
+            addMachineType(info.machineType());
         if (stats != null) {
             if (stats.parallels() > 0) addInfo(
                 MultiblockPerformanceFormatter.statLine(
@@ -104,7 +117,31 @@ public final class AutoMultiblockTooltipBuilder extends MultiblockTooltipBuilder
         if (structure != null) addStructure(structure);
         for (String note : info.structureNotes()) addStructureInfo(note);
         addParameterModules(info.moduleLimits());
+        if (recipeMapFooter) addRecipeMapGroup(machine.getAvailableRecipeMaps(), "GT5U.MBTT.MachineType", true);
         return this;
+    }
+
+    public AutoMultiblockTooltipBuilder addRecipeMaps(List<RecipeMap<?>> maps) {
+        // #tr gtnr.machine.tooltip.recipe_maps
+        // # Available recipe maps
+        // # zh_CN 可用配方池
+        addRecipeMapGroup(maps, "gtnr.machine.tooltip.recipe_maps", false);
+        return this;
+    }
+
+    private void addRecipeMapGroup(java.util.Collection<RecipeMap<?>> maps, String titleKey, boolean highlight) {
+        if (maps.isEmpty()) return;
+        List<String> names = maps.stream()
+            .map(map -> StatCollector.translateToLocal(map.unlocalizedName))
+            .toList();
+        List<String> lines = new ArrayList<>();
+        lines.add(StatCollector.translateToLocal(titleKey));
+        for (int start = 0; start < names.size(); start += RECIPE_MAPS_PER_LINE) {
+            int end = Math.min(start + RECIPE_MAPS_PER_LINE, names.size());
+            String row = String.join(" / ", names.subList(start, end));
+            lines.add(highlight ? "  " + TooltipHelper.coloredText(row, EnumChatFormatting.YELLOW) : row);
+        }
+        pendingGroups.add(lines);
     }
 
     private void addParameterModules(Map<MachineModuleType, Integer> limits) {

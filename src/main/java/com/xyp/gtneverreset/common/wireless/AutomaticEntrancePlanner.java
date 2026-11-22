@@ -1,16 +1,16 @@
 package com.xyp.gtneverreset.common.wireless;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.github.bsideup.jabel.Desugar;
-import com.xyp.gtnrlib.utils.ImmutableCollections;
 import com.xyp.gtnrlib.utils.LongMath;
+
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 
 public class AutomaticEntrancePlanner<N> {
 
@@ -44,12 +44,12 @@ public class AutomaticEntrancePlanner<N> {
         boolean settled, int capacity, int used, int served, int missing, int remainingEntrances) {}
 
     @Desugar
-    record Decision<N> (Action action, List<N> targets, List<Integer> entranceIds) {}
+    record Decision<N> (Action action, List<N> targets, IntList entranceIds) {}
 
     @Desugar
-    private record Trial<N> (List<N> targets, List<Integer> ids, long revision, int served, int used) {}
+    private record Trial<N> (List<N> targets, IntList ids, long revision, int served, int used) {}
 
-    private final Set<N> rejected = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<N> rejected = new ReferenceOpenHashSet<>();
     private Trial<N> trial;
     private long context;
     private boolean initialized;
@@ -66,8 +66,8 @@ public class AutomaticEntrancePlanner<N> {
         return trial != null;
     }
 
-    List<Integer> pendingEntrances() {
-        return trial == null ? ImmutableCollections.listOf() : trial.ids();
+    IntList pendingEntrances() {
+        return trial == null ? IntList.of() : trial.ids();
     }
 
     boolean isPending(int entranceId) {
@@ -114,8 +114,8 @@ public class AutomaticEntrancePlanner<N> {
         if (observation.remainingEntrances() <= 0) return idle(Status.ENTRANCE_LIMIT);
         if (observation.tick() < nextActionTick) return idle(Status.WAITING);
         if (exhausted) return idle(Status.NO_CANDIDATE);
-        Set<N> picked = Collections.newSetFromMap(new IdentityHashMap<>());
-        List<N> chosen = new ArrayList<>();
+        Set<N> picked = new ReferenceOpenHashSet<>();
+        List<N> chosen = new ObjectArrayList<>();
         for (int index = batchSize(observation); index > 0; index--) {
             N candidate = selectCandidate.apply(node -> !rejected.contains(node) && !picked.contains(node));
             if (candidate == null) break;
@@ -127,7 +127,7 @@ public class AutomaticEntrancePlanner<N> {
             return idle(Status.NO_CANDIDATE);
         }
         status = Status.EXPANDING;
-        return new Decision<>(Action.ADD, ImmutableCollections.copyList(chosen), ImmutableCollections.listOf());
+        return new Decision<>(Action.ADD, List.copyOf(chosen), IntList.of());
     }
 
     static int batchSize(Observation observation) {
@@ -138,10 +138,10 @@ public class AutomaticEntrancePlanner<N> {
         return Math.max(1, batch);
     }
 
-    void created(List<N> targets, List<Integer> entranceIds, Observation before) {
+    void created(List<N> targets, IntList entranceIds, Observation before) {
         trial = new Trial<>(
-            ImmutableCollections.copyList(targets),
-            ImmutableCollections.copyList(entranceIds),
+            List.copyOf(targets),
+            IntList.of(entranceIds.toIntArray()),
             before.revision(),
             before.served(),
             before.used());
@@ -170,6 +170,6 @@ public class AutomaticEntrancePlanner<N> {
 
     private Decision<N> idle(Status newStatus) {
         status = newStatus;
-        return new Decision<>(Action.NONE, ImmutableCollections.listOf(), ImmutableCollections.listOf());
+        return new Decision<>(Action.NONE, List.of(), IntList.of());
     }
 }

@@ -256,12 +256,12 @@ public final class WirelessPowerSavedData extends WorldSavedData {
             return matchesPosition(tile) && tile.getMetaTileID() == metaId;
         }
 
-        public void observed(BaseMetaTileEntity tile, long transferred) {
+        void observeTile(BaseMetaTileEntity tile) {
             if (loaded.get() != tile) loaded = new WeakReference<>(tile);
-            transferRate.record(
-                tile.getWorld()
-                    .getTotalWorldTime(),
-                transferred);
+        }
+
+        void recordTransfer(long tick, long transferred) {
+            transferRate.record(tick, transferred);
         }
 
         public BaseMetaTileEntity loadedTile() {
@@ -272,7 +272,7 @@ public final class WirelessPowerSavedData extends WorldSavedData {
             if (!(current instanceof BaseMetaTileEntity tile) || tile.isInvalid()
                 || !matches(tile)
                 || !id.equals(((IWirelessPowerReceiver) tile).gtnr$powerConnection())) return null;
-            if (loaded.get() != tile) loaded = new WeakReference<>(tile);
+            observeTile(tile);
             return tile;
         }
 

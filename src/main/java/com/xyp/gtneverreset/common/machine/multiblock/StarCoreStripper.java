@@ -229,7 +229,7 @@ public final class StarCoreStripper extends GTNRMultiBlockBase<StarCoreStripper>
 
     @Override
     public int getMaxRecipeThreads() {
-        return 128;
+        return 131_072;
     }
 
     @Override

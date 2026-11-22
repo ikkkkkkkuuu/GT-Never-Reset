@@ -44,7 +44,8 @@ final class AnimationBlockUseChecks {
                 player.isSwingInProgress = false;
                 click.invoke(mc);
                 if (world.getBlock(x, y + 1, z) != Blocks.brick_block || player.isSwingInProgress
-                    || animations.playing("place"))
+                    || animations.playing("place")
+                    || !FirstPersonItemActions.OFFHAND.playing("place"))
                     throw new AssertionError(
                         "Offhand placement must succeed without starting a main-hand swing or clip");
                 setOffhand.invoke(null, player, null);

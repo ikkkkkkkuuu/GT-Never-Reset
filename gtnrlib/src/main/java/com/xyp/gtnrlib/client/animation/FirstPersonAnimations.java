@@ -25,11 +25,7 @@ import net.minecraftforge.client.MinecraftForgeClient;
 import com.xyp.gtnrlib.GTNRLib;
 import com.xyp.gtnrlib.api.animation.AnimationClip;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Channel;
-import com.xyp.gtnrlib.api.animation.AnimationClip.Curve;
-import com.xyp.gtnrlib.api.animation.AnimationClip.End;
-import com.xyp.gtnrlib.api.animation.AnimationClip.Key;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Marker;
-import com.xyp.gtnrlib.api.animation.AnimationClip.Value;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
 import com.xyp.gtnrlib.api.animation.AnimationPlayer;
 import com.xyp.gtnrlib.client.render.animation.HmiPoseRenderer;
@@ -55,7 +51,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     private static final Marker HAND_MOTION = new Marker(0, "gtnrlib:hand_motion");
     private static final Marker CHAIN_PLACEMENT = new Marker(0, "gtnrlib:chain_placement");
     private static final Marker EMPTY_PUNCH = new Marker(0, "gtnrlib:empty_punch");
-    private static final double HANDOFF_SECONDS = .075, TANGENT_STEP = .001;
+    private static final double HANDOFF_SECONDS = .075;
     private final FirstPersonHandMotion handMotion = new FirstPersonHandMotion();
     private final List<Consumer<Marker>> listeners = new ArrayList<>();
     private final AnimationPlayer player = new AnimationPlayer(
@@ -69,7 +65,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     private Motion baseMotion, actionMotion;
     private PendingAction pending;
     private PunchyPack.Pose rightItem, rightArm, leftArm;
-    private AnimationPlayer.Playback base, action, actionHandoff;
+    private AnimationPlayer.Playback base, action;
     private String activeAction = "";
     private boolean mining, replacesSwing, usesHandMotion, playingEmptyPunch;
     private boolean inClientTick, advancedOnInput;
@@ -182,15 +178,18 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
             return;
         }
         var mc = Minecraft.getMinecraft();
+        boolean resetHand = !GTNRLibConfig.enableFirstPersonAnimations || mc.thePlayer == null
+            || mc.gameSettings.thirdPersonView != 0;
+        if (resetHand) {
+            HmiFirstPerson.INSTANCE.detach();
+            HmiFirstPerson.OFFHAND.detach();
+        }
+        FirstPersonItemActions.INSTANCE.tick();
+        if (Loader.isModLoaded("backhand")) FirstPersonItemActions.OFFHAND.tick();
         if (!GTNRLibConfig.enableFirstPersonAnimations) {
             reset();
-            HmiFirstPerson.INSTANCE.detach();
-            FirstPersonItemActions.INSTANCE.tick();
             return;
         }
-        if (HmiFirstPerson.INSTANCE.enabled() && (mc.thePlayer == null || mc.gameSettings.thirdPersonView != 0))
-            HmiFirstPerson.INSTANCE.detach();
-        FirstPersonItemActions.INSTANCE.tick();
         if (!enabled()) return;
         if (mc.thePlayer == null || mc.theWorld != world || mc.gameSettings.thirdPersonView != 0) {
             reset();
@@ -230,12 +229,12 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         Motion next = resolve(held, state, 0);
         if (next == null && !state.equals("idle")) next = resolve(held, "idle", 0);
         if (!Objects.equals(baseMotion, next) || (next != null && (base == null || !base.active()))) {
-            if (base != null) base.stop(.12);
+            if (base != null && next == null) base.stop(.12);
             baseMotion = next;
             usesHandMotion = next != null && next.clip()
                 .markers()
                 .contains(HAND_MOTION);
-            base = next == null ? null : play(next, .12, 0);
+            if (next != null) base = play(base, next, .12, 0);
         }
         if (incoming != null) trigger(incoming.name);
         advanceMovement(mc);
@@ -300,63 +299,38 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
                 && motion.clip()
                     .markers()
                     .contains(CHAIN_PLACEMENT)));
-        Map<Channel, Tangent> departure = chain ? new LinkedHashMap<>() : Map.of();
-        if (chain) {
-            for (Channel channel : motion.clip()
-                .tracks()
-                .keySet()) {
-                departure.put(channel, new Tangent(player.sample(channel, 0), player.sample(channel, TANGENT_STEP)));
-            }
-        }
-        if (actionHandoff != null) {
-            actionHandoff.stop(0);
-            actionHandoff = null;
-        }
-        if (action != null) action.stop(chain ? 0 : replacingActiveSwing ? .10 : .05);
         activeAction = name;
         actionMotion = motion;
         replacesSwing = ownsSwing;
         playingEmptyPunch = emptyPunch;
-        action = play(motion, chain ? 0 : replacingActiveSwing && replacesSwing ? .10 : .025, 1);
+        if (chain) {
+            double seconds = Math.min(
+                HANDOFF_SECONDS,
+                motion.clip()
+                    .duration() / Math.max(1, motion.speed())
+                    * .5);
+            action = player.transition(
+                action,
+                motion.clip(),
+                seconds,
+                AnimationPlayer.RotationBlend.EULER,
+                AnimationPlayer.Transition.MATCH_VELOCITY);
+            action.speed(motion.speed());
+        } else {
+            double fade = replacingActiveSwing ? .10 : action != null && action.active() ? .05 : .025;
+            action = play(action, motion, fade, 1);
+        }
         if (replacesSwing) action.fadeOutAtEnd(
             Math.min(
                 .08,
                 motion.clip()
                     .duration() * .25));
-        if (chain) joinAction(
-            departure,
-            Math.min(
-                HANDOFF_SECONDS,
-                motion.clip()
-                    .duration() / Math.max(1, motion.speed())
-                    * .5));
     }
 
-    /** A short cubic matches the current grip and its velocity to the incoming stroke at the join time. */
-    private void joinAction(Map<Channel, Tangent> departure, double seconds) {
-        Map<Channel, List<Key>> tracks = new LinkedHashMap<>();
-        double step = Math.min(TANGENT_STEP, seconds);
-        departure.forEach((channel, samples) -> {
-            Vec start = samples.value, end = player.sample(channel, seconds);
-            Vec outgoing = start.mix(samples.ahead, seconds / (3 * TANGENT_STEP));
-            Vec incoming = end.mix(player.sample(channel, seconds - step), seconds / (3 * step));
-            Value path = time -> {
-                double t = time / seconds;
-                Vec middle = outgoing.mix(incoming, t);
-                Vec left = start.mix(outgoing, t)
-                    .mix(middle, t);
-                Vec right = middle.mix(incoming.mix(end, t), t);
-                return left.mix(right, t);
-            };
-            tracks.put(channel, List.of(new Key(0, path, path, Curve.LINEAR)));
-        });
-        actionHandoff = player.play(new AnimationClip(seconds, End.ONCE, tracks, List.of()), 0, 2);
-        // Predictions beyond the sub-tick join must sample the live layer immediately.
-        actionHandoff.fadeOutAtEnd(step);
-    }
-
-    private AnimationPlayer.Playback play(Motion motion, double fade, int priority) {
-        var handle = player.play(motion.clip(), fade, priority);
+    private AnimationPlayer.Playback play(AnimationPlayer.Playback previous, Motion motion, double fade, int priority) {
+        var handle = previous != null && previous.active()
+            ? player.crossFade(previous, motion.clip(), fade, AnimationPlayer.RotationBlend.EULER)
+            : player.play(motion.clip(), fade, priority);
         handle.speed(motion.speed());
         return handle;
     }
@@ -447,7 +421,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
 
     public boolean dualHanded() {
         return (action != null && action.active() && actionMotion.dualHanded())
-            || (base != null && base.active() && baseMotion.dualHanded());
+            || (baseMotion != null && base != null && base.active() && baseMotion.dualHanded());
     }
 
     public Vec sample(Channel channel, float partial) {
@@ -499,7 +473,6 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         action = null;
         base = null;
         baseMotion = null;
-        actionHandoff = null;
         usesHandMotion = false;
         playingEmptyPunch = false;
         actionMotion = null;
@@ -509,8 +482,6 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
         activeAction = "";
         previousSway = sway = previousPitch = pitch = 0;
     }
-
-    private record Tangent(Vec value, Vec ahead) {}
 
     private record PendingAction(int slot, ItemStack stack, String name) {}
 }

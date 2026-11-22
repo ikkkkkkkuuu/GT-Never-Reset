@@ -8,6 +8,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.dreammaster.item.NHItemList;
+import com.xyp.gtneverreset.common.block.blocks.BlockLightHunterCasing.Variant;
 import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.loader.BlockLoader;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -61,6 +62,10 @@ public final class AssemblyLineRecipes {
     }
 
     public static void register() {
+        spacetimeAssemblyLineUnit();
+        registerLightHunterStation();
+        registerSatelliteFactories();
+        registerSatelliteUpgrades();
         registerStarCoreStripper();
         if (!ChaosConfig.enableBottleInChaos) return;
         registerChaosPhotonUpgrades();
@@ -509,4 +514,193 @@ public final class AssemblyLineRecipes {
             .duration(20 * 240)
             .addTo(GTRecipeConstants.AssemblyLine);
     }
+
+    private static void registerLightHunterStation() {
+        GTValues.RA.stdBuilder()
+            .metadata(RESEARCH_ITEM, ItemList.SpaceElevatorController.get(1))
+            .metadata(SCANNING, new Scanning(2400, TierEU.RECIPE_UXV))
+            .itemInputs(
+                CustomItemList.Machine_Multi_Research.get(16),
+                ItemList.MiningDroneUHV.get(64),
+                ItemList.MiningDroneUEV.get(64),
+                ItemList.MiningDroneUIV.get(64),
+                ItemList.MiningDroneUMV.get(64),
+                ItemList.MiningDroneUXV.get(64),
+                ItemList.SpaceElevatorModuleMinerT3.get(64),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.UXV, 32),
+                ItemList.Energy_Cluster.get(64),
+                GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.Infinity, 16),
+                GTOreDictUnificator.get(OrePrefixes.plateDouble, Materials.Tritanium, 16),
+                ItemList.Gravistar.get(16))
+            .fluidInputs(
+                MaterialMisc.MUTATED_LIVING_SOLDER.getFluidStack(1600000),
+                Materials.UUMatter.getFluid(1600000),
+                Materials.TranscendentMetal.getMolten(1600000))
+            .itemOutputs(GTNRItemList.LightHunterSpaceStation.get(1))
+            .duration(2400)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(GTRecipeConstants.AssemblyLine);
+    }
+
+    private static void registerSatelliteFactories() {
+        GTValues.RA.stdBuilder()
+            .metadata(RESEARCH_ITEM, GregtechItemList.Industrial_Mixer.get(1))
+            .metadata(SCANNING, new Scanning(1200, TierEU.RECIPE_UXV))
+            .itemInputs(
+                GregtechItemList.Industrial_PlatePress.get(16),
+                GregtechItemList.Industrial_WireFactory.get(16),
+                ItemList.Machine_Multi_IndustrialElectromagneticSeparator.get(16),
+                GregtechItemList.Industrial_Extruder.get(16),
+                GregtechItemList.Industrial_Mixer.get(4),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.UXV, 32),
+                ItemList.Energy_Cluster.get(1),
+                ItemList.Emitter_UXV.get(16),
+                GTOreDictUnificator.get(OrePrefixes.plateDouble, Materials.CosmicNeutronium, 16),
+                MaterialsAlloy.BLACK_TITANIUM.getPlate(32),
+                GTOreDictUnificator.get(OrePrefixes.plateDouble, Materials.Infinity, 16),
+                MaterialsAlloy.CINOBITE.getPlate(32))
+            .fluidInputs(
+                MaterialMisc.MUTATED_LIVING_SOLDER.getFluidStack(16000),
+                Materials.UUMatter.getFluid(16000),
+                Materials.Cerium.getMolten(16000))
+            .itemOutputs(GTNRItemList.MetalFormingSatelliteMkI.get(1))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(GTRecipeConstants.AssemblyLine);
+
+        GTValues.RA.stdBuilder()
+            .metadata(RESEARCH_ITEM, GregtechItemList.Industrial_Centrifuge.get(1))
+            .metadata(SCANNING, new Scanning(1200, TierEU.RECIPE_UXV))
+            .itemInputs(
+                ItemList.ChemicalBathUMV.get(64),
+                GregtechItemList.Industrial_Sifter.get(64),
+                GregtechItemList.Industrial_Centrifuge.get(64),
+                ItemList.Machine_Multi_IndustrialElectromagneticSeparator.get(16),
+                GregtechItemList.Controller_Vacuum_Furnace.get(16),
+                GregtechItemList.Industrial_Electrolyzer.get(16),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.UXV, 32),
+                ItemList.Energy_Cluster.get(1),
+                GTOreDictUnificator.get(OrePrefixes.plateDouble, Materials.Enderium, 16),
+                GTOreDictUnificator.get(OrePrefixes.plateDouble, Materials.Osmiridium, 16),
+                GTOreDictUnificator.get(OrePrefixes.plateDouble, Materials.Trinium, 16),
+                GTOreDictUnificator.get(OrePrefixes.plateDouble, Materials.Quantium, 16))
+            .fluidInputs(
+                MaterialMisc.MUTATED_LIVING_SOLDER.getFluidStack(16000),
+                Materials.UUMatter.getFluid(16000),
+                Materials.Neutronium.getMolten(16000))
+            .itemOutputs(GTNRItemList.MineralProcessingSatelliteMkI.get(1))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(GTRecipeConstants.AssemblyLine);
+
+        GTValues.RA.stdBuilder()
+            .metadata(RESEARCH_ITEM, ItemList.SpaceElevatorModulePumpT3.get(1))
+            .metadata(SCANNING, new Scanning(1200, TierEU.RECIPE_UXV))
+            .itemInputs(
+                ItemList.AutoclaveUMV.get(16),
+                ItemList.Machine_Multi_IndustrialExtractor.get(16),
+                GregtechItemList.Machine_Adv_DistillationTower.get(16),
+                ItemList.FluidHeaterUMV.get(16),
+                ItemList.Machine_Multi_IndustrialBrewery.get(64),
+                ItemList.Distillation_Tower.get(64),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.UXV, 32),
+                ItemList.Energy_Cluster.get(1),
+                MaterialsElements.STANDALONE.CELESTIAL_TUNGSTEN.getPlate(32),
+                MaterialsElements.STANDALONE.ASTRAL_TITANIUM.getPlate(32),
+                MaterialsElements.getInstance().RHENIUM.getPlate(32),
+                GTOreDictUnificator.get(OrePrefixes.plate, Materials.Neutronium, 32))
+            .fluidInputs(
+                MaterialMisc.MUTATED_LIVING_SOLDER.getFluidStack(16000),
+                Materials.UUMatter.getFluid(16000),
+                MaterialsElements.STANDALONE.HYPOGEN.getFluidStack(16000))
+            .itemOutputs(GTNRItemList.FluidProcessingSatelliteMkI.get(1))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(GTRecipeConstants.AssemblyLine);
+
+        GTValues.RA.stdBuilder()
+            .metadata(RESEARCH_ITEM, ItemRefer.Precise_Assembler.get(1))
+            .metadata(SCANNING, new Scanning(1200, TierEU.RECIPE_UXV))
+            .itemInputs(
+                ItemList.Machine_Multi_Canner.get(16),
+                ItemList.Machine_Multi_IndustrialElectromagneticSeparator.get(16),
+                ItemList.AssemblingMachineUMV.get(16),
+                ItemRefer.Precise_Assembler.get(64),
+                GregtechItemList.Industrial_Arc_Furnace.get(64),
+                GTOreDictUnificator.get(OrePrefixes.circuit, Materials.UXV, 32),
+                ItemList.Energy_Cluster.get(1),
+                ItemList.Field_Generator_UXV.get(16),
+                MaterialsAlloy.HASTELLOY_C276.getPlate(32),
+                GTOreDictUnificator.get(OrePrefixes.plateDouble, Materials.DraconiumAwakened, 16),
+                MaterialsAlloy.HASTELLOY_X.getPlate(32),
+                GTOreDictUnificator.get(OrePrefixes.plateDouble, Materials.Infinity, 16))
+            .fluidInputs(
+                MaterialMisc.MUTATED_LIVING_SOLDER.getFluidStack(16000),
+                Materials.UUMatter.getFluid(16000),
+                Materials.TranscendentMetal.getMolten(16000))
+            .itemOutputs(GTNRItemList.AssemblySatelliteMkI.get(1))
+            .duration(1200)
+            .eut(TierEU.RECIPE_UXV)
+            .addTo(GTRecipeConstants.AssemblyLine);
+    }
+
+    private static void registerSatelliteUpgrades() {
+        GTNRItemList[][] families = {
+            { GTNRItemList.MetalFormingSatelliteMkI, GTNRItemList.MetalFormingSatelliteMkII,
+                GTNRItemList.MetalFormingSatelliteMkIII, GTNRItemList.MetalFormingSatelliteMkIV },
+            { GTNRItemList.MineralProcessingSatelliteMkI, GTNRItemList.MineralProcessingSatelliteMkII,
+                GTNRItemList.MineralProcessingSatelliteMkIII, GTNRItemList.MineralProcessingSatelliteMkIV },
+            { GTNRItemList.FluidProcessingSatelliteMkI, GTNRItemList.FluidProcessingSatelliteMkII,
+                GTNRItemList.FluidProcessingSatelliteMkIII, GTNRItemList.FluidProcessingSatelliteMkIV },
+            { GTNRItemList.AssemblySatelliteMkI, GTNRItemList.AssemblySatelliteMkII,
+                GTNRItemList.AssemblySatelliteMkIII, GTNRItemList.AssemblySatelliteMkIV } };
+        for (GTNRItemList[] family : families) {
+            for (int grade = 1; grade < family.length; grade++) {
+                int count = 1 << grade;
+                GTValues.RA.stdBuilder()
+                    .metadata(RESEARCH_ITEM, family[grade - 1].get(1))
+                    .metadata(SCANNING, new Scanning(1200 * count, TierEU.RECIPE_UXV))
+                    .itemInputs(
+                        family[grade - 1].get(1),
+                        ItemList.Field_Generator_UXV.get(count),
+                        ItemList.Emitter_UXV.get(count),
+                        new Object[] { OrePrefixes.circuit.get(Materials.UXV), 8 * count })
+                    .fluidInputs(
+                        Materials.SpaceTime.getMolten(2304 * count),
+                        Materials.UUMatter.getFluid(16000 * count))
+                    .itemOutputs(family[grade].get(1))
+                    .eut(TierEU.RECIPE_UXV)
+                    .duration(1200 * count)
+                    .addTo(GTRecipeConstants.AssemblyLine);
+            }
+        }
+    }
+
+    private static void spacetimeAssemblyLineUnit() {
+        GTValues.RA.stdBuilder()
+            .metadata(RESEARCH_ITEM, ItemList.Casing_Assembler.get(1))
+            .metadata(SCANNING, new Scanning(2400, TierEU.RECIPE_UHV))
+            .itemInputs(
+                GTOreDictUnificator.get(OrePrefixes.frameGt, Materials.Adamantium, 1),
+                ItemList.Casing_Assembler.get(1),
+                ItemRefer.Precise_Electronic_Unit_T4.get(1),
+                ItemList.Robot_Arm_UHV.get(1),
+                Materials.Neutronium.getNanite(1),
+                ItemList.Circuit_Chip_Optical.get(6),
+                new Object[] { OrePrefixes.circuit.get(Materials.UEV), 2 },
+                GTOreDictUnificator.get(OrePrefixes.gearGt, Materials.BlueSteel, 4),
+                GTOreDictUnificator.get(OrePrefixes.gearGt, Materials.RedSteel, 4),
+                ItemList.Robot_Arm_ZPM.get(4),
+                MaterialsAlloy.PIKYONIUM.getPlateDouble(6))
+            .fluidInputs(
+                Materials.LiquidCrystalKevlar.getFluid(5760),
+                MaterialsAlloy.ABYSSAL.getFluidStack(1296),
+                MaterialsAlloy.INCOLOY_MA956.getFluidStack(1296),
+                MaterialsAlloy.PIKYONIUM.getFluidStack(1296))
+            .itemOutputs(Variant.SPACETIME_ASSEMBLY_LINE_UNIT.stack(1))
+            .duration(400)
+            .eut(TierEU.RECIPE_UHV)
+            .addTo(GTRecipeConstants.AssemblyLine);
+    }
+
 }

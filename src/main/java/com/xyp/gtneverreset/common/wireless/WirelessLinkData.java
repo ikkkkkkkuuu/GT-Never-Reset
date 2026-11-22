@@ -1,11 +1,9 @@
 package com.xyp.gtneverreset.common.wireless;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -13,7 +11,10 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.github.bsideup.jabel.Desugar;
 import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Address;
-import com.xyp.gtnrlib.utils.ImmutableCollections;
+
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 
 public class WirelessLinkData {
 
@@ -27,7 +28,7 @@ public class WirelessLinkData {
     private record Decoded(NBTTagCompound payload, Map<Slot, Claim> claims) {}
 
     static void beginReadBatch() {
-        if (readBatchDepth++ == 0) readBatch = new IdentityHashMap<>();
+        if (readBatchDepth++ == 0) readBatch = new Reference2ObjectOpenHashMap<>();
     }
 
     static void endReadBatch() {
@@ -61,21 +62,21 @@ public class WirelessLinkData {
         Set<WirelessFrequency> entrances) {
 
         public Claim {
-            frequencies = ImmutableCollections.copySet(frequencies);
-            entrances = entrances.isEmpty() ? ImmutableCollections.setOf()
+            frequencies = Set.copyOf(frequencies);
+            entrances = entrances.isEmpty() ? Set.of()
                 : entrances.stream()
                     .filter(frequencies::contains)
-                    .collect(ImmutableCollections.toImmutableSet());
-            paused = paused.isEmpty() ? ImmutableCollections.setOf()
+                    .collect(Collectors.toUnmodifiableSet());
+            paused = paused.isEmpty() ? Set.of()
                 : paused.stream()
                     .filter(frequencies::contains)
-                    .collect(ImmutableCollections.toImmutableSet());
+                    .collect(Collectors.toUnmodifiableSet());
         }
     }
 
     public static Map<Slot, Claim> read(NBTTagCompound tileData) {
         // Callers edit their own slot map; Claim and its contents are immutable.
-        return readBatch == null ? decode(tileData) : new HashMap<>(readView(tileData));
+        return readBatch == null ? decode(tileData) : new Object2ObjectOpenHashMap<>(readView(tileData));
     }
 
     static Claim claim(NBTTagCompound tileData, Slot slot) {
@@ -87,14 +88,14 @@ public class WirelessLinkData {
         NBTTagCompound payload = tileData.hasKey(KEY, 10) ? tileData.getCompoundTag(KEY) : null;
         Decoded saved = readBatch.get(tileData);
         if (saved == null || saved.payload() != payload) {
-            saved = new Decoded(payload, ImmutableCollections.copyMap(decode(tileData)));
+            saved = new Decoded(payload, Map.copyOf(decode(tileData)));
             readBatch.put(tileData, saved);
         }
         return saved.claims();
     }
 
     private static Map<Slot, Claim> decode(NBTTagCompound tileData) {
-        Map<Slot, Claim> result = new HashMap<>();
+        Map<Slot, Claim> result = new Object2ObjectOpenHashMap<>();
         if (!tileData.hasKey(KEY, 10)) return result;
         NBTTagCompound data = tileData.getCompoundTag(KEY);
         int version = data.getInteger("version");
@@ -111,9 +112,9 @@ public class WirelessLinkData {
                 || entry.getString("kind")
                     .isEmpty())
                 continue;
-            Set<WirelessFrequency> frequencies = new HashSet<>();
-            Set<WirelessFrequency> paused = new HashSet<>();
-            Set<WirelessFrequency> entrances = new HashSet<>();
+            Set<WirelessFrequency> frequencies = new ObjectOpenHashSet<>();
+            Set<WirelessFrequency> paused = new ObjectOpenHashSet<>();
+            Set<WirelessFrequency> entrances = new ObjectOpenHashSet<>();
             NBTTagList sources = entry.getTagList("frequencies", 10);
             for (int j = 0; j < sources.tagCount(); j++) {
                 NBTTagCompound source = sources.getCompoundTagAt(j);
