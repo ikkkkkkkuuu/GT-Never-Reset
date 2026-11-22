@@ -46,6 +46,7 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.GregTechAPI;
+import gregtech.api.enums.Materials;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.metatileentity.implementations.*;
 import gregtech.api.recipe.RecipeMap;
@@ -894,6 +895,30 @@ public final class BottleInChaosChecks {
                     .size() == 16,
             "wood route exposes ash and sixteen distillation fluids");
         require(petrochemicalRows.size() == 11, "petrochemical route publishes eleven oil and tar recipes");
+
+        int pbi = com.xyp.gtneverreset.common.crafting.chaos.route.BottledChaosRecipeResources.CredentialModel
+            .indexForTag("pbi");
+        var pbiRows = displays.stream()
+            .filter(display -> display.tagIndex() == pbi)
+            .toList();
+        require(pbiRows.size() == 1, "PBI credential publishes one production chain");
+        var row = pbiRows.get(0);
+        require(row.baseEUt() == gregtech.api.enums.TierEU.RECIPE_IV, "PBI uses IV voltage");
+        require(
+            row.fluidInputs()
+                .stream()
+                .anyMatch(
+                    input -> input.fluidStack()
+                        .isFluidEqual(Materials.Benzene.getFluid(1))),
+            "PBI chain consumes benzene");
+        require(
+            row.plan()
+                .fluidOutputs()
+                .stream()
+                .anyMatch(
+                    output -> output.amount() > 0 && output.fluidStack()
+                        .isFluidEqual(Materials.Polybenzimidazole.getMolten(1))),
+            "PBI chain produces the GregTech molten fluid");
     }
 
     private void verifyModuleMaterials() {

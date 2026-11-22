@@ -148,7 +148,8 @@ public final class BottledChaosRecipeResources {
             new TagDefinition("quark_gluon_plasma", true, "quark_gluon_plasma", BottledChaosRecipePage.DEFAULT),
             new TagDefinition("rocket_fuel", true, "rocket_fuel", BottledChaosRecipePage.ROCKET_FUEL),
             new TagDefinition("naquadah_fuel_1", true, "naquadah_fuel_1", BottledChaosRecipePage.NAQUADAH_FUEL),
-            new TagDefinition("naquadah_fuel_2", true, "naquadah_fuel_2", BottledChaosRecipePage.NAQUADAH_FUEL)
+            new TagDefinition("naquadah_fuel_2", true, "naquadah_fuel_2", BottledChaosRecipePage.NAQUADAH_FUEL),
+            new TagDefinition("pbi", true, "pbi", BottledChaosRecipePage.PBI)
         };
         // spotless:on
         private static final TagDefinition[] ACTIVE = Arrays.stream(DEFINITIONS)
@@ -299,6 +300,7 @@ public final class BottledChaosRecipeResources {
         static {
             // spotless:off
             register("wood", WoodLog, WoodLog);
+            register("pbi", Benzene, PolybenzimidazoleMolten);
             register("rocket_fuel", CarbonDust, GTPPFluids.RP1RocketFuel);
             register("naquadah_fuel_1", GGMaterial.lightNaquadahFuel.getFluidOrGas(1).getFluid(), GGMaterial.naquadahBasedFuelMkI.getFluidOrGas(1).getFluid());
             register("naquadah_fuel_2", GGMaterial.lightNaquadahFuel.getFluidOrGas(1).getFluid(), GGMaterial.naquadahBasedFuelMkII.getFluidOrGas(1).getFluid());
@@ -880,6 +882,11 @@ public final class BottledChaosRecipeResources {
     public static final Fluid PhosphorusTrichloride = fluid(Materials.PhosphorusTrichloride.getFluid(1));
     public static final Fluid TrimethylBorate = fluid(Materials.TrimethylBorate.getFluid(1));
     public static final Fluid BoricAcid = Objects.requireNonNull(FluidRegistry.getFluid("boricacid"), "boricacid");
+    public static final Fluid Nitrochlorobenzene = fluid(Materials.Nitrochlorobenzene.getFluid(1));
+    public static final Fluid Dichlorobenzidine = fluid(Materials.Dichlorobenzidine.getFluid(1));
+    public static final Fluid Diaminobenzidine = fluid(Materials.Diaminobenzidin.getFluid(1));
+    public static final Fluid DiphenylIsophthalate = fluid(Materials.Diphenylisophthalate.getFluid(1));
+    public static final Fluid PolybenzimidazoleMolten = fluid(Materials.Polybenzimidazole.getMolten(1));
     public static final Fluid Dimethylbenzene = fluid(Materials.Dimethylbenzene.getFluid(1));
     public static final Fluid SulfuricAcid = fluid(Materials.SulfuricAcid.getFluid(1));
     public static final Fluid DilutedSulfuricAcid = fluid(Materials.DilutedSulfuricAcid.getFluid(1));

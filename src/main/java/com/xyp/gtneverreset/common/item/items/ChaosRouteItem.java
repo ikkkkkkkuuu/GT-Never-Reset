@@ -244,6 +244,10 @@ public final class ChaosRouteItem extends ChaosMetaItem {
         // # Petrochemical Processing
         // # zh_CN 石化
 
+        // #tr gtnr.bottleinchaos.shared.route.pbi
+        // # Polybenzimidazole (PBI)
+        // # zh_CN 聚苯并咪唑（PBI）
+
         // #tr gtnr.bottleinchaos.shared.route.honeycomb
         // # Honeycomb Processing
         // # zh_CN 蜂窝处理

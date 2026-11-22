@@ -13,6 +13,7 @@ public enum BottledChaosRecipePage {
     DEFAULT(() -> GTNRRecipeMaps.BottledChaosRecipes.getDefaultRecipeCategory()),
     WOOD(() -> GTNRRecipeMaps.BottledChaosWoodCategory),
     PETROCHEMICAL(() -> GTNRRecipeMaps.BottledChaosPetrochemicalCategory),
+    PBI(() -> GTNRRecipeMaps.BottledChaosPbiCategory),
     TITANIUM(() -> GTNRRecipeMaps.BottledChaosTitaniumCategory),
     TUNGSTEN(() -> GTNRRecipeMaps.BottledChaosTungstenCategory),
     INDIUM(() -> GTNRRecipeMaps.BottledChaosIndiumCategory),
