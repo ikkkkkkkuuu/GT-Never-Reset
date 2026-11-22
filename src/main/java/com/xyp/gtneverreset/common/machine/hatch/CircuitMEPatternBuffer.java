@@ -21,7 +21,13 @@ import net.minecraftforge.fluids.FluidStack;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import com.cleanroommc.modularui.factory.PosGuiData;
+import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.screen.UISettings;
+import com.cleanroommc.modularui.value.sync.PanelSyncManager;
+import com.xyp.gtneverreset.common.gui.modularui.hatch.CircuitMEPatternBufferGui;
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
+import com.xyp.gtneverreset.common.me.CircuitSharedSupplies;
 import com.xyp.gtneverreset.common.me.LongCircuitBuffer;
 import com.xyp.gtneverreset.common.me.PatternMEOutput;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternCache;
@@ -49,6 +55,7 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
     public static final int PATTERN_COUNT = 540;
     private final List<CircuitSlot> pendingRefunds = new ArrayList<>();
     private final Map<ICraftingPatternDetails, CircuitRecipe> craftingSlots = new HashMap<>();
+    private final CircuitSharedSupplies sharedSupplies = new CircuitSharedSupplies(this::markDirty);
     private boolean craftingSlotsDirty = true;
     private boolean inputsChanged;
     private boolean inputsSerializedIntoDrop;
@@ -94,7 +101,16 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
         return true;
     }
 
-    /** Manual items are shared catalysts. Only buffered ME inputs supply consumable quantities. */
+    public CircuitSharedSupplies getSharedSupplies() {
+        return sharedSupplies;
+    }
+
+    @Override
+    public ModularPanel buildUI(PosGuiData data, PanelSyncManager syncManager, UISettings uiSettings) {
+        return new CircuitMEPatternBufferGui(this).build(data, syncManager, uiSettings);
+    }
+
+    /** Physical manual slots remain reusable catalysts. */
     @Override
     public ItemStack[] getSharedItems() {
         List<ItemStack> items = new ArrayList<>();
@@ -132,6 +148,7 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
     @Override
     public void onPostTick(IGregTechTileEntity tile, long timer) {
         super.onPostTick(tile, timer);
+        if (tile.isServerSide() && sharedSupplies.tick()) pullSharedSupplies();
         if (tile.isServerSide() && inputsChanged) {
             notifyWatchers();
             for (SuperMTEHatchCraftingInputSlave mirror : getProxyHatches()) mirror.onParentInvChange();
@@ -140,15 +157,36 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
         if (tile.isServerSide() && timer % 20 == 0 && !pendingRefunds.isEmpty() && isActive()) retryRefunds(4);
     }
 
+    private void pullSharedSupplies() {
+        var tile = getBaseMetaTileEntity();
+        if (!tile.isServerSide() || !tile.isAllowedToWork() || !isActive()) return;
+        try {
+            inputsChanged |= sharedSupplies.pull(
+                getProxy(),
+                getMEOutputActionSource(),
+                tile.getWorld()
+                    .getTotalWorldTime());
+        } catch (GridAccessException ignored) {}
+    }
+
+    private CircuitSharedSupplies suppliesForRecipe() {
+        if (sharedSupplies.onRecipeCheck() && sharedSupplies.hasWork()) pullSharedSupplies();
+        return sharedSupplies;
+    }
+
     @Override
     public void refundAll(boolean shouldDrop) {
         if (shouldDrop && inputsSerializedIntoDrop) {
             for (PatternSlot<SuperMTEHatchCraftingInputME> slot : iterableSlots())
                 if (slot instanceof CircuitSlot circuitSlot) circuitSlot.buffer.clear();
             pendingRefunds.clear();
+            sharedSupplies.clearStock();
             return;
         }
         super.refundAll(false);
+        try {
+            sharedSupplies.refund(getProxy(), getMEOutputActionSource());
+        } catch (GridAccessException ignored) {}
         retryRefunds(pendingRefunds.size());
     }
 
@@ -156,11 +194,13 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
     public void saveNBTData(NBTTagCompound tag) {
         super.saveNBTData(tag);
         writeRefunds(tag, false);
+        sharedSupplies.write(tag);
     }
 
     @Override
     public void loadNBTData(NBTTagCompound tag) {
         super.loadNBTData(tag);
+        sharedSupplies.read(tag);
         mInventory[getCircuitSlot()] = null;
         mInventory[getMoldSlot()] = null;
         pendingRefunds.clear();
@@ -191,6 +231,7 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
     public void setItemNBT(NBTTagCompound tag) {
         super.setItemNBT(tag);
         writeRefunds(tag, true);
+        sharedSupplies.write(tag);
         inputsSerializedIntoDrop = true;
     }
 
@@ -432,17 +473,29 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
             List<ItemStack> items = buffer.itemViews();
             if (items.isEmpty() && buffer.fluidViews()
                 .isEmpty()) return GTValues.emptyItemStackArray;
+            var shared = ((CircuitMEPatternBuffer) parentMTE).suppliesForRecipe()
+                .itemInputs();
             int toolCount = activeRecipe == null ? 0 : activeRecipe.molds.length + (activeRecipe.circuit >= 0 ? 1 : 0);
-            if (items.isEmpty() && toolCount == 0) return GTValues.emptyItemStackArray;
-            ItemStack[] inputs = items.toArray(new ItemStack[items.size() + toolCount]);
-            addRecipeTools(inputs, items.size());
+            if (items.isEmpty() && shared.isEmpty() && toolCount == 0) return GTValues.emptyItemStackArray;
+            ItemStack[] inputs = items.toArray(new ItemStack[items.size() + shared.size() + toolCount]);
+            int index = items.size();
+            for (ItemStack stack : shared) inputs[index++] = stack;
+            addRecipeTools(inputs, index);
             return inputs;
         }
 
         @Override
         public FluidStack[] getFluidInputs() {
             List<FluidStack> fluids = buffer.fluidViews();
-            return fluids.isEmpty() ? GTValues.emptyFluidStackArray : fluids.toArray(new FluidStack[fluids.size()]);
+            if (fluids.isEmpty() && buffer.itemViews()
+                .isEmpty()) return GTValues.emptyFluidStackArray;
+            var shared = ((CircuitMEPatternBuffer) parentMTE).suppliesForRecipe()
+                .fluidInputs();
+            if (fluids.isEmpty() && shared.isEmpty()) return GTValues.emptyFluidStackArray;
+            FluidStack[] inputs = fluids.toArray(new FluidStack[fluids.size() + shared.size()]);
+            int index = fluids.size();
+            for (FluidStack fluid : shared) inputs[index++] = fluid;
+            return inputs;
         }
 
         @Override

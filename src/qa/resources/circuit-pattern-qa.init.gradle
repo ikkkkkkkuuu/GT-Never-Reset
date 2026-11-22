@@ -1,4 +1,6 @@
 // Run with: gradlew.bat -I src/qa/resources/circuit-pattern-qa.init.gradle :runClient17 --no-configuration-cache
+// Set -PpatternSuppliesTest=true for the circuit hatch or -PpatternSuppliesTest=cross for the cross-recipe hatch.
+// Set -PpatternSuppliesTest=cables for end-to-end wildcard cable orders on both hatches.
 // Add -PpatternStressTest=true to run the multi-controller stress fixture instead.
 // Add -PpatternAddonTest=true with addon dev jars in build/addon-pattern-qa/dependencies for real addon checks.
 // Add -PpatternProgrammableHatchesTest=true with its dev jar in build/proghatches-qa/dependencies.
@@ -8,8 +10,11 @@ gradle.projectsEvaluated {
     def addons = root.providers.gradleProperty('patternAddonTest').isPresent()
     def programmableHatches = root.providers.gradleProperty('patternProgrammableHatchesTest').isPresent()
     def stress = addons || root.providers.gradleProperty('patternStressTest').isPresent()
-    def fixture = stress ? 'PatternRecipeStressChecks' : 'CircuitPatternChecks'
-    def directoryName = addons ? 'addon-pattern-qa' : stress ? 'pattern-recipe-stress-qa' :
+    def supplies = root.providers.gradleProperty('patternSuppliesTest').isPresent()
+    def crossSupplies = root.providers.gradleProperty('patternSuppliesTest').getOrElse('') == 'cross'
+    def cables = root.providers.gradleProperty('patternSuppliesTest').getOrElse('') == 'cables'
+    def fixture = cables ? 'WildcardCableOrderChecks' : supplies ? 'CircuitSupplyChecks' : stress ? 'PatternRecipeStressChecks' : 'CircuitPatternChecks'
+    def directoryName = cables ? 'wildcard-cable-orders-qa' : crossSupplies ? 'cross-recipe-supplies-qa' : supplies ? 'circuit-supplies-qa' : addons ? 'addon-pattern-qa' : stress ? 'pattern-recipe-stress-qa' :
         programmableHatches ? 'programmable-hatches-pattern-qa' : 'circuit-pattern-qa'
     def marker = stress ? 'gtnr.pattern.stress.qa' : 'gtnr.circuit.pattern.qa'
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
@@ -57,6 +62,7 @@ gradle.projectsEvaluated {
         }
         workingDir root.file("build/${directoryName}/run")
         systemProperty marker, 'true'
+        if (crossSupplies) systemProperty 'gtnr.cross.recipe.supplies.qa', 'true'
         systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
         systemProperty 'sun.net.client.defaultReadTimeout', '15000'
         args '--width', '1100', '--height', '740'
