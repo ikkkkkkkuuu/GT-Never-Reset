@@ -18,6 +18,7 @@ import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
+import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.projector.ProjectorEnergyHatches;
 import com.xyp.gtneverreset.common.projector.ProjectorEnergyHatches.Flow;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
@@ -156,6 +157,7 @@ public class ProjectorHatchPage {
         if (CASING.equals(kind)) return StatCollector.translateToLocal(LANG + "casing");
         if (kind instanceof Flow flow)
             return (flow == Flow.INPUT ? HatchElement.Energy : HatchElement.Dynamo).getDisplayName();
+        if (kind == ParameterModuleHatch.class) return StatCollector.translateToLocal(ParameterModuleHatch.NAME_KEY);
         if (kind instanceof HatchElement element) return element.getDisplayName();
         HatchSlot slot = slot();
         Map<String, List<Integer>> variants = slot == null ? null : groups(slot).get(kind);
@@ -674,6 +676,9 @@ public class ProjectorHatchPage {
 
     // GT gives some hatches of one class different names, such as the auto maintenance hatch, and those are not tiers.
     private static String modelKey(int id) {
+        if (ProjectorMachines.prototype(id) instanceof ParameterModuleHatch module) return module.getModuleType()
+            .name() + "|"
+            + module.isDynamic();
         String energy = ProjectorEnergyHatches.flowOf(id) == null ? null : ProjectorEnergyHatches.modelOf(id);
         if (energy != null) return energy;
         String series = ProjectorMachines.seriesOf(id);
@@ -693,7 +698,8 @@ public class ProjectorHatchPage {
     }
 
     public static String tierName(int id) {
-        return coloredTier(ProjectorMachines.tier(id));
+        return ProjectorMachines.prototype(id) instanceof ParameterModuleHatch ? "T" + ProjectorMachines.tier(id)
+            : coloredTier(ProjectorMachines.tier(id));
     }
 
     public static String coloredTier(int tier) {

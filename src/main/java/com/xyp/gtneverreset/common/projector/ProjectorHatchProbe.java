@@ -13,6 +13,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 import com.gtnewhorizon.structurelib.structure.AutoPlaceEnvironment;
 import com.gtnewhorizon.structurelib.structure.IStructureElement;
 import com.gtnewhorizon.structurelib.structure.IStructureElement.BlocksToPlace;
+import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure.HatchSlot;
 
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
@@ -58,11 +59,18 @@ public class ProjectorHatchProbe {
             return -1;
         }
         IntArrayList candidates = new IntArrayList();
+        List<String> spotKinds = describe(element);
         ItemStack casing = null;
         if (blocks != null) {
+            IntArrayList manualModules = new IntArrayList();
             Predicate<ItemStack> predicate = blocks.getPredicate();
             for (int id : ProjectorMachines.hatches()) {
                 if (accepts(predicate, ProjectorMachines.stackOf(id))) candidates.add(id);
+                else if (ProjectorMachines.prototype(id) instanceof ParameterModuleHatch module
+                    && (spotKinds.contains(ParameterModuleHatch.NAME_KEY) || spotKinds.contains(
+                        module.getModuleType()
+                            .getTranslationKey())))
+                    manualModules.add(id);
             }
             if (blocks.getStacks() != null) {
                 for (ItemStack stack : blocks.getStacks()) {
@@ -74,7 +82,12 @@ public class ProjectorHatchProbe {
             }
             // Legacy optional hatch adders only offer their casing for placement but still accept hatches.
             if (candidates.isEmpty()) candidates = tryHatchesInPlace(element, x, y, z);
-            else candidates = usable(element, candidates, x, y, z);
+            else candidates = usable(element, candidates, x, y, z, true);
+            // Manual module adders can accept a hatch while offering only the casing for auto-placement.
+            if (!manualModules.isEmpty()) {
+                manualModules.removeAll(candidates);
+                if (!manualModules.isEmpty()) candidates.addAll(usable(element, manualModules, x, y, z, false));
+            }
             if (candidates.isEmpty()) return -1;
         } else {
             if (!world.isAirBlock(x, y, z) || simulation.checks(element, x, y, z)) return -1;
@@ -85,7 +98,6 @@ public class ProjectorHatchProbe {
             }
             if (candidates.isEmpty()) return -1;
         }
-        List<String> spotKinds = describe(element);
         IntArrayList allowed = new IntArrayList(candidates.size());
         for (int id : candidates) {
             if (ProjectorMachines.allowedAt(id, spotKinds, simulation.machine)) allowed.add(id);
@@ -162,11 +174,13 @@ public class ProjectorHatchProbe {
     }
 
     // The placement filter is only a hint; the machine's own hatch adder decides what its structure check keeps.
-    private IntArrayList usable(IStructureElement<Object> element, IntArrayList candidates, int x, int y, int z) {
+    private IntArrayList usable(IStructureElement<Object> element, IntArrayList candidates, int x, int y, int z,
+        boolean trustPlacementFilter) {
         Block block = world.getBlock(x, y, z);
         int meta = world.getBlockMetadata(x, y, z);
         TileEntity tile = world.getTileEntity(x, y, z);
-        if (tile != null && !(tile instanceof IGregTechTileEntity)) return candidates;
+        if (tile != null && !(tile instanceof IGregTechTileEntity))
+            return trustPlacementFilter ? candidates : new IntArrayList();
         IGregTechTileEntity original = (IGregTechTileEntity) tile;
         int originalId = original == null ? 0 : original.getMetaTileID();
         ForgeDirection facing = original == null ? null : original.getFrontFacing();
@@ -180,7 +194,7 @@ public class ProjectorHatchProbe {
             if (world.getTileEntity(x, y, z) instanceof IGregTechTileEntity restored) restored.setFrontFacing(facing);
         } else if (block != Blocks.air) world.setBlock(x, y, z, block, meta, 2);
         // Adders that keep their hatch in a field of their own refuse every later one; keep the filter's list then.
-        return usable.isEmpty() ? candidates : usable;
+        return usable.isEmpty() && trustPlacementFilter ? candidates : usable;
     }
 
     private boolean tryHatch(IStructureElement<Object> element, int id, int x, int y, int z) {
