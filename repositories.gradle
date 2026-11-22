@@ -1,6 +1,22 @@
 // Add any additional repositories for your dependencies here.
 
 repositories {
+    exclusiveContent {
+        forRepository {
+            ivy {
+                name = "terminalModReleases"
+                url = uri("https://github.com")
+                patternLayout {
+                    artifact("[organisation]/[module]/releases/download/[revision]/[artifact]-[revision](-[classifier]).[ext]")
+                }
+                metadataSources { artifact() }
+            }
+        }
+        filter {
+            includeModule("GTNotLeisure", "AE2Things")
+            includeModule("233max258", "Wtcts-1.7.10")
+        }
+    }
     mavenLocal()
     maven {
         url = uri("https://jitpack.io")

@@ -176,11 +176,11 @@ public final class LateMixinsLoader implements ILateMixinLoader {
                 "appliedenergistics2.quantum.MixinGuiCraftConfirm",
                 "appliedenergistics2.quantum.MixinGuiCraftingTree"));
         mixins.add("appliedenergistics2.LargeInterfaceTerminalEntryMixin");
-        boolean wtctLoaded = loadedMods.contains("wtct");
-        if (wtctLoaded || loadedMods.contains(ModList.AE2Thing.ID)) {
-            mixins.add("terminal.TerminalPickBlockMixin");
+        if (loadedMods.contains(ModList.AE2Thing.ID)) {
+            mixins.add("ae2thing.KeybindLoaderMixin");
         }
-        if (wtctLoaded) {
+        if (loadedMods.contains("wtct")) {
+            mixins.add("wtct.KeybindLoaderMixin");
             mixins.add("wtct.BlockPickerKeyHandlerMixin");
         }
         if (loadedMods.contains(ModList.ModIds.NOT_ENOUGH_ITEMS)) {

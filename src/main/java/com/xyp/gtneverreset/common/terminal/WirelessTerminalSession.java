@@ -59,7 +59,7 @@ public final class WirelessTerminalSession {
     }
 
     public static int findDualInterfaceTerminal(EntityPlayer player) {
-        return findTerminalSlot(player, null);
+        return player == null ? -1 : findTerminalSlot(player, null);
     }
 
     public static int findTerminalSlot(EntityPlayer player, ItemStack wanted) {
