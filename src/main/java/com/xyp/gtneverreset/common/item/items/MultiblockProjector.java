@@ -23,6 +23,7 @@ import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.client.projector.ProjectorClient;
 import com.xyp.gtneverreset.client.projector.ProjectorGui;
+import com.xyp.gtneverreset.common.gui.ProjectorMaterialSync;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 
@@ -49,13 +50,15 @@ public class MultiblockProjector extends Item implements IBaubleExpanded, IGuiHo
 
     @Override
     public ModularPanel buildUI(PlayerInventoryGuiData data, PanelSyncManager syncManager, UISettings settings) {
-        return syncManager.isClient() ? createPanel(data)
+        var materials = new ProjectorMaterialSync(data).allowC2S();
+        syncManager.syncValue("materials", materials);
+        return syncManager.isClient() ? createPanel(data, materials)
             : new ModularPanel("multiblock_projector").size(GUI_WIDTH, GUI_HEIGHT);
     }
 
     @SideOnly(Side.CLIENT)
-    private ModularPanel createPanel(PlayerInventoryGuiData data) {
-        return new ProjectorGui(data);
+    private ModularPanel createPanel(PlayerInventoryGuiData data, ProjectorMaterialSync materials) {
+        return new ProjectorGui(data, materials);
     }
 
     @Override

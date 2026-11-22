@@ -54,7 +54,7 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
     private static final int SELECTED = 0xFFD040, HOVERED = 0xFFFFFF, MARKED = 0x4080FF, OVERRIDDEN = 0x40E060;
 
     private final Supplier<ProjectorStructure> source;
-    private final FxBlockMesh mesh = new FxBlockMesh();
+    private final ProjectorModelMesh mesh = new ProjectorModelMesh();
     private final FloatBuffer modelview = BufferUtils.createFloatBuffer(16),
         projection = BufferUtils.createFloatBuffer(16), point = BufferUtils.createFloatBuffer(3),
         labelView = BufferUtils.createFloatBuffer(16), labelLens = BufferUtils.createFloatBuffer(16);
@@ -105,7 +105,7 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
     }
 
     public int hovered() {
-        return hovered;
+        return structure instanceof ProjectorBatchPreview array && hovered >= 0 ? array.originals[hovered] : hovered;
     }
 
     public int layer() {
@@ -238,17 +238,24 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
         if (next != structure) {
             boolean sameMachine = structure != null && next != null
                 && structure.settings.machine() == next.settings.machine();
+            boolean changedArray = structure instanceof ProjectorBatchPreview || next instanceof ProjectorBatchPreview;
             structure = next;
             hovered = -1;
             if (!sameMachine) layer = ALL_LAYERS;
             if (next == null) {
                 mesh.release();
             } else {
-                int[][] positions = next.simulationPositions();
-                mesh.prepare(next, next.world, positions[0], positions[1], positions[2]);
+                mesh.prepare(next);
                 orient(wantedFacing());
-                if (sameMachine) applyLayer();
-                else {
+                if (sameMachine) {
+                    if (changedArray) {
+                        recenter();
+                        zoom = fittedZoom();
+                        int[] bounds = next.worldBounds(facing);
+                        if (layer < bounds[1] || layer > bounds[4]) layer = ALL_LAYERS;
+                    }
+                    applyLayer();
+                } else {
                     resetCamera();
                     int[] bounds = next.worldBounds(facing);
                     if (restoredLayer >= bounds[1] && restoredLayer <= bounds[4]) {
@@ -323,9 +330,16 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
             GL11.glTranslatef(-structure.originX, -structure.originY, -structure.originZ);
             mesh.draw();
             GL11.glPopMatrix();
-            hovered = isHovering() ? pick(context, scale) : -1;
+            hovered = isHovering() && structure.size > 0 ? pick(context, scale) : -1;
             drawMarkers();
             GL11.glPopMatrix();
+            if (structure instanceof ProjectorBatchPreview array && array.outlineOnly) {
+                int[] bounds = structure.worldBounds(facing);
+                GL11.glDisable(GL11.GL_TEXTURE_2D);
+                GL11.glDisable(GL11.GL_DEPTH_TEST);
+                ProjectorRenderer
+                    .drawBox(bounds[0], bounds[1], bounds[2], bounds[3] + 1, bounds[4] + 1, bounds[5] + 1, MARKED, 220);
+            }
             drawDimensions(context, scale);
             GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
         } finally {
@@ -423,6 +437,7 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         tessellator.startDrawing(GL11.GL_LINES);
         int selected = selection.getAsInt();
+        if (structure instanceof ProjectorBatchPreview array) selected = array.atOrigin(selected);
         if (selected >= 0 && selected < structure.size) box(tessellator, selected, SELECTED, 0.02);
         if (hovered >= 0) box(tessellator, hovered, HOVERED, 0.0);
         tessellator.draw();
@@ -465,6 +480,18 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
     }
 
     private void markChanged(Iterable<Long> keys, LongOpenHashSet changedCells) {
+        if (structure instanceof ProjectorBatchPreview array) {
+            var originals = new LongOpenHashSet();
+            for (long key : keys) originals.add(key);
+            if (originals.isEmpty()) return;
+            for (int i = 0; i < array.size && changedCells.size() < MAX_MARKED; i++) {
+                int src = array.originals[i];
+                if (visible(i) && originals
+                    .contains(ProjectorPlan.pack(array.template.a[src], array.template.b[src], array.template.c[src])))
+                    changedCells.add(outlineKey(i));
+            }
+            return;
+        }
         for (long key : keys) {
             int cell = structure
                 .indexOf(ProjectorPlan.unpackA(key), ProjectorPlan.unpackB(key), ProjectorPlan.unpackC(key));
@@ -586,7 +613,7 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
 
     @Override
     public boolean onMouseRelease(int mouseButton) {
-        if (mouseButton == 0 && travel < DRAG_THRESHOLD && hovered >= 0) onSelect.accept(hovered);
+        if (mouseButton == 0 && travel < DRAG_THRESHOLD && hovered >= 0) onSelect.accept(hovered());
         return true;
     }
 

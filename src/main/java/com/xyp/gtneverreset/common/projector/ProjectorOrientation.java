@@ -48,6 +48,17 @@ public class ProjectorOrientation {
         return find(target, facing, valid);
     }
 
+    static ExtendedFacing mirrorFront(ExtendedFacing pose) {
+        int[][] target = basis(pose);
+        int axis = pose.getDirection().offsetX == 0 ? 0 : 2;
+        for (int[] vector : target) vector[axis] = -vector[axis];
+        return find(target, pose, candidate -> true);
+    }
+
+    static ExtendedFacing allowedEquivalent(ExtendedFacing pose, Predicate<ExtendedFacing> valid) {
+        return valid.test(pose) ? pose : find(basis(pose), null, valid);
+    }
+
     // GT forbids vertical flips, but upside-down plus a horizontal flip draws the same shape and is allowed.
     public static ExtendedFacing flipVertical(ExtendedFacing facing, Predicate<ExtendedFacing> valid) {
         int[][] target = basis(facing);
@@ -55,9 +66,40 @@ public class ProjectorOrientation {
         return find(target, facing, valid);
     }
 
+    public static ExtendedFacing upsideDown(ExtendedFacing facing, Predicate<ExtendedFacing> valid) {
+        int[][] target = basis(facing);
+        int sideways = facing.getDirection().offsetX == 0 ? 0 : 2;
+        for (int[] axis : target) {
+            axis[1] = -axis[1];
+            axis[sideways] = -axis[sideways];
+        }
+        return find(target, facing, valid);
+    }
+
     public static boolean mirrors(int[] m) {
         return m[0] * (m[4] * m[8] - m[5] * m[7]) - m[3] * (m[1] * m[8] - m[2] * m[7])
             + m[6] * (m[1] * m[5] - m[2] * m[4]) < 0;
+    }
+
+    public static ForgeDirection changeBasis(ForgeDirection direction, ExtendedFacing from, ExtendedFacing to) {
+        if (direction == ForgeDirection.UNKNOWN) return direction;
+        int[] local = new int[3], out = new int[3];
+        from.getOffsetABC(new int[] { direction.offsetX, direction.offsetY, direction.offsetZ }, local);
+        to.getWorldOffset(local, out);
+        for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS)
+            if (side.offsetX == out[0] && side.offsetY == out[1] && side.offsetZ == out[2]) return side;
+        return ForgeDirection.UNKNOWN;
+    }
+
+    public static ExtendedFacing changeBasis(ExtendedFacing orientation, ExtendedFacing from, ExtendedFacing to) {
+        if (from == to) return orientation;
+        int[][] axes = basis(orientation);
+        int[] local = new int[3];
+        for (int[] axis : axes) {
+            from.getOffsetABC(axis, local);
+            to.getWorldOffset(local, axis);
+        }
+        return find(axes, orientation, candidate -> true);
     }
 
     public static int[] matrix(ExtendedFacing from, ExtendedFacing to) {

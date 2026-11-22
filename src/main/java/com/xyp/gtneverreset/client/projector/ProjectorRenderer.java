@@ -38,7 +38,7 @@ public class ProjectorRenderer {
     private static final float GHOST_ALPHA = 0.45f;
     private static final long COMPILE_NANOS = 4_000_000L;
     private static final int CONSTANT_ALPHA = 0x8003, ONE_MINUS_CONSTANT_ALPHA = 0x8004;
-    private static final FxBlockMesh GHOSTS = new FxBlockMesh();
+    private static final ProjectorModelMesh GHOSTS = new ProjectorModelMesh();
     private static final FloatBuffer MATRIX = BufferUtils.createFloatBuffer(16);
     private static boolean[] missing = new boolean[0];
     private static int checkRevision = -1;
@@ -60,7 +60,7 @@ public class ProjectorRenderer {
         double cameraX = camera.lastTickPosX + (camera.posX - camera.lastTickPosX) * event.partialTicks;
         double cameraY = camera.lastTickPosY + (camera.posY - camera.lastTickPosY) * event.partialTicks;
         double cameraZ = camera.lastTickPosZ + (camera.posZ - camera.lastTickPosZ) * event.partialTicks;
-        ProjectorStructure structure = ProjectorClient.structure;
+        ProjectorStructure structure = ProjectorClient.projection;
         ProjectorCheck check = ProjectorClient.CHECK;
         int x = ProjectorClient.x, y = ProjectorClient.y, z = ProjectorClient.z;
         int[] bounds = structure == null ? new int[6] : structure.worldBounds(ProjectorClient.facing);
@@ -72,7 +72,7 @@ public class ProjectorRenderer {
                 | GL11.GL_COLOR_BUFFER_BIT);
         try {
             GL11.glTranslated(x - cameraX, y - cameraY, z - cameraZ);
-            if (structure != null && !structure.isEmpty() && plan.display != ProjectorPlan.Display.BOX) {
+            if (structure != null && structure.size > 0 && plan.display != ProjectorPlan.Display.BOX) {
                 drawGhosts(
                     structure,
                     plan.display == ProjectorPlan.Display.DIFFERENCE && ProjectorClient.placed,
@@ -113,8 +113,7 @@ public class ProjectorRenderer {
     }
 
     private static void drawGhosts(ProjectorStructure structure, boolean difference, ProjectorCheck check) {
-        int[][] positions = structure.simulationPositions();
-        if (GHOSTS.prepare(structure, structure.world, positions[0], positions[1], positions[2])) checkRevision = -1;
+        if (GHOSTS.prepare(structure)) checkRevision = -1;
         if (!difference) {
             GHOSTS.show(null);
             checkRevision = -1;
@@ -223,7 +222,7 @@ public class ProjectorRenderer {
         }
     }
 
-    private static void drawBox(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, int color,
+    static void drawBox(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, int color,
         int alpha) {
         Tessellator tessellator = Tessellator.instance;
         tessellator.startDrawing(GL11.GL_LINES);
@@ -281,9 +280,15 @@ public class ProjectorRenderer {
         GL11.glLineWidth(3f);
         tessellator.startDrawing(GL11.GL_LINES);
         tessellator.setColorRGBA_I(ProjectorClient.focusColor, (int) (FOCUS_ALPHA_MIN + FOCUS_ALPHA_RANGE * pulse));
+        int[] out = new int[3];
         for (int i = 0; i < cells.length && i < MAX_WRONG_BOXES; i++) {
             int cell = cells[i];
-            if (cell >= check.worldX.length) continue;
+            if (check.structure instanceof ProjectorBatchPreview array && cell >= 0 && cell < array.template.size) {
+                cell = ProjectorClient.focusPose == null ? array.atOrigin(cell)
+                    : array.onCopy(cell, ProjectorClient.focusPose, ProjectorClient.focusOffset, out);
+
+            }
+            if (cell < 0 || cell >= check.worldX.length) continue;
             double minX = check.worldX[cell] - x - INSET, minY = check.worldY[cell] - y - INSET,
                 minZ = check.worldZ[cell] - z - INSET;
             FxVoxelOutline

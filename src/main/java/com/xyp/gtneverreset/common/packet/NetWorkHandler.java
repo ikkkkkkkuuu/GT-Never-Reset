@@ -145,9 +145,11 @@ public final class NetWorkHandler {
         if (ToolsConfig.enableMultiblockProjector) {
             registerServerbound(OpenProjectorPacket.class);
             registerServerbound(ProjectorPlanPacket.class);
+            registerServerbound(GenerateProjectorPacket.class);
+            registerServerbound(GenerateProjectorBatchPacket.class);
         } else {
-            // Reserve both IDs when the item is disabled so later packets keep their IDs.
-            nextPacketId += 2;
+            // Reserve projector IDs when the item is disabled so later packets keep their IDs.
+            nextPacketId += 4;
         }
         FMLCommonHandler.instance()
             .bus()

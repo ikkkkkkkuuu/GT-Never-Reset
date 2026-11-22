@@ -20,6 +20,7 @@ public class ProjectorPlan {
     public static final int MAX_MASTER = 64, MAX_CHANNELS = 32, MAX_CHANNEL_NAME = 64, MAX_CHANNEL_VALUE = 1024,
         MAX_OVERRIDES = 1024, MAX_HATCH_TIER = 14, DEFAULT_HATCH_TIER = 1, MAX_OFFSET = 64, MAX_CHOICES = 256,
         MAX_CHOICE_KEY = 256;
+    public static final int REACH = 128;
     public static final int CASING = 0;
     public static final String AIR = "air";
 
@@ -40,6 +41,8 @@ public class ProjectorPlan {
     public record Settings(int machine, int master, Map<String, Integer> channels, Map<Long, Integer> overrides,
         Map<String, String> choices, Map<Long, String> cellChoices) {}
 
+    public boolean batchProjection;
+    public final ProjectorBatch batch = new ProjectorBatch();
     public int machine;
     public int master = 1;
     public final TreeMap<String, Integer> channels = new TreeMap<>();
@@ -160,6 +163,8 @@ public class ProjectorPlan {
 
     public NBTTagCompound writeToNBT() {
         NBTTagCompound tag = new NBTTagCompound();
+        batch.write(tag);
+        tag.setBoolean("BatchProjection", batchProjection);
         tag.setInteger("Machine", machine);
         tag.setInteger("Master", master);
         NBTTagCompound channelTag = new NBTTagCompound();
@@ -208,6 +213,8 @@ public class ProjectorPlan {
     }
 
     public void readFromNBT(NBTTagCompound tag) {
+        batch.read(tag);
+        batchProjection = tag.hasKey("BatchProjection") ? tag.getBoolean("BatchProjection") : batch.machines() > 1;
         machine = Math.max(0, tag.getInteger("Machine"));
         master = clamp(tag.getInteger("Master"), 1, MAX_MASTER);
         channels.clear();

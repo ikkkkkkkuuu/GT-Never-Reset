@@ -7,10 +7,13 @@ import net.minecraftforge.common.MinecraftForge;
 
 import com.xyp.gtneverreset.client.projector.ProjectorInput;
 import com.xyp.gtneverreset.common.command.ProjectorSimulationCommand;
+import com.xyp.gtneverreset.common.projector.ProjectorBuildMaterials;
+import com.xyp.gtneverreset.common.projector.ProjectorBuilder;
 import com.xyp.gtneverreset.common.projector.ProjectorSimulation;
 import com.xyp.gtneverreset.common.projector.ProjectorSimulationWorld;
 import com.xyp.gtneverreset.config.ToolsConfig;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -20,9 +23,21 @@ public class ProjectorLoader implements IContentLoader {
 
     @Override
     public void init() {
+        // Pending player-owned materials can outlive a job or a change to the registration setting.
+        FMLCommonHandler.instance()
+            .bus()
+            .register(ProjectorBuildMaterials.REFUNDS);
         if (!ToolsConfig.enableMultiblockProjector) return;
+        FMLCommonHandler.instance()
+            .bus()
+            .register(ProjectorBuilder.INSTANCE);
         MinecraftForge.EVENT_BUS.register(new ProjectorSimulation.Visits());
         GregTechAPI.addDummyWorld(ProjectorSimulationWorld.class);
+    }
+
+    @Override
+    public void serverStopping() {
+        ProjectorBuilder.INSTANCE.clear();
     }
 
     @Override

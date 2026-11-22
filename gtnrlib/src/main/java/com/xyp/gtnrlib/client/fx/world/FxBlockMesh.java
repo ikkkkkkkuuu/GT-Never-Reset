@@ -183,7 +183,7 @@ public class FxBlockMesh {
                     Block block = view.getBlock(xs[cell], ys[cell], zs[cell]);
                     if (!block.canRenderInPass(pass)) continue;
                     try {
-                        renderer.renderBlockByRenderType(block, xs[cell], ys[cell], zs[cell]);
+                        renderCell(renderer, block, cell);
                     } catch (RuntimeException e) {
                         GTNRLib.LOG.debug("Could not draw {} in a block mesh", block, e);
                     }
@@ -196,5 +196,10 @@ public class FxBlockMesh {
             mc.gameSettings.ambientOcclusion = ambientOcclusion;
             if (player != null) player.worldObj = playerWorld;
         }
+    }
+
+    /** Draws a visible cell while its section display list is being compiled. */
+    protected void renderCell(RenderBlocks renderer, Block block, int cell) {
+        renderer.renderBlockByRenderType(block, xs[cell], ys[cell], zs[cell]);
     }
 }

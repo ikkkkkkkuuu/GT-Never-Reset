@@ -191,6 +191,13 @@ public class ProjectorInput {
     }
 
     private static boolean openSpot(ProjectorStructure shown, int cell, ItemStack clicked, boolean ghost) {
+        if (shown instanceof ProjectorBatchPreview array) {
+            int original = array.originals[cell];
+            array.copyOrigin(cell, ProjectorClient.focusOffset);
+            ProjectorClient.focusPose = array.copyPoses[cell];
+            shown = array.template;
+            cell = original;
+        } else ProjectorClient.focusPose = null;
         Choice choice = shown.choiceAt(cell);
         if (shown.slotAt(cell) != null) ProjectorSpotScreen.openHatch(shown, cell);
         else if (choice != null && choice.channel() != null)

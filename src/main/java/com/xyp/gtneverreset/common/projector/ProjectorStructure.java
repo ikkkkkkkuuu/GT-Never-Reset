@@ -108,8 +108,48 @@ public class ProjectorStructure {
     private int[][] simulationPositions;
 
     public ProjectorStructure(ProjectorSimulation simulation, int size) {
-        settings = simulation.settings;
-        canonical = simulation.canonical;
+        this(
+            size,
+            simulation.settings,
+            simulation.canonical,
+            simulation.hatchSlots,
+            simulation.choices,
+            simulation.emptyCells.toLongArray(),
+            Collections.unmodifiableList(simulation.channels),
+            simulation.formed,
+            simulation.checked,
+            Collections.unmodifiableList(simulation.errors),
+            simulation.limit,
+            simulation.failure,
+            simulation.rounds,
+            simulation.world,
+            simulation.bounds);
+    }
+
+    protected ProjectorStructure(ProjectorStructure template, int size, long[] emptyCells, int[] bounds,
+        ProjectorSimulationWorld view) {
+        this(
+            size,
+            template.settings,
+            template.canonical,
+            template.hatchSlots,
+            template.choices,
+            emptyCells,
+            template.channels,
+            template.formed,
+            template.checked,
+            template.errors,
+            template.limit,
+            template.failure,
+            template.rounds,
+            view,
+            bounds);
+    }
+
+    private ProjectorStructure(int size, ProjectorPlan.Settings settings, ExtendedFacing canonical,
+        List<HatchSlot> hatchSlots, List<Choice> choices, long[] emptyCells, List<String> channels, boolean formed,
+        boolean checked, List<String> errors, String limit, String failure, int rounds, ProjectorSimulationWorld world,
+        int[] bounds) {
         this.size = size;
         a = new int[size];
         b = new int[size];
@@ -120,21 +160,22 @@ public class ProjectorStructure {
         slots = new int[size];
         choiceOf = new int[size];
         items = new ItemStack[size];
-        hatchSlots = simulation.hatchSlots;
-        choices = simulation.choices;
-        emptyCells = simulation.emptyCells.toLongArray();
-        channels = Collections.unmodifiableList(simulation.channels);
-        formed = simulation.formed;
-        checked = simulation.checked;
-        errors = Collections.unmodifiableList(simulation.errors);
-        limit = simulation.limit;
-        failure = simulation.failure;
-        rounds = simulation.rounds;
-        world = simulation.world;
+        this.settings = settings;
+        this.canonical = canonical;
+        this.hatchSlots = hatchSlots;
+        this.choices = choices;
+        this.emptyCells = emptyCells;
+        this.channels = channels;
+        this.formed = formed;
+        this.checked = checked;
+        this.errors = errors;
+        this.limit = limit;
+        this.failure = failure;
+        this.rounds = rounds;
+        this.world = world;
         originX = ProjectorSimulation.CONTROLLER_X;
         originY = ProjectorSimulation.CONTROLLER_Y;
         originZ = ProjectorSimulation.CONTROLLER_Z;
-        int[] bounds = simulation.bounds;
         minA = bounds[0];
         minB = bounds[1];
         minC = bounds[2];

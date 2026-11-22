@@ -19,6 +19,8 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.world.WorldEvent;
 
+import com.cleanroommc.modularui.screen.ModularScreen;
+import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.gtnhlib.compat.BaublesCompat;
 import com.gtnewhorizon.gtnhlib.util.AboveHotbarHUD;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
@@ -45,14 +47,18 @@ import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 public class ProjectorClient {
 
     public static final String LANG = "gtneverreset.projector.";
-    public static final int REACH = 128, SEGMENT = 64, FLOAT_WARNING = 3, COMPLETE_TICKS = 40, HUD_TICKS = 10,
-        BLOCK_PREVIEW_LIMIT = 20_000;
+    public static final int REACH = ProjectorPlan.REACH, SEGMENT = 64, FLOAT_WARNING = 3, COMPLETE_TICKS = 40,
+        HUD_TICKS = 10, BLOCK_PREVIEW_LIMIT = 20_000;
     private static final int CLICK_GAP = 6, MAX_IN_FLIGHT = 16, SPOT_TICKS = 40;
     private static final ArrayDeque<NBTTagCompound> inFlight = new ArrayDeque<>();
 
     public static int location = Integer.MIN_VALUE;
     public static ProjectorPlan plan;
     public static ProjectorStructure structure;
+    static ProjectorStructure projection;
+    static ExtendedFacing focusPose;
+    static final int[] focusOffset = new int[3];
+    private static final ProjectorBatchPreview.Cache arrayCache = new ProjectorBatchPreview.Cache();
     public static ExtendedFacing facing = ExtendedFacing.DEFAULT;
     public static int x, y, z;
     public static boolean visible, placed, followed, unloadedGround, tooHigh, tooLow;
@@ -96,6 +102,8 @@ public class ProjectorClient {
         if (plan == null || !plan.hasMachine()
             || plan.state == ProjectorPlan.State.IDLE
             || plan.isPlaced() && plan.dimension != mc.thePlayer.dimension) {
+            projection = null;
+            arrayCache.clear();
             CHECK.clear();
             ProjectorRenderer.release();
             completeTicks = 0;
@@ -111,11 +119,23 @@ public class ProjectorClient {
                     false);
             return;
         }
-        structure = ProjectorStructures.get(plan.settings());
-        updatePlacement(mc);
-        if (structure != null && placed && visible) {
-            CHECK.update(mc.theWorld, structure, facing, x, y, z);
-            updateCompletion();
+        ModularScreen screen = ModularScreen.getCurrent();
+        ProjectorPlan draft = screen != null && screen.getMainPanel() instanceof ProjectorGui gui
+            ? gui.draftFor(location)
+            : null;
+        ProjectorPlan displayed = draft != null && draft.machine == plan.machine ? draft : plan;
+        structure = ProjectorStructures.get(displayed.settings());
+        updatePlacement(mc, displayed);
+        projection = arrayCache.get(structure, displayed, facing);
+        if (projection != null && visible) {
+            int[] bounds = projection.worldBounds(facing);
+            tooLow = y + bounds[1] < 0;
+            tooHigh = y + bounds[4] > 255;
+        }
+        if (projection != null && projection.size > 0 && placed && visible) {
+            CHECK.update(mc.theWorld, projection, facing, x, y, z);
+            if (draft == null) updateCompletion();
+            else completeTicks = 0;
         } else {
             CHECK.clear();
         }
@@ -135,6 +155,8 @@ public class ProjectorClient {
         spot = null;
         focus = new int[0];
         structure = null;
+        projection = null;
+        arrayCache.clear();
         visible = false;
         CHECK.clear();
         GROUND.clear();
@@ -235,8 +257,9 @@ public class ProjectorClient {
         return MathHelper.floor_double(player.rotationYaw * 4.0 / 360.0 + 0.5) & 3;
     }
 
-    public static ExtendedFacing followFacing(ExtendedFacing stored, EntityPlayer player) {
-        return ProjectorOrientation.rotateY(stored, quadrant(player), validFacings());
+    private static ExtendedFacing rotateWithView(ProjectorPlan plan, int turns) {
+        if (plan.batchProjection && plan.batch.machines() > 1) return plan.facing;
+        return ProjectorOrientation.rotateY(plan.facing, turns, ProjectorMachines.validFacings(plan.machine));
     }
 
     public static void reorient(ProjectorPlan next, ExtendedFacing target, ProjectorStructure shape) {
@@ -297,7 +320,7 @@ public class ProjectorClient {
             }
             case LOCKED -> {
                 if (sneaking) {
-                    next.facing = ProjectorOrientation.rotateY(plan.facing, -quadrant(player), validFacings());
+                    next.facing = rotateWithView(plan, -quadrant(player));
                     next.state = ProjectorPlan.State.FOLLOW;
                     send(next);
                 } else open();
@@ -329,7 +352,7 @@ public class ProjectorClient {
         return taken;
     }
 
-    private static void updatePlacement(Minecraft mc) {
+    private static void updatePlacement(Minecraft mc, ProjectorPlan plan) {
         EntityPlayer player = mc.thePlayer;
         tooHigh = tooLow = unloadedGround = false;
         floating = 0;
@@ -343,36 +366,64 @@ public class ProjectorClient {
             visible = true;
             return;
         }
-        facing = followFacing(plan.facing, player);
-        MovingObjectPosition hit = trace(mc.theWorld, player);
-        if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
+        facing = rotateWithView(plan, quadrant(player));
+        Target target = targetAtCrosshair(mc, plan, structure, facing);
+        if (target == null) {
             visible = followed;
             return;
+        }
+        x = target.x;
+        y = target.y;
+        z = target.z;
+        tooHigh = target.tooHigh;
+        tooLow = target.tooLow;
+        unloadedGround = target.unloaded;
+        floating = target.floating;
+        followed = visible = true;
+    }
+
+    static boolean locateBuild(ProjectorPlan draft, ProjectorStructure shape, boolean useAnchor) {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (useAnchor && draft.isPlaced()) return draft.dimension == mc.thePlayer.dimension;
+        ExtendedFacing targetFacing = rotateWithView(draft, quadrant(mc.thePlayer));
+        Target target = targetAtCrosshair(mc, draft, shape, targetFacing);
+        if (target == null || target.tooHigh || target.tooLow || target.unloaded) return false;
+        draft.facing = targetFacing;
+        draft.dimension = mc.thePlayer.dimension;
+        draft.x = target.x;
+        draft.y = target.y;
+        draft.z = target.z;
+        draft.state = ProjectorPlan.State.LOCKED;
+        return true;
+    }
+
+    private static Target targetAtCrosshair(Minecraft mc, ProjectorPlan plan, ProjectorStructure structure,
+        ExtendedFacing facing) {
+        MovingObjectPosition hit = trace(mc.theWorld, mc.thePlayer);
+        if (hit == null || hit.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
+            return null;
         }
         int[] bounds = structure == null ? new int[6] : structure.worldBounds(facing);
         int pivotX = plan.centerPivot ? Math.floorDiv(bounds[0] + bounds[3], 2) : 0;
         int pivotZ = plan.centerPivot ? Math.floorDiv(bounds[2] + bounds[5], 2) : 0;
-        if (plan.groundSnap) {
-            snap(mc.theWorld, hit.blockX - pivotX, hit.blockZ - pivotZ, hit.blockY, bounds);
-        } else {
-            ForgeDirection side = ForgeDirection.getOrientation(hit.sideHit);
-            x = hit.blockX + side.offsetX - pivotX;
-            z = hit.blockZ + side.offsetZ - pivotZ;
-            y = hit.blockY + side.offsetY + plan.verticalOffset;
-        }
-        tooHigh = y + bounds[4] > 255;
-        tooLow = y + bounds[1] < 0;
-        followed = visible = true;
+        if (plan.groundSnap)
+            return snap(mc.theWorld, hit.blockX - pivotX, hit.blockZ - pivotZ, hit.blockY, bounds, plan.verticalOffset);
+        ForgeDirection side = ForgeDirection.getOrientation(hit.sideHit);
+        int x = hit.blockX + side.offsetX - pivotX;
+        int z = hit.blockZ + side.offsetZ - pivotZ;
+        int y = hit.blockY + side.offsetY + plan.verticalOffset;
+        return new Target(x, y, z, y + bounds[4] > 255, y + bounds[1] < 0, 0, false);
     }
 
-    private static void snap(World world, int column, int row, int hitY, int[] bounds) {
+    private static Target snap(World world, int column, int row, int hitY, int[] bounds, int verticalOffset) {
+        boolean unloaded = false;
         GROUND.fit((bounds[3] - bounds[0] + 1) * (bounds[5] - bounds[2] + 1));
         int highest = Integer.MIN_VALUE, lowest = Integer.MAX_VALUE;
         for (int gx = column + bounds[0]; gx <= column + bounds[3]; gx++) {
             for (int gz = row + bounds[2]; gz <= row + bounds[5]; gz++) {
                 int height = GROUND.height(world, gx, gz);
                 if (height == ProjectorGround.UNLOADED) {
-                    unloadedGround = true;
+                    unloaded = true;
                     continue;
                 }
                 highest = Math.max(highest, height);
@@ -380,10 +431,15 @@ public class ProjectorClient {
             }
         }
         if (highest == Integer.MIN_VALUE) highest = lowest = hitY;
-        x = column;
-        z = row;
-        y = highest + 1 - bounds[1] + Math.max(0, plan.verticalOffset);
-        floating = y + bounds[1] - (lowest + 1);
+        int y = highest + 1 - bounds[1] + Math.max(0, verticalOffset);
+        return new Target(
+            column,
+            y,
+            row,
+            y + bounds[4] > 255,
+            y + bounds[1] < 0,
+            y + bounds[1] - (lowest + 1),
+            unloaded);
     }
 
     public static void chunkReceived(int chunkX, int chunkZ) {
@@ -472,6 +528,11 @@ public class ProjectorClient {
                 // # some chunks are not loaded, height may be off
                 // # zh_CN 有区块未加载，高度可能不准
                 StatCollector.translateToLocal(LANG + "unloaded_ground"));
+        } else if (projection instanceof ProjectorBatchPreview array && array.outlineOnly) {
+            // #tr gtneverreset.projector.batch_outline
+            // # Large array: showing its outer bounds.
+            // # zh_CN 大型阵列：仅显示外框。
+            text = StatCollector.translateToLocal(LANG + "batch_outline");
         } else if (!CHECK.scanned) {
             // #tr gtneverreset.projector.checking
             // # Checking blocks...
@@ -513,4 +574,7 @@ public class ProjectorClient {
             have.addTo(Choice.idOf(stack.getItem(), stack.getItemDamage()), stack.stackSize);
         return have;
     }
+
+    @Desugar
+    private record Target(int x, int y, int z, boolean tooHigh, boolean tooLow, int floating, boolean unloaded) {}
 }
