@@ -118,6 +118,7 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
     public final ActionHandler<StorageFluidRequest> craftFluidAction;
     public final ActionHandler<Void> quickEncodeAction;
     public final ActionHandler<Boolean> quickEncodeAndMoveToInventoryAction;
+    public final ActionHandler<Long> openInterfaceUpgradesAction;
     private final TerminalPatternState patternState;
     private boolean appliedCraftingMode;
     private boolean appliedCraftingModeInitialized;
@@ -214,7 +215,34 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
             applyPinRows(packPinRows(craftingPinRows, playerPinRows));
         }
 
+        openInterfaceUpgradesAction = sync.actionC2S("openInterfaceUpgrades", StreamCodecs.longValue())
+            .onServerAction(this::openInterfaceUpgrades);
         interfaceDelegate = new ContainerInterfaceTerminal(inventoryPlayer, (IInterfaceTerminal) host);
+    }
+
+    public ContainerInterfaceTerminal getInterfaceDelegate() {
+        return interfaceDelegate;
+    }
+
+    private void openInterfaceUpgrades(long id) {
+        EntityPlayer player = getPlayerInv().player;
+        if (player.openContainer != this || getTrackedInterfaceLocation(id) == null || TRACKED == null) return;
+        try {
+            Object previous = ((Map<?, ?>) TRACKED_BY_ID.get(interfaceDelegate)).get(id);
+            Object machine = readField(previous, "machine");
+            int slot = getDualTerminal().getInventorySlot();
+            if (slot >= Platform.baublesSlotsOffset) {
+                slot = WirelessTerminalSession.BAUBLE_SLOT_OFFSET + slot - Platform.baublesSlotsOffset;
+            }
+            WirelessTerminalSession.open(player, slot, WirelessTerminalGuiType.WirelessInterfaceUpgrades);
+            // Entry IDs belong to one window. Select the same machine in the new window's own tracker.
+            if (player.openContainer instanceof ContainerInterfaceTerminal upgrades) {
+                Object tracker = ((Map<?, ?>) TRACKED.get(upgrades)).get(machine);
+                if (tracker != null && readField(tracker, "id") instanceof Long currentId) {
+                    upgrades.selectUpgrades(currentId);
+                }
+            }
+        } catch (IllegalAccessException ignored) {}
     }
 
     @Override

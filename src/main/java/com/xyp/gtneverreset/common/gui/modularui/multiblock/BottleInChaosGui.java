@@ -1438,6 +1438,7 @@ public class BottleInChaosGui<T extends BottleInChaosMachineBase<T>> extends Cha
         BooleanSyncValue activeMode = syncManager
             .findSyncHandler("bottledChaosActiveConcentratedPower", BooleanSyncValue.class);
         return createDisableableToggleButton(
+            syncManager,
             mode,
             () -> !wireless.getBoolValue(),
             GTGuiTextures.OVERLAY_BUTTON_INPUT_SEPARATION_OFF,

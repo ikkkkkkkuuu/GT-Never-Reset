@@ -22,6 +22,7 @@ import appeng.api.networking.security.ISecurityGrid;
 import appeng.container.AEBaseContainer;
 import appeng.container.ContainerOpenContext;
 import appeng.container.implementations.ContainerCraftingTerm;
+import appeng.container.implementations.ContainerInterfaceTerminal;
 import appeng.core.localization.PlayerMessages;
 import appeng.helpers.WirelessTerminalGuiObject;
 import appeng.items.contents.WirelessCraftingTerminalGuiObject;
@@ -47,8 +48,9 @@ public final class WirelessTerminalGuiHandler implements IGuiHandler {
             ? appeng.util.Platform.baublesSlotsOffset + slot - WirelessTerminalSession.BAUBLE_SLOT_OFFSET
             : slot;
         return type == WirelessTerminalGuiType.WirelessDualInterfaceTerminal
-            ? new DualTerminalGuiObject(handler, stack, player, world, nativeSlot)
-            : new WirelessCraftingTerminalGuiObject(handler, stack, player, world, nativeSlot, 0, 0);
+            || type == WirelessTerminalGuiType.WirelessInterfaceUpgrades
+                ? new DualTerminalGuiObject(handler, stack, player, world, nativeSlot)
+                : new WirelessCraftingTerminalGuiObject(handler, stack, player, world, nativeSlot, 0, 0);
     }
 
     @Override
@@ -69,17 +71,21 @@ public final class WirelessTerminalGuiHandler implements IGuiHandler {
         ISecurityGrid security = host.getGrid()
             .getCache(ISecurityGrid.class);
         if (!security.hasPermission(player, SecurityPermissions.CRAFT)
-            || type == WirelessTerminalGuiType.WirelessDualInterfaceTerminal
-                && !security.hasPermission(player, SecurityPermissions.BUILD)) {
+            || host instanceof DualTerminalGuiObject && !security.hasPermission(player, SecurityPermissions.BUILD)) {
             // #tr gtnr.message.terminal_access_denied
             // # You do not have permission to use this terminal on the ME network.
             // # zh_CN 你没有在该 ME 网络上使用此终端的权限。
             player.addChatMessage(new ChatComponentTranslation("gtnr.message.terminal_access_denied"));
             return null;
         }
-        AEBaseContainer container = host instanceof DualTerminalGuiObject dual
-            ? new QuickEncodingTerminalContainer(player.inventory, dual)
-            : new ContainerCraftingTerm(player.inventory, (WirelessCraftingTerminalGuiObject) host);
+        AEBaseContainer container;
+        if (type == WirelessTerminalGuiType.WirelessInterfaceUpgrades) {
+            container = new ContainerInterfaceTerminal(player.inventory, (DualTerminalGuiObject) host);
+        } else if (host instanceof DualTerminalGuiObject dual) {
+            container = new QuickEncodingTerminalContainer(player.inventory, dual);
+        } else {
+            container = new ContainerCraftingTerm(player.inventory, (WirelessCraftingTerminalGuiObject) host);
+        }
         ContainerOpenContext context = new ContainerOpenContext(host);
         context.setWorld(world);
         context.setX(slot);

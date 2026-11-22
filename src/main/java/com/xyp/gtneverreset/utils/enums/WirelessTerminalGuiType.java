@@ -4,7 +4,8 @@ public enum WirelessTerminalGuiType {
 
     WirelessDualInterfaceTerminal,
     WirelessCraftingTerminal,
-    WirelessMagnetFilter;
+    WirelessMagnetFilter,
+    WirelessInterfaceUpgrades;
 
     public static WirelessTerminalGuiType getByOrdinal(int ordinal) {
         return ordinal >= 0 && ordinal < values().length ? values()[ordinal] : null;

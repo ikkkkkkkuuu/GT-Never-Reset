@@ -25,7 +25,6 @@ import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.player.InventoryPlayer;
 import net.minecraft.init.Blocks;
-import net.minecraft.inventory.Container;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
@@ -2044,6 +2043,8 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
     }
 
     public interface InterfaceRowFilter {
+
+        void openInterfaceUpgrades(long entryId);
     }
 
     public interface InterfacePatternRows {
@@ -2084,6 +2085,7 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
         private static Field entryOptionsButton;
         private static Field entryHideButton;
         private static Field entryRenameButton;
+        private static Field entryUpgradeButton;
         private static Field entrySection;
         private static Field sectionVisible;
 
@@ -2097,12 +2099,20 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
         private int lastEntryViewHeight = Integer.MIN_VALUE;
         private String[] lastEntrySearchTexts;
 
-        private EmbeddedInterfaceTerminal(Container container) {
-            super(container);
+        private final QuickEncodingTerminalContainer quickContainer;
+
+        private EmbeddedInterfaceTerminal(QuickEncodingTerminalContainer container) {
+            super(container.getInterfaceDelegate());
+            quickContainer = container;
             // The old combined terminal always used human/numeric ordering (3, 13, 23). AE2's NATURAL option is
             // plain String ordering (13, 23, 3), while ALPHANUM is the equivalent of the old terminal comparator.
             AEConfig.instance.settings.putSetting(Settings.INTERFACE_TERMINAL_SECTION_ORDER, StringOrder.ALPHANUM);
             changeSectionOrder(StringOrder.ALPHANUM);
+        }
+
+        @Override
+        public void openInterfaceUpgrades(long entryId) {
+            quickContainer.openInterfaceUpgradesAction.send(entryId);
         }
 
         @Override
@@ -2213,7 +2223,12 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
         }
 
         private void initialize(Minecraft minecraft, int width, int height) {
-            setWorldAndResolution(minecraft, width, height);
+            // GuiContainer.initGui binds its inventory to the player. Vanilla slot packets belong to the outer window.
+            try {
+                setWorldAndResolution(minecraft, width, height);
+            } finally {
+                minecraft.thePlayer.openContainer = quickContainer;
+            }
             entryHitBoxesDirty = true;
             ensureCtrlTeleportTooltip();
         }
@@ -2281,6 +2296,7 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
                 invalidateButtonY(entry, entryOptionsButton);
                 invalidateButtonY(entry, entryHideButton);
                 invalidateButtonY(entry, entryRenameButton);
+                if (objectField(entry, entryUpgradeButton) instanceof GuiButton upgrade) upgrade.visible = false;
                 Object section = objectField(entry, entrySection);
                 if (section != null && sectionVisible != null) {
                     try {
@@ -2811,6 +2827,7 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
             entryOptionsButton = findField(entryClass, "optionsButton");
             entryHideButton = findField(entryClass, "hideButton");
             entryRenameButton = findField(entryClass, "renameButton");
+            entryUpgradeButton = findField(entryClass, "upgradeButton");
             entrySection = findField(entryClass, "section");
             Object section = objectField(entry, entrySection);
             if (section != null) sectionVisible = findField(section.getClass(), "visible");

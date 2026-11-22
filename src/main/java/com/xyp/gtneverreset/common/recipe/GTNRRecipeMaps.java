@@ -136,7 +136,7 @@ public final class GTNRRecipeMaps {
         // # Small Centrifuge (Direct Fluids)
         // # zh_CN 小型离心机（直接流体）
         .of("gtnr.recipe.modern_centrifuge")
-        .maxIO(2, 6, 1, 6)
+        .maxIO(2, 9, 1, 6)
         .progressBar(GTUITextures.PROGRESSBAR_EXTRACT)
         .progressBarMUI2(GTGuiTextures.PROGRESSBAR_EXTRACT)
         .frontend(LargeNEIFrontend::new)

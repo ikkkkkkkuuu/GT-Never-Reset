@@ -14,10 +14,13 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui.InterfacePatternRows;
 import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui.InterfaceRowFilter;
 
 import appeng.client.gui.implementations.GuiInterfaceTerminal;
+import appeng.container.implementations.ContainerInterfaceTerminal;
 import appeng.core.AEConfig;
 import appeng.tile.inventory.AppEngInternalInventory;
 
@@ -57,6 +60,17 @@ public abstract class InterfaceEntryRowFilterMixin implements InterfacePatternRo
 
     @Unique
     private boolean rowsDirty = true;
+
+    @WrapOperation(
+        method = "mouseClicked",
+        at = @At(
+            value = "INVOKE",
+            target = "Lappeng/container/implementations/ContainerInterfaceTerminal;requestUpgradeSelection(J)V"),
+        require = 1)
+    private void gtnr$openUpgrades(ContainerInterfaceTerminal container, long id, Operation<Void> original) {
+        if (this$0 instanceof InterfaceRowFilter quick) quick.openInterfaceUpgrades(id);
+        else original.call(container, id);
+    }
 
     @Inject(method = "setItemInSlot", at = @At("RETURN"))
     private void invalidateRows(ItemStack stack, int slot, CallbackInfo ci) {

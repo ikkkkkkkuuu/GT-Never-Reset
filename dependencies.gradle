@@ -91,8 +91,6 @@ dependencies {
     runtimeOnlyNonPublishable(rfg.deobf("curse.maven:biomes-o-plenty-220318:2499612")) { transitive = false }
     runtimeOnlyNonPublishable(rfg.deobf("curse.maven:extra-utilities-225561:2264383")) { transitive = false }
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("BetterQuesting") as String) { transitive = false }
-    // CropsNH's dev runtime resolves this optional API before its mod-loaded guard.
-    devOnlyNonPublishable(elytraModpackVersion.gtnhdev("BetterBuildersWands") as String)
     compileOnlyApi(elytraModpackVersion.gtnhdev("NewHorizonsCoreMod") as String)
     runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("NewHorizonsCoreMod") as String)
     runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Yamcl") as String) { transitive = false }

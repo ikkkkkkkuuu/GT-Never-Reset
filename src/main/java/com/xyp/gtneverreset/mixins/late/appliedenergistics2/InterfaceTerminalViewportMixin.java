@@ -13,6 +13,7 @@ import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui.InterfacePattern
 import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui.InterfaceRowFilter;
 
 import appeng.client.gui.implementations.GuiInterfaceTerminal;
+import appeng.container.implementations.ContainerInterfaceTerminal;
 import appeng.tile.inventory.AppEngInternalInventory;
 
 /** Avoids decoding and rendering patterns below the scissor rectangle while preserving the entry's full height. */
@@ -21,6 +22,17 @@ public abstract class InterfaceTerminalViewportMixin {
 
     @Shadow
     private int viewHeight;
+
+    // The combined terminal uses its side panels for storage and encoding. Upgrade editing opens the native window.
+    @WrapOperation(
+        method = { "updateLayout", "drawBG" },
+        at = @At(
+            value = "INVOKE",
+            target = "Lappeng/container/implementations/ContainerInterfaceTerminal;getToolboxSize()I"),
+        require = 2)
+    private int gtnr$toolboxSize(ContainerInterfaceTerminal container, Operation<Integer> original) {
+        return (Object) this instanceof InterfaceRowFilter ? 0 : original.call(container);
+    }
 
     @WrapOperation(
         method = "drawEntry",

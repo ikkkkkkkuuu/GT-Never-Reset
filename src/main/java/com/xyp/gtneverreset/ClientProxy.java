@@ -18,6 +18,7 @@ import com.xyp.gtneverreset.loader.ContentLoaders;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
 
 import appeng.client.gui.implementations.GuiCraftingTerm;
+import appeng.client.gui.implementations.GuiInterfaceTerminal;
 import appeng.helpers.WirelessTerminalGuiObject;
 import appeng.items.contents.WirelessCraftingTerminalGuiObject;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -53,6 +54,9 @@ public class ClientProxy extends CommonProxy {
             return new GuiMagnetFilter(
                 player.inventory,
                 new WirelessMagnetCardFilterInventory(host.getItemStack(), host.getInventorySlot(), null, player));
+        }
+        if (type == WirelessTerminalGuiType.WirelessInterfaceUpgrades) {
+            return new GuiInterfaceTerminal(player.inventory, (DualTerminalGuiObject) host);
         }
         WirelessTerminalSorting.initialize();
         return host instanceof DualTerminalGuiObject dual ? new QuickEncodingTerminalGui(player.inventory, dual)

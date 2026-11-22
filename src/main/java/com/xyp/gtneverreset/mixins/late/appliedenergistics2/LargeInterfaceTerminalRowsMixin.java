@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.xyp.gtneverreset.common.block.blocks.tile.TileEntityPackagedProvider;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
+import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
 
 import appeng.api.util.IInterfaceViewable;
 import appeng.container.implementations.ContainerInterfaceTerminal;
@@ -60,8 +61,15 @@ public abstract class LargeInterfaceTerminalRowsMixin {
         }
     }
 
-    @Inject(method = "detectAndSendChanges", at = @At("HEAD"), remap = false)
+    @Inject(method = "detectAndSendChanges", at = @At("HEAD"), remap = false, cancellable = true)
     private void gtnr$refreshChangedRows(CallbackInfo ci) {
+        ContainerInterfaceTerminal container = (ContainerInterfaceTerminal) (Object) this;
+        if (Platform.isServer() && container.getTarget() instanceof DualTerminalGuiObject wireless
+            && wireless.getActionableNode() == null) {
+            container.setValidContainer(false);
+            ci.cancel();
+            return;
+        }
         if (Platform.isClient() || gtnr$knownRows == null) return;
         for (Map.Entry<IInterfaceViewable, Integer> snapshot : gtnr$knownRows.entrySet()) {
             if (snapshot.getKey()

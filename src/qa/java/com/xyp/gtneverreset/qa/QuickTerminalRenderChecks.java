@@ -213,7 +213,10 @@ public final class QuickTerminalRenderChecks {
         if (event.phase != TickEvent.Phase.END || finished) return;
         Minecraft mc = Minecraft.getMinecraft();
         try {
-            if (!launched && mc.currentScreen instanceof GuiMainMenu) {
+            if (!launched && mc.currentScreen != null
+                && (mc.currentScreen instanceof GuiMainMenu || mc.currentScreen.getClass()
+                    .getName()
+                    .equals("galaxyspace.core.gui.GSGuiMainMenu"))) {
                 launched = true;
                 mc.launchIntegratedServer(
                     "terminal-" + System.currentTimeMillis(),
@@ -230,6 +233,9 @@ public final class QuickTerminalRenderChecks {
                     : new QuickEncodingTerminalGui(mc.thePlayer.inventory, terminal(mc.thePlayer));
                 mc.displayGuiScreen(gui);
                 if (gui instanceof QuickEncodingTerminalGui) {
+                    if (mc.thePlayer.openContainer != gui.inventorySlots) {
+                        throw new AssertionError("Embedded interface terminal replaced the active window");
+                    }
                     field(QuickEncodingTerminalGui.class, "pendingPinRefresh").setBoolean(gui, false);
                 }
                 if (mode == 2) {

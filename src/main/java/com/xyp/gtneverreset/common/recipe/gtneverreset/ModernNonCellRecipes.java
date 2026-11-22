@@ -32,6 +32,6 @@ public final class ModernNonCellRecipes {
             .eut(RECIPE_LV)
             .addTo(GTNRRecipeMaps.MODERN_CHEMICAL_RECIPES);
         FluidContainerRecipeConverter
-            .convertRecipes(RecipeMaps.centrifugeRecipes, GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES, 2, 6, 1, 6);
+            .convertRecipes(RecipeMaps.centrifugeRecipes, GTNRRecipeMaps.MODERN_CENTRIFUGE_RECIPES, 2, 9, 1, 6);
     }
 }

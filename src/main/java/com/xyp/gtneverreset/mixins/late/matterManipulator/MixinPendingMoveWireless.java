@@ -1,6 +1,6 @@
 package com.xyp.gtneverreset.mixins.late.matterManipulator;
 
-import java.util.List;
+import java.util.Deque;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -20,7 +20,7 @@ import com.xyp.gtneverreset.common.wireless.WirelessConstructionSites.Site;
 public abstract class MixinPendingMoveWireless {
 
     @Shadow
-    private List<?> moves;
+    private Deque<?> moves;
 
     @Unique
     private Site gtnr$source;

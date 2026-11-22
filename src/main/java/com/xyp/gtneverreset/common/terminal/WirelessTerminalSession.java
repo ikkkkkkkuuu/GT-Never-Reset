@@ -44,7 +44,8 @@ public final class WirelessTerminalSession {
         WirelessTerminalGuiType type = requested == null
             ? getLastGuiMode(stack, WirelessTerminalGuiType.WirelessDualInterfaceTerminal)
             : requested;
-        if (requested != null) setLastGuiMode(player, slot, type);
+        if (requested != null && requested != WirelessTerminalGuiType.WirelessInterfaceUpgrades)
+            setLastGuiMode(player, slot, type);
         WirelessTerminalGuiHandler.openGui(player, slot, type);
     }
 
