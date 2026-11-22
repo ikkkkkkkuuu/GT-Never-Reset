@@ -30,7 +30,7 @@ import com.xyp.gtnrlib.gui.widget.CycleDropdown;
 import com.xyp.gtnrlib.gui.widget.GTNRListWidget;
 import com.xyp.gtnrlib.gui.widget.HandleScrollData;
 import com.xyp.gtnrlib.gui.widget.ListRow;
-import com.xyp.gtnrlib.gui.widget.NumberEntry;
+import com.xyp.gtnrlib.gui.widget.NumberEntryWidget;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -184,8 +184,8 @@ public class ProjectorParameterTab {
             .control(control, CONTROL, SMALL);
     }
 
-    private static NumberEntry entry(long min, long max, long reset, LongSupplier current, LongConsumer set) {
-        return new NumberEntry(null).wheel(true)
+    private static NumberEntryWidget entry(long min, long max, long reset, LongSupplier current, LongConsumer set) {
+        return new NumberEntryWidget().wheel(true)
             .bounds(min, max)
             .textAlignment(Alignment.Center)
             .resetValue(reset)

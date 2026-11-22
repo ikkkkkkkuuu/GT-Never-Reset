@@ -9,26 +9,31 @@ import org.jetbrains.annotations.NotNull;
 import com.cleanroommc.modularui.api.UpOrDown;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.Interactable;
+import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
+import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.widget.ParentWidget;
+import com.cleanroommc.modularui.widgets.TextWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
-import com.xyp.gtnrlib.gui.theme.ae2.AE2Draw;
+import com.xyp.gtnrlib.gui.theme.ae2.AE2Look;
 
 /**
  * Steps through a list of named values: {@code <} and {@code >} buttons around the current value's name, and, after
  * {@link #wheel(boolean) wheel(true)}, the mouse wheel anywhere over it. It holds no values itself; the step callback
  * moves the owner's selection, so it suits values that are not numbers, such as voltage tiers. For numbers use
- * {@link NumberEntry}. While {@link #available(BooleanSupplier)} reports false the arrows look disabled, the name is
- * greyed out, and clicks and the wheel do nothing. It can be built on either side, so it also works in GUIs the server
- * opens.
+ * {@link NumberEntryWidget}. The name takes the panel's text color, or the list's text color and shadow when the
+ * stepper is the control of a {@link ListRow}. While {@link #available(BooleanSupplier)} reports false the arrows look
+ * disabled, the name is greyed out, and clicks and the wheel do nothing. It can be built on either side, so it also
+ * works in GUIs the server opens.
  */
-public class ValueStepper extends ParentWidget<ValueStepper> implements Interactable {
+public class ValueStepper extends ParentWidget<ValueStepper> implements Interactable, IListRowControl {
 
     /** Width of each arrow button in pixels. */
     public static final int ARROW_WIDTH = 12;
     private final IntConsumer step;
-    private BooleanSupplier available = () -> true;
-    private boolean wheel;
+    private final TextWidget<?> name;
+    private final Availability availability = new Availability();
+    private boolean wheel, inListRow;
 
     /**
      * Creates a stepper; the caller sets its size, and the arrows fill its height.
@@ -38,25 +43,22 @@ public class ValueStepper extends ParentWidget<ValueStepper> implements Interact
      */
     public ValueStepper(Supplier<String> value, IntConsumer step) {
         this.step = step;
+        name = IKey.dynamic(value)
+            .asWidget();
         child(
             Flow.row()
                 .sizeRel(1f)
                 .childPadding(1)
                 .child(
-                    ActionButton.text(() -> "<", () -> step.accept(-1))
-                        .available(this::isAvailable)
+                    new AE2Button(() -> "<", () -> step.accept(-1)).available(availability::get)
                         .width(ARROW_WIDTH)
                         .heightRel(1f))
                 .child(
-                    IKey.dynamic(value)
-                        .asWidget()
-                        .color(() -> AE2Draw.panelTextColor(this, isAvailable()))
-                        .alignment(Alignment.Center)
+                    name.alignment(Alignment.Center)
                         .expanded()
                         .heightRel(1f))
                 .child(
-                    ActionButton.text(() -> ">", () -> step.accept(1))
-                        .available(this::isAvailable)
+                    new AE2Button(() -> ">", () -> step.accept(1)).available(availability::get)
                         .width(ARROW_WIDTH)
                         .heightRel(1f)));
     }
@@ -68,7 +70,7 @@ public class ValueStepper extends ParentWidget<ValueStepper> implements Interact
      * @return this stepper
      */
     public ValueStepper available(BooleanSupplier available) {
-        this.available = available;
+        availability.set(available);
         return this;
     }
 
@@ -84,13 +86,14 @@ public class ValueStepper extends ParentWidget<ValueStepper> implements Interact
         return this;
     }
 
-    private boolean isAvailable() {
-        return available.getAsBoolean();
+    @Override
+    public void placedInListRow() {
+        inListRow = true;
     }
 
     @Override
     public @NotNull Result onMousePressed(int mouseButton) {
-        return isAvailable() ? Result.IGNORE : Result.STOP;
+        return availability.press(() -> Result.IGNORE);
     }
 
     @Override
@@ -100,8 +103,19 @@ public class ValueStepper extends ParentWidget<ValueStepper> implements Interact
 
     @Override
     public boolean onMouseScroll(UpOrDown scrollDirection, int amount) {
-        if (!wheel || !isAvailable()) return false;
+        if (!wheel || !availability.get()) return false;
         step.accept(scrollDirection.modifier);
         return true;
+    }
+
+    @Override
+    public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
+        super.draw(context, widgetTheme);
+        boolean usable = availability.get();
+        AE2Look look = AE2Look.of(this);
+        if (inListRow) name.color(usable ? look.listText() : look.listMuted())
+            .shadow(usable && look.listShadow());
+        else name.color(look.panelText(usable))
+            .shadow(false);
     }
 }

@@ -1,3 +1,16 @@
+gtnrlib.widget_gallery.theme.light=AE2 Light
+gtnrlib.widget_gallery.theme.dark=AE2 Dark
+gtnrlib.widget_gallery.theme.purple=AE2 Purple
+gtnrlib.widget_gallery.theme.plain=Default
+gtnrlib.widget_gallery.dialog=Dialog
+gtnrlib.widget_gallery.available=Available
+gtnrlib.widget_gallery.hide=Hide some widgets
+gtnrlib.widget_gallery.page.buttons=Buttons
+gtnrlib.widget_gallery.page.inputs=Inputs
+gtnrlib.widget_gallery.page.lists=Lists
+gtnrlib.widget_gallery.option=Option %s
+gtnrlib.widget_gallery.hidden=Hidden button
+gtnrlib.widget_gallery.dialog.title=Another theme
 gtnrlib.gui.color.title=Pick a color
 gtnrlib.gui.color.inherit=Inherit
 gtnrlib.gui.color.inherit.tip=Clear this color to inherit the profile or mod default

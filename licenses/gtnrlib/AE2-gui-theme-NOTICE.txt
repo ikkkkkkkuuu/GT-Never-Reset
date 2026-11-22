@@ -17,7 +17,7 @@ Local assets:
   assets/gtnrlib/textures/gui/skin/ae2_light/list_row.png
   assets/gtnrlib/textures/gui/skin/ae2_light/progress.png
   assets/gtnrlib/textures/gui/skin/ae2_dark/ (the same fifteen files, recoloured)
-  assets/gtnrlib/textures/gui/skin/ae2_dark_purple/ (the ae2_dark files, selection recoloured)
+  assets/gtnrlib/textures/gui/skin/ae2_dark_purple/ (seven ae2_dark files, selection recoloured)
 Original assets:
   assets/ae2/textures/guis/background.png
   assets/ae2/textures/gui/sprites/button.png
@@ -62,7 +62,8 @@ The additional colour #4D4D67 becomes #0D0D13 in text_field.png and states.png,
 and #0D0D12 in list_row.png and progress.png. Other colours, including the
 selection blues and purple progress bar, and all alpha values are preserved.
 The files in skin/ae2_dark_purple are copies of skin/ae2_dark with the selection
-blues mapped to fluix purple:
+blues mapped to fluix purple; the purple skin takes every texture it does not
+recolour from skin/ae2_dark:
   #9CD3FF -> #644595
   #DAFFFF -> #E2A3E3
   #708CBA -> #212040

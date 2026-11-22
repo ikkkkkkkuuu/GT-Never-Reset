@@ -50,8 +50,9 @@ import com.xyp.gtnrlib.gui.theme.AE2Theme.Icon;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
 import com.xyp.gtnrlib.gui.theme.ae2.AE2Draw;
 import com.xyp.gtnrlib.gui.theme.ae2.AE2Panels;
-import com.xyp.gtnrlib.gui.widget.ActionButton;
+import com.xyp.gtnrlib.gui.widget.AE2Button;
 import com.xyp.gtnrlib.gui.widget.FadingNotice;
+import com.xyp.gtnrlib.gui.widget.IconButton;
 import com.xyp.gtnrlib.gui.widget.IconRowList;
 import com.xyp.gtnrlib.gui.widget.IconRowList.Row;
 import com.xyp.gtnrlib.gui.widget.ListRow;
@@ -239,16 +240,16 @@ public class ProjectorGui extends ModularPanel {
                 Flow.row()
                     .size(PREVIEW_WIDTH, BUTTON)
                     .childPadding(2)
-                    .child(ActionButton.icon(() -> Icon.REMOVE, () -> preview.stepLayer(-1)))
+                    .child(new IconButton(() -> Icon.REMOVE, () -> preview.stepLayer(-1)))
                     .child(
                         IKey.dynamic(this::layerLabel)
                             .asWidget()
                             .alignment(Alignment.Center)
                             .width(32)
                             .height(BUTTON))
-                    .child(ActionButton.icon(() -> Icon.ADD, () -> preview.stepLayer(1)))
+                    .child(new IconButton(() -> Icon.ADD, () -> preview.stepLayer(1)))
                     .child(
-                        ActionButton.text(
+                        new AE2Button(
                             () -> StatCollector
                                 // #tr gtneverreset.projector.display.BOX
                                 // # Display: frame only
@@ -260,9 +261,8 @@ public class ProjectorGui extends ModularPanel {
                                 // # Display: all blocks
                                 // # zh_CN 显示：全部方块
                                 .translateToLocal(ProjectorClient.LANG + "display." + working.display.name()),
-                            this::cycleDisplay)
-                            .expanded()
-                            .height(BUTTON)));
+                            this::cycleDisplay).expanded()
+                                .height(BUTTON)));
     }
 
     private IWidget sideColumn() {
@@ -285,14 +285,13 @@ public class ProjectorGui extends ModularPanel {
                     .size(RIGHT_WIDTH, BUTTON)
                     .childPadding(2)
                     .child(
-                        ActionButton.text(this::projectLabel, this::project)
-                            .expanded()
+                        new AE2Button(this::projectLabel, this::project).expanded()
                             .height(BUTTON))
                     .child(
                         // #tr gtneverreset.projector.gui.clear
                         // # Clear plan
                         // # zh_CN 清除方案
-                        ActionButton.text(() -> StatCollector.translateToLocal(LANG + "clear"), this::clearPlan)
+                        new AE2Button(() -> StatCollector.translateToLocal(LANG + "clear"), this::clearPlan)
                             .width(RIGHT_WIDTH * 2 / 5)
                             .height(BUTTON)));
     }

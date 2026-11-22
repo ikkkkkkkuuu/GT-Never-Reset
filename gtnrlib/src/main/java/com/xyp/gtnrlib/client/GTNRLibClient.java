@@ -8,6 +8,7 @@ import net.minecraftforge.common.MinecraftForge;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.fx.world.FxEffects;
 import com.xyp.gtnrlib.client.fx.world.FxMoteRenderer;
+import com.xyp.gtnrlib.client.gallery.WidgetGalleryCommand;
 import com.xyp.gtnrlib.client.hud.HudLayout;
 import com.xyp.gtnrlib.client.hud.HudOverlay;
 import com.xyp.gtnrlib.client.shader.ShaderEffect;
@@ -43,6 +44,7 @@ public class GTNRLibClient {
         ((IReloadableResourceManager) Minecraft.getMinecraft()
             .getResourceManager()).registerReloadListener(EffectTextRenderer.INSTANCE);
         ClientCommandHandler.instance.registerCommand(new TextEffectPreviewCommand());
+        ClientCommandHandler.instance.registerCommand(new WidgetGalleryCommand());
     }
 
     public static void connectConfig() {

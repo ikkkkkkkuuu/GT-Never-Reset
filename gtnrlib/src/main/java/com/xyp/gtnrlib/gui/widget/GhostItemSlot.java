@@ -22,6 +22,7 @@ import com.cleanroommc.modularui.screen.RecipeViewerSettingsImpl;
 import com.cleanroommc.modularui.theme.SlotTheme;
 import com.cleanroommc.modularui.widget.Widget;
 import com.gtnewhorizon.gtnhlib.util.data.ItemId;
+import com.xyp.gtnrlib.mod.ModList;
 
 /**
  * An item slot for client-only screens: drag an item from NEI onto it and it shows and keeps that item. With
@@ -92,6 +93,10 @@ public class GhostItemSlot extends Widget<GhostItemSlot>
      * client-side container.
      */
     public static void open(ModularScreen screen) {
+        if (!ModList.NotEnoughItems.isModLoaded()) {
+            ClientGUI.open(screen);
+            return;
+        }
         RecipeViewerSettingsImpl recipeViewer = new RecipeViewerSettingsImpl();
         recipeViewer.enable();
         ClientGUI.open(screen, recipeViewer, ModularContainer::new);

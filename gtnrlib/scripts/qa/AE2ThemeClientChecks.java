@@ -35,6 +35,8 @@ import com.xyp.gtnrlib.gui.widget.CycleDropdown;
 import com.xyp.gtnrlib.gui.widget.GTNRListWidget;
 import com.xyp.gtnrlib.gui.widget.HandleScrollData;
 import com.xyp.gtnrlib.gui.widget.NumberEntry;
+import com.xyp.gtnrlib.gui.widget.AE2Button;
+import net.minecraftforge.client.ClientCommandHandler;
 import com.xyp.gtnrlib.gui.widget.StepSlider;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -46,7 +48,7 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 @Mod(modid = "ae2themeqa", name = "AE2 Theme QA", version = "1", dependencies = "after:" + GTNRLib.MODID)
 public final class AE2ThemeClientChecks {
 
-    private boolean launched, finished;
+    private boolean launched, finished, checkingGallery;
     private int ticks, themeIndex, stage, frames;
     private ModularScreen screen;
     private ListWidget<IWidget, ?> list;
@@ -75,7 +77,7 @@ public final class AE2ThemeClientChecks {
                     "AE2 Theme QA",
                     new WorldSettings(16, WorldSettings.GameType.CREATIVE, false, false, WorldType.FLAT));
             }
-            if (mc.thePlayer != null && screen == null) open();
+            if (mc.thePlayer != null && screen == null && !checkingGallery) open();
         } catch (Throwable failure) {
             finish(failure);
         }
@@ -107,9 +109,8 @@ public final class AE2ThemeClientChecks {
             .pos(8, 184)
             .size(155, 25);
         panel.child(empty);
-        number = new NumberEntry(variant).bounds(1, Long.MAX_VALUE)
-            .value(64)
-            .pos(180, 26);
+        number = new NumberEntry(variant).bounds(1, Long.MAX_VALUE).value(64);
+        number.pos(180, 26);
         panel.child(number);
         panel.child(
             new StepSlider().range(0, 100, 20)
@@ -135,6 +136,14 @@ public final class AE2ThemeClientChecks {
 
     @SubscribeEvent
     public void render(TickEvent.RenderTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && checkingGallery && !finished) {
+            try {
+                checkGallery();
+            } catch (Throwable failure) {
+                finish(failure);
+            }
+            return;
+        }
         if (event.phase != TickEvent.Phase.END || finished
             || screen == null
             || ModularScreen.getCurrent() != screen
@@ -200,12 +209,44 @@ public final class AE2ThemeClientChecks {
                 Minecraft.getMinecraft()
                     .displayGuiScreen(null);
                 screen = null;
-                if (++themeIndex == ScreenTheme.values().length) finish(null);
+                if (++themeIndex == ScreenTheme.values().length) {
+                    checkingGallery = true;
+                    stage = 0;
+                    require(ClientCommandHandler.instance.executeCommand(Minecraft.getMinecraft().thePlayer, "/gtnrlib_widgets") == 1,
+                        "gallery command is registered on the client");
+                }
             }
             frames = 0;
         } catch (Throwable failure) {
             finish(failure);
         }
+    }
+
+    private void checkGallery() throws Exception {
+        ModularScreen gallery = ModularScreen.getCurrent();
+        if (gallery == null || ++frames < 20) return;
+        var panel = gallery.getMainPanel();
+        var buttons = panel.getChildren().stream().filter(AE2Button.class::isInstance).map(AE2Button.class::cast).toList();
+        require(buttons.size() >= 5, "gallery theme and dialog buttons are available");
+        switch (stage) {
+            case 0 -> {
+                require(AE2Theme.LIGHT_ID.equals(panel.getTheme().getId()), "gallery opens in light");
+                buttons.get(2).onMousePressed(0);
+            }
+            case 1 -> {
+                require(AE2Theme.DARK_PURPLE_ID.equals(panel.getTheme().getId()), "purple theme applied");
+                screenshot("gallery-purple.png");
+                buttons.get(4).onMousePressed(0);
+            }
+            case 2 -> {
+                require(gallery.getPanelManager().getTopMostPanel() != panel, "gallery dialog is open");
+                screenshot("gallery-dialog.png");
+                finish(null);
+            }
+            default -> throw new AssertionError("unexpected gallery stage " + stage);
+        }
+        frames = 0;
+        stage++;
     }
 
     private void numbers() {

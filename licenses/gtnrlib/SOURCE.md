@@ -159,3 +159,7 @@ Updated the shared widgets to GTNLLib commit 427ab43e63ee8f663c3f8daead861134305
 and the panel skin API, drawing helpers and associated tests to commit
 61b4118176b9ac0a94e0f90ffe4fcccf88770f03. Adaptations preserve GTNRLib's existing
 widget entry points, translations and color utility.
+
+The expanded theme widgets, gallery, tests and texture sharing are adapted from
+GTNLLib commit 768ed2970a3ec21ab969270872475684413ddcfc. GTNRLib retains the
+existing theme identifiers and previously exposed type names.

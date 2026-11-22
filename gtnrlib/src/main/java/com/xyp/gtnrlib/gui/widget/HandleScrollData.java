@@ -12,7 +12,6 @@ import com.cleanroommc.modularui.widget.scroll.VerticalScrollData;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
 import com.xyp.gtnrlib.gui.theme.ae2.AE2Look;
-import com.xyp.gtnrlib.gui.theme.ae2.AE2Scrollbars;
 
 /**
  * Vertical scroll data with a fixed-size AE2 or vanilla handle. It can be built on either side, so it also works in
@@ -27,11 +26,11 @@ import com.xyp.gtnrlib.gui.theme.ae2.AE2Scrollbars;
  * available vertical track must be at least {@link AE2Theme#SCROLLER_HEIGHT} pixels tall.
  * <p>
  * Scrolling is smooth by default. {@link #rows(int)} enables immediate scrolling snapped to row boundaries. Scroll
- * shadows are never drawn. A press on the track beside the handle moves the handle's centre to the pointer at once,
- * and the same press keeps dragging from there. {@link #pageOnTrackPress(boolean) pageOnTrackPress(true)} pages like
- * AE2 instead: the press moves one wheel step (MUI2's scroll speed, one row after {@link #rows(int)}) towards the
- * pointer, and inside a {@link GTNRListWidget} holding the button keeps paging, first after
- * {@value #FIRST_REPEAT_MILLIS} ms and then every {@value #REPEAT_MILLIS} ms.
+ * shadows are never drawn. A press on the track beside the handle moves the handle's centre to the pointer at once, and
+ * the same press keeps dragging from there. {@link #pageOnTrackPress(boolean) pageOnTrackPress(true)} pages like AE2
+ * instead: the press moves one wheel step (MUI2's scroll speed, one row after {@link #rows(int)}) towards the pointer,
+ * and inside a {@link GTNRListWidget} holding the button keeps paging, first after {@value #FIRST_REPEAT_MILLIS} ms and
+ * then every {@value #REPEAT_MILLIS} ms.
  */
 public class HandleScrollData extends VerticalScrollData implements IPersistentScrollbar {
 
@@ -52,8 +51,8 @@ public class HandleScrollData extends VerticalScrollData implements IPersistentS
     /**
      * Creates scroll data with the requested handle style.
      *
-     * @param small whether to use the 7-pixel-wide AE2 handle instead of the 12-pixel-wide one; outside AE2 themes the
-     *              vanilla scroll bar is used either way
+     * @param small whether to use the 7-pixel-wide scroll bar instead of the large one; outside AE2 themes it is
+     *              Minecraft's handle narrowed to fit
      */
     public HandleScrollData(boolean small) {
         this(null, small);
@@ -79,7 +78,10 @@ public class HandleScrollData extends VerticalScrollData implements IPersistentS
      */
     @Deprecated
     public HandleScrollData(@Nullable Variant variant, boolean small) {
-        super(false, AE2Scrollbars.scrollbarWidth(variant));
+        super(
+            false,
+            AE2Look.of(variant)
+                .scrollbarWidth());
         this.small = small;
         look = AE2Look.of(variant);
     }
@@ -97,26 +99,22 @@ public class HandleScrollData extends VerticalScrollData implements IPersistentS
     }
 
     /**
-     * Returns the track width for the current look: 12 pixels for AE2's large handle, 7 for its small one, 14 for the
-     * vanilla scroll bar.
+     * Returns the track width for the current look: 7 pixels for the small scroll bar in every look, otherwise 12 for
+     * AE2's large handle and 14 for the vanilla scroll bar.
      *
      * @return track width in pixels
      */
     @Override
     public int getThickness() {
-        return smallHandle() ? AE2Theme.SCROLLBAR_WIDTH : AE2Scrollbars.scrollbarWidth(look.variant());
-    }
-
-    private boolean smallHandle() {
-        return small && look.isAE2();
+        return small ? AE2Theme.SMALL_SCROLLER_WIDTH : look.scrollbarWidth();
     }
 
     /**
      * Configures row snapping and the wheel step.
      * <p>
-     * Positive values disable animation and set the wheel step to one row. Both content endpoints remain reachable
-     * when the scroll range is not divisible by the row height. Align content, viewport, padding and separators to
-     * the row height when partial rows must not be visible.
+     * Positive values disable animation and set the wheel step to one row. Both content endpoints remain reachable when
+     * the scroll range is not divisible by the row height. Align content, viewport, padding and separators to the row
+     * height when partial rows must not be visible.
      *
      * @param rowHeight row height in pixels; nonpositive values disable snapping without changing the wheel step
      * @return this scroll data
@@ -183,7 +181,7 @@ public class HandleScrollData extends VerticalScrollData implements IPersistentS
             page(area);
             return true;
         }
-        // Why: MUI2 moves the content only once the pointer moves, so a still press would not jump.
+        // MUI2 moves the content only once the pointer moves, so a still press would not jump.
         if (beside) scrollTo(area, offsetAt(track - clickOffset, visible, length));
         dragMouse = track;
         dragScroll = getScroll();
@@ -223,8 +221,8 @@ public class HandleScrollData extends VerticalScrollData implements IPersistentS
     /**
      * Converts the pointer position to the progress consumed by {@link ScrollArea#drag(int, int)}.
      * <p>
-     * During a drag, the pointer's movement since the press is added to the offset recorded at the press, so a
-     * pointer that has not moved keeps the content in place regardless of the content length.
+     * During a drag, the pointer's movement since the press is added to the offset recorded at the press, so a pointer
+     * that has not moved keeps the content in place regardless of the content length.
      *
      * @param area         owning scroll area
      * @param mainAxisPos  mouse Y coordinate relative to the scroll area
@@ -286,8 +284,8 @@ public class HandleScrollData extends VerticalScrollData implements IPersistentS
     /**
      * Draws the groove and enabled or disabled handle in scroll-area coordinates.
      * <p>
-     * The groove extends one pixel above and below the available vertical track. An active horizontal scroll bar
-     * is excluded from that track. This method does not reserve layout space or process input.
+     * The groove extends one pixel above and below the available vertical track. An active horizontal scroll bar is
+     * excluded from that track. This method does not reserve layout space or process input.
      *
      * @param area owning scroll area
      */
@@ -299,9 +297,8 @@ public class HandleScrollData extends VerticalScrollData implements IPersistentS
         int top = trackTop(area);
         int height = getFullVisibleSize(area);
         // The groove border sits one pixel outside the scroll area so the handle can travel the full height.
-        Variant variant = look.variant();
-        if (smallHandle()) AE2Scrollbars.drawSmallScrollbar(variant, x, top - 1, height + 2, handleY, active);
-        else AE2Scrollbars.drawScrollbar(variant, x, top - 1, height + 2, handleY, active);
+        if (small) look.drawSmallScrollbar(x, top - 1, height + 2, handleY, active);
+        else look.drawScrollbar(x, top - 1, height + 2, handleY, active);
     }
 
     private int trackTop(ScrollArea area) {

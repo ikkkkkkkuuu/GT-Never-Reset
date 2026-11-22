@@ -28,7 +28,7 @@ import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.config.ClientConfig;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
-import com.xyp.gtnrlib.gui.widget.ActionButton;
+import com.xyp.gtnrlib.gui.widget.AE2Button;
 import com.xyp.gtnrlib.gui.widget.CycleDropdown;
 import com.xyp.gtnrlib.gui.widget.IconRowList;
 import com.xyp.gtnrlib.gui.widget.IconRowList.Row;
@@ -120,7 +120,7 @@ public class ProjectorHatchTab {
                                 // # zh_CN 同组外壳一起换
                                 .translateToLocal(LANG + (casing.getAsBoolean() ? "same_casing" : "same_kind")))
                                     .width(wellWidth)
-                                    .toggle(
+                                    .checkbox(
                                         () -> casing.getAsBoolean() ? hatches.sameCasing() : hatches.sameKind(),
                                         () -> {
                                             if (casing.getAsBoolean()) hatches.toggleSameCasing();
@@ -208,7 +208,7 @@ public class ProjectorHatchTab {
         // # zh_CN 仓位描边
         rows.add(Row.header(StatCollector.translateToLocal(LANG + "outline")));
         rows.add(
-            Row.toggle(
+            Row.checkbox(
                 // #tr gtneverreset.projector.gui.hatch_outlines
                 // # Hatch outlines
                 // # zh_CN 仓室描边
@@ -219,7 +219,7 @@ public class ProjectorHatchTab {
                     gui.configChanged = true;
                 }));
         rows.add(
-            Row.toggle(
+            Row.checkbox(
                 // #tr gtneverreset.projector.gui.outline_merge
                 // # Join inner edges
                 // # zh_CN 连接内边
@@ -239,13 +239,11 @@ public class ProjectorHatchTab {
         private SpotHeader() {
             size(gui.wellWidth, HEADER_HEIGHT);
             child(
-                ActionButton.text(() -> "<", () -> hatches.step(-1))
-                    .size(ValueStepper.ARROW_WIDTH, ProjectorWidgets.BUTTON)
+                new AE2Button(() -> "<", () -> hatches.step(-1)).size(ValueStepper.ARROW_WIDTH, ProjectorWidgets.BUTTON)
                     .left(2)
                     .top(3));
             child(
-                ActionButton.text(() -> ">", () -> hatches.step(1))
-                    .size(ValueStepper.ARROW_WIDTH, ProjectorWidgets.BUTTON)
+                new AE2Button(() -> ">", () -> hatches.step(1)).size(ValueStepper.ARROW_WIDTH, ProjectorWidgets.BUTTON)
                     .right(2)
                     .top(3));
         }

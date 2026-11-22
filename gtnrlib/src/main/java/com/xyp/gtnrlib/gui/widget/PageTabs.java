@@ -11,7 +11,7 @@ import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widget.Widget;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
-import com.xyp.gtnrlib.gui.theme.ae2.AE2Buttons;
+import com.xyp.gtnrlib.gui.theme.ae2.AE2ButtonPainter;
 import com.xyp.gtnrlib.gui.theme.ae2.IconSource;
 
 /**
@@ -21,10 +21,11 @@ import com.xyp.gtnrlib.gui.theme.ae2.IconSource;
  * either side, so it also works in GUIs the server opens.
  * <p>
  * Place the widget at {@code panelRight - AE2Theme.PAGE_TAB_INSET} and add it after the panel's other children: the
- * open tab then covers the panel border and joins the panel, and the others stand out. {@link #page(int, Widget)}
- * shows a page widget only while its tab is open. Other themes draw the tabs as buttons, the open one hovered. A tab
- * made unavailable with {@link #available(BooleanSupplier)} shows no hover, draws its icon faded and swallows clicks.
- * {@link #tabSize(int, int)} changes the size of the tabs from AE2's 22 by 22 pixels.
+ * open tab then covers the panel border and joins the panel, and the others stand out. {@link #page(int, Widget)} shows
+ * a page widget only while its tab is open. Other themes draw the tabs as buttons, the open one hovered. A tab made
+ * unavailable with {@link #available(BooleanSupplier)} shows no hover, draws its icon faded and swallows clicks.
+ * {@link #tabSize(int, int)} changes the size of the tabs from AE2's 22 by 22 pixels. The tabs stand outside the panel,
+ * so they tell NEI to keep its panels clear of them, as AE2's do.
  */
 public class PageTabs extends ParentWidget<PageTabs> {
 
@@ -34,7 +35,7 @@ public class PageTabs extends ParentWidget<PageTabs> {
     private final IntSupplier open;
     private final IntConsumer select;
     private final List<BooleanSupplier[]> usable = new ArrayList<>();
-    private final List<ActionButton> buttons = new ArrayList<>();
+    private final List<ThemedButton<?>> buttons = new ArrayList<>();
     private int tabWidth = AE2Theme.PAGE_TAB_SIZE, tabHeight = AE2Theme.PAGE_TAB_SIZE;
 
     /**
@@ -46,7 +47,7 @@ public class PageTabs extends ParentWidget<PageTabs> {
     public PageTabs(IntSupplier open, IntConsumer select) {
         this.open = open;
         this.select = select;
-        size(AE2Theme.PAGE_TAB_SIZE, 0);
+        size(AE2Theme.PAGE_TAB_SIZE, 0).excludeAreaInRecipeViewer();
     }
 
     /**
@@ -79,8 +80,8 @@ public class PageTabs extends ParentWidget<PageTabs> {
     /**
      * Adds a tab below the existing ones; the first tab is page zero.
      *
-     * @param icon    supplier of the icon, read every frame: a built-in {@code Icon}, or any texture or item through
-     *                {@link IconSource#of}
+     * @param icon    supplier of the icon, read every frame: an {@code Icon} or {@code AE2SettingIcon}, or any
+     *                texture or item through {@link IconSource#of}
      * @param tooltip supplier of the tooltip line, such as the page name, read every frame
      * @return these tabs
      */
@@ -88,8 +89,8 @@ public class PageTabs extends ParentWidget<PageTabs> {
         int index = usable.size();
         BooleanSupplier[] available = { () -> true };
         usable.add(available);
-        ActionButton tab = new ActionButton();
-        IDrawable look = AE2Buttons
+        ThemedButton<?> tab = new ThemedButton<>();
+        IDrawable look = AE2ButtonPainter
             .pageTab(tab, icon, () -> open.getAsInt() == index, () -> available[0].getAsBoolean());
         tab.available(() -> available[0].getAsBoolean())
             .background(look)

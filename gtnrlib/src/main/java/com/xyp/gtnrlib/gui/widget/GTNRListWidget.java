@@ -18,7 +18,8 @@ import cpw.mods.fml.relauncher.SideOnly;
  * Scroll data implementing {@link IPersistentScrollbar} reserves its thickness during layout even when the content
  * fits. Its inactive track is drawn after the content. Scroll offsets are clamped after each resize. A
  * {@link HandleScrollData} gets the look of the list's panel before each layout, so its handle and width follow the
- * panel's theme.
+ * panel's theme. Like AE2's lists, it does not darken its top and bottom edges while there is more to scroll; call
+ * {@code showScrollShadows(true)} for MUI2's shading.
  *
  * @param <I> child widget type
  * @param <W> fluent widget type
@@ -40,6 +41,7 @@ public class GTNRListWidget<I extends IWidget, W extends ListWidget<I, W>> exten
     public GTNRListWidget(int initialScrollY) {
         super();
         this.initialScrollY = initialScrollY;
+        showScrollShadows(false);
     }
 
     @Override

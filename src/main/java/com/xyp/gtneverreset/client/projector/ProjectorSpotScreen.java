@@ -28,7 +28,7 @@ import com.xyp.gtneverreset.config.ConfigRegistry;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
-import com.xyp.gtnrlib.gui.widget.ActionButton;
+import com.xyp.gtnrlib.gui.widget.AE2Button;
 import com.xyp.gtnrlib.gui.widget.IconRowList;
 import com.xyp.gtnrlib.gui.widget.IconRowList.Row;
 import com.xyp.gtnrlib.gui.widget.ListRow;
@@ -104,7 +104,7 @@ public class ProjectorSpotScreen extends ModularScreen {
                 // # Whole casing group
                 // # zh_CN 同组外壳一起换
                 () -> StatCollector.translateToLocal(LANG + (casing.getAsBoolean() ? "same_casing" : "same_kind")))
-                    .toggle(() -> casing.getAsBoolean() ? hatches.sameCasing() : hatches.sameKind(), () -> {
+                    .checkbox(() -> casing.getAsBoolean() ? hatches.sameCasing() : hatches.sameKind(), () -> {
                         if (casing.getAsBoolean()) hatches.toggleSameCasing();
                         else hatches.toggleSameKind();
                     })
@@ -119,17 +119,16 @@ public class ProjectorSpotScreen extends ModularScreen {
         // #tr gtneverreset.projector.spot.full
         // # Full view
         // # zh_CN 完整界面
-        panel.child(ActionButton.text(() -> StatCollector.translateToLocal(LANG + "full"), () -> {
+        panel.child(new AE2Button(() -> StatCollector.translateToLocal(LANG + "full"), () -> {
             confirm(panel);
             ProjectorClient.openAt(shown, cell);
-        })
-            .pos(PAD + inner - CONFIRM_WIDTH - GAP - BUTTON_WIDTH, bottom + 1)
+        }).pos(PAD + inner - CONFIRM_WIDTH - GAP - BUTTON_WIDTH, bottom + 1)
             .size(BUTTON_WIDTH, BUTTON));
         panel.child(
             // #tr gtneverreset.projector.spot.confirm
             // # Confirm
             // # zh_CN 确认
-            ActionButton.text(() -> StatCollector.translateToLocal(LANG + "confirm"), () -> confirm(panel))
+            new AE2Button(() -> StatCollector.translateToLocal(LANG + "confirm"), () -> confirm(panel))
                 .pos(PAD + inner - CONFIRM_WIDTH, bottom + 1)
                 .size(CONFIRM_WIDTH, BUTTON));
         open(panel, working, null, hatches, new int[] { cell }, HATCH_COLOR);
