@@ -114,7 +114,8 @@ public class HudSettingsCard extends ParentWidget<HudSettingsCard> {
         content = lines.size() * style.rowHeight + style.spacingMedium;
         ListWidget<IWidget, ?> list = new ListWidget<>().pos(0, header)
             .width(WIDTH)
-            .height(() -> cardHeight() - header, Unit.Measure.PIXEL);
+            .height(() -> cardHeight() - header, Unit.Measure.PIXEL)
+            .showScrollShadows(false);
         lines.forEach(list::child);
         child(list);
     }
@@ -264,7 +265,8 @@ public class HudSettingsCard extends ParentWidget<HudSettingsCard> {
             Arrays.asList(Size.fill(), Size.fixed(SLIDER_WIDTH)),
             Arrays.asList(
                 Layout.label(IKey.lang(lang), style),
-                new StepSlider().value(getter, setter)
+                new StepSlider().wheel(true)
+                    .value(getter, setter)
                     .range(min, max, steps)
                     .milestones(MILESTONES)
                     .format(format)

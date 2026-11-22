@@ -2,7 +2,11 @@ package com.xyp.gtnrlib.gui.wheel;
 
 import java.util.Objects;
 
+import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
+
 public class WheelStyle {
+
+    private static final int AE2_DISC_ALPHA = 0xE6000000;
 
     public static final WheelStyle DEFAULT = builder().build();
 
@@ -161,6 +165,19 @@ public class WheelStyle {
             if (deadZone < 0) throw new IllegalArgumentException("deadZone must be >= 0");
             this.deadZone = deadZone;
             return this;
+        }
+
+        /**
+         * Applies an AE2 skin's disc, line, text and highlight colors, without a text shadow.
+         *
+         * @param variant AE2 skin to take the colors from
+         * @return this builder
+         */
+        public Builder skin(Variant variant) {
+            return discColor(AE2_DISC_ALPHA | variant.colors.panel() & 0xFFFFFF).lineColor(variant.colors.line())
+                .textColor(variant.colors.text())
+                .textShadow(false)
+                .highlightColor(variant.highlight);
         }
 
         public WheelStyle build() {

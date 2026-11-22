@@ -96,6 +96,7 @@ dependencies {
     compileOnlyApi(elytraModpackVersion.gtnhdev("NewHorizonsCoreMod") as String)
     runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("NewHorizonsCoreMod") as String)
     runtimeOnlyNonPublishable(elytraModpackVersion.gtnhdev("Yamcl") as String) { transitive = false }
+    devOnlyNonPublishable(elytraModpackVersion.gtnhdev("StructureCompat") as String) { transitive = false }
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("BlockRenderer6343") as String)
 
     compileOnly("org.jetbrains:annotations:26.0.1")

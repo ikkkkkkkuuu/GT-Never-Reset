@@ -209,7 +209,7 @@ public class LayoutContracts {
             "a section title sits over a themed divider in the title color");
         check(
             CloseButton.inset(8, LayoutTheme.DEFAULT) == 6 && CloseButton.inset(10, LayoutTheme.DEFAULT) == 8
-                && CloseButton.reserve(8, LayoutTheme.DEFAULT) == 11
+                && CloseButton.reserve(8, LayoutTheme.DEFAULT) == CloseButton.SIZE
                 && CloseButton.inset(1, LayoutTheme.DEFAULT) == 0,
             "a close button sits one small gap outside the content padding and the title leaves room for it");
     }

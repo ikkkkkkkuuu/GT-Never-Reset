@@ -29,6 +29,7 @@ public final class ContentLoaders {
         new WorldLoader(),
         new CropLoader(),
         new GuiLoader(),
+        new ProjectorLoader(),
         new MachineLoader(),
         new CommandLoader(),
         new WirelessLoader(),

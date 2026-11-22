@@ -58,6 +58,7 @@ import com.xyp.gtnrlib.gui.theme.AE2Theme.Colors;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Icon;
 import com.xyp.gtnrlib.gui.widget.CloseButton;
 import com.xyp.gtnrlib.gui.widget.CycleDropdown;
+import com.xyp.gtnrlib.gui.widget.RowScrollbar;
 import com.xyp.gtnrlib.gui.widget.ThemedButton;
 
 import appeng.core.localization.ColorUtils;
@@ -79,7 +80,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
     private final String themeId = ScreenThemeConfig.wirelessPowerCard.themeId;
     private final AE2Theme.Variant variant = AE2Theme.variant(themeId);
     private final int scrollWidth = AE2Theme.scrollbarWidth(variant);
-    private final WirelessCardScrollbar scrollbar;
+    private final RowScrollbar scrollbar;
     private final Session session;
     private final boolean details;
     private final IPanelHandler detailsPanel;
@@ -111,10 +112,9 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         detailsPanel = details ? null
             : IPanelHandler.simple(this, (parent, player) -> new WirelessPowerCardPanel(session, true), true);
         if (details) child(CloseButton.panelCorner());
-        scrollbar = new WirelessCardScrollbar(
-            variant,
-            this::view,
-            this::scrollReady,
+        scrollbar = new RowScrollbar(
+            () -> view().getInteger("scroll"),
+            () -> scrollReady() ? view().getInteger("maxScroll") : 0,
             offset -> session.request(SCROLL_TO, Integer.toString(offset)));
         child(scrollbar);
         // #tr gtnr.power.gui.back
@@ -130,7 +130,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             () -> tr("gtnr.power.gui.refresh"),
             () -> session.request(REFRESH, ""),
             () -> true);
-        sourceLink = new ThemedButton().background(IDrawable.EMPTY)
+        sourceLink = new ThemedButton<>().background(IDrawable.EMPTY)
             .hoverBackground(IDrawable.EMPTY)
             .onMousePressed(mouse -> {
                 if (mouse == 0) session.request(SOURCES, "");
@@ -226,7 +226,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
                 () -> row(index).getString("id"),
                 () -> !selected(index));
             select[i].setEnabledIf(widget -> sources() && hasRow(index));
-            sourceRows[i] = new ThemedButton().background(IDrawable.EMPTY)
+            sourceRows[i] = new ThemedButton<>().background(IDrawable.EMPTY)
                 .hoverBackground(IDrawable.EMPTY)
                 .onMousePressed(mouse -> {
                     if (mouse == 0) session.request(SELECT, row(index).getString("id"));
@@ -273,7 +273,7 @@ public final class WirelessPowerCardPanel extends ModularPanel {
             highlight[i].setEnabledIf(widget -> device(index));
             power[i] = toggle(() -> !row(index).getBoolean("paused"), PAUSE, () -> row(index).getString("id"));
             power[i].setEnabledIf(widget -> device(index));
-            deviceRows[i] = new ThemedButton().background(IDrawable.EMPTY)
+            deviceRows[i] = new ThemedButton<>().background(IDrawable.EMPTY)
                 .hoverBackground(IDrawable.EMPTY)
                 .onMousePressed(mouse -> {
                     var row = row(index);
@@ -350,8 +350,8 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         ySize = layout.height() - (details ? ROW_TOP - 60 : 0);
         visibleRows = layout.rows();
         size(xSize, ySize);
-        scrollbar.pos(xSize - 10 - scrollWidth, rowTop() - 2)
-            .size(scrollWidth, visibleRows * ROW_HEIGHT + 2);
+        scrollbar.pos(xSize - 10 - scrollWidth, rowTop() - 3)
+            .size(scrollWidth, visibleRows * ROW_HEIGHT + 4);
         // NEI keeps two shortcut buttons in the lower-left corner at large GUI scales.
         footerLeft = height - ySize < 40 ? Math.max(10, 46 - (width - xSize) / 2) : 10;
         back.pos(footerLeft, ySize - 27)
@@ -824,12 +824,12 @@ public final class WirelessPowerCardPanel extends ModularPanel {
 
     private ButtonWidget<?> button(Supplier<String> label, int action, Supplier<String> target,
         BooleanSupplier available) {
-        ThemedButton button = actionButton(() -> session.request(action, target.get()), available);
+        ThemedButton<?> button = actionButton(() -> session.request(action, target.get()), available);
         return button.label(label, available);
     }
 
-    private ThemedButton iconButton(Icon icon, Supplier<String> label, Runnable action, BooleanSupplier available) {
-        ThemedButton button = actionButton(action, available);
+    private ThemedButton<?> iconButton(Icon icon, Supplier<String> label, Runnable action, BooleanSupplier available) {
+        ThemedButton<?> button = actionButton(action, available);
         button.background(IDrawable.EMPTY)
             .hoverBackground(IDrawable.EMPTY)
             .overlay(
@@ -840,8 +840,8 @@ public final class WirelessPowerCardPanel extends ModularPanel {
         return button;
     }
 
-    private ThemedButton actionButton(Runnable action, BooleanSupplier available) {
-        ThemedButton button = new ThemedButton().onMousePressed(mouse -> {
+    private ThemedButton<?> actionButton(Runnable action, BooleanSupplier available) {
+        ThemedButton<?> button = new ThemedButton<>().onMousePressed(mouse -> {
             if (mouse == 0 && available.getAsBoolean()) action.run();
             return true;
         });

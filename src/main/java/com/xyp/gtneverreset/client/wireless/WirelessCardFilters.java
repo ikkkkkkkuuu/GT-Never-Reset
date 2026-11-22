@@ -75,7 +75,7 @@ final class WirelessCardFilters {
 
     static <T> CycleDropdown<T> choice(String name, Class<T> type, Supplier<String> label, Function<T, String> option,
         AE2Theme.Variant variant) {
-        CycleDropdown<T> choice = new CycleDropdown<>(name, type);
+        CycleDropdown<T> choice = new CycleDropdown<>(name, type).wheel(true);
         IDrawable background = AE2Theme.button(choice, () -> true, () -> false);
         return choice.optionToWidget(
             (value, selected) -> selected ? IDrawable.EMPTY.asWidget()

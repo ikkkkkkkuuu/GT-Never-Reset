@@ -982,7 +982,7 @@ public class WirelessCardGui extends WirelessCardPanel {
                     .overlay(false, look)
                     .overlay(true, look);
             } else {
-                widget = new ThemedButton().onMousePressed(button -> {
+                widget = new ThemedButton<>().onMousePressed(button -> {
                     if (button != 0 || !available) return false;
                     if (type(id) == MANAGE_DEVICES)
                         panel.action((GuiScreen.isShiftKeyDown() ? OPEN_ENTRANCES : OPEN_DETAILS) + rowIndex(id));

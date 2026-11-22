@@ -17,14 +17,22 @@ import com.cleanroommc.modularui.utils.Platform;
 import com.cleanroommc.modularui.widget.Widget;
 import com.google.gson.JsonObject;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
+import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
 
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
-@SideOnly(Side.CLIENT)
+/**
+ * AE2's text button background in one state of one skin, drawn row by row from the skin's 200-by-20 button textures: an
+ * outline, a face and a shadow under it. A hovered or disabled button sinks: its shadow gets thinner and the face moves
+ * down by the same amount. At AE2's 20 pixels of height it matches AE2 row for row; other heights stretch the face and
+ * follow the shadow rule of {@link #shadow(State, int)}.
+ * <p>
+ * The AE2 themes use it as MUI2's button background and save it to theme JSON under {@link #TYPE}. Code that draws a
+ * button in the look of its panel calls {@link AE2Look#drawButton} instead.
+ */
 public class AE2ButtonDrawable implements IDrawable, IJsonSerializable {
 
+    /** Drawable type name in theme JSON; saved themes refer to it, so it must not change. */
     public static final String TYPE = "gtnrlib:ae2_button";
     private static final String STATE = "state", SKIN = "skin";
     private static final int TEXTURE_WIDTH = 200, TEXTURE_HEIGHT = 20, EDGE = 2, FRAME_ROWS = 4, TEXT_ROOM = 13,
@@ -35,21 +43,44 @@ public class AE2ButtonDrawable implements IDrawable, IJsonSerializable {
         DrawableSerialization.registerDrawableType(
             TYPE,
             AE2ButtonDrawable.class,
-            json -> new AE2ButtonDrawable(State.NORMAL, AE2Theme.Variant.LIGHT.folder));
+            json -> new AE2ButtonDrawable(State.NORMAL, Variant.LIGHT.folder));
     }
 
     private State state;
     private String skin;
 
+    /**
+     * Creates the button background of one state.
+     *
+     * @param state visual state the drawable always shows
+     * @param skin  skin folder name, such as {@code ae2_dark} ({@link Variant#folder})
+     */
     public AE2ButtonDrawable(State state, String skin) {
         this.state = state;
         this.skin = skin;
     }
 
+    /**
+     * Returns the height of the shadow under the button's face. A normal button's shadow is {@code height - 13} pixels,
+     * kept between 1 and 3: 3 from 16 pixels of height up, 2 at 15, 1 at 14 and below. A hovered button's is one pixel
+     * thinner and a disabled button's two, never below zero.
+     *
+     * @param state  visual button state
+     * @param height button height in pixels
+     * @return shadow height in pixels
+     */
     public static int shadow(State state, int height) {
         return Math.max(0, baseShadow(height) - state.sink);
     }
 
+    /**
+     * Returns where a one-line label starts so that it is centred on the button's face, which sinks by the pixels its
+     * shadow lost.
+     *
+     * @param state  visual button state
+     * @param height button height in pixels
+     * @return offset of the label's top from the button's top, in pixels
+     */
     public static int textY(State state, int height) {
         int shadow = shadow(state, height);
         int top = baseShadow(height) - shadow + FACE_TOP, face = height - FACE_BOTTOM - shadow - top + 1;
@@ -60,6 +91,17 @@ public class AE2ButtonDrawable implements IDrawable, IJsonSerializable {
         return Math.max(MIN_SHADOW, Math.min(MAX_SHADOW, height - TEXT_ROOM));
     }
 
+    /**
+     * Draws an AE2 button background. The two-pixel left and right edges keep their width and the middle stretches.
+     * Client only.
+     *
+     * @param skin   skin folder name, such as {@code ae2_dark}
+     * @param state  visual button state
+     * @param x      left edge
+     * @param y      top edge
+     * @param width  button width in pixels
+     * @param height button height in pixels
+     */
     public static void draw(String skin, State state, int x, int y, int width, int height) {
         if (width <= 0 || height <= 0) return;
         int shadow = shadow(state, height), sunk = baseShadow(height) - shadow;
@@ -125,13 +167,19 @@ public class AE2ButtonDrawable implements IDrawable, IJsonSerializable {
         return state.hashCode() * 31 + skin.hashCode();
     }
 
+    /** The visual states of a button, in every look. */
     public enum State {
 
+        /** A button that can be used and is not under the mouse. */
         NORMAL("normal", "button", 0, 0, 1, 2, 15, 16, 19),
+        /** A button under the mouse, or a selected one; AE2 draws both with its highlighted button. */
         HOVER("hover", "button_highlighted", 1, 1, 2, 3, 16, 17, 19),
+        /** A button that cannot be used. */
         DISABLED("disabled", "button_disabled", 2, 2, 3, 4, 17, 18, 19);
 
+        /** Name of the state in theme JSON, and the texture filename of the state without {@code .png}. */
         public final String name, file;
+        /** Pixels the shadow loses and the face sinks in this state. */
         public final int sink;
         private final int frame, light, fill, low, dark, outline;
 
@@ -147,11 +195,26 @@ public class AE2ButtonDrawable implements IDrawable, IJsonSerializable {
             this.outline = outline;
         }
 
+        /**
+         * Picks the state of a button from its widget.
+         *
+         * @param widget    widget supplying the hover state
+         * @param available whether the button can be used
+         * @param selected  whether the button is selected
+         * @return {@code DISABLED} when unavailable, else {@code HOVER} when selected or under the mouse, else
+         *         {@code NORMAL}
+         */
         public static State of(Widget<?> widget, boolean available, boolean selected) {
             if (!available) return DISABLED;
             return selected || widget.isHovering() ? HOVER : NORMAL;
         }
 
+        /**
+         * Finds a state by its theme JSON name.
+         *
+         * @param name state name, such as {@code hover}
+         * @return the matching state, or {@code NORMAL} for an unknown name
+         */
         public static State byName(String name) {
             for (State state : values()) if (state.name.equals(name)) return state;
             return NORMAL;

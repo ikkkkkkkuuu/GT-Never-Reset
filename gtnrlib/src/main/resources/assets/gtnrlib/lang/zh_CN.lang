@@ -1,3 +1,16 @@
+gtnrlib.widget_gallery.theme.light=AE2 浅色
+gtnrlib.widget_gallery.theme.dark=AE2 深色
+gtnrlib.widget_gallery.theme.purple=AE2 紫色
+gtnrlib.widget_gallery.theme.plain=默认
+gtnrlib.widget_gallery.dialog=弹窗
+gtnrlib.widget_gallery.available=可用
+gtnrlib.widget_gallery.hide=隐藏部分控件
+gtnrlib.widget_gallery.page.buttons=按钮
+gtnrlib.widget_gallery.page.inputs=输入
+gtnrlib.widget_gallery.page.lists=列表
+gtnrlib.widget_gallery.option=选项 %s
+gtnrlib.widget_gallery.hidden=可隐藏的按钮
+gtnrlib.widget_gallery.dialog.title=另一个主题
 gtnrlib.gui.color.title=选择颜色
 gtnrlib.gui.color.inherit=继承
 gtnrlib.gui.color.inherit.tip=清除此颜色，继承配置方案或模组默认颜色

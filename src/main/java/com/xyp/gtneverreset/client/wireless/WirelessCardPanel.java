@@ -49,6 +49,7 @@ import com.xyp.gtneverreset.common.gui.container.WirelessCardContainer;
 import com.xyp.gtneverreset.common.wireless.WirelessCardText;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
+import com.xyp.gtnrlib.gui.widget.RowScrollbar;
 
 import appeng.core.localization.ColorUtils;
 import cpw.mods.fml.relauncher.Side;
@@ -64,10 +65,9 @@ abstract class WirelessCardPanel extends ModularPanel {
     final String themeId = ScreenThemeConfig.wirelessCard.themeId;
     final AE2Theme.Variant variant = AE2Theme.variant(themeId);
     private final int scrollWidth = AE2Theme.scrollbarWidth(variant);
-    private final WirelessCardScrollbar scrollbar = new WirelessCardScrollbar(
-        variant,
-        this::view,
-        this::layoutReady,
+    private final RowScrollbar scrollbar = new RowScrollbar(
+        () -> view().getInteger("scroll"),
+        () -> layoutReady() ? view().getInteger("maxScroll") : 0,
         this::scrollTo);
     private boolean highlighted;
     public final Minecraft mc = Minecraft.getMinecraft();
@@ -139,8 +139,8 @@ abstract class WirelessCardPanel extends ModularPanel {
         visibleRows = layout.rows();
         resizePanel(layout);
         size(xSize, ySize);
-        scrollbar.pos(xSize - 10 - scrollWidth, rowTop() - 2)
-            .size(scrollWidth, visibleRows * ROW_HEIGHT + 2);
+        scrollbar.pos(xSize - 10 - scrollWidth, rowTop() - 3)
+            .size(scrollWidth, visibleRows * ROW_HEIGHT + 4);
         int rowWidth = xSize - scrollWidth - 7;
         for (var control : buttons) {
             int id = control.id;

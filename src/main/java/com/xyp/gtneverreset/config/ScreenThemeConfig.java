@@ -56,4 +56,15 @@ public class ScreenThemeConfig {
     @Config.LangKey("gtneverreset.gui.config.general.screen_theme.universalWand")
     public static ScreenTheme universalWand = ScreenTheme.AE2_LIGHT;
 
+    @Config.Comment("Theme of the multiblock projector screen. DEFAULT: the ModularUI 2 default theme; AE2_LIGHT: the light AE2 1.21 theme; AE2_DARK: the dark AE2 1.21 theme; AE2_DARK_PURPLE: the dark AE2 1.21 theme with purple highlights")
+    // #tr gtneverreset.gui.config.screen_theme.projector
+    // # Multiblock Projector Theme
+    // # zh_CN 多方块投影仪主题
+    // #tr gtneverreset.gui.config.screen_theme.projector.tooltip
+    // # Select the default ModularUI theme or a light, dark or purple AE2 theme.
+    // # zh_CN 选择 ModularUI 默认主题，或 AE2 的亮色、暗色、紫色高亮主题。
+    @Config.LangKey("gtneverreset.gui.config.screen_theme.projector")
+    @Config.DefaultEnum("AE2_DARK")
+    public static ScreenTheme projector = ScreenTheme.AE2_DARK;
+
 }
