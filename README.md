@@ -1,5 +1,9 @@
 # GT-Never-Reset
 
+bug反馈群：1134941262
+
+
+
 面向 Minecraft 1.7.10 / Forge 的 GT New Horizons 附属模组。
 
 ## 📥 下载与兼容性
