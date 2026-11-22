@@ -105,7 +105,7 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
     }
 
     public int hovered() {
-        return structure instanceof ProjectorBatchPreview array && hovered >= 0 ? array.originals[hovered] : hovered;
+        return hovered;
     }
 
     public int layer() {
@@ -437,7 +437,6 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         tessellator.startDrawing(GL11.GL_LINES);
         int selected = selection.getAsInt();
-        if (structure instanceof ProjectorBatchPreview array) selected = array.atOrigin(selected);
         if (selected >= 0 && selected < structure.size) box(tessellator, selected, SELECTED, 0.02);
         if (hovered >= 0) box(tessellator, hovered, HOVERED, 0.0);
         tessellator.draw();
@@ -461,6 +460,7 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
         markerInputs = inputs;
         LongOpenHashSet slotCells = new LongOpenHashSet(), changedCells = new LongOpenHashSet();
         if (shown) {
+            if (structure instanceof ProjectorBatchPreview) markPositions(plan.batchOverrides.keySet(), changedCells);
             markChanged(plan.overrides.keySet(), changedCells);
             markChanged(plan.cellChoices.keySet(), changedCells);
             for (int cell = 0; !plan.choices.isEmpty() && cell < structure.size; cell++) {
@@ -492,6 +492,10 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
             }
             return;
         }
+        markPositions(keys, changedCells);
+    }
+
+    private void markPositions(Iterable<Long> keys, LongOpenHashSet changedCells) {
         for (long key : keys) {
             int cell = structure
                 .indexOf(ProjectorPlan.unpackA(key), ProjectorPlan.unpackB(key), ProjectorPlan.unpackC(key));

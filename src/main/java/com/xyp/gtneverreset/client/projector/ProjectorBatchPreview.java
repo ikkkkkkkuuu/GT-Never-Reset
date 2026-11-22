@@ -1,7 +1,8 @@
 package com.xyp.gtneverreset.client.projector;
 
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
@@ -9,8 +10,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.gtnewhorizon.gtnhlib.util.map.ItemStackMap;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.common.projector.ProjectorBatch;
+import com.xyp.gtneverreset.common.projector.ProjectorBatchHatches;
+import com.xyp.gtneverreset.common.projector.ProjectorBatchHatches.Sample;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.common.projector.ProjectorSimulationWorld;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
@@ -26,6 +30,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 final class ProjectorBatchPreview extends ProjectorStructure {
 
     final ProjectorStructure template;
+    private final ProjectorBatchHatches edits;
     final boolean outlineOnly;
     final int[] originals;
     final ExtendedFacing[] copyPoses;
@@ -35,9 +40,10 @@ final class ProjectorBatchPreview extends ProjectorStructure {
     final int blockedControllers;
 
     private ProjectorBatchPreview(ProjectorStructure template, Long2IntLinkedOpenHashMap cells, long[] empty,
-        int[] bounds, ExtendedFacing baseFacing, boolean compatible, boolean limited) {
+        int[] bounds, ExtendedFacing baseFacing, boolean compatible, boolean limited, ProjectorBatchHatches edits) {
         super(template, cells.size(), empty, bounds, new PreviewWorld());
         this.template = template;
+        this.edits = edits;
         this.baseFacing = baseFacing;
         this.compatible = compatible;
         this.limited = limited;
@@ -45,7 +51,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
         ((PreviewWorld) world).array = this;
         outlineOnly = cells.isEmpty();
         originals = new int[size];
-        var totals = new IdentityHashMap<ItemStack, Integer>();
+        Map<ItemStack, Integer> totals = new ItemStackMap<>(true);
         int i = 0;
         for (var it = Long2IntMaps.fastIterator(cells); it.hasNext(); i++) {
             var entry = it.next();
@@ -53,18 +59,20 @@ final class ProjectorBatchPreview extends ProjectorStructure {
             int src = entry.getIntValue() % template.size;
             copyPoses[i] = ExtendedFacing.byIndex(entry.getIntValue() / template.size);
             originals[i] = src;
-            if (template.items[src] != null) totals.merge(template.items[src], 1, Integer::sum);
+            Sample edit = edits == null ? null : edits.get(pos);
+            ItemStack item = edit == null ? template.items[src] : edit.item();
+            if (item != null) totals.merge(item, 1, Integer::sum);
             set(
                 i,
                 ProjectorPlan.unpackA(pos),
                 ProjectorPlan.unpackB(pos),
                 ProjectorPlan.unpackC(pos),
-                template.blocks[src],
-                template.metas[src],
-                template.machines[src],
+                edit == null ? template.blocks[src] : edit.block(),
+                edit == null ? template.metas[src] : edit.meta(),
+                edit == null ? template.machines[src] : edit.machine(),
                 template.slots[src],
                 template.choiceOf[src],
-                template.items[src]);
+                item);
         }
         int hidden = 0;
         int[] axis = new int[3];
@@ -79,9 +87,14 @@ final class ProjectorBatchPreview extends ProjectorStructure {
         blockedControllers = hidden;
         materials = new ArrayList<>();
         for (Material entry : template.materials) {
-            Integer count = totals.get(entry.stack());
+            Integer count = totals.remove(entry.stack());
             if (count != null) materials.add(new Material(entry.stack(), count));
         }
+        totals.forEach((stack, count) -> materials.add(new Material(stack, count)));
+    }
+
+    Sample editAt(int i) {
+        return edits == null ? null : edits.get(ProjectorPlan.pack(a[i], b[i], c[i]));
     }
 
     @Override
@@ -109,7 +122,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
         public Block getBlock(int x, int y, int z) {
             int cell = cellAt(x, y, z);
             int src = cell < 0 ? -1 : array.originals[cell];
-            return src < 0 ? Blocks.air : array.template.blocks[src];
+            return src < 0 ? Blocks.air : array.blocks[cell];
         }
 
         @Override
@@ -117,6 +130,8 @@ final class ProjectorBatchPreview extends ProjectorStructure {
             int cell = cellAt(x, y, z);
             int src = cell < 0 ? -1 : array.originals[cell];
             if (src < 0) return 0;
+            Sample edit = array.editAt(cell);
+            if (edit != null) return edit.meta();
             int[][] pos = array.template.simulationPositions();
             return array.template.world.getBlockMetadata(pos[0][src], pos[1][src], pos[2][src]);
         }
@@ -126,6 +141,8 @@ final class ProjectorBatchPreview extends ProjectorStructure {
             int cell = cellAt(x, y, z);
             int src = cell < 0 ? -1 : array.originals[cell];
             if (src < 0) return null;
+            Sample edit = array.editAt(cell);
+            if (edit != null) return edit.tile();
             int[][] pos = array.template.simulationPositions();
             int sx = pos[0][src], sy = pos[1][src], sz = pos[2][src];
             return array.template.world.getTileEntity(sx, sy, sz);
@@ -162,6 +179,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
         private ProjectorStructure template;
         private ExtendedFacing facing;
         private long arrangement;
+        private final Map<Long, Integer> overrides = new TreeMap<>();
         private ProjectorBatchPreview result;
 
         void clear() {
@@ -175,7 +193,11 @@ final class ProjectorBatchPreview extends ProjectorStructure {
                 return shape;
             }
             long nextKey = plan.batch.arrangementKey();
-            if (shape != template || nextFacing != facing || nextKey != arrangement) {
+            if (shape != template || nextFacing != facing
+                || nextKey != arrangement
+                || !overrides.equals(plan.batchOverrides)) {
+                overrides.clear();
+                overrides.putAll(plan.batchOverrides);
                 result = expand(shape, plan, nextFacing);
                 template = shape;
                 facing = nextFacing;
@@ -200,11 +222,12 @@ final class ProjectorBatchPreview extends ProjectorStructure {
         }
         var cells = new Long2IntLinkedOpenHashMap();
         if ((long) copies * (shape.size + shape.emptyCells.length) > FxBlockMesh.MAX_BLOCKS)
-            return new ProjectorBatchPreview(shape, cells, new long[0], bounds, facing, true, false);
+            return new ProjectorBatchPreview(shape, cells, new long[0], bounds, facing, true, false, null);
         cells.defaultReturnValue(-1);
         var empty = new LongOpenHashSet();
         int[] abc = new int[3];
         boolean compatible = layout.solve();
+        var edits = plan.batchOverrides.isEmpty() ? null : new ProjectorBatchHatches(shape, plan);
         int[] source = new int[3];
         for (int copy = 0; copy < copies; copy++) {
             var at = layout.placement(copy);
@@ -226,6 +249,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
                 world[2] += at.z();
                 facing.getOffsetABC(world, abc);
                 long key = ProjectorPlan.pack(abc[0], abc[1], abc[2]);
+                if (edits != null) edits.sample(key, i);
                 if (i >= shape.size) {
                     empty.add(key);
                     continue;
@@ -244,7 +268,8 @@ final class ProjectorBatchPreview extends ProjectorStructure {
             empty.toLongArray(),
             bounds,
             facing,
-            compatible,
-            layout.searchLimited());
+            compatible && (edits == null || !edits.incompatible),
+            layout.searchLimited(),
+            edits);
     }
 }

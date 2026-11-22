@@ -57,6 +57,7 @@ public class ProjectorClient {
     public static ProjectorStructure structure;
     static ProjectorStructure projection;
     static ExtendedFacing focusPose;
+    static boolean focusInArray;
     static final int[] focusOffset = new int[3];
     private static final ProjectorBatchPreview.Cache arrayCache = new ProjectorBatchPreview.Cache();
     public static ExtendedFacing facing = ExtendedFacing.DEFAULT;

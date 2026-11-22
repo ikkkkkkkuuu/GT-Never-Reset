@@ -107,6 +107,9 @@ public final class ProjectorBuilder {
         private final int copies;
         private ProjectorBatch.Layout.Placement placement;
         private ProjectorBatch.Layout layout;
+        private ProjectorBatchHatches batchHatches;
+        private ProjectorBatchHatches.Sample edit;
+        private final int[] batchPosition = new int[3];
         private int copy, cell, x, y, z, placed;
         private boolean writing;
 
@@ -178,6 +181,7 @@ public final class ProjectorBuilder {
                     return incompatible();
                 }
                 placement = layout.placement(0);
+                if (!plan.batchOverrides.isEmpty()) batchHatches = new ProjectorBatchHatches(shape, plan);
                 return false;
             }
             for (int n = 0; n < CELLS_PER_TICK && System.nanoTime() < deadline; n++) {
@@ -199,6 +203,15 @@ public final class ProjectorBuilder {
                     if (layout != null) placement = layout.placement(copy);
                 }
                 position();
+                if (batchHatches != null) {
+                    offset[0] = x - plan.x;
+                    offset[1] = y - plan.y;
+                    offset[2] = z - plan.z;
+                    plan.facing.getOffsetABC(offset, batchPosition);
+                    edit = batchHatches
+                        .sample(ProjectorPlan.pack(batchPosition[0], batchPosition[1], batchPosition[2]), cell);
+                    if (batchHatches.incompatible) return incompatible();
+                }
                 if (!visit()) return stopped();
                 cell++;
             }
@@ -260,12 +273,12 @@ public final class ProjectorBuilder {
                     .chunkExists(x >> 4, z >> 4))
                 return false;
             Block actual = world.getBlock(x, y, z);
-            if (cell >= shape.size || shape.blocks[cell] == Blocks.air)
+            if (cell >= shape.size || (edit == null ? shape.blocks[cell] : edit.block()) == Blocks.air)
                 return actual == residualHeat || world.isAirBlock(x, y, z);
             shape.simulationPosition(local[0], local[1], local[2], simPos);
-            Block expected = shape.blocks[cell];
-            int meta = shape.world.getBlockMetadata(simPos[0], simPos[1], simPos[2]);
-            int machine = shape.machines[cell];
+            Block expected = edit == null ? shape.blocks[cell] : edit.block();
+            int meta = edit == null ? shape.world.getBlockMetadata(simPos[0], simPos[1], simPos[2]) : edit.meta();
+            int machine = edit == null ? shape.machines[cell] : edit.machine();
             if (actual == expected && world.getBlockMetadata(x, y, z) == meta) {
                 if (machine == 0) return true;
                 if (world.getTileEntity(x, y, z) instanceof IGregTechTileEntity tile
@@ -281,7 +294,7 @@ public final class ProjectorBuilder {
                 || !(actual.isAir(world, x, y, z) || actual.isReplaceable(world, x, y, z)))) return false;
             if (!world.canMineBlock(player, x, y, z) || world.func_73046_m()
                 .isBlockProtected(world, x, y, z, player) || !player.canPlayerEdit(x, y, z, 1, projector)) return false;
-            ItemStack item = shape.items[cell];
+            ItemStack item = edit == null ? shape.items[cell] : edit.item();
             if (materials != null && (item == null || !(item.getItem() instanceof ItemBlock)
                 || Block.getBlockFromItem(item.getItem()) != expected)) {
                 // #tr gtneverreset.projector.build.no_item
@@ -333,7 +346,7 @@ public final class ProjectorBuilder {
                 if (!accepted) restore(changes);
             }
             if (!accepted) return false;
-            if (materials != null) materials.placed(x, y, z, shape.items[cell]);
+            if (materials != null) materials.placed(x, y, z, edit == null ? shape.items[cell] : edit.item());
             placed++;
             if (!expected.hasTileEntity(meta)) expected.onBlockAdded(world, x, y, z);
             world.markAndNotifyBlock(x, y, z, null, changes.get(0).replacedBlock, expected, 3);
@@ -341,7 +354,7 @@ public final class ProjectorBuilder {
         }
 
         private boolean putBlock(Block expected, int meta, int machine) {
-            ItemStack item = shape.items[cell];
+            ItemStack item = edit == null ? shape.items[cell] : edit.item();
             if (item != null && item.getItem() instanceof ItemBlock blockItem
                 && Block.getBlockFromItem(blockItem) == expected) {
                 if (!blockItem.placeBlockAt(
@@ -369,7 +382,8 @@ public final class ProjectorBuilder {
                 if (gt.getMetaTileEntity() instanceof IAlignment aligned) aligned.setExtendedFacing(copyFacing());
                 return true;
             }
-            if (shape.world.getTileEntity(simPos[0], simPos[1], simPos[2]) instanceof IGregTechTileEntity source) {
+            if ((edit == null ? shape.world.getTileEntity(simPos[0], simPos[1], simPos[2])
+                : edit.tile()) instanceof IGregTechTileEntity source) {
                 ForgeDirection front = source.getFrontFacing();
                 if (front != ForgeDirection.UNKNOWN)
                     gt.setFrontFacing(ProjectorOrientation.changeBasis(front, shape.canonical, copyFacing()));

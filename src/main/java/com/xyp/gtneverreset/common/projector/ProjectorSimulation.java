@@ -290,7 +290,7 @@ public class ProjectorSimulation {
             itemBlock.getMetadata(stack.getItemDamage()));
     }
 
-    private ForgeDirection outward(int x, int y, int z) {
+    ForgeDirection outward(int x, int y, int z) {
         ForgeDirection vertical = ForgeDirection.UNKNOWN;
         for (ForgeDirection direction : ForgeDirection.VALID_DIRECTIONS) {
             int nx = x + direction.offsetX, ny = y + direction.offsetY, nz = z + direction.offsetZ;

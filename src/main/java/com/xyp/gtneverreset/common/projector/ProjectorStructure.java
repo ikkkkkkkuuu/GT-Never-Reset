@@ -88,6 +88,7 @@ public class ProjectorStructure {
     public final int[] metas;
     public final int[] machines;
     public final int[] slots;
+    public final byte[] hatchFront;
     public final int[] choiceOf;
     public final ItemStack[] items;
     public final List<HatchSlot> hatchSlots;
@@ -158,6 +159,7 @@ public class ProjectorStructure {
         metas = new int[size];
         machines = new int[size];
         slots = new int[size];
+        hatchFront = new byte[size];
         choiceOf = new int[size];
         items = new ItemStack[size];
         this.settings = settings;

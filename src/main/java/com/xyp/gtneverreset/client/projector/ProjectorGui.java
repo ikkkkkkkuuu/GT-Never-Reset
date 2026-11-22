@@ -163,7 +163,7 @@ public class ProjectorGui extends ModularPanel {
             .markers(() -> ClientConfig.projectorHatchOutlines, working)
             .facing(() -> working.hasMachine() ? working.facing : null);
         if (working.machine == lastLayerMachine) preview.restoreLayer(lastLayer);
-        hatches = new ProjectorHatchPage(this::structure, working, this::selectedCell, this::select);
+        hatches = new ProjectorHatchPage(this::previewStructure, working, this::selectedCell, this::select);
         child(
             column().pos(BODY_LEFT + PAD, TOP)
                 .size(CONTENT_WIDTH, CONTENT_HEIGHT)
@@ -819,12 +819,12 @@ public class ProjectorGui extends ModularPanel {
     }
 
     private int selectedCell() {
-        ProjectorStructure structure = structure();
+        ProjectorStructure structure = previewStructure();
         return structure == null || !hasSelection ? -1 : structure.indexOf(selectedA, selectedB, selectedC);
     }
 
     private void select(int cell) {
-        ProjectorStructure structure = structure();
+        ProjectorStructure structure = previewStructure();
         if (structure == null || cell < 0) return;
         hasSelection = true;
         selectedA = structure.a[cell];
@@ -940,7 +940,7 @@ public class ProjectorGui extends ModularPanel {
     }
 
     private String hoverLine() {
-        ProjectorStructure structure = structure();
+        ProjectorStructure structure = previewStructure();
         int cell = preview.hovered();
         if (structure == null || cell < 0 || cell >= structure.size) return "";
         return structure.items[cell] == null ? structure.blocks[cell].getLocalizedName()

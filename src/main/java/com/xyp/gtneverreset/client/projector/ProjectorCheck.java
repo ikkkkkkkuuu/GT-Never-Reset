@@ -237,6 +237,11 @@ public class ProjectorCheck {
 
     private boolean matches(int cell, Block block, int meta, int x, int y, int z) {
         int expected = structure.machines[cell];
+        if (structure instanceof ProjectorBatchPreview array && array.editAt(cell) != null) {
+            return block == structure.blocks[cell] && meta == structure.metas[cell]
+                && (expected == 0 || world.getTileEntity(x, y, z) instanceof IGregTechTileEntity tile
+                    && tile.getMetaTileID() == expected);
+        }
         if (expected <= 0 && block == structure.blocks[cell]
             && (meta == structure.metas[cell] || structure.metas[cell] == ProjectorStructure.ANY_META)) return true;
         Choice choice = structure.choiceAt(cell);

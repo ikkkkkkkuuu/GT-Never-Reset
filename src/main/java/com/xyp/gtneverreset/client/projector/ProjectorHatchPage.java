@@ -124,11 +124,14 @@ public class ProjectorHatchPage {
     }
 
     public boolean sameKind() {
-        return ClientConfig.projectorSameKind;
+        return structure.get() instanceof ProjectorBatchPreview ? ClientConfig.projectorBatchSameKind
+            : ClientConfig.projectorSameKind;
     }
 
     public void toggleSameKind() {
-        ClientConfig.projectorSameKind = !ClientConfig.projectorSameKind;
+        if (structure.get() instanceof ProjectorBatchPreview)
+            ClientConfig.projectorBatchSameKind = !ClientConfig.projectorBatchSameKind;
+        else ClientConfig.projectorSameKind = !ClientConfig.projectorSameKind;
         configChanged = true;
     }
 
@@ -312,7 +315,7 @@ public class ProjectorHatchPage {
             HatchSlot slot = slot();
             return slot == null || slot.casing() == null ? null : ProjectorPlan.blockKey(slot.casing());
         }
-        String own = working.cellChoices.get(key(current, selected.getAsInt()));
+        String own = working.cellChoices.get(templateKey(current, selected.getAsInt()));
         return own != null ? own : working.chosenBlock(choice);
     }
 
@@ -339,14 +342,14 @@ public class ProjectorHatchPage {
         int cell = selected.getAsInt();
         if (current == null || choice == null) return;
         if (!ClientConfig.projectorSameCasing) {
-            if (blockKey.equals(working.chosenBlock(choice))) working.cellChoices.remove(key(current, cell));
-            else working.cellChoices.put(key(current, cell), blockKey);
+            if (blockKey.equals(working.chosenBlock(choice))) working.cellChoices.remove(templateKey(current, cell));
+            else working.cellChoices.put(templateKey(current, cell), blockKey);
             return;
         }
         working.chooseBlock(choice, blockKey);
         int group = current.choiceOf[cell];
         for (int other = 0; other < current.size; other++) {
-            if (current.choiceOf[other] == group) working.cellChoices.remove(key(current, other));
+            if (current.choiceOf[other] == group) working.cellChoices.remove(templateKey(current, other));
         }
     }
 
@@ -546,7 +549,7 @@ public class ProjectorHatchPage {
         int cell = selected.getAsInt();
         List<Integer> chosen = new ArrayList<>();
         for (int spot : spots(current)) {
-            if (working.overrides.containsKey(key(current, spot))) chosen.add(spot);
+            if (overrides(current).containsKey(key(current, spot))) chosen.add(spot);
         }
         // #tr gtneverreset.projector.gui.chosen_slots
         // # Chosen hatches · %s
@@ -557,7 +560,7 @@ public class ProjectorHatchPage {
             String name = item == null ? current.blocks[spot].getLocalizedName() : item.getDisplayName();
             rows.add(
                 Row.item(item, name, place(current, spot, "slot_place_short"), spot == cell, () -> select.accept(spot))
-                    .onRightClick(() -> working.overrides.remove(key(current, spot))));
+                    .onRightClick(() -> overrides(current).remove(key(current, spot))));
         }
         return rows;
     }
@@ -572,7 +575,7 @@ public class ProjectorHatchPage {
         int cell = selected.getAsInt();
         if (current == null || current.slotAt(cell) == null) return -1;
         // The shown structure lags behind a choice until the new simulation finishes.
-        Integer chosen = working.overrides.get(key(current, cell));
+        Integer chosen = overrides(current).get(key(current, cell));
         return chosen != null ? chosen : current.machines[cell];
     }
 
@@ -605,7 +608,7 @@ public class ProjectorHatchPage {
     private void setModel(ProjectorStructure current, int cell, int id) {
         put(current, cell, id);
         REMEMBERED.put(kindKey(id), id);
-        if (!ClientConfig.projectorSameKind) return;
+        if (!sameKind()) return;
         Object kind = kindKey(id);
         for (int spot : spots(current)) {
             int held = current.machines[spot];
@@ -615,7 +618,18 @@ public class ProjectorHatchPage {
     }
 
     private void put(ProjectorStructure current, int cell, int id) {
-        working.overrides.put(key(current, cell), id == 0 ? ProjectorPlan.CASING : id);
+        var changes = overrides(current);
+        long pos = key(current, cell);
+        if (changes.containsKey(pos) || changes.size() < ProjectorPlan.MAX_OVERRIDES) changes.put(pos, id);
+    }
+
+    private Map<Long, Integer> overrides(ProjectorStructure current) {
+        return current instanceof ProjectorBatchPreview ? working.batchOverrides : working.overrides;
+    }
+
+    private static long templateKey(ProjectorStructure current, int cell) {
+        if (current instanceof ProjectorBatchPreview array) return key(array.template, array.originals[cell]);
+        return key(current, cell);
     }
 
     private static boolean accepts(HatchSlot slot, int id) {
