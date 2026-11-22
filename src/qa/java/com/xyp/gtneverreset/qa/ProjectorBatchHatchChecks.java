@@ -21,7 +21,10 @@ import com.cleanroommc.modularui.screen.ModularScreen;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.client.projector.ProjectorClient;
 import com.xyp.gtneverreset.client.projector.ProjectorGui;
+import com.xyp.gtneverreset.common.item.items.WirelessPowerCard;
 import com.xyp.gtneverreset.common.projector.*;
+import com.xyp.gtneverreset.common.wireless.IWirelessPowerReceiver;
+import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
@@ -29,9 +32,9 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.registry.GameRegistry;
-import gregtech.api.enums.HatchElement;
 import gregtech.api.enums.ItemList;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
+import gregtech.common.misc.WirelessNetworkManager;
 
 @Mod(
     modid = "gtnrprojectorbatchhatchqa",
@@ -40,6 +43,9 @@ import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
     dependencies = "after:gtneverreset")
 public class ProjectorBatchHatchChecks {
 
+    private static final long POWER_BUDGET = 4_000_000L;
+    private int chargeTicks;
+    private int[] singleHatch;
     private volatile boolean done;
     private volatile ProjectorStructure confirmed;
     private boolean launched, seeded, opened, requested;
@@ -66,7 +72,7 @@ public class ProjectorBatchHatchChecks {
                 var plan = new ProjectorPlan();
                 plan.selectMachine(ProjectorMachines.idOf(ItemList.Machine_Multi_BlastFurnace.get(1)));
                 plan.state = ProjectorPlan.State.LOCKED;
-                plan.x = (int) p.posX + 8;
+                plan.x = (int) p.posX + 24;
                 plan.y = 12;
                 plan.z = (int) p.posZ + 3;
                 plan.facing = ExtendedFacing.of(ForgeDirection.NORTH);
@@ -81,6 +87,16 @@ public class ProjectorBatchHatchChecks {
                 p.inventoryContainer.detectAndSendChanges();
                 seeded = true;
             }
+            if (singleHatch != null) {
+                if (p.worldObj
+                    .getTileEntity(singleHatch[0], singleHatch[1], singleHatch[2]) instanceof IGregTechTileEntity tile
+                    && tile.getMetaTileID() == hatch
+                    && ((IWirelessPowerReceiver) tile).gtnr$powerConnection() != null
+                    && tile.getStoredEU() > 0) {
+                    finish(null);
+                } else require(++chargeTicks < 240, "single remote energy hatch did not receive EU");
+                return;
+            }
             var shape = confirmed;
             if (shape == null) return;
             var plan = ProjectorPlan.read(projector);
@@ -88,6 +104,10 @@ public class ProjectorBatchHatchChecks {
             require(plan.overrides.isEmpty(), "single template was changed");
             if (!requested) {
                 java.util.Arrays.fill(p.inventory.mainInventory, 1, p.inventory.mainInventory.length, null);
+                var card = GTNRItemList.WirelessPowerCard.get(1);
+                p.inventory.setInventorySlotContents(8, card);
+                var source = WirelessPowerCard.source(card, p, true);
+                WirelessNetworkManager.addEUToGlobalEnergyMap(source, POWER_BUDGET);
                 for (var m : shape.materials) {
                     var stack = m.stack()
                         .copy();
@@ -99,7 +119,7 @@ public class ProjectorBatchHatchChecks {
                 return;
             }
             int[] offset = new int[3];
-            int actual = 0;
+            int actual = 0, powered = 0;
             for (int i = 0; i < shape.size; i++) {
                 plan.facing.getWorldOffset(new int[] { shape.a[i], shape.b[i], shape.c[i] }, offset);
                 int x = plan.x + offset[0], y = plan.y + offset[1], z = plan.z + offset[2];
@@ -107,13 +127,50 @@ public class ProjectorBatchHatchChecks {
                 require(p.worldObj.getBlock(x, y, z) == shape.blocks[i], "wrong world block");
                 if (p.worldObj.getTileEntity(x, y, z) instanceof IGregTechTileEntity tile) {
                     require(tile.getMetaTileID() == shape.machines[i], "wrong world machine");
-                    if (tile.getMetaTileID() == hatch) actual++;
+                    if (tile.getMetaTileID() == hatch) {
+                        actual++;
+                        require(
+                            p.getDistanceSq(x + 0.5, y + 0.5, z + 0.5) >= 64,
+                            "remote placement test is inside GUI range");
+                        if (((IWirelessPowerReceiver) tile).gtnr$powerConnection() != null && tile.getStoredEU() > 0)
+                            powered++;
+                    }
                 }
             }
             require(actual == 2, "two physical hatches in four machines");
+            if (powered < actual) {
+                require(++chargeTicks < 60, "projected energy hatches received power: " + powered + "/" + actual);
+                return;
+            }
+            require(
+                WirelessNetworkManager.getUserEU(WirelessPowerCard.source(p.inventory.getStackInSlot(8), p, false))
+                    .longValue() < POWER_BUDGET,
+                "wireless network supplied EU");
             for (int i = 1; i < p.inventory.mainInventory.length; i++)
-                require(p.inventory.mainInventory[i] == null, "leftover materials");
-            finish(null);
+                require(i == 8 || p.inventory.mainInventory[i] == null, "leftover materials");
+            // Exercise the single-build packet's server path with a second remote controller.
+            p.theItemInWorldManager.setGameType(WorldSettings.GameType.CREATIVE);
+            plan.batchProjection = false;
+            plan.x += 16;
+            plan.batchOverrides.clear();
+            var template = ProjectorSimulation.run(plan.settings());
+            for (int i = 0; i < template.size; i++) {
+                var slot = template.slotAt(i);
+                if (slot == null || !java.util.Arrays.stream(slot.candidates())
+                    .anyMatch(id -> id == hatch)) continue;
+                var local = new int[] { template.a[i], template.b[i], template.c[i] };
+                plan.overrides.put(ProjectorPlan.pack(local[0], local[1], local[2]), hatch);
+                singleHatch = new int[3];
+                plan.facing.getWorldOffset(local, singleHatch);
+                singleHatch[0] += plan.x;
+                singleHatch[1] += plan.y;
+                singleHatch[2] += plan.z;
+                break;
+            }
+            require(singleHatch != null, "single energy hatch slot");
+            chargeTicks = 0;
+            plan.write(projector);
+            ProjectorBuilder.request(p, 0, false);
         } catch (Throwable t) {
             finish(t);
         }
@@ -167,7 +224,7 @@ public class ProjectorBatchHatchChecks {
                     if (slot == null || slot.casing() == null
                         || shape.machines[i] != 0
                         || !java.util.Arrays.stream(slot.candidates())
-                            .anyMatch(id -> ProjectorMachines.kindOf(id) == HatchElement.Maintenance))
+                            .anyMatch(id -> id == energyHatch()))
                         continue;
                     long pos = ProjectorPlan.pack(shape.a[i], shape.b[i], shape.c[i]);
                     if (template.indexOf(shape.a[i], shape.b[i], shape.c[i]) >= 0) continue;
@@ -187,7 +244,10 @@ public class ProjectorBatchHatchChecks {
             if (screen != null && screen.getMainPanel() instanceof ProjectorGui gui) {
                 if (frames == 0) {
                     require(!gui.hatches.sameKind(), "array edits must default to the selected slot");
-                    gui.hatches.chooseKind(HatchElement.Maintenance);
+                    gui.hatches.chooseKind(ProjectorEnergyHatches.Flow.INPUT);
+                    gui.hatches.chooseVariant(energyHatch());
+                    gui.hatches.chooseTier(energyHatch());
+                    require(gui.hatches.held() == energyHatch(), "ordinary MV energy hatch");
                     hatch = gui.hatches.held();
                     require(
                         hatch > 0 && gui.working.batchOverrides.get(separate) == hatch
@@ -206,7 +266,10 @@ public class ProjectorBatchHatchChecks {
                     var select = ProjectorGui.class.getDeclaredMethod("select", int.class);
                     select.setAccessible(true);
                     select.invoke(gui, index(shape, shared));
-                    gui.hatches.chooseKind(HatchElement.Maintenance);
+                    gui.hatches.chooseKind(ProjectorEnergyHatches.Flow.INPUT);
+                    gui.hatches.chooseVariant(energyHatch());
+                    gui.hatches.chooseTier(energyHatch());
+                    require(gui.hatches.held() == energyHatch(), "ordinary MV energy hatch");
                     require(gui.working.batchOverrides.get(shared) == hatch, "selecting a shared cell");
                 }
                 if (frames > 8 && count(shape, ProjectorMachines.stackOf(hatch)) == 2) {
@@ -228,6 +291,10 @@ public class ProjectorBatchHatchChecks {
         } catch (Throwable t) {
             finish(t);
         }
+    }
+
+    private static int energyHatch() {
+        return ProjectorMachines.idOf(ItemList.Hatch_Energy_MV.get(1));
     }
 
     private void checkLocations(ProjectorStructure shape) {

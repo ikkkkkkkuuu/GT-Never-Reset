@@ -109,8 +109,7 @@ public final class WirelessPowerEvents {
                     .contains(entry.card)
                 || !WirelessPowerCard.automatic(entry.card)
                 || !entry.source.equals(WirelessPowerCard.source(entry.card, player, false))) continue;
-            if (entry.event == null) WirelessPowerTransfer.connectPlaced(tile, player, entry.source);
-            else WirelessPowerTransfer.connect(tile, player, entry.source);
+            WirelessPowerTransfer.connectPlaced(tile, player, entry.source);
         }
     }
 
