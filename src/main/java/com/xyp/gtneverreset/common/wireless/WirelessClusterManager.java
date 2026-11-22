@@ -7,7 +7,6 @@ import static com.xyp.gtneverreset.common.wireless.WirelessFrequencies.same;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -36,6 +35,10 @@ import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.pathing.ControllerState;
 import appeng.api.networking.pathing.IPathingGrid;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.Reference2LongOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 
 public class WirelessClusterManager {
 
@@ -43,14 +46,14 @@ public class WirelessClusterManager {
     private static final PhysicalClusterTracker<IGridNode, WirelessFrequency> TRACKER = new PhysicalClusterTracker<>(
         MAX_SCANNED_NODES);
     private static final PhysicalMeTopology TOPOLOGY = new PhysicalMeTopology();
-    private static final Map<Cluster<IGridNode, WirelessFrequency>, State> STATES = new IdentityHashMap<>();
-    private static final Map<IGridNode, Long> RETRY_AFTER = new IdentityHashMap<>();
-    private static final Map<Cluster<IGridNode, WirelessFrequency>, Set<WirelessFrequency>> PAUSES = new IdentityHashMap<>();
-    private static final Map<Cluster<IGridNode, WirelessFrequency>, Set<IGridNode>> SAVED_ENTRANCES = new IdentityHashMap<>();
+    private static final Map<Cluster<IGridNode, WirelessFrequency>, State> STATES = new Reference2ObjectOpenHashMap<>();
+    private static final Reference2LongOpenHashMap<IGridNode> RETRY_AFTER = new Reference2LongOpenHashMap<>();
+    private static final Map<Cluster<IGridNode, WirelessFrequency>, Set<WirelessFrequency>> PAUSES = new Reference2ObjectOpenHashMap<>();
+    private static final Map<Cluster<IGridNode, WirelessFrequency>, Set<IGridNode>> SAVED_ENTRANCES = new Reference2ObjectOpenHashMap<>();
     private static final VerifiedEntranceRecovery<IGridNode, WirelessFrequency> RECOVERY = new VerifiedEntranceRecovery<>();
     private static final ScanSchedule SCANS = new ScanSchedule();
     private static final WirelessTopologyWatch WATCH = new WirelessTopologyWatch();
-    private static final Map<Cluster<IGridNode, WirelessFrequency>, WirelessNetworkStatistics> STATISTICS = new IdentityHashMap<>();
+    private static final Map<Cluster<IGridNode, WirelessFrequency>, WirelessNetworkStatistics> STATISTICS = new Reference2ObjectOpenHashMap<>();
     private static WirelessEntranceIndex entranceIndex = new WirelessEntranceIndex(TRACKER);
 
     private enum State {
@@ -132,11 +135,11 @@ public class WirelessClusterManager {
     }
 
     public static void refresh() {
-        refresh(ImmutableCollections.listOf());
+        refresh(List.of());
     }
 
     public static void refreshTarget(IGridNode target) {
-        refresh(ImmutableCollections.listOf(target));
+        refresh(List.of(target));
         var cluster = TRACKER.clusterOf(target);
         if (cluster != null && cluster.limited()) throw new PhysicalClusterTracker.ScanLimitException();
     }
@@ -145,7 +148,7 @@ public class WirelessClusterManager {
         try (var ignored = WirelessLinkData.readBatch()) {
             SCANS.beginScan();
             TOPOLOGY.beginScan();
-            List<IGridNode> seeds = new ArrayList<>(WirelessLinkPersistence.seeds());
+            List<IGridNode> seeds = new ObjectArrayList<>(WirelessLinkPersistence.seeds());
             if (WirelessLinkPersistence.hasPendingSeeds()) SCANS.retrySoon();
             seeds.addAll(extraSeeds);
             TRACKER.refresh(
@@ -235,15 +238,15 @@ public class WirelessClusterManager {
                 .filter(cluster -> STATES.get(cluster) != State.PAUSED)
                 .filter(cluster -> Collections.disjoint(cluster.frequencies(), pendingRecovery))
                 .filter(cluster -> !building.contains(cluster))
-                .collect(Collectors.toList()),
+                .toList(),
             TOPOLOGY,
             entrances);
         TOPOLOGY.beginScan();
     }
 
     private static Set<Cluster<IGridNode, WirelessFrequency>> underConstruction() {
-        if (!WirelessConstructionSites.any()) return ImmutableCollections.setOf();
-        Set<Cluster<IGridNode, WirelessFrequency>> result = Collections.newSetFromMap(new IdentityHashMap<>());
+        if (!WirelessConstructionSites.any()) return Set.of();
+        Set<Cluster<IGridNode, WirelessFrequency>> result = new ReferenceOpenHashSet<>();
         for (var cluster : TRACKER.clusters()) {
             if (cluster.frequencies()
                 .isEmpty()) continue;
@@ -259,7 +262,7 @@ public class WirelessClusterManager {
 
     private static Set<WirelessFrequency> restoreSavedEntrances(WirelessEntranceIndex entrances,
         Set<Cluster<IGridNode, WirelessFrequency>> building) {
-        List<Candidate<IGridNode, WirelessFrequency>> candidates = new ArrayList<>();
+        List<Candidate<IGridNode, WirelessFrequency>> candidates = new ObjectArrayList<>();
         for (var cluster : TRACKER.clusters()) {
             if (cluster.limited() || cluster.blocked()
                 || building.contains(cluster)
@@ -270,7 +273,7 @@ public class WirelessClusterManager {
                 .iterator()
                 .next();
             if (paused(cluster, source)) continue;
-            for (IGridNode node : SAVED_ENTRANCES.getOrDefault(cluster, ImmutableCollections.setOf())) {
+            for (IGridNode node : SAVED_ENTRANCES.getOrDefault(cluster, Set.of())) {
                 if (hasEntrance(node, source, entrances)) continue;
                 candidates.add(new Candidate<>(node, source));
             }
@@ -355,7 +358,7 @@ public class WirelessClusterManager {
         if (now < RETRY_AFTER.getOrDefault(anchor, Long.MIN_VALUE)) return;
         try {
             WirelessChannelManager.connect(source, TOPOLOGY.entranceAddress(anchor));
-            RETRY_AFTER.remove(anchor);
+            RETRY_AFTER.removeLong(anchor);
             STATES.put(cluster, State.ACTIVE);
         } catch (IllegalArgumentException | FailedConnection unavailable) {
             // AE2 may still be repathing after a conflict or reject a security/foreign bridge connection.
@@ -365,14 +368,14 @@ public class WirelessClusterManager {
     }
 
     private static boolean paused(Cluster<IGridNode, WirelessFrequency> cluster, WirelessFrequency source) {
-        return PAUSES.getOrDefault(cluster, ImmutableCollections.setOf())
+        return PAUSES.getOrDefault(cluster, Set.of())
             .contains(canonical(source));
     }
 
     public static List<ClusterView> links(WirelessFrequency source) {
         try (var ignored = WirelessLinkData.readBatch()) {
             source = canonical(source);
-            List<ClusterView> result = new ArrayList<>();
+            List<ClusterView> result = new ObjectArrayList<>();
             for (var cluster : TRACKER.clusters()) {
                 if (!cluster.frequencies()
                     .contains(source)) continue;
@@ -408,7 +411,7 @@ public class WirelessClusterManager {
                             cluster,
                             measured -> WirelessNetworkStatistics
                                 .measure(measured.nodes(), WirelessChannelManager.channelsEnabled())),
-                        ImmutableCollections.copySet(cluster.nodes())));
+                        Set.copyOf(cluster.nodes())));
             }
             result.sort(
                 Comparator.comparing(ClusterView::statistics, WirelessNetworkStatistics.DISPLAY_ORDER)
@@ -542,8 +545,8 @@ public class WirelessClusterManager {
         }
 
         List<Address> internalAddresses() {
-            if (cluster == null) return ImmutableCollections.listOf();
-            List<Address> addresses = new ArrayList<>(
+            if (cluster == null) return List.of();
+            List<Address> addresses = new ObjectArrayList<>(
                 cluster.nodes()
                     .size());
             for (IGridNode member : cluster.nodes()) {

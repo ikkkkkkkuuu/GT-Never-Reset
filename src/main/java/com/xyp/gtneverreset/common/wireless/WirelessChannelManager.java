@@ -1,12 +1,6 @@
 package com.xyp.gtneverreset.common.wireless;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,7 +17,6 @@ import net.minecraftforge.event.world.WorldEvent;
 import com.github.bsideup.jabel.Desugar;
 import com.xyp.gtneverreset.config.WirelessFrequencyConfig;
 import com.xyp.gtneverreset.mixins.late.appliedenergistics2.wireless.AccessorTileController;
-import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.AEApi;
 import appeng.api.config.SecurityPermissions;
@@ -45,14 +38,19 @@ import appeng.tile.networking.TileController;
 import appeng.tile.networking.TileCreativeEnergyController;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 
 public class WirelessChannelManager {
 
     public static final WirelessChannelManager INSTANCE = new WirelessChannelManager();
-    private static final Map<Integer, Entrance> ENTRANCES = new LinkedHashMap<>();
-    private static List<Entrance> entranceSnapshot = ImmutableCollections.listOf();
-    private static Map<WirelessFrequency, Integer> entranceCounts;
-    private static final Map<IGridConnection, Entrance> OWNED_CONNECTIONS = new IdentityHashMap<>();
+    private static final Int2ObjectLinkedOpenHashMap<Entrance> ENTRANCES = new Int2ObjectLinkedOpenHashMap<>();
+    private static List<Entrance> entranceSnapshot = List.of();
+    private static Object2IntOpenHashMap<WirelessFrequency> entranceCounts;
+    private static final Map<IGridConnection, Entrance> OWNED_CONNECTIONS = new Reference2ObjectOpenHashMap<>();
     private static final Map<IGrid, Allocation> ALLOCATIONS = new WeakHashMap<>();
     private static int nextId = 1;
     private static long allocationRevision;
@@ -123,7 +121,7 @@ public class WirelessChannelManager {
         if (connectionSnapshot == null || node.getClass() != GridNode.class) return node.getConnections()
             .contains(connection);
         return connectionSnapshot.computeIfAbsent(node, key -> {
-            Set<IGridConnection> connections = Collections.newSetFromMap(new IdentityHashMap<>());
+            Set<IGridConnection> connections = new ReferenceOpenHashSet<>();
             for (IGridConnection current : key.getConnections()) connections.add(current);
             return connections;
         })
@@ -152,7 +150,7 @@ public class WirelessChannelManager {
     }
 
     public static int capacity(IGrid grid) {
-        Set<ChannelBudget.Position> controllers = new HashSet<>();
+        Set<ChannelBudget.Position> controllers = new ObjectOpenHashSet<>();
         // AE already indexes hosts by their concrete class; avoid scanning every cable and device for each GUI update.
         Class<?> controllerType = TileController.class;
         for (Class<? extends IGridHost> machine : grid.getMachinesClasses()) {
@@ -243,8 +241,9 @@ public class WirelessChannelManager {
 
     public static void clear() {
         invalidateFrequencies();
-        for (int id : new ArrayList<>(ENTRANCES.keySet())) disconnect(id);
-        entranceSnapshot = ImmutableCollections.listOf();
+        for (int id : ENTRANCES.keySet()
+            .toIntArray()) disconnect(id);
+        entranceSnapshot = List.of();
         OWNED_CONNECTIONS.clear();
         ALLOCATIONS.clear();
         WirelessClusterManager.clear();
@@ -257,7 +256,7 @@ public class WirelessChannelManager {
     }
 
     public static List<Entrance> entrances() {
-        if (entranceSnapshot == null) entranceSnapshot = ImmutableCollections.copyList(ENTRANCES.values());
+        if (entranceSnapshot == null) entranceSnapshot = List.copyOf(ENTRANCES.values());
         return entranceSnapshot;
     }
 
@@ -271,9 +270,9 @@ public class WirelessChannelManager {
 
     public static int entranceCount(WirelessFrequency frequency) {
         if (entranceCounts == null) {
-            entranceCounts = new HashMap<>();
+            entranceCounts = new Object2IntOpenHashMap<>();
             for (Entrance entrance : ENTRANCES.values()) {
-                entranceCounts.merge(WirelessFrequencies.canonical(entrance.frequency()), 1, Integer::sum);
+                entranceCounts.addTo(WirelessFrequencies.canonical(entrance.frequency()), 1);
             }
         }
         return entranceCounts.getOrDefault(WirelessFrequencies.canonical(frequency), 0);
@@ -284,7 +283,7 @@ public class WirelessChannelManager {
         if (entranceCounts == null) return;
         WirelessFrequency frequency = WirelessFrequencies.canonical(source);
         int count = entranceCounts.getOrDefault(frequency, 0) + change;
-        if (count == 0) entranceCounts.remove(frequency);
+        if (count == 0) entranceCounts.removeInt(frequency);
         else entranceCounts.put(frequency, count);
     }
 
@@ -306,7 +305,7 @@ public class WirelessChannelManager {
     @SubscribeEvent
     public void tick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        connectionSnapshot = new IdentityHashMap<>();
+        connectionSnapshot = new Reference2ObjectOpenHashMap<>();
         try (var ignored = WirelessLinkData.readBatch()) {
             entranceCounts = null;
             WirelessFrequencies.tick();

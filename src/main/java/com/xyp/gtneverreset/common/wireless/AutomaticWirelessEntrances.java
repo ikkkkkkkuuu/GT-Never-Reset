@@ -1,10 +1,7 @@
 package com.xyp.gtneverreset.common.wireless;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,7 +14,6 @@ import com.xyp.gtneverreset.common.wireless.AutomaticEntrancePlanner.Status;
 import com.xyp.gtneverreset.common.wireless.PhysicalClusterTracker.Cluster;
 import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Address;
 import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Entrance;
-import com.xyp.gtnrlib.utils.ImmutableCollections;
 
 import appeng.api.exceptions.FailedConnection;
 import appeng.api.networking.GridFlags;
@@ -27,12 +23,17 @@ import appeng.api.networking.IGridNode;
 import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.pathing.ControllerState;
 import appeng.api.networking.pathing.IPathingGrid;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 
 public class AutomaticWirelessEntrances {
 
-    private static final Map<IGrid, AutomaticEntrancePlanner<IGridNode>> PLANNERS = new IdentityHashMap<>();
-    private static final Map<IGrid, GridTargets> TARGETS = new IdentityHashMap<>();
-    private static final Map<IGrid, ChannelCount> COUNTS = new IdentityHashMap<>();
+    private static final Map<IGrid, AutomaticEntrancePlanner<IGridNode>> PLANNERS = new Reference2ObjectOpenHashMap<>();
+    private static final Map<IGrid, GridTargets> TARGETS = new Reference2ObjectOpenHashMap<>();
+    private static final Map<IGrid, ChannelCount> COUNTS = new Reference2ObjectOpenHashMap<>();
 
     private record GridTargets(List<Cluster<IGridNode, WirelessFrequency>> clusters,
         Map<IGridNode, WirelessFrequency> sources, List<IGridNode> nodes, long fingerprint) {}
@@ -42,9 +43,9 @@ public class AutomaticWirelessEntrances {
 
     private static class Work {
 
-        public final List<Cluster<IGridNode, WirelessFrequency>> clusters = new ArrayList<>();
-        public final Set<IGridNode> occupied = Collections.newSetFromMap(new IdentityHashMap<>());
-        public final List<IGridNode> missing = new ArrayList<>();
+        public final List<Cluster<IGridNode, WirelessFrequency>> clusters = new ObjectArrayList<>();
+        public final Set<IGridNode> occupied = new ReferenceOpenHashSet<>();
+        public final List<IGridNode> missing = new ObjectArrayList<>();
         public final WirelessFrequency frequency;
         public final IGridNode source;
         public int served;
@@ -61,7 +62,7 @@ public class AutomaticWirelessEntrances {
         private final GridTargets targets;
         private final PhysicalMeTopology topology;
         private final Comparator<IGridNode> order;
-        private final Map<Cluster<IGridNode, WirelessFrequency>, EntranceCandidates.Batch<IGridNode>> batches = new IdentityHashMap<>();
+        private final Map<Cluster<IGridNode, WirelessFrequency>, EntranceCandidates.Batch<IGridNode>> batches = new Reference2ObjectOpenHashMap<>();
         private List<Cluster<IGridNode, WirelessFrequency>> ordered;
         private Map<Cluster<IGridNode, WirelessFrequency>, List<IGridNode>> missing;
 
@@ -76,8 +77,8 @@ public class AutomaticWirelessEntrances {
         }
 
         private void prepare() {
-            ordered = new ArrayList<>(work.clusters);
-            Map<Cluster<IGridNode, WirelessFrequency>, IGridNode> anchors = new IdentityHashMap<>();
+            ordered = new ObjectArrayList<>(work.clusters);
+            Map<Cluster<IGridNode, WirelessFrequency>, IGridNode> anchors = new Reference2ObjectOpenHashMap<>();
             for (var cluster : ordered) {
                 anchors.put(
                     cluster,
@@ -88,12 +89,12 @@ public class AutomaticWirelessEntrances {
                         .orElse(null));
             }
             ordered.sort(Comparator.comparing(anchors::get, Comparator.nullsLast(order)));
-            missing = new IdentityHashMap<>();
+            missing = new Reference2ObjectOpenHashMap<>();
             for (IGridNode node : work.missing) {
                 for (var cluster : ordered) {
                     if (cluster.nodes()
                         .contains(node)) {
-                        missing.computeIfAbsent(cluster, ignored -> new ArrayList<>())
+                        missing.computeIfAbsent(cluster, ignored -> new ObjectArrayList<>())
                             .add(node);
                         break;
                     }
@@ -133,7 +134,7 @@ public class AutomaticWirelessEntrances {
 
     static void refresh(Collection<Cluster<IGridNode, WirelessFrequency>> clusters, PhysicalMeTopology topology,
         WirelessEntranceIndex entrances) {
-        Map<IGrid, Work> workByGrid = new IdentityHashMap<>();
+        Map<IGrid, Work> workByGrid = new Reference2ObjectOpenHashMap<>();
         for (Cluster<IGridNode, WirelessFrequency> cluster : clusters) {
             if (cluster.blocked() || cluster.frequencies()
                 .size() != 1) continue;
@@ -142,7 +143,7 @@ public class AutomaticWirelessEntrances {
                 .next();
             IGridNode sourceNode = WirelessFrequencies.controllerNode(source);
             if (sourceNode == null) continue;
-            List<IGridNode> occupied = new ArrayList<>();
+            List<IGridNode> occupied = new ObjectArrayList<>();
             for (Entrance entrance : entrances.forCluster(cluster)) {
                 if (WirelessFrequencies.same(entrance.frequency(), source) && entrance.isLive()) {
                     occupied.add(entrance.targetNode());
@@ -171,7 +172,7 @@ public class AutomaticWirelessEntrances {
                 .get(index) == clusters.get(index)) index++;
             if (index == clusters.size()) return cached;
         }
-        Map<IGridNode, WirelessFrequency> sources = new IdentityHashMap<>();
+        Map<IGridNode, WirelessFrequency> sources = new Reference2ObjectOpenHashMap<>();
         for (var cluster : clusters) {
             WirelessFrequency source = cluster.frequencies()
                 .iterator()
@@ -185,9 +186,9 @@ public class AutomaticWirelessEntrances {
                     .hashCode());
         }
         GridTargets targets = new GridTargets(
-            ImmutableCollections.copyList(clusters),
+            List.copyOf(clusters),
             sources,
-            ImmutableCollections.copyList(sources.keySet()),
+            List.copyOf(sources.keySet()),
             fingerprint);
         TARGETS.put(grid, targets);
         return targets;
@@ -198,13 +199,13 @@ public class AutomaticWirelessEntrances {
         if (cached != null && revision >= 0 && cached.targets() == targets && cached.revision() == revision)
             return cached;
         int served = 0;
-        List<IGridNode> missing = new ArrayList<>();
+        List<IGridNode> missing = new ObjectArrayList<>();
         for (IGridNode node : targets.nodes()) {
             if (!node.hasFlag(GridFlags.REQUIRE_CHANNEL) || node.hasFlag(GridFlags.CANNOT_CARRY)) continue;
             if (node.meetsChannelRequirements()) served++;
             else missing.add(node);
         }
-        ChannelCount count = new ChannelCount(targets, revision, served, ImmutableCollections.copyList(missing));
+        ChannelCount count = new ChannelCount(targets, revision, served, List.copyOf(missing));
         if (revision >= 0) COUNTS.put(grid, count);
         else COUNTS.remove(grid);
         return count;
@@ -220,8 +221,9 @@ public class AutomaticWirelessEntrances {
         AutomaticEntrancePlanner<IGridNode> planner = PLANNERS
             .computeIfAbsent(grid, ignored -> new AutomaticEntrancePlanner<>());
         if (planner.hasTrial()) {
-            for (int id : planner.pendingEntrances()) {
-                if (WirelessChannelManager.entrance(id) == null) {
+            IntList pending = planner.pendingEntrances();
+            for (int i = 0; i < pending.size(); i++) {
+                if (WirelessChannelManager.entrance(pending.getInt(i)) == null) {
                     planner.entranceLost();
                     break;
                 }
@@ -264,12 +266,13 @@ public class AutomaticWirelessEntrances {
             WirelessChannelManager.entranceLimit() - WirelessChannelManager.entranceCount(work.frequency));
         var decision = planner.decide(observation, new CandidateSearch(work, targets, topology)::select);
         if (decision.action() == Action.REMOVE) {
-            for (int id : decision.entranceIds()) WirelessChannelManager.disconnect(id);
+            IntList ids = decision.entranceIds();
+            for (int i = 0; i < ids.size(); i++) WirelessChannelManager.disconnect(ids.getInt(i));
         } else if (decision.action() == Action.KEEP) {
             keep(planner, decision, topology);
         } else if (decision.action() == Action.ADD) {
-            List<IGridNode> created = new ArrayList<>();
-            List<Integer> ids = new ArrayList<>();
+            List<IGridNode> created = new ObjectArrayList<>();
+            IntArrayList ids = new IntArrayList();
             for (IGridNode target : decision.targets()) {
                 try {
                     ids.add(
@@ -288,10 +291,10 @@ public class AutomaticWirelessEntrances {
 
     private static void keep(AutomaticEntrancePlanner<IGridNode> planner,
         AutomaticEntrancePlanner.Decision<IGridNode> decision, PhysicalMeTopology topology) {
-        List<Integer> ids = decision.entranceIds();
+        IntList ids = decision.entranceIds();
         boolean prune = ids.size() > 1 && WirelessChannelManager.channelsEnabled();
         for (int index = 0; index < ids.size(); index++) {
-            Entrance entrance = WirelessChannelManager.entrance(ids.get(index));
+            Entrance entrance = WirelessChannelManager.entrance(ids.getInt(index));
             if (entrance == null) continue;
             if (prune && entrance.isLive()
                 && entrance.connection()
