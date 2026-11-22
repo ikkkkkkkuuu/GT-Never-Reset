@@ -1,8 +1,6 @@
 # GT-Never-Reset
 
-bug反馈群：1134941262
-
-
+[![加入 GTNR Bug 反馈 QQ 群（1134941262）](https://img.shields.io/badge/QQ-1134941262-12B7F5?style=for-the-badge&logo=qq&logoColor=white)](https://qm.qq.com/q/5MuIY84DLO)
 
 面向 Minecraft 1.7.10 / Forge 的 GT New Horizons 附属模组。
 
