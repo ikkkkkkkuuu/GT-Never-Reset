@@ -1,8 +1,8 @@
 package com.xyp.gtneverreset.mixins.late.terminal;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
-import net.minecraft.world.World;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
@@ -17,8 +17,8 @@ import com.xyp.gtneverreset.common.terminal.WirelessTerminalSession;
 public abstract class TerminalPickBlockMixin {
 
     @Inject(method = "getTargetBlock", at = @At("HEAD"), cancellable = true, require = 0)
-    private static void gtnr$preferDualTerminal(World world, EntityPlayer player,
-        CallbackInfoReturnable<ItemStack> cir) {
-        if (WirelessTerminalSession.findDualInterfaceTerminal(player) >= 0) cir.setReturnValue(null);
+    private static void gtnr$preferDualTerminal(CallbackInfoReturnable<ItemStack> cir) {
+        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        if (player != null && WirelessTerminalSession.findDualInterfaceTerminal(player) >= 0) cir.setReturnValue(null);
     }
 }
