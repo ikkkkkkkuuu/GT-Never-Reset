@@ -1,8 +1,6 @@
 # GT-Never-Reset
 
-bug反馈群：1134941262
-
-
+[![加入 GTNR Bug 反馈 QQ 群（1134941262）](https://img.shields.io/badge/QQ-1134941262-12B7F5?style=for-the-badge&logo=qq&logoColor=white)](https://qm.qq.com/q/5MuIY84DLO)
 
 面向 Minecraft 1.7.10 / Forge 的 GT New Horizons 附属模组。
 
@@ -10,10 +8,10 @@ bug反馈群：1134941262
 
 | GTNH 版本 | 模组版本 | 现状 | 下载 |
 | --- | --- | --- | --- |
-| `2.9.0`（当前开发基准） | `0.1.53` | 已发布 | [下载](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.53) |
+| `2.9.0`（当前开发基准） | `0.1.54` | 已发布 | [下载](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.54) |
 | `2.9.0-RC-2` | `0.1.10` | 已发布 | [![Download Releases](https://img.shields.io/badge/Download-Releases-blue)](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.10) |
 
-可在 [0.1.53 发行页](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.53) 下载正式模组文件 `gtneverreset-0.1.53.jar`。构建状态与日志可在 [Actions](https://github.com/ikkkkkkkuuu/GT-Never-Reset/actions) 查看。
+可在 [0.1.54 发行页](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.54) 下载正式模组文件 `gtneverreset-0.1.54.jar`。构建状态与日志可在 [Actions](https://github.com/ikkkkkkkuuu/GT-Never-Reset/actions) 查看。
 
 开发环境使用 Minecraft `1.7.10`、Forge `10.13.4.1614`，主模组与 GTNRLib 共用 GTNH [`2.9.0` 正式版依赖清单](https://github.com/GTNewHorizons/DreamAssemblerXXL/blob/master/releases/manifests/2.9.0.json)，由 `gradle.properties` 中的 `elytra.manifest.version` 统一选择；其他 GTNH 版本的兼容性尚待验证。
 

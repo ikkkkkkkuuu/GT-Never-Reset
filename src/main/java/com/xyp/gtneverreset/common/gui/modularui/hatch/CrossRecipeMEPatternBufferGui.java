@@ -6,7 +6,7 @@ import java.util.List;
 
 import net.minecraft.util.StatCollector;
 
-import com.cleanroommc.modularui.drawable.GuiTextures;
+import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.network.NetworkUtils;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.value.sync.GenericListSyncHandler;
@@ -16,11 +16,15 @@ import com.cleanroommc.modularui.value.sync.StringSyncValue;
 import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
+import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtnrlib.gui.widget.ScrollingDropdown;
 
-public final class CrossRecipeMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
+public final class CrossRecipeMEPatternBufferGui extends CircuitMEPatternBufferGui {
+
+    private static final UITexture AUTO_ASSIGN_NAMES = UITexture
+        .fullImage(GTNeverReset.MODID, "gui/overlay_button/auto_assign_recipe_names");
 
     private final CrossRecipeMEPatternBuffer hatch;
 
@@ -40,7 +44,7 @@ public final class CrossRecipeMEPatternBufferGui extends SuperMTEHatchCraftingIn
             mouse -> { if (!mouse.isClient() && mouse.mouseButton == 0) hatch.autoAssignRecipeMapNames(); });
         ButtonWidget<?> button = new ButtonWidget<>().name("auto_assign_recipe_names")
             .syncHandler(assign)
-            .overlay(GuiTextures.EDIT);
+            .overlay(AUTO_ASSIGN_NAMES);
         // #tr gtnr.gui.gtneverreset.cross_recipe_buffer.auto_names
         // # Automatically assign names
         // # zh_CN 自动分配名字

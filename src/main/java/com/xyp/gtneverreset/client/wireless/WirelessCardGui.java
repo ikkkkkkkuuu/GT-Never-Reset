@@ -86,7 +86,9 @@ import com.xyp.gtneverreset.common.wireless.WirelessCardText;
 import com.xyp.gtneverreset.common.wireless.WirelessCardVisualisation;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Icon;
+import com.xyp.gtnrlib.gui.widget.CloseButton;
 import com.xyp.gtnrlib.gui.widget.CycleDropdown;
+import com.xyp.gtnrlib.gui.widget.ThemedButton;
 
 import appeng.core.localization.GuiText;
 import cpw.mods.fml.common.Loader;
@@ -198,7 +200,6 @@ public class WirelessCardGui extends WirelessCardPanel {
     }
 
     public ModularScreen screen() {
-        AE2Theme.useMenuTheme(themeId, GTNeverReset.MODID, NAME, DIMENSION_MENU, VISUALISATION_MENU);
         return new ModularScreen(GTNeverReset.MODID, this) {
 
             @Override
@@ -681,7 +682,7 @@ public class WirelessCardGui extends WirelessCardPanel {
         private WirelessCardDetailsPanel(WirelessCardContainer container) {
             super("wireless_card_details", container);
             addRowButtons(TOGGLE_PAUSE, COPY_POSITION, HIGHLIGHT, TELEPORT);
-            child(ButtonWidget.panelCloseButton());
+            child(CloseButton.panelCorner());
             addButton(RENAME);
             renamePanel = IPanelHandler.simple(this, (parent, player) -> new WirelessCardRenameDialog(this), true);
         }
@@ -822,7 +823,7 @@ public class WirelessCardGui extends WirelessCardPanel {
             this.container = owner.container;
             this.name = owner.textField(32);
             size(260, 96);
-            child(ButtonWidget.panelCloseButton());
+            child(CloseButton.panelCorner());
             child(
                 IKey.str(GuiText.Renamer.getLocal())
                     .asWidget()
@@ -981,7 +982,7 @@ public class WirelessCardGui extends WirelessCardPanel {
                     .overlay(false, look)
                     .overlay(true, look);
             } else {
-                widget = new ActionButton().onMousePressed(button -> {
+                widget = new ThemedButton<>().onMousePressed(button -> {
                     if (button != 0 || !available) return false;
                     if (type(id) == MANAGE_DEVICES)
                         panel.action((GuiScreen.isShiftKeyDown() ? OPEN_ENTRANCES : OPEN_DETAILS) + rowIndex(id));
@@ -1022,14 +1023,6 @@ public class WirelessCardGui extends WirelessCardPanel {
                                 panel.view()
                                     .getBoolean("collapseTypes") ? "options.on" : "options.off")))
                 .tooltipAutoUpdate(true);
-        }
-
-        private static class ActionButton extends ButtonWidget<ActionButton> {
-
-            @Override
-            public boolean canBeSeen(IViewportStack stack) {
-                return isEnabled() && super.canBeSeen(stack);
-            }
         }
 
         private void styleTextButton() {

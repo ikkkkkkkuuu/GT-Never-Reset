@@ -51,6 +51,17 @@ public class CloseButton extends ButtonWidget<CloseButton> {
         });
     }
 
+    public static CloseButton panelCorner() {
+        CloseButton button = new CloseButton();
+        return button.top(4)
+            .right(4)
+            .onMousePressed(mouse -> {
+                if (mouse != 0 && mouse != 1) return false;
+                button.action.run();
+                return true;
+            });
+    }
+
     /**
      * Sets what a left click does instead of closing the panel.
      *

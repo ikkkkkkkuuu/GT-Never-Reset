@@ -17,6 +17,7 @@ import com.cleanroommc.modularui.screen.viewport.GuiContext;
 import com.cleanroommc.modularui.theme.ReloadThemeEvent;
 import com.cleanroommc.modularui.theme.ThemeBuilder;
 import com.cleanroommc.modularui.theme.WidgetTheme;
+import com.cleanroommc.modularui.widget.AbstractScrollWidget;
 import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.SliderWidget;
 import com.xyp.gtnrlib.GTNRLib;
@@ -254,6 +255,18 @@ public class AE2Theme {
         String menuTheme = variant == null ? CONTEXT_MENU_ID : variant.menuId;
         for (String menu : menus) IThemeApi.get()
             .registerThemeForScreen(owner + ":" + screen + ":" + menu, menuTheme);
+    }
+
+    public static void polish(IWidget root, @Nullable String themeId) {
+        Variant variant = variant(themeId);
+        if (variant != null) polish(root, variant, new AE2ButtonDrawable(State.NORMAL, variant.folder));
+    }
+
+    private static void polish(IWidget widget, Variant variant, IDrawable handle) {
+        if (widget instanceof SliderWidget slider) slider.sliderTexture(handle);
+        if (widget instanceof AbstractScrollWidget<?, ?>scroll) scroll.getScrollArea()
+            .setScrollBarBackgroundColor(variant.colors.outline());
+        for (IWidget child : widget.getChildren()) polish(child, variant, handle);
     }
 
     /**
@@ -876,6 +889,10 @@ public class AE2Theme {
          */
         public UITexture switchSprite(boolean on, boolean hovered) {
             return checkboxSprite(on, hovered);
+        }
+
+        public Colors rowColors(boolean selected) {
+            return selected && this != DARK_PURPLE ? LIGHT.colors : colors;
         }
 
         public WheelStyle.Builder wheel(WheelStyle.Builder builder) {

@@ -127,7 +127,7 @@ public final class AE2ThemeClientChecks {
             .size(138, 20);
         selected.background(AE2Theme.radio(selected, () -> true, () -> "Selected / 已选中", () -> true));
         panel.child(selected);
-        AE2Theme.useMenuTheme(theme.themeId, GTNRLib.MODID, panel.getName(), "qa_options");
+        AE2Theme.polish(panel, theme.themeId);
         screen = new ModularScreen(GTNRLib.MODID, panel);
         if (theme.themeId != null) screen.useTheme(theme.themeId);
         ClientGUI.open(screen);
@@ -161,6 +161,17 @@ public final class AE2ThemeClientChecks {
                 var padding = menu.getArea()
                     .getPadding();
                 boolean ae2 = theme != ScreenTheme.DEFAULT;
+                var variant = AE2Theme.variant(theme.themeId);
+                require(
+                    menu.getPanel()
+                        .getTheme()
+                        .getId()
+                        .equals(ae2 ? variant.menuId : AE2Theme.CONTEXT_MENU_ID),
+                    "popup inherits the selected screen theme");
+                if (ae2) require(
+                    list.getScrollArea()
+                        .getScrollBarBackgroundColor() == variant.colors.outline(),
+                    "scroll track uses the selected palette");
                 require(
                     padding.getLeft() == (ae2 ? 2 : 1) && padding.getRight() == (ae2 ? 2 : 1)
                         && padding.getTop() == (ae2 ? 2 : 1)

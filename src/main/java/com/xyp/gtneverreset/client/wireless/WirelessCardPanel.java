@@ -273,11 +273,12 @@ abstract class WirelessCardPanel extends ModularPanel {
     }
 
     private AE2Theme.Colors colors() {
-        return (highlighted ? AE2Theme.Variant.LIGHT : variant).colors;
+        return variant.rowColors(highlighted);
     }
 
     int foreground() {
-        return variant == null ? ColorUtils.guiTextColorGray.getColor() : colors().text();
+        return variant == null ? ColorUtils.guiTextColorGray.getColor()
+            : highlighted ? variant.highlightText : colors().text();
     }
 
     int secondary() {
@@ -519,22 +520,27 @@ abstract class WirelessCardPanel extends ModularPanel {
             boolean group = row.getBoolean("group");
             highlighted = index == hovered || row.getBoolean("expanded");
             if (highlighted) {
-                drawRect(9, y, rowRight(), y + ROW_HEIGHT - 1, variant == null ? 0x60ffffff : AE2Theme.HIGHLIGHT);
-                drawRect(9, y, rowRight(), y + 1, variant == null ? 0x80ffffff : 0xffdaffff);
+                drawRect(9, y, rowRight(), y + ROW_HEIGHT - 1, variant == null ? 0x60ffffff : variant.highlight);
+                drawRect(9, y, rowRight(), y + 1, variant == null ? 0x80ffffff : variant.highlightTop);
                 drawRect(
                     9,
                     y + ROW_HEIGHT - 2,
                     rowRight(),
                     y + ROW_HEIGHT - 1,
-                    variant == null ? 0x40000000 : AE2Theme.HIGHLIGHT_SHADOW);
+                    variant == null ? 0x40000000 : variant.highlightShadow);
             }
-            if (!highlighted && depth > 0) drawRect(9, y, rowRight(), y + ROW_HEIGHT, tint(Math.min(3, depth) * 0x1f));
+            if (!highlighted && depth > 0) {
+                GL11.glPushAttrib(GL11.GL_ENABLE_BIT);
+                GL11.glDisable(GL11.GL_ALPHA_TEST);
+                drawRect(9, y, rowRight(), y + ROW_HEIGHT, tint(Math.min(3, depth) * 0x1f));
+                GL11.glPopAttrib();
+            }
             int start = highlighted || depth == 0 ? 9 : iconX(depth, group) - 2;
             drawRect(start, y + ROW_HEIGHT - 1, rowRight(), y + ROW_HEIGHT, tint(0x5d));
             textColor = foreground();
             int iconX = isDetailView() || data.getBoolean("sourcesPage") ? 12 : iconX(depth, group);
             int treeColor = variant == null ? secondary()
-                : highlighted ? AE2Theme.HIGHLIGHT_SHADOW : variant.colors.edge();
+                : highlighted ? variant.highlightShadow : variant.colors.edge();
             drawTree(row, depth, group, y, treeColor);
             if (group) drawArrow(variant, row.getBoolean("expanded"), arrowX(depth), y + 4);
             if (icon != null) drawDeviceIcon(icon, iconX, y + 4);

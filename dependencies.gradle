@@ -37,6 +37,18 @@
 def elytraModpackVersion = project.extensions.getByName("elytraModpackVersion")
 
 dependencies {
+    compileOnly("GTNotLeisure:AE2Things:1.3.7") {
+        artifact {
+            name = "ae2thing"
+            classifier = "dev"
+        }
+    }
+    compileOnly("233max258:Wtcts-1.7.10:1.0.63-rc1") {
+        artifact {
+            name = "wtct"
+            classifier = "dev"
+        }
+    }
     devOnlyNonPublishable(elytraModpackVersion.gtnhdev("EnderIO") as String)
     compileOnly(elytraModpackVersion.gtnhdev("Backhand") as String) { transitive = false }
     shadowImplementation("org.luaj:luaj-jse:3.0.1") { transitive = false }

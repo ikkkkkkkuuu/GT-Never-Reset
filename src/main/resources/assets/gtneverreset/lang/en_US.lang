@@ -1001,6 +1001,15 @@ gtnr.message.terminal_access_denied=You do not have permission to use this termi
 gtnr.gui.gtneverreset.quick_terminal.container_inventory_full=No inventory space for the remaining empty containers.
 gtnr.chaos.patterns.title=AE custom chain (left to right)
 gtnr.chaos.patterns.help=Remove all patterns to use presets
+gtnr.gui.circuit_supplies.title=Shared consumable supplies
+gtnr.gui.circuit_supplies.items=Items
+gtnr.gui.circuit_supplies.fluids=Fluids (mB)
+gtnr.gui.circuit_supplies.interval=Interval (s, 0 = off)
+gtnr.gui.circuit_supplies.on_check=Pull on recipe check
+gtnr.gui.circuit_supplies.next=Next pull in %s s
+gtnr.gui.circuit_supplies.sample=Left-click with a sample to mark, or with an empty hand to clear. Right-click to set the limit.
+gtnr.gui.circuit_supplies.item_limit=Target item count
+gtnr.gui.circuit_supplies.fluid_limit=Target fluid amount (mB)
 gtnr.gui.gtneverreset.cross_recipe_buffer.auto_names=Automatically assign names
 gtnr.gui.gtneverreset.cross_recipe_buffer.auto_names.description=Cycle recipe names across connected buffers; mirrors share a name. Only terminal names change.
 gtnr.gui.gtneverreset.cross_recipe_buffer.terminal_name=Select the recipe type name shown in the Interface Terminal; processing modes are selected by patterns

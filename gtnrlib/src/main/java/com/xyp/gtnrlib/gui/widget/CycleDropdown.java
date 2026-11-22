@@ -239,7 +239,7 @@ public class CycleDropdown<T> extends DropdownWidget<T, CycleDropdown<T>> {
     @Override
     public boolean onMouseScroll(UpOrDown scrollDirection, int amount) {
         IValue<T> value = getValue();
-        if (!wheel || value == null || choices.isEmpty() || !isAvailable()) return false;
+        if (!wheel || !isHovering() || value == null || choices.isEmpty() || !isAvailable()) return false;
         int index = Math.max(0, choices.indexOf(value.getValue()));
         setValue(choices.get(Math.floorMod(index - scrollDirection.modifier, choices.size())), true);
         return true;
@@ -300,10 +300,12 @@ public class CycleDropdown<T> extends DropdownWidget<T, CycleDropdown<T>> {
         if (menuWidth > getArea().width) menu.width(menuWidth)
             .right(0);
         // MUI2 menus draw their options over the panel border, so keep the options inside it.
-        if (AE2Look.of(this)
-            .isAE2())
+        var variant = AE2Look.of(this)
+            .variant();
+        if (variant != null) {
+            AE2Theme.polish(menu, variant.id);
             menu.padding(AE2Theme.PANEL_EDGE, AE2Theme.PANEL_EDGE, AE2Theme.PANEL_EDGE, AE2Theme.PANEL_BOTTOM_EDGE);
-        else menu.padding(MENU_EDGE);
+        } else menu.padding(MENU_EDGE);
         for (IWidget child : menu.getChildren())
             if (child instanceof ListWidget<?, ?>list) list.showScrollShadows(false);
         return menu;

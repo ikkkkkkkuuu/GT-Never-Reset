@@ -2,7 +2,7 @@ package com.xyp.gtneverreset.common.machine.multiblock;
 
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofChain;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
-import static gregtech.api.util.GTStructureUtility.ofHatchAdder;
+import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 
 import java.math.BigInteger;
 import java.util.EnumMap;
@@ -106,10 +106,12 @@ public final class LightHunterSpaceStation extends MTEExtendedPowerMultiBlockBas
                 if (symbol == 'd') {
                     element = ofChain(
                         StructureTooltipHooks.describeAsHatch(
-                            ofHatchAdder(
-                                LightHunterSpaceStation::addParameterHatch,
-                                Casings.HighPowerCasing.getTextureId(),
-                                1),
+                            buildHatchAdder(LightHunterSpaceStation.class).hatchClass(ParameterModuleHatch.class)
+                                .adder(LightHunterSpaceStation::addParameterHatch)
+                                .casingIndex(Casings.HighPowerCasing.getTextureId())
+                                .hint(1)
+                                // Optional modules are installed by the player. Auto-build fills the slot with casing.
+                                .shouldReject(station -> true),
                             ParameterModuleHatch.NAME_KEY),
                         element);
                 }

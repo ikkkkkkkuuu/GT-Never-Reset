@@ -1,11 +1,13 @@
 package com.xyp.gtnrlib.gui.widget;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
 
 import com.cleanroommc.modularui.api.layout.IViewportStack;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
+import com.xyp.gtnrlib.gui.theme.AE2Theme;
 
 /**
  * The button the AE2 buttons build on: {@link AE2Button}, {@link IconButton} and {@link TabButton}. On its own, with an
@@ -56,6 +58,13 @@ public class ThemedButton<W extends ThemedButton<W>> extends ButtonWidget<W> {
             action.run();
             return true;
         });
+    }
+
+    public W label(Supplier<String> label, BooleanSupplier available) {
+        available(available);
+        var look = AE2Theme.button(this, this::isAvailable, this::isSelected);
+        return background(look).hoverBackground(look)
+            .overlay(AE2Theme.label(this, label, this::isAvailable, this::isSelected));
     }
 
     protected boolean isAvailable() {

@@ -12,7 +12,6 @@ import net.minecraft.client.Minecraft;
 
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
-import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.screen.viewport.GuiContext;
 import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
@@ -108,9 +107,6 @@ final class WirelessCardFilters {
             textY,
             style.color(),
             style.shadow());
-        int arrowX = x + width - 10, arrowY = textY + 2;
-        for (int row = 0; row < 3; row++)
-            GuiDraw.drawRect(arrowX + row, arrowY + row, 5 - row * 2, 1, 0xFF000000 | style.color());
     }
 
     static void layoutChips(List<ButtonWidget<?>> chips, int xSize, int y, IntFunction<String> label,

@@ -118,6 +118,7 @@ public class AE2ThemeDefinitions {
             .textFieldHintColor(colors.placeholder())
             .textFieldMarkedColor(FIELD_SELECTION)
             .background(IThemeApi.SCROLLBAR, variant.scroller)
+            .defaultWidth(IThemeApi.SCROLLBAR, AE2Theme.SCROLLBAR_WIDTH)
             .widgetTheme(
                 SlideSwitch.Theme.KEY,
                 new SlideSwitch.Theme.Builder().text(colors.text(), colors.muted(), colors.text())

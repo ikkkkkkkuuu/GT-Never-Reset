@@ -238,6 +238,8 @@ Two things cannot match AE2: Minecraft 1.7.10 has no keyboard focus for buttons,
 
 GTNRLib registers these themes during client initialization. Apply the selected identifier with `ModularScreen.useTheme` (see Quick Start), not with `IThemeApi.registerThemeForScreen`, which would override the theme of every dialog in the screen. `CycleDropdown` menus pick the menu theme of their panel's look by themselves; `AE2Theme.useMenuTheme` maps other named menu panels, such as MUI2's own context menus, to the matching menu theme.
 
+Call `AE2Theme.polish(panel, themeId)` after constructing a client panel to apply slider handles and scroll track colors. Call it for separately constructed dialogs as well.
+
 ### Themes Of Your Own
 
 There are three AE2 skins and no way yet to add a fourth: the skins are the `Variant` enum, and `AE2Look` only knows those three. What a theme of your own can change depends on the mechanism a widget uses (see the table above):
