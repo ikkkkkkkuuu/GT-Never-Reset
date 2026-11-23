@@ -161,11 +161,14 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
         var tile = getBaseMetaTileEntity();
         if (!tile.isServerSide() || !tile.isAllowedToWork() || !isActive()) return;
         try {
-            inputsChanged |= sharedSupplies.pull(
+            if (sharedSupplies.pull(
                 getProxy(),
                 getMEOutputActionSource(),
                 tile.getWorld()
-                    .getTotalWorldTime());
+                    .getTotalWorldTime())) {
+                patternInputsChanged();
+                inputsChanged = true;
+            }
         } catch (GridAccessException ignored) {}
     }
 
@@ -400,6 +403,7 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
                 return false;
             if (!buffer.insert(table, recipe.molds)) return false;
             activeRecipe = recipe;
+            parentMTE.patternInputsChanged();
             return true;
         }
 
@@ -523,7 +527,7 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
 
         @Override
         public boolean insertItemsAndFluids(MEInventoryCrafting table) {
-            return activeRecipe != null && buffer.insert(table, activeRecipe.molds);
+            return activeRecipe != null && insert(activeRecipe, table);
         }
     }
 

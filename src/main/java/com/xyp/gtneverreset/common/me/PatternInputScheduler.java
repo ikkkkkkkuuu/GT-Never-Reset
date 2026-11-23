@@ -5,12 +5,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import net.minecraft.item.ItemStack;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
+import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
+import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
 
 import gregtech.api.recipe.check.CheckRecipeResult;
@@ -27,8 +31,9 @@ public final class PatternInputScheduler {
     private final ArrayDeque<Integer> candidates = new ArrayDeque<>();
     private int selectedIndex = -1;
     private boolean startedInPass;
+    private final Map<IDualInputHatch, Long> checkedHatches = new IdentityHashMap<>();
 
-    private record Entry(IDualInputInventory inventory, ItemStack[] shared) {
+    private record Entry(IDualInputHatch hatch, IDualInputInventory inventory, ItemStack[] shared) {
 
         private RecipeThreadProcessingLogic.RecipeInputs inputs() {
             return new RecipeThreadProcessingLogic.RecipeInputs(
@@ -37,22 +42,30 @@ public final class PatternInputScheduler {
         }
     }
 
-    private static List<Entry> entries(List<IDualInputHatch> hatches) {
+    private List<Entry> entries(List<IDualInputHatch> hatches, boolean trackFallback) {
         List<Entry> entries = new ArrayList<>();
         Set<IDualInputInventory> seen = Collections.newSetFromMap(new IdentityHashMap<>());
         for (IDualInputHatch hatch : hatches) {
+            if (trackFallback && (hatch.getClass() == SuperMTEHatchCraftingInputME.class
+                || hatch.getClass() == CircuitMEPatternBuffer.class
+                || hatch.getClass() == CrossRecipeMEPatternBuffer.class)) {
+                checkedHatches.put(hatch, ((SuperMTEHatchCraftingInputME) hatch).getPatternInputRevision());
+            }
             ItemStack[] shared = hatch.getSharedItems();
             for (var it = hatch.inventories(); it.hasNext();) {
                 IDualInputInventory inventory = it.next();
-                if (seen.add(inventory) && !inventory.isEmpty()) entries.add(new Entry(inventory, shared));
+                if (!seen.add(inventory)) {
+                    // Another hatch supplied this inventory's shared slots during the round-robin pass.
+                    if (trackFallback) checkedHatches.remove(hatch);
+                } else if (!inventory.isEmpty()) entries.add(new Entry(hatch, inventory, shared));
             }
         }
         return entries;
     }
 
     /** Builds the snapshot reused by every start in one fill pass. */
-    public void beginPass(List<IDualInputHatch> hatches) {
-        passEntries = entries(hatches);
+    public void beginPass(List<IDualInputHatch> hatches, boolean trackFallback) {
+        passEntries = entries(hatches, trackFallback);
         int count = passEntries.size();
         for (int i = 0; i < count; i++) candidates.addLast((cursor + i) % count);
         startedInPass = false;
@@ -62,6 +75,7 @@ public final class PatternInputScheduler {
         passEntries = null;
         selectedIndex = -1;
         candidates.clear();
+        checkedHatches.clear();
     }
 
     public boolean inPass() {
@@ -74,7 +88,12 @@ public final class PatternInputScheduler {
         return next != null;
     }
 
-    public void finishSelection(boolean started) {
+    public void finishSelection(boolean started, CheckRecipeResult result) {
+        if (!started && result != CheckRecipeResultRegistry.NO_RECIPE) {
+            checkedHatches.remove(
+                passEntries.get(selectedIndex)
+                    .hatch());
+        }
         if (started || !startedInPass) cursor = (selectedIndex + 1) % passEntries.size();
         if (started) {
             startedInPass = true;
@@ -83,6 +102,12 @@ public final class PatternInputScheduler {
                 .isEmpty()) candidates.addLast(selectedIndex);
         }
         selectedIndex = -1;
+    }
+
+    public boolean alreadyChecked(IDualInputHatch hatch) {
+        if (hasSelection() || !candidates.isEmpty()) return false;
+        Long revision = checkedHatches.get(hatch);
+        return revision != null && revision == ((SuperMTEHatchCraftingInputME) hatch).getPatternInputRevision();
     }
 
     public boolean hasSelection() {
@@ -97,8 +122,9 @@ public final class PatternInputScheduler {
         return processEntry(entry, logic);
     }
 
-    public CheckRecipeResult checkNext(List<IDualInputHatch> hatches, RecipeThreadProcessingLogic logic) {
-        List<Entry> entries = entries(hatches);
+    public CheckRecipeResult checkNext(List<IDualInputHatch> hatches, RecipeThreadProcessingLogic logic,
+        boolean trackFallback) {
+        List<Entry> entries = entries(hatches, trackFallback);
         CheckRecipeResult result = CheckRecipeResultRegistry.NO_RECIPE;
         for (int i = 0; i < entries.size(); i++) {
             int index = (cursor + i) % entries.size();
@@ -110,7 +136,10 @@ public final class PatternInputScheduler {
                 cursor = (index + 1) % entries.size();
                 return found;
             }
-            if (found != CheckRecipeResultRegistry.NO_RECIPE) result = found;
+            if (found != CheckRecipeResultRegistry.NO_RECIPE) {
+                if (trackFallback) checkedHatches.remove(entry.hatch());
+                result = found;
+            }
         }
         logic.resetPatternInventory();
         return result;

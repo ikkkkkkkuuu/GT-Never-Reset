@@ -82,10 +82,8 @@ public final class RecipeThreadOutputs {
         if (largest.signum() == 0) return true;
         int high = largest.min(BigInteger.valueOf(Integer.MAX_VALUE))
             .intValueExact();
-        if (transfer(machine, largest, high, false)) {
-            transfer(machine, largest, high, true);
-            return largest().signum() == 0;
-        }
+        // transfer stages both channels and only commits after the entire slice fits.
+        if (transfer(machine, largest, high, true)) return largest().signum() == 0;
         if (high == 1 || !transfer(machine, largest, 1, false)) return false;
         int low = 1;
         high--;

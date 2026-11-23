@@ -16,6 +16,8 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.xyp.gtneverreset.api.me.PatternRecipeModePreflight;
 import com.xyp.gtneverreset.api.me.RecipeMapPatternInventory;
 import com.xyp.gtneverreset.api.mixinHelper.PatternRecipeProcessingAccess;
+import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeCandidateCache;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.common.me.PatternRecipeRouting;
 
@@ -82,6 +84,8 @@ public abstract class PatternRecipeProcessingMixin implements PatternRecipeProce
     private boolean gtnr$preparingMode;
     @Unique
     private boolean gtnr$callingOriginal;
+    @Unique
+    private boolean gtnr$patternLookup;
 
     @Override
     public boolean gtnr$cachePattern(IDualInputInventoryWithPattern inventory) {
@@ -145,9 +149,13 @@ public abstract class PatternRecipeProcessingMixin implements PatternRecipeProce
     private boolean gtnr$callCache(IDualInputInventoryWithPattern inventory, Operation<Boolean> original) {
         boolean previous = gtnr$callingOriginal;
         gtnr$callingOriginal = true;
-        try {
-            return original == null ? ((ProcessingLogic) (Object) this).tryCachePossibleRecipesFromPattern(inventory)
+        boolean isPatternSlot = inventory instanceof SuperMTEHatchCraftingInputME.PatternSlot<?>;
+        try (var scope = isPatternSlot ? RecipeCandidateCache.enter() : null) {
+            boolean accepted = original == null
+                ? ((ProcessingLogic) (Object) this).tryCachePossibleRecipesFromPattern(inventory)
                 : original.call(inventory);
+            gtnr$patternLookup = isPatternSlot && accepted;
+            return accepted;
         } finally {
             gtnr$callingOriginal = previous;
         }
@@ -162,7 +170,9 @@ public abstract class PatternRecipeProcessingMixin implements PatternRecipeProce
     private CheckRecipeResult gtnr$callProcess(Operation<CheckRecipeResult> original) {
         boolean previous = gtnr$callingOriginal;
         gtnr$callingOriginal = true;
-        try {
+        boolean patternLookup = gtnr$patternLookup;
+        gtnr$patternLookup = false;
+        try (var scope = patternLookup ? RecipeCandidateCache.enter() : null) {
             return original == null ? ((ProcessingLogic) (Object) this).process() : original.call();
         } finally {
             gtnr$callingOriginal = previous;
@@ -178,6 +188,7 @@ public abstract class PatternRecipeProcessingMixin implements PatternRecipeProce
     public void gtnr$resetRouting() {
         if (gtnr$preparingMode) return;
         gtnr$pendingMap = null;
+        gtnr$patternLookup = false;
         if (gtnr$restoreConfiguration != null) {
             gtnr$restoreConfiguration.run();
             gtnr$restoreConfiguration = null;

@@ -28,7 +28,11 @@ public class RecipeThreadProcessingLogic extends ProcessingLogic {
         activeDualInv = null;
     }
 
-    public final void prepareRecipe(long power) {
+    public boolean shouldRetryWithMorePower(CheckRecipeResult result) {
+        return true;
+    }
+
+    public void prepareRecipe(long power) {
         preparing = true;
         availablePower = Math.max(0, power);
         discardInputs();
