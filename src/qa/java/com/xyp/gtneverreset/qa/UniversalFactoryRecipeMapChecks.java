@@ -340,7 +340,19 @@ public final class UniversalFactoryRecipeMapChecks {
                         && recipe.mDuration == 1200
                         && GTNRItemList.HadronCatalyticRefinery.isStackEqual(recipe.mOutputs[0])),
             "IV controller is craftable");
-        var maps = new RecipeMap<?>[] { RecipeMaps.mixerNonCellRecipes, RecipeMaps.distillationTowerRecipes };
+        var refineryMaps = refinery.getAvailableRecipeMaps();
+        require(
+            java.util.Collections.disjoint(refineryMaps, factory.getAvailableRecipeMaps()),
+            "refinery and universal factory have distinct recipe pools");
+        require(
+            refineryMaps.size() == 12 && refineryMaps.containsAll(
+                List.of(
+                    RecipeMaps.arcFurnaceRecipes,
+                    RecipeMaps.alloySmelterRecipes,
+                    RecipeMaps.electroMagneticSeparatorRecipes,
+                    RecipeMaps.vacuumFreezerRecipes)),
+            "refinery exposes all four replacement pools");
+        var maps = new RecipeMap<?>[] { RecipeMaps.fluidHeaterRecipes, RecipeMaps.distillationTowerRecipes };
         var outputs = new FluidStack[] { Materials.Hydrogen.getGas(1), Materials.Oxygen.getGas(1) };
         for (int i = 0; i < maps.length; i++) {
             GTRecipe recipe = GTRecipeBuilder.builder()
@@ -386,7 +398,7 @@ public final class UniversalFactoryRecipeMapChecks {
         require(
             refinery.getRecipeThreadTasks()
                 .size() == 32 && refinery.getRecipeMap() == RecipeMaps.autoclaveRecipes,
-            "concurrent mixer and distillation orders preserve the selected autoclave mode");
+            "concurrent fluid heater and distillation orders preserve the selected autoclave mode");
         refineryEnergy.increaseStoredEnergyUnits(8192, true);
         refineryTile.enableWorking();
     }

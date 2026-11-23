@@ -47,17 +47,17 @@ public final class HadronCatalyticRefinery extends CrossRecipeMultiblockBase<Had
     private static final String STRUCTURE_PIECE = "main";
     private static final int HORIZONTAL_OFFSET = 8, VERTICAL_OFFSET = 22, DEPTH_OFFSET = 0;
     private static final List<RecipeMap<?>> RECIPE_MAPS = List.of(
-        RecipeMaps.mixerNonCellRecipes,
-        RecipeMaps.chemicalDehydratorNonCellRecipes,
+        RecipeMaps.arcFurnaceRecipes,
+        RecipeMaps.alloySmelterRecipes,
         RecipeMaps.autoclaveRecipes,
-        RecipeMaps.extractorRecipes,
+        RecipeMaps.electroMagneticSeparatorRecipes,
         RecipeMaps.fluidExtractionRecipes,
         RecipeMaps.brewingRecipes,
         RecipeMaps.fermentingRecipes,
         RecipeMaps.distilleryRecipes,
         RecipeMaps.distillationTowerRecipes,
         RecipeMaps.fluidHeaterRecipes,
-        RecipeMaps.fluidSolidifierRecipes,
+        RecipeMaps.vacuumFreezerRecipes,
         RecipeMaps.cannerRecipes);
 
     private static IStructureDefinition<HadronCatalyticRefinery> createStructure() {
