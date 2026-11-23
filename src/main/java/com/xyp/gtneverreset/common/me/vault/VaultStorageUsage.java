@@ -28,16 +28,17 @@ public final class VaultStorageUsage {
 
     /** Returns the accepted quantity without changing the ledger, including space in a partially used byte. */
     public long insertableAmount(long currentAmount, long requestedAmount, int amountPerByte) {
-        if (requestedAmount <= 0) return 0;
+        if (requestedAmount <= 0 || currentAmount < 0) return 0;
+        long limit = Math.min(requestedAmount, Long.MAX_VALUE - currentAmount);
         long freeBytes = capacity.longValue() - usedBytes();
         if (currentAmount <= 0) freeBytes -= bytesPerType;
         if (freeBytes < 0) return 0;
         long unusedAmount = currentAmount <= 0 ? 0 : (amountPerByte - currentAmount % amountPerByte) % amountPerByte;
-        long byteLimitedAmount = freeBytes > Long.MAX_VALUE / amountPerByte ? Long.MAX_VALUE
-            : freeBytes * amountPerByte;
-        byteLimitedAmount = byteLimitedAmount > Long.MAX_VALUE - unusedAmount ? Long.MAX_VALUE
-            : byteLimitedAmount + unusedAmount;
-        return Math.min(requestedAmount, Math.min(byteLimitedAmount, Long.MAX_VALUE - currentAmount));
+        if (limit <= unusedAmount) return limit;
+        long bytesNeeded = 1 + (limit - unusedAmount - 1) / amountPerByte;
+        if (bytesNeeded <= freeBytes) return limit;
+        // Here the available quantity is strictly below limit, so both operations fit in a long.
+        return freeBytes * amountPerByte + unusedAmount;
     }
 
     /**
