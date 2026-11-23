@@ -116,6 +116,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     public boolean locked = true;
     @Setter
     public boolean doVoidExcess = false;
+    private int storagePriority;
     private IItemList<IAEItemStack> storedItems = AEApi.instance()
         .storage()
         .createItemList();
@@ -875,6 +876,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
             .storage()
             .createFluidList();
         setDoVoidExcess(tag.getBoolean("doVoidExcess"));
+        storagePriority = tag.getInteger("storagePriority");
         locked = true;
         wirelessMode = tag.getBoolean("wirelessMode");
         if (tag.hasKey("STORE_ITEM", 9) || tag.hasKey("STORE_FLUID", 9)) {
@@ -888,6 +890,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     private void writeSettings(NBTTagCompound tag) {
         tag.setBoolean("wirelessMode", wirelessMode);
         tag.setBoolean("doVoidExcess", doVoidExcess);
+        tag.setInteger("storagePriority", storagePriority);
         tag.setBoolean("locked", locked);
     }
 
@@ -1011,6 +1014,20 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
     @Override
     public boolean getDoVoidExcess() {
         return doVoidExcess;
+    }
+
+    @Override
+    public int getStoragePriority() {
+        return storagePriority;
+    }
+
+    public void setStoragePriority(EntityPlayer player, int priority) {
+        if (priority == storagePriority || portHatch == null
+            || portHatch.controller != this
+            || !portHatch.canConfigureStoragePriority(player)) return;
+        storagePriority = priority;
+        markDirty();
+        portHatch.refreshCellArray();
     }
 
 }

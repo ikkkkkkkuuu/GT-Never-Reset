@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.StatCollector;
@@ -18,6 +19,7 @@ import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
+import appeng.api.config.SecurityPermissions;
 import appeng.api.implementations.IPowerChannelState;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
@@ -29,6 +31,7 @@ import appeng.api.networking.events.MENetworkPowerStatusChange;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.MachineSource;
+import appeng.api.networking.storage.IStorageGrid;
 import appeng.api.storage.ICellContainer;
 import appeng.api.storage.IMEInventory;
 import appeng.api.storage.IMEInventoryHandler;
@@ -138,10 +141,12 @@ public class VaultPortHatch extends MTEHatch
                 postUpdateFluid(fluid.getFluidStack(), fluid.getStackSize());
             }
         }
+        if (getPriority() != 0) refreshCellArray();
     }
 
     public void unbind() {
         if (this.controller == null) return;
+        int oldPriority = getPriority();
         if (this.controller.hasItem()) {
             for (IAEItemStack item : controller.getStoreItems()) {
                 postUpdateItem(item.getItemStack(), -item.getStackSize());
@@ -153,6 +158,7 @@ public class VaultPortHatch extends MTEHatch
             }
         }
         this.controller = null;
+        if (oldPriority != 0) refreshCellArray();
     }
 
     @Override
@@ -177,6 +183,28 @@ public class VaultPortHatch extends MTEHatch
     public void updateValidGridProxySides() {
         AENetworkProxy proxy = getProxy();
         if (proxy != null) proxy.setValidSides(EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)));
+    }
+
+    public IStorageGrid getNetworkStorageFor(EntityPlayer player) {
+        AENetworkProxy proxy = getProxy();
+        if (controller == null || proxy == null || !proxy.isActive()) return null;
+        try {
+            if (proxy.getSecurity()
+                .hasPermission(player, SecurityPermissions.EXTRACT)) return proxy.getStorage();
+        } catch (GridAccessException ignored) {}
+        return null;
+    }
+
+    public boolean canConfigureStoragePriority(EntityPlayer player) {
+        if (player.worldObj.isRemote) return false;
+        AENetworkProxy proxy = getProxy();
+        if (proxy == null) return false;
+        try {
+            return proxy.getSecurity()
+                .hasPermission(player, SecurityPermissions.BUILD);
+        } catch (GridAccessException ignored) {
+            return false;
+        }
     }
 
     @Override
@@ -283,17 +311,15 @@ public class VaultPortHatch extends MTEHatch
 
     @MENetworkEventSubscribe
     public void powerRender(final MENetworkPowerStatusChange c) {
-        try {
-            AENetworkProxy proxy = getProxy();
-            if (proxy != null && proxy.isActive()) {
-                proxy.getGrid()
-                    .postEvent(new MENetworkCellArrayUpdate());
-            }
-        } catch (GridAccessException e) {}
+        refreshCellArray();
     }
 
     @MENetworkEventSubscribe
     public void channelRender(final MENetworkChannelsChanged c) {
+        refreshCellArray();
+    }
+
+    public void refreshCellArray() {
         try {
             AENetworkProxy proxy = getProxy();
             if (proxy != null && proxy.isActive()) {
@@ -329,7 +355,7 @@ public class VaultPortHatch extends MTEHatch
 
     @Override
     public int getPriority() {
-        return 0;
+        return controller == null ? 0 : controller.getStoragePriority();
     }
 
     @Override
@@ -431,7 +457,7 @@ public class VaultPortHatch extends MTEHatch
 
         @Override
         public int getPriority() {
-            return 0;
+            return VaultPortHatch.this.getPriority();
         }
 
         @Override
@@ -507,7 +533,7 @@ public class VaultPortHatch extends MTEHatch
 
         @Override
         public int getPriority() {
-            return 0;
+            return VaultPortHatch.this.getPriority();
         }
 
         @Override

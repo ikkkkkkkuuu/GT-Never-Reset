@@ -1,474 +1,803 @@
 package com.xyp.gtneverreset.common.gui.modularui.multiblock;
 
-import static gregtech.api.metatileentity.BaseTileEntity.TOOLTIP_DELAY;
-
-import java.math.BigInteger;
+import java.io.IOException;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
-import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.NBTSizeTracker;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.StatCollector;
+import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.fluids.FluidStack;
 
-import org.lwjgl.opengl.GL11;
-
+import com.cleanroommc.modularui.api.IPanelHandler;
+import com.cleanroommc.modularui.api.UpOrDown;
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
-import com.cleanroommc.modularui.api.widget.IWidget;
-import com.cleanroommc.modularui.drawable.DynamicDrawable;
-import com.cleanroommc.modularui.drawable.Rectangle;
-import com.cleanroommc.modularui.drawable.UITexture;
+import com.cleanroommc.modularui.api.widget.Interactable;
+import com.cleanroommc.modularui.drawable.FluidDrawable;
+import com.cleanroommc.modularui.drawable.GuiDraw;
+import com.cleanroommc.modularui.drawable.GuiTextures;
+import com.cleanroommc.modularui.drawable.ItemDrawable;
 import com.cleanroommc.modularui.factory.PosGuiData;
+import com.cleanroommc.modularui.network.NetworkUtils;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
-import com.cleanroommc.modularui.theme.WidgetTheme;
 import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.utils.Alignment;
+import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.value.sync.BooleanSyncValue;
+import com.cleanroommc.modularui.value.sync.GenericSyncValue;
+import com.cleanroommc.modularui.value.sync.IntSyncValue;
 import com.cleanroommc.modularui.value.sync.LongSyncValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widget.Widget;
-import com.cleanroommc.modularui.widgets.SlotGroupWidget;
-import com.cleanroommc.modularui.widgets.ToggleButton;
+import com.cleanroommc.modularui.widget.sizer.Unit;
+import com.cleanroommc.modularui.widgets.TextWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
-import com.xyp.gtneverreset.GTNeverReset;
+import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
+import com.xyp.gtneverreset.common.machine.hatch.VaultPortHatch;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
+import com.xyp.gtneverreset.common.me.vault.VaultInventoryHistory;
+import com.xyp.gtneverreset.common.me.vault.VaultNetworkInventory;
+import com.xyp.gtneverreset.config.ScreenThemeConfig;
+import com.xyp.gtnrlib.gui.theme.AE2Theme;
+import com.xyp.gtnrlib.gui.theme.ae2.AE2Look;
+import com.xyp.gtnrlib.gui.widget.ThemedButton;
 
+import appeng.api.networking.storage.IStorageGrid;
+import appeng.api.storage.IMEMonitor;
+import appeng.api.storage.data.IAEFluidStack;
+import appeng.api.storage.data.IAEItemStack;
+import appeng.api.storage.data.IAEStack;
+import appeng.util.item.AEFluidStack;
+import appeng.util.item.AEItemStack;
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import gregtech.common.modularui2.factory.GTBaseGuiBuilder;
 
 public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityDataHub> {
 
-    private static final String ITEM_TYPES_SYNC_KEY = "singularityDataHubItemTypes";
-    private static final String FLUID_TYPES_SYNC_KEY = "singularityDataHubFluidTypes";
-    private static final String STORAGE_BYTES_SYNC_KEY = "singularityDataHubStorageBytes";
-    private static final String WIRELESS_MODE_SYNC_KEY = "singularityDataHubWirelessMode";
-    private static final String AUTO_VOID_SYNC_KEY = "singularityDataHubAutoVoid";
-    private static final String PORT_HATCH_SYNC_KEY = "singularityDataHubPortHatch";
-
-    private static final int CONTROL_BUTTON_SIZE = 16;
-    private static final int TEXT = 0xFFD6D0E0;
-    private static final int MUTED = 0xFFAAA4B2;
-    private static final int VALUE = 0xFF8377FF;
-    private static final int ITEM = 0xFFF89737;
-    private static final int FLUID = 0xFF3FD6FF;
-    private static final int GOOD = 0xFF6CFFA0;
+    private static final String TEXT = "gtnr.gui.singularity_data_hub.";
+    private static final String ITEMS = "vaultNetworkItems";
+    private static final String FLUIDS = "vaultNetworkFluids";
+    private static final String RESIZE = "vaultNetworkResize";
+    private static final String SCROLL = "vaultNetworkScroll";
+    private static final String SORT = "vaultNetworkSort";
+    private static final String SEARCH = "vaultNetworkSearch";
+    private static final String HISTORY = "vaultNetworkHistorySelect";
+    private static final int SLOT_SIZE = AE2Theme.SLOT_SIZE;
+    private static final int GRID_PADDING = 4;
+    private static final int PANEL_WIDTH = 440;
+    private static final int PANEL_HEIGHT = 320;
+    private static final int PANEL_PADDING = 8;
+    private static final int OVERVIEW_HEIGHT = 64;
+    private static final int REFRESH_TICKS = 20;
+    private static final int SEARCH_LENGTH = 80;
 
     public SingularityDataHubGui(SingularityDataHub multiblock) {
         super(multiblock);
     }
 
     @Override
-    protected void registerSyncValues(PanelSyncManager syncManager) {
-        super.registerSyncValues(syncManager);
-        syncManager.syncValue(ITEM_TYPES_SYNC_KEY, new LongSyncValue(multiblock::itemsCount));
-        syncManager.syncValue(FLUID_TYPES_SYNC_KEY, new LongSyncValue(multiblock::fluidsCount));
-        syncManager.syncValue(STORAGE_BYTES_SYNC_KEY, new LongSyncValue(multiblock::getUsedStorageBytes));
-        syncManager.syncValue(WIRELESS_MODE_SYNC_KEY, new BooleanSyncValue(() -> multiblock.wirelessMode));
-        syncManager.syncValue(AUTO_VOID_SYNC_KEY, new BooleanSyncValue(() -> multiblock.doVoidExcess));
-        syncManager.syncValue(PORT_HATCH_SYNC_KEY, new BooleanSyncValue(() -> multiblock.portHatch != null));
-    }
-
-    @Override
     protected int getBasePanelWidth() {
-        return 344;
+        return PANEL_WIDTH;
     }
 
     @Override
     protected int getBasePanelHeight() {
-        return 232;
+        return PANEL_HEIGHT;
     }
 
     @Override
     protected ModularPanel getBasePanel(PosGuiData guiData, PanelSyncManager syncManager, UISettings uiSettings) {
-        return super.getBasePanel(guiData, syncManager, uiSettings).background(VaultGuiTextures.BACKGROUND);
+        ModularPanel panel = new GTBaseGuiBuilder(multiblock, guiData, syncManager, uiSettings)
+            .setWidth(getBasePanelWidth())
+            .setHeight(getBasePanelHeight())
+            .doesAddTitle(false)
+            .doesAddGregTechLogo(false)
+            .doesBindPlayerInventory(false)
+            .build();
+        if (guiData.isClient()) {
+            uiSettings.useTheme(ScreenThemeConfig.vault.themeId);
+            panel.width(
+                () -> Math.min(
+                    PANEL_WIDTH,
+                    panel.getScreen()
+                        .getScreenArea()
+                        .w() - 2 * PANEL_PADDING),
+                Unit.Measure.PIXEL);
+            panel.height(
+                () -> Math.min(
+                    PANEL_HEIGHT,
+                    panel.getScreen()
+                        .getScreenArea()
+                        .h() - 2 * PANEL_PADDING),
+                Unit.Measure.PIXEL);
+        }
+        return panel;
     }
 
     @Override
     public Flow createMainColumn(ModularPanel panel, PanelSyncManager syncManager) {
-        LongSyncValue itemTypes = syncManager.findSyncHandler(ITEM_TYPES_SYNC_KEY, LongSyncValue.class);
-        LongSyncValue fluidTypes = syncManager.findSyncHandler(FLUID_TYPES_SYNC_KEY, LongSyncValue.class);
-        LongSyncValue storageBytes = syncManager.findSyncHandler(STORAGE_BYTES_SYNC_KEY, LongSyncValue.class);
-        BooleanSyncValue wirelessMode = syncManager.findSyncHandler(WIRELESS_MODE_SYNC_KEY, BooleanSyncValue.class);
-        BooleanSyncValue autoVoid = syncManager.findSyncHandler(AUTO_VOID_SYNC_KEY, BooleanSyncValue.class);
-        BooleanSyncValue portHatch = syncManager.findSyncHandler(PORT_HATCH_SYNC_KEY, BooleanSyncValue.class);
-
-        ParentWidget<?> content = new ParentWidget<>().size(336, 224);
-        content.child(section(0, 4, 176, 112));
-        // #tr gtnr.gui.singularity_data_hub.common_storage
-        // # Common Storage
-        // # zh_CN 通用存储
+        ParentWidget<?> content = new ParentWidget<>().fullWidth()
+            .expanded();
+        NetworkBrowser browser = new NetworkBrowser(syncManager);
+        IPanelHandler historyPanel = syncManager.syncedPanel(
+            VaultInventoryHistoryGui.NAME,
+            true,
+            (manager, handler) -> VaultInventoryHistoryGui.build(
+                panel,
+                manager,
+                NetworkBrowser.inventorySync(browser::historyIdentity),
+                browser::historySample,
+                browser::clearHistory));
+        content.child(createOverview(syncManager, browser));
         content.child(
-            text(IKey.lang("gtnr.gui.singularity_data_hub.common_storage"), 8, 12, 148, ITEM, Alignment.CenterLeft));
-        content.child(bytesRow(storageBytes::getLongValue, 27));
-        // #tr gtnr.gui.singularity_data_hub.need_vault_port_hatch
-        // # Vault Port Hatch is required
-        // # zh_CN 需要保险库接口
-        content.child(
-            dynamic(
-                () -> portHatch.getBoolValue() ? ""
-                    : StatCollector.translateToLocal("gtnr.gui.singularity_data_hub.need_vault_port_hatch"),
-                38,
-                43,
-                126,
-                0xFFFF5555,
-                Alignment.CenterLeft));
-        content.child(section(182, 4, 154, 214));
-        // #tr gtnr.gui.singularity_data_hub.system_load
-        // # System Load
-        // # zh_CN 系统负载
-        content
-            .child(text(IKey.lang("gtnr.gui.singularity_data_hub.system_load"), 190, 12, 138, TEXT, Alignment.Center));
-        content.child(darkInset(190, 28, 138, 172));
-        DoubleSupplier load = () -> storageLoad(storageBytes.getLongValue());
-        content.child(
-            new VaultStorageLoadWidget(load).pos(198, 40)
-                .size(32, 126));
-        content.child(dynamic(() -> formatPercent(load.getAsDouble()), 198, 168, 32, GOOD, Alignment.Center));
-        // #tr gtnr.gui.singularity_data_hub.current_load
-        // # Current Load
-        // # zh_CN 当前负载
-        content.child(
-            metric(
-                "gtnr.gui.singularity_data_hub.current_load",
-                () -> formatPercent(load.getAsDouble()),
-                238,
-                44,
-                TEXT));
-        // #tr gtnr.gui.singularity_data_hub.item_types
-        // # Item Types
-        // # zh_CN 物品种类
-        content.child(
-            metric(
-                "gtnr.gui.singularity_data_hub.item_types",
-                () -> compactAmount(itemTypes.getLongValue()),
-                238,
-                62,
-                ITEM));
-        // #tr gtnr.gui.singularity_data_hub.fluid_types
-        // # Fluid Types
-        // # zh_CN 流体种类
-        content.child(
-            metric(
-                "gtnr.gui.singularity_data_hub.fluid_types",
-                () -> compactAmount(fluidTypes.getLongValue()),
-                238,
-                78,
-                FLUID));
-        content.child(
-            // #tr gtnr.gui.singularity_data_hub.mode
-            // # Mode
-            // # zh_CN 模式
-            // #tr gtnr.gui.singularity_data_hub.wireless
-            // # Wireless
-            // # zh_CN 无线
-            // #tr gtnr.gui.singularity_data_hub.wired
-            // # Wired
-            // # zh_CN 有线
-            metric(
-                "gtnr.gui.singularity_data_hub.mode",
-                () -> StatCollector.translateToLocal(
-                    wirelessMode.getBoolValue() ? "gtnr.gui.singularity_data_hub.wireless"
-                        : "gtnr.gui.singularity_data_hub.wired"),
-                238,
-                96,
-                wirelessMode.getBoolValue() ? VALUE : TEXT));
-        content.child(
-            // #tr gtnr.gui.singularity_data_hub.auto_void
-            // # Auto-voiding
-            // # zh_CN 自动销毁溢出
-            // #tr gtnr.gui.singularity_data_hub.enabled
-            // # Enabled
-            // # zh_CN 已启用
-            // #tr gtnr.gui.singularity_data_hub.disabled
-            // # Disabled
-            // # zh_CN 已禁用
-            metric(
-                "gtnr.gui.singularity_data_hub.auto_void",
-                () -> StatCollector.translateToLocal(
-                    autoVoid.getBoolValue() ? "gtnr.gui.singularity_data_hub.enabled"
-                        : "gtnr.gui.singularity_data_hub.disabled"),
-                238,
-                114,
-                autoVoid.getBoolValue() ? GOOD : MUTED));
-        // #tr gtnr.gui.singularity_data_hub.running_cost
-        // # Running Cost
-        // # zh_CN 运行成本
-        content.child(metric("gtnr.gui.singularity_data_hub.running_cost", () -> "0 EU/t", 238, 132, TEXT));
-        content.child(
-            SlotGroupWidget.playerInventory((index, slot) -> slot.background(VaultGuiTextures.ITEM_SLOT))
-                .pos(8, 123));
-        content.child(createFixedButtonColumn(syncManager).pos(309, 160));
+            createNetworkBrowser(syncManager, browser, historyPanel).left(0)
+                .right(0)
+                .top(OVERVIEW_HEIGHT)
+                .bottom(0));
         return Flow.column()
-            .padding(4)
+            .full()
+            .padding(PANEL_PADDING)
             .child(content);
     }
 
-    private IWidget section(int x, int y, int width, int height) {
-        return new ParentWidget<>().pos(x, y)
-            .size(width, height)
-            .background(VaultGuiTextures.PANEL_BORDER);
-    }
+    private ParentWidget<?> createOverview(PanelSyncManager syncManager, NetworkBrowser browser) {
+        LongSyncValue usedBytes = new LongSyncValue(multiblock::getUsedStorageBytes);
+        LongSyncValue itemTypes = new LongSyncValue(multiblock::itemsCount);
+        LongSyncValue fluidTypes = new LongSyncValue(multiblock::fluidsCount);
+        BooleanSyncValue autoVoid = new BooleanSyncValue(() -> multiblock.doVoidExcess);
+        BooleanSyncValue hasPort = new BooleanSyncValue(() -> multiblock.portHatch != null);
+        IntSyncValue priority = new IntSyncValue(
+            multiblock::getStoragePriority,
+            value -> { if (!syncManager.isClient()) multiblock.setStoragePriority(syncManager.getPlayer(), value); })
+                .allowC2S();
+        syncManager.syncValue("singularityDataHubStorageBytes", usedBytes);
+        syncManager.syncValue("singularityDataHubItemTypes", itemTypes);
+        syncManager.syncValue("singularityDataHubFluidTypes", fluidTypes);
+        syncManager.syncValue("singularityDataHubAutoVoid", autoVoid);
+        syncManager.syncValue("singularityDataHubPortHatch", hasPort);
+        syncManager.syncValue("singularityDataHubStoragePriority", priority);
 
-    private IWidget darkInset(int x, int y, int width, int height) {
-        ParentWidget<?> inset = new ParentWidget<>().pos(x, y)
-            .size(width, height)
-            .background(new Rectangle().color(0xFFC9C3D6));
-        inset.child(
-            new ParentWidget<>().pos(1, 1)
-                .size(width - 2, height - 2)
-                .background(new Rectangle().color(0xFF17141E)));
-        inset.child(
-            new ParentWidget<>().pos(2, 2)
-                .size(width - 4, height - 4)
-                .background(new Rectangle().color(0xFF201E27)));
-        return inset;
-    }
-
-    private Flow createFixedButtonColumn(PanelSyncManager syncManager) {
-        return Flow.column()
-            .size(18, 40)
-            .reverseLayout(true)
-            .child(createPowerSwitchButton())
-            .child(createStructureUpdateButton(syncManager));
-    }
-
-    @Override
-    protected IWidget createStructureUpdateButton(PanelSyncManager syncManager) {
-        ToggleButton button = ((ToggleButton) super.createStructureUpdateButton(syncManager)).size(CONTROL_BUTTON_SIZE)
-            .overlay(
-                new DynamicDrawable(
-                    () -> multiblock.getStructureUpdateTime() > -20 ? VaultGuiTextures.STRUCTURE_CHECK_ON
-                        : VaultGuiTextures.STRUCTURE_CHECK_OFF))
-            .tooltipShowUpTimer(TOOLTIP_DELAY);
-        return applyVaultToggleButton(button, () -> true);
-    }
-
-    @Override
-    protected ToggleButton createPowerSwitchButton() {
-        ToggleButton button = super.createPowerSwitchButton().size(CONTROL_BUTTON_SIZE)
-            .overlay(
-                new DynamicDrawable(
-                    () -> multiblock.isAllowedToWork() ? VaultGuiTextures.POWER_SWITCH_ON
-                        : VaultGuiTextures.POWER_SWITCH_DISABLED))
-            .tooltipShowUpTimer(TOOLTIP_DELAY);
-        return applyVaultToggleButton(button, () -> !isPowerSwitchDisabled());
-    }
-
-    private ToggleButton applyVaultToggleButton(ToggleButton button, BooleanSupplier enabled) {
-        button.background(
-            false,
-            new DynamicDrawable(
-                () -> enabled.getAsBoolean() ? VaultGuiTextures.BUTTON : VaultGuiTextures.BUTTON_DISABLED));
-        button.background(
-            true,
-            new DynamicDrawable(
-                () -> enabled.getAsBoolean() ? VaultGuiTextures.BUTTON_PRESSED : VaultGuiTextures.BUTTON_DISABLED));
-        button.hoverBackground(
-            false,
-            new DynamicDrawable(
-                () -> enabled.getAsBoolean() ? VaultGuiTextures.BUTTON_HOVER : VaultGuiTextures.BUTTON_DISABLED));
-        button.hoverBackground(
-            true,
-            new DynamicDrawable(
-                () -> enabled.getAsBoolean() ? VaultGuiTextures.BUTTON_HOVER : VaultGuiTextures.BUTTON_DISABLED));
-        return button;
-    }
-
-    private IWidget bytesRow(LongSupplier usedBytes, int y) {
-        ParentWidget<?> row = new ParentWidget<>().pos(8, y)
-            .size(160, 12);
+        ParentWidget<?> overview = new ParentWidget<>().fullWidth()
+            .height(OVERVIEW_HEIGHT);
+        overview.child(
+            label(IKey.lang("gtnr.machine.singularity_data_hub.name")).pos(0, 0)
+                .width(156));
+        // #tr gtnr.gui.singularity_data_hub.network_search
+        // # Search
+        // # zh_CN 搜索
+        overview.child(
+            label(IKey.lang(TEXT + "network_search")).pos(122, 2)
+                .width(38));
+        overview.child(
+            new TextFieldWidget().left(164)
+                .right(0)
+                .top(0)
+                .height(16)
+                .setMaxLength(SEARCH_LENGTH)
+                .autoUpdateOnChange(true)
+                .value(new StringValue.Dynamic(() -> browser.clientQuery, browser::setClientQuery)));
         // #tr gtnr.gui.singularity_data_hub.bytes
         // # Bytes
         // # zh_CN 字节
-        row.child(text(IKey.lang("gtnr.gui.singularity_data_hub.bytes"), 0, 0, 28, MUTED, Alignment.CenterLeft));
-        row.child(
-            new VaultStorageProgressWidget(() -> storageLoad(usedBytes.getAsLong()), FLUID).pos(30, 1)
-                .size(36, 9));
-        row.child(dynamic(() -> compactAmount(usedBytes.getAsLong()), 72, 0, 24, GOOD, Alignment.CenterRight));
-        row.child(dynamic(() -> "/", 98, 0, 6, MUTED, Alignment.Center));
-        row.child(
-            dynamic(
-                () -> compactAmount(SingularityDataHub.MAX_STORAGE_BYTES),
-                106,
-                0,
-                52,
-                FLUID,
-                Alignment.CenterLeft));
-        return row;
+        overview.child(
+            metric(
+                "bytes",
+                () -> compact(usedBytes.getLongValue()) + " / " + compact(SingularityDataHub.MAX_STORAGE_BYTES),
+                18).left(0)
+                    .widthRel(0.48f));
+        Widget<?> loadBar = new Widget<>().pos(0, 31)
+            .widthRel(0.46f)
+            .height(10);
+        loadBar.background((context, x, y, width, height, theme) -> {
+            AE2Look look = AE2Look.of(loadBar);
+            look.drawWell(x, y, width, height);
+            int fill = (int) (load(usedBytes.getLongValue()) * (width - 4));
+            if (fill > 0) look.drawSelectedRow(x + 2, y + 2, fill, height - 4);
+        });
+        loadBar.tooltip(
+            t -> t.setAutoUpdate(true)
+                .tooltipBuilder(lines -> {
+                    // #tr gtnr.gui.singularity_data_hub.current_load
+                    // # Current Load
+                    // # zh_CN 当前负载
+                    lines.addLine(IKey.str(tr("current_load") + " " + percent(usedBytes.getLongValue())));
+                    lines.addLine(
+                        IKey.str(
+                            String.format(
+                                Locale.ROOT,
+                                "%,d / %,d",
+                                usedBytes.getLongValue(),
+                                SingularityDataHub.MAX_STORAGE_BYTES)));
+                }));
+        overview.child(loadBar);
+        // #tr gtnr.gui.singularity_data_hub.item_types
+        // # Item Types
+        // # zh_CN 物品种类
+        overview.child(
+            metric("item_types", () -> compact(itemTypes.getLongValue()), 18).leftRelAnchor(0.5f, 0)
+                .right(0));
+        // #tr gtnr.gui.singularity_data_hub.fluid_types
+        // # Fluid Types
+        // # zh_CN 流体种类
+        overview.child(
+            metric("fluid_types", () -> compact(fluidTypes.getLongValue()), 31).leftRelAnchor(0.5f, 0)
+                .right(0));
+        // #tr gtnr.gui.singularity_data_hub.auto_void
+        // # Auto-voiding
+        // # zh_CN 自动销毁溢出
+        // #tr gtnr.gui.singularity_data_hub.enabled
+        // # Enabled
+        // # zh_CN 已启用
+        // #tr gtnr.gui.singularity_data_hub.disabled
+        // # Disabled
+        // # zh_CN 已禁用
+        overview.child(
+            metric("auto_void", () -> tr(autoVoid.getBoolValue() ? "enabled" : "disabled"), 44).leftRelAnchor(0.5f, 0)
+                .right(0));
+        // #tr gtnr.gui.singularity_data_hub.need_vault_port_hatch
+        // # Vault Port Hatch is required
+        // # zh_CN 需要保险库接口
+        overview.child(
+            label(IKey.dynamic(() -> hasPort.getBoolValue() ? "" : tr("need_vault_port_hatch"))).left(0)
+                .widthRel(0.48f)
+                .top(44));
+        // #tr gtnr.gui.singularity_data_hub.storage_priority
+        // # ME Priority
+        // # zh_CN ME 优先级
+        overview.child(
+            label(IKey.lang(TEXT + "storage_priority")).pos(0, 44)
+                .width(62)
+                .setEnabledIf(widget -> hasPort.getBoolValue()));
+        overview.child(
+            new TextFieldWidget().name("vault_storage_priority")
+                .pos(65, 42)
+                .size(75, 16)
+                .numbersInt(Integer.MIN_VALUE, Integer.MAX_VALUE)
+                .value(priority)
+                .setEnabledIf(widget -> hasPort.getBoolValue()));
+        overview.child(
+            Flow.row()
+                .pos(72, 0)
+                .size(44, 18)
+                .child(createPowerSwitchButton())
+                .child(createStructureUpdateButton(syncManager)));
+        return overview;
     }
 
-    private IWidget metric(String key, Supplier<String> value, int x, int y, int color) {
-        return dynamic(
-            () -> StatCollector.translateToLocal(key) + ": " + value.get(),
-            x,
-            y,
-            96,
-            color,
-            Alignment.CenterLeft);
+    private ParentWidget<?> createNetworkBrowser(PanelSyncManager syncManager, NetworkBrowser browser,
+        IPanelHandler historyPanel) {
+        ParentWidget<?> network = new ParentWidget<>();
+        InventoryGrid grid = new InventoryGrid(browser, syncManager, historyPanel).left(0)
+            .right(0)
+            .top(23)
+            .bottom(0);
+        syncManager.onClientTick(grid::syncSize);
+        syncManager.onClientTick(browser::sendSearch);
+        network.child(grid);
+        // #tr gtnr.gui.singularity_data_hub.network
+        // # ME Network
+        // # zh_CN ME 网络
+        network.child(
+            label(IKey.lang(TEXT + "network")).left(0)
+                .top(4)
+                .width(78));
+        network.child(
+            new ThemedButton<>().size(84, 20)
+                .right(152)
+                .top(0)
+                .label(browser::sortLabel, () -> true)
+                .action(() -> syncManager.callSyncedAction(SORT)));
+        // #tr gtnr.gui.singularity_data_hub.network_items
+        // # Items
+        // # zh_CN 物品
+        network.child(
+            channelButton("network_items", () -> !browser.fluid(), syncManager, ITEMS).right(76)
+                .top(0));
+        // #tr gtnr.gui.singularity_data_hub.network_fluids
+        // # Fluids
+        // # zh_CN 流体
+        network.child(
+            channelButton("network_fluids", browser::fluid, syncManager, FLUIDS).right(0)
+                .top(0));
+        return network;
     }
 
-    private IWidget text(IKey key, int x, int y, int width, int color, Alignment alignment) {
-        return key.asWidget()
-            .pos(x, y)
-            .size(width, 12)
-            .color(color)
-            .textAlign(alignment);
+    private static ThemedButton<?> channelButton(String key, BooleanSupplier selected, PanelSyncManager sync,
+        String action) {
+        return new ThemedButton<>().size(72, 20)
+            .selected(selected)
+            .label(() -> tr(key), () -> true)
+            .action(() -> sync.callSyncedAction(action));
     }
 
-    private IWidget dynamic(Supplier<String> value, int x, int y, int width, int color, Alignment alignment) {
-        return text(IKey.dynamic(value), x, y, width, color, alignment);
+    private static TextWidget<?> metric(String key, Supplier<String> value, int y) {
+        return label(IKey.dynamic(() -> tr(key) + ": " + value.get())).top(y);
     }
 
-    private static double storageLoad(long usedBytes) {
-        return Math.min(1D, usedBytes / (double) SingularityDataHub.MAX_STORAGE_BYTES);
+    private static TextWidget<?> label(IKey text) {
+        return text.asWidget()
+            .height(12)
+            .textAlign(Alignment.CenterLeft);
     }
 
-    private static String formatPercent(double value) {
-        if (value > 0D && value < 0.001D) return "<0.1%";
-        return String.format(Locale.ROOT, "%.1f%%", value * 100D);
+    private static String tr(String key) {
+        return StatCollector.translateToLocal(TEXT + key);
     }
 
-    private static String compactAmount(long amount) {
-        return compactAmount(BigInteger.valueOf(amount));
+    private static double load(long bytes) {
+        return bytes / (double) SingularityDataHub.MAX_STORAGE_BYTES;
     }
 
-    private static String compactAmount(BigInteger amount) {
-        BigInteger safeAmount = amount == null ? BigInteger.ZERO : amount.abs();
+    private static String percent(long bytes) {
+        double percentage = load(bytes) * 100;
+        return percentage > 0 && percentage < 0.1 ? "<0.1%" : String.format(Locale.ROOT, "%.1f%%", percentage);
+    }
 
-        if (safeAmount.compareTo(BigInteger.valueOf(1_000L)) < 0) {
-            return safeAmount.toString();
-        }
-
+    private static String compact(long amount) {
+        if (amount < 1000) return Long.toString(amount);
         String[] units = { "", "K", "M", "G", "T", "P", "E" };
-
-        double scaled = safeAmount.doubleValue();
-        int unitIndex = 0;
-
-        while (scaled >= 1_000D && unitIndex < units.length - 1) {
-            scaled /= 1_000D;
-            unitIndex++;
+        double scaled = amount;
+        int index = 0;
+        while (scaled >= 1000 && index < units.length - 1) {
+            scaled /= 1000;
+            index++;
         }
-
-        if (unitIndex == units.length - 1) {
-            return String.format(Locale.ROOT, "%.2f%s", scaled, units[unitIndex]);
-        }
-
-        return String.format(Locale.ROOT, scaled < 10D ? "%.1f%s" : "%.0f%s", scaled, units[unitIndex]);
+        return String.format(Locale.ROOT, "%.1f%s", scaled, units[index]);
     }
 
-    private static final class VaultStorageLoadWidget extends Widget<VaultStorageLoadWidget> {
+    private final class NetworkBrowser {
 
-        private static final int GAUGE_FRAME = 0xFFB0B0C8;
-        private static final int GAUGE_INSET = 0xFF2B2834;
-        private static final int GAUGE_SHADOW = 0xFF17141E;
-        private static final int GAUGE_FILL = 0xFF00B800;
-        private static final int GAUGE_FILL_HIGHLIGHT = 0xFF42E842;
+        private final PanelSyncManager sync;
+        private final GenericSyncValue<NBTTagCompound, ?> viewValue;
+        private final VaultNetworkInventory inventory = new VaultNetworkInventory();
 
-        private final DoubleSupplier progress;
+        private EntityPlayer viewer;
+        private NBTTagCompound serverView = new NBTTagCompound();
+        private NBTTagCompound previousView = new NBTTagCompound();
+        private NBTTagCompound historyIdentity = new NBTTagCompound();
+        private VaultInventoryHistory history;
+        private int historySequence;
+        private long nextRefresh;
+        private boolean showFluids;
+        private boolean sortByAmount;
+        private int columns;
+        private int rows;
+        private int firstRow;
+        private boolean dirty = true;
 
-        private VaultStorageLoadWidget(DoubleSupplier progress) {
-            this.progress = progress;
+        private NBTTagCompound displayedView;
+        private NetworkEntry[] visibleEntries = new NetworkEntry[0];
+        private String clientQuery = "";
+        private String sentQuery = "";
+        private int searchDelay;
+
+        private NetworkBrowser(PanelSyncManager sync) {
+            this.sync = sync;
+            sync.addOpenListener(player -> { if (!sync.isClient()) viewer = player; });
+            sync.addCloseListener(player -> inventory.stopObserving());
+            viewValue = inventorySync(this::snapshot);
+            sync.syncValue("vaultNetworkView", viewValue);
+            sync.registerSyncedAction(ITEMS, false, true, buffer -> select(false));
+            sync.registerSyncedAction(FLUIDS, false, true, buffer -> select(true));
+            sync.registerSyncedAction(
+                RESIZE,
+                false,
+                true,
+                buffer -> resize(buffer.readUnsignedByte(), buffer.readUnsignedByte()));
+            sync.registerSyncedAction(SCROLL, false, true, buffer -> scroll(buffer.readByte()));
+            sync.registerSyncedAction(SORT, false, true, buffer -> sort());
+            sync.registerSyncedAction(SEARCH, false, true, this::receiveSearch);
+            sync.registerSyncedAction(
+                HISTORY,
+                false,
+                true,
+                buffer -> selectHistory(buffer.readInt(), buffer.readUnsignedShort()));
+        }
+
+        private IStorageGrid networkStorage() {
+            VaultPortHatch port = multiblock.portHatch;
+            return viewer == null || port == null || port.controller != multiblock ? null
+                : port.getNetworkStorageFor(viewer);
+        }
+
+        private void requestHistory(int index) {
+            sync.callSyncedAction(HISTORY, buffer -> {
+                buffer.writeInt(
+                    viewValue.getValue()
+                        .getInteger("revision"));
+                buffer.writeShort(index);
+            });
+        }
+
+        private void selectHistory(int revision, int index) {
+            if (sync.getModularSyncManager()
+                .isOpen(VaultInventoryHistoryGui.NAME)) return;
+            clearHistory();
+            NBTTagCompound selectedView = revision == serverView.getInteger("revision") ? serverView
+                : revision == previousView.getInteger("revision") ? previousView : null;
+            if (selectedView == null) return;
+            NBTTagList entries = selectedView.getTagList("entries", Constants.NBT.TAG_COMPOUND);
+            if (index >= entries.tagCount()) return;
+            IStorageGrid storage = networkStorage();
+            if (storage == null) return;
+
+            NBTTagCompound icon = entries.getCompoundTagAt(index)
+                .getCompoundTag("icon");
+            boolean fluid = selectedView.getBoolean("fluids");
+            IAEStack<?> target = fluid ? AEFluidStack.create(FluidStack.loadFluidStackFromNBT(icon))
+                : AEItemStack.create(ItemStack.loadItemStackFromNBT(icon));
+            if (target == null) return;
+            historyIdentity.setTag("icon", icon);
+            historyIdentity.setBoolean("fluid", fluid);
+            historyIdentity.setInteger("sequence", ++historySequence);
+            history = new VaultInventoryHistory(storage, target, viewer.worldObj.getTotalWorldTime());
+        }
+
+        private NBTTagCompound historyIdentity() {
+            return historyIdentity;
+        }
+
+        private VaultInventoryHistory.Sample historySample() {
+            return history == null ? VaultInventoryHistory.Sample.WAITING
+                : history.sample(viewer.worldObj.getTotalWorldTime(), this::networkStorage);
+        }
+
+        private void clearHistory() {
+            history = null;
+            historyIdentity = new NBTTagCompound();
+        }
+
+        private static GenericSyncValue<NBTTagCompound, ?> inventorySync(Supplier<NBTTagCompound> source) {
+            return GenericSyncValue.builder(NBTTagCompound.class)
+                .getter(source)
+                .serializer(NetworkBrowser::writeView)
+                .deserializer(NetworkBrowser::readView)
+                .equalsDefault()
+                .copy(tag -> (NBTTagCompound) tag.copy())
+                .build();
+        }
+
+        // A full grid may exceed the signed-short length used by PacketBuffer's NBT methods.
+        private static void writeView(PacketBuffer buffer, NBTTagCompound view) throws IOException {
+            byte[] compressed = CompressedStreamTools.compress(view);
+            buffer.writeVarIntToBuffer(compressed.length);
+            buffer.writeBytes(compressed);
+        }
+
+        private static NBTTagCompound readView(PacketBuffer buffer) throws IOException {
+            int length = buffer.readVarIntFromBuffer();
+            if (length <= 0 || length > buffer.readableBytes()) throw new IOException("Invalid vault inventory data");
+            byte[] compressed = new byte[length];
+            buffer.readBytes(compressed);
+            return CompressedStreamTools.func_152457_a(compressed, new NBTSizeTracker(8L * 1024 * 1024));
+        }
+
+        private void select(boolean fluid) {
+            if (showFluids == fluid) return;
+            showFluids = fluid;
+            firstRow = 0;
+            dirty = true;
+        }
+
+        private void sort() {
+            sortByAmount = !sortByAmount;
+            firstRow = 0;
+            inventory.invalidateOrder();
+            dirty = true;
+        }
+
+        private void setClientQuery(String text) {
+            clientQuery = text;
+            searchDelay = 5;
+        }
+
+        private void sendSearch() {
+            if (searchDelay == 0 || --searchDelay != 0 || sentQuery.equals(clientQuery)) return;
+            sentQuery = clientQuery;
+            sync.callSyncedAction(SEARCH, buffer -> {
+                NetworkUtils.writeStringSafe(buffer, sentQuery, SEARCH_LENGTH * 4);
+                NetworkUtils.writeStringSafe(
+                    buffer,
+                    FMLCommonHandler.instance()
+                        .getCurrentLanguage(),
+                    16);
+            });
+        }
+
+        private void receiveSearch(PacketBuffer buffer) {
+            try {
+                search(buffer.readStringFromBuffer(SEARCH_LENGTH), buffer.readStringFromBuffer(16));
+            } catch (IOException ignored) {}
+        }
+
+        private void search(String text, String locale) {
+            if (!inventory.setSearch(text, locale)) return;
+            firstRow = 0;
+            dirty = true;
+        }
+
+        private void resize(int newColumns, int newRows) {
+            if (newColumns < 1 || newColumns > PANEL_WIDTH / SLOT_SIZE
+                || newRows < 1
+                || newRows > PANEL_HEIGHT / SLOT_SIZE) return;
+            if (newColumns == columns && newRows == rows) return;
+            firstRow = (int) ((long) firstRow * columns / newColumns);
+            columns = newColumns;
+            rows = newRows;
+            dirty = true;
+        }
+
+        private void scroll(int direction) {
+            if (direction != -1 && direction != 1) return;
+            if (dirty || (direction < 0 ? firstRow == 0 : !serverView.getBoolean("more"))) return;
+            firstRow += direction;
+            dirty = true;
+        }
+
+        private NBTTagCompound snapshot() {
+            if (viewer == null || columns == 0) return serverView;
+            long tick = viewer.worldObj.getTotalWorldTime();
+            boolean poll = tick >= nextRefresh;
+            if (!dirty && !poll) return serverView;
+            if (poll) nextRefresh = tick + REFRESH_TICKS;
+
+            IStorageGrid storage = networkStorage();
+            IMEMonitor<?> monitor = storage == null ? null
+                : showFluids ? storage.getFluidInventory() : storage.getItemInventory();
+            boolean inventoryChanged = inventory.refresh(monitor, poll);
+            if (!dirty && !inventoryChanged) return serverView;
+            dirty = false;
+
+            NBTTagCompound result = new NBTTagCompound();
+            result.setBoolean("fluids", showFluids);
+            result.setBoolean("amountOrder", sortByAmount);
+            result.setBoolean("online", monitor != null);
+            result.setBoolean("filtering", inventory.isFiltering());
+            collectVisible(result, inventory.entries(showFluids, sortByAmount));
+            result.setInteger("columns", columns);
+            result.setInteger("rows", rows);
+            result.setLong("firstRow", firstRow);
+            int revision = serverView.getInteger("revision");
+            result.setInteger("revision", revision);
+            if (result.equals(serverView)) return serverView;
+            previousView = serverView;
+            result.setInteger("revision", revision + 1);
+            serverView = result;
+            return serverView;
+        }
+
+        private void collectVisible(NBTTagCompound result, List<IAEStack<?>> filtered) {
+            NBTTagList entries = new NBTTagList();
+            int lastRow = (int) Math.max(0, ((long) filtered.size() + columns - 1) / columns - rows);
+            firstRow = Math.min(firstRow, lastRow);
+            int start = firstRow * columns;
+            int capacity = columns * rows;
+            int visible = Math.min(capacity, filtered.size() - start);
+            for (int index = 0; index < visible; index++) {
+                IAEStack<?> stack = filtered.get(start + index);
+                long amount = stack.getStackSize();
+                NBTTagCompound entry = new NBTTagCompound();
+                NBTTagCompound icon = new NBTTagCompound();
+                if (stack instanceof IAEFluidStack fluid) {
+                    FluidStack display = fluid.getFluidStack();
+                    display.amount = 1;
+                    display.writeToNBT(icon);
+                } else if (stack instanceof IAEItemStack item) {
+                    ItemStack display = item.getItemStack();
+                    display.stackSize = 1;
+                    display.writeToNBT(icon);
+                }
+                entry.setTag("icon", icon);
+                entry.setLong("amount", amount);
+                entries.appendTag(entry);
+            }
+            result.setBoolean("more", firstRow < lastRow);
+            result.setTag("entries", entries);
+        }
+
+        private boolean fluid() {
+            return viewValue.getValue()
+                .getBoolean("fluids");
+        }
+
+        private String sortLabel() {
+            // #tr gtnr.gui.singularity_data_hub.sort_amount
+            // # By quantity
+            // # zh_CN 按数量
+            if (viewValue.getValue()
+                .getBoolean("amountOrder")) return tr("sort_amount");
+            // #tr gtnr.gui.singularity_data_hub.sort_fluid
+            // # By fluid ID
+            // # zh_CN 按流体 ID
+            // #tr gtnr.gui.singularity_data_hub.sort_inventory
+            // # By category
+            // # zh_CN 按分类
+            return tr(fluid() ? "sort_fluid" : "sort_inventory");
+        }
+
+        private String emptyMessage() {
+            // #tr gtnr.gui.singularity_data_hub.network_unavailable
+            // # ME inventory unavailable
+            // # zh_CN 无法读取 ME 网络库存
+            if (!viewValue.getValue()
+                .getBoolean("online")) return tr("network_unavailable");
+            // #tr gtnr.gui.singularity_data_hub.network_no_matches
+            // # No matching entries
+            // # zh_CN 没有匹配的库存
+            if (entries().length == 0 && viewValue.getValue()
+                .getBoolean("filtering")) return tr("network_no_matches");
+            // #tr gtnr.gui.singularity_data_hub.network_empty
+            // # No stored entries
+            // # zh_CN 暂无库存
+            return entries().length == 0 ? tr("network_empty") : "";
+        }
+
+        private NetworkEntry[] entries() {
+            NBTTagCompound view = viewValue.getValue();
+            if (displayedView != view) {
+                displayedView = view;
+                NBTTagList entries = view.getTagList("entries", Constants.NBT.TAG_COMPOUND);
+                visibleEntries = new NetworkEntry[entries.tagCount()];
+                for (int i = 0; i < visibleEntries.length; i++) {
+                    visibleEntries[i] = NetworkEntry.read(entries.getCompoundTagAt(i), fluid());
+                }
+            }
+            return visibleEntries;
+        }
+    }
+
+    private record NetworkEntry(ItemStack item, FluidStack fluid, IDrawable icon, IKey count, String exactAmount) {
+
+        private static NetworkEntry read(NBTTagCompound entry, boolean fluidChannel) {
+            NBTTagCompound icon = entry.getCompoundTag("icon");
+            long amount = entry.getLong("amount");
+            IKey count = IKey.str(compact(amount))
+                .color(0xFFFFFFFF)
+                .shadow(true)
+                .scale(0.55f)
+                .alignment(Alignment.BottomRight);
+            String exact = String.format(Locale.ROOT, "%,d", amount);
+            if (fluidChannel) {
+                FluidStack fluid = FluidStack.loadFluidStackFromNBT(icon);
+                return fluid == null ? null
+                    : new NetworkEntry(null, fluid, new FluidDrawable(fluid), count, exact + " mB");
+            }
+            ItemStack item = ItemStack.loadItemStackFromNBT(icon);
+            return item == null ? null : new NetworkEntry(item, null, new ItemDrawable(item), count, exact);
+        }
+    }
+
+    private static final class InventoryGrid extends Widget<InventoryGrid> implements Interactable {
+
+        private final NetworkBrowser browser;
+        private final PanelSyncManager sync;
+        private final IPanelHandler historyPanel;
+        private int lastColumns;
+        private int lastRows;
+
+        private InventoryGrid(NetworkBrowser browser, PanelSyncManager sync, IPanelHandler historyPanel) {
+            this.browser = browser;
+            this.sync = sync;
+            this.historyPanel = historyPanel;
+            name("vault_network_grid");
+            disableHoverBackground();
+            tooltip(
+                t -> t.setAutoUpdate(true)
+                    .tooltipBuilder(lines -> {
+                        int index = hoveredIndex();
+                        NetworkEntry[] entries = browser.entries();
+                        if (index < 0 || index >= entries.length || entries[index] == null) return;
+                        NetworkEntry entry = entries[index];
+                        if (entry.item() != null) lines.addFromItem(entry.item());
+                        else lines.addFromFluid(entry.fluid());
+                        lines.addLine(IKey.str(entry.exactAmount()));
+                        // #tr gtnr.gui.singularity_data_hub.history_click
+                        // # Left-click to view inventory history
+                        // # zh_CN 左键查看库存变化
+                        lines.addLine(IKey.lang(TEXT + "history_click"));
+                    }));
+        }
+
+        private int columns() {
+            return Math.max(0, (getArea().w() - 2 * GRID_PADDING) / SLOT_SIZE);
+        }
+
+        private int rows() {
+            return Math.max(0, (getArea().h() - 2 * GRID_PADDING) / SLOT_SIZE);
+        }
+
+        private void syncSize() {
+            int columns = columns();
+            int rows = rows();
+            if (columns == 0 || rows == 0 || (columns == lastColumns && rows == lastRows)) return;
+            lastColumns = columns;
+            lastRows = rows;
+            sync.callSyncedAction(RESIZE, buffer -> {
+                buffer.writeByte(columns);
+                buffer.writeByte(rows);
+            });
+        }
+
+        @Override
+        public Result onMousePressed(int button) {
+            if (button != 0 || historyPanel.isPanelOpen()) return Result.IGNORE;
+            int index = hoveredIndex();
+            NetworkEntry[] entries = browser.entries();
+            if (index < 0 || index >= entries.length || entries[index] == null) return Result.IGNORE;
+            browser.requestHistory(index);
+            historyPanel.openPanel();
+            return Result.SUCCESS;
+        }
+
+        @Override
+        public boolean onMouseScroll(UpOrDown direction, int amount) {
+            sync.callSyncedAction(SCROLL, buffer -> buffer.writeByte(direction == UpOrDown.UP ? -1 : 1));
+            return true;
+        }
+
+        private int hoveredIndex() {
+            int columns = columns();
+            int rows = rows();
+            int x = getContext().getAbsMouseX() - getArea().x - gridLeft(columns);
+            int y = getContext().getAbsMouseY() - getArea().y - GRID_PADDING;
+            if (x < 0 || y < 0 || x >= columns * SLOT_SIZE || y >= rows * SLOT_SIZE) return -1;
+            return y / SLOT_SIZE * columns + x / SLOT_SIZE;
+        }
+
+        private int gridLeft(int columns) {
+            return (getArea().w() - columns * SLOT_SIZE) / 2;
         }
 
         @Override
         @SideOnly(Side.CLIENT)
-        public void draw(ModularGuiContext context, WidgetThemeEntry<?> entry) {
-            WidgetTheme theme = getActiveWidgetTheme(entry, isHovering());
-            int width = getArea().width;
-            int height = getArea().height;
-            new Rectangle().color(GAUGE_SHADOW)
-                .draw(context, 0, 0, width, height, theme);
-            new Rectangle().color(GAUGE_FRAME)
-                .draw(context, 1, 1, width - 2, height - 2, theme);
-            new Rectangle().color(GAUGE_INSET)
-                .draw(context, 3, 3, width - 6, height - 6, theme);
-            int filled = Math
-                .max(2, (int) Math.round((height - 8) * Math.max(0D, Math.min(1D, progress.getAsDouble()))));
-            new Rectangle().color(GAUGE_FILL)
-                .draw(context, 4, height - filled - 4, width - 8, filled, theme);
-            new Rectangle().color(GAUGE_FILL_HIGHLIGHT)
-                .draw(context, 4, height - filled - 4, width - 8, 1, theme);
-            GL11.glColor4f(1F, 1F, 1F, 1F);
+        public void draw(ModularGuiContext context, WidgetThemeEntry<?> theme) {
+            int columns = columns();
+            int rows = rows();
+            int width = getArea().w();
+            int height = getArea().h();
+            AE2Look look = AE2Look.of(this);
+            look.drawWell(0, 0, width, height);
+            boolean fluid = browser.fluid();
+            AE2Theme.Variant variant = look.variant();
+            IDrawable slot = variant == null ? (fluid ? GuiTextures.SLOT_FLUID : GuiTextures.SLOT_ITEM)
+                : (fluid ? variant.slotFluid : variant.slotItem);
+            NetworkEntry[] entries = browser.entries();
+            if (entries.length == 0) {
+                IKey.str(browser.emptyMessage())
+                    .color(look.listText())
+                    .shadow(look.listShadow())
+                    .alignment(Alignment.Center)
+                    .draw(context, GRID_PADDING, 0, width - 2 * GRID_PADDING, height, theme.getTheme());
+                return;
+            }
+            int hovered = isHovering() ? hoveredIndex() : -1;
+            int left = gridLeft(columns);
+            for (int index = 0; index < columns * rows; index++) {
+                int x = left + index % columns * SLOT_SIZE;
+                int y = GRID_PADDING + index / columns * SLOT_SIZE;
+                slot.draw(context, x, y, SLOT_SIZE, SLOT_SIZE, theme.getTheme());
+                NetworkEntry entry = index < entries.length ? entries[index] : null;
+                if (entry == null) continue;
+                entry.icon()
+                    .draw(context, x + 1, y + 1, 16, 16, theme.getTheme());
+                if (index == hovered) GuiDraw.drawRect(x + 1, y + 1, 16, 16, 0x55FFFFFF);
+                entry.count()
+                    .draw(context, x + 1, y + 8, 16, 9, theme.getTheme());
+            }
         }
-    }
-
-    private static final class VaultStorageProgressWidget extends Widget<VaultStorageProgressWidget> {
-
-        private static final int PANEL_ALT = 0xFF201E27;
-
-        private final DoubleSupplier progress;
-        private final int color;
-
-        private VaultStorageProgressWidget(DoubleSupplier progress, int color) {
-            this.progress = progress;
-            this.color = color;
-        }
-
-        @Override
-        @SideOnly(Side.CLIENT)
-        public void draw(ModularGuiContext context, WidgetThemeEntry<?> entry) {
-            WidgetTheme theme = getActiveWidgetTheme(entry, isHovering());
-            int width = getArea().width;
-            int height = getArea().height;
-            VaultGuiTextures.PANEL_BORDER.draw(context, 0, 0, width, height, theme);
-            new Rectangle().color(PANEL_ALT)
-                .draw(context, 2, 2, width - 4, height - 4, theme);
-            int filled = (int) Math.round(Math.max(0D, Math.min(1D, progress.getAsDouble())) * (width - 6));
-            if (filled > 0) new Rectangle().color(color)
-                .draw(context, 3, 3, filled, height - 6, theme);
-        }
-    }
-
-    private static final class VaultGuiTextures {
-
-        private static final UITexture BACKGROUND = UITexture.builder()
-            .location(GTNeverReset.MODID, "gui/modernity/vault_background")
-            .imageSize(16, 16)
-            .adaptable(2, 2, 2, 4)
-            .build();
-        private static final UITexture PANEL_BORDER = UITexture.builder()
-            .location(GTNeverReset.MODID, "gui/modernity/vault_panel_border")
-            .imageSize(16, 16)
-            .adaptable(6)
-            .build();
-        private static final UITexture ITEM_SLOT = UITexture.builder()
-            .location(GTNeverReset.MODID, "gui/modernity/vault_item_slot")
-            .imageSize(18, 18)
-            .adaptable(1)
-            .build();
-        private static final UITexture BUTTON = UITexture.builder()
-            .location(GTNeverReset.MODID, "gui/modernity/button")
-            .imageSize(20, 20)
-            .adaptable(3)
-            .build();
-        private static final UITexture BUTTON_HOVER = UITexture.builder()
-            .location(GTNeverReset.MODID, "gui/modernity/button_hover")
-            .imageSize(20, 20)
-            .subAreaXYWH(0, 1, 20, 19)
-            .adaptable(3)
-            .build();
-        private static final UITexture BUTTON_PRESSED = UITexture.builder()
-            .location(GTNeverReset.MODID, "gui/modernity/button_pressed")
-            .imageSize(20, 20)
-            .adaptable(3)
-            .build();
-        private static final UITexture BUTTON_DISABLED = UITexture.builder()
-            .location(GTNeverReset.MODID, "gui/modernity/button_disabled")
-            .imageSize(20, 20)
-            .subAreaXYWH(0, 2, 20, 18)
-            .adaptable(3)
-            .build();
-        private static final UITexture POWER_SWITCH_ON = UITexture
-            .fullImage(GTNeverReset.MODID, "gui/overlay_button/power_switch_on");
-        private static final UITexture POWER_SWITCH_DISABLED = UITexture
-            .fullImage(GTNeverReset.MODID, "gui/overlay_button/power_switch_disabled");
-        private static final UITexture STRUCTURE_CHECK_ON = UITexture
-            .fullImage(GTNeverReset.MODID, "gui/overlay_button/structure_check_on");
-        private static final UITexture STRUCTURE_CHECK_OFF = UITexture
-            .fullImage(GTNeverReset.MODID, "gui/overlay_button/structure_check_off");
-
     }
 }
