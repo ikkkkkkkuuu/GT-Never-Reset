@@ -100,6 +100,7 @@ public class WirelessFrequencies {
     public static void register(TileEntity tile) {
         World world = tile.getWorldObj();
         if (world == null || world.isRemote) return;
+        WirelessChannelManager.forgetUnloadedChunks();
         for (Entry entry : entries(tile)) index(tile, entry);
         invalidate();
     }
@@ -347,16 +348,23 @@ public class WirelessFrequencies {
             .add(tile);
     }
 
-    private static Address block(Address position) {
-        return new Address(position.dimension(), position.x(), position.y(), position.z(), ForgeDirection.UNKNOWN);
-    }
-
     static void forget(Predicate<Address> removed) {
         Predicate<TileEntity> gone = tile -> tile.getWorldObj() != null
             && removed.test(WirelessLinkPersistence.address(tile));
-        CARRIERS.values()
-            .removeIf(carriers -> carriers.removeIf(gone) && carriers.isEmpty());
-        invalidate();
+        boolean changed = false;
+        var carriers = CARRIERS.values()
+            .iterator();
+        while (carriers.hasNext()) {
+            Set<TileEntity> tiles = carriers.next();
+            if (!tiles.removeIf(gone)) continue;
+            changed = true;
+            if (tiles.isEmpty()) carriers.remove();
+        }
+        for (TileEntity tile : STRUCTURES.keySet()) {
+            if (changed) break;
+            changed = gone.test(tile);
+        }
+        if (changed) invalidate();
     }
 
     static void invalidate() {
@@ -383,7 +391,7 @@ public class WirelessFrequencies {
         Map<UUID, Entry> entries) {
 
         public boolean contains(Address position) {
-            return positions.contains(block(position));
+            return positions.contains(position.withoutSide());
         }
 
         public UUID canonical() {

@@ -64,8 +64,12 @@ public record WirelessCardBinding(WirelessFrequency frequency, Address location,
         return collapse;
     }
 
+    public static boolean hasBinding(NBTTagCompound itemTag) {
+        return itemTag != null && itemTag.hasKey(KEY, 10);
+    }
+
     public static WirelessCardBinding read(NBTTagCompound itemTag) {
-        return itemTag == null || !itemTag.hasKey(KEY, 10) ? null : decode(itemTag.getCompoundTag(KEY));
+        return hasBinding(itemTag) ? decode(itemTag.getCompoundTag(KEY)) : null;
     }
 
     private static WirelessCardBinding decode(NBTTagCompound data) {
@@ -73,10 +77,10 @@ public record WirelessCardBinding(WirelessFrequency frequency, Address location,
         Address location = WirelessLinkData.readPosition(data);
         UUID owner = WirelessFrequencies.uuid(data, "owner");
         if (!data.hasKey("version", 3) || location == null || owner == null) return null;
+        UUID frequencyId = version == VERSION ? WirelessFrequencies.uuid(data, "frequency") : null;
         WirelessFrequency frequency;
         if (version == 1) frequency = WirelessFrequency.legacy(location);
-        else if (version == VERSION && WirelessFrequencies.uuid(data, "frequency") != null)
-            frequency = WirelessFrequency.of(WirelessFrequencies.uuid(data, "frequency"));
+        else if (frequencyId != null) frequency = WirelessFrequency.of(frequencyId);
         else return null;
         return new WirelessCardBinding(
             frequency,

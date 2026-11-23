@@ -17,10 +17,7 @@ import com.xyp.gtneverreset.mixins.late.appliedenergistics2.wireless.AccessorTil
 
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridConnection;
-import appeng.api.networking.IGridHost;
 import appeng.api.networking.IGridNode;
-import appeng.api.parts.IPart;
-import appeng.api.parts.IPartHost;
 import appeng.api.util.DimensionalCoord;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.Reference2BooleanOpenHashMap;
@@ -32,11 +29,7 @@ public class PhysicalMeTopology implements PhysicalClusterTracker.Topology<IGrid
     private record NodeRef(Address address, boolean external) {
 
         IGridNode resolve() {
-            if (!external) return address.node();
-            TileEntity tile = address.tile();
-            if (!(tile instanceof IPartHost host)) return null;
-            IPart part = host.getPart(address.side());
-            return part == null ? null : part.getExternalFacingNode();
+            return WirelessChannelManager.nodeAt(address.tile(), address.side(), external);
         }
 
         Position position() {
@@ -70,14 +63,8 @@ public class PhysicalMeTopology implements PhysicalClusterTracker.Topology<IGrid
         if (tile == null || tile.isInvalid()) return false;
         for (ForgeDirection side : ForgeDirection.values()) {
             Address address = new Address(dimension, location.x, location.y, location.z, side);
-            if (tile instanceof IPartHost host) {
-                IPart part = host.getPart(side);
-                if (part == null) continue;
-                if (part.getGridNode() == node) reference = new NodeRef(address, false);
-                else if (part.getExternalFacingNode() == node) reference = new NodeRef(address, true);
-            } else if (tile instanceof IGridHost host && host.getGridNode(side) == node) {
-                reference = new NodeRef(address, false);
-            }
+            if (WirelessChannelManager.nodeAt(tile, side, false) == node) reference = new NodeRef(address, false);
+            else if (WirelessChannelManager.nodeAt(tile, side, true) == node) reference = new NodeRef(address, true);
             if (reference != null) {
                 references.put(node, reference);
                 return true;

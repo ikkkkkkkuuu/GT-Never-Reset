@@ -21,46 +21,103 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 
-public class WirelessTopologyWatch implements IBlockStateListener {
+public class WirelessTopologyWatch {
 
     private final Map<World, LongSet> watched = new Reference2ObjectOpenHashMap<>();
     private final Map<World, Long2ObjectMap<TileEntity>> tiles = new Reference2ObjectOpenHashMap<>();
+    private final Map<World, Long2ObjectMap<ChunkWatch>> listeners = new Reference2ObjectOpenHashMap<>();
 
     void update(Collection<Cluster<IGridNode, WirelessFrequency>> clusters, PhysicalMeTopology topology) {
         Map<World, LongSet> next = new Reference2ObjectOpenHashMap<>();
         Map<World, Long2ObjectMap<TileEntity>> nextTiles = new Reference2ObjectOpenHashMap<>();
-        for (var cluster : clusters) {
-            if (cluster.frequencies()
-                .isEmpty()) continue;
-            for (IGridNode node : cluster.nodes()) add(next, nextTiles, topology.nodeAddress(node));
-            for (WirelessFrequency source : cluster.frequencies())
-                add(next, nextTiles, WirelessFrequencies.controller(source));
-        }
+        for (var cluster : clusters) collect(cluster, topology, next, nextTiles);
         for (World world : tiles.keySet()) {
-            if (!nextTiles.containsKey(world)) WorldListener.INSTANCE.unregisterBlockStateListener(world, this);
+            if (!nextTiles.containsKey(world)) {
+                for (ChunkWatch listener : listeners.remove(world)
+                    .values()) WorldListener.INSTANCE.unregisterBlockStateListener(world, listener);
+            }
         }
         for (var entry : nextTiles.entrySet()) {
-            Long2ObjectMap<TileEntity> previous = tiles.get(entry.getKey());
-            if (previous != null && previous.keySet()
-                .equals(
-                    entry.getValue()
-                        .keySet()))
-                continue;
-            Iterable<BlockPos> positions = () -> entry.getValue()
-                .keySet()
-                .longStream()
-                .mapToObj(
-                    position -> new BlockPos(
-                        CoordinatePacker.unpackX(position),
-                        CoordinatePacker.unpackY(position),
-                        CoordinatePacker.unpackZ(position)))
-                .iterator();
-            WorldListener.INSTANCE.registerBlockStateListener(entry.getKey(), this, positions);
+            register(entry.getKey(), entry.getValue(), true);
         }
         watched.clear();
         watched.putAll(next);
         tiles.clear();
         tiles.putAll(nextTiles);
+    }
+
+    public void add(Cluster<IGridNode, WirelessFrequency> cluster, PhysicalMeTopology topology) {
+        Map<World, Long2ObjectMap<TileEntity>> added = new Reference2ObjectOpenHashMap<>();
+        collect(cluster, topology, watched, added);
+        for (var entry : added.entrySet()) {
+            Long2ObjectMap<TileEntity> current = tiles
+                .computeIfAbsent(entry.getKey(), ignored -> new Long2ObjectOpenHashMap<>());
+            current.putAll(entry.getValue());
+            register(entry.getKey(), entry.getValue(), false);
+        }
+    }
+
+    private static void collect(Cluster<IGridNode, WirelessFrequency> cluster, PhysicalMeTopology topology,
+        Map<World, LongSet> map, Map<World, Long2ObjectMap<TileEntity>> tiles) {
+        if (cluster.frequencies()
+            .isEmpty()) return;
+        for (IGridNode node : cluster.nodes()) add(map, tiles, topology.nodeAddress(node));
+        for (WirelessFrequency source : cluster.frequencies()) add(map, tiles, WirelessFrequencies.controller(source));
+    }
+
+    private void register(World world, Long2ObjectMap<TileEntity> watchedTiles, boolean replace) {
+        Long2ObjectMap<LongSet> positionsByChunk = new Long2ObjectOpenHashMap<>();
+        for (long position : watchedTiles.keySet()) {
+            long chunk = CoordinatePacker
+                .pack(CoordinatePacker.unpackX(position) >> 4, 0, CoordinatePacker.unpackZ(position) >> 4);
+            positionsByChunk.computeIfAbsent(chunk, ignored -> new LongOpenHashSet())
+                .add(position);
+        }
+        Long2ObjectMap<ChunkWatch> current = listeners
+            .computeIfAbsent(world, ignored -> new Long2ObjectOpenHashMap<>());
+        if (replace) {
+            for (var iterator = current.long2ObjectEntrySet()
+                .iterator(); iterator.hasNext();) {
+                var entry = iterator.next();
+                if (positionsByChunk.containsKey(entry.getLongKey())) continue;
+                WorldListener.INSTANCE.unregisterBlockStateListener(world, entry.getValue());
+                iterator.remove();
+            }
+        }
+        for (var entry : positionsByChunk.long2ObjectEntrySet()) {
+            ChunkWatch listener = current.computeIfAbsent(entry.getLongKey(), ignored -> new ChunkWatch(world));
+            LongSet positions = entry.getValue();
+            if (!replace) positions.addAll(listener.positions);
+            if (positions.equals(listener.positions)) continue;
+            listener.positions = positions;
+            register(world, listener);
+        }
+    }
+
+    private void register(World world, ChunkWatch listener) {
+        Iterable<BlockPos> positions = () -> listener.positions.longStream()
+            .mapToObj(
+                position -> new BlockPos(
+                    CoordinatePacker.unpackX(position),
+                    CoordinatePacker.unpackY(position),
+                    CoordinatePacker.unpackZ(position)))
+            .iterator();
+        WorldListener.INSTANCE.registerBlockStateListener(world, listener, positions);
+    }
+
+    private class ChunkWatch implements IBlockStateListener {
+
+        private final World world;
+        private LongSet positions = new LongOpenHashSet();
+
+        private ChunkWatch(World world) {
+            this.world = world;
+        }
+
+        @Override
+        public void onBlockChanged(BlockPos pos) {
+            WirelessTopologyWatch.this.onBlockChanged(world, pos);
+        }
     }
 
     private static void add(Map<World, LongSet> map, Map<World, Long2ObjectMap<TileEntity>> tiles, Address address) {
@@ -94,27 +151,21 @@ public class WirelessTopologyWatch implements IBlockStateListener {
         }
     }
 
-    @Override
-    public void onBlockChanged(BlockPos pos) {
-        long packed = CoordinatePacker.pack(pos.x, pos.y, pos.z);
-        boolean known = false;
-        for (var entry : tiles.entrySet()) {
-            TileEntity expected = entry.getValue()
-                .get(packed);
-            if (expected == null) continue;
-            known = true;
-            World world = entry.getKey();
-            if (expected.isInvalid() || !world.blockExists(pos.x, pos.y, pos.z)
-                || world.getTileEntity(pos.x, pos.y, pos.z) != expected) {
-                WirelessClusterManager.invalidateTopology();
-                return;
-            }
-        }
-        if (!known) WirelessClusterManager.invalidateTopology();
+    private void onBlockChanged(World world, BlockPos pos) {
+        Long2ObjectMap<TileEntity> expectedTiles = tiles.get(world);
+        TileEntity expected = expectedTiles == null ? null
+            : expectedTiles.get(CoordinatePacker.pack(pos.x, pos.y, pos.z));
+        if (expected == null || expected.isInvalid()
+            || !world.blockExists(pos.x, pos.y, pos.z)
+            || world.getTileEntity(pos.x, pos.y, pos.z) != expected) WirelessClusterManager.invalidateTopology();
     }
 
     void clear() {
-        for (World world : tiles.keySet()) WorldListener.INSTANCE.unregisterBlockStateListener(world, this);
+        for (var entry : listeners.entrySet()) {
+            for (ChunkWatch listener : entry.getValue()
+                .values()) WorldListener.INSTANCE.unregisterBlockStateListener(entry.getKey(), listener);
+        }
+        listeners.clear();
         watched.clear();
         tiles.clear();
     }

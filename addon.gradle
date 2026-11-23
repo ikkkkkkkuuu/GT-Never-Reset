@@ -241,6 +241,11 @@ localContract('checkWirelessFrequencyContracts',
     description = 'Checks wireless frequency persistence, multi-source migration and merge/split provenance.'
 }
 
+localContract('checkWirelessTopologyContracts',
+    'com.xyp.gtneverreset.common.wireless.WirelessTopologyContracts') {
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+}
+
 localContract('checkWirelessPowerContracts',
     'com.xyp.gtneverreset.common.wireless.WirelessPowerContracts') {
     description = 'Checks wireless power accounting limits, persistence and device ownership.'

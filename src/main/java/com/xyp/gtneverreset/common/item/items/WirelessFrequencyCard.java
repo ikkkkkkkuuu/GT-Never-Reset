@@ -337,7 +337,7 @@ public class WirelessFrequencyCard extends Item implements IBaubleExpanded, IGui
     @Override
     @SideOnly(Side.CLIENT)
     public boolean hasEffect(ItemStack stack, int pass) {
-        return WirelessCardBinding.read(stack.getTagCompound()) != null;
+        return WirelessCardBinding.hasBinding(stack.getTagCompound());
     }
 
     @Override
