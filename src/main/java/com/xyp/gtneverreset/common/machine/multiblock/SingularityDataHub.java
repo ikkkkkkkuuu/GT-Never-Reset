@@ -85,7 +85,7 @@ public class SingularityDataHub extends MTEExtendedPowerMultiBlockBase<Singulari
 
     public static long maxDistinctItems = Long.MAX_VALUE - 1;
     public static long maxDistinctFluids = Long.MAX_VALUE - 1;
-    public static final long MAX_STORAGE_BYTES = 5_764_607_523_034_234_870L;
+    public static final long MAX_STORAGE_BYTES = Long.MAX_VALUE;
     private static final int BYTES_PER_TYPE = 8;
     private static final int ITEMS_PER_BYTE = 8;
     private static final int FLUID_MB_PER_BYTE = 8 * 256;
