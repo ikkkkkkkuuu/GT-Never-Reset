@@ -151,6 +151,11 @@ public final class NetWorkHandler {
             // Reserve projector IDs when the item is disabled so later packets keep their IDs.
             nextPacketId += 4;
         }
+        CHANNEL.registerMessage(
+            new PayloadHandler.Client<>(),
+            ProjectorDeploymentPacket.class,
+            nextPacketId++,
+            Side.CLIENT);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);

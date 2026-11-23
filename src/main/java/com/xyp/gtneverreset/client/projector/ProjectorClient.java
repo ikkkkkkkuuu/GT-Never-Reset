@@ -98,6 +98,7 @@ public class ProjectorClient {
         }
         ticks++;
         ProjectorStructures.tick();
+        ProjectorDeploymentRenderer.tick(mc.theWorld);
         findActive(mc.thePlayer);
         visible = false;
         if (plan == null || !plan.hasMachine()
@@ -162,6 +163,7 @@ public class ProjectorClient {
         CHECK.clear();
         GROUND.clear();
         ProjectorStructures.clear();
+        ProjectorDeploymentRenderer.clear();
         ProjectorRenderer.release();
     }
 
