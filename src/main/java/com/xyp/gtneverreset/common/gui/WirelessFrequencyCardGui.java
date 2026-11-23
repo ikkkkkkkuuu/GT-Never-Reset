@@ -64,7 +64,9 @@ import com.xyp.gtneverreset.common.wireless.WirelessCardVisualisation;
 import com.xyp.gtneverreset.common.wireless.WirelessChannelManager;
 import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Address;
 import com.xyp.gtneverreset.common.wireless.WirelessClusterManager;
+import com.xyp.gtneverreset.common.wireless.WirelessClusterManager.LinkState;
 import com.xyp.gtneverreset.common.wireless.WirelessFrequencies;
+import com.xyp.gtneverreset.common.wireless.WirelessFrequency;
 import com.xyp.gtneverreset.common.wireless.WirelessInterfaceView;
 import com.xyp.gtneverreset.common.wireless.WirelessMachineGroups;
 import com.xyp.gtneverreset.common.wireless.WirelessMachineGroups.Row;
@@ -77,6 +79,7 @@ import appeng.api.networking.IGridNode;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import galacticgreg.api.enums.DimensionDef;
+import it.unimi.dsi.fastutil.objects.Reference2ByteOpenHashMap;
 
 public final class WirelessFrequencyCardGui {
 
@@ -314,6 +317,10 @@ public final class WirelessFrequencyCardGui {
     public static class WirelessCardViewState {
 
         private static final List<String> DEVICE_STATES = Arrays.asList("missing", "offline", "online");
+        private static final int PRESENTATION_REFRESH_TICKS = 100;
+        private long lastBuildTick;
+        private Inputs previousInputs;
+        private Snapshot previousSnapshot;
         private IGridNode detailNode;
         private boolean detailDevices;
         private Map<IGridNode, Long> deviceIds = new HashMap<>();
@@ -334,7 +341,81 @@ public final class WirelessFrequencyCardGui {
             return nameRevision;
         }
 
+        @Desugar
+        private record Inputs(WirelessCardBinding binding, NBTTagCompound card, List<LinkState> links,
+            Reference2ByteOpenHashMap<IGridNode> devices, List<Boolean> sourcesLoaded, Header header) {}
+
+        @Desugar
+        private record Header(int entrances, int entranceLimit, Address source, boolean sourceLoaded,
+            boolean sourceSplit, boolean channels, boolean allocated, int capacity, int used) {
+
+            static Header of(WirelessCardBinding binding) {
+                int limit = WirelessChannelManager.entranceLimit();
+                if (binding == null) return new Header(0, limit, null, false, false, false, false, 0, -1);
+                WirelessFrequency frequency = binding.frequency();
+                Address controller = WirelessFrequencies.controller(frequency);
+                IGridNode source = WirelessFrequencies.controllerNode(frequency);
+                boolean allocated = source != null && source.getGrid() != null;
+                var allocation = allocated ? WirelessChannelManager.allocation(source.getGrid()) : null;
+                return new Header(
+                    WirelessChannelManager.entranceCount(frequency),
+                    limit,
+                    controller == null ? binding.location() : controller,
+                    source != null,
+                    WirelessFrequencies.split(frequency),
+                    WirelessChannelManager.channelsEnabled(),
+                    allocated,
+                    allocated ? WirelessChannelManager.capacity(source.getGrid()) : 0,
+                    allocation == null ? -1 : allocation.used());
+            }
+
+            void write(NBTTagCompound data, NBTTagCompound dimensions) {
+                data.setInteger("entrances", entrances);
+                data.setInteger("entranceLimit", entranceLimit);
+                if (source == null) return;
+                data.setString("source", coordinates(source));
+                writeDimensionName(dimensions, source.dimension());
+                data.setBoolean("sourceLoaded", sourceLoaded);
+                data.setBoolean("frequencySplit", sourceSplit);
+                data.setBoolean("channels", channels);
+                if (!allocated) return;
+                data.setInteger("capacity", capacity);
+                data.setInteger("used", used);
+            }
+        }
+
         public Snapshot build(WirelessCardBinding binding, ItemStack card) {
+            return build(binding, card, 0L, true);
+        }
+
+        private Snapshot build(WirelessCardBinding binding, ItemStack card, long tick, boolean force) {
+            var tag = card.getTagCompound();
+            var states = binding == null ? Collections.<LinkState>emptyList()
+                : WirelessClusterManager.viewStates(binding.frequency());
+            var header = Header.of(binding);
+            var devicesOnline = new Reference2ByteOpenHashMap<IGridNode>();
+            for (var state : states) {
+                for (var node : state.cluster()
+                    .nodes()) {
+                    if (node.hasFlag(GridFlags.REQUIRE_CHANNEL))
+                        devicesOnline.put(node, deviceState(node, header.channels()));
+                }
+            }
+            var savedSources = WirelessCardBinding.sources(tag);
+            List<Boolean> loaded = new ArrayList<>(savedSources.size());
+            for (var source : savedSources) loaded.add(WirelessFrequencies.controllerNode(source.frequency()) != null);
+            var inputs = new Inputs(
+                binding,
+                tag == null ? null : (NBTTagCompound) tag.copy(),
+                states,
+                devicesOnline,
+                loaded,
+                header);
+            if (!force && previousSnapshot != null
+                && !previousSnapshot.payload.getBoolean("initializing")
+                && tick >= lastBuildTick
+                && tick - lastBuildTick < PRESENTATION_REFRESH_TICKS
+                && inputs.equals(previousInputs)) return previousSnapshot;
             var interfaces = new WirelessInterfaceView();
             List<IWirelessLinkView> all = binding == null ? Collections.emptyList()
                 : new ArrayList<>(WirelessClusterManager.links(binding.frequency()));
@@ -384,7 +465,6 @@ public final class WirelessFrequencyCardGui {
                         .toString());
             data.setString("sourceName", WirelessCardBinding.sourceName(card.getTagCompound(), binding));
             NBTTagList sources = new NBTTagList();
-            var savedSources = WirelessCardBinding.sources(card.getTagCompound());
             for (int i = 0; i < savedSources.size(); i++) {
                 var saved = savedSources.get(i);
                 NBTTagCompound entry = new NBTTagCompound();
@@ -423,25 +503,7 @@ public final class WirelessFrequencyCardGui {
                 data,
                 WirelessMachineGroups.summarize(focus == null ? all : Collections.singletonList(focus)));
             data.setInteger("total", focus == null ? all.size() : 1);
-            data.setInteger(
-                "entrances",
-                binding == null ? 0 : WirelessChannelManager.entranceCount(binding.frequency()));
-            data.setInteger("entranceLimit", WirelessChannelManager.entranceLimit());
-            if (binding != null) {
-                var sourceAddress = WirelessFrequencies.controller(binding.frequency());
-                if (sourceAddress == null) sourceAddress = binding.location();
-                data.setBoolean("frequencySplit", WirelessFrequencies.split(binding.frequency()));
-                data.setString("source", coordinates(sourceAddress));
-                writeDimensionName(dimensions, sourceAddress.dimension());
-                IGridNode source = WirelessFrequencies.controllerNode(binding.frequency());
-                data.setBoolean("sourceLoaded", source != null);
-                data.setBoolean("channels", WirelessChannelManager.channelsEnabled());
-                if (source != null && source.getGrid() != null) {
-                    var allocation = WirelessChannelManager.allocation(source.getGrid());
-                    data.setInteger("capacity", WirelessChannelManager.capacity(source.getGrid()));
-                    data.setInteger("used", allocation == null ? -1 : allocation.used());
-                }
-            }
+            header.write(data, dimensions);
             Map<Target, Long> nextIds = new HashMap<>();
             Map<Long, IWirelessLinkView> targets = new LinkedHashMap<>();
             if (focus != null) data.setLong("detailId", identify(focus, nextIds, targets));
@@ -456,7 +518,10 @@ public final class WirelessFrequencyCardGui {
             targetIds = nextIds;
             data.setTag("rows", entries);
             data.setTag("dimensions", dimensions);
-            return new Snapshot(data, targets, devices);
+            previousInputs = inputs;
+            lastBuildTick = tick;
+            previousSnapshot = new Snapshot(data, targets, devices);
+            return previousSnapshot;
         }
 
         private long identify(IWirelessLinkView link, Map<Target, Long> nextIds, Map<Long, IWirelessLinkView> targets) {
@@ -469,6 +534,10 @@ public final class WirelessFrequencyCardGui {
             return id;
         }
 
+        private static byte deviceState(IGridNode node, boolean channels) {
+            return (byte) (channels && !node.meetsChannelRequirements() ? 0 : node.isActive() ? 2 : 1);
+        }
+
         private static List<Listed> devices(IWirelessLinkView link) {
             boolean channels = WirelessChannelManager.channelsEnabled();
             List<Listed> devices = new ArrayList<>();
@@ -476,8 +545,7 @@ public final class WirelessFrequencyCardGui {
                 if (!node.hasFlag(GridFlags.REQUIRE_CHANNEL)) continue;
                 Address address = WirelessClusterManager.deviceAddress(node);
                 if (address == null) continue;
-                String state = channels && !node.meetsChannelRequirements() ? "missing"
-                    : node.isActive() ? "online" : "offline";
+                String state = DEVICE_STATES.get(deviceState(node, channels));
                 devices.add(new Listed(node, address, state));
             }
             devices.sort(
@@ -686,8 +754,8 @@ public final class WirelessFrequencyCardGui {
             private Snapshot(NBTTagCompound payload, Map<Long, IWirelessLinkView> targets,
                 Map<Long, IGridNode> devices) {
                 this.devices = devices;
-                this.payload = (NBTTagCompound) payload.copy();
-                this.targets = Collections.unmodifiableMap(new HashMap<>(targets));
+                this.payload = payload;
+                this.targets = Collections.unmodifiableMap(targets);
             }
 
             public IWirelessLinkView target(long id) {
@@ -699,7 +767,8 @@ public final class WirelessFrequencyCardGui {
             }
 
             public NBTTagCompound packet(long session, long revision, NBTTagList highlight) {
-                var data = (NBTTagCompound) payload.copy();
+                var data = new NBTTagCompound();
+                for (Object key : payload.func_150296_c()) data.setTag((String) key, payload.getTag((String) key));
                 data.setLong("session", session);
                 data.setLong("revision", revision);
                 if (highlight != null) data.setTag("highlight", highlight.copy());
@@ -722,8 +791,13 @@ public final class WirelessFrequencyCardGui {
         }
 
         public void update(boolean force) {
+            update(force, true);
+        }
+
+        private void update(boolean force, boolean rebuild) {
             if (!(container.player instanceof EntityPlayerMP)) return;
-            var next = container.view.build(container.binding, container.card);
+            var next = container.view
+                .build(container.binding, container.card, container.player.worldObj.getTotalWorldTime(), rebuild);
             boolean changed = force || !next.sameView(container.snapshot);
             container.snapshot = next;
             if (changed) container.revision++;
@@ -758,7 +832,7 @@ public final class WirelessFrequencyCardGui {
 
         @Override
         public void detectAndSendChanges(boolean init) {
-            if ((init || ++ticks % 20 == 0) && container.canInteractWith(container.player)) container.update(init);
+            if ((init || ++ticks % 20 == 0) && container.canInteractWith(container.player)) update(init, init);
         }
 
         @SideOnly(Side.CLIENT)

@@ -18,12 +18,6 @@ public class EntranceCandidates {
     private static final int NEED_RADIUS = 2;
     private static final int CAPTURE_RADIUS = 6;
 
-    public static <N> N select(Set<N> members, Collection<N> missing, Collection<N> occupied,
-        Function<N, Iterable<N>> neighbours, Predicate<N> eligible, ToIntFunction<N> rank, ToIntFunction<N> capacity,
-        Comparator<N> order) {
-        return new Batch<>(members, occupied, neighbours).select(missing, eligible, rank, capacity, order);
-    }
-
     public static class Batch<N> {
 
         private final Set<N> members;

@@ -7,3 +7,5 @@ Network overview layout, tree rows and scrolling adapted from GT-Not-Leisure PR 
 https://github.com/GTNotLeisure/GT-Not-Leisure/pull/675
 AE2 theme components and scrollbar textures adapted from GTNLLib PR 3 at d5c43b46380948c0b043b483823c99b7b3751288.
 https://github.com/GTNotLeisure/GTNLLib/pull/3
+
+Wireless topology scanning, chunk unload batching, entrance caching and view refresh logic adapted from GT-Not-Leisure commit 7e18f004017525b708b4b2444f30d1267d4ca0d7.

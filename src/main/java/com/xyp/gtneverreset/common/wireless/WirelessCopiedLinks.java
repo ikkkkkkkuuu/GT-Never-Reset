@@ -151,7 +151,7 @@ public class WirelessCopiedLinks {
         if (waiting >= MAX_PENDING || PLAYER_WAITING.getInt(player) >= MAX_PENDING_PER_PLAYER) return false;
         Pending pending = new Pending(player, position, tile, part, source);
         QUEUE.enqueue(pending);
-        WAITING.computeIfAbsent(block(position), ignored -> new ObjectArrayList<>())
+        WAITING.computeIfAbsent(position.withoutSide(), ignored -> new ObjectArrayList<>())
             .add(pending);
         waiting++;
         PLAYER_WAITING.addTo(player, 1);
@@ -169,7 +169,7 @@ public class WirelessCopiedLinks {
     private static List<Pending> waitingAt(List<Address> nodes) {
         Set<Pending> group = new ReferenceLinkedOpenHashSet<>();
         for (Address node : nodes) {
-            List<Pending> here = WAITING.get(block(node));
+            List<Pending> here = WAITING.get(node.withoutSide());
             if (here == null) continue;
             TileEntity current = node.tile();
             for (Pending pending : here) {
@@ -255,15 +255,11 @@ public class WirelessCopiedLinks {
         pending.done = true;
         waiting--;
         if (PLAYER_WAITING.addTo(pending.player, -1) == 1) PLAYER_WAITING.removeInt(pending.player);
-        Address block = block(pending.position);
+        Address block = pending.position.withoutSide();
         List<Pending> here = WAITING.get(block);
         if (here == null) return;
         here.remove(pending);
         if (here.isEmpty()) WAITING.remove(block);
-    }
-
-    private static Address block(Address address) {
-        return new Address(address.dimension(), address.x(), address.y(), address.z(), ForgeDirection.UNKNOWN);
     }
 
     private static Address target(Address position) {

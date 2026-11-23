@@ -20,6 +20,7 @@ import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.github.bsideup.jabel.Desugar;
+import com.xyp.gtneverreset.common.wireless.PhysicalClusterTracker.Cluster;
 import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Address;
 import com.xyp.gtneverreset.common.wireless.WirelessChannelManager.Entrance;
 import com.xyp.gtneverreset.common.wireless.WirelessLinkData.Claim;
@@ -66,11 +67,7 @@ public class WirelessLinkPersistence {
         }
 
         IGridNode node() {
-            if (tile instanceof IPartHost host) {
-                IPart part = host.getPart(slot.side());
-                return part == null ? null : slot.external() ? part.getExternalFacingNode() : part.getGridNode();
-            }
-            return !slot.external() && tile instanceof IGridHost host ? host.getGridNode(slot.side()) : null;
+            return WirelessChannelManager.nodeAt(tile, slot.side(), slot.external());
         }
     }
 
@@ -85,6 +82,7 @@ public class WirelessLinkPersistence {
     public static void placed(TileEntity tile) {
         World world = tile.getWorldObj();
         if (world == null || world.isRemote) return;
+        WirelessChannelManager.forgetUnloadedChunks();
         // Tiles moved by tools such as Matter Manipulator arrive through setTileEntity, without a chunk load.
         PLACED.add(tile);
         WirelessClusterManager.invalidateTopology();
@@ -183,9 +181,21 @@ public class WirelessLinkPersistence {
 
     static void synchronize(PhysicalClusterTracker<IGridNode, WirelessFrequency> tracker, PhysicalMeTopology topology) {
         REMEMBERED_ENTRANCES.clear();
+        IMPORTED.keySet()
+            .retainAll(synchronizeClusters(tracker.clusters(), tracker, topology));
+    }
+
+    // Only the full scan may prune IMPORTED: its seeds() first clears a replaced part's inherited slot claim.
+    static void synchronize(Collection<Cluster<IGridNode, WirelessFrequency>> clusters,
+        PhysicalClusterTracker<IGridNode, WirelessFrequency> tracker, PhysicalMeTopology topology) {
+        synchronizeClusters(clusters, tracker, topology);
+    }
+
+    private static Set<IGridNode> synchronizeClusters(Collection<Cluster<IGridNode, WirelessFrequency>> clusters,
+        PhysicalClusterTracker<IGridNode, WirelessFrequency> tracker, PhysicalMeTopology topology) {
         Map<TileEntity, Map<Slot, Claim>> updates = new Reference2ObjectOpenHashMap<>();
         Set<IGridNode> retained = new ReferenceOpenHashSet<>();
-        for (var cluster : tracker.clusters()) {
+        for (var cluster : clusters) {
             Set<WirelessFrequency> paused = new ObjectOpenHashSet<>();
             if (!cluster.limited()) for (IGridNode node : cluster.nodes()) {
                 Claim saved = claim(node, topology);
@@ -221,13 +231,12 @@ public class WirelessLinkPersistence {
                 }
             }
         }
-        IMPORTED.keySet()
-            .retainAll(retained);
         updates.forEach((tile, claims) -> {
             save(tile, claims);
             if (claims.isEmpty()) TILES.remove(tile);
             else TILES.add(tile);
         });
+        return retained;
     }
 
     private static Claim claim(IGridNode node, PhysicalMeTopology topology) {

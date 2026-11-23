@@ -35,8 +35,48 @@ public class AutomaticWirelessEntrances {
     private static final Map<IGrid, GridTargets> TARGETS = new Reference2ObjectOpenHashMap<>();
     private static final Map<IGrid, ChannelCount> COUNTS = new Reference2ObjectOpenHashMap<>();
 
-    private record GridTargets(List<Cluster<IGridNode, WirelessFrequency>> clusters,
-        Map<IGridNode, WirelessFrequency> sources, List<IGridNode> nodes, long fingerprint) {}
+    private static class GridTargets {
+
+        private final List<Cluster<IGridNode, WirelessFrequency>> clusters;
+        private final Map<IGridNode, Cluster<IGridNode, WirelessFrequency>> owners;
+        private final List<IGridNode> nodes;
+        private final long fingerprint;
+        private List<Cluster<IGridNode, WirelessFrequency>> ordered;
+
+        private GridTargets(List<Cluster<IGridNode, WirelessFrequency>> clusters,
+            Map<IGridNode, Cluster<IGridNode, WirelessFrequency>> owners, List<IGridNode> nodes, long fingerprint) {
+            this.clusters = clusters;
+            this.owners = owners;
+            this.nodes = nodes;
+            this.fingerprint = fingerprint;
+        }
+
+        private WirelessFrequency source(IGridNode node) {
+            return owners.get(node)
+                .frequencies()
+                .iterator()
+                .next();
+        }
+
+        private List<Cluster<IGridNode, WirelessFrequency>> ordered(PhysicalMeTopology topology,
+            Comparator<IGridNode> order) {
+            if (ordered != null) return ordered;
+            List<Cluster<IGridNode, WirelessFrequency>> result = new ObjectArrayList<>(clusters);
+            Map<Cluster<IGridNode, WirelessFrequency>, IGridNode> anchors = new Reference2ObjectOpenHashMap<>();
+            for (var cluster : result) {
+                anchors.put(
+                    cluster,
+                    cluster.nodes()
+                        .stream()
+                        .filter(node -> topology.entranceAddress(node) != null)
+                        .min(order)
+                        .orElse(null));
+            }
+            result.sort(Comparator.comparing(anchors::get, Comparator.nullsLast(order)));
+            ordered = List.copyOf(result);
+            return ordered;
+        }
+    }
 
     @Desugar
     private record ChannelCount(GridTargets targets, long revision, int served, List<IGridNode> missing) {}
@@ -77,28 +117,12 @@ public class AutomaticWirelessEntrances {
         }
 
         private void prepare() {
-            ordered = new ObjectArrayList<>(work.clusters);
-            Map<Cluster<IGridNode, WirelessFrequency>, IGridNode> anchors = new Reference2ObjectOpenHashMap<>();
-            for (var cluster : ordered) {
-                anchors.put(
-                    cluster,
-                    cluster.nodes()
-                        .stream()
-                        .filter(node -> topology.entranceAddress(node) != null)
-                        .min(order)
-                        .orElse(null));
-            }
-            ordered.sort(Comparator.comparing(anchors::get, Comparator.nullsLast(order)));
+            ordered = targets.ordered(topology, order);
             missing = new Reference2ObjectOpenHashMap<>();
             for (IGridNode node : work.missing) {
-                for (var cluster : ordered) {
-                    if (cluster.nodes()
-                        .contains(node)) {
-                        missing.computeIfAbsent(cluster, ignored -> new ObjectArrayList<>())
-                            .add(node);
-                        break;
-                    }
-                }
+                var cluster = targets.owners.get(node);
+                missing.computeIfAbsent(cluster, ignored -> new ObjectArrayList<>())
+                    .add(node);
             }
         }
 
@@ -115,10 +139,7 @@ public class AutomaticWirelessEntrances {
                     node -> accepted.test(node) && !work.occupied.contains(node)
                         && topology.entranceAddress(node) != null
                         && !node.hasFlag(GridFlags.CANNOT_CARRY)
-                        && !hasSourceConnection(
-                            node,
-                            targets.sources()
-                                .get(node)),
+                        && !hasSourceConnection(node, targets.source(node)),
                     PhysicalMeTopology::entranceRank,
                     PhysicalMeTopology::entranceCapacity,
                     order);
@@ -165,31 +186,29 @@ public class AutomaticWirelessEntrances {
 
     private static GridTargets targets(IGrid grid, List<Cluster<IGridNode, WirelessFrequency>> clusters) {
         GridTargets cached = TARGETS.get(grid);
-        if (cached != null && cached.clusters()
-            .size() == clusters.size()) {
+        if (cached != null && cached.clusters.size() == clusters.size()) {
             int index = 0;
-            while (index < clusters.size() && cached.clusters()
-                .get(index) == clusters.get(index)) index++;
+            while (index < clusters.size() && cached.clusters.get(index) == clusters.get(index)) index++;
             if (index == clusters.size()) return cached;
         }
-        Map<IGridNode, WirelessFrequency> sources = new Reference2ObjectOpenHashMap<>();
+        int nodeCount = clusters.stream()
+            .mapToInt(
+                cluster -> cluster.nodes()
+                    .size())
+            .sum();
+        Map<IGridNode, Cluster<IGridNode, WirelessFrequency>> owners = new Reference2ObjectOpenHashMap<>(nodeCount);
+        long fingerprint = 0;
         for (var cluster : clusters) {
             WirelessFrequency source = cluster.frequencies()
                 .iterator()
                 .next();
-            for (IGridNode node : cluster.nodes()) sources.put(node, source);
+            int sourceHash = source.hashCode();
+            for (IGridNode node : cluster.nodes()) {
+                owners.put(node, cluster);
+                fingerprint += mix(((long) System.identityHashCode(node) << 32) ^ sourceHash);
+            }
         }
-        long fingerprint = 0;
-        for (var entry : sources.entrySet()) {
-            fingerprint += mix(
-                ((long) System.identityHashCode(entry.getKey()) << 32) ^ entry.getValue()
-                    .hashCode());
-        }
-        GridTargets targets = new GridTargets(
-            List.copyOf(clusters),
-            sources,
-            List.copyOf(sources.keySet()),
-            fingerprint);
+        GridTargets targets = new GridTargets(List.copyOf(clusters), owners, List.copyOf(owners.keySet()), fingerprint);
         TARGETS.put(grid, targets);
         return targets;
     }
@@ -200,7 +219,7 @@ public class AutomaticWirelessEntrances {
             return cached;
         int served = 0;
         List<IGridNode> missing = new ObjectArrayList<>();
-        for (IGridNode node : targets.nodes()) {
+        for (IGridNode node : targets.nodes) {
             if (!node.hasFlag(GridFlags.REQUIRE_CHANNEL) || node.hasFlag(GridFlags.CANNOT_CARRY)) continue;
             if (node.meetsChannelRequirements()) served++;
             else missing.add(node);
@@ -275,11 +294,7 @@ public class AutomaticWirelessEntrances {
             IntArrayList ids = new IntArrayList();
             for (IGridNode target : decision.targets()) {
                 try {
-                    ids.add(
-                        WirelessChannelManager.connect(
-                            targets.sources()
-                                .get(target),
-                            topology.entranceAddress(target)));
+                    ids.add(WirelessChannelManager.connect(targets.source(target), topology.entranceAddress(target)));
                     created.add(target);
                 } catch (IllegalArgumentException | FailedConnection failure) {
                     planner.failed(target, observation.tick());
@@ -332,7 +347,7 @@ public class AutomaticWirelessEntrances {
         long topology = grid.getCache(IPathingGrid.class) instanceof IWirelessPathingState state
             ? state.gtnr$topologyRevision()
             : 0;
-        return mix(capacity) + mix(topology) + targets.fingerprint();
+        return mix(capacity) + mix(topology) + targets.fingerprint;
     }
 
     private static long mix(long value) {
