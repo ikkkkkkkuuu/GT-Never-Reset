@@ -1197,6 +1197,7 @@ gtnr.gui.singularity_data_hub.auto_void=自动销毁溢出
 gtnr.gui.singularity_data_hub.enabled=已启用
 gtnr.gui.singularity_data_hub.disabled=已禁用
 gtnr.gui.singularity_data_hub.need_vault_port_hatch=需要保险库接口
+gtnr.gui.singularity_data_hub.storage_priority=ME 优先级
 gtnr.gui.singularity_data_hub.network=ME 网络
 gtnr.gui.singularity_data_hub.network_items=物品
 gtnr.gui.singularity_data_hub.network_fluids=流体

@@ -35,6 +35,7 @@ import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.value.sync.BooleanSyncValue;
 import com.cleanroommc.modularui.value.sync.GenericSyncValue;
+import com.cleanroommc.modularui.value.sync.IntSyncValue;
 import com.cleanroommc.modularui.value.sync.LongSyncValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widget.ParentWidget;
@@ -145,11 +146,16 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
         LongSyncValue fluidTypes = new LongSyncValue(multiblock::fluidsCount);
         BooleanSyncValue autoVoid = new BooleanSyncValue(() -> multiblock.doVoidExcess);
         BooleanSyncValue hasPort = new BooleanSyncValue(() -> multiblock.portHatch != null);
+        IntSyncValue priority = new IntSyncValue(
+            multiblock::getStoragePriority,
+            value -> { if (!syncManager.isClient()) multiblock.setStoragePriority(syncManager.getPlayer(), value); })
+                .allowC2S();
         syncManager.syncValue("singularityDataHubStorageBytes", usedBytes);
         syncManager.syncValue("singularityDataHubItemTypes", itemTypes);
         syncManager.syncValue("singularityDataHubFluidTypes", fluidTypes);
         syncManager.syncValue("singularityDataHubAutoVoid", autoVoid);
         syncManager.syncValue("singularityDataHubPortHatch", hasPort);
+        syncManager.syncValue("singularityDataHubStoragePriority", priority);
 
         ParentWidget<?> overview = new ParentWidget<>().fullWidth()
             .height(OVERVIEW_HEIGHT);
@@ -235,6 +241,20 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
             label(IKey.dynamic(() -> hasPort.getBoolValue() ? "" : tr("need_vault_port_hatch"))).left(0)
                 .widthRel(0.48f)
                 .top(44));
+        // #tr gtnr.gui.singularity_data_hub.storage_priority
+        // # ME Priority
+        // # zh_CN ME 优先级
+        overview.child(
+            label(IKey.lang(TEXT + "storage_priority")).pos(0, 44)
+                .width(62)
+                .setEnabledIf(widget -> hasPort.getBoolValue()));
+        overview.child(
+            new TextFieldWidget().name("vault_storage_priority")
+                .pos(65, 42)
+                .size(75, 16)
+                .numbersInt(Integer.MIN_VALUE, Integer.MAX_VALUE)
+                .value(priority)
+                .setEnabledIf(widget -> hasPort.getBoolValue()));
         overview.child(
             Flow.row()
                 .pos(72, 0)

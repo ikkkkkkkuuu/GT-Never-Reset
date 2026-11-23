@@ -1197,6 +1197,7 @@ gtnr.gui.singularity_data_hub.auto_void=Auto-voiding
 gtnr.gui.singularity_data_hub.enabled=Enabled
 gtnr.gui.singularity_data_hub.disabled=Disabled
 gtnr.gui.singularity_data_hub.need_vault_port_hatch=Vault Port Hatch is required
+gtnr.gui.singularity_data_hub.storage_priority=ME Priority
 gtnr.gui.singularity_data_hub.network=ME Network
 gtnr.gui.singularity_data_hub.network_items=Items
 gtnr.gui.singularity_data_hub.network_fluids=Fluids

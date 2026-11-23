@@ -182,6 +182,10 @@ public interface IItemVault {
         getStoreFluids().forEach(out::addStorage);
     }
 
+    default int getStoragePriority() {
+        return 0;
+    }
+
     /**
      * 设置是否销毁过量物品
      *

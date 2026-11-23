@@ -141,10 +141,12 @@ public class VaultPortHatch extends MTEHatch
                 postUpdateFluid(fluid.getFluidStack(), fluid.getStackSize());
             }
         }
+        if (getPriority() != 0) refreshCellArray();
     }
 
     public void unbind() {
         if (this.controller == null) return;
+        int oldPriority = getPriority();
         if (this.controller.hasItem()) {
             for (IAEItemStack item : controller.getStoreItems()) {
                 postUpdateItem(item.getItemStack(), -item.getStackSize());
@@ -156,6 +158,7 @@ public class VaultPortHatch extends MTEHatch
             }
         }
         this.controller = null;
+        if (oldPriority != 0) refreshCellArray();
     }
 
     @Override
@@ -190,6 +193,18 @@ public class VaultPortHatch extends MTEHatch
                 .hasPermission(player, SecurityPermissions.EXTRACT)) return proxy.getStorage();
         } catch (GridAccessException ignored) {}
         return null;
+    }
+
+    public boolean canConfigureStoragePriority(EntityPlayer player) {
+        if (player.worldObj.isRemote) return false;
+        AENetworkProxy proxy = getProxy();
+        if (proxy == null) return false;
+        try {
+            return proxy.getSecurity()
+                .hasPermission(player, SecurityPermissions.BUILD);
+        } catch (GridAccessException ignored) {
+            return false;
+        }
     }
 
     @Override
@@ -296,17 +311,15 @@ public class VaultPortHatch extends MTEHatch
 
     @MENetworkEventSubscribe
     public void powerRender(final MENetworkPowerStatusChange c) {
-        try {
-            AENetworkProxy proxy = getProxy();
-            if (proxy != null && proxy.isActive()) {
-                proxy.getGrid()
-                    .postEvent(new MENetworkCellArrayUpdate());
-            }
-        } catch (GridAccessException e) {}
+        refreshCellArray();
     }
 
     @MENetworkEventSubscribe
     public void channelRender(final MENetworkChannelsChanged c) {
+        refreshCellArray();
+    }
+
+    public void refreshCellArray() {
         try {
             AENetworkProxy proxy = getProxy();
             if (proxy != null && proxy.isActive()) {
@@ -342,7 +355,7 @@ public class VaultPortHatch extends MTEHatch
 
     @Override
     public int getPriority() {
-        return 0;
+        return controller == null ? 0 : controller.getStoragePriority();
     }
 
     @Override
@@ -444,7 +457,7 @@ public class VaultPortHatch extends MTEHatch
 
         @Override
         public int getPriority() {
-            return 0;
+            return VaultPortHatch.this.getPriority();
         }
 
         @Override
@@ -520,7 +533,7 @@ public class VaultPortHatch extends MTEHatch
 
         @Override
         public int getPriority() {
-            return 0;
+            return VaultPortHatch.this.getPriority();
         }
 
         @Override
