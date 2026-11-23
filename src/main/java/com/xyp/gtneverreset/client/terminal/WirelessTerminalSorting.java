@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.compat.ae2.TerminalInventorySort;
 
 import appeng.util.InvTweakSortingModule;
 import cpw.mods.fml.relauncher.Side;
@@ -17,7 +18,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class WirelessTerminalSorting {
 
-    private static final String DEFAULT_TREE = "/assets/gtneverreset/terminal/InvTweaksTree.txt";
     private static boolean attempted;
 
     private WirelessTerminalSorting() {}
@@ -38,8 +38,9 @@ public final class WirelessTerminalSorting {
     }
 
     private static void installDefault(Path tree) throws IOException {
-        try (InputStream input = WirelessTerminalSorting.class.getResourceAsStream(DEFAULT_TREE)) {
-            if (input == null) throw new IOException("missing bundled terminal sorting tree: " + DEFAULT_TREE);
+        try (
+            InputStream input = WirelessTerminalSorting.class.getResourceAsStream(TerminalInventorySort.DEFAULT_TREE)) {
+            if (input == null) throw new IOException("missing bundled terminal sorting tree");
             Files.createDirectories(tree.getParent());
             Path temporary = Files.createTempFile(tree.getParent(), "gtnr-invtweaks-", ".tmp");
             try {

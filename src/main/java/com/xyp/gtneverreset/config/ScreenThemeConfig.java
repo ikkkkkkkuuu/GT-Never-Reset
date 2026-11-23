@@ -67,4 +67,12 @@ public class ScreenThemeConfig {
     @Config.DefaultEnum("AE2_DARK")
     public static ScreenTheme projector = ScreenTheme.AE2_DARK;
 
+    @Config.Comment("Vault theme: DEFAULT, AE2_LIGHT, AE2_DARK or AE2_DARK_PURPLE")
+    @Config.DefaultEnum("AE2_DARK_PURPLE")
+    // #tr gtneverreset.gui.config.general.screen_theme.vault
+    // # Vault
+    // # zh_CN 保险库
+    @Config.LangKey("gtneverreset.gui.config.general.screen_theme.vault")
+    public static ScreenTheme vault = ScreenTheme.AE2_DARK_PURPLE;
+
 }

@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.StatCollector;
@@ -18,6 +19,7 @@ import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import appeng.api.config.AccessRestriction;
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
+import appeng.api.config.SecurityPermissions;
 import appeng.api.implementations.IPowerChannelState;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
@@ -29,6 +31,7 @@ import appeng.api.networking.events.MENetworkPowerStatusChange;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.MachineSource;
+import appeng.api.networking.storage.IStorageGrid;
 import appeng.api.storage.ICellContainer;
 import appeng.api.storage.IMEInventory;
 import appeng.api.storage.IMEInventoryHandler;
@@ -177,6 +180,16 @@ public class VaultPortHatch extends MTEHatch
     public void updateValidGridProxySides() {
         AENetworkProxy proxy = getProxy();
         if (proxy != null) proxy.setValidSides(EnumSet.complementOf(EnumSet.of(ForgeDirection.UNKNOWN)));
+    }
+
+    public IStorageGrid getNetworkStorageFor(EntityPlayer player) {
+        AENetworkProxy proxy = getProxy();
+        if (controller == null || proxy == null || !proxy.isActive()) return null;
+        try {
+            if (proxy.getSecurity()
+                .hasPermission(player, SecurityPermissions.EXTRACT)) return proxy.getStorage();
+        } catch (GridAccessException ignored) {}
+        return null;
     }
 
     @Override
