@@ -98,16 +98,7 @@ public final class ProjectorDeploymentPacket extends ClientboundPacket {
     @Override
     @SideOnly(Side.CLIENT)
     public void handleClient(Minecraft minecraft) {
-        runInWorld(minecraft, () -> {
-            if (minecraft.thePlayer == null || minecraft.thePlayer.dimension != dimension) return;
-            if (phase != Phase.START) {
-                ProjectorDeploymentRenderer.update(id, phase);
-            } else {
-                ProjectorPlan snapshot = new ProjectorPlan();
-                snapshot.readFromNBT(plan);
-                ProjectorDeploymentRenderer.start(id, minecraft.theWorld, deployment, snapshot, batch);
-            }
-        });
+        ProjectorDeploymentRenderer.receive(minecraft, id, dimension, phase, deployment, plan, batch);
     }
 
     public enum Phase {

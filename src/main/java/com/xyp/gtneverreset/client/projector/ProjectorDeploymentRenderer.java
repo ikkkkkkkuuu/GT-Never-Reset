@@ -7,6 +7,7 @@ import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.Entity;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 
 import org.lwjgl.BufferUtils;
@@ -37,11 +38,30 @@ public final class ProjectorDeploymentRenderer {
 
     private ProjectorDeploymentRenderer() {}
 
-    public static void start(long id, World world, ProjectorDeployment animation, ProjectorPlan plan, boolean batch) {
+    public static void receive(Minecraft minecraft, long id, int dimension, Phase phase, ProjectorDeployment animation,
+        NBTTagCompound data, boolean batch) {
+        var connection = minecraft.getNetHandler();
+        var world = minecraft.theWorld;
+        if (connection == null || world == null) return;
+        minecraft.func_152344_a(() -> {
+            if (minecraft.getNetHandler() != connection || minecraft.theWorld != world
+                || minecraft.thePlayer == null
+                || minecraft.thePlayer.dimension != dimension) return;
+            if (phase == Phase.START) {
+                ProjectorPlan plan = new ProjectorPlan();
+                plan.readFromNBT(data);
+                start(id, world, animation, plan, batch);
+            } else {
+                update(id, phase);
+            }
+        });
+    }
+
+    private static void start(long id, World world, ProjectorDeployment animation, ProjectorPlan plan, boolean batch) {
         ACTIVE.putIfAbsent(id, new Presentation(world, animation, plan, batch));
     }
 
-    public static void update(long id, Phase phase) {
+    private static void update(long id, Phase phase) {
         Presentation presentation = ACTIVE.get(id);
         if (presentation == null) return;
         long now = presentation.world.getTotalWorldTime();
