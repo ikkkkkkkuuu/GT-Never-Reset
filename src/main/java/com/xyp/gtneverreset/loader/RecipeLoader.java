@@ -8,6 +8,7 @@ import com.xyp.gtneverreset.common.recipe.gregtech.AssemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.BenderRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.BlastFurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.ExtruderRecipes;
+import com.xyp.gtneverreset.common.recipe.gregtech.LargeChemicalReactorRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.DisassemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.LightningProcessorRecipes;
@@ -74,6 +75,7 @@ public final class RecipeLoader implements IContentLoader {
         com.xyp.gtneverreset.common.recipe.gregtech.CondensateAssemblerRecipes.register();
         com.xyp.gtneverreset.common.recipe.gregtech.FluidSolidifierRecipes.register();
         com.xyp.gtneverreset.common.recipe.gregtech.LaserEngraverRecipes.register();
+        LargeChemicalReactorRecipes.register();
         BenderRecipes.register();
         com.xyp.gtneverreset.common.recipe.gregtech.FormingPressRecipes.register();
         BlastFurnaceRecipes.register();
