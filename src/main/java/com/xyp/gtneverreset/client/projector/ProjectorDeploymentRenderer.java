@@ -47,8 +47,10 @@ public final class ProjectorDeploymentRenderer {
         long now = presentation.world.getTotalWorldTime();
         switch (phase) {
             case IMPACT -> {
-                if (presentation.impact == null)
-                    presentation.impact = new ProjectorDeploymentImpact(presentation.world, presentation.animation, now);
+                if (presentation.impact == null) presentation.impact = new ProjectorDeploymentImpact(
+                    presentation.world,
+                    presentation.animation,
+                    now);
             }
             case COMPLETE -> presentation.finishedTick = now;
             case CANCEL -> {
@@ -284,7 +286,13 @@ public final class ProjectorDeploymentRenderer {
         private void open() {
             if (opened) return;
             opened = true;
-            world.playSound(animation.centerX(), animation.openingY(), animation.centerZ(), "random.orb", 0.65f, 0.45f,
+            world.playSound(
+                animation.centerX(),
+                animation.openingY(),
+                animation.centerZ(),
+                "random.orb",
+                0.65f,
+                0.45f,
                 false);
         }
     }

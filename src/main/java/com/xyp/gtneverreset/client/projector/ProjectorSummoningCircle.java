@@ -19,16 +19,9 @@ final class ProjectorSummoningCircle {
     private static final int RING_SEGMENTS = 128;
     private static final int GOLD = 0xC09552;
     // Each pair connects two points on a 3 by 3 grid, indexed row by row.
-    private static final int[][] RUNES = {
-        { 6, 1, 1, 8, 3, 5 },
-        { 0, 8, 2, 6, 3, 1 },
-        { 0, 4, 4, 2, 4, 8, 3, 7 },
-        { 0, 6, 1, 5, 5, 7 },
-        { 1, 7, 3, 4, 4, 8 },
-        { 0, 2, 0, 8, 3, 5 },
-        { 0, 4, 4, 8, 2, 4, 4, 6 },
-        { 1, 3, 3, 7, 7, 5, 5, 2 }
-    };
+    private static final int[][] RUNES = { { 6, 1, 1, 8, 3, 5 }, { 0, 8, 2, 6, 3, 1 }, { 0, 4, 4, 2, 4, 8, 3, 7 },
+        { 0, 6, 1, 5, 5, 7 }, { 1, 7, 3, 4, 4, 8 }, { 0, 2, 0, 8, 3, 5 }, { 0, 4, 4, 8, 2, 4, 4, 6 },
+        { 1, 3, 3, 7, 7, 5, 5, 2 } };
 
     private ProjectorSummoningCircle() {}
 
@@ -106,7 +99,8 @@ final class ProjectorSummoningCircle {
         arc(tess, x, z, radius, 0, TURN, Math.max(24, (int) (radius * RING_SEGMENTS)));
     }
 
-    private static void arc(Tessellator tess, double x, double z, double radius, double start, double sweep, int steps) {
+    private static void arc(Tessellator tess, double x, double z, double radius, double start, double sweep,
+        int steps) {
         double lastX = x + radius * Math.cos(start);
         double lastZ = z + radius * Math.sin(start);
         for (int step = 1; step <= steps; step++) {

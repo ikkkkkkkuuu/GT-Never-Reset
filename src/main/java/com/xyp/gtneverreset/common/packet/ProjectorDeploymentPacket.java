@@ -111,6 +111,9 @@ public final class ProjectorDeploymentPacket extends ClientboundPacket {
     }
 
     public enum Phase {
-        START, IMPACT, COMPLETE, CANCEL
+        START,
+        IMPACT,
+        COMPLETE,
+        CANCEL
     }
 }

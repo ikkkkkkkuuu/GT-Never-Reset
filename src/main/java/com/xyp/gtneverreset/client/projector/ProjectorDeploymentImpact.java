@@ -33,8 +33,10 @@ final class ProjectorDeploymentImpact {
         this.bounds = bounds;
         this.startTick = startTick;
         Entity camera = Minecraft.getMinecraft().renderViewEntity;
-        double x = camera == null ? bounds.centerX() : MathHelper.clamp_double(camera.posX, bounds.minX(), bounds.maxX());
-        double z = camera == null ? bounds.centerZ() : MathHelper.clamp_double(camera.posZ, bounds.minZ(), bounds.maxZ());
+        double x = camera == null ? bounds.centerX()
+            : MathHelper.clamp_double(camera.posX, bounds.minX(), bounds.maxX());
+        double z = camera == null ? bounds.centerZ()
+            : MathHelper.clamp_double(camera.posZ, bounds.minZ(), bounds.maxZ());
         world.playSound(x, bounds.minY(), z, "random.anvil_land", 1.30f, 0.55f, false);
         world.playSound(x, bounds.minY(), z, "random.explode", 1.50f, 0.65f, false);
         tick(Minecraft.getMinecraft());
@@ -94,8 +96,14 @@ final class ProjectorDeploymentImpact {
             double z = bounds.centerZ() + dz * edge;
             double speed = (0.12 + random.nextDouble() * 0.16) * (1 - wave * 0.18);
             minecraft.effectRenderer.addEffect(
-                new Dust(world, x, y + 0.1 + random.nextDouble() * 0.25, z, dx * speed,
-                    0.012 + random.nextDouble() * 0.025, dz * speed));
+                new Dust(
+                    world,
+                    x,
+                    y + 0.1 + random.nextDouble() * 0.25,
+                    z,
+                    dx * speed,
+                    0.012 + random.nextDouble() * 0.025,
+                    dz * speed));
             if (wave == 0 && index % 2 == 0) debris(minecraft, x, y, z, dx * speed, dz * speed);
         }
     }
@@ -104,8 +112,17 @@ final class ProjectorDeploymentImpact {
         int bx = MathHelper.floor_double(x), by = bounds.minY() - 1, bz = MathHelper.floor_double(z);
         if (by < 0 || !world.blockExists(bx, by, bz)) return;
         Block ground = world.getBlock(bx, by, bz);
-        if (ground.isAir(world, bx, by, bz) || ground.getMaterial().isLiquid()) return;
-        var debris = new EntityDiggingFX(world, x, y + 0.15, z, vx, 0.12, vz, ground,
+        if (ground.isAir(world, bx, by, bz) || ground.getMaterial()
+            .isLiquid()) return;
+        var debris = new EntityDiggingFX(
+            world,
+            x,
+            y + 0.15,
+            z,
+            vx,
+            0.12,
+            vz,
+            ground,
             world.getBlockMetadata(bx, by, bz)).applyColourMultiplier(bx, by, bz);
         debris.motionX = vx;
         debris.motionY = 0.12 + world.rand.nextDouble() * 0.12;
