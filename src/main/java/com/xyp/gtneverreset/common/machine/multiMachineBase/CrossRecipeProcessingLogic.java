@@ -31,6 +31,7 @@ public class CrossRecipeProcessingLogic extends RecipeThreadProcessingLogic {
     private final CrossRecipeMultiblockBase<?> controller;
     private ICraftingPatternDetails pattern;
     private RecipeMap<?> patternRecipeMap;
+    private GTRecipe matchedPatternRecipe;
 
     public CrossRecipeProcessingLogic(CrossRecipeMultiblockBase<?> controller) {
         this.controller = controller;
@@ -62,6 +63,7 @@ public class CrossRecipeProcessingLogic extends RecipeThreadProcessingLogic {
         } finally {
             pattern = null;
             patternRecipeMap = null;
+            matchedPatternRecipe = null;
             resetPatternInventory();
             controller.setProcessingRecipeMap(null);
         }
@@ -70,19 +72,19 @@ public class CrossRecipeProcessingLogic extends RecipeThreadProcessingLogic {
     @Override
     @Nonnull
     protected Stream<GTRecipe> findRecipeMatches(@Nullable RecipeMap<?> selected) {
-        Stream<GTRecipe> query = Stream.ofNullable(patternRecipeMap == null ? selected : patternRecipeMap)
-            .flatMap(
-                map -> map.findRecipeQuery()
-                    .items(inputItems)
-                    .fluids(inputFluids)
-                    .specialSlot(specialSlotItem)
-                    .findAll()
-                    .peek(recipe -> controller.setProcessingRecipeMap(map)))
-            .filter(this::matchesPatternOutputs);
+        RecipeMap<?> map = patternRecipeMap == null ? selected : patternRecipeMap;
+        if (map == null) return Stream.empty();
+        Stream<GTRecipe> query = map.findRecipeQuery()
+            .items(inputItems)
+            .fluids(inputFluids)
+            .specialSlot(specialSlotItem)
+            .findAll()
+            .peek(recipe -> controller.setProcessingRecipeMap(map));
         if (pattern == null) return query;
         // A pattern is an explicit ingredient list, so an output-only match must not run a recipe that ignores some
         // of those ingredients and produce the output while leaving them behind.
-        return query.filter(this::consumesPatternInputs);
+        return query.filter(recipe -> matchesPatternOutputs(recipe) && consumesPatternInputs(recipe))
+            .peek(recipe -> matchedPatternRecipe = recipe);
     }
 
     /**
@@ -143,7 +145,7 @@ public class CrossRecipeProcessingLogic extends RecipeThreadProcessingLogic {
                 recipeLockableMachine.getSingleRecipeCheck()
                     .getRecipeMap());
         }
-        if (pattern == null) return super.validateRecipe(recipe);
+        if (pattern == null || recipe == matchedPatternRecipe) return super.validateRecipe(recipe);
         return matchesPatternOutputs(recipe) && consumesPatternInputs(recipe) ? super.validateRecipe(recipe)
             : CheckRecipeResultRegistry.NO_RECIPE;
     }

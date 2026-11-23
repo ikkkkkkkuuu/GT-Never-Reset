@@ -26,6 +26,7 @@ import net.minecraftforge.fluids.FluidStack;
 import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.GTNRMultiBlockBaseGui;
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeCandidateCache;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadInputPreflight;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadOutputs;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
@@ -59,6 +60,7 @@ import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.api.util.OverclockCalculator;
 import gregtech.api.util.shutdown.ShutDownReason;
 import gregtech.api.util.tooltip.TooltipHelper;
+import gregtech.common.tileentities.machines.IDualInputHatch;
 import mcp.mobius.waila.api.IWailaConfigHandler;
 import mcp.mobius.waila.api.IWailaDataAccessor;
 
@@ -88,6 +90,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     protected int mGlassTier = -1;
     protected int mCasingTier = -1;
     private final PatternInputScheduler patternScheduler = new PatternInputScheduler();
+    private boolean checkingNativeInputs;
     private int preparingThread = -1;
     private boolean useRemainingPower;
     private boolean paused = true;
@@ -214,10 +217,28 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     protected CheckRecipeResult doCheckRecipe() {
         RecipeThreadProcessingLogic logic = (RecipeThreadProcessingLogic) processingLogic;
         if (patternScheduler.inPass()) {
-            return patternScheduler.hasSelection() ? patternScheduler.processSelected(logic) : super.doCheckRecipe();
+            return patternScheduler.hasSelection() ? patternScheduler.processSelected(logic) : checkNativeInputs();
         }
-        CheckRecipeResult result = patternScheduler.checkNext(mDualInputHatches, logic);
-        return result.wasSuccessful() ? result : super.doCheckRecipe();
+        try {
+            CheckRecipeResult result = patternScheduler
+                .checkNext(mDualInputHatches, logic, this instanceof CrossRecipeMultiblockBase<?>);
+            return result.wasSuccessful() ? result : checkNativeInputs();
+        } finally {
+            patternScheduler.endPass();
+        }
+    }
+
+    private CheckRecipeResult checkNativeInputs() {
+        checkingNativeInputs = true;
+        try {
+            return super.doCheckRecipe();
+        } finally {
+            checkingNativeInputs = false;
+        }
+    }
+
+    public final boolean alreadyCheckedPatternHatch(IDualInputHatch hatch) {
+        return checkingNativeInputs && patternScheduler.alreadyChecked(hatch);
     }
 
     @Override
@@ -233,10 +254,12 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         preparingThread = slot;
         SingleRecipeCheck previousRecipeCheck = getSingleRecipeCheck();
         boolean committed = false;
-        try {
+        try (var scope = RecipeCandidateCache.enter()) {
             setupProcessingLogic(logic);
             CheckRecipeResult result = postCheckRecipe(doCheckRecipe(), logic);
-            if (!result.wasSuccessful() && !usesInstantThreadFill() && availableThreadPower() < remainingPower()) {
+            if (!result.wasSuccessful() && !usesInstantThreadFill()
+                && logic.shouldRetryWithMorePower(result)
+                && availableThreadPower() < remainingPower()) {
                 logic.finishRecipe();
                 useRemainingPower = true;
                 setupProcessingLogic(logic);
@@ -336,12 +359,12 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     private boolean fillRecipeThreads() {
         if (firstFreeThread() < 0) return false;
         long deadline = System.nanoTime() + THREAD_FILL_BUDGET_NANOS;
-        patternScheduler.beginPass(mDualInputHatches);
         try {
+            patternScheduler.beginPass(mDualInputHatches, this instanceof CrossRecipeMultiblockBase<?>);
             do {
                 boolean selected = patternScheduler.selectNext();
                 boolean started = checkRecipe();
-                if (selected) patternScheduler.finishSelection(started);
+                if (selected) patternScheduler.finishSelection(started, getCheckRecipeResult());
                 else if (!started) return false;
 
                 if (firstFreeThread() < 0 || remainingPower() <= 0) return false;

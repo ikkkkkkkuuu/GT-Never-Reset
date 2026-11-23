@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.loader;
 
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeCandidateCache;
 import com.xyp.gtneverreset.common.machine.multiblock.bee.BeeBreedingTiers;
 import com.xyp.gtneverreset.common.recipe.CraftingTableRecipes;
 import com.xyp.gtneverreset.common.recipe.FurnaceRecipes;
@@ -17,6 +18,7 @@ import com.xyp.gtneverreset.compat.etfuturum.EtFuturumCompat;
 import com.xyp.gtneverreset.config.ChaosConfig;
 
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import gregtech.api.GregTechAPI;
 import gregtech.api.enums.Mods;
 
@@ -50,6 +52,16 @@ public final class RecipeLoader implements IContentLoader {
     public void loadComplete() {
         registerLateRecipes();
         if (Mods.Forestry.isModLoaded()) BeeBreedingTiers.initialize();
+    }
+
+    @Override
+    public void serverStarting(FMLServerStartingEvent event) {
+        RecipeCandidateCache.start();
+    }
+
+    @Override
+    public void serverStopping() {
+        RecipeCandidateCache.stop();
     }
 
     public static void registerRecipes() {

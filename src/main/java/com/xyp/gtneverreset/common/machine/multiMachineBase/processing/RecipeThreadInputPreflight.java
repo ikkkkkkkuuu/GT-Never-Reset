@@ -42,6 +42,8 @@ public final class RecipeThreadInputPreflight {
     }
 
     public static CheckRecipeResult check(MTEMultiBlockBase machine, RecipeThreadProcessingLogic logic) {
+        if (machine.mInputBusses.isEmpty() && machine.mInputHatches.isEmpty())
+            return CheckRecipeResultRegistry.SUCCESSFUL;
         Requests<IAEItemStack> items = new Requests<>();
         Requests<IAEFluidStack> fluids = new Requests<>();
         Map<IEnergyGrid, Long> energy = new IdentityHashMap<>();

@@ -53,6 +53,7 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.glodblock.github.common.item.ItemFluidPacket;
+import com.google.common.collect.AbstractIterator;
 import com.xyp.gtneverreset.api.mixinHelper.ITerminalVisibilityToggle;
 import com.xyp.gtneverreset.common.gui.modularui.hatch.SuperMTEHatchCraftingInputMEGui;
 import com.xyp.gtneverreset.common.me.ChatComponentInterfaceNameSuffix;
@@ -138,6 +139,7 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
     private static final int MAX_PATTERN_COUNT = 60 * 9;
     private static final int SLOT_MANUAL_SIZE = 9;
 
+    private long patternInputRevision;
     private BaseActionSource requestSource = null;
     private final PatternMEOutput meOutput = new PatternMEOutput(this);
     private final List<PatternSlot<SuperMTEHatchCraftingInputME>> pendingPatternRefunds = new ArrayList<>();
@@ -436,6 +438,7 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
                 }
                 patternDetailsPatternSlotMap.values()
                     .removeIf(slot -> slot == originalPattern);
+                patternInputsChanged();
                 internalInventory[index] = null;
                 needPatternSync = true;
             } else {
@@ -449,6 +452,7 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
         }
 
         PatternSlot<SuperMTEHatchCraftingInputME> patternSlot = createPatternSlot(newItem, null);
+        patternInputsChanged();
         internalInventory[index] = patternSlot;
         registerPatternOptions(patternSlot);
         needPatternSync = true;
@@ -515,7 +519,10 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
     @Override
     public void setInventorySlotContents(int aIndex, ItemStack aStack) {
         super.setInventorySlotContents(aIndex, aStack);
-        if (aIndex >= getPatternCount()) return;
+        if (aIndex >= getPatternCount()) {
+            patternInputsChanged();
+            return;
+        }
         onPatternChange(aIndex, aStack);
         needPatternSync = true;
     }
@@ -666,9 +673,27 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
 
     @Override
     public Iterator<PatternSlot<SuperMTEHatchCraftingInputME>> inventories() {
-        return Arrays.stream(internalInventory)
-            .filter(Objects::nonNull)
-            .iterator();
+        return new AbstractIterator<PatternSlot<SuperMTEHatchCraftingInputME>>() {
+
+            private int index;
+
+            @Override
+            protected PatternSlot<SuperMTEHatchCraftingInputME> computeNext() {
+                while (index < internalInventory.length) {
+                    PatternSlot<SuperMTEHatchCraftingInputME> slot = internalInventory[index++];
+                    if (slot != null) return slot;
+                }
+                return endOfData();
+            }
+        };
+    }
+
+    public final long getPatternInputRevision() {
+        return patternInputRevision;
+    }
+
+    protected final void patternInputsChanged() {
+        patternInputRevision++;
     }
 
     public Iterator<PatternSlot<SuperMTEHatchCraftingInputME>> inventoriesReversed() {
@@ -1671,6 +1696,7 @@ public class SuperMTEHatchCraftingInputME extends MTEHatchInputBus
                     insertItem(ais);
                 }
             }
+            if (parentMTE instanceof SuperMTEHatchCraftingInputME hatch) hatch.patternInputsChanged();
             return true;
         }
 

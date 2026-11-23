@@ -92,6 +92,8 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("gregtech.AutoStructureTooltipMixin");
             mixins.add("gregtech.PatternInputHatchElementMixin");
             mixins.add("gregtech.PatternRecipeProcessingMixin");
+            mixins.add("gregtech.PatternInputFallbackMixin");
+            mixins.add("gregtech.RecipeLookupMixin");
             mixins.add("gregtech.MultiblockProcessingAccessor");
             mixins.add("gregtech.CircuitAssemblyLinePatternModeMixin");
             mixins.add("gregtech.PatternMEOutputMultiblockMixin");
