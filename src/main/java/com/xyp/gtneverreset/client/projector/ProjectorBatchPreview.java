@@ -1,6 +1,8 @@
 package com.xyp.gtneverreset.client.projector;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -38,12 +40,61 @@ final class ProjectorBatchPreview extends ProjectorStructure {
     final boolean compatible;
     final boolean limited;
     final int blockedControllers;
+    final Formation formation;
+
+    /** Counts controllers, including every controller whose structure visits a shared hatch. */
+    static final class Formation {
+
+        final int total;
+        int finished, formed, unchecked;
+        final Map<String, Integer> errors = new LinkedHashMap<>();
+        private final Map<Map<Long, Integer>, Integer> pending = new LinkedHashMap<>();
+        private ProjectorPlan.Settings requested;
+
+        Formation(int total) {
+            this.total = total;
+        }
+
+        void update(ProjectorStructure template) {
+            if (pending.isEmpty()) return;
+            var it = pending.entrySet()
+                .iterator();
+            var group = it.next();
+            ProjectorStructure checked = template;
+            if (!group.getKey()
+                .isEmpty()) {
+                if (requested == null) {
+                    var base = template.settings;
+                    var overrides = new TreeMap<>(base.overrides());
+                    overrides.putAll(group.getKey());
+                    requested = new ProjectorPlan.Settings(
+                        base.machine(),
+                        base.master(),
+                        base.channels(),
+                        Collections.unmodifiableMap(overrides),
+                        base.choices(),
+                        base.cellChoices());
+                }
+                checked = ProjectorStructures.get(requested);
+                if (checked == null) return;
+            }
+            int count = group.getValue();
+            if (!checked.failure.isEmpty() || !checked.limit.isEmpty() || !checked.checked) unchecked += count;
+            else if (checked.formed) formed += count;
+            else for (String error : checked.errors) errors.merge(error, count, Integer::sum);
+            finished += count;
+            it.remove();
+            requested = null;
+        }
+    }
 
     private ProjectorBatchPreview(ProjectorStructure template, Long2IntLinkedOpenHashMap cells, long[] empty,
-        int[] bounds, ExtendedFacing baseFacing, boolean compatible, boolean limited, ProjectorBatchHatches edits) {
+        int[] bounds, ExtendedFacing baseFacing, boolean compatible, boolean limited, ProjectorBatchHatches edits,
+        Formation formation) {
         super(template, cells.size(), empty, bounds, new PreviewWorld());
         this.template = template;
         this.edits = edits;
+        this.formation = formation;
         this.baseFacing = baseFacing;
         this.compatible = compatible;
         this.limited = limited;
@@ -221,8 +272,9 @@ final class ProjectorBatchPreview extends ProjectorStructure {
             bounds[axis + 3] += Math.max(first[axis], last[axis]);
         }
         var cells = new Long2IntLinkedOpenHashMap();
+        var formation = new Formation(copies);
         if ((long) copies * (shape.size + shape.emptyCells.length) > FxBlockMesh.MAX_BLOCKS)
-            return new ProjectorBatchPreview(shape, cells, new long[0], bounds, facing, true, false, null);
+            return new ProjectorBatchPreview(shape, cells, new long[0], bounds, facing, true, false, null, formation);
         cells.defaultReturnValue(-1);
         var empty = new LongOpenHashSet();
         int[] abc = new int[3];
@@ -231,6 +283,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
         int[] source = new int[3];
         for (int copy = 0; copy < copies; copy++) {
             var at = layout.placement(copy);
+            Map<Long, Integer> localOverrides = null;
             for (int i = 0; i < shape.size + shape.emptyCells.length; i++) {
                 if (i < shape.size) {
                     source[0] = shape.a[i];
@@ -249,7 +302,13 @@ final class ProjectorBatchPreview extends ProjectorStructure {
                 world[2] += at.z();
                 facing.getOffsetABC(world, abc);
                 long key = ProjectorPlan.pack(abc[0], abc[1], abc[2]);
-                if (edits != null) edits.sample(key, i);
+                if (edits != null) {
+                    var hatch = edits.sample(key, i);
+                    if (hatch != null && i < shape.size) {
+                        if (localOverrides == null) localOverrides = new TreeMap<>();
+                        localOverrides.put(ProjectorPlan.pack(source[0], source[1], source[2]), hatch.machine());
+                    }
+                }
                 if (i >= shape.size) {
                     empty.add(key);
                     continue;
@@ -260,6 +319,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
                 if (previous >= 0 && shape.blocks[previous % shape.size] == Blocks.air && shape.blocks[i] != Blocks.air)
                     cells.put(key, value);
             }
+            formation.pending.merge(localOverrides == null ? Collections.emptyMap() : localOverrides, 1, Integer::sum);
         }
         empty.removeAll(cells.keySet());
         return new ProjectorBatchPreview(
@@ -270,6 +330,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
             facing,
             compatible && (edits == null || !edits.incompatible),
             layout.searchLimited(),
-            edits);
+            edits,
+            formation);
     }
 }

@@ -67,7 +67,8 @@ public class ProjectorSpotScreen extends ModularScreen {
 
     public static void openHatch(ProjectorStructure shown, int cell) {
         ProjectorPlan working = ProjectorClient.plan.copy();
-        ProjectorHatchPage hatches = new ProjectorHatchPage(() -> shown, working, () -> cell, spot -> {});
+        int[] selected = { cell };
+        ProjectorHatchPage hatches = new ProjectorHatchPage(() -> shown, working, () -> selected, spot -> {});
         int kinds = KIND_WIDTH + SCROLL, models = MODEL_WIDTH + SCROLL, tiers = TIER_WIDTH + SCROLL,
             amperes = AMPERES_WIDTH + SCROLL;
         int inner = kinds + GAP + models + GAP + tiers + GAP + amperes, listHeight = 2 + VISIBLE * ROW;

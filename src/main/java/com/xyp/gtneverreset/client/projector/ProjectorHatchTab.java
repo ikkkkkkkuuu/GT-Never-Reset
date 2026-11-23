@@ -59,8 +59,9 @@ public class ProjectorHatchTab {
         BooleanSupplier editable = hatches::editable, block = hatches::blockCell,
             casing = () -> editable.getAsBoolean() && ProjectorHatchPage.CASING.equals(hatches.kind()),
             model = () -> editable.getAsBoolean() && !casing.getAsBoolean(),
-            casings = () -> casing.getAsBoolean() && hatches.casings()
-                .size() > 1;
+            casings = () -> !hatches.multiple() && casing.getAsBoolean()
+                && hatches.casings()
+                    .size() > 1;
         Flow card = column().size(wellWidth, CARD_HEIGHT)
             .padding(0, 0, 1, 1)
             .background(gui.well())
@@ -126,7 +127,8 @@ public class ProjectorHatchTab {
                                             if (casing.getAsBoolean()) hatches.toggleSameCasing();
                                             else hatches.toggleSameKind();
                                         })
-                                    .setEnabledIf(w -> !block.getAsBoolean() && !hatches.channelCasing()))
+                                    .setEnabledIf(
+                                        w -> !hatches.multiple() && !block.getAsBoolean() && !hatches.channelCasing()))
                     .child(
                         new ListRow(
                             () -> block.getAsBoolean()
@@ -139,7 +141,9 @@ public class ProjectorHatchTab {
                                 // # zh_CN 外壳等级整台机器一起换
                                 : StatCollector.translateToLocal(ProjectorSpotScreen.LANG + "channel_casing"))
                                     .width(wellWidth)
-                                    .setEnabledIf(w -> block.getAsBoolean() || hatches.channelCasing())));
+                                    .setEnabledIf(
+                                        w -> !hatches.multiple()
+                                            && (block.getAsBoolean() || hatches.channelCasing()))));
         int width = ProjectorGui.RIGHT_WIDTH, height = ProjectorGui.PAGE_HEIGHT;
         return column().size(width, height)
             .childPadding(4)
@@ -238,6 +242,10 @@ public class ProjectorHatchTab {
 
         private SpotHeader() {
             size(gui.wellWidth, HEADER_HEIGHT);
+            // #tr gtneverreset.projector.gui.multiselect_hint
+            // # Ctrl-click to add or remove hatch positions. Click normally to select one block.
+            // # zh_CN Ctrl＋点击可添加或取消仓位，普通点击任意方块回到单选。
+            tooltipBuilder(tooltip -> tooltip.addLine(StatCollector.translateToLocal(LANG + "multiselect_hint")));
             child(
                 new AE2Button(() -> "<", () -> hatches.step(-1)).size(ValueStepper.ARROW_WIDTH, ProjectorWidgets.BUTTON)
                     .left(2)

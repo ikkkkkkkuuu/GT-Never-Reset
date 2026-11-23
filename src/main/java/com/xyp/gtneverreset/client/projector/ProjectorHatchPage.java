@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntConsumer;
 import java.util.function.IntPredicate;
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import net.minecraft.init.Blocks;
@@ -35,6 +35,7 @@ import gregtech.api.enums.GTValues;
 import gregtech.api.enums.HatchElement;
 import gregtech.api.util.GTUtility;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 
 @SideOnly(Side.CLIENT)
 public class ProjectorHatchPage {
@@ -46,7 +47,7 @@ public class ProjectorHatchPage {
 
     private final Supplier<ProjectorStructure> structure;
     private final ProjectorPlan working;
-    private final IntSupplier selected;
+    private final Supplier<int[]> selected;
     private final IntConsumer select;
     private boolean configChanged;
     private ProjectorStructure ordered;
@@ -54,10 +55,12 @@ public class ProjectorHatchPage {
     private ExtendedFacing placedFor;
     private String[] places = new String[0];
     private int[] layers = new int[0];
+    private int[] sharedSelection, overLimit;
+    private HatchSlot sharedSlot;
     private HatchSlot groupedFor;
     private Map<Object, Map<String, List<Integer>>> grouped = Collections.emptyMap();
 
-    public ProjectorHatchPage(Supplier<ProjectorStructure> structure, ProjectorPlan working, IntSupplier selected,
+    public ProjectorHatchPage(Supplier<ProjectorStructure> structure, ProjectorPlan working, Supplier<int[]> selected,
         IntConsumer select) {
         this.structure = structure;
         this.working = working;
@@ -65,24 +68,33 @@ public class ProjectorHatchPage {
         this.select = select;
     }
 
+    private int primaryCell() {
+        int[] cells = selected.get();
+        return cells.length == 0 ? -1 : cells[cells.length - 1];
+    }
+
+    public boolean multiple() {
+        return selected.get().length > 1;
+    }
+
     public void step(int direction) {
         ProjectorStructure current = structure.get();
         if (current == null || spots(current).length == 0) return;
-        int index = indexOf(selected.getAsInt());
+        int index = indexOf(primaryCell());
         int next = index < 0 ? (direction > 0 ? 0 : spots.length - 1) : Math.floorMod(index + direction, spots.length);
         select.accept(spots[next]);
     }
 
     public ItemStack icon() {
         ProjectorStructure current = structure.get();
-        int cell = selected.getAsInt();
+        int cell = primaryCell();
         return current == null || cell < 0 ? null : current.items[cell];
     }
 
     public String placeLine() {
         ProjectorStructure current = structure.get();
         if (current == null) return "";
-        int cell = selected.getAsInt();
+        int cell = primaryCell();
         // #tr gtneverreset.projector.gui.hatch_hint
         // # Pick a blue spot or use the arrows (%s spots)
         // # zh_CN 点预览里的蓝框或用箭头选择（共 %s 个仓位）
@@ -95,13 +107,13 @@ public class ProjectorHatchPage {
 
     public String countLine() {
         ProjectorStructure current = structure.get();
-        int index = indexOf(selected.getAsInt());
+        int index = indexOf(primaryCell());
         return current == null || index < 0 ? "" : (index + 1) + "/" + spots(current).length;
     }
 
     public String nameLine() {
         ProjectorStructure current = structure.get();
-        int cell = selected.getAsInt();
+        int cell = primaryCell();
         if (current == null || cell < 0) return "";
         if (current.blocks[cell] == Blocks.air) return StatCollector
             // #tr gtneverreset.projector.spot.empty
@@ -111,6 +123,18 @@ public class ProjectorHatchPage {
             // # Empty spot, takes only a hatch
             // # zh_CN 空位（只能放仓）
             .translateToLocal(choice() != null ? ProjectorSpotScreen.LANG + "empty" : LANG + "empty_spot");
+        if (overLimit == selected.get()) {
+            // #tr gtneverreset.projector.gui.hatch_edit_limit
+            // # Plan limit: %s hatch edits
+            // # zh_CN 方案最多可修改 %s 个仓位
+            return StatCollector.translateToLocalFormatted(LANG + "hatch_edit_limit", ProjectorPlan.MAX_OVERRIDES);
+        }
+        if (multiple()) {
+            // #tr gtneverreset.projector.gui.selected_hatches
+            // # %s hatch positions selected
+            // # zh_CN 已选 %s 个仓位
+            return StatCollector.translateToLocalFormatted(LANG + "selected_hatches", selected.get().length);
+        }
         String name = current.items[cell] == null ? current.blocks[cell].getLocalizedName()
             : current.items[cell].getDisplayName();
         if (current.slotAt(cell) != null || choice() != null) return name;
@@ -178,8 +202,8 @@ public class ProjectorHatchPage {
     public void chooseKind(Object kind) {
         ProjectorStructure current = structure.get();
         HatchSlot slot = slot();
-        int cell = selected.getAsInt();
-        if (current == null || slot == null || kind == null || kind.equals(kind())) return;
+        if (current == null || slot == null || kind == null || kind.equals(kind()) || !groups(slot).containsKey(kind))
+            return;
         Map<String, List<Integer>> variants = groups(slot).get(kind);
         int best = remembered(slot, kind, variants);
         if (best == 0 && variants != null) {
@@ -190,7 +214,7 @@ public class ProjectorHatchPage {
                 }
             }
         }
-        put(current, cell, best);
+        if (!putSelection(current, best)) return;
         if (best > 0) REMEMBERED.put(kind, best);
     }
 
@@ -233,7 +257,7 @@ public class ProjectorHatchPage {
 
     public void chooseAmperes(int id) {
         ProjectorStructure current = structure.get();
-        if (current != null && amperes().contains(id) && id != heldId()) setModel(current, selected.getAsInt(), id);
+        if (current != null && amperes().contains(id) && id != heldId()) setModel(current, primaryCell(), id);
     }
 
     public static String amperesName(int id) {
@@ -257,7 +281,7 @@ public class ProjectorHatchPage {
 
     public void chooseTier(int id) {
         ProjectorStructure current = structure.get();
-        if (current != null && tiers().contains(id) && id != heldId()) setModel(current, selected.getAsInt(), id);
+        if (current != null && tiers().contains(id) && id != heldId()) setModel(current, primaryCell(), id);
     }
 
     public boolean sameCasing() {
@@ -271,13 +295,13 @@ public class ProjectorHatchPage {
 
     public Choice choice() {
         ProjectorStructure current = structure.get();
-        Choice choice = current == null ? null : current.choiceAt(selected.getAsInt());
+        Choice choice = current == null ? null : current.choiceAt(primaryCell());
         return choice == null || choice.channel() != null ? null : choice;
     }
 
     private Choice channelChoice() {
         ProjectorStructure current = structure.get();
-        Choice choice = current == null || slot() == null ? null : current.choiceAt(selected.getAsInt());
+        Choice choice = current == null || slot() == null ? null : current.choiceAt(primaryCell());
         return choice == null || choice.channel() == null ? null : choice;
     }
 
@@ -315,7 +339,7 @@ public class ProjectorHatchPage {
             HatchSlot slot = slot();
             return slot == null || slot.casing() == null ? null : ProjectorPlan.blockKey(slot.casing());
         }
-        String own = working.cellChoices.get(templateKey(current, selected.getAsInt()));
+        String own = working.cellChoices.get(templateKey(current, primaryCell()));
         return own != null ? own : working.chosenBlock(choice);
     }
 
@@ -339,7 +363,7 @@ public class ProjectorHatchPage {
             return;
         }
         Choice choice = choice();
-        int cell = selected.getAsInt();
+        int cell = primaryCell();
         if (current == null || choice == null) return;
         if (!ClientConfig.projectorSameCasing) {
             if (blockKey.equals(working.chosenBlock(choice))) working.cellChoices.remove(templateKey(current, cell));
@@ -393,7 +417,7 @@ public class ProjectorHatchPage {
 
     public int groupSize() {
         ProjectorStructure current = structure.get();
-        int cell = selected.getAsInt();
+        int cell = primaryCell();
         return current == null || cell < 0 || cell >= current.size ? 0 : current.countOf(current.choiceOf[cell]);
     }
 
@@ -401,7 +425,7 @@ public class ProjectorHatchPage {
         List<Row> casings = new ArrayList<>(), blocks = new ArrayList<>();
         ProjectorStructure current = structure.get();
         if (current == null) return casings;
-        int cell = selected.getAsInt();
+        int cell = primaryCell();
         for (Map.Entry<Long, String> entry : working.cellChoices.entrySet()) {
             long position = entry.getKey();
             int spot = current.indexOf(
@@ -488,7 +512,7 @@ public class ProjectorHatchPage {
         int id = heldId();
         if (variants == null || current == null || id <= 0) return;
         List<Integer> ids = variants.get(modelKey(first));
-        if (ids != null && !ids.contains(id)) setModel(current, selected.getAsInt(), closest(ids, id));
+        if (ids != null && !ids.contains(id)) setModel(current, primaryCell(), closest(ids, id));
     }
 
     public String variantLabel(int first) {
@@ -539,14 +563,14 @@ public class ProjectorHatchPage {
         for (int i = 0; index < 0 && i < choices.size(); i++) if (sameAsHeld.test(choices.get(i))) index = i;
         if (index < 0) return;
         int position = Math.max(0, Math.min(choices.size() - 1, index + step));
-        if (position != index) setModel(current, selected.getAsInt(), choices.get(position));
+        if (position != index) setModel(current, primaryCell(), choices.get(position));
     }
 
     public List<Row> spotRows() {
         List<Row> rows = new ArrayList<>();
         ProjectorStructure current = structure.get();
         if (current == null) return rows;
-        int cell = selected.getAsInt();
+        int cell = primaryCell();
         List<Integer> chosen = new ArrayList<>();
         for (int spot : spots(current)) {
             if (overrides(current).containsKey(key(current, spot))) chosen.add(spot);
@@ -567,16 +591,42 @@ public class ProjectorHatchPage {
 
     private HatchSlot slot() {
         ProjectorStructure current = structure.get();
-        return current == null ? null : current.slotAt(selected.getAsInt());
+        if (current == null) return null;
+        int[] cells = selected.get();
+        if (cells.length < 2) return cells.length == 0 ? null : current.slotAt(cells[0]);
+        if (cells != sharedSelection) {
+            HatchSlot first = current.slotAt(cells[0]);
+            var allowed = new IntOpenHashSet(first.candidates());
+            boolean casing = first.casing() != null;
+            var checked = new HashSet<HatchSlot>();
+            checked.add(first);
+            for (int cell : cells) {
+                HatchSlot next = current.slotAt(cell);
+                if (checked.add(next)) {
+                    allowed.retainAll(new IntOpenHashSet(next.candidates()));
+                    casing &= next.casing() != null;
+                }
+            }
+            int[] candidates = java.util.Arrays.stream(first.candidates())
+                .filter(allowed::contains)
+                .toArray();
+            sharedSlot = new HatchSlot(candidates, candidates, casing ? first.casing() : null);
+            sharedSelection = cells;
+        }
+        return sharedSlot;
     }
 
     private int heldId() {
         ProjectorStructure current = structure.get();
-        int cell = selected.getAsInt();
-        if (current == null || current.slotAt(cell) == null) return -1;
-        // The shown structure lags behind a choice until the new simulation finishes.
-        Integer chosen = overrides(current).get(key(current, cell));
-        return chosen != null ? chosen : current.machines[cell];
+        int[] cells = selected.get();
+        if (current == null || cells.length == 0 || current.slotAt(cells[0]) == null) return -1;
+        Map<Long, Integer> changes = overrides(current);
+        int held = changes.getOrDefault(key(current, cells[0]), current.machines[cells[0]]);
+        for (int i = 1; i < cells.length; i++) {
+            int cell = cells[i];
+            if (changes.getOrDefault(key(current, cell), current.machines[cell]) != held) return -1;
+        }
+        return held;
     }
 
     private Map<String, List<Integer>> variantsOfHeld() {
@@ -606,15 +656,30 @@ public class ProjectorHatchPage {
     }
 
     private void setModel(ProjectorStructure current, int cell, int id) {
-        put(current, cell, id);
+        if (!putSelection(current, id)) return;
         REMEMBERED.put(kindKey(id), id);
-        if (!sameKind()) return;
+        if (multiple() || !sameKind()) return;
         Object kind = kindKey(id);
         for (int spot : spots(current)) {
             int held = current.machines[spot];
             if (spot != cell && held != 0 && kind.equals(kindKey(held)) && accepts(current.slotAt(spot), id))
                 put(current, spot, id);
         }
+    }
+
+    private boolean putSelection(ProjectorStructure current, int id) {
+        int[] cells = selected.get();
+        if (!accepts(slot(), id)) return false;
+        var changes = overrides(current);
+        int size = changes.size();
+        for (int cell : cells) if (!changes.containsKey(key(current, cell))) size++;
+        if (size > ProjectorPlan.MAX_OVERRIDES) {
+            overLimit = cells;
+            return false;
+        }
+        overLimit = null;
+        for (int cell : cells) put(current, cell, id);
+        return true;
     }
 
     private void put(ProjectorStructure current, int cell, int id) {

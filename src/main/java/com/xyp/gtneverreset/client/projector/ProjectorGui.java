@@ -14,6 +14,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
@@ -71,6 +72,7 @@ import com.xyp.gtnrlib.gui.widget.VerticalButtonBar;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 
 @SideOnly(Side.CLIENT)
 public class ProjectorGui extends ModularPanel {
@@ -126,8 +128,10 @@ public class ProjectorGui extends ModularPanel {
     private ProjectorStructure shown;
     private int page, ticks;
     private final FadingNotice notice = new FadingNotice().duration(NOTICE_MILLIS);
-    private boolean hasSelection, displayChosen;
-    private int selectedA, selectedB, selectedC;
+    private boolean displayChosen;
+    private final LongLinkedOpenHashSet selectedPositions = new LongLinkedOpenHashSet();
+    private ProjectorStructure selectionShape;
+    private int[] selectionCells = new int[0];
 
     public ProjectorGui(PlayerInventoryGuiData data, ProjectorMaterialSync materialStock) {
         super(NAME);
@@ -152,18 +156,16 @@ public class ProjectorGui extends ModularPanel {
         page = !working.hasMachine() ? MACHINES : lastPage >= 0 ? lastPage : PARAMETERS;
         int[] spot = ProjectorClient.takeSpot(working.machine);
         if (spot != null) {
-            hasSelection = true;
-            selectedA = spot[0];
-            selectedB = spot[1];
-            selectedC = spot[2];
+            selectedPositions.add(ProjectorPlan.pack(spot[0], spot[1], spot[2]));
             page = HATCHES;
         }
         if (page == BATCH || page == GENERATION) working.batchProjection = page == BATCH;
-        preview = new ProjectorPreviewWidget(this::previewStructure).selection(this::selectedCell, this::select)
+        preview = new ProjectorPreviewWidget(this::previewStructure)
+            .selection(this::selectedCells, cell -> select(cell, GuiScreen.isCtrlKeyDown()))
             .markers(() -> ClientConfig.projectorHatchOutlines, working)
             .facing(() -> working.hasMachine() ? working.facing : null);
         if (working.machine == lastLayerMachine) preview.restoreLayer(lastLayer);
-        hatches = new ProjectorHatchPage(this::previewStructure, working, this::selectedCell, this::select);
+        hatches = new ProjectorHatchPage(this::previewStructure, working, this::selectedCells, this::select);
         child(
             column().pos(BODY_LEFT + PAD, TOP)
                 .size(CONTENT_WIDTH, CONTENT_HEIGHT)
@@ -321,7 +323,10 @@ public class ProjectorGui extends ModularPanel {
     private void buildTabs() {
         PageTabs tabs = new PageTabs(() -> page, index -> {
             page = index;
-            if (page == BATCH || page == GENERATION) working.batchProjection = page == BATCH;
+            if (page == BATCH || page == GENERATION) {
+                if (working.batchProjection != (page == BATCH)) clearSelection();
+                working.batchProjection = page == BATCH;
+            }
         });
         for (int i = 0; i < TAB_ICONS.length; i++) {
             int index = i;
@@ -655,8 +660,10 @@ public class ProjectorGui extends ModularPanel {
     public void onUpdate() {
         super.onUpdate();
         if (++ticks % REFRESH_TICKS == 0) machines.refreshCarried(Minecraft.getMinecraft().thePlayer);
-        ProjectorStructure shape = page == MATERIALS ? previewStructure() : null;
-        materialStock.update(shape == null ? null : shape.materials, ticks);
+        ProjectorStructure shape = previewStructure();
+        if (shape instanceof ProjectorBatchPreview array && array.compatible && !array.outlineOnly)
+            array.formation.update(array.template);
+        materialStock.update(page == MATERIALS && shape != null ? shape.materials : null, ticks);
     }
 
     private void closed() {
@@ -695,7 +702,7 @@ public class ProjectorGui extends ModularPanel {
         if (id == working.machine) return;
         working.selectMachine(id);
         working.facing = ProjectorClient.initialFacing(id);
-        hasSelection = false;
+        clearSelection();
         machines.showMachine();
     }
 
@@ -734,7 +741,7 @@ public class ProjectorGui extends ModularPanel {
 
     private void clearPlan() {
         working.clear();
-        hasSelection = false;
+        clearSelection();
         machines.showMachine();
         ProjectorClient.send(location, working);
         stored.readFromNBT(working.writeToNBT());
@@ -818,18 +825,49 @@ public class ProjectorGui extends ModularPanel {
         return rows;
     }
 
-    private int selectedCell() {
-        ProjectorStructure structure = previewStructure();
-        return structure == null || !hasSelection ? -1 : structure.indexOf(selectedA, selectedB, selectedC);
+    private void clearSelection() {
+        selectedPositions.clear();
+        selectionShape = null;
+    }
+
+    private int[] selectedCells() {
+        ProjectorStructure shape = previewStructure();
+        if (shape == null) return it.unimi.dsi.fastutil.ints.IntArrays.EMPTY_ARRAY;
+        if (shape != selectionShape) {
+            var cells = new it.unimi.dsi.fastutil.ints.IntArrayList(selectedPositions.size());
+            boolean group = selectedPositions.size() > 1;
+            var positions = selectedPositions.iterator();
+            while (positions.hasNext()) {
+                long key = positions.nextLong();
+                int cell = shape
+                    .indexOf(ProjectorPlan.unpackA(key), ProjectorPlan.unpackB(key), ProjectorPlan.unpackC(key));
+                if (cell < 0 || group && shape.slotAt(cell) == null) positions.remove();
+                else cells.add(cell);
+            }
+            selectionCells = cells.toIntArray();
+            selectionShape = shape;
+        }
+        return selectionCells;
     }
 
     private void select(int cell) {
+        select(cell, false);
+    }
+
+    private void select(int cell, boolean toggle) {
         ProjectorStructure structure = previewStructure();
-        if (structure == null || cell < 0) return;
-        hasSelection = true;
-        selectedA = structure.a[cell];
-        selectedB = structure.b[cell];
-        selectedC = structure.c[cell];
+        if (structure == null || cell < 0 || cell >= structure.size) return;
+        long key = ProjectorPlan.pack(structure.a[cell], structure.b[cell], structure.c[cell]);
+        if (toggle) {
+            if (structure.slotAt(cell) == null) return;
+            int[] current = selectedCells();
+            if (current.length == 1 && structure.slotAt(current[0]) == null) clearSelection();
+            if (!selectedPositions.remove(key)) selectedPositions.add(key);
+        } else {
+            selectedPositions.clear();
+            selectedPositions.add(key);
+        }
+        selectionShape = null;
         Choice choice = structure.choiceAt(cell);
         if (structure.slotAt(cell) != null || choice != null && choice.channel() == null) page = HATCHES;
         else if (choice != null) page = PARAMETERS;
@@ -881,6 +919,15 @@ public class ProjectorGui extends ModularPanel {
     private Widget<?> statusIcon() {
         IDrawable look = (context, x, y, width, height, theme) -> {
             ProjectorStructure structure = finishedStructure();
+            if (structure instanceof ProjectorBatchPreview array && !hasProblem(structure)) {
+                var status = array.formation;
+                boolean unknown = array.outlineOnly
+                    || array.compatible && (status.finished < status.total || status.unchecked > 0);
+                boolean formed = array.compatible && status.formed == status.total;
+                Icon icon = unknown ? Icon.MORE : formed ? Icon.CHECKMARK : Icon.EXCLAMATION;
+                AE2Draw.drawTintedIcon(icon, x, y, unknown ? muted : formed ? goodColor : badColor);
+                return;
+            }
             if (structure == null || !hasProblem(structure) && !structure.checked) return;
             boolean good = !hasProblem(structure) && structure.formed;
             AE2Draw.drawTintedIcon(good ? Icon.CHECKMARK : Icon.EXCLAMATION, x, y, good ? goodColor : badColor);
@@ -897,7 +944,7 @@ public class ProjectorGui extends ModularPanel {
     }
 
     private ProjectorStructure finishedStructure() {
-        return simulating() ? null : structure();
+        return simulating() ? null : previewStructure();
     }
 
     private static boolean hasProblem(ProjectorStructure structure) {
@@ -924,6 +971,7 @@ public class ProjectorGui extends ModularPanel {
             // # The structure took too many building rounds, only part is shown
             // # zh_CN 推算轮数超过上限，只显示一部分
             tooltip.addLine(EnumChatFormatting.RED + StatCollector.translateToLocal(LANG + "limit." + structure.limit));
+        else if (structure instanceof ProjectorBatchPreview array) batchStatusTooltip(tooltip, array);
         else if (!structure.checked) return;
         else if (structure.formed)
             // #tr gtneverreset.projector.gui.formed
@@ -936,6 +984,48 @@ public class ProjectorGui extends ModularPanel {
             // # zh_CN 还不能成型：
             tooltip.addLine(EnumChatFormatting.RED + StatCollector.translateToLocal(LANG + "not_formed"));
             for (String error : structure.errors) tooltip.addLine(EnumChatFormatting.GRAY + error);
+        }
+    }
+
+    private void batchStatusTooltip(RichTooltip tooltip, ProjectorBatchPreview array) {
+        if (array.outlineOnly) {
+            tooltip.addLine(StatCollector.translateToLocal(ProjectorClient.LANG + "batch_outline"));
+            return;
+        }
+        if (!array.compatible) {
+            tooltip.addLine(
+                EnumChatFormatting.RED
+                    + StatCollector.translateToLocal(LANG + (array.limited ? "batch_search_limit" : "batch_no_fit")));
+            return;
+        }
+        var status = array.formation;
+        if (status.finished < status.total) {
+            // #tr gtneverreset.projector.gui.batch_checking
+            // # Checking controllers: %s/%s
+            // # zh_CN 正在检查控制器：%s/%s 台
+            tooltip.addLine(
+                StatCollector.translateToLocalFormatted(LANG + "batch_checking", status.finished, status.total));
+            return;
+        }
+        // #tr gtneverreset.projector.gui.batch_formed
+        // # Controllers that can form: %s/%s
+        // # zh_CN 可成型：%s/%s 台
+        tooltip.addLine(
+            (status.formed == status.total ? EnumChatFormatting.GREEN : EnumChatFormatting.YELLOW)
+                + StatCollector.translateToLocalFormatted(LANG + "batch_formed", status.formed, status.total));
+        status.errors.forEach((error, count) -> {
+            // #tr gtneverreset.projector.gui.batch_error_count
+            // # %s (%s/%s controllers)
+            // # zh_CN %s（%s/%s 台）
+            tooltip.addLine(
+                EnumChatFormatting.GRAY
+                    + StatCollector.translateToLocalFormatted(LANG + "batch_error_count", error, count, status.total));
+        });
+        if (status.unchecked > 0) {
+            // #tr gtneverreset.projector.gui.batch_unchecked
+            // # Could not check %s controllers
+            // # zh_CN 有 %s 台未能完成结构检查
+            tooltip.addLine(StatCollector.translateToLocalFormatted(LANG + "batch_unchecked", status.unchecked));
         }
     }
 
