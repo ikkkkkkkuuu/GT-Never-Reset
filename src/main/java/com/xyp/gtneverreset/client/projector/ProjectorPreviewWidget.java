@@ -4,7 +4,6 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
-import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import net.minecraft.client.Minecraft;
@@ -60,7 +59,7 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
         labelView = BufferUtils.createFloatBuffer(16), labelLens = BufferUtils.createFloatBuffer(16);
     private final IntBuffer viewport = BufferUtils.createIntBuffer(16);
     private ProjectorStructure structure;
-    private IntSupplier selection = () -> -1;
+    private Supplier<int[]> selection = () -> it.unimi.dsi.fastutil.ints.IntArrays.EMPTY_ARRAY;
     private IntConsumer onSelect = cell -> {};
     private BooleanSupplier showOutlines = () -> false;
     private ProjectorPlan plan = new ProjectorPlan();
@@ -87,7 +86,7 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
         return this;
     }
 
-    public ProjectorPreviewWidget selection(IntSupplier selection, IntConsumer onSelect) {
+    public ProjectorPreviewWidget selection(Supplier<int[]> selection, IntConsumer onSelect) {
         this.selection = selection;
         this.onSelect = onSelect;
         return this;
@@ -436,8 +435,9 @@ public class ProjectorPreviewWidget extends Widget<ProjectorPreviewWidget> imple
         GL11.glDepthMask(true);
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         tessellator.startDrawing(GL11.GL_LINES);
-        int selected = selection.getAsInt();
-        if (selected >= 0 && selected < structure.size) box(tessellator, selected, SELECTED, 0.02);
+        for (int cell : selection.get()) {
+            if (cell >= 0 && cell < structure.size && visible(cell)) box(tessellator, cell, SELECTED, 0.02);
+        }
         if (hovered >= 0) box(tessellator, hovered, HOVERED, 0.0);
         tessellator.draw();
     }

@@ -243,34 +243,31 @@ public class ProjectorBatchHatchChecks {
             var screen = ModularScreen.getCurrent();
             if (screen != null && screen.getMainPanel() instanceof ProjectorGui gui) {
                 if (frames == 0) {
-                    require(!gui.hatches.sameKind(), "array edits must default to the selected slot");
+                    var select = ProjectorGui.class.getDeclaredMethod("select", int.class, boolean.class);
+                    select.setAccessible(true);
+                    int sharedCell = index(shape, shared), separateCell = index(shape, separate);
+                    select.invoke(gui, sharedCell, true);
+                    require(gui.hatches.multiple(), "Ctrl adds a shared physical slot");
+                    select.invoke(gui, sharedCell, true);
+                    require(!gui.hatches.multiple() && gui.hatches.editable(), "Ctrl removes a selected slot");
+                    select.invoke(gui, sharedCell, true);
+                    select.invoke(gui, shape.indexOf(0, 0, 0), false);
+                    require(
+                        !gui.hatches.multiple() && !gui.hatches.editable(),
+                        "plain click on the controller exits multi-select");
+                    select.invoke(gui, separateCell, false);
+                    select.invoke(gui, sharedCell, true);
+                    require(gui.hatches.multiple(), "multi-selection restored");
                     gui.hatches.chooseKind(ProjectorEnergyHatches.Flow.INPUT);
                     gui.hatches.chooseVariant(energyHatch());
                     gui.hatches.chooseTier(energyHatch());
-                    require(gui.hatches.held() == energyHatch(), "ordinary MV energy hatch");
                     hatch = gui.hatches.held();
                     require(
-                        hatch > 0 && gui.working.batchOverrides.get(separate) == hatch
+                        hatch == energyHatch() && gui.working.batchOverrides.size() == 2
+                            && gui.working.batchOverrides.get(separate) == hatch
+                            && gui.working.batchOverrides.get(shared) == hatch
                             && gui.working.overrides.isEmpty(),
-                        "selecting a unique array cell: selected=" + hatch
-                            + " key="
-                            + separate
-                            + " kinds="
-                            + gui.hatches.kinds()
-                            + " array="
-                            + gui.working.batchOverrides
-                            + " single="
-                            + gui.working.overrides);
-                }
-                if (frames == 4) {
-                    var select = ProjectorGui.class.getDeclaredMethod("select", int.class);
-                    select.setAccessible(true);
-                    select.invoke(gui, index(shape, shared));
-                    gui.hatches.chooseKind(ProjectorEnergyHatches.Flow.INPUT);
-                    gui.hatches.chooseVariant(energyHatch());
-                    gui.hatches.chooseTier(energyHatch());
-                    require(gui.hatches.held() == energyHatch(), "ordinary MV energy hatch");
-                    require(gui.working.batchOverrides.get(shared) == hatch, "selecting a shared cell");
+                        "one edit sets both selected hatches to MV");
                 }
                 if (frames > 8 && count(shape, ProjectorMachines.stackOf(hatch)) == 2) {
                     require(count(shape, casing) == originalCasings - 2, "shared boundary deducted once");
