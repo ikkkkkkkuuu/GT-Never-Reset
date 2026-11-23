@@ -20,7 +20,9 @@ import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.cleanroommc.modularui.api.widget.IWidget;
+import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.ModularScreen;
+import com.cleanroommc.modularui.screen.viewport.LocatedWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.glodblock.github.loader.ItemAndBlockHolder;
@@ -36,6 +38,7 @@ import appeng.tile.storage.TileDrive;
 import appeng.util.inv.MEInventoryCrafting;
 import appeng.util.item.AEFluidStack;
 import appeng.util.item.AEItemStack;
+import codechicken.nei.ItemPanels;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -44,6 +47,7 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.GregTechAPI;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.util.GTRecipe;
+import gregtech.api.util.GTUtility;
 
 @Mod(modid = "circuitsupplyqa", name = "Circuit Supply QA", version = "1", dependencies = "after:gtneverreset")
 public final class CircuitSupplyChecks {
@@ -54,7 +58,7 @@ public final class CircuitSupplyChecks {
 
     private CircuitMEPatternBuffer guiHatch;
     private int waitForTile;
-    private volatile boolean edited;
+    private volatile boolean edited, itemEdited, dropsReceived;
     private CircuitMEPatternBuffer serverHatch;
     private boolean launched, verified, opened, finished;
     private int ticks, stage, frames;
@@ -80,9 +84,32 @@ public final class CircuitSupplyChecks {
                     require(guiHatch.onRightclick(guiHatch.getBaseMetaTileEntity(), player), "native hatch GUI opens");
                     opened = true;
                 }
+                if (!dropsReceived) {
+                    var samples = guiHatch.getSharedSupplies();
+                    var item = samples.target(1);
+                    var bucket = samples.target(17);
+                    var display = samples.target(16);
+                    if (item != null && bucket != null && display != null && display.getStackSize() == 500) {
+                        require(
+                            item.isSameType(AEItemStack.create(taggedSample())) && item.getStackSize() == 3,
+                            "item ghost preserves NBT and count");
+                        require(
+                            bucket.isSameType(AEFluidStack.create(new FluidStack(FluidRegistry.LAVA, 1)))
+                                && bucket.getStackSize() == 1000,
+                            "NEI filled bucket marks its fluid");
+                        require(
+                            display.isSameType(AEFluidStack.create(new FluidStack(FluidRegistry.WATER, 1))),
+                            "NEI GT fluid display marks its fluid");
+                        require(player.inventory.getItemStack() == null, "ghost drops leave the real cursor empty");
+                        dropsReceived = true;
+                    }
+                }
+                itemEdited = dropsReceived && guiHatch.getSharedSupplies()
+                    .target(1)
+                    .getStackSize() == 1234567;
                 edited = guiHatch.getSharedSupplies()
                     .target(16)
-                    .getStackSize() == 1750;
+                    .getStackSize() == 1234567;
                 return;
             }
             if (serverHatch == null) {
@@ -290,16 +317,45 @@ public final class CircuitSupplyChecks {
             } else if (stage == 1) {
                 var fluid = (ButtonWidget<?>) find(panel, "supply_sample_16");
                 if (fluid == null) return;
+                drop(panel, 1, taggedSample(), false, true);
+                drop(panel, 2, new ItemStack(Items.apple), false, true);
+                drop(panel, 17, new ItemStack(Items.lava_bucket), false, true);
+                drop(
+                    panel,
+                    16,
+                    GTUtility.getFluidDisplayStack(new FluidStack(FluidRegistry.WATER, 500), true),
+                    true,
+                    true);
+                drop(panel, 17, new ItemStack(Items.stick), false, false);
+            } else if (stage == 2) {
+                if (!dropsReceived) return;
+                var fluid = (ButtonWidget<?>) find(panel, "supply_sample_16");
                 shot("circuit-supplies.png");
                 fluid.onMousePressed(1);
-            } else if (stage == 2) {
+            } else if (stage == 3) {
                 if (!screen.isPanelOpen("supply_limit_16")) return;
                 shot("circuit-supplies-fluid-limit.png");
                 var field = (TextFieldWidget) find(panel, "supply_limit");
-                field.setText("1750");
+                field.setText("1234567");
                 field.onRemoveFocus(screen.getContext());
-            } else {
+            } else if (stage == 4) {
                 if (!edited) return;
+                panel.closeIfOpen();
+            } else if (stage == 5) {
+                var item = (ButtonWidget<?>) find(panel, "supply_sample_1");
+                if (item == null) return;
+                item.onMousePressed(1);
+            } else if (stage == 6) {
+                if (!screen.isPanelOpen("supply_limit_1")) return;
+                var field = (TextFieldWidget) find(panel, "supply_limit");
+                field.setText("1234567");
+                field.onRemoveFocus(screen.getContext());
+            } else if (stage == 7) {
+                if (!itemEdited) return;
+                panel.closeIfOpen();
+            } else {
+                if (find(panel, "supply_sample_1") == null) return;
+                shot("circuit-supplies-item-count.png");
                 finish(null);
             }
             stage++;
@@ -307,6 +363,23 @@ public final class CircuitSupplyChecks {
         } catch (Throwable error) {
             finish(error);
         }
+    }
+
+    private static ItemStack taggedSample() {
+        return new ItemStack(Items.gold_ingot, 3).setStackDisplayName("NEI sample");
+    }
+
+    private static void drop(ModularPanel panel, int slot, ItemStack sample, boolean bookmark, boolean accepted) {
+        var source = bookmark ? ItemPanels.bookmarkPanel : ItemPanels.itemPanel;
+        source.draggedStack = sample;
+        panel.getHovering()
+            .clear();
+        panel.getHovering()
+            .add(LocatedWidget.of(find(panel, "supply_sample_" + slot)));
+        panel.onMousePressed(0);
+        require((source.draggedStack == null) == accepted, "NEI drag result for slot " + slot);
+        panel.onMouseRelease(0);
+        source.draggedStack = null;
     }
 
     private static IWidget find(IWidget widget, String name) {

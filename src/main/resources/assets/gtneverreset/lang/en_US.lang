@@ -1014,7 +1014,7 @@ gtnr.gui.circuit_supplies.fluids=Fluids (mB)
 gtnr.gui.circuit_supplies.interval=Interval (s, 0 = off)
 gtnr.gui.circuit_supplies.on_check=Pull on recipe check
 gtnr.gui.circuit_supplies.next=Next pull in %s s
-gtnr.gui.circuit_supplies.sample=Left-click with a sample to mark, or with an empty hand to clear. Right-click to set the limit.
+gtnr.gui.circuit_supplies.sample=Drag from NEI or click with a sample. Empty-hand left-click clears. Right-click sets the limit.
 gtnr.gui.circuit_supplies.item_limit=Target item count
 gtnr.gui.circuit_supplies.fluid_limit=Target fluid amount (mB)
 gtnr.gui.gtneverreset.cross_recipe_buffer.auto_names=Automatically assign names
