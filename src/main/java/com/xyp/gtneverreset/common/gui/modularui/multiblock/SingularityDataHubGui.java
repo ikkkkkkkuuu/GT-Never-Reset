@@ -17,6 +17,7 @@ import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.UpOrDown;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
@@ -46,6 +47,7 @@ import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.xyp.gtneverreset.common.machine.hatch.VaultPortHatch;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
+import com.xyp.gtneverreset.common.me.vault.VaultInventoryHistory;
 import com.xyp.gtneverreset.common.me.vault.VaultNetworkInventory;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
@@ -57,6 +59,8 @@ import appeng.api.storage.IMEMonitor;
 import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IAEStack;
+import appeng.util.item.AEFluidStack;
+import appeng.util.item.AEItemStack;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -71,6 +75,7 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
     private static final String SCROLL = "vaultNetworkScroll";
     private static final String SORT = "vaultNetworkSort";
     private static final String SEARCH = "vaultNetworkSearch";
+    private static final String HISTORY = "vaultNetworkHistorySelect";
     private static final int SLOT_SIZE = AE2Theme.SLOT_SIZE;
     private static final int GRID_PADDING = 4;
     private static final int PANEL_WIDTH = 440;
@@ -128,9 +133,18 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
         ParentWidget<?> content = new ParentWidget<>().fullWidth()
             .expanded();
         NetworkBrowser browser = new NetworkBrowser(syncManager);
+        IPanelHandler historyPanel = syncManager.syncedPanel(
+            VaultInventoryHistoryGui.NAME,
+            true,
+            (manager, handler) -> VaultInventoryHistoryGui.build(
+                panel,
+                manager,
+                NetworkBrowser.inventorySync(browser::historyIdentity),
+                browser::historySample,
+                browser::clearHistory));
         content.child(createOverview(syncManager, browser));
         content.child(
-            createNetworkBrowser(syncManager, browser).left(0)
+            createNetworkBrowser(syncManager, browser, historyPanel).left(0)
                 .right(0)
                 .top(OVERVIEW_HEIGHT)
                 .bottom(0));
@@ -264,9 +278,10 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
         return overview;
     }
 
-    private ParentWidget<?> createNetworkBrowser(PanelSyncManager syncManager, NetworkBrowser browser) {
+    private ParentWidget<?> createNetworkBrowser(PanelSyncManager syncManager, NetworkBrowser browser,
+        IPanelHandler historyPanel) {
         ParentWidget<?> network = new ParentWidget<>();
-        InventoryGrid grid = new InventoryGrid(browser, syncManager).left(0)
+        InventoryGrid grid = new InventoryGrid(browser, syncManager, historyPanel).left(0)
             .right(0)
             .top(23)
             .bottom(0);
@@ -352,6 +367,10 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
 
         private EntityPlayer viewer;
         private NBTTagCompound serverView = new NBTTagCompound();
+        private NBTTagCompound previousView = new NBTTagCompound();
+        private NBTTagCompound historyIdentity = new NBTTagCompound();
+        private VaultInventoryHistory history;
+        private int historySequence;
         private long nextRefresh;
         private boolean showFluids;
         private boolean sortByAmount;
@@ -370,13 +389,7 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
             this.sync = sync;
             sync.addOpenListener(player -> { if (!sync.isClient()) viewer = player; });
             sync.addCloseListener(player -> inventory.stopObserving());
-            viewValue = GenericSyncValue.builder(NBTTagCompound.class)
-                .getter(this::snapshot)
-                .serializer(NetworkBrowser::writeView)
-                .deserializer(NetworkBrowser::readView)
-                .equalsDefault()
-                .copy(tag -> (NBTTagCompound) tag.copy())
-                .build();
+            viewValue = inventorySync(this::snapshot);
             sync.syncValue("vaultNetworkView", viewValue);
             sync.registerSyncedAction(ITEMS, false, true, buffer -> select(false));
             sync.registerSyncedAction(FLUIDS, false, true, buffer -> select(true));
@@ -388,6 +401,74 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
             sync.registerSyncedAction(SCROLL, false, true, buffer -> scroll(buffer.readByte()));
             sync.registerSyncedAction(SORT, false, true, buffer -> sort());
             sync.registerSyncedAction(SEARCH, false, true, this::receiveSearch);
+            sync.registerSyncedAction(
+                HISTORY,
+                false,
+                true,
+                buffer -> selectHistory(buffer.readInt(), buffer.readUnsignedShort()));
+        }
+
+        private IStorageGrid networkStorage() {
+            VaultPortHatch port = multiblock.portHatch;
+            return viewer == null || port == null || port.controller != multiblock ? null
+                : port.getNetworkStorageFor(viewer);
+        }
+
+        private void requestHistory(int index) {
+            sync.callSyncedAction(HISTORY, buffer -> {
+                buffer.writeInt(
+                    viewValue.getValue()
+                        .getInteger("revision"));
+                buffer.writeShort(index);
+            });
+        }
+
+        private void selectHistory(int revision, int index) {
+            if (sync.getModularSyncManager()
+                .isOpen(VaultInventoryHistoryGui.NAME)) return;
+            clearHistory();
+            NBTTagCompound selectedView = revision == serverView.getInteger("revision") ? serverView
+                : revision == previousView.getInteger("revision") ? previousView : null;
+            if (selectedView == null) return;
+            NBTTagList entries = selectedView.getTagList("entries", Constants.NBT.TAG_COMPOUND);
+            if (index >= entries.tagCount()) return;
+            IStorageGrid storage = networkStorage();
+            if (storage == null) return;
+
+            NBTTagCompound icon = entries.getCompoundTagAt(index)
+                .getCompoundTag("icon");
+            boolean fluid = selectedView.getBoolean("fluids");
+            IAEStack<?> target = fluid ? AEFluidStack.create(FluidStack.loadFluidStackFromNBT(icon))
+                : AEItemStack.create(ItemStack.loadItemStackFromNBT(icon));
+            if (target == null) return;
+            historyIdentity.setTag("icon", icon);
+            historyIdentity.setBoolean("fluid", fluid);
+            historyIdentity.setInteger("sequence", ++historySequence);
+            history = new VaultInventoryHistory(storage, target, viewer.worldObj.getTotalWorldTime());
+        }
+
+        private NBTTagCompound historyIdentity() {
+            return historyIdentity;
+        }
+
+        private VaultInventoryHistory.Sample historySample() {
+            return history == null ? VaultInventoryHistory.Sample.WAITING
+                : history.sample(viewer.worldObj.getTotalWorldTime(), this::networkStorage);
+        }
+
+        private void clearHistory() {
+            history = null;
+            historyIdentity = new NBTTagCompound();
+        }
+
+        private static GenericSyncValue<NBTTagCompound, ?> inventorySync(Supplier<NBTTagCompound> source) {
+            return GenericSyncValue.builder(NBTTagCompound.class)
+                .getter(source)
+                .serializer(NetworkBrowser::writeView)
+                .deserializer(NetworkBrowser::readView)
+                .equalsDefault()
+                .copy(tag -> (NBTTagCompound) tag.copy())
+                .build();
         }
 
         // A full grid may exceed the signed-short length used by PacketBuffer's NBT methods.
@@ -474,9 +555,7 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
             if (!dirty && !poll) return serverView;
             if (poll) nextRefresh = tick + REFRESH_TICKS;
 
-            VaultPortHatch port = multiblock.portHatch;
-            IStorageGrid storage = port == null || port.controller != multiblock ? null
-                : port.getNetworkStorageFor(viewer);
+            IStorageGrid storage = networkStorage();
             IMEMonitor<?> monitor = storage == null ? null
                 : showFluids ? storage.getFluidInventory() : storage.getItemInventory();
             boolean inventoryChanged = inventory.refresh(monitor, poll);
@@ -492,6 +571,11 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
             result.setInteger("columns", columns);
             result.setInteger("rows", rows);
             result.setLong("firstRow", firstRow);
+            int revision = serverView.getInteger("revision");
+            result.setInteger("revision", revision);
+            if (result.equals(serverView)) return serverView;
+            previousView = serverView;
+            result.setInteger("revision", revision + 1);
             serverView = result;
             return serverView;
         }
@@ -601,12 +685,14 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
 
         private final NetworkBrowser browser;
         private final PanelSyncManager sync;
+        private final IPanelHandler historyPanel;
         private int lastColumns;
         private int lastRows;
 
-        private InventoryGrid(NetworkBrowser browser, PanelSyncManager sync) {
+        private InventoryGrid(NetworkBrowser browser, PanelSyncManager sync, IPanelHandler historyPanel) {
             this.browser = browser;
             this.sync = sync;
+            this.historyPanel = historyPanel;
             name("vault_network_grid");
             disableHoverBackground();
             tooltip(
@@ -619,6 +705,10 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
                         if (entry.item() != null) lines.addFromItem(entry.item());
                         else lines.addFromFluid(entry.fluid());
                         lines.addLine(IKey.str(entry.exactAmount()));
+                        // #tr gtnr.gui.singularity_data_hub.history_click
+                        // # Left-click to view inventory history
+                        // # zh_CN 左键查看库存变化
+                        lines.addLine(IKey.lang(TEXT + "history_click"));
                     }));
         }
 
@@ -640,6 +730,17 @@ public class SingularityDataHubGui extends GTNRMultiBlockBaseGui<SingularityData
                 buffer.writeByte(columns);
                 buffer.writeByte(rows);
             });
+        }
+
+        @Override
+        public Result onMousePressed(int button) {
+            if (button != 0 || historyPanel.isPanelOpen()) return Result.IGNORE;
+            int index = hoveredIndex();
+            NetworkEntry[] entries = browser.entries();
+            if (index < 0 || index >= entries.length || entries[index] == null) return Result.IGNORE;
+            browser.requestHistory(index);
+            historyPanel.openPanel();
+            return Result.SUCCESS;
         }
 
         @Override
