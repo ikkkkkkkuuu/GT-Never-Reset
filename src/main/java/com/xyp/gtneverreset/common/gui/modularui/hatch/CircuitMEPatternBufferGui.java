@@ -1,5 +1,9 @@
 package com.xyp.gtneverreset.common.gui.modularui.hatch;
 
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.fluids.FluidStack;
@@ -7,7 +11,13 @@ import net.minecraftforge.fluids.FluidStack;
 import com.cleanroommc.modularui.api.IThemeApi;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.drawable.GuiTextures;
+import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerGhostIngredientSlot;
+import com.cleanroommc.modularui.network.NetworkUtils;
 import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
+import com.cleanroommc.modularui.theme.WidgetThemeEntry;
+import com.cleanroommc.modularui.utils.GlStateManager;
+import com.cleanroommc.modularui.utils.fluid.FluidInteractions;
 import com.cleanroommc.modularui.utils.serialization.ByteBufAdapters;
 import com.cleanroommc.modularui.value.sync.BooleanSyncValue;
 import com.cleanroommc.modularui.value.sync.GenericSyncValue;
@@ -27,8 +37,11 @@ import com.xyp.gtneverreset.compat.ae2fc.FluidDropCompat;
 import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IAEStack;
+import appeng.util.ReadableNumberConverter;
 import appeng.util.item.AEFluidStack;
 import appeng.util.item.AEItemStack;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import gregtech.api.modularui2.GTGuiTextures;
 import gregtech.api.modularui2.GTGuis;
 import gregtech.api.util.GTUtility;
@@ -148,40 +161,103 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
         sync.syncValue("amount", slot, amount);
         String name = "supply_limit_" + slot;
         var editor = sync.syncedPanel(name, true, (manager, handler) -> amountPanel(name, slot));
+        String drop = "supply_drop_" + slot;
+        sync.registerSyncedAction(drop, false, true, buffer -> {
+            ItemStack stack = NetworkUtils.readItemStack(buffer);
+            if (stack != null) markSample(slot, stack);
+        });
         var click = new InteractionSyncHandler().setOnMousePressed(mouse -> {
             if (mouse.mouseButton == 1 || mouse.mouseButton == 2) {
                 if (mouse.isClient() && icon.getValue() != null) editor.openPanel();
             } else if (!mouse.isClient() && mouse.mouseButton == 0) {
                 ItemStack cursor = sync.getPlayer().inventory.getItemStack();
                 if (cursor == null) supplies.setTarget(slot, null);
-                else if (itemSlot) supplies.setTarget(slot, AEItemStack.create(cursor));
-                else {
-                    FluidStack fluid = ItemFluidPacket.getFluidStack(cursor);
-                    if (fluid == null && FluidDropCompat.isFluidDrop(cursor))
-                        fluid = FluidDropCompat.getFluidStack(cursor);
-                    if (fluid == null) fluid = GTUtility.getFluidFromContainerOrFluidDisplay(cursor);
-                    if (fluid != null) supplies.setTarget(slot, AEFluidStack.create(fluid));
-                }
+                else markSample(slot, cursor);
             }
         });
         // #tr gtnr.gui.circuit_supplies.sample
-        // # Left-click with a sample to mark, or with an empty hand to clear. Right-click to set the limit.
-        // # zh_CN 左键用手持样品标记，空手左键清除；右键设置补货上限。
-        return new SlotLikeButtonWidget(icon::getValue).size(18)
-            .widgetTheme(itemSlot ? IThemeApi.ITEM_SLOT : IThemeApi.FLUID_SLOT)
-            .backgroundOverlay(
-                itemSlot ? GuiTextures.SLOT_ITEM : GTGuiTextures.SLOT_FLUID_DARK,
-                GTGuiTextures.OVERLAY_SLOT_ARROW_ME)
-            .name("supply_sample_" + slot)
-            .syncHandler(click)
-            .tooltip(
-                t -> t.addLine(
-                    IKey.dynamic(
-                        () -> icon.getValue() == null ? ""
-                            : icon.getValue()
-                                .getDisplayName() + " × "
-                                + amount.getIntValue()))
-                    .addLine(IKey.lang("gtnr.gui.circuit_supplies.sample")));
+        // # Drag from NEI or click with a sample. Empty-hand left-click clears. Right-click sets the limit.
+        // # zh_CN 从 NEI 拖入或手持样品左键标记，空手左键清除，右键设置补货上限。
+        return new SupplySampleSlot(
+            icon::getValue,
+            itemSlot,
+            amount,
+            stack -> sync.callSyncedAction(drop, buffer -> NetworkUtils.writeItemStack(buffer, stack))).size(18)
+                .widgetTheme(itemSlot ? IThemeApi.ITEM_SLOT : IThemeApi.FLUID_SLOT)
+                .backgroundOverlay(
+                    itemSlot ? GuiTextures.SLOT_ITEM : GTGuiTextures.SLOT_FLUID_DARK,
+                    GTGuiTextures.OVERLAY_SLOT_ARROW_ME)
+                .name("supply_sample_" + slot)
+                .syncHandler(click)
+                .tooltip(
+                    t -> t.addLine(
+                        IKey.dynamic(
+                            () -> icon.getValue() == null ? ""
+                                : icon.getValue()
+                                    .getDisplayName() + " × "
+                                    + amount.getIntValue()))
+                        .addLine(IKey.lang("gtnr.gui.circuit_supplies.sample")));
+    }
+
+    private void markSample(int slot, ItemStack stack) {
+        if (slot < CircuitSharedSupplies.SLOTS_PER_CHANNEL) {
+            supplies.setTarget(slot, AEItemStack.create(stack));
+        } else {
+            FluidStack fluid = sampleFluid(stack);
+            if (fluid != null) supplies.setTarget(slot, AEFluidStack.create(fluid));
+        }
+    }
+
+    private static FluidStack sampleFluid(ItemStack stack) {
+        FluidStack fluid = ItemFluidPacket.getFluidStack(stack);
+        if (fluid == null && FluidDropCompat.isFluidDrop(stack)) fluid = FluidDropCompat.getFluidStack(stack);
+        if (fluid == null) fluid = GTUtility.getFluidFromContainerOrFluidDisplay(stack);
+        return fluid == null ? FluidInteractions.getFluidForItem(stack) : fluid;
+    }
+
+    private static final class SupplySampleSlot extends SlotLikeButtonWidget
+        implements RecipeViewerGhostIngredientSlot<ItemStack> {
+
+        private final boolean itemSlot;
+        private final IntSyncValue amount;
+        private final Consumer<ItemStack> drop;
+
+        private SupplySampleSlot(Supplier<ItemStack> icon, boolean itemSlot, IntSyncValue amount,
+            Consumer<ItemStack> drop) {
+            super(icon);
+            this.itemSlot = itemSlot;
+            this.amount = amount;
+            this.drop = drop;
+        }
+
+        @Override
+        @SideOnly(Side.CLIENT)
+        public void draw(ModularGuiContext context, WidgetThemeEntry<?> theme) {
+            super.draw(context, theme);
+            int count = amount.getIntValue();
+            if (!itemSlot || count <= 0) return;
+
+            // Match GT's fluid display label within the centered 16-pixel inventory icon.
+            var font = Minecraft.getMinecraft().fontRenderer;
+            float scale = font.getUnicodeFlag() ? 0.75f : 0.5f;
+            String text = count < 10000 ? Integer.toString(count)
+                : ReadableNumberConverter.INSTANCE.toWideReadableForm(count);
+            GlStateManager.pushMatrix();
+            GlStateManager.translate((getArea().width - 16) / 2, (getArea().height - 16) / 2, 0);
+            GlStateManager.scale(scale, scale, 1);
+            font.drawString(text, 0, (int) (16 / scale) - font.FONT_HEIGHT + 1, 0xFFFFFF, true);
+            GlStateManager.popMatrix();
+        }
+
+        @Override
+        public boolean handleDragAndDrop(ItemStack stack, int button) {
+            if (!areAncestorsEnabled() || stack == null
+                || stack.getItem() == null
+                || (!itemSlot && sampleFluid(stack) == null)) return false;
+            drop.accept(stack);
+            stack.stackSize = 0;
+            return true;
+        }
     }
 
     private int amount(int slot) {
