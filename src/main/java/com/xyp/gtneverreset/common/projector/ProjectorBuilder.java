@@ -20,6 +20,9 @@ import net.minecraftforge.event.ForgeEventFactory;
 import com.gtnewhorizon.structurelib.alignment.IAlignment;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.common.packet.NetWorkHandler;
+import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket;
+import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket.Phase;
 import com.xyp.gtneverreset.config.ToolsConfig;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -33,6 +36,8 @@ public final class ProjectorBuilder {
     private static final long MAX_BATCH_CELLS = 4_000_000L;
     private static final int CELLS_PER_TICK = 256;
     private static final long TICK_NANOS = 4_000_000L;
+    private static final int PORTAL_CLEARANCE = 15, ANIMATION_RANGE = 128;
+    private long nextDeploymentId;
     private final Deque<Build> queue = new ArrayDeque<>();
 
     private ProjectorBuilder() {}
@@ -63,7 +68,7 @@ public final class ProjectorBuilder {
     }
 
     public void clear() {
-        for (Build build : queue) build.releaseMaterials();
+        for (Build build : queue) build.finish();
         queue.clear();
     }
 
@@ -74,10 +79,10 @@ public final class ProjectorBuilder {
         try {
             if (!build.step()) {
                 queue.addLast(build);
-            } else build.releaseMaterials();
+            } else build.finish();
         } catch (RuntimeException e) {
             GTNeverReset.LOG.error("could not generate projector structure {}", build.plan.machine, e);
-            build.releaseMaterials();
+            build.finish();
             build.stopped();
         }
     }
@@ -111,7 +116,12 @@ public final class ProjectorBuilder {
         private ProjectorBatchHatches.Sample edit;
         private final int[] batchPosition = new int[3];
         private int copy, cell, x, y, z, placed;
-        private boolean writing;
+        private final int[] bounds = { Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE,
+            Integer.MIN_VALUE, Integer.MIN_VALUE };
+        private boolean writing, supplementing, completed;
+        private ProjectorDeployment deployment;
+        private long deploymentId;
+        private List<EntityPlayerMP> spectators;
 
         private Build(EntityPlayerMP player, int location, ItemStack projector, ProjectorPlan plan, boolean batch) {
             this.player = player;
@@ -166,6 +176,8 @@ public final class ProjectorBuilder {
                 }
                 return false;
             }
+            if (deployment != null
+                && world.getTotalWorldTime() < deployment.startTick() + ProjectorDeployment.IMPACT_TICK) return false;
             long deadline = System.nanoTime() + TICK_NANOS;
             if (layout != null && placement == null) {
                 if (!layout.advanceSearch(deadline)) return false;
@@ -193,11 +205,15 @@ public final class ProjectorBuilder {
                             // # zh_CN 结构生成完成，共放置 %s 个方块。
                             player.addChatMessage(
                                 new ChatComponentTranslation("gtneverreset.projector.build.done", placed));
+                            completed = true;
                             return true;
                         }
                         if (materials != null && !materials.reserve()) return true;
                         writing = true;
                         copy = 0;
+                        cell = 0;
+                        if (layout != null) placement = layout.placement(0);
+                        if (startDeployment()) return false;
                     }
                     cell = 0;
                     if (layout != null) placement = layout.placement(copy);
@@ -218,7 +234,52 @@ public final class ProjectorBuilder {
             return false;
         }
 
-        private void releaseMaterials() {
+        private boolean startDeployment() {
+            if (supplementing || bounds[3] == Integer.MIN_VALUE) return false;
+            int openingY = Math.min(world.getHeight(), bounds[4] + PORTAL_CLEARANCE);
+            deployment = new ProjectorDeployment(
+                world.getTotalWorldTime() + ProjectorDeployment.START_DELAY_TICKS,
+                bounds[0],
+                bounds[1],
+                bounds[2],
+                bounds[3],
+                bounds[5],
+                openingY);
+            deploymentId = ++INSTANCE.nextDeploymentId;
+            spectators = new ArrayList<>();
+            var packet = new ProjectorDeploymentPacket(
+                deploymentId,
+                player.dimension,
+                deployment,
+                plan,
+                layout != null);
+            for (Object entry : world.playerEntities) {
+                EntityPlayerMP observer = (EntityPlayerMP) entry;
+                if (observer != player
+                    && (observer.posX < bounds[0] - ANIMATION_RANGE || observer.posX > bounds[3] + ANIMATION_RANGE
+                        || observer.posZ < bounds[2] - ANIMATION_RANGE
+                        || observer.posZ > bounds[5] + ANIMATION_RANGE
+                        || observer.posY < bounds[1] - ANIMATION_RANGE
+                        || observer.posY > openingY + ANIMATION_RANGE))
+                    continue;
+                spectators.add(observer);
+                NetWorkHandler.sendTo(packet, observer);
+            }
+            return true;
+        }
+
+        private void sendDeploymentUpdate(Phase phase) {
+            if (spectators == null) return;
+            var packet = new ProjectorDeploymentPacket(deploymentId, plan.dimension, phase);
+            for (EntityPlayerMP observer : spectators) {
+                if (observer.worldObj == world && observer.playerNetServerHandler.netManager.isChannelOpen())
+                    NetWorkHandler.sendTo(packet, observer);
+            }
+        }
+
+        private void finish() {
+            sendDeploymentUpdate(completed ? Phase.COMPLETE : Phase.CANCEL);
+            spectators = null;
             if (materials != null && !player.isDead
                 && player.playerNetServerHandler.netManager.isChannelOpen()
                 && ProjectorBuildMaterials.refund(player)) {
@@ -280,9 +341,13 @@ public final class ProjectorBuilder {
             int meta = edit == null ? shape.world.getBlockMetadata(simPos[0], simPos[1], simPos[2]) : edit.meta();
             int machine = edit == null ? shape.machines[cell] : edit.machine();
             if (actual == expected && world.getBlockMetadata(x, y, z) == meta) {
-                if (machine == 0) return true;
+                if (machine == 0) {
+                    if (!writing) supplementing = true;
+                    return true;
+                }
                 if (world.getTileEntity(x, y, z) instanceof IGregTechTileEntity tile
                     && tile.getMetaTileID() == machine) {
+                    if (!writing) supplementing = true;
                     if (!controller()) return true;
                     return tile.getFrontFacing() == copyFacing().getDirection()
                         && (!(tile.getMetaTileEntity() instanceof IAlignment alignment)
@@ -304,6 +369,14 @@ public final class ProjectorBuilder {
                 return false;
             }
             if (!writing) {
+                if (!supplementing) {
+                    bounds[0] = Math.min(bounds[0], x);
+                    bounds[1] = Math.min(bounds[1], y);
+                    bounds[2] = Math.min(bounds[2], z);
+                    bounds[3] = Math.max(bounds[3], x + 1);
+                    bounds[4] = Math.max(bounds[4], y + 1);
+                    bounds[5] = Math.max(bounds[5], z + 1);
+                }
                 if (materials != null) materials.require(x, y, z, item);
                 return true;
             }
@@ -350,6 +423,7 @@ public final class ProjectorBuilder {
             placed++;
             if (!expected.hasTileEntity(meta)) expected.onBlockAdded(world, x, y, z);
             world.markAndNotifyBlock(x, y, z, null, changes.get(0).replacedBlock, expected, 3);
+            if (placed == 1) sendDeploymentUpdate(Phase.IMPACT);
             return true;
         }
 

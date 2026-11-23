@@ -259,7 +259,11 @@ final class ProjectorBatchPreview extends ProjectorStructure {
     }
 
     private static ProjectorBatchPreview expand(ProjectorStructure shape, ProjectorPlan plan, ExtendedFacing facing) {
-        ProjectorBatch.Layout layout = new ProjectorBatch.Layout(plan.batch, shape, facing);
+        return expand(shape, plan, facing, new ProjectorBatch.Layout(plan.batch, shape, facing));
+    }
+
+    static ProjectorBatchPreview expand(ProjectorStructure shape, ProjectorPlan plan, ExtendedFacing facing,
+        ProjectorBatch.Layout layout) {
         int copies = plan.batch.machines();
         int[] world = new int[3], first = new int[3], last = new int[3];
         layout.copyOffset(0, world);

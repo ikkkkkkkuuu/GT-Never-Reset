@@ -205,7 +205,7 @@ public final class ProjectorBatch {
             return valid;
         }
 
-        boolean advanceSearch(long deadline) {
+        public boolean advanceSearch(long deadline) {
             if (solved) return true;
             int count = batch.machines();
             if (next == null) {

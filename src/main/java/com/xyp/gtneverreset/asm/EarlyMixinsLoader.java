@@ -50,6 +50,7 @@ public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLo
             mixins.addAll(
                 List.of(
                     "minecraft.MixinNetHandlerPlayClientProjector",
+                    "client.ProjectorCameraMixin",
                     "client.UniversalWandBreakDelayMixin",
                     "client.UniversalWandBlockReachMixin",
                     "client.UniversalWandDeathStatusMixin",

@@ -52,7 +52,8 @@ public class ProjectorRenderer {
     @SubscribeEvent
     public void render(RenderWorldLastEvent event) {
         ProjectorPlan plan = ProjectorClient.plan;
-        if (!ProjectorClient.visible || plan == null) return;
+        boolean preview = ProjectorClient.visible && plan != null && !ProjectorDeploymentRenderer.covers(plan);
+        if (!preview && !ProjectorDeploymentRenderer.isActive()) return;
         FxCamera.capture();
         Minecraft mc = Minecraft.getMinecraft();
         Entity camera = mc.renderViewEntity;
@@ -60,6 +61,8 @@ public class ProjectorRenderer {
         double cameraX = camera.lastTickPosX + (camera.posX - camera.lastTickPosX) * event.partialTicks;
         double cameraY = camera.lastTickPosY + (camera.posY - camera.lastTickPosY) * event.partialTicks;
         double cameraZ = camera.lastTickPosZ + (camera.posZ - camera.lastTickPosZ) * event.partialTicks;
+        ProjectorDeploymentRenderer.render(mc, event.partialTicks, cameraX, cameraY, cameraZ);
+        if (!preview) return;
         ProjectorStructure structure = ProjectorClient.projection;
         ProjectorCheck check = ProjectorClient.CHECK;
         int x = ProjectorClient.x, y = ProjectorClient.y, z = ProjectorClient.z;
@@ -141,7 +144,12 @@ public class ProjectorRenderer {
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         GL11.glDepthFunc(GL11.GL_LEQUAL);
         GL11.glColor4f(1f, 1f, 1f, 1f);
-        Predicate<FxBlockMesh.Section> inView = sectionsInView(structure);
+        Predicate<FxBlockMesh.Section> inView = sectionsInView(
+            structure,
+            ProjectorClient.facing,
+            ProjectorClient.x,
+            ProjectorClient.y,
+            ProjectorClient.z);
         // Depth first, so only the nearest face of the translucent ghost is coloured.
         GL11.glColorMask(false, false, false, false);
         GL11.glDepthMask(true);
@@ -157,9 +165,10 @@ public class ProjectorRenderer {
         GL11.glPopMatrix();
     }
 
-    private static Predicate<FxBlockMesh.Section> sectionsInView(ProjectorStructure structure) {
-        int[] m = ProjectorOrientation.matrix(structure.canonical, ProjectorClient.facing);
-        double baseX = ProjectorClient.x + 0.5, baseY = ProjectorClient.y + 0.5, baseZ = ProjectorClient.z + 0.5;
+    static Predicate<FxBlockMesh.Section> sectionsInView(ProjectorStructure structure, ExtendedFacing facing, double x,
+        double y, double z) {
+        int[] m = ProjectorOrientation.matrix(structure.canonical, facing);
+        double baseX = x + 0.5, baseY = y + 0.5, baseZ = z + 0.5;
         return section -> {
             double sx = section.x + SECTION_CENTER - structure.originX - 0.5,
                 sy = section.y + SECTION_CENTER - structure.originY - 0.5,
@@ -173,7 +182,7 @@ public class ProjectorRenderer {
         };
     }
 
-    private static boolean applyFacing(ProjectorStructure structure, ExtendedFacing facing) {
+    static boolean applyFacing(ProjectorStructure structure, ExtendedFacing facing) {
         int[] m = ProjectorOrientation.matrix(structure.canonical, facing);
         fillMatrix(MATRIX, m);
         GL11.glTranslatef(0.5f, 0.5f, 0.5f);
