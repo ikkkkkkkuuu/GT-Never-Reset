@@ -234,8 +234,8 @@ public class ProjectorGui extends ModularPanel {
             // # Projector pose
             // # zh_CN 投影姿态
             // #tr gtneverreset.projector.gui.title
-            // # Multiblock Projector
-            // # zh_CN 多方块投影仪
+            // # Wrist-Mounted Holographic Terminal
+            // # zh_CN 腕臂式全息投影终端
             .child(text(StatCollector.translateToLocal(LANG + "title")))
             .child(
                 IKey.dynamic(this::summaryLine)

@@ -41,8 +41,8 @@ public class MultiblockProjector extends Item implements IBaubleExpanded, IGuiHo
     public MultiblockProjector() {
         setMaxStackSize(1);
         // #tr item.gtneverreset.multiblock_projector.name
-        // # Multiblock Projector
-        // # zh_CN 多方块投影仪
+        // # Wrist-Mounted Holographic Terminal
+        // # zh_CN 腕臂式全息投影终端
         setUnlocalizedName("gtneverreset.multiblock_projector");
         setTextureName("gtneverreset:multiblock_projector");
         setCreativeTab(GTNRCreativeTabs.ITEMS);
