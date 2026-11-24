@@ -5,6 +5,7 @@ import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -22,10 +23,28 @@ import cpw.mods.fml.common.Loader;
 public abstract class MinecraftAttackMixin {
 
     @WrapOperation(
-        method = { "func_147121_ag", "backhand$rightClickBlock" },
+        method = "func_147121_ag()V",
         at = @At(value = "INVOKE", target = "Lnet/minecraft/client/entity/EntityClientPlayerMP;swingItem()V"),
         require = 0)
-    private void gtnrlib$blockUseSwing(EntityClientPlayerMP player, Operation<Void> vanilla) {
+    private void gtnrlib$vanillaBlockUseSwing(EntityClientPlayerMP player, Operation<Void> vanilla) {
+        gtnrlib$blockUseSwing(player, vanilla);
+    }
+
+    // The helper is added at runtime by Backhand. Its call to the vanilla swing still uses the refmap.
+    @WrapOperation(
+        method = "backhand$rightClickBlock",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/entity/EntityClientPlayerMP;swingItem()V",
+            remap = true),
+        remap = false,
+        require = 0)
+    private void gtnrlib$backhandBlockUseSwing(EntityClientPlayerMP player, Operation<Void> vanilla) {
+        gtnrlib$blockUseSwing(player, vanilla);
+    }
+
+    @Unique
+    private static void gtnrlib$blockUseSwing(EntityClientPlayerMP player, Operation<Void> vanilla) {
         var hand = Loader.isModLoaded("backhand") && BackhandAnimationCompat.selected(player) ? HmiFirstPerson.OFFHAND
             : HmiFirstPerson.INSTANCE;
         if (hand.enabled()) hand.duringBlockUseSwing(() -> vanilla.call(player));
