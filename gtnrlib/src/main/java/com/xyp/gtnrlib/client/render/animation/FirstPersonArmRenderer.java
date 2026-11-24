@@ -14,6 +14,7 @@ import net.minecraftforge.client.ForgeHooksClient;
 import org.lwjgl.opengl.GL11;
 
 import com.xyp.gtnrlib.compat.draconicevolution.DraconicArmorArms;
+import com.xyp.gtnrlib.compat.gtneverreset.ProjectorArmAnimation;
 import com.xyp.gtnrlib.mod.ModList;
 
 import cpw.mods.fml.relauncher.Side;
@@ -32,6 +33,11 @@ public final class FirstPersonArmRenderer {
     private static ModelBiped defaultChestplate;
 
     static void render(boolean left, float shoulderRoll) {
+        render(left, shoulderRoll, null);
+    }
+
+    /** Draws an arm and the equipped grip attachment in the same model coordinates. */
+    public static void render(boolean left, float shoulderRoll, ItemStack grip) {
         var mc = Minecraft.getMinecraft();
         var player = mc.thePlayer;
         var renderer = RenderManager.instance.getEntityRenderObject(player);
@@ -55,21 +61,24 @@ public final class FirstPersonArmRenderer {
             GL11.glAlphaFunc(GL11.GL_GREATER, .1f);
             drawAtShoulder(arm, MODEL_UNIT);
             renderChestplate(player, left);
+            ProjectorArmAnimation.renderOnFirstPersonArm(player, left, grip);
         } finally {
             GL11.glPopAttrib();
             GL11.glPopMatrix();
         }
     }
 
-    public static void renderOverVanillaArm(EntityPlayer player, RenderPlayer renderer) {
-        if (player.getCurrentArmor(2) == null) return;
+    public static void renderOverVanillaArm(EntityPlayer player, RenderPlayer renderer, boolean renderArmor) {
+        boolean armor = renderArmor && player.getCurrentArmor(2) != null;
+        if (!armor && !ProjectorArmAnimation.wearsProjector(player)) return;
         var arm = renderer.modelBipedMain.bipedRightArm;
         GL11.glPushMatrix();
         GL11.glPushAttrib(ARM_ATTRIBUTES);
         try {
             GL11.glTranslatef(arm.offsetX, arm.offsetY, arm.offsetZ);
             arm.postRender(MODEL_UNIT);
-            renderChestplate(player, false);
+            if (armor) renderChestplate(player, false);
+            ProjectorArmAnimation.renderOnFirstPersonArm(player, false, null);
         } finally {
             GL11.glPopAttrib();
             GL11.glPopMatrix();

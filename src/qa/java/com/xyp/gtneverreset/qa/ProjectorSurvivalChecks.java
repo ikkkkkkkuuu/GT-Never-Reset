@@ -92,6 +92,8 @@ public class ProjectorSurvivalChecks {
     private ProjectorStructure shape;
     private final Map<ItemStack, Integer> need = new ItemStackMap<>(true);
 
+    private long nextRequestTick;
+
     @Mod.EventHandler
     public void init(FMLInitializationEvent e) {
         FMLCommonHandler.instance()
@@ -232,6 +234,7 @@ public class ProjectorSurvivalChecks {
                 verify(p);
                 if (done) return;
             }
+            if (p.worldObj.getTotalWorldTime() < nextRequestTick) return;
             switch (stage) {
                 case SETUP -> {
                     require(Loader.isModLoaded("structurecompat"), "StructureCompat missing");
@@ -519,6 +522,7 @@ public class ProjectorSurvivalChecks {
     }
 
     private void request(EntityPlayerMP p, boolean batch) {
+        nextRequestTick = p.worldObj.getTotalWorldTime() + 41;
         feedback = "";
         shortCount = -1;
         placedEvents = 0;

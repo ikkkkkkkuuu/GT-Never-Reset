@@ -3,7 +3,10 @@ package com.xyp.gtneverreset.common.projector;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -23,27 +26,46 @@ import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket;
 import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket.Phase;
+import com.xyp.gtneverreset.config.ProjectorConfig;
 import com.xyp.gtneverreset.config.ToolsConfig;
+import com.xyp.gtnrlib.animation.StructureDeployment;
+import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.registry.GameRegistry;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 public final class ProjectorBuilder {
 
     public static final ProjectorBuilder INSTANCE = new ProjectorBuilder();
     private static final long MAX_BATCH_CELLS = 4_000_000L;
-    private static final int CELLS_PER_TICK = 256;
-    private static final long TICK_NANOS = 4_000_000L;
-    private static final int PORTAL_CLEARANCE = 15, ANIMATION_RANGE = 128;
-    private long nextDeploymentId;
-    private final Deque<Build> queue = new ArrayDeque<>();
+    private static final int SIMULATION_ROUND_CELLS = 256;
+    private static final int REQUEST_COOLDOWN_TICKS = 40;
+    private static final int PORTAL_CLEARANCE = 15, ANIMATION_RANGE = 128, SPECTATOR_REFRESH_TICKS = 20;
+    private final Deque<Build> pending = new ArrayDeque<>();
+    private final Deque<Build> active = new ArrayDeque<>();
+    private final Map<UUID, Build> jobs = new HashMap<>();
+    private final Map<UUID, Long> requests = new HashMap<>();
+    private long nextDeploymentId, serverTick;
+    private Build preparing;
 
     private ProjectorBuilder() {}
 
     public static void request(EntityPlayerMP player, int location, boolean batch) {
-        if (!ToolsConfig.enableMultiblockProjector || !player.capabilities.allowEdit) return;
+        if (!ToolsConfig.enableMultiblockProjector || !ProjectorConfig.buildEnabled || !player.capabilities.allowEdit)
+            return;
+        ProjectorBuilder builder = INSTANCE;
+        UUID owner = player.getUniqueID();
+        Long previous = builder.requests.get(owner);
+        if (builder.building(player) || previous != null && builder.serverTick - previous < REQUEST_COOLDOWN_TICKS) {
+            // #tr gtneverreset.projector.build.busy
+            // # A generation request is already active or was just submitted.
+            // # zh_CN 已有生成任务或刚提交过请求，请稍后再试。
+            player.addChatMessage(new ChatComponentTranslation("gtneverreset.projector.build.busy"));
+            return;
+        }
         ItemStack projector = ProjectorServer.projectorAt(player, location);
         if (projector == null) return;
         ProjectorPlan plan = ProjectorPlan.read(projector);
@@ -53,14 +75,16 @@ public final class ProjectorBuilder {
             return;
         if (player.dimension != plan.dimension || !inRange(player, plan)) {
             // #tr gtneverreset.projector.build.range
-            // # Move within 128 blocks of the projected controller in its dimension.
-            // # zh_CN 请在投影所在维度靠近控制器（128 格以内）。
+            // # Go to the dimension of the projected controller and move closer.
+            // # zh_CN 请前往投影控制器所在维度并靠近控制器。
             player.addChatMessage(new ChatComponentTranslation("gtneverreset.projector.build.range"));
             return;
         }
         if (batch && plan.batch.machines() < 2) return;
-        for (Build build : INSTANCE.queue) if (build.player == player) return;
-        INSTANCE.queue.addLast(new Build(player, location, projector, plan, batch));
+        var build = new Build(player, location, projector, plan, batch);
+        builder.requests.put(owner, builder.serverTick);
+        builder.jobs.put(owner, build);
+        builder.pending.addLast(build);
         // #tr gtneverreset.projector.build.started
         // # Checking the build site…
         // # zh_CN 正在检查生成位置……
@@ -68,33 +92,63 @@ public final class ProjectorBuilder {
     }
 
     public void clear() {
-        for (Build build : queue) build.finish();
-        queue.clear();
+        for (Build build : active) build.finish();
+        active.clear();
+        pending.clear();
+        jobs.clear();
+        requests.clear();
+        preparing = null;
     }
 
     @SubscribeEvent
     public void tick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || queue.isEmpty()) return;
-        Build build = queue.removeFirst();
-        try {
-            if (!build.step()) {
-                queue.addLast(build);
-            } else build.finish();
-        } catch (RuntimeException e) {
-            GTNeverReset.LOG.error("could not generate projector structure {}", build.plan.machine, e);
-            build.finish();
-            build.stopped();
+        if (event.phase != TickEvent.Phase.END) return;
+        serverTick++;
+        if (serverTick % REQUEST_COOLDOWN_TICKS == 0) requests.values()
+            .removeIf(tick -> serverTick - tick >= REQUEST_COOLDOWN_TICKS);
+        if (preparing == null && !pending.isEmpty()) {
+            preparing = pending.removeFirst();
+            active.addLast(preparing);
+        }
+        if (active.isEmpty()) return;
+        long deadline = System.nanoTime() + ProjectorConfig.buildBudgetMillis * 1_000_000L;
+        for (int remaining = active.size(); remaining > 0 && System.nanoTime() < deadline; remaining--) {
+            Build build = active.removeFirst();
+            boolean done = true;
+            try {
+                long now = System.nanoTime();
+                long slice = (deadline - now) / remaining;
+                done = build.step(now + Math.max(1, slice));
+            } catch (RuntimeException e) {
+                GTNeverReset.LOG.error("could not generate projector structure {}", build.plan.machine, e);
+                build.stopped();
+            } finally {
+                if (preparing == build && (done || !build.preparing())) preparing = null;
+            }
+            if (done) {
+                jobs.remove(build.player.getUniqueID());
+                build.finish();
+            } else {
+                active.addLast(build);
+            }
         }
     }
 
     boolean building(EntityPlayerMP player) {
-        for (Build job : queue) if (job.player == player) return true;
-        return false;
+        return jobs.containsKey(player.getUniqueID());
     }
 
     private static boolean inRange(EntityPlayerMP player, ProjectorPlan plan) {
-        return player.getDistanceSq(plan.x + 0.5, plan.y + 0.5, plan.z + 0.5)
-            <= ProjectorPlan.REACH * ProjectorPlan.REACH;
+        int range = ProjectorConfig.buildRange;
+        return range == 0 || player.getDistanceSq(plan.x + 0.5, plan.y + 0.5, plan.z + 0.5) <= (double) range * range;
+    }
+
+    private enum Stage {
+        CHECK,
+        GROUP,
+        PLACE,
+        RETRY,
+        CONTROLLERS
     }
 
     private static final class Build {
@@ -115,12 +169,18 @@ public final class ProjectorBuilder {
         private ProjectorBatchHatches batchHatches;
         private ProjectorBatchHatches.Sample edit;
         private final int[] batchPosition = new int[3];
-        private int copy, cell, x, y, z, placed;
+        private int copy, cell, x, y, z, placed, cellsPerCopy, controllerCell;
+        private int band, bandIndex, retryIndex;
+        private final IntArrayList retry = new IntArrayList();
         private final int[] bounds = { Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MIN_VALUE,
             Integer.MIN_VALUE, Integer.MIN_VALUE };
-        private boolean writing, supplementing, completed;
-        private ProjectorDeployment deployment;
+        private Stage stage = Stage.CHECK;
+        private boolean supplementing, completed, retryable;
+        private IntArrayList[] bands;
+        private long nextBandTick, nextSpectatorRefresh;
+        private StructureDeployment deployment;
         private long deploymentId;
+        private ProjectorDeploymentPacket deploymentStart;
         private List<EntityPlayerMP> spectators;
 
         private Build(EntityPlayerMP player, int location, ItemStack projector, ProjectorPlan plan, boolean batch) {
@@ -131,20 +191,25 @@ public final class ProjectorBuilder {
             this.plan = plan;
             materials = player.capabilities.isCreativeMode ? null : new ProjectorBuildMaterials(player);
             copies = batch ? plan.batch.machines() : 1;
-            this.simulation = new ProjectorSimulation(plan.settings(), CELLS_PER_TICK);
+            this.simulation = new ProjectorSimulation(plan.settings(), SIMULATION_ROUND_CELLS);
             x = plan.x;
             y = plan.y;
             z = plan.z;
         }
 
-        private boolean step() {
+        private boolean preparing() {
+            return stage == Stage.CHECK || stage == Stage.GROUP;
+        }
+
+        private boolean step(long deadline) {
             if (player.isDead || player.worldObj != world || !player.playerNetServerHandler.netManager.isChannelOpen())
                 return true;
-            if (!player.capabilities.allowEdit || (materials == null) != player.capabilities.isCreativeMode
+            if (!ProjectorConfig.buildEnabled || !player.capabilities.allowEdit
+                || (materials == null) != player.capabilities.isCreativeMode
                 || ProjectorServer.projectorAt(player, location) != projector
                 || !inRange(player, plan)) return stopped();
             if (shape == null) {
-                if (!simulation.step(TICK_NANOS)) return false;
+                if (!simulation.step(Math.max(1, deadline - System.nanoTime()))) return false;
                 shape = simulation.result();
                 if (shape == null || shape.isEmpty() || !shape.failure.isEmpty() || !shape.limit.isEmpty()) {
                     // #tr gtneverreset.projector.build.incomplete
@@ -153,8 +218,10 @@ public final class ProjectorBuilder {
                     player.addChatMessage(new ChatComponentTranslation("gtneverreset.projector.build.incomplete"));
                     return true;
                 }
+                cellsPerCopy = shape.size + shape.emptyCells.length;
+                controllerCell = shape.indexOf(0, 0, 0);
                 if (copies > 1) {
-                    if ((long) copies * (shape.size + shape.emptyCells.length) > MAX_BATCH_CELLS) {
+                    if ((long) copies * cellsPerCopy > MAX_BATCH_CELLS) {
                         // #tr gtneverreset.projector.build.batch_limit
                         // # Reduce the batch: a job can check up to %s structure cells.
                         // # zh_CN 请减少台数：单次批量任务最多可检查 %s 个结构格。
@@ -176,9 +243,9 @@ public final class ProjectorBuilder {
                 }
                 return false;
             }
-            if (deployment != null
-                && world.getTotalWorldTime() < deployment.startTick() + ProjectorDeployment.IMPACT_TICK) return false;
-            long deadline = System.nanoTime() + TICK_NANOS;
+            long now = world.getTotalWorldTime();
+            if (deploymentStart != null && now >= nextSpectatorRefresh) refreshSpectators(now);
+            if (stage == Stage.PLACE && now < nextBandTick) return false;
             if (layout != null && placement == null) {
                 if (!layout.advanceSearch(deadline)) return false;
                 if (!layout.solve()) {
@@ -196,10 +263,80 @@ public final class ProjectorBuilder {
                 if (!plan.batchOverrides.isEmpty()) batchHatches = new ProjectorBatchHatches(shape, plan);
                 return false;
             }
-            for (int n = 0; n < CELLS_PER_TICK && System.nanoTime() < deadline; n++) {
-                if (cell == shape.size + shape.emptyCells.length) {
-                    if (++copy == copies) {
-                        if (writing) {
+            while (System.nanoTime() < deadline) {
+                switch (stage) {
+                    case CHECK -> {
+                        if (copy == copies) {
+                            if (!supplementing && bounds[3] != Integer.MIN_VALUE && plan.buildStyle.segmented()) {
+                                deployment = deploymentAt(0);
+                                bands = new IntArrayList[deployment.bandCount(plan.buildStyle)];
+                                for (int i = 0; i < bands.length; i++) bands[i] = new IntArrayList();
+                                select(0, 0);
+                                stage = Stage.GROUP;
+                                continue;
+                            }
+                            return !beginPlacement(now);
+                        }
+                        if (!visitSelected())
+                            return batchHatches != null && batchHatches.incompatible ? incompatible() : stopped();
+                        advance();
+                    }
+                    case GROUP -> {
+                        if (copy == copies) return !beginPlacement(now);
+                        if (cell != controllerCell) {
+                            position();
+                            bands[deployment.bandAt(x, z, bands.length)].add(copy * cellsPerCopy + cell);
+                        }
+                        advance();
+                    }
+                    case PLACE -> {
+                        if (bands == null) {
+                            if (copy == copies) {
+                                stage = Stage.RETRY;
+                                continue;
+                            }
+                            if (cell == controllerCell) {
+                                advance();
+                                continue;
+                            }
+                        } else {
+                            if (band == bands.length) {
+                                stage = Stage.RETRY;
+                                continue;
+                            }
+                            IntArrayList cells = bands[band];
+                            if (bandIndex == cells.size()) {
+                                band++;
+                                bandIndex = 0;
+                                sendDeploymentPacket(new ProjectorDeploymentPacket(deploymentId, plan.dimension, band));
+                                if (band < bands.length) {
+                                    nextBandTick = deployment.startTick() + plan.buildStyle.bandReadyTick(band);
+                                    if (plan.buildStyle == StructureDeploymentStyle.REVEAL) nextBandTick = Math
+                                        .max(nextBandTick, now + StructureDeploymentStyle.REVEAL_BAND_TICKS);
+                                    return false;
+                                }
+                                continue;
+                            }
+                            select(cells.getInt(bandIndex++));
+                        }
+                        retryable = false;
+                        if (!visitSelected()) {
+                            if (!retryable) return stopped();
+                            retry.add(copy * cellsPerCopy + cell);
+                        }
+                        if (bands == null) advance();
+                    }
+                    case RETRY -> {
+                        if (retryIndex == retry.size()) {
+                            select(0, controllerCell);
+                            stage = Stage.CONTROLLERS;
+                            continue;
+                        }
+                        select(retry.getInt(retryIndex++));
+                        if (!visitSelected()) return stopped();
+                    }
+                    case CONTROLLERS -> {
+                        if (controllerCell < 0 || copy == copies) {
                             // #tr gtneverreset.projector.build.done
                             // # Structure generated. Placed %s blocks.
                             // # zh_CN 结构生成完成，共放置 %s 个方块。
@@ -208,69 +345,99 @@ public final class ProjectorBuilder {
                             completed = true;
                             return true;
                         }
-                        if (materials != null && !materials.reserve()) return true;
-                        writing = true;
-                        copy = 0;
-                        cell = 0;
-                        if (layout != null) placement = layout.placement(0);
-                        if (startDeployment()) return false;
+                        if (!visitSelected()) return stopped();
+                        select(copy + 1, controllerCell);
                     }
-                    cell = 0;
-                    if (layout != null) placement = layout.placement(copy);
                 }
-                position();
-                if (batchHatches != null) {
-                    offset[0] = x - plan.x;
-                    offset[1] = y - plan.y;
-                    offset[2] = z - plan.z;
-                    plan.facing.getOffsetABC(offset, batchPosition);
-                    edit = batchHatches
-                        .sample(ProjectorPlan.pack(batchPosition[0], batchPosition[1], batchPosition[2]), cell);
-                    if (batchHatches.incompatible) return incompatible();
-                }
-                if (!visit()) return stopped();
-                cell++;
             }
             return false;
         }
 
-        private boolean startDeployment() {
-            if (supplementing || bounds[3] == Integer.MIN_VALUE) return false;
-            int openingY = Math.min(world.getHeight(), bounds[4] + PORTAL_CLEARANCE);
-            deployment = new ProjectorDeployment(
-                world.getTotalWorldTime() + ProjectorDeployment.START_DELAY_TICKS,
+        private boolean visitSelected() {
+            position();
+            if (batchHatches != null) {
+                offset[0] = x - plan.x;
+                offset[1] = y - plan.y;
+                offset[2] = z - plan.z;
+                plan.facing.getOffsetABC(offset, batchPosition);
+                edit = batchHatches
+                    .sample(ProjectorPlan.pack(batchPosition[0], batchPosition[1], batchPosition[2]), cell);
+                if (batchHatches.incompatible) return false;
+            }
+            return visit();
+        }
+
+        private void advance() {
+            if (++cell == cellsPerCopy) select(copy + 1, 0);
+        }
+
+        private void select(int index) {
+            select(index / cellsPerCopy, index % cellsPerCopy);
+        }
+
+        private void select(int copy, int cell) {
+            if (this.copy != copy && layout != null && copy < copies) placement = layout.placement(copy);
+            this.copy = copy;
+            this.cell = cell;
+        }
+
+        private boolean beginPlacement(long now) {
+            if (materials != null && !materials.reserve()) return false;
+            select(0, 0);
+            stage = Stage.PLACE;
+            if (supplementing || bounds[3] == Integer.MIN_VALUE || plan.buildStyle == StructureDeploymentStyle.NONE)
+                return true;
+            deployment = deploymentAt(now + StructureDeployment.START_DELAY_TICKS);
+            nextBandTick = deployment.startTick() + plan.buildStyle.bandReadyTick(0);
+            deploymentId = ++INSTANCE.nextDeploymentId;
+            spectators = new ArrayList<>();
+            deploymentStart = new ProjectorDeploymentPacket(
+                deploymentId,
+                plan.dimension,
+                deployment,
+                plan,
+                layout != null);
+            refreshSpectators(now);
+            return true;
+        }
+
+        private StructureDeployment deploymentAt(long startTick) {
+            return new StructureDeployment(
+                startTick,
                 bounds[0],
                 bounds[1],
                 bounds[2],
                 bounds[3],
                 bounds[5],
-                openingY);
-            deploymentId = ++INSTANCE.nextDeploymentId;
-            spectators = new ArrayList<>();
-            var packet = new ProjectorDeploymentPacket(
-                deploymentId,
-                player.dimension,
-                deployment,
-                plan,
-                layout != null);
+                Math.min(world.getHeight(), bounds[4] + PORTAL_CLEARANCE));
+        }
+
+        private void refreshSpectators(long now) {
+            nextSpectatorRefresh = now + SPECTATOR_REFRESH_TICKS;
+            spectators.removeIf(
+                observer -> observer.worldObj != world || !observer.playerNetServerHandler.netManager.isChannelOpen());
             for (Object entry : world.playerEntities) {
                 EntityPlayerMP observer = (EntityPlayerMP) entry;
-                if (observer != player
+                if (spectators.contains(observer) || observer != player
                     && (observer.posX < bounds[0] - ANIMATION_RANGE || observer.posX > bounds[3] + ANIMATION_RANGE
                         || observer.posZ < bounds[2] - ANIMATION_RANGE
                         || observer.posZ > bounds[5] + ANIMATION_RANGE
                         || observer.posY < bounds[1] - ANIMATION_RANGE
-                        || observer.posY > openingY + ANIMATION_RANGE))
+                        || observer.posY > deployment.openingY() + ANIMATION_RANGE))
                     continue;
                 spectators.add(observer);
-                NetWorkHandler.sendTo(packet, observer);
+                NetWorkHandler.sendTo(deploymentStart, observer);
+                if (band > 0)
+                    NetWorkHandler.sendTo(new ProjectorDeploymentPacket(deploymentId, plan.dimension, band), observer);
             }
-            return true;
         }
 
         private void sendDeploymentUpdate(Phase phase) {
-            if (spectators == null) return;
-            var packet = new ProjectorDeploymentPacket(deploymentId, plan.dimension, phase);
+            if (spectators != null)
+                sendDeploymentPacket(new ProjectorDeploymentPacket(deploymentId, plan.dimension, phase));
+        }
+
+        private void sendDeploymentPacket(ProjectorDeploymentPacket packet) {
             for (EntityPlayerMP observer : spectators) {
                 if (observer.worldObj == world && observer.playerNetServerHandler.netManager.isChannelOpen())
                     NetWorkHandler.sendTo(packet, observer);
@@ -280,6 +447,7 @@ public final class ProjectorBuilder {
         private void finish() {
             sendDeploymentUpdate(completed ? Phase.COMPLETE : Phase.CANCEL);
             spectators = null;
+            deploymentStart = null;
             if (materials != null && !player.isDead
                 && player.playerNetServerHandler.netManager.isChannelOpen()
                 && ProjectorBuildMaterials.refund(player)) {
@@ -342,12 +510,12 @@ public final class ProjectorBuilder {
             int machine = edit == null ? shape.machines[cell] : edit.machine();
             if (actual == expected && world.getBlockMetadata(x, y, z) == meta) {
                 if (machine == 0) {
-                    if (!writing) supplementing = true;
+                    if (preparing()) supplementing = true;
                     return true;
                 }
                 if (world.getTileEntity(x, y, z) instanceof IGregTechTileEntity tile
                     && tile.getMetaTileID() == machine) {
-                    if (!writing) supplementing = true;
+                    if (preparing()) supplementing = true;
                     if (!controller()) return true;
                     return tile.getFrontFacing() == copyFacing().getDirection()
                         && (!(tile.getMetaTileEntity() instanceof IAlignment alignment)
@@ -368,7 +536,7 @@ public final class ProjectorBuilder {
                 player.addChatMessage(new ChatComponentTranslation("gtneverreset.projector.build.no_item", x, y, z));
                 return false;
             }
-            if (!writing) {
+            if (preparing()) {
                 if (!supplementing) {
                     bounds[0] = Math.min(bounds[0], x);
                     bounds[1] = Math.min(bounds[1], y);
@@ -408,7 +576,10 @@ public final class ProjectorBuilder {
                 captured.clear();
                 if (!success) restore(changes);
             }
-            if (!success || changes.isEmpty()) return false;
+            if (!success || changes.isEmpty()) {
+                retryable = true;
+                return false;
+            }
             boolean accepted = false;
             try {
                 for (BlockSnapshot snapshot : changes)
@@ -423,7 +594,7 @@ public final class ProjectorBuilder {
             placed++;
             if (!expected.hasTileEntity(meta)) expected.onBlockAdded(world, x, y, z);
             world.markAndNotifyBlock(x, y, z, null, changes.get(0).replacedBlock, expected, 3);
-            if (placed == 1) sendDeploymentUpdate(Phase.IMPACT);
+            if (placed == 1 && plan.buildStyle == StructureDeploymentStyle.SUMMON) sendDeploymentUpdate(Phase.IMPACT);
             return true;
         }
 

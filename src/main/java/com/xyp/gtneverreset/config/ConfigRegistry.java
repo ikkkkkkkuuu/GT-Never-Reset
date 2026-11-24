@@ -26,6 +26,7 @@ public final class ConfigRegistry {
         CATEGORIES.put(QuestsConfig.class, false);
         CATEGORIES.put(UniversalWandConfig.class, false);
         CATEGORIES.put(ToolsConfig.class, false);
+        CATEGORIES.put(ProjectorConfig.class, false);
         CATEGORIES.put(CropsNHConfig.class, false);
         CATEGORIES.put(CropBreederConfig.class, false);
         CATEGORIES.put(BeeBreederConfig.class, false);

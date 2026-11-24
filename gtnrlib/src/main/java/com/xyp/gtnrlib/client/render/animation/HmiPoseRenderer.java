@@ -30,6 +30,7 @@ import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.client.animation.ToolGrip;
+import com.xyp.gtnrlib.compat.gtneverreset.ProjectorArmAnimation;
 import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
 
 import cpw.mods.fml.common.Loader;
@@ -79,7 +80,8 @@ public final class HmiPoseRenderer {
     }
 
     public static boolean render(ItemRenderer renderer, ItemStack stack, float partial, float dip) {
-        return !FirstPersonAnimations.INSTANCE.applies(stack) && MAIN.renderHand(renderer, stack, partial, dip);
+        return ProjectorArmAnimation.renderRaisedFirstPerson(stack, partial, dip)
+            || !FirstPersonAnimations.INSTANCE.applies(stack) && MAIN.renderHand(renderer, stack, partial, dip);
     }
 
     public static boolean renderOffhand(ItemRenderer renderer, ItemStack stack, float partial, float dip) {
@@ -109,7 +111,7 @@ public final class HmiPoseRenderer {
                             pose.forgeRenderer(),
                             partial,
                             left -> {
-                                if (!left || !FirstPersonAnimations.offhandOwnsLeftArm(partial)) gripHand(left);
+                                if (!left || !FirstPersonAnimations.offhandOwnsLeftArm(partial)) gripHand(left, stack);
                             });
                     } catch (RuntimeException ex) {
                         pose.disableTool(stack, ex);
@@ -182,12 +184,12 @@ public final class HmiPoseRenderer {
         }
     }
 
-    private static void gripHand(boolean left) {
+    private static void gripHand(boolean left, ItemStack stack) {
         GL11.glPushMatrix();
         try {
             apply(com.xyp.gtnrlib.client.animation.FirstPersonItemActions.INSTANCE.grip(left));
             GL11.glTranslatef((left ? -6 : 6) / 16f, -10f / 16, 0);
-            FirstPersonArmRenderer.render(left, 0);
+            FirstPersonArmRenderer.render(left, 0, stack);
         } finally {
             GL11.glPopMatrix();
         }

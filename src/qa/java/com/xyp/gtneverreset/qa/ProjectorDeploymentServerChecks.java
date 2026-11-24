@@ -17,9 +17,10 @@ import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket;
 import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket.Phase;
 import com.xyp.gtneverreset.common.projector.ProjectorBuilder;
-import com.xyp.gtneverreset.common.projector.ProjectorDeployment;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
+import com.xyp.gtnrlib.animation.StructureDeployment;
+import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
@@ -46,6 +47,7 @@ public final class ProjectorDeploymentServerChecks {
     private EntityPlayerMP player;
     private ProjectorPlan plan;
     private long start;
+    private int build;
 
     @Mod.EventHandler
     public void ready(FMLServerStartedEvent event) throws Exception {
@@ -75,12 +77,7 @@ public final class ProjectorDeploymentServerChecks {
             plan.y = Y;
             plan.z = spawn.posZ;
             plan.facing = ExtendedFacing.of(ForgeDirection.NORTH);
-            var item = new ItemStack(GameRegistry.findItem("gtneverreset", "multiblock_projector"));
-            plan.write(item);
-            player.setPosition(plan.x + 0.5, Y, plan.z - 4);
-            player.inventory.setInventorySlotContents(player.inventory.currentItem, item);
-            start = world.getTotalWorldTime();
-            ProjectorBuilder.request(player, 0, false);
+            request(StructureDeploymentStyle.SUMMON);
             FMLCommonHandler.instance()
                 .bus()
                 .register(this);
@@ -96,17 +93,39 @@ public final class ProjectorDeploymentServerChecks {
             long elapsed = world.getTotalWorldTime() - start;
             require(elapsed < 480, "projector did not finish on the dedicated server");
             if (!(world.getTileEntity(plan.x, Y, plan.z) instanceof IGregTechTileEntity tile)) return;
-            require(elapsed >= ProjectorDeployment.IMPACT_TICK, "projector skipped the animation wait");
             require(tile.getMetaTileID() == plan.machine, "projector placed the wrong controller");
-            var bounds = new ProjectorDeployment(start, plan.x - 1, Y, plan.z, plan.x + 2, plan.z + 3, Y + 19);
+            int delay = switch (plan.buildStyle) {
+                case SUMMON -> StructureDeployment.IMPACT_TICK;
+                case REVEAL, FLIGHT -> plan.buildStyle.bandReadyTick(0);
+                case NONE -> 0;
+            };
+            require(elapsed >= delay, "projector skipped the animation wait for " + plan.buildStyle);
+            if (elapsed < 42) return;
+            var bounds = new StructureDeployment(start, plan.x - 1, Y, plan.z, plan.x + 2, plan.z + 3, Y + 19);
             checkPacket(new ProjectorDeploymentPacket(1, 0, bounds, plan, false));
             checkPacket(new ProjectorDeploymentPacket(1, 0, Phase.IMPACT));
             checkPacket(new ProjectorDeploymentPacket(1, 0, Phase.COMPLETE));
             checkPacket(new ProjectorDeploymentPacket(1, 0, Phase.CANCEL));
-            finish(null);
+            checkPacket(new ProjectorDeploymentPacket(1, 0, 1));
+            if (++build < StructureDeploymentStyle.values().length) {
+                plan.x += 8;
+                request(StructureDeploymentStyle.values()[build]);
+            } else finish(null);
         } catch (Throwable failure) {
             finish(failure);
         }
+    }
+
+    private void request(StructureDeploymentStyle style) {
+        plan.buildStyle = style;
+        var item = new ItemStack(GameRegistry.findItem("gtneverreset", "multiblock_projector"));
+        plan.write(item);
+        require(ProjectorPlan.read(item).buildStyle == style, "deployment style did not survive NBT round trip");
+        player.setPosition(plan.x + 0.5, Y, plan.z - 4);
+        player.inventory.setInventorySlotContents(player.inventory.currentItem, item);
+        start = world.getTotalWorldTime();
+        ProjectorBuilder.request(player, 0, false);
+        ProjectorBuilder.request(player, 0, false);
     }
 
     private void checkPacket(ProjectorDeploymentPacket packet) {

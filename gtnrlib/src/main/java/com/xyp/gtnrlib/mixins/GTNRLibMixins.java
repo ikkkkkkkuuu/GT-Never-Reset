@@ -20,6 +20,13 @@ public enum GTNRLibMixins implements IMixins {
             "animation.ItemBlockPlacementMixin")
         .setPhase(Phase.EARLY)),
 
+    PROJECTOR_ARM(new MixinBuilder("Wrist terminal player pose").addClientMixins("animation.ProjectorPlayerArmMixin")
+        .setPhase(Phase.EARLY)),
+
+    STRUCTURE_DEPLOYMENT(new MixinBuilder("Structure deployment camera shake")
+        .addClientMixins("animation.StructureDeploymentCameraMixin")
+        .setPhase(Phase.EARLY)),
+
     KEY_INPUT(new MixinBuilder("Key binding input access").addClientMixins("input.KeyBindingAccessor")
         .setPhase(Phase.EARLY)),
 
