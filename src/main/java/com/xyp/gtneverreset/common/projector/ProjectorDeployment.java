@@ -3,6 +3,7 @@ package com.xyp.gtneverreset.common.projector;
 import net.minecraft.util.MathHelper;
 
 import com.github.bsideup.jabel.Desugar;
+import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 @Desugar
 public record ProjectorDeployment(long startTick, int minX, int minY, int minZ, int maxX, int maxZ, int openingY) {
@@ -13,6 +14,26 @@ public record ProjectorDeployment(long startTick, int minX, int minY, int minZ, 
     public static final int IMPACT_TICK = OPEN_TICKS + DESCENT_TICKS;
     public static final int CLOSE_TICKS = 12;
     private static final double CIRCLE_MARGIN = 0.25;
+
+    public boolean bandsAlongX() {
+        return maxX - minX >= maxZ - minZ;
+    }
+
+    public int bandMin() {
+        return bandsAlongX() ? minX : minZ;
+    }
+
+    public int bandMax() {
+        return bandsAlongX() ? maxX : maxZ;
+    }
+
+    public int bandCount(StructureDeploymentStyle style) {
+        return style.bandCount(bandMax() - bandMin());
+    }
+
+    public int bandAt(int x, int z, int count) {
+        return StructureDeploymentStyle.bandAt(bandsAlongX() ? x : z, bandMin(), bandMax(), count);
+    }
 
     public double centerX() {
         return (minX + maxX) * 0.5;

@@ -3,8 +3,8 @@ gradle.projectsEvaluated {
     def root = gradle.rootProject
     root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
     def fixture = root.hasProperty('projectorFormationChecks') ? 'ProjectorFormationChecks' : root.hasProperty('projectorBatchHatchChecks') ? 'ProjectorBatchHatchChecks' : root.hasProperty('projectorSurvivalChecks') ? 'ProjectorSurvivalChecks' : root.hasProperty('projectorMirrorChecks') ? 'ProjectorMirrorChecks' : 'ProjectorCreativeChecks'
-    root.spotless.java { target root.file("src/qa/java/com/xyp/gtneverreset/qa/${fixture}.java") }
     if (root.hasProperty('projectorDeploymentChecks')) fixture = 'ProjectorDeploymentChecks'
+    root.spotless.java { target root.file("src/qa/java/com/xyp/gtneverreset/qa/${fixture}.java") }
     def directoryName = 'projector-creative-qa'
     def marker = 'gtnr.projector.creative.qa'
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
@@ -28,6 +28,7 @@ gradle.projectsEvaluated {
         classpath += root.files(qaDirectory.map { it.dir('classes') })
         workingDir root.file("build/${directoryName}/run")
         systemProperty marker, 'true'
+        systemProperty 'java.security.manager', 'allow'
         systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
         systemProperty 'sun.net.client.defaultReadTimeout', '15000'
         args '--width', '1100', '--height', '740'

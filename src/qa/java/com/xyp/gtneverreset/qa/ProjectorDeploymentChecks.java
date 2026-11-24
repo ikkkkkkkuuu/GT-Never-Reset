@@ -26,6 +26,7 @@ import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.projector.ProjectorDeployment;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
+import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
@@ -50,6 +51,10 @@ public class ProjectorDeploymentChecks {
         BATCH,
         PREPARE_SUPPLEMENT,
         SUPPLEMENT,
+        PREPARE_REVEAL,
+        REVEAL,
+        PREPARE_FLIGHT,
+        FLIGHT,
         DONE
     }
 
@@ -61,6 +66,8 @@ public class ProjectorDeploymentChecks {
     private Stage sent;
     private Object batchPresentation;
     private boolean circlePicture, impactPicture, allWaves;
+    private boolean outlinePicture, solidPicture, revealPicture, flightPicture;
+    private long nextBuildTick;
     private int ticks, x, z, machine;
 
     @Mod.EventHandler
@@ -91,6 +98,16 @@ public class ProjectorDeploymentChecks {
             } else if (stage == Stage.PREPARE_SUPPLEMENT) {
                 setup(player, 2);
                 stage = Stage.SUPPLEMENT;
+            } else if (stage == Stage.PREPARE_REVEAL || stage == Stage.PREPARE_FLIGHT) {
+                if (player.worldObj.getTotalWorldTime() < nextBuildTick) return;
+                z += 21;
+                Stage next = stage == Stage.PREPARE_REVEAL ? Stage.REVEAL : Stage.FLIGHT;
+                setup(
+                    player,
+                    1,
+                    next == Stage.REVEAL ? StructureDeploymentStyle.REVEAL : StructureDeploymentStyle.FLIGHT);
+                requested = -1;
+                stage = next;
             } else if (requested >= 0) {
                 long elapsed = player.worldObj.getTotalWorldTime() - requested;
                 if (stage == Stage.SINGLE && controller(player, x, z)) {
@@ -104,7 +121,15 @@ public class ProjectorDeploymentChecks {
                     requested = -1;
                 } else if (stage == Stage.SUPPLEMENT && controller(player, x + 6, z)) {
                     require(elapsed < ProjectorDeployment.IMPACT_TICK, "Mixed batch waited for a landing");
-                    stage = Stage.DONE;
+                    nextBuildTick = requested + 42;
+                    stage = Stage.PREPARE_REVEAL;
+                } else if ((stage == Stage.REVEAL || stage == Stage.FLIGHT) && controller(player, x + 3, z)) {
+                    var style = stage == Stage.REVEAL ? StructureDeploymentStyle.REVEAL
+                        : StructureDeploymentStyle.FLIGHT;
+                    require(elapsed >= style.bandReadyTick(1), "Segmented structure placed before the last band");
+                    require(controller(player, x, z), "Segmented batch first controller missing");
+                    nextBuildTick = requested + 42;
+                    stage = stage == Stage.REVEAL ? Stage.PREPARE_FLIGHT : Stage.DONE;
                 }
             }
         } catch (Throwable failure) {
@@ -113,6 +138,10 @@ public class ProjectorDeploymentChecks {
     }
 
     private void setup(EntityPlayerMP player, int extra) {
+        setup(player, extra, StructureDeploymentStyle.SUMMON);
+    }
+
+    private void setup(EntityPlayerMP player, int extra, StructureDeploymentStyle style) {
         var plan = new ProjectorPlan();
         plan.selectMachine(machine);
         plan.state = ProjectorPlan.State.LOCKED;
@@ -123,6 +152,7 @@ public class ProjectorDeploymentChecks {
         plan.facing = ExtendedFacing.of(ForgeDirection.NORTH);
         plan.batch.setAdditional(ForgeDirection.EAST, extra);
         plan.batchProjection = extra > 0;
+        plan.buildStyle = style;
         if (extra == 1) {
             for (int dx = -4; dx <= 9; dx++)
                 for (int dz = -4; dz <= 7; dz++) player.worldObj.setBlock(x + dx, Y - 1, z + dz, Blocks.stone, 0, 2);
@@ -134,8 +164,10 @@ public class ProjectorDeploymentChecks {
         player.capabilities.isFlying = true;
         player.sendPlayerAbilities();
         player.rotationYaw = 25;
-        player.rotationPitch = -5;
-        player.setPositionAndUpdate(x + (extra == 0 ? 8 : 9.5), Y + 8, z - 17);
+        player.rotationPitch = style == StructureDeploymentStyle.FLIGHT ? -14
+            : style == StructureDeploymentStyle.REVEAL ? 14 : -5;
+        if (style == StructureDeploymentStyle.FLIGHT) player.setPositionAndUpdate(x + 18, Y + 5, z - 23);
+        else player.setPositionAndUpdate(x + (extra == 0 ? 8 : 9.5), Y + 8, z - 17);
     }
 
     private boolean controller(EntityPlayerMP player, int x, int z) {
@@ -169,12 +201,21 @@ public class ProjectorDeploymentChecks {
                 require(singlePicture && batchPicture, "Missing descent screenshots");
                 if (!allWaves) return;
                 require(circlePicture && impactPicture, "Missing summoning-circle or impact screenshot");
+                require(
+                    outlinePicture && solidPicture && revealPicture && flightPicture,
+                    "Missing segmented deployment screenshots");
                 finish(null);
             }
             if (sent == current || mc.theWorld == null || ProjectorClient.plan == null) return;
-            if (current != Stage.SINGLE && current != Stage.BATCH && current != Stage.SUPPLEMENT) return;
-            int expected = current == Stage.SINGLE ? 1 : current == Stage.BATCH ? 2 : 3;
-            if (ProjectorClient.plan.z != z || ProjectorClient.plan.batch.machines() != expected) return;
+            if (current != Stage.SINGLE && current != Stage.BATCH
+                && current != Stage.SUPPLEMENT
+                && current != Stage.REVEAL
+                && current != Stage.FLIGHT) return;
+            int expected = current == Stage.SINGLE ? 1 : current == Stage.SUPPLEMENT ? 3 : 2;
+            var style = current == Stage.REVEAL ? StructureDeploymentStyle.REVEAL
+                : current == Stage.FLIGHT ? StructureDeploymentStyle.FLIGHT : StructureDeploymentStyle.SUMMON;
+            if (ProjectorClient.plan.z != z || ProjectorClient.plan.batch.machines() != expected
+                || ProjectorClient.plan.buildStyle != style) return;
             var server = mc.getIntegratedServer();
             requested = server.worldServerForDimension(0)
                 .getTotalWorldTime();
@@ -190,6 +231,7 @@ public class ProjectorDeploymentChecks {
     public void capture(TickEvent.RenderTickEvent event) {
         if (done || event.phase != TickEvent.Phase.END) return;
         captureImpact();
+        if (stage == Stage.REVEAL || stage == Stage.FLIGHT) captureSegmented();
         if (stage != Stage.SINGLE && stage != Stage.BATCH) return;
         boolean single = stage == Stage.SINGLE;
         if (single ? singlePicture : batchPicture) return;
@@ -237,6 +279,59 @@ public class ProjectorDeploymentChecks {
         } catch (Throwable failure) {
             finish(failure);
         }
+    }
+
+    private void captureSegmented() {
+        var mc = Minecraft.getMinecraft();
+        if (mc.theWorld == null || mc.currentScreen != null) return;
+        try {
+            var active = ProjectorDeploymentRenderer.class.getDeclaredField("ACTIVE");
+            active.setAccessible(true);
+            for (Object presentation : ((Map<?, ?>) active.get(null)).values()) {
+                var bounds = presentation.getClass()
+                    .getDeclaredField("animation");
+                bounds.setAccessible(true);
+                var animation = (ProjectorDeployment) bounds.get(presentation);
+                if (z < animation.minZ() || z >= animation.maxZ()) continue;
+                var effect = presentation.getClass()
+                    .getDeclaredField("segmented");
+                effect.setAccessible(true);
+                var segmented = effect.get(presentation);
+                require(segmented != null, "Selected style was not sent to the client");
+                var model = presentation.getClass()
+                    .getDeclaredField("model");
+                model.setAccessible(true);
+                if (model.get(presentation) == null) continue;
+                long age = mc.theWorld.getTotalWorldTime() - animation.startTick();
+                if (stage == Stage.REVEAL) {
+                    if (!outlinePicture && age >= 7 && age < StructureDeploymentStyle.REVEAL_OUTLINE_TICKS) {
+                        save("white-outline.png");
+                        outlinePicture = true;
+                    }
+                    if (!solidPicture && age >= 14 && age < StructureDeploymentStyle.REVEAL_SOLID_TICKS) {
+                        save("white-solid.png");
+                        solidPicture = true;
+                    }
+                    var finished = segmented.getClass()
+                        .getDeclaredField("finished");
+                    finished.setAccessible(true);
+                    if (!revealPicture && finished.getInt(segmented) == 1) {
+                        save("white-band-reveal.png");
+                        revealPicture = true;
+                    }
+                } else if (!flightPicture && age >= 24 && age < StructureDeploymentStyle.FLIGHT_TRAVEL_TICKS) {
+                    save("segmented-flight.png");
+                    flightPicture = true;
+                }
+            }
+        } catch (Throwable failure) {
+            finish(failure);
+        }
+    }
+
+    private void save(String name) {
+        var mc = Minecraft.getMinecraft();
+        ScreenShotHelper.saveScreenshot(new File("."), name, mc.displayWidth, mc.displayHeight, mc.getFramebuffer());
     }
 
     private void captureImpact() {

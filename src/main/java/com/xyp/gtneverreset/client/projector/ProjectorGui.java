@@ -51,7 +51,9 @@ import com.xyp.gtneverreset.common.projector.ProjectorStructure.Choice;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure.Material;
 import com.xyp.gtneverreset.config.ClientConfig;
 import com.xyp.gtneverreset.config.ConfigRegistry;
+import com.xyp.gtneverreset.config.ProjectorConfig;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
+import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Icon;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
@@ -340,6 +342,8 @@ public class ProjectorGui extends ModularPanel {
         // # Generate one machine
         // # zh_CN 生成一台
         return column().sizeRel(1f)
+            .childPadding(4)
+            .child(deploymentStyleButton())
             .child(
                 new AE2Button(() -> StatCollector.translateToLocal(LANG + "generate"), () -> generate(false))
                     .name("generate_structure")
@@ -347,6 +351,41 @@ public class ProjectorGui extends ModularPanel {
                     .height(BUTTON)
                     .available(this::canGenerate)
                     .tooltipBuilder(this::buildHint));
+    }
+
+    private Widget<?> deploymentStyleButton() {
+        // #tr gtneverreset.projector.gui.build_style
+        // # Animation: %s
+        // # zh_CN 搭建动画：%s
+        return new AE2Button(
+            () -> StatCollector.translateToLocalFormatted(LANG + "build_style", deploymentStyleName()),
+            () -> {
+                var styles = StructureDeploymentStyle.values();
+                working.buildStyle = styles[(working.buildStyle.ordinal() + 1) % styles.length];
+            }).name("deployment_style")
+                .widthRel(1f)
+                .height(BUTTON);
+    }
+
+    private String deploymentStyleName() {
+        return StatCollector.translateToLocal(switch (working.buildStyle) {
+            // #tr gtneverreset.projector.gui.build_style_summon
+            // # Summoning Circle
+            // # zh_CN 法阵降临
+            case SUMMON -> LANG + "build_style_summon";
+            // #tr gtneverreset.projector.gui.build_style_reveal
+            // # White Reveal
+            // # zh_CN 白光显现
+            case REVEAL -> LANG + "build_style_reveal";
+            // #tr gtneverreset.projector.gui.build_style_flight
+            // # Segmented Flight
+            // # zh_CN 分段飞入
+            case FLIGHT -> LANG + "build_style_flight";
+            // #tr gtneverreset.projector.gui.build_style_none
+            // # None
+            // # zh_CN 无动画
+            case NONE -> LANG + "build_style_none";
+        });
     }
 
     private void buildHint(RichTooltip tooltip) {
@@ -442,6 +481,7 @@ public class ProjectorGui extends ModularPanel {
                 .alignment(Alignment.CenterLeft)
                 .widthRel(1f)
                 .height(LINE));
+        controls.child(deploymentStyleButton());
         controls.child(
             new AE2Button(() -> StatCollector.translateToLocal(LANG + "tab_batch"), () -> generate(true))
                 .name("generate_batch")
@@ -516,7 +556,8 @@ public class ProjectorGui extends ModularPanel {
     }
 
     private boolean canGenerate() {
-        return Minecraft.getMinecraft().thePlayer.capabilities.allowEdit && working.hasMachine()
+        return ProjectorConfig.buildEnabled && Minecraft.getMinecraft().thePlayer.capabilities.allowEdit
+            && working.hasMachine()
             && !simulating()
             && structure() != null;
     }
