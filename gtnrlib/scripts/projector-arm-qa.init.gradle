@@ -1,0 +1,55 @@
+// Run with: gradlew.bat -I gtnrlib/scripts/projector-arm-qa.init.gradle :runClient25 --no-configuration-cache
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    def lib = root.project(':gtnrlib')
+    def output = lib.layout.buildDirectory.dir('projector-arm-qa').get().asFile
+    def classes = new File(output, 'classes')
+    def fixture = root.tasks.register('compileProjectorArmQA', JavaCompile) {
+        dependsOn root.tasks.named('classes')
+        source lib.file('scripts/qa/AnimationProjectorChecks.java')
+        classpath = root.sourceSets.test.compileClasspath + lib.sourceSets.main.output
+        destinationDirectory.set(classes)
+        javaCompiler.set(lib.javaToolchains.compilerFor(lib.java.toolchain))
+        options.encoding = 'UTF-8'
+        options.compilerArgs += ['-proc:none']
+    }
+    root.tasks.named('runClient25', JavaExec).configure {
+        dependsOn fixture
+        classpath += lib.files(classes)
+        workingDir new File(output, 'run')
+        systemProperty 'gtnrlib.projector.arm.qa', 'true'
+        systemProperty 'gtnrlib.projector.arm.qa.output', output.absolutePath
+        args '--width', '1120', '--height', '720'
+        notCompatibleWithConfigurationCache('isolated forearm projector verification')
+        doFirst {
+            workingDir.mkdirs()
+            root.copy { from root.file('run/client/falsepattern'); include '*.jar'; into new File(workingDir, 'falsepattern') }
+            def config = new File(workingDir, 'config/GTNeverReset/item.cfg')
+            config.parentFile.mkdirs()
+            config.setText('tools {\n    B:enableMultiblockProjector=true\n}\n', 'UTF-8')
+            new File(workingDir, 'config/splash.properties').setText('enabled=false\n', 'UTF-8')
+            new File(workingDir, 'config/DreamCoreMod.properties').setText('showConfirmExitWindow=false\n', 'UTF-8')
+            new File(workingDir, 'options.txt').setText(
+                'lang:en_US\nchatVisibility:2\nheldItemTooltips:false\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsound:0.0\nmusic:0.0\nrenderDistance:4\n',
+                'UTF-8')
+            java.nio.file.Files.deleteIfExists(new File(output, 'result.txt').toPath())
+            if (System.getProperty('os.name').startsWith('Windows')) {
+                def ready = new File(output, 'window-helper.ready')
+                java.nio.file.Files.deleteIfExists(ready.toPath())
+                def helper = new ProcessBuilder('powershell.exe', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
+                    '-ExecutionPolicy', 'Bypass', '-File', lib.file('scripts/qa/HideTestClient.ps1').absolutePath,
+                    '-Workspace', root.projectDir.absolutePath, '-Marker', '-Dgtnrlib.projector.arm.qa=true',
+                    '-ReadyFile', 'gtnrlib/build/projector-arm-qa/window-helper.ready')
+                    .redirectErrorStream(true).redirectOutput(new File(output, 'window-helper.log')).start()
+                for (int i = 0; i < 100 && !ready.isFile() && helper.isAlive(); i++) Thread.sleep(100)
+                if (!ready.isFile()) throw new GradleException('Background window guard did not start')
+            }
+        }
+        doLast {
+            def result = new File(output, 'result.txt')
+            if (!result.isFile() || result.text.trim() != 'PASS') {
+                throw new GradleException("Forearm projector verification failed. See ${output}.")
+            }
+        }
+    }
+}
