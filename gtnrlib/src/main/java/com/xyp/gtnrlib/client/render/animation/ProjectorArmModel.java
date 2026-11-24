@@ -19,6 +19,9 @@ import cpw.mods.fml.relauncher.SideOnly;
 public final class ProjectorArmModel {
 
     private static final float MODEL_UNIT = 1f / 16;
+    // Center of the outer lens cap in forearm_terminal.py.
+    private static final float LENS_X = .28f * MODEL_UNIT, LENS_Y = -3.55f * MODEL_UNIT, LENS_Z = -5.72f * MODEL_UNIT;
+    private static final String[] OPTICAL_GROUPS = { "display", "display_marks", "status_lamps", "lens" };
     private static final ResourceLocation GEOMETRY = resource("models/animation/projector/forearm_projector.obj");
     private static final ResourceLocation SHELL = resource("textures/animation/projector/orrery_shell_proportions.png");
     private static final ResourceLocation OPTICS = resource("textures/animation/projector/orrery_materials.png");
@@ -35,12 +38,16 @@ public final class ProjectorArmModel {
     }
 
     /** The shoulder pivot and live arm rotation have already been applied. */
-    public static void renderOnArm(boolean left, boolean armored) {
+    public static void renderOnArm(boolean armored, float projection, boolean localView) {
         GL11.glPushMatrix();
         try {
-            GL11.glTranslatef((left ? 1 : -1) * MODEL_UNIT, 5.9f * MODEL_UNIT, 0);
+            GL11.glTranslatef(-MODEL_UNIT, 5.9f * MODEL_UNIT, 0);
             if (armored) GL11.glScalef(1.35f, 1, 1.35f);
             render();
+            if (projection > .01f) {
+                if (localView) ProjectorHologramRenderer.captureLens(LENS_X, LENS_Y, LENS_Z, projection);
+                else ProjectorHologramRenderer.drawWorldProjection(LENS_X, LENS_Y, LENS_Z, projection);
+            }
         } finally {
             GL11.glPopMatrix();
         }
@@ -57,13 +64,16 @@ public final class ProjectorArmModel {
             GL11.glEnable(GL12.GL_RESCALE_NORMAL);
             GL11.glColor4f(1, 1, 1, 1);
             textures.bindTexture(SHELL);
-            mesh.renderPart("cuffs");
-            mesh.renderPart("body");
-            mesh.renderPart("panels");
+            mesh.renderAllExcept(OPTICAL_GROUPS);
             GL11.glDisable(GL11.GL_LIGHTING);
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240, 240);
             textures.bindTexture(OPTICS);
-            mesh.renderPart("optics");
+            GL11.glColor4f(.28f, .54f, .55f, 1);
+            mesh.renderPart("display");
+            GL11.glColor4f(.66f, .94f, .92f, 1);
+            mesh.renderPart("display_marks");
+            GL11.glColor4f(1, 1, 1, 1);
+            mesh.renderOnly("status_lamps", "lens");
         } finally {
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, lightX, lightY);
             GL11.glPopAttrib();

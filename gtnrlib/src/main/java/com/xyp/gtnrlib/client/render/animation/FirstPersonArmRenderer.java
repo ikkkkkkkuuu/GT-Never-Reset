@@ -68,15 +68,17 @@ public final class FirstPersonArmRenderer {
         }
     }
 
-    public static void renderOverVanillaArm(EntityPlayer player, RenderPlayer renderer) {
-        if (player.getCurrentArmor(2) == null) return;
+    public static void renderOverVanillaArm(EntityPlayer player, RenderPlayer renderer, boolean renderArmor) {
+        boolean armor = renderArmor && player.getCurrentArmor(2) != null;
+        if (!armor && !ProjectorArmAnimation.wearsProjector(player)) return;
         var arm = renderer.modelBipedMain.bipedRightArm;
         GL11.glPushMatrix();
         GL11.glPushAttrib(ARM_ATTRIBUTES);
         try {
             GL11.glTranslatef(arm.offsetX, arm.offsetY, arm.offsetZ);
             arm.postRender(MODEL_UNIT);
-            renderChestplate(player, false);
+            if (armor) renderChestplate(player, false);
+            ProjectorArmAnimation.renderOnFirstPersonArm(player, false, null);
         } finally {
             GL11.glPopAttrib();
             GL11.glPopMatrix();

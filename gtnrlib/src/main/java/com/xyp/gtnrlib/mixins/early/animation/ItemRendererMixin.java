@@ -139,8 +139,8 @@ public abstract class ItemRendererMixin implements FirstPersonAnimations.Equippe
         require = 0)
     private void gtnrlib$emptyArmArmor(RenderPlayer renderer, EntityPlayer player, Operation<Void> original) {
         original.call(renderer, player);
-        if (gtnrlib$mainHand() && FirstPersonAnimations.INSTANCE.applies(null))
-            FirstPersonArmRenderer.renderOverVanillaArm(player, renderer);
+        if (gtnrlib$mainHand())
+            FirstPersonArmRenderer.renderOverVanillaArm(player, renderer, FirstPersonAnimations.INSTANCE.applies(null));
     }
 
     @Unique

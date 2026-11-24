@@ -30,6 +30,7 @@ import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.client.animation.ToolGrip;
+import com.xyp.gtnrlib.compat.gtneverreset.ProjectorArmAnimation;
 import com.xyp.gtnrlib.compat.hmi.HmiPoseProgram;
 
 import cpw.mods.fml.common.Loader;
@@ -79,7 +80,8 @@ public final class HmiPoseRenderer {
     }
 
     public static boolean render(ItemRenderer renderer, ItemStack stack, float partial, float dip) {
-        return !FirstPersonAnimations.INSTANCE.applies(stack) && MAIN.renderHand(renderer, stack, partial, dip);
+        return ProjectorArmAnimation.renderRaisedFirstPerson(partial, dip)
+            || !FirstPersonAnimations.INSTANCE.applies(stack) && MAIN.renderHand(renderer, stack, partial, dip);
     }
 
     public static boolean renderOffhand(ItemRenderer renderer, ItemStack stack, float partial, float dip) {

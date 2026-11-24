@@ -30,7 +30,7 @@ gradle.projectsEvaluated {
             new File(workingDir, 'config/splash.properties').setText('enabled=false\n', 'UTF-8')
             new File(workingDir, 'config/DreamCoreMod.properties').setText('showConfirmExitWindow=false\n', 'UTF-8')
             new File(workingDir, 'options.txt').setText(
-                'lang:en_US\nchatVisibility:2\nheldItemTooltips:false\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsound:0.0\nmusic:0.0\nrenderDistance:4\n',
+                'lang:en_US\nguiScale:2\nchatVisibility:2\nheldItemTooltips:false\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsound:0.0\nmusic:0.0\nrenderDistance:4\n',
                 'UTF-8')
             java.nio.file.Files.deleteIfExists(new File(output, 'result.txt').toPath())
             if (System.getProperty('os.name').startsWith('Windows')) {

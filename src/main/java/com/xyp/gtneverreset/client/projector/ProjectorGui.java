@@ -54,6 +54,7 @@ import com.xyp.gtneverreset.config.ConfigRegistry;
 import com.xyp.gtneverreset.config.ProjectorConfig;
 import com.xyp.gtneverreset.config.ScreenThemeConfig;
 import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
+import com.xyp.gtnrlib.client.render.animation.ProjectorHologramRenderer;
 import com.xyp.gtnrlib.gui.theme.AE2Theme;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Icon;
 import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
@@ -203,6 +204,20 @@ public class ProjectorGui extends ModularPanel {
         menus[channelMenus + 4] = MENU + "block";
         AE2Theme.useMenuTheme(themeId, GTNeverReset.MODID, NAME, menus);
         return new ModularScreen(GTNeverReset.MODID, this) {
+
+            @Override
+            public void drawScreen() {
+                var screen = getScreenArea();
+                var panel = ProjectorGui.this.getArea();
+                ProjectorHologramRenderer.drawBeam(
+                    screen.width,
+                    screen.height,
+                    panel.x + BODY_LEFT,
+                    panel.y,
+                    panel.width - BODY_LEFT - BODY_RIGHT,
+                    panel.height);
+                super.drawScreen();
+            }
 
             @Override
             public void onClose() {
