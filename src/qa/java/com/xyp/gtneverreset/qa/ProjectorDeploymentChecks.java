@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
@@ -25,6 +26,7 @@ import com.xyp.gtneverreset.common.packet.GenerateProjectorPacket;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
+import com.xyp.gtneverreset.common.projector.ProjectorSimulation;
 import com.xyp.gtnrlib.animation.StructureDeployment;
 import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
@@ -153,6 +155,7 @@ public class ProjectorDeploymentChecks {
         plan.batch.setAdditional(ForgeDirection.EAST, extra);
         plan.batchProjection = extra > 0;
         plan.buildStyle = style;
+        if (extra == 0) chooseFrontHatch(plan);
         if (extra == 1) {
             for (int dx = -4; dx <= 9; dx++)
                 for (int dz = -4; dz <= 7; dz++) player.worldObj.setBlock(x + dx, Y - 1, z + dz, Blocks.stone, 0, 2);
@@ -163,11 +166,31 @@ public class ProjectorDeploymentChecks {
         player.inventoryContainer.detectAndSendChanges();
         player.capabilities.isFlying = true;
         player.sendPlayerAbilities();
-        player.rotationYaw = 25;
+        player.rotationYaw = extra == 0 ? 15 : 25;
         player.rotationPitch = style == StructureDeploymentStyle.FLIGHT ? -14
             : style == StructureDeploymentStyle.REVEAL ? 14 : -5;
         if (style == StructureDeploymentStyle.FLIGHT) player.setPositionAndUpdate(x + 18, Y + 5, z - 23);
-        else player.setPositionAndUpdate(x + (extra == 0 ? 8 : 9.5), Y + 8, z - 17);
+        else if (extra == 0) player.setPositionAndUpdate(x + 3.5, Y + 6, z - 11);
+        else player.setPositionAndUpdate(x + 9.5, Y + 8, z - 17);
+    }
+
+    private static void chooseFrontHatch(ProjectorPlan plan) {
+        int hatch = ProjectorMachines.idOf(ItemList.Hatch_Energy_MV.get(1));
+        var shape = ProjectorSimulation.run(plan.settings());
+        int chosen = -1, frontZ = Integer.MAX_VALUE, rightX = Integer.MIN_VALUE;
+        int[] offset = new int[3];
+        for (int i = 0; i < shape.size; i++) {
+            var slot = shape.slotAt(i);
+            if (slot == null || Arrays.stream(slot.candidates())
+                .noneMatch(id -> id == hatch)) continue;
+            plan.facing.getWorldOffset(new int[] { shape.a[i], shape.b[i], shape.c[i] }, offset);
+            if (offset[2] > frontZ || offset[2] == frontZ && offset[0] <= rightX) continue;
+            chosen = i;
+            frontZ = offset[2];
+            rightX = offset[0];
+        }
+        require(chosen >= 0, "No visible MV energy hatch slot for the descent fixture");
+        plan.overrides.put(ProjectorPlan.pack(shape.a[chosen], shape.b[chosen], shape.c[chosen]), hatch);
     }
 
     private boolean controller(EntityPlayerMP player, int x, int z) {

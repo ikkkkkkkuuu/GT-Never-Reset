@@ -134,7 +134,8 @@ public final class FxStructureDeployment {
         GL11.glEnable(GL11.GL_CULL_FACE);
         GL11.glCullFace(GL11.GL_BACK);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthFunc(GL11.GL_LESS);
+        // Machine face overlays share their depth with the casing beneath them.
+        GL11.glDepthFunc(GL11.GL_LEQUAL);
         GL11.glDepthMask(true);
         GL11.glColor4f(1, 1, 1, 1);
     }
