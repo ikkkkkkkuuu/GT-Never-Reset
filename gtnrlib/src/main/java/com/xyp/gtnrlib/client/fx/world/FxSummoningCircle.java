@@ -1,4 +1,4 @@
-package com.xyp.gtneverreset.client.projector;
+package com.xyp.gtnrlib.client.fx.world;
 
 import net.minecraft.client.renderer.Tessellator;
 
@@ -8,7 +8,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-final class ProjectorSummoningCircle {
+final class FxSummoningCircle {
 
     private static final double TURN = 2 * Math.PI;
     private static final double SECTOR = TURN / 6;
@@ -23,7 +23,7 @@ final class ProjectorSummoningCircle {
         { 0, 6, 1, 5, 5, 7 }, { 1, 7, 3, 4, 4, 8 }, { 0, 2, 0, 8, 3, 5 }, { 0, 4, 4, 8, 2, 4, 4, 6 },
         { 1, 3, 3, 7, 7, 5, 5, 2 } };
 
-    private ProjectorSummoningCircle() {}
+    private FxSummoningCircle() {}
 
     static void draw() {
         Tessellator tess = Tessellator.instance;

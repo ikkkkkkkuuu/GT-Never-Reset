@@ -84,6 +84,7 @@ tasks.named('shadowJar') {
 ['jar', 'shadowJar', 'sourcesJar'].each { archive ->
     tasks.named(archive, Jar) {
         from(rootProject.file('licenses/gtnrlib')) { into 'META-INF/licenses/gtnrlib' }
+        from(rootProject.file('licenses/ports/cosmiccore-projector')) { into 'META-INF/cosmiccore-projector' }
     }
 }
 

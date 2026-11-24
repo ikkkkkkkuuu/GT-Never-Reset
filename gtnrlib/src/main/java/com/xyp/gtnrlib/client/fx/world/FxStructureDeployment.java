@@ -4,10 +4,15 @@ import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.util.Arrays;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.world.World;
+
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 
+import com.xyp.gtnrlib.animation.StructureDeployment;
 import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 import cpw.mods.fml.relauncher.Side;
@@ -16,6 +21,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class FxStructureDeployment {
 
+    private static final int FINISH_GRACE_TICKS = 8;
     private static final int REVEAL_FADE_TICKS = 6;
     private static final double FLIGHT_APPROACH_TICKS = 22;
     private static final double FLIGHT_HOVER_TICKS = 26;
@@ -23,29 +29,114 @@ public final class FxStructureDeployment {
     private static final DoubleBuffer PLANE = BufferUtils.createDoubleBuffer(4);
     private static final FloatBuffer COLOR = BufferUtils.createFloatBuffer(4);
 
+    private final World world;
     private final StructureDeploymentStyle style;
+    private final StructureDeployment bounds;
+    private final FxSummoningDeployment summoning;
     private final boolean alongX;
     private final int min, max;
     private final long[] revealedAt;
+    private long finishedTick = -1;
     private int finished;
 
-    public FxStructureDeployment(StructureDeploymentStyle style, boolean alongX, int min, int max) {
+    public FxStructureDeployment(World world, StructureDeploymentStyle style, StructureDeployment bounds) {
+        this.world = world;
         this.style = style;
-        this.alongX = alongX;
-        this.min = min;
-        this.max = max;
-        revealedAt = new long[style.bandCount(max - min)];
+        this.bounds = bounds;
+        summoning = style == StructureDeploymentStyle.SUMMON ? new FxSummoningDeployment(world, bounds) : null;
+        alongX = bounds.bandsAlongX();
+        min = bounds.bandMin();
+        max = bounds.bandMax();
+        revealedAt = style.segmented() ? new long[bounds.bandCount(style)] : new long[0];
         Arrays.fill(revealedAt, Long.MAX_VALUE);
     }
 
-    public void progress(int finishedBands, long age) {
+    public void impact() {
+        if (summoning != null) summoning.impact();
+    }
+
+    public void progress(int finishedBands) {
         int count = Math.min(revealedAt.length, finishedBands);
+        long age = age();
         while (finished < count) revealedAt[finished++] = age;
     }
 
-    public void draw(double age, double cameraX, double cameraZ, Model model) {
-        if (style == StructureDeploymentStyle.REVEAL) drawReveal(age, cameraX, cameraZ, model);
-        else if (style == StructureDeploymentStyle.FLIGHT) drawFlight(age, cameraX, cameraZ, model);
+    public void complete() {
+        finishedTick = world.getTotalWorldTime();
+    }
+
+    /** Returns whether a summoning effect has a landing animation left to play. */
+    public boolean cancel() {
+        if (summoning == null || !summoning.hasImpact()) return false;
+        complete();
+        return true;
+    }
+
+    public boolean expired() {
+        return finishedTick >= 0 && world.getTotalWorldTime() - finishedTick >= FINISH_GRACE_TICKS
+            && (summoning == null || summoning.finished(age()));
+    }
+
+    public void close() {
+        if (summoning != null) summoning.close();
+    }
+
+    public void tick(Minecraft minecraft) {
+        if (summoning != null) summoning.tick(minecraft, age());
+    }
+
+    public static void shakeCamera(float partial) {
+        FxStructureImpact.shakeCamera(partial);
+    }
+
+    public void render(Minecraft minecraft, float partial, double cameraX, double cameraY, double cameraZ,
+        FxBlockMesh mesh, long compileBudgetNanos, Model model) {
+        GL11.glPushAttrib(
+            GL11.GL_ENABLE_BIT | GL11.GL_DEPTH_BUFFER_BIT
+                | GL11.GL_COLOR_BUFFER_BIT
+                | GL11.GL_CURRENT_BIT
+                | GL11.GL_POLYGON_BIT
+                | GL11.GL_LINE_BIT
+                | GL11.GL_TRANSFORM_BIT
+                | GL11.GL_TEXTURE_BIT);
+        try {
+            if (mesh != null && compileBudgetNanos > 0) mesh.compile(compileBudgetNanos);
+            double age = age() + partial;
+            if (age < 0) return;
+            if (model != null) prepareStructureRendering(minecraft);
+            switch (style) {
+                case SUMMON -> summoning.draw(age, cameraX, cameraY, cameraZ, model);
+                case REVEAL -> {
+                    if (model != null) drawReveal(age, cameraX, cameraZ, model);
+                }
+                case FLIGHT -> {
+                    if (model != null) drawFlight(age, cameraX, cameraZ, model);
+                }
+                case NONE -> {}
+            }
+        } finally {
+            GL11.glPopAttrib();
+        }
+    }
+
+    private long age() {
+        return world.getTotalWorldTime() - bounds.startTick();
+    }
+
+    private static void prepareStructureRendering(Minecraft minecraft) {
+        minecraft.getTextureManager()
+            .bindTexture(TextureMap.locationBlocksTexture);
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glDisable(GL11.GL_LIGHTING);
+        GL11.glDisable(GL11.GL_BLEND);
+        GL11.glEnable(GL11.GL_ALPHA_TEST);
+        GL11.glAlphaFunc(GL11.GL_GREATER, 0.1f);
+        GL11.glEnable(GL11.GL_CULL_FACE);
+        GL11.glCullFace(GL11.GL_BACK);
+        GL11.glEnable(GL11.GL_DEPTH_TEST);
+        GL11.glDepthFunc(GL11.GL_LESS);
+        GL11.glDepthMask(true);
+        GL11.glColor4f(1, 1, 1, 1);
     }
 
     private void drawReveal(double age, double cameraX, double cameraZ, Model model) {

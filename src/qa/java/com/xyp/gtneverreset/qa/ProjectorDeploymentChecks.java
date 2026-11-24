@@ -23,9 +23,9 @@ import com.xyp.gtneverreset.client.projector.ProjectorDeploymentRenderer;
 import com.xyp.gtneverreset.common.packet.GenerateProjectorBatchPacket;
 import com.xyp.gtneverreset.common.packet.GenerateProjectorPacket;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtneverreset.common.projector.ProjectorDeployment;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
+import com.xyp.gtnrlib.animation.StructureDeployment;
 import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -111,16 +111,16 @@ public class ProjectorDeploymentChecks {
             } else if (requested >= 0) {
                 long elapsed = player.worldObj.getTotalWorldTime() - requested;
                 if (stage == Stage.SINGLE && controller(player, x, z)) {
-                    require(elapsed >= ProjectorDeployment.IMPACT_TICK, "Single machine placed before landing");
+                    require(elapsed >= StructureDeployment.IMPACT_TICK, "Single machine placed before landing");
                     stage = Stage.PREPARE_BATCH;
                     requested = -1;
                 } else if (stage == Stage.BATCH && controller(player, x + 3, z)) {
-                    require(elapsed >= ProjectorDeployment.IMPACT_TICK, "Batch placed before landing");
+                    require(elapsed >= StructureDeployment.IMPACT_TICK, "Batch placed before landing");
                     require(controller(player, x, z), "Batch first controller missing");
                     stage = Stage.PREPARE_SUPPLEMENT;
                     requested = -1;
                 } else if (stage == Stage.SUPPLEMENT && controller(player, x + 6, z)) {
-                    require(elapsed < ProjectorDeployment.IMPACT_TICK, "Mixed batch waited for a landing");
+                    require(elapsed < StructureDeployment.IMPACT_TICK, "Mixed batch waited for a landing");
                     nextBuildTick = requested + 42;
                     stage = Stage.PREPARE_REVEAL;
                 } else if ((stage == Stage.REVEAL || stage == Stage.FLIGHT) && controller(player, x + 3, z)) {
@@ -246,10 +246,7 @@ public class ProjectorDeploymentChecks {
             Object presentation = animations.values()
                 .iterator()
                 .next();
-            var animationField = presentation.getClass()
-                .getDeclaredField("animation");
-            animationField.setAccessible(true);
-            var animation = (ProjectorDeployment) animationField.get(presentation);
+            var animation = (StructureDeployment) field(field(presentation, "effects"), "bounds");
             if (z < animation.minZ() || z >= animation.maxZ()) return;
             long age = mc.theWorld.getTotalWorldTime() - animation.startTick();
             if (!single && !circlePicture && age >= 40) {
@@ -288,16 +285,11 @@ public class ProjectorDeploymentChecks {
             var active = ProjectorDeploymentRenderer.class.getDeclaredField("ACTIVE");
             active.setAccessible(true);
             for (Object presentation : ((Map<?, ?>) active.get(null)).values()) {
-                var bounds = presentation.getClass()
-                    .getDeclaredField("animation");
-                bounds.setAccessible(true);
-                var animation = (ProjectorDeployment) bounds.get(presentation);
+                var effects = field(presentation, "effects");
+                var animation = (StructureDeployment) field(effects, "bounds");
                 if (z < animation.minZ() || z >= animation.maxZ()) continue;
-                var effect = presentation.getClass()
-                    .getDeclaredField("segmented");
-                effect.setAccessible(true);
-                var segmented = effect.get(presentation);
-                require(segmented != null, "Selected style was not sent to the client");
+                var style = stage == Stage.REVEAL ? StructureDeploymentStyle.REVEAL : StructureDeploymentStyle.FLIGHT;
+                require(field(effects, "style") == style, "Selected style was not sent to the client");
                 var model = presentation.getClass()
                     .getDeclaredField("model");
                 model.setAccessible(true);
@@ -312,10 +304,7 @@ public class ProjectorDeploymentChecks {
                         save("white-solid.png");
                         solidPicture = true;
                     }
-                    var finished = segmented.getClass()
-                        .getDeclaredField("finished");
-                    finished.setAccessible(true);
-                    if (!revealPicture && finished.getInt(segmented) == 1) {
+                    if (!revealPicture && (int) field(effects, "finished") == 1) {
                         save("white-band-reveal.png");
                         revealPicture = true;
                     }
@@ -338,10 +327,8 @@ public class ProjectorDeploymentChecks {
         if (batchPresentation == null || allWaves) return;
         var mc = Minecraft.getMinecraft();
         try {
-            var field = batchPresentation.getClass()
-                .getDeclaredField("impact");
-            field.setAccessible(true);
-            Object impact = field.get(batchPresentation);
+            Object summoning = field(field(batchPresentation, "effects"), "summoning");
+            Object impact = field(summoning, "impact");
             if (impact == null) return;
             var waveField = impact.getClass()
                 .getDeclaredField("nextWave");
@@ -364,6 +351,13 @@ public class ProjectorDeploymentChecks {
         } catch (Throwable failure) {
             finish(failure);
         }
+    }
+
+    private static Object field(Object target, String name) throws ReflectiveOperationException {
+        var field = target.getClass()
+            .getDeclaredField(name);
+        field.setAccessible(true);
+        return field.get(target);
     }
 
     private static void require(boolean condition, String reason) {

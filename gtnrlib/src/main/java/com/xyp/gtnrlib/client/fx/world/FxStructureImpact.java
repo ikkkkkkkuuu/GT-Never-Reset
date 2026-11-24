@@ -1,4 +1,7 @@
-package com.xyp.gtneverreset.client.projector;
+package com.xyp.gtnrlib.client.fx.world;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
@@ -10,25 +13,26 @@ import net.minecraft.world.World;
 
 import org.lwjgl.opengl.GL11;
 
-import com.xyp.gtneverreset.common.projector.ProjectorDeployment;
+import com.xyp.gtnrlib.animation.StructureDeployment;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-final class ProjectorDeploymentImpact {
+final class FxStructureImpact {
 
     private static final int[] DUST_WAVE_TICKS = { 0, 6, 14 };
     private static final int SHAKE_TICKS = 16;
     static final int TAIL_TICKS = SHAKE_TICKS;
     private static final double SHAKE_RANGE = 36;
+    private static final Set<FxStructureImpact> SHAKING = new LinkedHashSet<>();
 
     private final World world;
-    private final ProjectorDeployment bounds;
+    private final StructureDeployment bounds;
     private final long startTick;
     private int nextWave;
 
-    ProjectorDeploymentImpact(World world, ProjectorDeployment bounds, long startTick) {
+    FxStructureImpact(World world, StructureDeployment bounds, long startTick) {
         this.world = world;
         this.bounds = bounds;
         this.startTick = startTick;
@@ -40,6 +44,7 @@ final class ProjectorDeploymentImpact {
         world.playSound(x, bounds.minY(), z, "random.anvil_land", 1.30f, 0.55f, false);
         world.playSound(x, bounds.minY(), z, "random.explode", 1.50f, 0.65f, false);
         tick(Minecraft.getMinecraft());
+        SHAKING.add(this);
     }
 
     long age() {
@@ -58,7 +63,23 @@ final class ProjectorDeploymentImpact {
         }
     }
 
-    void shake(Entity camera, float partial) {
+    void close() {
+        SHAKING.remove(this);
+    }
+
+    static void shakeCamera(float partial) {
+        if (SHAKING.isEmpty()) return;
+        Minecraft minecraft = Minecraft.getMinecraft();
+        Entity camera = minecraft.renderViewEntity;
+        var iterator = SHAKING.iterator();
+        while (iterator.hasNext()) {
+            FxStructureImpact impact = iterator.next();
+            if (impact.world != minecraft.theWorld || impact.age() >= SHAKE_TICKS) iterator.remove();
+            else if (camera != null) impact.shake(camera, partial);
+        }
+    }
+
+    private void shake(Entity camera, float partial) {
         double age = age() + partial;
         if (age < 0 || age >= SHAKE_TICKS) return;
         double x = camera.prevPosX + (camera.posX - camera.prevPosX) * partial;

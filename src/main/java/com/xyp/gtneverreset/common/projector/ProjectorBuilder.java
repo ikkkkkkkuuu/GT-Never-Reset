@@ -28,6 +28,7 @@ import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket;
 import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket.Phase;
 import com.xyp.gtneverreset.config.ProjectorConfig;
 import com.xyp.gtneverreset.config.ToolsConfig;
+import com.xyp.gtnrlib.animation.StructureDeployment;
 import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -177,7 +178,7 @@ public final class ProjectorBuilder {
         private boolean supplementing, completed, retryable;
         private IntArrayList[] bands;
         private long nextBandTick, nextSpectatorRefresh;
-        private ProjectorDeployment deployment;
+        private StructureDeployment deployment;
         private long deploymentId;
         private ProjectorDeploymentPacket deploymentStart;
         private List<EntityPlayerMP> spectators;
@@ -386,9 +387,8 @@ public final class ProjectorBuilder {
             stage = Stage.PLACE;
             if (supplementing || bounds[3] == Integer.MIN_VALUE || plan.buildStyle == StructureDeploymentStyle.NONE)
                 return true;
-            deployment = deploymentAt(now + ProjectorDeployment.START_DELAY_TICKS);
-            nextBandTick = deployment.startTick()
-                + (plan.buildStyle.segmented() ? plan.buildStyle.bandReadyTick(0) : ProjectorDeployment.IMPACT_TICK);
+            deployment = deploymentAt(now + StructureDeployment.START_DELAY_TICKS);
+            nextBandTick = deployment.startTick() + plan.buildStyle.bandReadyTick(0);
             deploymentId = ++INSTANCE.nextDeploymentId;
             spectators = new ArrayList<>();
             deploymentStart = new ProjectorDeploymentPacket(
@@ -401,8 +401,8 @@ public final class ProjectorBuilder {
             return true;
         }
 
-        private ProjectorDeployment deploymentAt(long startTick) {
-            return new ProjectorDeployment(
+        private StructureDeployment deploymentAt(long startTick) {
+            return new StructureDeployment(
                 startTick,
                 bounds[0],
                 bounds[1],

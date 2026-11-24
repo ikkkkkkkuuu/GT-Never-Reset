@@ -27,7 +27,8 @@ public enum StructureDeploymentStyle {
         return switch (this) {
             case REVEAL -> REVEAL_SOLID_TICKS + band * REVEAL_BAND_TICKS;
             case FLIGHT -> FLIGHT_TRAVEL_TICKS + band * FLIGHT_BAND_TICKS;
-            default -> 0;
+            case SUMMON -> StructureDeployment.IMPACT_TICK;
+            case NONE -> 0;
         };
     }
 

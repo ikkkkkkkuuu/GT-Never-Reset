@@ -1,12 +1,11 @@
-package com.xyp.gtneverreset.common.projector;
+package com.xyp.gtnrlib.animation;
 
 import net.minecraft.util.MathHelper;
 
 import com.github.bsideup.jabel.Desugar;
-import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 @Desugar
-public record ProjectorDeployment(long startTick, int minX, int minY, int minZ, int maxX, int maxZ, int openingY) {
+public record StructureDeployment(long startTick, int minX, int minY, int minZ, int maxX, int maxZ, int openingY) {
 
     public static final int START_DELAY_TICKS = 2;
     public static final int OPEN_TICKS = 16;

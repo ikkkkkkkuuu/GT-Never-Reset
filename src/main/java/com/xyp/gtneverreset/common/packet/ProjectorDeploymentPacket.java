@@ -8,8 +8,8 @@ import net.minecraft.nbt.NBTSizeTracker;
 import net.minecraft.nbt.NBTTagCompound;
 
 import com.xyp.gtneverreset.client.projector.ProjectorDeploymentRenderer;
-import com.xyp.gtneverreset.common.projector.ProjectorDeployment;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
+import com.xyp.gtnrlib.animation.StructureDeployment;
 import com.xyp.gtnrlib.network.ClientboundPacket;
 
 import cpw.mods.fml.relauncher.Side;
@@ -22,7 +22,7 @@ public final class ProjectorDeploymentPacket extends ClientboundPacket {
 
     private long id;
     private int dimension;
-    private ProjectorDeployment deployment;
+    private StructureDeployment deployment;
     private NBTTagCompound plan;
     private boolean batch;
     private int finishedBands;
@@ -30,7 +30,7 @@ public final class ProjectorDeploymentPacket extends ClientboundPacket {
 
     public ProjectorDeploymentPacket() {}
 
-    public ProjectorDeploymentPacket(long id, int dimension, ProjectorDeployment deployment, ProjectorPlan plan,
+    public ProjectorDeploymentPacket(long id, int dimension, StructureDeployment deployment, ProjectorPlan plan,
         boolean batch) {
         this.id = id;
         this.dimension = dimension;
@@ -60,7 +60,7 @@ public final class ProjectorDeploymentPacket extends ClientboundPacket {
         phase = Phase.values()[phaseId];
         if (phase == Phase.PROGRESS) finishedBands = buffer.readUnsignedByte();
         if (phase != Phase.START) return;
-        deployment = new ProjectorDeployment(
+        deployment = new StructureDeployment(
             buffer.readLong(),
             buffer.readInt(),
             buffer.readInt(),

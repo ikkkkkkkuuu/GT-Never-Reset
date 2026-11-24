@@ -1,24 +1,20 @@
 package com.xyp.gtneverreset.client.projector;
 
-import java.nio.DoubleBuffer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.entity.Entity;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 
-import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket.Phase;
 import com.xyp.gtneverreset.common.projector.ProjectorBatch;
-import com.xyp.gtneverreset.common.projector.ProjectorDeployment;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
+import com.xyp.gtnrlib.animation.StructureDeployment;
 import com.xyp.gtnrlib.client.fx.world.FxBlockMesh;
 import com.xyp.gtnrlib.client.fx.world.FxCamera;
 import com.xyp.gtnrlib.client.fx.world.FxStructureDeployment;
@@ -30,16 +26,13 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class ProjectorDeploymentRenderer {
 
-    private static final int FINISH_GRACE_TICKS = 8;
     private static final long COMPILE_NANOS = 3_000_000L;
     private static final long LAYOUT_NANOS = 2_000_000L;
-    private static final double CIRCLE_DEGREES_PER_TICK = 2.4;
     private static final Map<Long, Presentation> ACTIVE = new LinkedHashMap<>();
-    private static final DoubleBuffer PORTAL_PLANE = BufferUtils.createDoubleBuffer(4);
 
     private ProjectorDeploymentRenderer() {}
 
-    public static void receive(Minecraft minecraft, long id, int dimension, Phase phase, ProjectorDeployment animation,
+    public static void receive(Minecraft minecraft, long id, int dimension, Phase phase, StructureDeployment animation,
         NBTTagCompound data, boolean batch, int finishedBands) {
         var connection = minecraft.getNetHandler();
         var world = minecraft.theWorld;
@@ -58,30 +51,22 @@ public final class ProjectorDeploymentRenderer {
         });
     }
 
-    private static void start(long id, World world, ProjectorDeployment animation, ProjectorPlan plan, boolean batch) {
+    private static void start(long id, World world, StructureDeployment animation, ProjectorPlan plan, boolean batch) {
         ACTIVE.putIfAbsent(id, new Presentation(world, animation, plan, batch));
     }
 
     private static void update(long id, Phase phase, int finishedBands) {
         Presentation presentation = ACTIVE.get(id);
         if (presentation == null) return;
-        long now = presentation.world.getTotalWorldTime();
         switch (phase) {
-            case IMPACT -> {
-                if (presentation.impact == null) presentation.impact = new ProjectorDeploymentImpact(
-                    presentation.world,
-                    presentation.animation,
-                    now);
-            }
-            case COMPLETE -> presentation.finishedTick = now;
-            case PROGRESS -> {
-                if (presentation.segmented != null)
-                    presentation.segmented.progress(finishedBands, now - presentation.animation.startTick());
-            }
+            case IMPACT -> presentation.effects.impact();
+            case COMPLETE -> presentation.effects.complete();
+            case PROGRESS -> presentation.effects.progress(finishedBands);
             case CANCEL -> {
-                if (presentation.impact == null) ACTIVE.remove(id).mesh.release();
-                else {
-                    presentation.finishedTick = now;
+                if (!presentation.effects.cancel()) {
+                    ACTIVE.remove(id);
+                    presentation.release();
+                } else {
                     presentation.unavailable = true;
                     presentation.model = null;
                     presentation.mesh.release();
@@ -91,19 +76,8 @@ public final class ProjectorDeploymentRenderer {
         }
     }
 
-    public static void shakeCamera(float partialTicks) {
-        if (ACTIVE.isEmpty()) return;
-        Minecraft minecraft = Minecraft.getMinecraft();
-        Entity camera = minecraft.renderViewEntity;
-        if (camera == null) return;
-        for (Presentation presentation : ACTIVE.values()) {
-            if (presentation.world == minecraft.theWorld && presentation.impact != null)
-                presentation.impact.shake(camera, partialTicks);
-        }
-    }
-
     static void clear() {
-        for (Presentation presentation : ACTIVE.values()) presentation.mesh.release();
+        for (Presentation presentation : ACTIVE.values()) presentation.release();
         ACTIVE.clear();
     }
 
@@ -127,20 +101,13 @@ public final class ProjectorDeploymentRenderer {
             .iterator();
         while (iterator.hasNext()) {
             Presentation presentation = iterator.next();
-            long now = world.getTotalWorldTime();
-            long age = now - presentation.animation.startTick();
-            if (world != presentation.world || presentation.finishedTick >= 0
-                && now - presentation.finishedTick >= FINISH_GRACE_TICKS
-                && (presentation.segmented != null
-                    || age >= ProjectorDeployment.IMPACT_TICK + ProjectorDeployment.CLOSE_TICKS)
-                && (presentation.impact == null || presentation.impact.age() >= ProjectorDeploymentImpact.TAIL_TICKS)) {
-                presentation.mesh.release();
+            if (world != presentation.world || presentation.effects.expired()) {
+                presentation.release();
                 iterator.remove();
                 continue;
             }
             presentation.prepare();
-            if (presentation.segmented == null && age >= 0 && age < ProjectorDeployment.OPEN_TICKS) presentation.open();
-            if (presentation.impact != null) presentation.impact.tick(Minecraft.getMinecraft());
+            presentation.effects.tick(Minecraft.getMinecraft());
         }
     }
 
@@ -148,79 +115,17 @@ public final class ProjectorDeploymentRenderer {
         long compileDeadline = System.nanoTime() + COMPILE_NANOS;
         for (Presentation presentation : ACTIVE.values()) {
             if (presentation.world != minecraft.theWorld) continue;
-            double age = presentation.world.getTotalWorldTime() - presentation.animation.startTick() + partial;
-            if (presentation.impact != null) age = Math.max(age, ProjectorDeployment.IMPACT_TICK);
-            GL11.glPushAttrib(
-                GL11.GL_ENABLE_BIT | GL11.GL_DEPTH_BUFFER_BIT
-                    | GL11.GL_COLOR_BUFFER_BIT
-                    | GL11.GL_CURRENT_BIT
-                    | GL11.GL_POLYGON_BIT
-                    | GL11.GL_LINE_BIT
-                    | GL11.GL_TRANSFORM_BIT
-                    | GL11.GL_TEXTURE_BIT);
-            try {
-                long remaining = compileDeadline - System.nanoTime();
-                if (presentation.model != null && remaining > 0) presentation.mesh.compile(remaining);
-                if (age < 0) continue;
-                if (presentation.segmented != null) {
-                    if (presentation.model != null) {
-                        prepareStructureRendering(minecraft);
-                        presentation.segmented.draw(
-                            age,
-                            cameraX,
-                            cameraZ,
-                            (x, y, z) -> drawModels(presentation, x, y, z, cameraX, cameraY, cameraZ));
-                    }
-                } else {
-                    if (age >= ProjectorDeployment.OPEN_TICKS && presentation.model != null)
-                        drawStructure(minecraft, presentation, age, cameraX, cameraY, cameraZ);
-                    float scale = presentation.animation.circleScale(age);
-                    if (scale > 0) drawCircle(presentation.animation, age, scale, cameraX, cameraY, cameraZ);
-                }
-            } finally {
-                GL11.glPopAttrib();
-            }
+            boolean hasModel = presentation.model != null;
+            presentation.effects.render(
+                minecraft,
+                partial,
+                cameraX,
+                cameraY,
+                cameraZ,
+                hasModel ? presentation.mesh : null,
+                compileDeadline - System.nanoTime(),
+                hasModel ? (x, y, z) -> drawModels(presentation, x, y, z, cameraX, cameraY, cameraZ) : null);
         }
-    }
-
-    private static void prepareStructureRendering(Minecraft minecraft) {
-        minecraft.getTextureManager()
-            .bindTexture(TextureMap.locationBlocksTexture);
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glDisable(GL11.GL_BLEND);
-        GL11.glEnable(GL11.GL_ALPHA_TEST);
-        GL11.glAlphaFunc(GL11.GL_GREATER, 0.1f);
-        GL11.glEnable(GL11.GL_CULL_FACE);
-        GL11.glCullFace(GL11.GL_BACK);
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthFunc(GL11.GL_LESS);
-        GL11.glDepthMask(true);
-        GL11.glColor4f(1, 1, 1, 1);
-    }
-
-    private static void drawStructure(Minecraft minecraft, Presentation presentation, double age, double cameraX,
-        double cameraY, double cameraZ) {
-        prepareStructureRendering(minecraft);
-        ProjectorDeployment animation = presentation.animation;
-        double offset = animation.verticalOffset(age);
-        if (age < ProjectorDeployment.IMPACT_TICK) {
-            PORTAL_PLANE.clear();
-            PORTAL_PLANE.put(0)
-                .put(-1)
-                .put(0)
-                .put(animation.openingY() - cameraY)
-                .flip();
-            GL11.glClipPlane(GL11.GL_CLIP_PLANE0, PORTAL_PLANE);
-            GL11.glEnable(GL11.GL_CLIP_PLANE0);
-        } else {
-            // Real blocks already rendered by the terrain pass take precedence at the landing position.
-            GL11.glEnable(GL11.GL_POLYGON_OFFSET_FILL);
-            GL11.glPolygonOffset(1, 1);
-        }
-        drawModels(presentation, 0, offset, 0, cameraX, cameraY, cameraZ);
-        GL11.glDisable(GL11.GL_CLIP_PLANE0);
-        GL11.glDisable(GL11.GL_POLYGON_OFFSET_FILL);
     }
 
     private static void drawModels(Presentation presentation, double offsetX, double offsetY, double offsetZ,
@@ -260,58 +165,28 @@ public final class ProjectorDeploymentRenderer {
         }
     }
 
-    private static void drawCircle(ProjectorDeployment animation, double age, float scale, double cameraX,
-        double cameraY, double cameraZ) {
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        GL11.glDisable(GL11.GL_ALPHA_TEST);
-        GL11.glDisable(GL11.GL_CULL_FACE);
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GL11.glDepthFunc(GL11.GL_LEQUAL);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glDepthMask(false);
-        GL11.glPushMatrix();
-        try {
-            GL11.glTranslated(
-                animation.centerX() - cameraX,
-                animation.openingY() - cameraY,
-                animation.centerZ() - cameraZ);
-            GL11.glScaled(animation.radius() * scale, 1, animation.radius() * scale);
-            GL11.glRotated(age * CIRCLE_DEGREES_PER_TICK % 360, 0, 1, 0);
-            ProjectorSummoningCircle.draw();
-        } finally {
-            GL11.glPopMatrix();
-        }
-    }
-
     private static final class Presentation {
 
         private final World world;
-        private final ProjectorDeployment animation;
         private final ProjectorPlan plan;
         private final boolean batch;
-        private final FxStructureDeployment segmented;
+        private final FxStructureDeployment effects;
         private final ProjectorModelMesh mesh = new ProjectorModelMesh();
         private ProjectorStructure template, model;
         private ProjectorBatch.Layout layout;
-        private long finishedTick = -1;
-        private boolean repeatedModel, opened, unavailable;
-        private ProjectorDeploymentImpact impact;
+        private boolean repeatedModel, unavailable;
         private double modelRadius;
 
-        private Presentation(World world, ProjectorDeployment animation, ProjectorPlan plan, boolean batch) {
+        private Presentation(World world, StructureDeployment animation, ProjectorPlan plan, boolean batch) {
             this.world = world;
-            this.animation = animation;
             this.plan = plan;
             this.batch = batch;
-            segmented = plan.buildStyle.segmented()
-                ? new FxStructureDeployment(
-                    plan.buildStyle,
-                    animation.bandsAlongX(),
-                    animation.bandMin(),
-                    animation.bandMax())
-                : null;
+            effects = new FxStructureDeployment(world, plan.buildStyle, animation);
+        }
+
+        private void release() {
+            effects.close();
+            mesh.release();
         }
 
         private void prepare() {
@@ -346,17 +221,5 @@ public final class ProjectorDeploymentRenderer {
             mesh.prepare(model);
         }
 
-        private void open() {
-            if (opened) return;
-            opened = true;
-            world.playSound(
-                animation.centerX(),
-                animation.openingY(),
-                animation.centerZ(),
-                "random.orb",
-                0.65f,
-                0.45f,
-                false);
-        }
     }
 }

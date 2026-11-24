@@ -17,9 +17,9 @@ import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket;
 import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket.Phase;
 import com.xyp.gtneverreset.common.projector.ProjectorBuilder;
-import com.xyp.gtneverreset.common.projector.ProjectorDeployment;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
+import com.xyp.gtnrlib.animation.StructureDeployment;
 import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -95,13 +95,13 @@ public final class ProjectorDeploymentServerChecks {
             if (!(world.getTileEntity(plan.x, Y, plan.z) instanceof IGregTechTileEntity tile)) return;
             require(tile.getMetaTileID() == plan.machine, "projector placed the wrong controller");
             int delay = switch (plan.buildStyle) {
-                case SUMMON -> ProjectorDeployment.IMPACT_TICK;
+                case SUMMON -> StructureDeployment.IMPACT_TICK;
                 case REVEAL, FLIGHT -> plan.buildStyle.bandReadyTick(0);
                 case NONE -> 0;
             };
             require(elapsed >= delay, "projector skipped the animation wait for " + plan.buildStyle);
             if (elapsed < 42) return;
-            var bounds = new ProjectorDeployment(start, plan.x - 1, Y, plan.z, plan.x + 2, plan.z + 3, Y + 19);
+            var bounds = new StructureDeployment(start, plan.x - 1, Y, plan.z, plan.x + 2, plan.z + 3, Y + 19);
             checkPacket(new ProjectorDeploymentPacket(1, 0, bounds, plan, false));
             checkPacket(new ProjectorDeploymentPacket(1, 0, Phase.IMPACT));
             checkPacket(new ProjectorDeploymentPacket(1, 0, Phase.COMPLETE));
