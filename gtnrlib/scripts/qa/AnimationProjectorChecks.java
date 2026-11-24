@@ -29,9 +29,8 @@ import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.viewport.GuiViewportStack;
 import com.gtnewhorizon.gtnhlib.compat.BaublesCompat;
 import com.mojang.authlib.GameProfile;
+import com.xyp.gtneverreset.client.projector.ProjectorClient;
 import com.xyp.gtneverreset.client.projector.ProjectorGui;
-import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtneverreset.common.packet.OpenProjectorPacket;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
@@ -59,7 +58,7 @@ public final class AnimationProjectorChecks {
     private final File output = new File(System.getProperty("gtnrlib.projector.arm.qa.output", "."));
     private final AtomicReference<Runnable> serverTask = new AtomicReference<>();
     private volatile Throwable failure;
-    private boolean launched, finished;
+    private boolean launched, finished, raisedBeforeGui;
     private int ticks, stage, entered;
 
     @Mod.EventHandler
@@ -113,7 +112,7 @@ public final class AnimationProjectorChecks {
 
     @SubscribeEvent
     public void render(TickEvent.RenderTickEvent event) {
-        if (finished || event.phase != TickEvent.Phase.END || ticks - entered < 20) return;
+        if (finished || event.phase != TickEvent.Phase.END || stage != 2 && ticks - entered < 20) return;
         var mc = Minecraft.getMinecraft();
         if (mc.thePlayer == null) return;
         try {
@@ -128,24 +127,45 @@ public final class AnimationProjectorChecks {
                     require(
                         HmiFirstPerson.INSTANCE.handheldTool() instanceof ProjectorArmAnimation,
                         "held projector uses the animated arm rig");
-                    GTNRLibConfig.enableFirstPersonAnimations = false;
                     capture(mc, "projector-first-person");
+                    ProjectorClient.open(0);
                     advance();
                 }
                 case 2 -> {
+                    if (!ModularScreen.isActive("gtneverreset", "multiblock_projector")) {
+                        if (!raisedBeforeGui && ticks - entered >= 7 && mc.currentScreen == null) {
+                            capture(mc, "projector-raising-held");
+                            raisedBeforeGui = true;
+                        }
+                        return;
+                    }
+                    require(raisedBeforeGui, "raised-arm presentation begins before the GUI covers the view");
+                    if (ticks - entered < 12) return;
+                    capture(mc, "projector-held-gui-first-person");
+                    mc.thePlayer.closeScreen();
+                    advance();
+                }
+                case 3 -> {
+                    require(mc.currentScreen == null, "held-terminal GUI closed");
+                    capture(mc, "projector-reset-held");
+                    GTNRLibConfig.enableFirstPersonAnimations = false;
+                    advance();
+                }
+                case 4 -> {
                     capture(mc, "projector-vanilla-first-person");
                     GTNRLibConfig.enableFirstPersonAnimations = true;
                     mc.displayGuiScreen(new GuiInventory(mc.thePlayer));
                     advance();
                 }
-                case 3 -> {
+                case 5 -> {
                     require(mc.currentScreen instanceof GuiInventory, "player inventory was displayed");
                     capture(mc, "projector-inventory");
                     mc.thePlayer.closeScreen();
                     mc.gameSettings.thirdPersonView = 2;
                     advance();
                 }
-                case 4 -> {
+                case 6 -> {
+                    require(rightArmPitch(mc) > -.24f, "held terminal uses the normal third-person resting arm");
                     capture(mc, "projector-held-third-person");
                     String name = mc.thePlayer.getCommandSenderName();
                     serverTask.set(() -> {
@@ -169,7 +189,7 @@ public final class AnimationProjectorChecks {
                     });
                     advance();
                 }
-                case 5 -> {
+                case 7 -> {
                     if (held != null || !ProjectorArmAnimation.wearsProjector(mc.thePlayer)) return;
                     capture(mc, "projector-worn-third-person");
                     mc.gameSettings.thirdPersonView = 0;
@@ -178,26 +198,33 @@ public final class AnimationProjectorChecks {
                         var stack = baubles.getStackInSlot(slot);
                         if (stack != null
                             && stack.getItem() == GameRegistry.findItem("gtneverreset", "multiblock_projector")) {
-                            NetWorkHandler.sendToServer(new OpenProjectorPacket(-slot - 1));
+                            ProjectorClient.open(-slot - 1);
                             break;
                         }
                     }
                     advance();
                 }
-                case 6 -> {
-                    if (!ModularScreen.isActive("gtneverreset", "multiblock_projector")) return;
+                case 8 -> {
+                    if (!ModularScreen.isActive("gtneverreset", "multiblock_projector")) {
+                        require(ticks - entered < 60, "worn terminal GUI did not open");
+                        return;
+                    }
                     require(
                         ModularScreen.getCurrent()
                             .shouldDrawDarkBackground(),
                         "original GUI backdrop preserved");
                     var lens = ProjectorHologramRenderer.class.getDeclaredField("lensVisible");
                     lens.setAccessible(true);
-                    if (!lens.getBoolean(null)) return;
+                    if (!lens.getBoolean(null)) {
+                        if (ticks - entered >= 60) capture(mc, "projector-worn-qa-debug");
+                        require(ticks - entered < 60, "worn terminal GUI opened without a visible lens sample");
+                        return;
+                    }
                     capture(mc, "projector-gui-first-person");
                     mc.gameSettings.thirdPersonView = 2;
                     advance();
                 }
-                case 7 -> {
+                case 9 -> {
                     require(
                         ModularScreen.isActive("gtneverreset", "multiblock_projector"),
                         "projector interface stayed open");
@@ -207,7 +234,7 @@ public final class AnimationProjectorChecks {
                     mc.thePlayer.closeScreen();
                     advance();
                 }
-                case 8 -> {
+                case 10 -> {
                     require(
                         !ModularScreen.isActive("gtneverreset", "multiblock_projector"),
                         "projector interface closed");
@@ -216,13 +243,13 @@ public final class AnimationProjectorChecks {
                     showObserverView(mc);
                     advance();
                 }
-                case 9 -> {
+                case 11 -> {
                     capture(mc, "projector-observer");
                     mc.theWorld.removeEntityFromWorld(-147);
                     mc.displayGuiScreen(new ModelGallery());
                     advance();
                 }
-                case 10 -> {
+                case 12 -> {
                     capture(mc, "projector-model-angles");
                     finish(mc, null);
                 }

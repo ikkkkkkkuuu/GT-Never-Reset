@@ -24,8 +24,6 @@ import com.gtnewhorizon.gtnhlib.compat.BaublesCompat;
 import com.gtnewhorizon.gtnhlib.util.AboveHotbarHUD;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.common.item.items.MultiblockProjector;
-import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtneverreset.common.packet.OpenProjectorPacket;
 import com.xyp.gtneverreset.common.projector.ProjectorOrientation;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
@@ -264,7 +262,7 @@ public class ProjectorInput {
     private static void openAnywhere(EntityPlayer player) {
         ItemStack held = player.getCurrentEquippedItem();
         if (held != null && held.getItem() instanceof MultiblockProjector) {
-            NetWorkHandler.sendToServer(new OpenProjectorPacket(0));
+            ProjectorClient.open(0);
             return;
         }
         IInventory worn = BaublesCompat.getBaubles(player);
@@ -272,7 +270,7 @@ public class ProjectorInput {
         for (int slot = 0; slot < worn.getSizeInventory(); slot++) {
             ItemStack stack = worn.getStackInSlot(slot);
             if (stack != null && stack.getItem() instanceof MultiblockProjector) {
-                NetWorkHandler.sendToServer(new OpenProjectorPacket(-slot - 1));
+                ProjectorClient.open(-slot - 1);
                 return;
             }
         }

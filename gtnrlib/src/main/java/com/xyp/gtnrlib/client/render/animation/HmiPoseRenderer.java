@@ -80,7 +80,7 @@ public final class HmiPoseRenderer {
     }
 
     public static boolean render(ItemRenderer renderer, ItemStack stack, float partial, float dip) {
-        return ProjectorArmAnimation.renderRaisedFirstPerson(partial, dip)
+        return ProjectorArmAnimation.renderRaisedFirstPerson(stack, partial, dip)
             || !FirstPersonAnimations.INSTANCE.applies(stack) && MAIN.renderHand(renderer, stack, partial, dip);
     }
 

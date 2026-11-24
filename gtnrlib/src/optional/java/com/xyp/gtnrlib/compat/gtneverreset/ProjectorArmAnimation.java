@@ -20,6 +20,7 @@ import org.lwjgl.opengl.GL12;
 
 import com.cleanroommc.modularui.screen.ModularScreen;
 import com.gtnewhorizon.gtnhlib.compat.BaublesCompat;
+import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.client.render.animation.FirstPersonArmRenderer;
 import com.xyp.gtnrlib.client.render.animation.ProjectorArmModel;
@@ -36,10 +37,14 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class ProjectorArmAnimation implements IItemRenderer, HmiItemBindings.TwoHandedModel {
 
+    private static final int LIFT_LEAD_TICKS = 8;
+    private static final int OPEN_RESPONSE_TICKS = 20;
     private static final Pose LOCAL = new Pose();
     private static final Map<Integer, Pose> REMOTE = new HashMap<>();
     private static Item projector;
     private static ItemStack activeStack;
+    private static Runnable openRequest;
+    private static int openDelay, responseTicks;
     private static World world;
     private static float renderPartial;
 
@@ -67,12 +72,27 @@ public final class ProjectorArmAnimation implements IItemRenderer, HmiItemBindin
     public void renderGripped(ItemStack stack, IItemRenderer renderer, float partial, HmiItemBindings.GripHands hands) {
         GL11.glPushMatrix();
         try {
-            GL11.glTranslatef(.32f, .02f, -1.38f);
-            orientForearm();
+            mountFirstPersonArm(LOCAL.sample(partial));
             hands.draw(false);
         } finally {
             GL11.glPopMatrix();
         }
+    }
+
+    public static void requestOpen(ItemStack stack, Runnable sendRequest) {
+        var mc = Minecraft.getMinecraft();
+        if (!GTNRLibConfig.enableFirstPersonAnimations || mc.thePlayer == null
+            || mc.thePlayer.isInvisible()
+            || mc.currentScreen != null
+            || !isProjector(stack)) {
+            sendRequest.run();
+            return;
+        }
+        resetWorld(mc.theWorld);
+        if (openRequest != null || responseTicks > 0) return;
+        activeStack = stack;
+        openDelay = LIFT_LEAD_TICKS;
+        openRequest = sendRequest;
     }
 
     public static void receivePose(Minecraft minecraft, int entity, int dimension, boolean open) {
@@ -96,8 +116,10 @@ public final class ProjectorArmAnimation implements IItemRenderer, HmiItemBindin
         var mc = Minecraft.getMinecraft();
         resetWorld(mc.theWorld);
         var player = mc.thePlayer;
-        LOCAL.open = player != null && projectionOpen();
-        if (LOCAL.open) {
+        boolean visible = player != null && projectionOpen();
+        advanceOpenRequest(mc, visible);
+        LOCAL.open = visible || openRequest != null || responseTicks > 0;
+        if (visible) {
             ItemStack held = player.getHeldItem();
             activeStack = isProjector(held) ? held : wornProjector(player);
             if (activeStack == null) {
@@ -116,6 +138,20 @@ public final class ProjectorArmAnimation implements IItemRenderer, HmiItemBindin
             });
     }
 
+    private static void advanceOpenRequest(Minecraft mc, boolean visible) {
+        if (visible || mc.thePlayer == null || mc.currentScreen != null) {
+            openRequest = null;
+            responseTicks = 0;
+        } else if (openRequest != null && --openDelay == 0) {
+            Runnable send = openRequest;
+            openRequest = null;
+            responseTicks = OPEN_RESPONSE_TICKS;
+            send.run();
+        } else if (responseTicks > 0) {
+            responseTicks--;
+        }
+    }
+
     @SubscribeEvent
     public void frame(TickEvent.RenderTickEvent event) {
         if (event.phase == TickEvent.Phase.START) {
@@ -124,14 +160,16 @@ public final class ProjectorArmAnimation implements IItemRenderer, HmiItemBindin
         }
     }
 
-    public static boolean renderRaisedFirstPerson(float partial, float dip) {
+    public static boolean renderRaisedFirstPerson(ItemStack rendered, float partial, float dip) {
         var mc = Minecraft.getMinecraft();
-        if (!GTNRLibConfig.enableFirstPersonAnimations || activeStack == null
-            || mc.thePlayer == null
-            || mc.thePlayer.isInvisible()
-            || mc.gameSettings.thirdPersonView != 0) return false;
+        var player = mc.thePlayer;
+        if (!GTNRLibConfig.enableFirstPersonAnimations || player == null
+            || player.isInvisible()
+            || mc.gameSettings.thirdPersonView != 0
+            || isProjector(rendered) && HmiFirstPerson.INSTANCE.enabled()) return false;
         float progress = LOCAL.sample(partial);
-        if (progress <= .001f) return false;
+        ItemStack stack = progress > .001f ? activeStack : rendered == null ? wornProjector(player) : null;
+        if (stack == null) return false;
         GL11.glPushAttrib(
             GL11.GL_CURRENT_BIT | GL11.GL_TEXTURE_BIT
                 | GL11.GL_ENABLE_BIT
@@ -140,14 +178,11 @@ public final class ProjectorArmAnimation implements IItemRenderer, HmiItemBindin
         GL11.glPushMatrix();
         try {
             GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-            GL11.glTranslatef(.30f + .35f * progress, -.34f - .125f * progress - .15f * dip, -1.39f);
-            float distanceScale = 1 - .15f * progress;
-            GL11.glScalef(distanceScale, distanceScale, distanceScale);
-            GL11.glRotatef(54 + 29 * progress, 0, 0, 1);
-            GL11.glRotatef(-30 + 10 * progress, 1, 0, 0);
-            GL11.glRotatef(166 - 12 * progress, 0, 1, 0);
+            // Match the standing HMI camera frame so opening does not switch to a different wrist position.
+            GL11.glTranslatef(0, -.35f - .27f * dip, .20f);
+            mountFirstPersonArm(progress);
             GL11.glTranslatef(6f / 16, -10f / 16, 0);
-            FirstPersonArmRenderer.render(false, 0, activeStack);
+            FirstPersonArmRenderer.render(false, 0, stack);
         } finally {
             GL11.glPopMatrix();
             GL11.glPopAttrib();
@@ -205,6 +240,8 @@ public final class ProjectorArmAnimation implements IItemRenderer, HmiItemBindin
         if (world == next) return;
         world = next;
         activeStack = null;
+        openRequest = null;
+        responseTicks = 0;
         LOCAL.open = false;
         LOCAL.previous = LOCAL.progress = 0;
         REMOTE.clear();
@@ -249,8 +286,8 @@ public final class ProjectorArmAnimation implements IItemRenderer, HmiItemBindin
                     GL11.glTranslatef(.5f, .5f, .5f);
                     GL11.glScalef(2.15f, 2.15f, 2.15f);
                     GL11.glRotatef(-45, 0, 1, 0);
-                    GL11.glTranslatef(-.25f, .23f, -.48f);
-                    orientForearm();
+                    GL11.glTranslatef(-.05f, -.05f, -.57f);
+                    orientForearm(0);
                     GL11.glTranslatef(6f / 16, -10f / 16, 0);
                     FirstPersonArmRenderer.render(false, 0, stack);
                 }
@@ -261,10 +298,15 @@ public final class ProjectorArmAnimation implements IItemRenderer, HmiItemBindin
         }
     }
 
-    private static void orientForearm() {
-        GL11.glRotatef(54, 0, 0, 1);
-        GL11.glRotatef(-30, 1, 0, 0);
-        GL11.glRotatef(166, 0, 1, 0);
+    private static void mountFirstPersonArm(float raise) {
+        GL11.glTranslatef(.53f - .45f * raise, -.22f + .34f * raise, -1.43f + .14f * raise);
+        orientForearm(raise);
+    }
+
+    private static void orientForearm(float raise) {
+        GL11.glRotatef(33 + 54 * raise, 0, 0, 1);
+        GL11.glRotatef(-29 + 10 * raise, 1, 0, 0);
+        GL11.glRotatef(166 - 12 * raise, 0, 1, 0);
     }
 
     private static void drawOnArm(ModelRenderer arm, boolean armored, float amount, boolean localView) {
@@ -281,6 +323,10 @@ public final class ProjectorArmAnimation implements IItemRenderer, HmiItemBindin
 
     private static boolean isProjector(ItemStack stack) {
         return projector != null && stack != null && stack.getItem() == projector;
+    }
+
+    public static boolean holdsProjector(EntityPlayer player) {
+        return isProjector(player.getHeldItem());
     }
 
     public static boolean wearsProjector(EntityPlayer player) {
