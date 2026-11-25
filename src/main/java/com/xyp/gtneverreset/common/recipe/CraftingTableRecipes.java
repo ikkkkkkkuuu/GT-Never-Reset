@@ -124,6 +124,12 @@ public final class CraftingTableRecipes {
         registerCompactAEMachineRecipes();
         registerStableEndCrystalRecipe();
         registerFragmentWorldCollectorRecipe();
+        GTModHandler.addCraftingRecipe(
+            GTNRItemList.CatalyticReformer.get(1),
+            GTModHandler.RecipeBits.BITS,
+            new Object[] { "MCM", "PHP", "MKM", 'M', OrePrefixes.pipeMedium.get(Materials.StainlessSteel), 'C',
+                OrePrefixes.circuit.get(Materials.HV), 'P', ItemList.Electric_Pump_HV.get(1), 'H',
+                ItemList.Hull_HV.get(1), 'K', OrePrefixes.cableGt02.get(Materials.Gold) });
         registerDisassemblerRecipes();
     }
 

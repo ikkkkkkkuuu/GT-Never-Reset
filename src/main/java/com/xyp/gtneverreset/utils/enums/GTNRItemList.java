@@ -44,6 +44,8 @@ public enum GTNRItemList implements IItemContainer {
     StableEndCrystal,
     ChaosCredential,
     ChaosStructureModule,
+    AluminiumSulfateDust,
+    Zsm5Plate,
 
     AdvancedIOBus,
     StockIOInterfacePart,
@@ -78,6 +80,7 @@ public enum GTNRItemList implements IItemContainer {
     MegaElectricBlastFurnace,
     UniversalJointFactory,
     HadronCatalyticRefinery,
+    CatalyticReformer,
     BottleInChaos,
     QuantumComputer,
     AssemblerMatrix,

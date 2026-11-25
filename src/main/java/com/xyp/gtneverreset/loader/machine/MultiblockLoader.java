@@ -8,6 +8,7 @@ import net.minecraft.util.StatCollector;
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
 import com.xyp.gtneverreset.common.machine.multiblock.BottleInChaos;
+import com.xyp.gtneverreset.common.machine.multiblock.CatalyticReformerController;
 import com.xyp.gtneverreset.common.machine.multiblock.HadronCatalyticRefinery;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeBeeBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeCropBreeder;
@@ -97,6 +98,15 @@ public final class MultiblockLoader {
                 GTNRMachineID.HadronCatalyticRefinery.id,
                 "gtneverreset.hadron_catalytic_refinery",
                 StatCollector.translateToLocal("gtnr.machine.hadron_catalytic_refinery.name")));
+        // #tr gtnr.machine.catalytic_reformer.name
+        // # Catalytic Reformer
+        // # zh_CN 催化重整机
+        register(
+            GTNRItemList.CatalyticReformer,
+            new CatalyticReformerController(
+                GTNRMachineID.CatalyticReformer.id,
+                "gtneverreset.catalytic_reformer",
+                StatCollector.translateToLocal("gtnr.machine.catalytic_reformer.name")));
         // #tr gtnr.machine.quantum_computer.name
         // # Quantum Computer
         // # zh_CN 量子计算机
