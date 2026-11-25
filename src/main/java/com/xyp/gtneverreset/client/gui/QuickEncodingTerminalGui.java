@@ -747,9 +747,9 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
         // work until drawScreen runs on the restored terminal; otherwise AE2's
         // init replaces both the search value and the selected entry.
         interfaceTerminal.clearHighlight();
-        if (interfaceSearch != null) pendingInterfaceSearch = interfaceSearch;
+        pendingInterfaceSearch = interfaceSearch;
         pendingTargetSelectionTicks = 0;
-        pendingAutoPlace = payload.shouldEncode();
+        pendingAutoPlace = interfaceSearch != null && payload.shouldEncode();
         Arrays.fill(patternScrollRows, 0);
         patternContainer.requestRecipeTransfer(payload);
         layoutPatternExtension();
@@ -1037,9 +1037,10 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
             return;
         }
         if (button == encodeButton) {
-            if (isAltDown() && !isShiftKeyDown() && !isCtrlKeyDown() && interfaceTerminal.highlightedTarget() != null) {
-                patternContainer.quickEncodeAction.send();
-                patternContainer.requestPlaceEncodedPattern(interfaceTerminal.highlightedTarget());
+            pendingAutoPlace = false;
+            InterfacePatternTarget target = interfaceTerminal.highlightedTarget();
+            if (isAltDown() && !isShiftKeyDown() && !isCtrlKeyDown() && target != null) {
+                patternContainer.requestEncodeAndPlacePattern(target);
             } else if (isShiftKeyDown()) {
                 patternContainer.quickEncodeAndMoveToInventoryAction.send(isCtrlKeyDown());
             } else {
