@@ -385,7 +385,6 @@ public final class CraftingMonitorTooltip {
             int y = Math.max(EDGE, Math.min(mouseY - PADDING, screenHeight - height - EDGE));
 
             SKIN.panel.draw(x, y, width, height);
-            Gui.drawRect(x + PADDING, y + 3, x + width - PADDING, y + 4, SKIN.highlight);
             for (int index = 0; index < lines.size(); index++) {
                 lines.get(index)
                     .draw(x + PADDING, y + PADDING + index * LINE_HEIGHT, width - 2 * PADDING, font);
@@ -427,15 +426,6 @@ public final class CraftingMonitorTooltip {
                         I18n.format("gtnr.gui.crafting_monitor.percent", percent),
                         LOOK.listText()));
                 lines.add(new Bar(formatMachineTime(progress, machine.duration()), fraction));
-                // #tr gtnr.gui.crafting_monitor.remaining
-                // # %s t left
-                // # zh_CN 剩余 %s t
-                lines.add(
-                    new Text(
-                        progress + " / " + machine.duration() + " t",
-                        LOOK.listText(),
-                        I18n.format("gtnr.gui.crafting_monitor.remaining", machine.duration() - progress),
-                        LOOK.listText()));
             } else if (!parallel.isEmpty()) {
                 lines.add(new Text(parallel, LOOK.listText()));
             }

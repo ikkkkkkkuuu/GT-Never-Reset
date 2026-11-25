@@ -56,7 +56,6 @@ gtnr.gui.crafting_monitor.additional=%s more targets
 gtnr.gui.crafting_monitor.actions=Right-click for machine and pattern actions
 gtnr.gui.crafting_monitor.parallel=Actual parallel: %s
 gtnr.gui.crafting_monitor.percent=This cycle: %s%%
-gtnr.gui.crafting_monitor.remaining=%s t left
 gtnr.gui.crafting_monitor.shutdown=Stop reason: %s
 gtnr.gui.crafting_monitor.running=Processing
 gtnr.gui.crafting_monitor.waiting=Waiting

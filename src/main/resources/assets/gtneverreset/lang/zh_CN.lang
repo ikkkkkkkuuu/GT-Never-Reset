@@ -56,7 +56,6 @@ gtnr.gui.crafting_monitor.additional=另有 %s 个目标
 gtnr.gui.crafting_monitor.actions=右键查看机器与样板操作
 gtnr.gui.crafting_monitor.parallel=实际并行：%s
 gtnr.gui.crafting_monitor.percent=本轮 %s%%
-gtnr.gui.crafting_monitor.remaining=剩余 %s t
 gtnr.gui.crafting_monitor.shutdown=停机原因：%s
 gtnr.gui.crafting_monitor.running=加工中
 gtnr.gui.crafting_monitor.waiting=等待中
