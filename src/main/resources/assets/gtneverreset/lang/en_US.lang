@@ -2137,6 +2137,7 @@ gtnr.machine.star_core_stripper.name=Star Core Stripper
 gtnr.machine.bottle_in_chaos.name=Bottle in Chaos
 gtnr.machine.large_ore_processor.name=Large Ore Processor
 gtnr.machine.large_furnace.name=Large Furnace
+gtnr.machine.large_steel_kiln.name=Large Steel Kiln
 gtnr.machine.universal_joint_factory.name=Universal Joint Factory
 gtnr.machine.hadron_catalytic_refinery.name=Hadron Catalytic Refinery
 gtnr.machine.catalytic_reformer.name=Catalytic Reformer

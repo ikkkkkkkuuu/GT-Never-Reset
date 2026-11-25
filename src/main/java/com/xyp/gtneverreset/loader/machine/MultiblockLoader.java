@@ -14,6 +14,7 @@ import com.xyp.gtneverreset.common.machine.multiblock.LargeBeeBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeCropBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeOreProcessor;
+import com.xyp.gtneverreset.common.machine.multiblock.LargeSteelKilnController;
 import com.xyp.gtneverreset.common.machine.multiblock.LightHunterSpaceStation;
 import com.xyp.gtneverreset.common.machine.multiblock.MegaElectricBlastFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.NexusSatelliteFactory;
@@ -80,6 +81,15 @@ public final class MultiblockLoader {
                 GTNRMachineID.LargeFurnace.id,
                 "gtneverreset.large_furnace",
                 StatCollector.translateToLocal("gtnr.machine.large_furnace.name")));
+        // #tr gtnr.machine.large_steel_kiln.name
+        // # Large Steel Kiln
+        // # zh_CN 大型炼钢窑
+        register(
+            GTNRItemList.LargeSteelKiln,
+            new LargeSteelKilnController(
+                GTNRMachineID.LargeSteelKiln.id,
+                "gtneverreset.large_steel_kiln",
+                StatCollector.translateToLocal("gtnr.machine.large_steel_kiln.name")));
         // #tr gtnr.machine.universal_joint_factory.name
         // # Universal Joint Factory
         // # zh_CN 通用联合工厂

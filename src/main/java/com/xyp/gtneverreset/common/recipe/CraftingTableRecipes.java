@@ -104,6 +104,13 @@ public final class CraftingTableRecipes {
             new Object[] { "AAA", " B ", " A ", 'A', new ItemStack(Blocks.planks, 1, 0), 'B',
                 new ItemStack(Items.wooden_pickaxe, 1, 0) });
 
+        GTModHandler.addCraftingRecipe(
+            GTNRItemList.LargeSteelKiln.get(1),
+            GTModHandler.RecipeBits.DO_NOT_CHECK_FOR_COLLISIONS,
+            new Object[] { "PCP", "FBF", "PHP", 'P', OrePrefixes.plate.get(Materials.Steel), 'C',
+                OrePrefixes.circuit.get(Materials.LV), 'F', ItemList.Casing_Firebricks.get(1), 'B',
+                ItemList.Machine_Bricked_BlastFurnace.get(1), 'H', ItemList.Hull_LV.get(1) });
+
         registerPackagedRecipes();
         registerWirelessTerminalRecipes(GTNRItemList.WirelessDualInterfaceTerminal.get(1));
         registerWirelessFrequencyCardRecipes();

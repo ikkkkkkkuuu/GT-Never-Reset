@@ -2137,6 +2137,7 @@ gtnr.machine.star_core_stripper.name=星核剥离装置
 gtnr.machine.bottle_in_chaos.name=混沌中瓶
 gtnr.machine.large_ore_processor.name=大型矿石处理机
 gtnr.machine.large_furnace.name=大型熔炉
+gtnr.machine.large_steel_kiln.name=大型炼钢窑
 gtnr.machine.universal_joint_factory.name=通用联合工厂
 gtnr.machine.hadron_catalytic_refinery.name=强子流态催化精炼塔
 gtnr.machine.catalytic_reformer.name=催化重整机

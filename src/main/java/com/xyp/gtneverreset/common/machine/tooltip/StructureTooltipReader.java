@@ -117,12 +117,14 @@ public final class StructureTooltipReader {
                     hatchLines(data.hatches(), data.rules())) : null;
                 Section section = toSection(data, details, independent || variant == first);
                 if (!independent && variant != first) {
+                    List<HatchLine> hatches = hatchLines(fullData.hatches(), fullData.rules());
+                    if (hatches.equals(hatchLines(largestData.hatches(), largestData.rules()))) hatches = List.of();
                     section = new Section(
                         section.blocks(),
                         section.materialTiers(),
                         null,
                         cumulativeCasingRequirements(fullData),
-                        hatchLines(fullData.hatches(), fullData.rules()));
+                        hatches);
                 }
                 sections.add(section);
                 largestData = fullData;
