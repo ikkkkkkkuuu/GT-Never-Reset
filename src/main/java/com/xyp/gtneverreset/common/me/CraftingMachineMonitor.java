@@ -125,12 +125,12 @@ public final class CraftingMachineMonitor {
     public static List<Target> find(CraftingCPUCluster cpu, IAEStack<?> stack) {
         Job job = JOBS.get(cpu);
         if (job == null || !Objects.equals(job.id, jobId(cpu))) return List.of();
-        if (cpu.getStackAmount(stack, CraftingItemList.ACTIVE) <= 0) return List.of();
         List<RecordedRoute> routes = job.outputs.get(stack);
-        if (routes == null) return List.of();
+        if (routes == null || cpu.getStackAmount(stack, CraftingItemList.ACTIVE) <= 0) return List.of();
 
         Set<Route> loaded = new LinkedHashSet<>();
         for (RecordedRoute route : routes) {
+            if (loaded.size() >= MAX_ROUTES) break;
             TileEntity provider = route.provider.get();
             if (!isLoaded(provider)) continue;
             TileEntity machine = route.machine.get();
@@ -178,12 +178,18 @@ public final class CraftingMachineMonitor {
             return;
         }
         boolean hasController = addHatchControllers(routes, route, hatch);
-        if (hatch instanceof MTEHatchCraftingInputME aeHatch) {
-            for (MTEHatch mirror : aeHatch.getProxyHatches())
-                hasController |= addHatchControllers(routes, route, mirror);
-        } else if (hatch instanceof SuperMTEHatchCraftingInputME superHatch) {
-            for (MTEHatch mirror : superHatch.getProxyHatches())
-                hasController |= addHatchControllers(routes, route, mirror);
+        if (routes.size() < MAX_ROUTES) {
+            if (hatch instanceof MTEHatchCraftingInputME aeHatch) {
+                for (MTEHatch mirror : aeHatch.getProxyHatches()) {
+                    hasController |= addHatchControllers(routes, route, mirror);
+                    if (routes.size() >= MAX_ROUTES) break;
+                }
+            } else if (hatch instanceof SuperMTEHatchCraftingInputME superHatch) {
+                for (MTEHatch mirror : superHatch.getProxyHatches()) {
+                    hasController |= addHatchControllers(routes, route, mirror);
+                    if (routes.size() >= MAX_ROUTES) break;
+                }
+            }
         }
         if (!hasController) routes.add(new Route(route.provider, route.providerSide, null, ForgeDirection.UNKNOWN));
     }

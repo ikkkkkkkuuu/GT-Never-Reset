@@ -2,6 +2,7 @@ package com.xyp.gtneverreset.client.gui.crafting;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -15,9 +16,8 @@ import net.minecraft.util.ChatComponentTranslation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
-import com.cleanroommc.modularui.ModularUIConfig;
-import com.cleanroommc.modularui.theme.WidgetTheme;
 import com.xyp.gtneverreset.api.mixinHelper.CraftingMonitorScreen;
+import com.xyp.gtneverreset.common.packet.CraftingMonitorCellProgressPacket;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorRequestPacket;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorRequestPacket.Action;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorSnapshotPacket;
@@ -33,9 +33,10 @@ import appeng.api.util.NamedDimensionalCoord;
 import appeng.client.gui.implementations.GuiCraftingCPU;
 import appeng.client.render.highlighter.BlockPosHighlighter;
 import appeng.core.localization.PlayerMessages;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import gregtech.api.modularui2.GTGuiTextures;
+import mcp.mobius.waila.overlay.tooltiprenderers.TTRenderBar;
 
 @SideOnly(Side.CLIENT)
 public final class CraftingMonitorTooltip {
@@ -52,6 +53,7 @@ public final class CraftingMonitorTooltip {
     private static final int MENU_HEIGHT = MENU_ROW_HEIGHT * 5 + 6;
     private static int nextRequestId;
 
+    private final CraftingMonitorCellOverlay cells = new CraftingMonitorCellOverlay();
     private IAEStack<?> hovered;
     private IAEStack<?> observed;
     private List<Machine> machines = List.of();
@@ -66,17 +68,31 @@ public final class CraftingMonitorTooltip {
 
     public static void accept(CraftingMonitorSnapshotPacket packet) {
         Minecraft minecraft = Minecraft.getMinecraft();
+        CraftingMonitorTooltip monitor = currentMonitor(minecraft, packet.windowId());
+        if (monitor != null) monitor.apply(packet, minecraft);
+    }
+
+    public static void acceptCells(CraftingMonitorCellProgressPacket packet) {
+        CraftingMonitorTooltip monitor = currentMonitor(Minecraft.getMinecraft(), packet.windowId());
+        if (monitor != null) monitor.cells.apply(packet);
+    }
+
+    private static CraftingMonitorTooltip currentMonitor(Minecraft minecraft, int windowId) {
         if (minecraft.thePlayer == null || !(minecraft.currentScreen instanceof GuiCraftingCPU gui)
             || minecraft.thePlayer.openContainer != gui.inventorySlots
-            || gui.inventorySlots.windowId != packet.windowId()
-            || !(gui instanceof CraftingMonitorScreen screen)) return;
-        screen.gtnr$craftingMonitor()
-            .apply(packet, minecraft);
+            || gui.inventorySlots.windowId != windowId
+            || !(gui instanceof CraftingMonitorScreen screen)) return null;
+        return screen.gtnr$craftingMonitor();
     }
 
     public void beginFrame() {
         hovered = null;
         card = null;
+        cells.beginFrame();
+    }
+
+    public void drawCellProgress(IAEStack<?> stack, int x, int y, int width, int height) {
+        cells.draw(stack, x, y, width, height);
     }
 
     public String prepareCard(IAEStack<?> stack, int windowId, String nativeTooltip, List<String> lines,
@@ -115,7 +131,8 @@ public final class CraftingMonitorTooltip {
         return card == null ? nativeTooltip : "";
     }
 
-    public void endFrame(int mouseX, int mouseY, int width, int height, FontRenderer font) {
+    public void endFrame(int mouseX, int mouseY, int width, int height, int windowId, FontRenderer font) {
+        cells.endFrame(windowId);
         if (hovered == null && menu == null) resetObservation();
         if (menu == null && card == null) return;
         GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_TEXTURE_BIT);
@@ -171,6 +188,7 @@ public final class CraftingMonitorTooltip {
 
     public void clear() {
         resetObservation();
+        cells.clear();
         menu = null;
         card = null;
         hovered = null;
@@ -282,9 +300,9 @@ public final class CraftingMonitorTooltip {
         return I18n.format("gtnr.gui.crafting_monitor.position", pos.dimension(), pos.x(), pos.y(), pos.z());
     }
 
-    private record ProgressSample(double from, double to, long receivedAt) {
+    record ProgressSample(double from, double to, long receivedAt) {
 
-        private double valueAt(long now) {
+        double valueAt(long now) {
             double elapsed = Math.max(0, Math.min(1, (double) (now - receivedAt) / PROGRESS_ANIMATION_MS));
             return from + (to - from) * elapsed;
         }
@@ -296,10 +314,9 @@ public final class CraftingMonitorTooltip {
         private static final int EDGE = 4;
         private static final int PADDING = 7;
         private static final int POINTER_GAP = 12;
-        private static final int LINE_HEIGHT = 11;
+        private static final int LINE_HEIGHT = 13;
         private static final int COLUMN_GAP = 8;
-        private static final int BAR_HEIGHT = 7;
-        private static final int BAR_TEXTURE_WIDTH = 130;
+        private static final int BAR_HEIGHT = 12;
 
         private static Card create(String title, List<String> amounts, List<String> details, int screenWidth,
             int screenHeight, FontRenderer font, List<Machine> machines, List<ProgressSample> samples) {
@@ -409,7 +426,7 @@ public final class CraftingMonitorTooltip {
                         LOOK.listText(),
                         I18n.format("gtnr.gui.crafting_monitor.percent", percent),
                         LOOK.listText()));
-                lines.add(new Bar(fraction));
+                lines.add(new Bar(formatMachineTime(progress, machine.duration()), fraction));
                 // #tr gtnr.gui.crafting_monitor.remaining
                 // # %s t left
                 // # zh_CN 剩余 %s t
@@ -433,6 +450,14 @@ public final class CraftingMonitorTooltip {
                 }
             }
             lines.add(new Text(formatPosition(machine.machine()), LOOK.listMuted()));
+        }
+
+        private static String formatMachineTime(int progress, int duration) {
+            if (duration < 20) return I18n.format("GT5U.waila.machine.progress_tick", progress, duration);
+            return I18n.format(
+                "GT5U.waila.machine.progress_second",
+                String.format(Locale.ROOT, "%.2f", progress / 20.0),
+                String.format(Locale.ROOT, "%.2f", duration / 20.0));
         }
 
         private static String stateText(Machine machine) {
@@ -482,29 +507,38 @@ public final class CraftingMonitorTooltip {
             }
         }
 
-        private record Bar(double fraction) implements Line {
+        private record Bar(String label, double fraction) implements Line {
 
             @Override
             public void draw(int x, int y, int width, FontRenderer font) {
                 int top = y + (LINE_HEIGHT - BAR_HEIGHT) / 2;
-                GL11.glColor4f(1, 1, 1, 1);
-                GTGuiTextures.PROGRESSBAR_GODFORGE_MILESTONE_BACKGROUND.draw(x, top, width, BAR_HEIGHT);
-                float progress = (float) fraction;
-                if (!ModularUIConfig.smoothProgressBar) {
-                    progress = (float) (Math.floor(progress * BAR_TEXTURE_WIDTH) / BAR_TEXTURE_WIDTH);
+                String text = font.trimStringToWidth(label, width - 4);
+                if (Loader.isModLoaded("Waila")) {
+                    NativeWailaBar.draw(x, top, width, text, fraction);
+                    return;
                 }
-                if (progress <= 0) return;
-                GTGuiTextures.PROGRESSBAR_GODFORGE_MILESTONE_PURPLE.drawSubArea(
-                    x,
-                    top,
-                    width * progress,
-                    BAR_HEIGHT,
-                    0,
-                    0,
-                    progress,
-                    1,
-                    WidgetTheme.getDefault()
-                        .getTheme());
+                LOOK.drawWell(x, top, width, BAR_HEIGHT);
+                int filled = (int) ((width - 2) * fraction);
+                if (filled > 0) Gui.drawRect(x + 1, top + 1, x + 1 + filled, top + BAR_HEIGHT - 1, SKIN.highlight);
+                font.drawStringWithShadow(text, x + 2, top + 2, SKIN.colors.fieldText());
+            }
+        }
+
+        private static final class NativeWailaBar {
+
+            private static final TTRenderBar RENDERER = new TTRenderBar();
+            private static final String COLOR_TOP = Integer.toString(SKIN.highlightTop);
+            private static final String COLOR_BOTTOM = Integer.toString(SKIN.highlight);
+
+            private static void draw(int x, int y, int width, String label, double fraction) {
+                GL11.glPushMatrix();
+                try {
+                    GL11.glTranslatef(x, y, 0);
+                    RENDERER.setMaxLineWidth(width);
+                    RENDERER.draw(new String[] { label, COLOR_TOP, COLOR_BOTTOM, Double.toString(fraction) }, null);
+                } finally {
+                    GL11.glPopMatrix();
+                }
             }
         }
 

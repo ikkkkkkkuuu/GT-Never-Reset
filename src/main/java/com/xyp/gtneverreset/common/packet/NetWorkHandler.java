@@ -167,6 +167,12 @@ public final class NetWorkHandler {
             CraftingMonitorSnapshotPacket.class,
             nextPacketId++,
             Side.CLIENT);
+        registerServerbound(CraftingMonitorCellRequestPacket.class);
+        CHANNEL.registerMessage(
+            new PayloadHandler.Client<>(),
+            CraftingMonitorCellProgressPacket.class,
+            nextPacketId++,
+            Side.CLIENT);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);

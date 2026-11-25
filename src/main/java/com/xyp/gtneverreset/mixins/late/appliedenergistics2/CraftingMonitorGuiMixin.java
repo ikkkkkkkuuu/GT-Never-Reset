@@ -4,11 +4,14 @@ import java.util.List;
 
 import net.minecraft.inventory.Container;
 
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -20,15 +23,39 @@ import appeng.api.storage.data.IAEStack;
 import appeng.client.gui.AEBaseGui;
 import appeng.client.gui.implementations.GuiCraftingCPU;
 import appeng.container.implementations.CraftingCpuEntry;
+import appeng.core.AEConfig;
 
 @Mixin(value = GuiCraftingCPU.class, remap = false)
 public abstract class CraftingMonitorGuiMixin extends AEBaseGui implements CraftingMonitorScreen {
+
+    @Shadow
+    @Final
+    protected static int SECTION_LENGTH;
+    @Shadow
+    @Final
+    protected static int SECTION_HEIGHT;
+    @Shadow
+    @Final
+    private static int ITEMSTACK_LEFT_OFFSET;
+    @Shadow
+    @Final
+    private static int ITEMSTACK_TOP_OFFSET;
 
     @Unique
     private final CraftingMonitorTooltip gtnr$monitorTooltip = new CraftingMonitorTooltip();
 
     private CraftingMonitorGuiMixin(Container container) {
         super(container);
+    }
+
+    @Inject(method = "drawEntry", at = @At(value = "NEW", target = "java/util/LinkedList"))
+    private void gtnr$drawCellProgress(CraftingCpuEntry entry, int visibleIndex, int column, int row,
+        IAEStack<?> lastHoveredStack, CallbackInfoReturnable<?> ci) {
+        if (!entry.hasActiveAmount() || !AEConfig.instance.useColoredCraftingStatus) return;
+        // AE draws this part of the cell with a half-scale matrix.
+        int x = 2 * (column * (1 + SECTION_LENGTH) + ITEMSTACK_LEFT_OFFSET);
+        int y = 2 * (row * SECTION_HEIGHT + ITEMSTACK_TOP_OFFSET - 3);
+        gtnr$monitorTooltip.drawCellProgress(entry.getStack(), x, y, 2 * SECTION_LENGTH, 2 * SECTION_HEIGHT - 2);
     }
 
     @WrapOperation(
@@ -59,7 +86,7 @@ public abstract class CraftingMonitorGuiMixin extends AEBaseGui implements Craft
 
     @Inject(method = "drawScreen", at = @At("RETURN"), remap = true)
     private void gtnr$drawMonitorOverlay(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        gtnr$monitorTooltip.endFrame(mouseX, mouseY, width, height, fontRendererObj);
+        gtnr$monitorTooltip.endFrame(mouseX, mouseY, width, height, inventorySlots.windowId, fontRendererObj);
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)

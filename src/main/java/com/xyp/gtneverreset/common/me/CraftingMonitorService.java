@@ -18,6 +18,9 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.xyp.gtneverreset.common.me.CraftingMachineMonitor.Provider;
 import com.xyp.gtneverreset.common.me.CraftingMachineMonitor.Target;
+import com.xyp.gtneverreset.common.packet.CraftingMonitorCellProgressPacket;
+import com.xyp.gtneverreset.common.packet.CraftingMonitorCellProgressPacket.Cell;
+import com.xyp.gtneverreset.common.packet.CraftingMonitorCellRequestPacket;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorRequestPacket.Action;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorSnapshotPacket;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorSnapshotPacket.Machine;
@@ -48,6 +51,7 @@ public final class CraftingMonitorService {
 
     private static final int STATUS_INTERVAL = 4;
     private static final int ACTION_INTERVAL = 4;
+    private static final int CELL_SAMPLE_INTERVAL = 8;
     private static final int MAX_RECENT_VIEWS = 3;
     private static final int VIEW_LIFETIME = 400;
     private static final Map<ContainerCraftingCPU, Session> SESSIONS = new WeakHashMap<>();
@@ -65,11 +69,7 @@ public final class CraftingMonitorService {
 
         CraftingCPUCluster cpu = container.getCpu();
         IGrid grid = cpu == null ? null : cpu.getGrid();
-        IGridNode terminalNode = container.getActionSource() instanceof PlayerSource source && source.via != null
-            ? source.via.getActionableNode()
-            : null;
-        ISecurityGrid security = terminalNode == null || terminalNode.getGrid() != grid || grid == null ? null
-            : grid.getCache(ISecurityGrid.class);
+        ISecurityGrid security = securityFor(container, grid);
         if (security == null || !security.hasPermission(player, SecurityPermissions.CRAFT)) {
             reply(
                 player,
@@ -145,6 +145,47 @@ public final class CraftingMonitorService {
             }
         }
         reply(player, windowId, requestId, List.of(), Result.DENIED, null);
+    }
+
+    public static void sampleCells(EntityPlayerMP player, int windowId, int requestId, List<IAEStack<?>> visible) {
+        if (visible.isEmpty() || visible.size() > CraftingMonitorCellRequestPacket.MAX_CELLS
+            || !(player.openContainer instanceof ContainerCraftingCPU container)
+            || container.windowId != windowId
+            || !container.canInteractWith(player)) return;
+
+        long now = player.worldObj.getTotalWorldTime();
+        Session session = SESSIONS.computeIfAbsent(container, ignored -> new Session());
+        if (!session.acceptCellSample(now)) return;
+
+        CraftingCPUCluster cpu = container.getCpu();
+        IGrid grid = cpu == null ? null : cpu.getGrid();
+        ISecurityGrid security = securityFor(container, grid);
+        List<Cell> cells = new ArrayList<>();
+        if (security != null && cpu.getLastCraftingLink() != null
+            && security.hasPermission(player, SecurityPermissions.CRAFT)) {
+            for (int index = 0; index < visible.size(); index++) {
+                IAEStack<?> stack = visible.get(index);
+                if (stack == null) continue;
+                Target closest = null;
+                for (Target target : CraftingMachineMonitor.find(cpu, stack)) {
+                    if (!target.active() || target.duration() <= 0
+                        || closest != null
+                            && target.duration() - target.progress() >= closest.duration() - closest.progress()
+                        || !providerOnGrid(grid, target.provider(), target.providerSide())) continue;
+                    closest = target;
+                }
+                if (closest != null) cells.add(new Cell(index, closest.progress(), closest.duration()));
+            }
+        }
+        NetWorkHandler.sendTo(new CraftingMonitorCellProgressPacket(windowId, requestId, cells), player);
+    }
+
+    private static ISecurityGrid securityFor(ContainerCraftingCPU container, IGrid grid) {
+        if (grid == null) return null;
+        IGridNode terminalNode = container.getActionSource() instanceof PlayerSource source && source.via != null
+            ? source.via.getActionableNode()
+            : null;
+        return terminalNode != null && terminalNode.getGrid() == grid ? grid.getCache(ISecurityGrid.class) : null;
     }
 
     private static List<Row> collectRows(EntityPlayerMP player, CraftingCPUCluster cpu, IGrid grid, IAEStack<?> stack,
@@ -314,6 +355,7 @@ public final class CraftingMonitorService {
         private final Deque<View> views = new ArrayDeque<>();
         private long nextStatus = Long.MIN_VALUE;
         private long nextAction = Long.MIN_VALUE;
+        private long nextCellSample = Long.MIN_VALUE;
 
         private boolean accept(Action action, long now) {
             if (action == Action.STATUS) {
@@ -323,6 +365,12 @@ public final class CraftingMonitorService {
                 if (now < nextAction) return false;
                 nextAction = now + ACTION_INTERVAL;
             }
+            return true;
+        }
+
+        private boolean acceptCellSample(long now) {
+            if (now < nextCellSample) return false;
+            nextCellSample = now + CELL_SAMPLE_INTERVAL;
             return true;
         }
 
