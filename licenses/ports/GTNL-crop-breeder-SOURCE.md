@@ -6,3 +6,6 @@ License: GTNL-LICENSE.txt.
 Archived crop production fix adapted from GTNotLeisure/GT-Not-Leisure PR #697, revision 376d313d67642c7ef7c756247dd04f8eb3bd916d.
 https://github.com/GTNotLeisure/GT-Not-Leisure/pull/697
 Adapted archived-target production, planner behavior and GUI source/output display to GTNR, preserving GTNR configuration, output protection, save keys and seed improvement rules.
+
+Right-side tabs, inventory and control layout, and machine mode switching adapted from GTNL revision 538a1d236a0e72e1a144299bf07c19285b496e60.
+https://github.com/GTNotLeisure/GT-Not-Leisure/commit/538a1d236a0e72e1a144299bf07c19285b496e60
