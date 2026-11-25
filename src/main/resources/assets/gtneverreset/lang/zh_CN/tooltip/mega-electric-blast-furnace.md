@@ -1,4 +1,12 @@
-每完成一个加工周期，炉温永久提高 {var:cycleHeat} K。
-对于温度要求至少为 {var:discountHeat} K 的配方，炉温每高出要求 {var:discountHeat} K，基础耗电减半，每并行最低 1 EU/t。
-每次超频使每刻耗电增为 4 倍。普通超频将加工时间减半，无损超频将加工时间缩短至四分之一。
-并行上限等于炉温的开尔文数乘以 {var:parallelsPerKelvin}，再乘以线圈的并行倍率。
+线圈决定基础炉温。能源仓的合计电压每比 {aqua:LV} 高一级，基础炉温就多 {red:{var:voltageHeat} K}。
+每完成一批，炉温永久提高 {red:{var:cycleHeat} K}。当前炉温可用扫描仪查看。
+炉温达标才能开工。总供电须达到配方标注的 EU/t，温差折扣随后再算。
+{hr}
+配方要求至少 {red:{var:discountHeat} K} 时，炉温每高出要求 {red:{var:discountHeat} K}，基础耗电就{aqua:减半}。
+每并行在超频前至少消耗 {aqua:{var:minEUt} EU/t}。
+炉温每高出配方要求 {red:{var:perfectOverclockHeat} K}，就有一次普通超频变为{light_purple:无损超频}。
+每次超频的 EU/t 都乘 {aqua:4}。普通超频耗时减半，{light_purple:无损超频}耗时缩到四分之一。
+{hr}
+用白铜线圈和 {aqua:LV} 供电，刚成型时的理论并行上限是 {gold:{var:baseParallels}}。
+理论并行上限为 {gold:{var:parallelsPerKelvin}} × 炉温(K) × 线圈倍率。实际能跑多少取决于供电、原料和输出余量。
+可在机器界面切换模式。工业高炉模式按 NEI 配方放电路，部分配方通保护气烧得更快。

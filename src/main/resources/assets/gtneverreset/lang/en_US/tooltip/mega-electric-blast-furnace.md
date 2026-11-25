@@ -1,4 +1,12 @@
-Completing a processing cycle permanently raises the furnace temperature by {var:cycleHeat} K.
-For recipes requiring at least {var:discountHeat} K, each full {var:discountHeat} K of surplus heat halves the base energy cost, down to 1 EU/t per parallel.
-Each overclock quadruples EU/t. A regular overclock halves the duration, and a perfect overclock quarters it.
-Parallel capacity is {var:parallelsPerKelvin} times the furnace temperature in kelvin, multiplied by the heating coil's parallel multiplier.
+Coils set the starting temperature. For each tier the combined hatch voltage exceeds {aqua:LV}, add {red:{var:voltageHeat} K}.
+Each finished batch permanently adds {red:{var:cycleHeat} K}. Use a scanner to check the current temperature.
+The furnace needs enough heat to start. Combined input power must cover the recipe's listed EU/t before discounts.
+{hr}
+For recipes that require at least {red:{var:discountHeat} K}, every extra {red:{var:discountHeat} K} {aqua:halves} the base EU/t.
+Before overclocking, each parallel uses at least {aqua:{var:minEUt} EU/t}.
+For every {red:{var:perfectOverclockHeat} K} above the recipe temperature, one regular overclock becomes {light_purple:perfect}.
+Each overclock multiplies EU/t by {aqua:4}. Regular overclocks halve the time. {light_purple:Perfect overclocks} quarter it.
+{hr}
+Cupronickel coils at {aqua:LV} start with a theoretical limit of {gold:{var:baseParallels}} parallels.
+The limit is {gold:{var:parallelsPerKelvin}} × temperature (K) × coil multiplier. Actual parallels depend on power, inputs, and output space.
+Switch modes in the machine UI. In blast furnace mode, use the circuit shown in NEI. Some recipes run faster with a protective gas.

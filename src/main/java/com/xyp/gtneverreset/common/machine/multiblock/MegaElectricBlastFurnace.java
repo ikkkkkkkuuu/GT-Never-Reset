@@ -75,6 +75,7 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
     private static final int HEAT_PER_VOLTAGE_TIER = 1_000;
     private static final int HEAT_PER_RECIPE = 100;
     private static final int HEAT_PER_DISCOUNT = 450;
+    private static final int MIN_DISCOUNTED_EUT = 1;
     private static final int PARALLELS_PER_KELVIN = 256;
     private static final Casings CASING = Casings.DimensionallyTranscendentCasing;
     private static final IHatchElement<? super MegaElectricBlastFurnace> ENERGY_INPUT = Energy.or(ExoticEnergy);
@@ -213,7 +214,7 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
 
     @Override
     protected MultiblockTooltipBuilder createTooltip() {
-        return new AutoMultiblockTooltipBuilder().addAutoTooltipWithRecipeMapFooter(this)
+        return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
             .toolTipFinisher();
     }
 
@@ -223,36 +224,47 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
     }
 
     @Override
-    public TooltipStats getTooltipStats() {
-        return getTooltipStatsAtTier(TieredPart.COIL, 0);
-    }
-
-    @Override
-    public List<TieredPart> getTooltipTieredParts() {
-        return List.of(TieredPart.COIL, TieredPart.VOLTAGE);
-    }
-
-    @Override
-    public TooltipStats getTooltipStatsAtTier(TieredPart part, int tier) {
-        HeatingCoilLevel coils = HeatingCoilLevel.getFromTier((byte) (part == TieredPart.COIL ? tier : 0));
-        int voltageTier = part == TieredPart.VOLTAGE ? tier : VoltageIndex.LV;
-        return new TooltipStats(parallelLimit(coils, initialHeat(coils, voltageTier)), Double.NaN, Double.NaN, false);
-    }
-
-    @Override
-    public HeatRules getTooltipHeatRules() {
-        return new HeatRules(true, false, 1, true, HEAT_PER_VOLTAGE_TIER, VoltageIndex.LV, 0);
+    public String getTooltipMachineType() {
+        // #tr gtnr.machine.mega_electric_blast_furnace.recipe_type
+        // # Electric Blast Furnace / Alloy Blast Smelter
+        // # zh_CN 工业高炉 / 合金冶炼炉
+        return StatCollector.translateToLocal("gtnr.machine.mega_electric_blast_furnace.recipe_type");
     }
 
     @Override
     public Map<String, Object> getTooltipVars() {
         return Map.of(
+            "voltageHeat",
+            formatNumber(HEAT_PER_VOLTAGE_TIER),
             "cycleHeat",
             HEAT_PER_RECIPE,
             "discountHeat",
             HEAT_PER_DISCOUNT,
+            "minEUt",
+            MIN_DISCOUNTED_EUT,
+            "perfectOverclockHeat",
+            formatNumber(OverclockCalculator.HEAT_OVERCLOCK_THRESHOLD),
+            "baseParallels",
+            formatNumber(parallelLimit(HeatingCoilLevel.LV, initialHeat(HeatingCoilLevel.LV, VoltageIndex.LV))),
             "parallelsPerKelvin",
             PARALLELS_PER_KELVIN);
+    }
+
+    @Override
+    public List<String> getTooltipStructureNotes() {
+        return List.of(
+            // #tr gtnr.machine.mega_electric_blast_furnace.structure.coils
+            // # All heating coils must be the {\\RED}same tier{\\GRAY}.
+            // # zh_CN 所有加热线圈都得是{\\RED}同一等级{\\GRAY}。
+            StatCollector.translateToLocal("gtnr.machine.mega_electric_blast_furnace.structure.coils"),
+            // #tr gtnr.machine.mega_electric_blast_furnace.structure.hatches
+            // # Put an {\\AQUA}energy hatch{\\GRAY} in a main casing slot. No maintenance or muffler needed.
+            // # zh_CN 主机壳位至少留一个给{\\AQUA}能源仓{\\GRAY}。无需维护仓或消声仓。
+            StatCollector.translateToLocal("gtnr.machine.mega_electric_blast_furnace.structure.hatches"),
+            // #tr gtnr.machine.mega_electric_blast_furnace.structure.outputs
+            // # Use {\\AQUA}output buses{\\GRAY} for items and {\\AQUA}output hatches{\\GRAY} for fluids.
+            // # zh_CN 物品走{\\AQUA}输出总线{\\GRAY}，流体走{\\AQUA}输出仓{\\GRAY}。
+            StatCollector.translateToLocal("gtnr.machine.mega_electric_blast_furnace.structure.outputs"));
     }
 
     @Override
@@ -333,7 +345,7 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
     private double getRecipeEnergyMultiplier(GTRecipe recipe) {
         if (recipe.mSpecialValue < HEAT_PER_DISCOUNT || recipe.mEUt <= 0) return 1;
         int steps = (heatingCapacity - recipe.mSpecialValue) / HEAT_PER_DISCOUNT;
-        int discountedEUt = Math.max(1, recipe.mEUt >> Math.min(30, Math.max(0, steps)));
+        int discountedEUt = Math.max(MIN_DISCOUNTED_EUT, recipe.mEUt >> Math.min(30, Math.max(0, steps)));
         return (double) discountedEUt / recipe.mEUt;
     }
 
