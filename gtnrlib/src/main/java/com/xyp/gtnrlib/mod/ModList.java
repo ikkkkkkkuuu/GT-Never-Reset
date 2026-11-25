@@ -54,6 +54,7 @@ public enum ModList implements IMod, ITargetMod {
     BoxPlusPlus("boxplusplus", "Box Plus Plus"),
     NHUtilities("NHUtilities", "NH-Utilities", "com.xir.NHUtilities.main.NHUtilitiesCore"),
     AE2Thing("ae2thing", "AE2 Things"),
+    AE2ConvenienceFeatures(ModIds.AE2_CONVENIENCE_FEATURES, "AE2 Convenience Features", false),
     QzMiner("qz_miner", "Qz Miner", false),
     OTHTechnology("123Technology", "123Technology"),
     Baubles("Baubles", "Baubles", false),
@@ -97,6 +98,7 @@ public enum ModList implements IMod, ITargetMod {
         public static final String BETTER_QUESTING = "betterquesting";
         public static final String APPLIED_ENERGISTICS_2 = "appliedenergistics2";
         public static final String AE2_FLUID_CRAFT = "ae2fc";
+        public static final String AE2_CONVENIENCE_FEATURES = "ae2conveniencefeatures";
         public static final String CROPSNH = "cropsnh";
         public static final String DRACONIC_EVOLUTION = "DraconicEvolution";
         public static final String SPICE_OF_LIFE = "SpiceOfLife";

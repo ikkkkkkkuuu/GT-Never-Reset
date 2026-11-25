@@ -4,17 +4,22 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.world.Teleporter;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
+import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.world.BlockEvent;
@@ -24,7 +29,9 @@ import com.gtnewhorizon.gtnhlib.util.map.ItemStackMap;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.client.projector.ProjectorClient;
 import com.xyp.gtneverreset.client.projector.ProjectorGui;
+import com.xyp.gtneverreset.common.gui.WirelessTerminalGuiHandler;
 import com.xyp.gtneverreset.common.projector.*;
+import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
 import com.xyp.gtnrlib.gui.widget.IconRowList;
 import com.xyp.gtnrlib.gui.widget.PageTabs;
 import com.xyp.gtnrlib.gui.widget.ThemedButton;
@@ -37,6 +44,7 @@ import appeng.api.networking.security.PlayerSource;
 import appeng.api.networking.storage.IStorageGrid;
 import appeng.api.storage.*;
 import appeng.api.storage.data.IAEItemStack;
+import appeng.items.tools.powered.ToolWirelessTerminal;
 import appeng.tile.networking.TileWireless;
 import appeng.tile.storage.TileDrive;
 import appeng.util.item.AEItemStack;
@@ -54,9 +62,14 @@ import gregtech.api.enums.ItemList;
     dependencies = "after:gtneverreset")
 public class ProjectorSurvivalChecks {
 
+    private static final int NETHER = -1;
+
     private enum Stage {
         SETUP,
         POWER,
+        CROSS_DIMENSION,
+        CROSS_PREVIEW,
+        CROSS_BUILD,
         STOCK,
         STOCK_CHANGED,
         SHORT,
@@ -80,6 +93,8 @@ public class ProjectorSurvivalChecks {
     private volatile boolean done;
     private boolean launched, waiting, selectedMaterials;
     private volatile boolean stockChecked;
+    private final boolean crossDimension = Boolean.getBoolean("gtnr.projector.crossDimensionQa");
+    private final boolean crossDimensionBaseline = Boolean.getBoolean("gtnr.projector.crossDimensionBaseline");
     private double previewCharge;
     private int stableStockTicks, viewTicks;
     private ProjectorStructure originalPreview;
@@ -145,8 +160,9 @@ public class ProjectorSurvivalChecks {
             }
             return;
         }
-        if ((stage == Stage.STOCK || stage == Stage.STOCK_CHANGED) && !stockChecked) {
+        if ((stage == Stage.STOCK || stage == Stage.STOCK_CHANGED || stage == Stage.CROSS_PREVIEW) && !stockChecked) {
             try {
+                if (stage == Stage.CROSS_PREVIEW && (mc.thePlayer == null || mc.thePlayer.dimension != NETHER)) return;
                 var screen = ModularScreen.getCurrent();
                 if (screen == null || !(screen.getMainPanel() instanceof ProjectorGui gui) || gui.structure() == null)
                     return;
@@ -169,7 +185,8 @@ public class ProjectorSurvivalChecks {
                 for (var row : rows) {
                     if (row.header()) continue;
                     int needed = need.get(row.icon());
-                    int available = stage == Stage.STOCK_CHANGED && casing.isItemEqual(row.icon()) ? 10 : needed * 4;
+                    int available = stage == Stage.CROSS_PREVIEW && crossDimensionBaseline ? 0 : needed * 4;
+                    if (stage == Stage.STOCK_CHANGED && casing.isItemEqual(row.icon())) available = 10;
                     if (!row.detail()
                         .equals(available + "/" + needed)
                         || row.color() != (available >= needed ? IconRowList.GOOD : IconRowList.BAD)) return;
@@ -178,11 +195,13 @@ public class ProjectorSurvivalChecks {
                 stableStockTicks = 0;
                 net.minecraft.util.ScreenShotHelper.saveScreenshot(
                     new java.io.File("."),
-                    "materials-" + stage + ".png",
+                    stage == Stage.CROSS_PREVIEW
+                        ? "projector-cross-dimension-preview-" + (crossDimensionBaseline ? "before" : "after") + ".png"
+                        : "materials-" + stage + ".png",
                     mc.displayWidth,
                     mc.displayHeight,
                     mc.getFramebuffer());
-                if (stage == Stage.STOCK_CHANGED) screen.close();
+                if (stage == Stage.STOCK_CHANGED || stage == Stage.CROSS_PREVIEW) screen.close();
                 stockChecked = true;
             } catch (Throwable error) {
                 finish(error);
@@ -304,8 +323,36 @@ public class ProjectorSurvivalChecks {
                     }
                     previewCharge = ((IAEItemPowerStorage) terminal.getItem()).getAECurrentPower(terminal);
                     p.inventoryContainer.detectAndSendChanges();
+                    if (crossDimension) {
+                        int stock = need.get(casing) * 4;
+                        require(nativeWirelessInRange(p), "unboosted terminal can reach nearby overworld network");
+                        require(
+                            ProjectorBuildMaterials.available(p, casing, stock + 1) == stock,
+                            "projector sees available items on the same dimension without upgrade");
+                        reportCross("same dimension unupgraded: dimension=" + p.dimension + ", available=" + stock);
+                        moveToNether(p);
+                        stage = Stage.CROSS_DIMENSION;
+                        return;
+                    }
                     stage = Stage.STOCK;
                     ProjectorServer.openGui(p, 0);
+                }
+                case CROSS_DIMENSION -> {
+                    if (p.dimension != NETHER || !access.isActive()) return;
+                    prepareCrossPreview(p);
+                }
+                case CROSS_PREVIEW -> {
+                    if (!stockChecked) return;
+                    require(
+                        ((IAEItemPowerStorage) terminal.getItem()).getAECurrentPower(terminal) == previewCharge,
+                        "cross-dimension preview spends no wireless power");
+                    for (var entry : need.entrySet()) {
+                        require(gridCount(p, entry.getKey()) == entry.getValue() * 4, "preview consumes no ME items");
+                    }
+                    reportCross(
+                        "client material preview synchronized; stored item counts and terminal charge unchanged");
+                    stage = Stage.CROSS_BUILD;
+                    request(p, false);
                 }
                 case STOCK -> {
                     if (!stockChecked) return;
@@ -464,6 +511,78 @@ public class ProjectorSurvivalChecks {
         p.inventoryContainer.detectAndSendChanges();
     }
 
+    private void moveToNether(EntityPlayerMP p) {
+        if (DimensionManager.getWorld(NETHER) == null) DimensionManager.initDimension(NETHER);
+        var nether = DimensionManager.getWorld(NETHER);
+        require(nether != null, "Nether test dimension loaded");
+        int standY = 110;
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+            nether.setBlock(dx, standY - 1, dz, Blocks.cobblestone);
+            for (int dy = 0; dy < 4; dy++) nether.setBlockToAir(dx, standY + dy, dz);
+        }
+        MinecraftServer.getServer()
+            .getConfigurationManager()
+            .transferPlayerToDimension(p, NETHER, new Teleporter(nether) {
+
+                @Override
+                public void placeInPortal(Entity entity, double x, double y, double z, float yaw) {
+                    entity.setLocationAndAngles(0.5, standY, 0.5, yaw, 0);
+                }
+            });
+    }
+
+    private void prepareCrossPreview(EntityPlayerMP p) throws Exception {
+        require(access.getWorldObj().provider.dimensionId == 0, "ME network remains in overworld");
+        require(p.worldObj.provider.dimensionId == NETHER, "player is actually in the Nether");
+        int stock = need.get(casing) * 4;
+        require(!nativeWirelessInRange(p), "unupgraded terminal has no range into remote dimension");
+        require(
+            ProjectorBuildMaterials.available(p, casing, stock + 1) == 0,
+            "projector cannot see remote items without range upgrade");
+        reportCross("cross-dimension unupgraded: player=-1, ME=0, native=false, available=0");
+        terminal.getTagCompound()
+            .setBoolean(ToolWirelessTerminal.infinityBoosterCard, true);
+        require(nativeWirelessInRange(p), "native wireless host can reach remote ME after range upgrade");
+        int seen = ProjectorBuildMaterials.available(p, casing, stock + 1);
+        reportCross("cross-dimension upgraded: native=true, ME stock=" + stock + ", projector available=" + seen);
+        require(seen == (crossDimensionBaseline ? 0 : stock), "projector remote availability differs from expectation");
+        x = 8;
+        y = 110;
+        z = 7;
+        makePlan(p, false);
+        var plan = ProjectorPlan.read(projector);
+        int[] off = new int[3];
+        for (int i = 0; i < shape.size; i++) {
+            plan.facing.getWorldOffset(new int[] { shape.a[i], shape.b[i], shape.c[i] }, off);
+            p.worldObj.setBlockToAir(x + off[0], y + off[1], z + off[2]);
+        }
+        for (long cell : shape.emptyCells) {
+            plan.facing.getWorldOffset(
+                new int[] { ProjectorPlan.unpackA(cell), ProjectorPlan.unpackB(cell), ProjectorPlan.unpackC(cell) },
+                off);
+            p.worldObj.setBlockToAir(x + off[0], y + off[1], z + off[2]);
+        }
+        p.inventory.markDirty();
+        p.inventoryContainer.detectAndSendChanges();
+        stage = Stage.CROSS_PREVIEW;
+        ProjectorServer.openGui(p, 0);
+    }
+
+    private static boolean nativeWirelessInRange(EntityPlayerMP p) {
+        var host = WirelessTerminalGuiHandler
+            .buildHost(p, p.worldObj, 1, WirelessTerminalGuiType.WirelessCraftingTerminal);
+        return host != null && host.rangeCheck() && host.getItemInventory() != null;
+    }
+
+    private static void reportCross(String line) throws Exception {
+        System.out.println("[projector-cross-dimension-qa] " + line);
+        Files.writeString(
+            Path.of("projector-cross-dimension-report.txt"),
+            line + System.lineSeparator(),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.APPEND);
+    }
+
     private void decrement(ItemStack stack) {
         need.put(stack, need.get(stack) - 1);
     }
@@ -504,12 +623,16 @@ public class ProjectorSurvivalChecks {
         for (var item : p.inventory.mainInventory)
             if (item != null && item.isItemEqual(stack) && ItemStack.areItemStackTagsEqual(item, stack))
                 n += item.stackSize;
+        return n + gridCount(p, stack);
+    }
+
+    private int gridCount(EntityPlayerMP p, ItemStack stack) {
         var have = me.extractItems(
             AEItemStack.create(stack)
                 .setStackSize(100000),
             Actionable.SIMULATE,
             new PlayerSource(p, null));
-        return n + (have == null ? 0 : (int) have.getStackSize());
+        return have == null ? 0 : (int) have.getStackSize();
     }
 
     private void balances(EntityPlayerMP p, boolean shortOne, boolean empty) {
@@ -537,8 +660,43 @@ public class ProjectorSurvivalChecks {
             .hasKey("gtneverresetProjectorMaterials");
     }
 
-    private void verify(EntityPlayerMP p) {
+    private void verify(EntityPlayerMP p) throws Exception {
         switch (stage) {
+            case CROSS_BUILD -> {
+                double charge = ((IAEItemPowerStorage) terminal.getItem()).getAECurrentPower(terminal);
+                if (crossDimensionBaseline) {
+                    require(
+                        feedback.equals("missing") && placedEvents == 0 && p.worldObj.isAirBlock(x, y, z),
+                        "baseline projector reports missing items and places nothing across dimensions");
+                    require(charge == chargeBefore, "baseline consumes no terminal energy");
+                } else {
+                    require(
+                        feedback.equals("done") && built == 34 && placedEvents == 34,
+                        "cross-dimension generation places all 34 blocks");
+                    require(
+                        p.worldObj.getTileEntity(
+                            x,
+                            y,
+                            z) instanceof gregtech.api.interfaces.tileentity.IGregTechTileEntity tile
+                            && tile.getMetaTileID()
+                                == ProjectorMachines.idOf(ItemList.Machine_Multi_BlastFurnace.get(1)),
+                        "Nether furnace controller is really placed");
+                    require(charge < chargeBefore, "cross-dimension extraction spends actual terminal energy");
+                }
+                for (var entry : need.entrySet()) {
+                    require(
+                        gridCount(p, entry.getKey()) == entry.getValue() * (crossDimensionBaseline ? 4 : 3),
+                        "exact ME balance after cross-dimension build");
+                }
+                reportCross(
+                    "generation feedback=" + feedback
+                        + ", placed="
+                        + placedEvents
+                        + ", charge spent="
+                        + (chargeBefore - charge)
+                        + ", exact remote storage balance verified");
+                finish(null);
+            }
             case SHORT, RACE, BATCH_SHORT -> {
                 require(
                     feedback.equals("missing") && shortCount == 1 && placedEvents == 0,

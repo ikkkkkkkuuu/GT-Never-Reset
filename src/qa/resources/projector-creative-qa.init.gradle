@@ -5,7 +5,9 @@ gradle.projectsEvaluated {
     def fixture = root.hasProperty('projectorFormationChecks') ? 'ProjectorFormationChecks' : root.hasProperty('projectorBatchHatchChecks') ? 'ProjectorBatchHatchChecks' : root.hasProperty('projectorSurvivalChecks') ? 'ProjectorSurvivalChecks' : root.hasProperty('projectorMirrorChecks') ? 'ProjectorMirrorChecks' : 'ProjectorCreativeChecks'
     if (root.hasProperty('projectorDeploymentChecks')) fixture = 'ProjectorDeploymentChecks'
     root.spotless.java { target root.file("src/qa/java/com/xyp/gtneverreset/qa/${fixture}.java") }
-    def directoryName = 'projector-creative-qa'
+    def crossDimension = Boolean.getBoolean('gtnr.projector.crossDimensionQa')
+    def baseline = crossDimension && Boolean.getBoolean('gtnr.projector.crossDimensionBaseline')
+    def directoryName = crossDimension ? (baseline ? 'projector-cross-dimension-baseline' : 'projector-cross-dimension-qa') : 'projector-creative-qa'
     def marker = 'gtnr.projector.creative.qa'
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
 
@@ -28,6 +30,8 @@ gradle.projectsEvaluated {
         classpath += root.files(qaDirectory.map { it.dir('classes') })
         workingDir root.file("build/${directoryName}/run")
         systemProperty marker, 'true'
+        systemProperty 'gtnr.projector.crossDimensionQa', crossDimension
+        systemProperty 'gtnr.projector.crossDimensionBaseline', baseline
         systemProperty 'java.security.manager', 'allow'
         systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
         systemProperty 'sun.net.client.defaultReadTimeout', '15000'
@@ -45,6 +49,9 @@ gradle.projectsEvaluated {
             new File(workingDir, 'config/splash.properties').text = 'enabled=false\n'
             new File(workingDir, 'config/DreamCoreMod.properties').text = 'showConfirmExitWindow=false\n'
             java.nio.file.Files.deleteIfExists(new File(workingDir, 'result.txt').toPath())
+            if (crossDimension) {
+                java.nio.file.Files.deleteIfExists(new File(workingDir, 'projector-cross-dimension-report.txt').toPath())
+            }
             new File(workingDir, 'options.txt').setText(
                 ('lang:zh_CN\nguiScale:2\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsoundCategory_music:0.0\nmusic:0.0\nsound:0.0\n'),
                 'UTF-8')

@@ -118,6 +118,7 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
     public final ActionHandler<StorageFluidRequest> craftFluidAction;
     public final ActionHandler<Void> quickEncodeAction;
     public final ActionHandler<Boolean> quickEncodeAndMoveToInventoryAction;
+    private final ActionHandler<InterfacePatternTarget> encodeAndPlacePatternAction;
     private final TerminalPatternState patternState;
     private boolean appliedCraftingMode;
     private boolean appliedCraftingModeInitialized;
@@ -125,6 +126,7 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
     private PinsRows nativePlayerPinRows = PinsRows.DISABLED;
     private boolean nativePinRowsCaptured;
     private boolean encodingWithLogicalInventorySize;
+    private ItemStack pendingRecipeUpload;
 
     public QuickEncodingTerminalContainer(InventoryPlayer inventoryPlayer, ITerminalHost host) {
         super(inventoryPlayer, host, true);
@@ -180,7 +182,10 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
         takeBlankPatternAction = sync.actionC2S("takeBlankPattern", StreamCodecs.intValue())
             .onServerAction(action -> clickPatternSlot(blankPatternSlot, action));
         takeEncodedPatternAction = sync.actionC2S("takeEncodedPattern", StreamCodecs.intValue())
-            .onServerAction(action -> clickPatternSlot(encodedPatternSlot, action));
+            .onServerAction(action -> {
+                pendingRecipeUpload = null;
+                clickPatternSlot(encodedPatternSlot, action);
+            });
         clickInterfacePatternAction = sync.actionC2S("clickInterfacePattern", InterfacePatternTarget.CODEC)
             .onServerAction(target -> performInterfacePatternAction(target, InventoryAction.PICKUP_OR_SET_DOWN));
         shiftClickInterfacePatternAction = sync.actionC2S("shiftClickInterfacePattern", InterfacePatternTarget.CODEC)
@@ -197,6 +202,8 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
             .onServerAction(this::quickEncode);
         quickEncodeAndMoveToInventoryAction = sync.actionC2S("quickEncodeAndMove", StreamCodecs.booleanValue())
             .onServerAction(this::quickEncodeAndMoveToInventory);
+        encodeAndPlacePatternAction = sync.actionC2S("encodeAndPlacePattern", InterfacePatternTarget.CODEC)
+            .onServerAction(target -> placeEncodedPattern(target, quickEncode()));
         if (Platform.isServer()) {
             nativeCraftingPinRows = getCraftingPinsRows();
             nativePlayerPinRows = getPlayerPinsRows();
@@ -371,6 +378,10 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
 
     public void requestPlaceEncodedPattern(InterfacePatternTarget target) {
         if (target != null) placeEncodedPatternAction.send(target);
+    }
+
+    public void requestEncodeAndPlacePattern(InterfacePatternTarget target) {
+        encodeAndPlacePatternAction.send(target);
     }
 
     public void requestTakeEncodedPattern(boolean shiftToInventory) {
@@ -724,6 +735,7 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
     }
 
     private void applyRecipeTransfer(RecipeTransferPayload payload) {
+        pendingRecipeUpload = null;
         if (!payload.isCrafting()) {
             applyProcessingGridSize(payload.getProcessingGridSize());
             applyInverted(payload.isInverted());
@@ -744,7 +756,7 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
         // representation is regenerated from it on the next mode switch.
         patternState.invalidateLink();
         saveChanges();
-        if (payload.shouldEncode()) quickEncode();
+        if (payload.shouldEncode()) pendingRecipeUpload = quickEncode();
     }
 
     private void applyRecipeIngredient(RecipeIngredientReplacement replacement) {
@@ -790,13 +802,19 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
             && first.isSameType((Object) second);
     }
 
+    private void placeEncodedPattern(InterfacePatternTarget target) {
+        ItemStack pattern = pendingRecipeUpload;
+        pendingRecipeUpload = null;
+        placeEncodedPattern(target, pattern);
+    }
+
     /**
      * Moves the freshly encoded pattern straight into the highlighted interface
      * slot. The target id comes from this delegate's own synchronized entry list,
      * so no world-coordinate lookup or cross-dimensional tile access is needed.
      */
-    private void placeEncodedPattern(InterfacePatternTarget target) {
-        if (encodedPatternSlot == null || !encodedPatternSlot.getHasStack() || TRACKED_BY_ID == null) return;
+    private void placeEncodedPattern(InterfacePatternTarget target, ItemStack pattern) {
+        if (pattern == null || encodedPatternSlot.getStack() != pattern || TRACKED_BY_ID == null) return;
         try {
             Object tracker = ((Map<?, ?>) TRACKED_BY_ID.get(interfaceDelegate)).get(target.getEntryId());
             if (tracker == null) return;
@@ -806,8 +824,7 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
             int slot = target.getSlot();
             if (slot < 0 || slot >= patterns.getSizeInventory() || patterns.getStackInSlot(slot) != null) return;
 
-            ItemStack pattern = encodedPatternSlot.getStack();
-            if (pattern == null || !patterns.isItemValidForSlot(slot, pattern)) return;
+            if (!patterns.isItemValidForSlot(slot, pattern)) return;
             InventoryPlayer playerInventory = getPlayerInv();
             if (!(playerInventory.player instanceof EntityPlayerMP player) || playerInventory.getItemStack() != null)
                 return;
@@ -955,13 +972,18 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
         return true;
     }
 
-    private void quickEncode() {
-        if (!rememberArcaneLayout()) return;
+    private ItemStack quickEncode() {
+        pendingRecipeUpload = null;
+        if (!rememberArcaneLayout()) return null;
+        ItemStack previous = encodedPatternSlot.getStack();
         if (isCraftingMode()) {
             encodeWithInventorySizes(9, -1);
-            return;
+        } else {
+            encodeWithInventorySizes(processingInputSize(), DualTerminalGuiObject.PATTERN_SLOT_COUNT);
         }
-        encodeWithInventorySizes(processingInputSize(), DualTerminalGuiObject.PATTERN_SLOT_COUNT);
+        // AE2 replaces the stack on success and leaves the original stack in place on failure.
+        ItemStack encoded = encodedPatternSlot.getStack();
+        return encoded == previous ? null : encoded;
     }
 
     /** Keeps occupied high slots and interior gaps, but avoids serializing hundreds of empty trailing NBT tags. */
@@ -974,9 +996,7 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
     }
 
     private void quickEncodeAndMoveToInventory(boolean encodeWholeStack) {
-        if (!rememberArcaneLayout()) return;
-        quickEncode();
-        ItemStack output = encodedPatternSlot.getStack();
+        ItemStack output = quickEncode();
         if (output == null) return;
         if (encodeWholeStack) {
             ItemStack blanks = blankPatternSlot.getStack();

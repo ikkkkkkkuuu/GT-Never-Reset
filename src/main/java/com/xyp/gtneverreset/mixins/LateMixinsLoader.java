@@ -105,6 +105,12 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("structurelib.TooltipLazyStructureElementMixin");
         }
         if (loadedMods.contains(ModList.ModIds.APPLIED_ENERGISTICS_2)) {
+            if (loadedMods.contains("structurecompat")) {
+                mixins.add("structurecompat.WirelessTerminalRangeMixin");
+            }
+            if (!loadedMods.contains(ModList.ModIds.AE2_CONVENIENCE_FEATURES)) {
+                mixins.add("appliedenergistics2.CraftingCompletionMixin");
+            }
             if (loadedMods.contains(ModList.ModIds.MATTER_MANIPULATOR)) {
                 mixins.addAll(
                     Arrays.asList(
@@ -156,6 +162,10 @@ public final class LateMixinsLoader implements ILateMixinLoader {
         if (!FMLLaunchHandler.side()
             .isClient() || !loadedMods.contains(ModList.ModIds.APPLIED_ENERGISTICS_2)) {
             return mixins;
+        }
+        if (!loadedMods.contains(ModList.ModIds.AE2_CONVENIENCE_FEATURES)) {
+            mixins.add("appliedenergistics2.CraftingCompletionItemRepoMixin");
+            mixins.add("appliedenergistics2.CraftingCompletionTerminalMixin");
         }
         mixins.addAll(
             Arrays.asList(

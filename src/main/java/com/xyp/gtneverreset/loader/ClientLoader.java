@@ -14,6 +14,7 @@ import com.xyp.gtneverreset.client.render.FluxConnectorRender;
 import com.xyp.gtneverreset.client.render.PackagedCoreRenderer;
 import com.xyp.gtneverreset.client.render.StableEndCrystalRender;
 import com.xyp.gtneverreset.client.render.WirelessConnectorRenderer;
+import com.xyp.gtneverreset.client.terminal.CraftingCompletionClient;
 import com.xyp.gtneverreset.client.terminal.WirelessTerminalInputHandler;
 import com.xyp.gtneverreset.client.wireless.WirelessCardInput;
 import com.xyp.gtneverreset.client.wireless.WirelessMonitorHud;
@@ -86,6 +87,7 @@ public final class ClientLoader {
             .register(new QuantumCraftingClientEvents());
         ClientRegistry.registerKeyBinding(WirelessTerminalInputHandler.OPEN_TERMINAL);
         ClientRegistry.registerKeyBinding(WirelessTerminalInputHandler.SEND_HELD_ITEM);
+        if (!ModList.AE2ConvenienceFeatures.isModLoaded()) CraftingCompletionClient.register();
         FMLCommonHandler.instance()
             .bus()
             .register(new WirelessTerminalInputHandler());
