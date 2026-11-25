@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -55,6 +56,7 @@ import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.metatileentity.implementations.MTEExtendedPowerMultiBlockBase;
+import gregtech.api.modularui2.GTGuiTextures;
 import gregtech.api.recipe.RecipeMap;
 import gregtech.api.recipe.check.CheckRecipeResult;
 import gregtech.api.recipe.check.CheckRecipeResultRegistry;
@@ -79,6 +81,8 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     private static final int FERTILIZER_PER_PARALLEL = 28_800;
     private static final int BASE_EUT = 512;
     private static final int WASH_TICKS = 160;
+    private static final int MODE_BREEDING = 0;
+    private static final int MODE_WASHING = 1;
 
     private static int farmCasingTextureIndex() {
         return GTUtility.getCasingTextureIndex(CropsNHBlocks.blockCasings1, 0);
@@ -90,7 +94,6 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     private String activeCrop = "";
     private int activeChance;
     private int activeParallel;
-    private boolean washingMode;
     private int activeWashStat;
 
     private IStructureDefinition<LargeCropBreeder> structureDefinition;
@@ -124,6 +127,14 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
                 endRecipeProcessing();
             }
         }
+    }
+
+    @Override
+    public void onScrewdriverRightClick(ForgeDirection side, EntityPlayer player, float x, float y, float z,
+        ItemStack tool) {
+        if (!getBaseMetaTileEntity().isServerSide()) return;
+        toggleWashingMode();
+        GTUtility.sendChatTrans(player, getMachineModeKey());
     }
 
     @Override
@@ -203,7 +214,7 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
         activeWashStat = 0;
         collectSamples();
         if (targetCrop.isEmpty()) return CheckRecipeResultRegistry.NO_RECIPE;
-        if (washingMode) return startWashing();
+        if (isWashingMode()) return startWashing();
         ICropCard crop = CropRegistry.instance.get(targetCrop);
         ICropMutation mutation = null;
         ArrayList<ICropCard> parents = new ArrayList<>();
@@ -501,7 +512,9 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
 
     @Override
     protected MTEMultiBlockBaseGui<LargeCropBreeder> getGui() {
-        return new LargeCropBreederGui(this);
+        return new LargeCropBreederGui(this).withMachineModeIcons(
+            GTGuiTextures.OVERLAY_BUTTON_MACHINEMODE_DEFAULT,
+            GTGuiTextures.OVERLAY_BUTTON_MACHINEMODE_LPF_FLUID);
     }
 
     public void setTargetCrop(String value) {
@@ -557,20 +570,19 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     }
 
     public int getCurrentParallel() {
-        return mMaxProgresstime > 0 ? activeParallel : washingMode ? 1 : getMaxParallelRecipes();
+        return mMaxProgresstime > 0 ? activeParallel : isWashingMode() ? 1 : getMaxParallelRecipes();
     }
 
     public boolean isWashingMode() {
-        return washingMode;
+        return machineMode == MODE_WASHING;
     }
 
     public boolean showsWashingOperation() {
-        return mMaxProgresstime > 0 ? activeWashStat != 0 : washingMode;
+        return mMaxProgresstime > 0 ? activeWashStat != 0 : isWashingMode();
     }
 
     public void toggleWashingMode() {
-        washingMode = !washingMode;
-        markChanged(false);
+        setMachineMode(nextMachineMode());
     }
 
     @Override
@@ -589,7 +601,7 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     public void loadNBTData(NBTTagCompound tag) {
         super.loadNBTData(tag);
         targetCrop = tag.getString("cropTarget");
-        washingMode = tag.getBoolean("cropWashingMode");
+        machineMode = tag.getBoolean("cropWashingMode") ? MODE_WASHING : MODE_BREEDING;
         archive.clear();
         NBTTagList samples = tag.getTagList("cropArchive", 10);
         for (int i = 0; i < samples.tagCount(); i++) {
@@ -617,7 +629,7 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
 
     private void writeArchive(NBTTagCompound tag) {
         tag.setString("cropTarget", targetCrop);
-        tag.setBoolean("cropWashingMode", washingMode);
+        tag.setBoolean("cropWashingMode", isWashingMode());
         NBTTagList samples = new NBTTagList();
         archive.forEach((id, stats) -> {
             NBTTagCompound sample = stats.writeToNBT(new NBTTagCompound());
@@ -645,6 +657,42 @@ public class LargeCropBreeder extends MTEExtendedPowerMultiBlockBase<LargeCropBr
     @Override
     public boolean supportsBatchMode() {
         return false;
+    }
+
+    @Override
+    public boolean supportsMachineModeSwitch() {
+        return true;
+    }
+
+    @Override
+    public int nextMachineMode() {
+        return isWashingMode() ? MODE_BREEDING : MODE_WASHING;
+    }
+
+    @Override
+    public String getMachineModeKey() {
+        if (isWashingMode()) {
+            // #tr gtnr.crop_breeder.mode_washing
+            // # Seed improvement mode
+            // # zh_CN 洗种模式
+            return "gtnr.crop_breeder.mode_washing";
+        }
+        // #tr gtnr.crop_breeder.mode_breeding
+        // # Breeding mode
+        // # zh_CN 杂交模式
+        return "gtnr.crop_breeder.mode_breeding";
+    }
+
+    @Override
+    public void setMachineMode(int mode) {
+        if ((mode != MODE_BREEDING && mode != MODE_WASHING) || mode == machineMode) return;
+        IGregTechTileEntity tile = getBaseMetaTileEntity();
+        if (tile != null && tile.isServerSide()) {
+            super.setMachineMode(mode);
+            markChanged(false);
+        } else {
+            machineMode = mode;
+        }
     }
 
     @Override

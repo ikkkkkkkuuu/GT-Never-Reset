@@ -41,7 +41,8 @@ public final class BeeBreedingPlanner {
     public static Plan plan(String targetUID, Set<String> unlockedSpecies) {
         if (targetUID == null || targetUID.isEmpty()) return Plan.empty("");
 
-        Set<String> unlocked = unlockedSpecies == null ? Collections.emptySet() : new HashSet<>(unlockedSpecies);
+        Set<String> unlocked = unlockedSpecies == null ? new HashSet<>() : new HashSet<>(unlockedSpecies);
+        unlocked.remove(targetUID);
         Candidate candidate = resolve(targetUID, unlocked, new HashSet<>(), new HashMap<>());
         if (candidate == null) {
             return new Plan(
@@ -122,11 +123,17 @@ public final class BeeBreedingPlanner {
 
         private final LinkedHashMap<String, BeeBreedingHelper.BreedingStep> stepsByResult;
         private final LinkedHashSet<String> missingSpecies;
+        private final double expectedAttempts;
 
         private Candidate(LinkedHashMap<String, BeeBreedingHelper.BreedingStep> stepsByResult,
             LinkedHashSet<String> missingSpecies) {
             this.stepsByResult = stepsByResult;
             this.missingSpecies = missingSpecies;
+            double attempts = 0.0D;
+            for (BeeBreedingHelper.BreedingStep step : stepsByResult.values()) {
+                attempts += 100.0D / Math.max(MIN_CHANCE_FOR_COST, step.chance);
+            }
+            expectedAttempts = attempts;
         }
 
         private static Candidate empty() {
@@ -152,11 +159,7 @@ public final class BeeBreedingPlanner {
         }
 
         private double expectedAttempts() {
-            double attempts = 0.0D;
-            for (BeeBreedingHelper.BreedingStep step : stepsByResult.values()) {
-                attempts += 100.0D / Math.max(MIN_CHANCE_FOR_COST, step.chance);
-            }
-            return attempts;
+            return expectedAttempts;
         }
 
         private String signature() {

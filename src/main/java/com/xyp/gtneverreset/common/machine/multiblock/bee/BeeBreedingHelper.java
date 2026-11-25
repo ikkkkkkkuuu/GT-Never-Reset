@@ -63,6 +63,16 @@ public final class BeeBreedingHelper {
         return getBeeRoot().getType(stack) == EnumBeeType.DRONE;
     }
 
+    public static ItemStack copyBeeAsType(ItemStack source, EnumBeeType type) {
+        if (!isBee(source)) return null;
+        IBeeRoot root = getBeeRoot();
+        IBee bee = root.getMember(source);
+        if (bee == null) return null;
+        ItemStack copy = root.getMemberStack(bee, type.ordinal());
+        if (copy != null) copy.stackSize = 1;
+        return copy;
+    }
+
     public static String getBeeUID(ItemStack stack) {
         if (!isBee(stack)) return null;
         IBee bee = getBeeRoot().getMember(stack);

@@ -91,10 +91,10 @@ import gregtech.api.modularui2.GTGuiTextures;
 import gregtech.api.util.GTUtility;
 import gregtech.common.modularui2.widget.SlotLikeButtonWidget;
 
-public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBreeder> {
+public final class LargeCropBreederGui extends BreederGui<LargeCropBreeder> {
 
-    private static final int WIDTH = 232, BODY_HEIGHT = 230, SPECIES_PER_PAGE = 30;
-    private static final int ROUTE_WIDTH = WIDTH - 4, ROUTE_HEIGHT = BODY_HEIGHT - 18;
+    private static final int WIDTH = BODY_WIDTH, BODY_HEIGHT = 230, SPECIES_PER_PAGE = 30;
+    private static final int ROUTE_WIDTH = ROUTE_VIEWPORT_WIDTH - 4, ROUTE_HEIGHT = BODY_HEIGHT - 18;
     private static final float MIN_ROUTE_ZOOM = 0.25F, MAX_ROUTE_ZOOM = 2F;
     private static final int JUNCTION_RISE = 24;
     private static final UITexture ROUTE_ARROW_EMPTY = new RouteArrowTexture(false, 0);
@@ -103,7 +103,6 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     private static final UITexture ROUTE_LINE_EMPTY = new RouteArrowTexture(false, 0, false);
     private static final UITexture ROUTE_LINE_FULL = new RouteArrowTexture(true, 0, false);
     private static final UITexture ROUTE_LINE_COMPLETE = new RouteArrowTexture(true, 0xFF55DD55, false);
-    private final PagedWidget.Controller pages = new PagedWidget.Controller();
     private final Map<String, ItemStack> icons = new HashMap<>();
     private final Map<String, Integer> cropChances = new HashMap<>();
     private final Map<String, Integer> cropVoltageTiers = new HashMap<>();
@@ -123,7 +122,6 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     private String draftText;
     private StringSyncValue draft, target, active;
     private BooleanSyncValue valid;
-    private BooleanSyncValue washingMode;
     private BooleanSyncValue washingOperation;
     private IntSyncValue progress, duration, chance;
     private IntSyncValue parallel;
@@ -135,7 +133,7 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     private List<NBTTagCompound> archiveSnapshot = Collections.emptyList();
 
     public LargeCropBreederGui(LargeCropBreeder machine) {
-        super(machine);
+        super(machine, BODY_HEIGHT);
         draftText = machine.getTargetCrop();
     }
 
@@ -150,14 +148,8 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         target = new StringSyncValue(multiblock::getTargetCrop);
         active = new StringSyncValue(multiblock::getActiveCrop);
         valid = new BooleanSyncValue(multiblock::isTargetValid);
-        washingMode = new BooleanSyncValue(multiblock::isWashingMode);
-        sync.syncValue("cropWashingMode", washingMode);
         washingOperation = new BooleanSyncValue(multiblock::showsWashingOperation);
         sync.syncValue("cropWashingOperation", washingOperation);
-        sync.syncValue(
-            "cropSwitchMode",
-            new InteractionSyncHandler().setOnMousePressed(
-                mouse -> { if (!mouse.isClient() && mouse.mouseButton == 0) multiblock.toggleWashingMode(); }));
         chance = new IntSyncValue(multiblock::getSuccessChance);
         parallel = new IntSyncValue(multiblock::getCurrentParallel);
         sync.syncValue("cropParallel", parallel);
@@ -353,106 +345,32 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
     }
 
     @Override
-    protected int getBasePanelWidth() {
-        return WIDTH + 12;
-    }
-
-    @Override
-    protected int getBasePanelHeight() {
-        return 264;
-    }
-
-    @Override
-    public Flow createMainColumn(ModularPanel panel, PanelSyncManager sync) {
-        Flow tabs = Flow.row()
-            .size(WIDTH, 18)
-            .marginBottom(4);
-        // #tr gtnr.crop_breeder.run
-        // # Run
-        // # zh_CN 运行
-        tabs.child(
-            tab(0, "gtnr.crop_breeder.run", "gtnr.crop_breeder.run", GTGuiTextures.OVERLAY_BUTTON_POWER_SWITCH_ON));
-        // #tr gtnr.crop_breeder.archive
-        // # Archive
-        // # zh_CN 档案
-        tabs.child(tab(1, "gtnr.crop_breeder.archive", "gtnr.crop_breeder.archive", new ItemDrawable(Items.book)));
-        // #tr gtnr.crop_breeder.reachable
-        // # Breedable
-        // # zh_CN 可育
-        // #tr gtnr.crop_breeder.tab_reachable
-        // # Crops
-        // # zh_CN 可育
-        tabs.child(
-            tab(2, "gtnr.crop_breeder.tab_reachable", "gtnr.crop_breeder.reachable", new ItemDrawable(Items.wheat)));
-        // #tr gtnr.crop_breeder.route
-        // # Route
-        // # zh_CN 路线
-        tabs.child(tab(3, "gtnr.crop_breeder.route", "gtnr.crop_breeder.route", new ItemDrawable(Items.map)));
-        Flow inventory = Flow.column()
-            .pos(0, 154)
-            .size(WIDTH, 76)
-            .child(createInventoryRow(panel, sync));
-        ButtonWidget<?> modeButton = modeButton();
-        PagedWidget<?> content = new PagedWidget<>().controller(pages)
-            .size(WIDTH, BODY_HEIGHT)
-            .addPage(operationPage(panel, sync))
+    protected void addPages(PagedWidget<?> content, ModularPanel panel, PanelSyncManager sync) {
+        content.addPage(operationPage(panel, sync))
             .addPage(speciesPage(archiveView))
             .addPage(speciesPage(reachableView))
-            .addPage(routePage())
-            .onPageChange(index -> {
-                inventory.setEnabled(index != 3);
-                modeButton.setEnabled(index == 0);
-            });
-        return Flow.column()
-            .padding(6)
-            .child(tabs)
-            .child(
-                new ParentWidget<>().size(WIDTH, BODY_HEIGHT)
-                    .child(content)
-                    .child(inventory)
-                    .child(modeButton));
+            .addPage(routePage());
     }
 
-    private ButtonWidget<?> modeButton() {
-        IDrawable breedingIcon = new ItemDrawable(Items.wheat_seeds);
-        IDrawable washingIcon = new ItemDrawable(Items.water_bucket);
-        return new ButtonWidget<>().name("crop_mode_switch")
-            .pos(WIDTH - 20, 154)
-            .size(18, 18)
-            .background(GTGuiTextures.BUTTON_STANDARD)
-            .overlay(
-                (context, x, y, width, height, theme) -> (washingMode.getBoolValue() ? washingIcon : breedingIcon)
-                    .draw(context, x + 2, y + 2, width - 4, height - 4, theme))
-            .tooltipAutoUpdate(true)
-            .tooltipBuilder(t -> {
-                // #tr gtnr.crop_breeder.mode_breeding
-                // # Breeding mode. Click to switch to seed improvement.
-                // # zh_CN 杂交模式，点击切换为洗种
-                // #tr gtnr.crop_breeder.mode_washing
-                // # Seed improvement mode. Click to switch to breeding.
-                // # zh_CN 洗种模式，点击切换为杂交模式
-                t.addLine(
-                    tr(
-                        washingMode.getBoolValue() ? "gtnr.crop_breeder.mode_washing"
-                            : "gtnr.crop_breeder.mode_breeding"));
-            })
-            .syncHandler("cropSwitchMode");
-    }
-
-    private PageButton tab(int index, String key, String tooltipKey, IDrawable icon) {
-        IKey label = IKey.lang(key)
-            .scale(0.75F)
-            .color(0xFF202020)
-            .shadow(false);
-        return new PageButton(index, pages).size(55, 18)
-            .marginRight(index == 3 ? 0 : 4)
-            .background(false, GTGuiTextures.BUTTON_STANDARD)
-            .background(true, GTGuiTextures.BUTTON_STANDARD_PRESSED)
-            .overlay((context, x, y, width, height, theme) -> {
-                icon.draw(context, x + 3, y + 2, 14, 14, theme);
-                label.draw(context, x + 19, y + 3, 34, 12, theme);
-            })
-            .tooltipBuilder(t -> t.addLine(IKey.lang(tooltipKey)));
+    @Override
+    protected PageButton[] createPageTabs() {
+        return new PageButton[] {
+            // #tr gtnr.crop_breeder.run
+            // # Run
+            // # zh_CN 运行
+            tab(0, new ItemDrawable(Items.wheat_seeds), "gtnr.crop_breeder.run"),
+            // #tr gtnr.crop_breeder.archive
+            // # Archive
+            // # zh_CN 档案
+            tab(1, new ItemDrawable(Items.book), "gtnr.crop_breeder.archive"),
+            // #tr gtnr.crop_breeder.reachable
+            // # Breedable Crops
+            // # zh_CN 可育作物
+            tab(2, new ItemDrawable(Items.wheat), "gtnr.crop_breeder.reachable"),
+            // #tr gtnr.crop_breeder.route
+            // # Route
+            // # zh_CN 路线
+            tab(3, new ItemDrawable(Items.map), "gtnr.crop_breeder.route") };
     }
 
     private ParentWidget<?> operationPage(ModularPanel panel, PanelSyncManager sync) {
@@ -645,8 +563,9 @@ public final class LargeCropBreederGui extends GTNRMultiBlockBaseGui<LargeCropBr
         VerticalScrollData vertical = new VerticalScrollData();
         HorizontalScrollData horizontal = new HorizontalScrollData();
         ScrollWidget<?> viewport = new BreedingRouteViewport(vertical).showScrollShadows(false)
+            .name("breeder_route")
             .pos(0, 18)
-            .size(WIDTH, ROUTE_HEIGHT)
+            .size(ROUTE_VIEWPORT_WIDTH, ROUTE_HEIGHT)
             .background(IDrawable.EMPTY);
         viewport.getScrollArea()
             .setScrollDataX(horizontal);
