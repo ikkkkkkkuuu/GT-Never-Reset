@@ -75,6 +75,7 @@ public enum GTNRItemList implements IItemContainer {
     StarCoreStripper,
     LargeOreProcessor,
     LargeFurnace,
+    MegaElectricBlastFurnace,
     UniversalJointFactory,
     HadronCatalyticRefinery,
     BottleInChaos,

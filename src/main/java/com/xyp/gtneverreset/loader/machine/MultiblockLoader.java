@@ -14,6 +14,7 @@ import com.xyp.gtneverreset.common.machine.multiblock.LargeCropBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeOreProcessor;
 import com.xyp.gtneverreset.common.machine.multiblock.LightHunterSpaceStation;
+import com.xyp.gtneverreset.common.machine.multiblock.MegaElectricBlastFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.NexusSatelliteFactory;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
@@ -154,6 +155,15 @@ public final class MultiblockLoader {
                     "gtneverreset.large_bee_breeder",
                     StatCollector.translateToLocal("gtnr.machine.large_bee_breeder.name")));
         }
+        // #tr gtnr.machine.mega_electric_blast_furnace.name
+        // # Mega Electric Blast Furnace
+        // # zh_CN 巨型电力高炉
+        register(
+            GTNRItemList.MegaElectricBlastFurnace,
+            new MegaElectricBlastFurnace(
+                GTNRMachineID.MegaElectricBlastFurnace.id,
+                "gtneverreset.mega_electric_blast_furnace",
+                StatCollector.translateToLocal("gtnr.machine.mega_electric_blast_furnace.name")));
     }
 
     private static void registerSatellites() {

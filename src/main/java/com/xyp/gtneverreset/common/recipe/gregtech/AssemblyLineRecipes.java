@@ -67,6 +67,7 @@ public final class AssemblyLineRecipes {
         registerSatelliteFactories();
         registerSatelliteUpgrades();
         registerStarCoreStripper();
+        registerMegaElectricBlastFurnace();
         if (!ChaosConfig.enableBottleInChaos) return;
         registerChaosPhotonUpgrades();
         registerChaosGenerators();
@@ -104,6 +105,34 @@ public final class AssemblyLineRecipes {
             .requireMods(Mods.AppliedEnergistics2, Mods.AE2FluidCraft, Mods.OpenComputers)
             .addTo(GTRecipeConstants.AssemblyLine);
 
+    }
+
+    private static void registerMegaElectricBlastFurnace() {
+        TTRecipeAdder.addResearchableAssemblylineRecipe(
+            ItemList.LargeNaquadahReactor.get(1),
+            256_000,
+            64,
+            (int) TierEU.RECIPE_UEV,
+            4,
+            new Object[] { GregtechItemList.Machine_Adv_BlastFurnace.get(64),
+                GregtechItemList.Machine_Adv_BlastFurnace.get(64),
+                GregtechItemList.Industrial_AlloyBlastSmelter.get(64),
+                GregtechItemList.Industrial_AlloyBlastSmelter.get(64),
+                GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.BlackPlutonium, 4),
+                GTOreDictUnificator.get(OrePrefixes.plateDense, Materials.Infinity, 4),
+                MaterialsAlloy.ABYSSAL.getPlateDense(4), MaterialsAlloy.CINOBITE.getPlateDense(4),
+                ItemList.Electric_Pump_UIV.get(16), ItemList.Electric_Piston_UIV.get(16),
+                ItemList.Hatch_Energy_UIV.get(8), ItemList.Transformer_UIV_UEV.get(8),
+                new Object[] { OrePrefixes.circuit.get(Materials.UIV), 16 },
+                GTOreDictUnificator.get(OrePrefixes.block, Materials.Neutronium, 64),
+                GTOreDictUnificator.get(OrePrefixes.wireGt16, Materials.SuperconductorUEV, 16),
+                GTOreDictUnificator.get(OrePrefixes.wireGt16, Materials.SuperconductorUIV, 16) },
+            new FluidStack[] { MaterialMisc.MUTATED_LIVING_SOLDER.getFluidStack(144 * 100),
+                Materials.CosmicNeutronium.getMolten(144 * 400), Materials.TranscendentMetal.getMolten(144 * 80),
+                GGMaterial.tairitsu.getMolten(144 * 40) },
+            GTNRItemList.MegaElectricBlastFurnace.get(1),
+            20 * 60 * 5,
+            (int) TierEU.RECIPE_UIV);
     }
 
     private static void registerChaosCasings() {
