@@ -95,6 +95,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("gregtech.PatternInputFallbackMixin");
             mixins.add("gregtech.RecipeLookupMixin");
             mixins.add("gregtech.MultiblockProcessingAccessor");
+            mixins.add("gregtech.CraftingMonitorHatchAccessor");
             mixins.add("gregtech.CircuitAssemblyLinePatternModeMixin");
             mixins.add("gregtech.PatternMEOutputMultiblockMixin");
             mixins.add("gregtech.PatternAssemblyControllerNameMixin");
@@ -105,6 +106,9 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("structurelib.TooltipLazyStructureElementMixin");
         }
         if (loadedMods.contains(ModList.ModIds.APPLIED_ENERGISTICS_2)) {
+            if (loadedMods.contains(ModList.ModIds.GREGTECH) && loadedMods.contains("modularui2")) {
+                mixins.add("modularui2.CraftingMonitorGuiReachMixin");
+            }
             if (loadedMods.contains("structurecompat")) {
                 mixins.add("structurecompat.WirelessTerminalRangeMixin");
             }
@@ -171,6 +175,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             Arrays.asList(
                 "appliedenergistics2.wireless.MixinWirelessVisualiserRender",
                 "appliedenergistics2.TerminalInventorySortMixin",
+                "appliedenergistics2.CraftingMonitorGuiMixin",
                 "appliedenergistics2.AccessorGuiScrollbar",
                 "appliedenergistics2.AccessorContainerMEMonitorable",
                 "appliedenergistics2.MixinGuiCraftingTerm",

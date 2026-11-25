@@ -1,6 +1,7 @@
 package com.xyp.gtneverreset.mixins.late.gregtech;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 import gregtech.api.logic.ProcessingLogic;
@@ -11,4 +12,7 @@ public interface MultiblockProcessingAccessor {
 
     @Invoker("setupProcessingLogic")
     void gtnr$setupProcessingLogic(ProcessingLogic logic);
+
+    @Accessor("processingLogic")
+    ProcessingLogic gtnr$getProcessingLogic();
 }

@@ -19,6 +19,7 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import com.cleanroommc.modularui.api.IGuiHolder;
 import com.cleanroommc.modularui.factory.PosGuiData;
@@ -30,6 +31,7 @@ import com.xyp.gtneverreset.api.packaged.PackagedCoreRegistry;
 import com.xyp.gtneverreset.api.packaged.PackagedTarget;
 import com.xyp.gtneverreset.common.gui.PackagedProviderGui;
 import com.xyp.gtneverreset.common.item.items.ItemPackagedCore;
+import com.xyp.gtneverreset.common.me.CraftingMachineMonitor;
 import com.xyp.gtneverreset.utils.enums.AltarStatus;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.PackagedCraftingLock;
@@ -422,8 +424,9 @@ public final class TileEntityPackagedProvider extends TileEntityAENetworkBase
                 throttled = true;
                 continue;
             }
-            if (!canQueue(target, adapter, details.getPattern()) || !adapter.accepts(target.resolve(worldObj)))
-                continue;
+            if (!canQueue(target, adapter, details.getPattern())) continue;
+            TileEntity targetTile = target.resolve(worldObj);
+            if (!adapter.accepts(targetTile)) continue;
             ItemStack expected = adapter.dispatch(this, target, details, table);
             if (expected == null) continue;
             if (adapter.returnsImmediately()) arcaneDispatchTicks.put(target, worldObj.getTotalWorldTime());
@@ -443,6 +446,8 @@ public final class TileEntityPackagedProvider extends TileEntityAENetworkBase
             failures = 0;
             nextDispatch = 0;
             markDirty();
+            CraftingMachineMonitor
+                .capture(this, this, ForgeDirection.UNKNOWN, targetTile, ForgeDirection.getOrientation(target.face));
             return true;
         }
         nextDispatch = worldObj.getTotalWorldTime()

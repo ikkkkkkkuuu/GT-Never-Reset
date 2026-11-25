@@ -39,6 +39,23 @@ public final class RecipeThreadOutputs {
         }
     }
 
+    public boolean hasItemOutput(ItemStack stack) {
+        for (int i = 0; i < items.length; i++) {
+            ItemStack item = items[i];
+            if (item != null && itemAmounts[i].signum() > 0
+                && item.isItemEqual(stack)
+                && ItemStack.areItemStackTagsEqual(item, stack)) return true;
+        }
+        return false;
+    }
+
+    public boolean hasFluidOutput(FluidStack stack) {
+        for (int i = 0; i < fluids.length; i++) {
+            if (fluids[i] != null && fluidAmounts[i].signum() > 0 && fluids[i].isFluidEqual(stack)) return true;
+        }
+        return false;
+    }
+
     private BigInteger largest() {
         BigInteger largest = BigInteger.ZERO;
         for (BigInteger n : itemAmounts) largest = largest.max(n);

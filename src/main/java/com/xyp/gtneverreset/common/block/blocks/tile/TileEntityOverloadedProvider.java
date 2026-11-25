@@ -38,6 +38,7 @@ import com.xyp.gtneverreset.api.packaged.PackagedTarget;
 import com.xyp.gtneverreset.common.gui.OverloadedProviderGui;
 import com.xyp.gtneverreset.common.machine.basicMachine.ModernFluidMachine;
 import com.xyp.gtneverreset.common.me.CircuitPatternCodec;
+import com.xyp.gtneverreset.common.me.CraftingMachineMonitor;
 import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineBuffer;
 import com.xyp.gtneverreset.common.me.overloaded.OverloadedMachineInput;
 import com.xyp.gtneverreset.common.me.overloaded.OverloadedProviderInventory;
@@ -522,6 +523,10 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
                     || !OverloadedProviderInventory.insert(target, lane.target.face, inputs, false)) continue;
             }
             recordOutputs(lane, details);
+            if (target instanceof TileEntity tile) {
+                CraftingMachineMonitor
+                    .capture(this, this, ForgeDirection.UNKNOWN, tile, ForgeDirection.getOrientation(lane.target.face));
+            }
             dispatchCursor = roundRobin ? index + 1 : index;
             markDirty();
             return true;
@@ -571,6 +576,8 @@ public final class TileEntityOverloadedProvider extends TileEntityAENetworkBase 
                 BaseMetaTileEntity gt = (BaseMetaTileEntity) lane.target.resolve(worldObj);
                 ((OverloadedMachineConfiguration) gt.getMetaTileEntity()).gtnr$setProvider(xCoord, yCoord, zCoord);
                 recordOutputs(lane, details);
+                CraftingMachineMonitor
+                    .capture(this, this, ForgeDirection.UNKNOWN, gt, ForgeDirection.getOrientation(lane.target.face));
             }
             int next = remainder > 0 ? remainder : prepared.size();
             dispatchCursor = candidates.get(next - 1) + 1;

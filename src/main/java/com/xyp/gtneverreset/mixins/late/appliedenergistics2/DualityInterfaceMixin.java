@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -15,12 +17,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.xyp.gtneverreset.common.me.CraftingMachineMonitor;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternCache;
 import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.helpers.DualityInterface;
 import appeng.helpers.IInterfaceHost;
+import appeng.parts.AEBasePart;
 import appeng.tile.inventory.AppEngInternalInventory;
 
 @Mixin(value = DualityInterface.class, remap = false)
@@ -65,5 +69,13 @@ public abstract class DualityInterfaceMixin {
             this.craftingList.add(details);
         }
         ci.cancel();
+    }
+
+    @Inject(method = "onPushPatternSuccess", at = @At("HEAD"), require = 1)
+    private void gtnr$recordAcceptedTarget(TileEntity target, ForgeDirection targetSide,
+        ICraftingPatternDetails pattern, CallbackInfo ci) {
+        ForgeDirection providerSide = iHost instanceof AEBasePart part ? part.getSide() : ForgeDirection.UNKNOWN;
+        CraftingMachineMonitor
+            .capture((DualityInterface) (Object) this, iHost.getTileEntity(), providerSide, target, targetSide);
     }
 }
