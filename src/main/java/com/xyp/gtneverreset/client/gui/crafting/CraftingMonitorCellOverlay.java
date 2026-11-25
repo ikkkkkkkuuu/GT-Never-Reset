@@ -42,16 +42,17 @@ final class CraftingMonitorCellOverlay {
         visible.clear();
     }
 
-    void draw(IAEStack<?> stack, int x, int y, int width, int height) {
+    boolean draw(IAEStack<?> stack, int x, int y, int width, int height) {
         visible.add(stack);
         Sample sample = samples.get(stack);
-        if (sample == null) return;
+        if (sample == null) return false;
         long now = Minecraft.getSystemTime();
-        if (now >= sample.expiresAt()) return;
+        if (now >= sample.expiresAt()) return false;
         int filled = (int) (width * sample.fill()
             .valueAt(now));
         Gui.drawRect(x, y, x + width, y + height, SKIN.highlightShadow);
         if (filled > 0) Gui.drawRect(x, y, x + filled, y + height, SKIN.highlight);
+        return true;
     }
 
     void endFrame(int windowId) {

@@ -16,8 +16,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.llamalad7.mixinextras.sugar.Share;
+import com.llamalad7.mixinextras.sugar.ref.LocalBooleanRef;
 import com.xyp.gtneverreset.api.mixinHelper.CraftingMonitorScreen;
 import com.xyp.gtneverreset.client.gui.crafting.CraftingMonitorTooltip;
+import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
 
 import appeng.api.storage.data.IAEStack;
 import appeng.client.gui.AEBaseGui;
@@ -50,12 +53,26 @@ public abstract class CraftingMonitorGuiMixin extends AEBaseGui implements Craft
 
     @Inject(method = "drawEntry", at = @At(value = "NEW", target = "java/util/LinkedList"))
     private void gtnr$drawCellProgress(CraftingCpuEntry entry, int visibleIndex, int column, int row,
-        IAEStack<?> lastHoveredStack, CallbackInfoReturnable<?> ci) {
+        IAEStack<?> lastHoveredStack, CallbackInfoReturnable<?> ci,
+        @Share("gtnr$paintedCell") LocalBooleanRef painted) {
         if (!entry.hasActiveAmount() || !AEConfig.instance.useColoredCraftingStatus) return;
         // AE draws this part of the cell with a half-scale matrix.
         int x = 2 * (column * (1 + SECTION_LENGTH) + ITEMSTACK_LEFT_OFFSET);
         int y = 2 * (row * SECTION_HEIGHT + ITEMSTACK_TOP_OFFSET - 3);
-        gtnr$monitorTooltip.drawCellProgress(entry.getStack(), x, y, 2 * SECTION_LENGTH, 2 * SECTION_HEIGHT - 2);
+        painted.set(
+            gtnr$monitorTooltip.drawCellProgress(entry.getStack(), x, y, 2 * SECTION_LENGTH, 2 * SECTION_HEIGHT - 2));
+    }
+
+    @WrapOperation(
+        method = "drawEntry",
+        at = @At(
+            value = "INVOKE",
+            target = "Lappeng/client/gui/implementations/GuiCraftingCPU;drawAmountLine(Ljava/lang/String;JIIIIIILjava/util/List;)I"))
+    private int gtnr$drawReadableCellAmount(GuiCraftingCPU screen, String label, long amount, int column, int row,
+        int negY, int downY, int color, int visibleIndex, List<String> lines, Operation<Integer> original,
+        @Share("gtnr$paintedCell") LocalBooleanRef painted) {
+        int textColor = painted.get() ? Variant.DARK_PURPLE.colors.fieldText() : color;
+        return original.call(screen, label, amount, column, row, negY, downY, textColor, visibleIndex, lines);
     }
 
     @WrapOperation(
