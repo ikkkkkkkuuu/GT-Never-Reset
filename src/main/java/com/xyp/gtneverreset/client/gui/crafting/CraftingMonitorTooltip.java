@@ -1,14 +1,16 @@
 package com.xyp.gtneverreset.client.gui.crafting;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ChatComponentTranslation;
-import net.minecraft.util.EnumChatFormatting;
 
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
@@ -21,6 +23,8 @@ import com.xyp.gtneverreset.common.packet.CraftingMonitorSnapshotPacket.Machine;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorSnapshotPacket.Position;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorSnapshotPacket.Result;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
+import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
+import com.xyp.gtnrlib.gui.theme.ae2.AE2Look;
 
 import appeng.api.storage.data.IAEStack;
 import appeng.api.util.NamedDimensionalCoord;
@@ -36,9 +40,10 @@ public final class CraftingMonitorTooltip {
     private static final long HOVER_DELAY_MS = 300;
     private static final long REFRESH_INTERVAL_MS = 500;
     private static final long REPLY_TIMEOUT_MS = 2000;
+    private static final long PROGRESS_ANIMATION_MS = 180;
+    private static final Variant SKIN = Variant.DARK_PURPLE;
+    private static final AE2Look LOOK = AE2Look.of(SKIN);
     private static final int MAX_TOOLTIP_TARGETS = 2;
-    private static final int BAR_WIDTH = 12;
-    private static final String BAR_SEGMENT = "━";
     private static final int MENU_WIDTH = 154;
     private static final int MENU_ROW_HEIGHT = 14;
     private static final int MENU_HEIGHT = MENU_ROW_HEIGHT * 5 + 6;
@@ -47,6 +52,8 @@ public final class CraftingMonitorTooltip {
     private IAEStack<?> hovered;
     private IAEStack<?> observed;
     private List<Machine> machines = List.of();
+    private List<ProgressSample> progressSamples = List.of();
+    private Card card;
     private long nextRefresh;
     private long replyDeadline;
     private int statusRequest;
@@ -66,11 +73,14 @@ public final class CraftingMonitorTooltip {
 
     public void beginFrame() {
         hovered = null;
+        card = null;
     }
 
-    public void append(IAEStack<?> stack, List<String> lines, int windowId) {
+    public String prepareCard(IAEStack<?> stack, int windowId, String nativeTooltip, List<String> lines,
+        int amountLines, int width, int height, FontRenderer font) {
+        if (menu != null) return "";
+        if (stack == null) return nativeTooltip;
         hovered = stack;
-        if (menu != null) return;
         long now = Minecraft.getSystemTime();
         if (observed == null || !stack.equals(observed)) {
             resetObservation();
@@ -80,100 +90,42 @@ public final class CraftingMonitorTooltip {
         if (statusRequest != 0 && now >= replyDeadline) {
             statusRequest = 0;
             machines = List.of();
+            progressSamples = List.of();
         }
         if (statusRequest == 0 && now >= nextRefresh) {
             statusRequest = send(windowId, stack, Action.STATUS, 0);
             replyDeadline = now + REPLY_TIMEOUT_MS;
             nextRefresh = now + REFRESH_INTERVAL_MS;
         }
-        if (machines.isEmpty()) return;
-
-        for (int index = 0; index < Math.min(machines.size(), MAX_TOOLTIP_TARGETS); index++) {
-            appendMachine(lines, machines.get(index));
-        }
-        if (machines.size() > MAX_TOOLTIP_TARGETS) {
-            // #tr gtnr.gui.crafting_monitor.additional
-            // # %s more targets
-            // # zh_CN 另有 %s 个目标
-            lines.add(
-                EnumChatFormatting.GRAY
-                    + I18n.format("gtnr.gui.crafting_monitor.additional", machines.size() - MAX_TOOLTIP_TARGETS));
-        }
-        // #tr gtnr.gui.crafting_monitor.actions
-        // # Right-click for machine and pattern actions
-        // # zh_CN 右键查看机器与样板操作
-        lines.add(EnumChatFormatting.GRAY + I18n.format("gtnr.gui.crafting_monitor.actions"));
+        if (machines.isEmpty()) return nativeTooltip;
+        int titleEnd = nativeTooltip.indexOf('\n');
+        String title = titleEnd < 0 ? nativeTooltip : nativeTooltip.substring(0, titleEnd);
+        card = Card.create(
+            title,
+            lines.subList(0, amountLines),
+            lines.subList(amountLines, lines.size()),
+            width,
+            height,
+            font,
+            machines,
+            progressSamples);
+        return card == null ? nativeTooltip : "";
     }
 
-    private static void appendMachine(List<String> lines, Machine machine) {
-        lines.add("");
-        if (machine.machine() == null) {
-            lines.add(EnumChatFormatting.AQUA + displayName(machine));
-            if (machine.provider() != null) lines.add(formatPosition(machine.provider()));
-            return;
-        }
-        lines.add(EnumChatFormatting.AQUA + displayName(machine) + "  " + stateText(machine));
-        if (machine.active() && machine.duration() > 0) {
-            int progress = Math.max(0, Math.min(machine.progress(), machine.duration()));
-            int filled = (int) (((long) progress * BAR_WIDTH + machine.duration() / 2L) / machine.duration());
-            int percent = (int) ((long) progress * 100 / machine.duration());
-            lines.add(
-                EnumChatFormatting.GREEN + BAR_SEGMENT.repeat(filled)
-                    + EnumChatFormatting.DARK_GRAY
-                    + BAR_SEGMENT.repeat(BAR_WIDTH - filled)
-                    + EnumChatFormatting.WHITE
-                    + "  "
-                    + percent
-                    + "%");
-            // #tr gtnr.gui.crafting_monitor.progress
-            // # %s / %s t · %s t left
-            // # zh_CN %s / %s t · 剩余 %s t
-            lines.add(
-                I18n.format(
-                    "gtnr.gui.crafting_monitor.progress",
-                    progress,
-                    machine.duration(),
-                    machine.duration() - progress));
-        }
-        if (machine.active() && machine.parallel() > 0) {
-            // #tr gtnr.gui.crafting_monitor.parallel
-            // # Actual parallel: %s
-            // # zh_CN 实际并行：%s
-            lines.add(I18n.format("gtnr.gui.crafting_monitor.parallel", machine.parallel()));
-        }
-        if (!machine.active() && !machine.shutdown()
-            .isEmpty()) {
-            // #tr gtnr.gui.crafting_monitor.shutdown
-            // # Stop reason: %s
-            // # zh_CN 停机原因：%s
-            lines.add(EnumChatFormatting.RED + I18n.format("gtnr.gui.crafting_monitor.shutdown", machine.shutdown()));
-        }
-        lines.add(formatPosition(machine.machine()));
-    }
-
-    private static String stateText(Machine machine) {
-        if (machine.active()) {
-            // #tr gtnr.gui.crafting_monitor.running
-            // # Processing
-            // # zh_CN 加工中
-            return EnumChatFormatting.GREEN + I18n.format("gtnr.gui.crafting_monitor.running");
-        }
-        if (machine.duration() > 0 || !machine.shutdown()
-            .isEmpty()) {
-            // #tr gtnr.gui.crafting_monitor.waiting
-            // # Waiting
-            // # zh_CN 等待中
-            return EnumChatFormatting.GRAY + I18n.format("gtnr.gui.crafting_monitor.waiting");
-        }
-        // #tr gtnr.gui.crafting_monitor.progress_unavailable
-        // # Progress unavailable
-        // # zh_CN 暂无加工进度
-        return EnumChatFormatting.GRAY + I18n.format("gtnr.gui.crafting_monitor.progress_unavailable");
-    }
-
-    public void endFrame(int mouseX, int mouseY, FontRenderer font) {
+    public void endFrame(int mouseX, int mouseY, int width, int height, FontRenderer font) {
         if (hovered == null && menu == null) resetObservation();
-        if (menu != null) menu.draw(mouseX, mouseY, font);
+        if (menu == null && card == null) return;
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_TEXTURE_BIT);
+        try {
+            GL11.glDisable(GL11.GL_DEPTH_TEST);
+            GL11.glDisable(GL11.GL_LIGHTING);
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+            GL11.glColor4f(1, 1, 1, 1);
+            if (menu != null) menu.draw(mouseX, mouseY, font);
+            else card.draw(mouseX, mouseY, width, height, font);
+        } finally {
+            GL11.glPopAttrib();
+        }
     }
 
     public boolean click(int mouseX, int mouseY, int button, int windowId, int left, int top, int width, int height) {
@@ -195,7 +147,11 @@ public final class CraftingMonitorTooltip {
             }
             return true;
         }
-        if (button != 1 || hovered == null || observed == null || !hovered.equals(observed) || machines.isEmpty()) {
+        if (button != 1 || GuiScreen.isShiftKeyDown()
+            || hovered == null
+            || observed == null
+            || !hovered.equals(observed)
+            || machines.isEmpty()) {
             return false;
         }
         int x = Math.max(left, Math.min(mouseX, left + width - MENU_WIDTH));
@@ -213,6 +169,7 @@ public final class CraftingMonitorTooltip {
     public void clear() {
         resetObservation();
         menu = null;
+        card = null;
         hovered = null;
         actionRequest = 0;
     }
@@ -220,7 +177,7 @@ public final class CraftingMonitorTooltip {
     private void apply(CraftingMonitorSnapshotPacket packet, Minecraft minecraft) {
         if (packet.result() == Result.STATUS && packet.requestId() == statusRequest) {
             statusRequest = 0;
-            machines = packet.machines();
+            applyMachines(packet.machines(), Minecraft.getSystemTime());
             snapshotId = packet.requestId();
             return;
         }
@@ -241,6 +198,40 @@ public final class CraftingMonitorTooltip {
         }
     }
 
+    private void applyMachines(List<Machine> updates, long now) {
+        List<ProgressSample> samples = new ArrayList<>(updates.size());
+        for (Machine update : updates) {
+            double fraction = progressFraction(update);
+            double from = fraction;
+            if (update.active() && update.duration() > 0) {
+                for (int index = 0; index < machines.size(); index++) {
+                    Machine old = machines.get(index);
+                    if (old.active() && old.duration() == update.duration()
+                        && old.progress() <= update.progress()
+                        && old.machine() != null
+                        && old.machine()
+                            .equals(update.machine())
+                        && Objects.equals(old.provider(), update.provider())) {
+                        from = progressSamples.get(index)
+                            .valueAt(now);
+                        break;
+                    }
+                }
+            }
+            samples.add(new ProgressSample(from, fraction, now));
+        }
+        machines = updates;
+        progressSamples = samples;
+    }
+
+    private static double progressFraction(Machine machine) {
+        return machine.duration() > 0 ? (double) progressTicks(machine) / machine.duration() : 0;
+    }
+
+    private static int progressTicks(Machine machine) {
+        return Math.max(0, Math.min(machine.progress(), machine.duration()));
+    }
+
     private void select(Action action, boolean enabled, int windowId) {
         if (!enabled) return;
         actionRequest = menu.snapshotId;
@@ -257,6 +248,7 @@ public final class CraftingMonitorTooltip {
     private void resetObservation() {
         observed = null;
         machines = List.of();
+        progressSamples = List.of();
         statusRequest = 0;
         snapshotId = 0;
     }
@@ -284,8 +276,231 @@ public final class CraftingMonitorTooltip {
         // #tr gtnr.gui.crafting_monitor.position
         // # Dim %s (%s, %s, %s)
         // # zh_CN 维度 %s（%s, %s, %s）
-        return EnumChatFormatting.GRAY
-            + I18n.format("gtnr.gui.crafting_monitor.position", pos.dimension(), pos.x(), pos.y(), pos.z());
+        return I18n.format("gtnr.gui.crafting_monitor.position", pos.dimension(), pos.x(), pos.y(), pos.z());
+    }
+
+    private record ProgressSample(double from, double to, long receivedAt) {
+
+        private double valueAt(long now) {
+            double elapsed = Math.max(0, Math.min(1, (double) (now - receivedAt) / PROGRESS_ANIMATION_MS));
+            return from + (to - from) * elapsed;
+        }
+    }
+
+    private record Card(String title, int width, int height, List<Line> lines) {
+
+        private static final int MAX_WIDTH = 228;
+        private static final int EDGE = 4;
+        private static final int PADDING = 7;
+        private static final int POINTER_GAP = 12;
+        private static final int LINE_HEIGHT = 11;
+        private static final int COLUMN_GAP = 8;
+        private static final int BAR_HEIGHT = 6;
+
+        private static Card create(String title, List<String> amounts, List<String> details, int screenWidth,
+            int screenHeight, FontRenderer font, List<Machine> machines, List<ProgressSample> samples) {
+            int width = Math.min(MAX_WIDTH, screenWidth - 2 * EDGE);
+            int contentWidth = width - 2 * PADDING;
+            int maxRows = (screenHeight - 2 * (EDGE + PADDING)) / LINE_HEIGHT;
+            if (contentWidth <= 0 || maxRows <= 0) return null;
+
+            List<Line> lines = new ArrayList<>();
+            lines.add(new Text(title, SKIN.colors.fieldText()));
+            for (String amount : amounts) lines.add(new Text(amount, LOOK.listText()));
+            long linked = machines.stream()
+                .map(Machine::machine)
+                .filter(Objects::nonNull)
+                .distinct()
+                .count();
+            if (linked > 0) {
+                // #tr gtnr.gui.crafting_monitor.linked_machines
+                // # Linked machines: %s
+                // # zh_CN 关联机器：%s 台
+                lines.add(new Text(I18n.format("gtnr.gui.crafting_monitor.linked_machines", linked), LOOK.listMuted()));
+            }
+            long now = Minecraft.getSystemTime();
+            for (int index = 0; index < Math.min(machines.size(), MAX_TOOLTIP_TARGETS); index++) {
+                lines.add(Divider.INSTANCE);
+                appendMachine(
+                    lines,
+                    machines.get(index),
+                    samples.get(index)
+                        .valueAt(now),
+                    contentWidth,
+                    font);
+            }
+            if (machines.size() > MAX_TOOLTIP_TARGETS) {
+                // #tr gtnr.gui.crafting_monitor.additional
+                // # %s more targets
+                // # zh_CN 另有 %s 个目标
+                lines.add(
+                    new Text(
+                        I18n.format("gtnr.gui.crafting_monitor.additional", machines.size() - MAX_TOOLTIP_TARGETS),
+                        LOOK.listMuted()));
+            }
+            for (String detail : details) {
+                for (String line : font.listFormattedStringToWidth(detail, contentWidth)) {
+                    lines.add(new Text(line, LOOK.listMuted()));
+                    if (lines.size() >= maxRows) break;
+                }
+                if (lines.size() >= maxRows) break;
+            }
+            if (lines.size() >= maxRows) {
+                if (GuiScreen.isShiftKeyDown()) return null;
+                lines.subList(maxRows - 1, lines.size())
+                    .clear();
+            }
+            // #tr gtnr.gui.crafting_monitor.actions
+            // # Right-click for machine and pattern actions
+            // # zh_CN 右键查看机器与样板操作
+            lines.add(new Text(I18n.format("gtnr.gui.crafting_monitor.actions"), LOOK.listDetail()));
+            return new Card(title, width, 2 * PADDING + lines.size() * LINE_HEIGHT, lines);
+        }
+
+        private void draw(int mouseX, int mouseY, int screenWidth, int screenHeight, FontRenderer font) {
+            int x = mouseX + POINTER_GAP;
+            if (x + width + EDGE > screenWidth) x = mouseX - POINTER_GAP - width;
+            x = Math.max(EDGE, Math.min(x, screenWidth - width - EDGE));
+            int y = Math.max(EDGE, Math.min(mouseY - PADDING, screenHeight - height - EDGE));
+
+            SKIN.panel.draw(x, y, width, height);
+            Gui.drawRect(x + PADDING, y + 3, x + width - PADDING, y + 4, SKIN.highlight);
+            for (int index = 0; index < lines.size(); index++) {
+                lines.get(index)
+                    .draw(x + PADDING, y + PADDING + index * LINE_HEIGHT, width - 2 * PADDING, font);
+            }
+        }
+
+        private static void appendMachine(List<Line> lines, Machine machine, double fraction, int contentWidth,
+            FontRenderer font) {
+            if (machine.machine() == null) {
+                lines.add(new Text(displayName(machine), LOOK.listText()));
+                if (machine.provider() != null) {
+                    lines.add(new Text(formatPosition(machine.provider()), LOOK.listMuted()));
+                }
+                return;
+            }
+            lines.add(
+                new Text(
+                    displayName(machine),
+                    SKIN.colors.fieldText(),
+                    stateText(machine),
+                    machine.active() ? LOOK.good() : LOOK.listMuted()));
+            String parallel = "";
+            if (machine.active() && machine.parallel() > 0) {
+                // #tr gtnr.gui.crafting_monitor.parallel
+                // # Actual parallel: %s
+                // # zh_CN 实际并行：%s
+                parallel = I18n.format("gtnr.gui.crafting_monitor.parallel", machine.parallel());
+            }
+            if (machine.active() && machine.duration() > 0) {
+                int progress = progressTicks(machine);
+                int percent = (int) ((long) progress * 100 / machine.duration());
+                // #tr gtnr.gui.crafting_monitor.percent
+                // # This cycle: %s%%
+                // # zh_CN 本轮 %s%%
+                lines.add(
+                    new Text(
+                        parallel,
+                        LOOK.listText(),
+                        I18n.format("gtnr.gui.crafting_monitor.percent", percent),
+                        LOOK.listText()));
+                lines.add(new Bar(fraction));
+                // #tr gtnr.gui.crafting_monitor.remaining
+                // # %s t left
+                // # zh_CN 剩余 %s t
+                lines.add(
+                    new Text(
+                        progress + " / " + machine.duration() + " t",
+                        LOOK.listText(),
+                        I18n.format("gtnr.gui.crafting_monitor.remaining", machine.duration() - progress),
+                        LOOK.listText()));
+            } else if (!parallel.isEmpty()) {
+                lines.add(new Text(parallel, LOOK.listText()));
+            }
+            if (!machine.active() && !machine.shutdown()
+                .isEmpty()) {
+                // #tr gtnr.gui.crafting_monitor.shutdown
+                // # Stop reason: %s
+                // # zh_CN 停机原因：%s
+                String reason = I18n.format("gtnr.gui.crafting_monitor.shutdown", machine.shutdown());
+                for (String line : font.listFormattedStringToWidth(reason, contentWidth)) {
+                    lines.add(new Text(line, LOOK.bad()));
+                }
+            }
+            lines.add(new Text(formatPosition(machine.machine()), LOOK.listMuted()));
+        }
+
+        private static String stateText(Machine machine) {
+            if (machine.active()) {
+                // #tr gtnr.gui.crafting_monitor.running
+                // # Processing
+                // # zh_CN 加工中
+                return I18n.format("gtnr.gui.crafting_monitor.running");
+            }
+            if (machine.duration() > 0 || !machine.shutdown()
+                .isEmpty()) {
+                // #tr gtnr.gui.crafting_monitor.waiting
+                // # Waiting
+                // # zh_CN 等待中
+                return I18n.format("gtnr.gui.crafting_monitor.waiting");
+            }
+            // #tr gtnr.gui.crafting_monitor.progress_unavailable
+            // # Progress unavailable
+            // # zh_CN 暂无加工进度
+            return I18n.format("gtnr.gui.crafting_monitor.progress_unavailable");
+        }
+
+        private interface Line {
+
+            void draw(int x, int y, int width, FontRenderer font);
+        }
+
+        private record Text(String left, int leftColor, String right, int rightColor) implements Line {
+
+            private Text(String left, int color) {
+                this(left, color, "", color);
+            }
+
+            @Override
+            public void draw(int x, int y, int width, FontRenderer font) {
+                if (right.isEmpty()) {
+                    font.drawString(font.trimStringToWidth(left, width), x, y, leftColor, LOOK.listShadow());
+                    return;
+                }
+                String rightText = font.trimStringToWidth(right, width);
+                int rightWidth = font.getStringWidth(rightText);
+                int leftWidth = Math.max(0, width - rightWidth - COLUMN_GAP);
+                if (leftWidth > 0) {
+                    font.drawString(font.trimStringToWidth(left, leftWidth), x, y, leftColor, LOOK.listShadow());
+                }
+                font.drawString(rightText, x + width - rightWidth, y, rightColor, LOOK.listShadow());
+            }
+        }
+
+        private record Bar(double fraction) implements Line {
+
+            @Override
+            public void draw(int x, int y, int width, FontRenderer font) {
+                int top = y + (LINE_HEIGHT - BAR_HEIGHT) / 2;
+                LOOK.drawWell(x, top, width, BAR_HEIGHT);
+                int filled = (int) Math.round((width - 2) * fraction);
+                if (filled <= 0) return;
+                Gui.drawRect(x + 1, top + 1, x + 1 + filled, top + BAR_HEIGHT - 1, SKIN.highlight);
+                Gui.drawRect(x + 1, top + 1, x + 1 + filled, top + 2, SKIN.highlightTop);
+            }
+        }
+
+        private enum Divider implements Line {
+
+            INSTANCE;
+
+            @Override
+            public void draw(int x, int y, int width, FontRenderer font) {
+                int center = y + LINE_HEIGHT / 2;
+                Gui.drawRect(x, center, x + width, center + 1, SKIN.colors.line());
+            }
+        }
     }
 
     private static final class Menu {
@@ -311,11 +526,7 @@ public final class CraftingMonitorTooltip {
 
         private void draw(int mouseX, int mouseY, FontRenderer font) {
             Machine target = machines.get(row);
-            GL11.glPushAttrib(GL11.GL_ENABLE_BIT);
-            GL11.glDisable(GL11.GL_DEPTH_TEST);
-            GL11.glDisable(GL11.GL_LIGHTING);
-            Gui.drawRect(x, y, x + MENU_WIDTH, y + MENU_HEIGHT, 0xff5b456c);
-            Gui.drawRect(x + 1, y + 1, x + MENU_WIDTH - 1, y + MENU_HEIGHT - 1, 0xff20182a);
+            SKIN.panel.draw(x, y, MENU_WIDTH, MENU_HEIGHT);
             String index = (row + 1) + " / " + machines.size() + "  ";
             drawRow(0, index + displayName(target), machines.size() > 1, mouseX, mouseY, font);
             // #tr gtnr.gui.crafting_monitor.locate_provider
@@ -352,16 +563,14 @@ public final class CraftingMonitorTooltip {
             // # Close
             // # zh_CN 关闭
             drawRow(4, I18n.format("gtnr.gui.crafting_monitor.close"), true, mouseX, mouseY, font);
-            GL11.glPopAttrib();
         }
 
         private void drawRow(int index, String text, boolean enabled, int mouseX, int mouseY, FontRenderer font) {
             int top = y + 3 + index * MENU_ROW_HEIGHT;
-            if (enabled && contains(mouseX, mouseY) && mouseY >= top && mouseY < top + MENU_ROW_HEIGHT) {
-                Gui.drawRect(x + 2, top, x + MENU_WIDTH - 2, top + MENU_ROW_HEIGHT, 0xff59456d);
-            }
-            int color = enabled || index == 0 ? 0xffffff : 0x7c7584;
-            font.drawStringWithShadow(font.trimStringToWidth(text, MENU_WIDTH - 12), x + 6, top + 3, color);
+            boolean selected = enabled && contains(mouseX, mouseY) && mouseY >= top && mouseY < top + MENU_ROW_HEIGHT;
+            if (selected) LOOK.drawSelectedRow(x + 2, top, MENU_WIDTH - 4, MENU_ROW_HEIGHT);
+            int color = selected ? LOOK.selectedText() : enabled || index == 0 ? LOOK.listText() : LOOK.listMuted();
+            font.drawString(font.trimStringToWidth(text, MENU_WIDTH - 12), x + 6, top + 3, color, LOOK.listShadow());
         }
     }
 }

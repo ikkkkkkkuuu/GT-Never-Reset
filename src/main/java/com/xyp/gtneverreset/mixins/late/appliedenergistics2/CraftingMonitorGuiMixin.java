@@ -36,12 +36,20 @@ public abstract class CraftingMonitorGuiMixin extends AEBaseGui implements Craft
         at = @At(
             value = "INVOKE",
             target = "Lappeng/client/gui/implementations/GuiCraftingCPU;buildTooltipMessage(Lappeng/api/storage/data/IAEStack;Ljava/util/List;Z)Ljava/lang/String;"))
-    private String gtnr$appendMachineDetails(GuiCraftingCPU screen, IAEStack<?> visual, List<String> lines,
+    private String gtnr$prepareMonitorCard(GuiCraftingCPU screen, IAEStack<?> visual, List<String> lines,
         boolean changed, Operation<String> original, @Local(argsOnly = true) CraftingCpuEntry entry) {
-        if (entry.hasActiveAmount() || entry.hasPendingAmount()) {
-            gtnr$monitorTooltip.append(entry.getStack(), lines, inventorySlots.windowId);
-        }
-        return original.call(screen, visual, lines, changed);
+        int amountLines = lines.size();
+        String nativeTooltip = original.call(screen, visual, lines, changed);
+        IAEStack<?> monitored = entry.hasActiveAmount() || entry.hasPendingAmount() ? entry.getStack() : null;
+        return gtnr$monitorTooltip.prepareCard(
+            monitored,
+            inventorySlots.windowId,
+            nativeTooltip,
+            lines,
+            amountLines,
+            width,
+            height,
+            fontRendererObj);
     }
 
     @Inject(method = "drawScreen", at = @At("HEAD"), remap = true)
@@ -50,8 +58,8 @@ public abstract class CraftingMonitorGuiMixin extends AEBaseGui implements Craft
     }
 
     @Inject(method = "drawScreen", at = @At("RETURN"), remap = true)
-    private void gtnr$drawMonitorMenu(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        gtnr$monitorTooltip.endFrame(mouseX, mouseY, fontRendererObj);
+    private void gtnr$drawMonitorOverlay(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        gtnr$monitorTooltip.endFrame(mouseX, mouseY, width, height, fontRendererObj);
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)
