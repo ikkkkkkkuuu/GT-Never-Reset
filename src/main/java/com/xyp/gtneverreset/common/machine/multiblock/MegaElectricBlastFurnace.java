@@ -1,6 +1,7 @@
 package com.xyp.gtneverreset.common.machine.multiblock;
 
 import static com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil.formatNumber;
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofChain;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.onElementPass;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
 import static gregtech.api.enums.HatchElement.Energy;
@@ -16,6 +17,7 @@ import static gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_ELECTRIC_BLAS
 import static gregtech.api.util.GTStructureUtility.activeCoils;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofCoil;
+import static gregtech.api.util.GTStructureUtility.ofHatchAdder;
 
 import java.util.Arrays;
 import java.util.List;
@@ -32,42 +34,42 @@ import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructa
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
-import com.xyp.gtneverreset.api.machine.MultiblockTooltipSource;
+import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeMultiblockBase;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeProcessingLogic;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadOutputs;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadTask;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
 import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
+import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
 import gregtech.api.casing.Casings;
 import gregtech.api.enums.HeatingCoilLevel;
 import gregtech.api.enums.Textures;
-import gregtech.api.enums.VoidingMode;
 import gregtech.api.enums.VoltageIndex;
-import gregtech.api.interfaces.IHatchElement;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.ICasingTextureProvider;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.logic.ProcessingLogic;
-import gregtech.api.metatileentity.implementations.MTEExtendedPowerMultiBlockBase;
-import gregtech.api.modularui2.GTGuiTextures;
 import gregtech.api.recipe.RecipeMap;
 import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.recipe.check.CheckRecipeResult;
 import gregtech.api.recipe.check.CheckRecipeResultRegistry;
-import gregtech.api.structure.error.ErrorType;
 import gregtech.api.structure.error.StructureError;
-import gregtech.api.structure.error.StructureErrors;
+import gregtech.api.util.ExoticEnergyInputHelper;
 import gregtech.api.util.GTRecipe;
 import gregtech.api.util.GTUtility;
 import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.api.util.OverclockCalculator;
 import gregtech.api.util.ParallelHelper;
-import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui;
 import gregtech.common.misc.GTStructureChannels;
 
 @IMetaTileEntity.SkipGenerateDescription
-public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBase<MegaElectricBlastFurnace>
-    implements ICasingTextureProvider, ISurvivalConstructable, MultiblockTooltipSource {
+public final class MegaElectricBlastFurnace extends CrossRecipeMultiblockBase<MegaElectricBlastFurnace>
+    implements ICasingTextureProvider, ISurvivalConstructable {
 
     private static final String STRUCTURE_PIECE = "main";
     private static final int HORIZONTAL_OFFSET = 11, VERTICAL_OFFSET = 21, DEPTH_OFFSET = 0;
@@ -77,8 +79,10 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
     private static final int HEAT_PER_DISCOUNT = 450;
     private static final int MIN_DISCOUNTED_EUT = 1;
     private static final int PARALLELS_PER_KELVIN = 256;
+    private static final int BASE_THREADS = 96;
     private static final Casings CASING = Casings.DimensionallyTranscendentCasing;
-    private static final IHatchElement<? super MegaElectricBlastFurnace> ENERGY_INPUT = Energy.or(ExoticEnergy);
+    private static final List<RecipeMap<?>> RECIPE_MAPS = List
+        .of(RecipeMaps.blastFurnaceRecipes, RecipeMaps.alloyBlastSmelterRecipes);
 
     private static int initialHeat(HeatingCoilLevel coils, int voltageTier) {
         return (int) coils.getHeat() + HEAT_PER_VOLTAGE_TIER * Math.max(0, voltageTier - VoltageIndex.LV);
@@ -93,7 +97,6 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
     private int heatingCapacity;
 
     private int casingCount;
-    private HeatingCoilLevel coilLevel = HeatingCoilLevel.None;
 
     public MegaElectricBlastFurnace(int id, String name, String regionalName) {
         super(id, name, regionalName);
@@ -134,30 +137,24 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
     }
 
     @Override
-    public void checkMachine(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
+    protected void checkMachineStructure(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
         casingCount = 0;
-        coilLevel = HeatingCoilLevel.None;
-        if (checkPiece(STRUCTURE_PIECE, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors)) {
-            collectTooltipStructureRequirements(errors);
-        }
+        checkPiece(STRUCTURE_PIECE, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors);
     }
 
     @Override
-    public void collectTooltipStructureRequirements(List<StructureError> errors) {
+    protected void checkMachineHatches(List<StructureError> errors) {
         if (!StructureTooltipHooks.onCheckCasingMin(this, MIN_CASINGS)) {
             checkCasingMin(errors, casingCount, MIN_CASINGS);
         }
-        if (!StructureTooltipHooks.onCheckHatches(this, 1, StructureTooltipHooks.UNLIMITED, ENERGY_INPUT)
-            && ENERGY_INPUT.count(this) == 0) {
-            errors.add(StructureErrors.hatchCount(ErrorType.TOO_FEW, Energy, 0, 1));
-        }
+        checkHatchMin(errors, Energy.or(ExoticEnergy), 1);
     }
 
     @Override
     protected void onStructureCheckFinished(IGregTechTileEntity tile) {
         super.onStructureCheckFinished(tile);
         if (!mMachine) return;
-        int baseHeat = initialHeat(coilLevel, GTUtility.getTier(getMaxInputVoltage()));
+        int baseHeat = initialHeat(mCoilLevel, GTUtility.getTier(getMaxInputVoltage()));
         if (baseHeat > heatingCapacity) {
             heatingCapacity = baseHeat;
             markDirty();
@@ -165,32 +162,33 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
     }
 
     @Override
-    public RecipeMap<?> getRecipeMap() {
-        return getMachineMode() == 1 ? RecipeMaps.alloyBlastSmelterRecipes : RecipeMaps.blastFurnaceRecipes;
-    }
-
-    @Override
     public List<RecipeMap<?>> getAvailableRecipeMaps() {
-        return List.of(RecipeMaps.blastFurnaceRecipes, RecipeMaps.alloyBlastSmelterRecipes);
+        return RECIPE_MAPS;
     }
 
     @Override
-    protected ProcessingLogic createProcessingLogic() {
-        return new BlastFurnaceProcessingLogic().setMaxParallelSupplier(this::getTrueParallel);
+    protected RecipeThreadProcessingLogic createRecipeThreadProcessingLogic() {
+        return new BlastFurnaceProcessingLogic();
     }
 
     @Override
-    protected void setProcessingLogicPower(ProcessingLogic logic) {
-        logic.setAvailableVoltage(Math.max(0, getMaxInputEu()))
+    protected void setupProcessingLogic(ProcessingLogic logic) {
+        super.setupProcessingLogic(logic);
+        logic.setAvailableVoltage(availableThreadPower())
             .setAvailableAmperage(1)
             .setAmperageOC(true)
             .setMaxTierSkips(NO_TIER_SKIP);
     }
 
     @Override
-    protected void outputAfterRecipe() {
-        super.outputAfterRecipe();
+    protected void onRecipeThreadFinished() {
         heatingCapacity = (int) Math.min(Integer.MAX_VALUE, (long) heatingCapacity + HEAT_PER_RECIPE);
+    }
+
+    @Override
+    public long getMaxInputVoltage() {
+        return isTooltipProbeActive() ? super.getMaxInputVoltage()
+            : ExoticEnergyInputHelper.getMaxInputVoltageMulti(getExoticAndNormalEnergyHatchList());
     }
 
     @Override
@@ -221,6 +219,16 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
     @Override
     public String getTooltipPath() {
         return "mega-electric-blast-furnace";
+    }
+
+    @Override
+    public TooltipStats getTooltipStats() {
+        return null;
+    }
+
+    @Override
+    public HeatRules getTooltipHeatRules() {
+        return null;
     }
 
     @Override
@@ -280,23 +288,6 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
     }
 
     @Override
-    protected MTEMultiBlockBaseGui<?> getGui() {
-        return super.getGui().withMachineModeIcons(
-            GTGuiTextures.OVERLAY_BUTTON_MACHINEMODE_DEFAULT,
-            GTGuiTextures.OVERLAY_BUTTON_MACHINEMODE_LPF_METAL);
-    }
-
-    @Override
-    public String getMachineModeName() {
-        return StatCollector.translateToLocal(getRecipeMap().unlocalizedName);
-    }
-
-    @Override
-    public void setMachineMode(int index) {
-        if (index >= 0 && index < getAvailableRecipeMaps().size()) super.setMachineMode(index);
-    }
-
-    @Override
     public void saveNBTData(NBTTagCompound tag) {
         super.saveNBTData(tag);
         tag.setInteger("heatingCapacity", heatingCapacity);
@@ -309,23 +300,25 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
     }
 
     @Override
-    public boolean supportsInputSeparation() {
-        return true;
+    protected RecipeThreadTask createLegacyRecipeThread() {
+        if (mMaxProgresstime <= 0) return null;
+        return new RecipeThreadTask(
+            0,
+            Math.max(0L, -lEUt),
+            mMaxProgresstime,
+            Math.max(1, lastParallel),
+            new RecipeThreadOutputs(mOutputItems, mOutputFluids),
+            mProgresstime);
     }
 
     @Override
-    public boolean supportsMachineModeSwitch() {
-        return true;
+    public boolean getDefaultInputSeparationMode() {
+        return false;
     }
 
     @Override
-    public boolean supportsVoidProtection() {
-        return true;
-    }
-
-    @Override
-    public VoidingMode getDefaultVoidingMode() {
-        return VoidingMode.VOID_NONE;
+    public boolean supportsBatchMode() {
+        return false;
     }
 
     @Override
@@ -334,8 +327,18 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
     }
 
     @Override
-    public int getMaxParallelRecipes() {
-        return mMachine ? parallelLimit(coilLevel, heatingCapacity) : 0;
+    public int getMaxRecipeThreads() {
+        return BASE_THREADS;
+    }
+
+    @Override
+    public int getParameterModuleLimit(MachineModuleType type) {
+        return type == MachineModuleType.Thread ? 1 : 0;
+    }
+
+    @Override
+    protected int getBaseParallelRecipes() {
+        return mMachine ? parallelLimit(mCoilLevel, heatingCapacity) : 0;
     }
 
     public int getHeatingCapacity() {
@@ -356,11 +359,18 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
             .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load("mega_electric_blast_furnace")))
             .addElement(
                 'A',
-                buildHatchAdder(MegaElectricBlastFurnace.class)
-                    .atLeast(InputBus, InputHatch, OutputBus, OutputHatch, ENERGY_INPUT)
-                    .casingIndex(CASING.getTextureId())
-                    .hint(1)
-                    .buildAndChain(onElementPass(machine -> ++machine.casingCount, CASING.asElement())))
+                ofChain(
+                    StructureTooltipHooks.describeAsHatch(
+                        ofHatchAdder(
+                            MegaElectricBlastFurnace::addParameterModuleToMachineList,
+                            CASING.getTextureId(),
+                            1),
+                        ParameterModuleHatch.NAME_KEY),
+                    buildHatchAdder(MegaElectricBlastFurnace.class)
+                        .atLeast(InputBus, InputHatch, OutputBus, OutputHatch, Energy.or(ExoticEnergy))
+                        .casingIndex(CASING.getTextureId())
+                        .hint(1)
+                        .buildAndChain(onElementPass(machine -> ++machine.casingCount, CASING.asElement()))))
             .addElement('C', Casings.DimensionalInjectionCasing.asElement())
             .addElement('D', Casings.OmniPurposeInfinityFusedGlass.asElement())
             .addElement('E', Casings.NeutroniumCasing.asElement())
@@ -369,17 +379,24 @@ public final class MegaElectricBlastFurnace extends MTEExtendedPowerMultiBlockBa
                 'G',
                 GTStructureChannels.HEATING_COIL.use(
                     activeCoils(
-                        ofCoil((machine, level) -> { machine.coilLevel = level; }, machine -> machine.coilLevel))))
+                        ofCoil((machine, level) -> { machine.mCoilLevel = level; }, machine -> machine.mCoilLevel))))
             .build();
     }
 
-    private final class BlastFurnaceProcessingLogic extends ProcessingLogic {
+    private final class BlastFurnaceProcessingLogic extends CrossRecipeProcessingLogic {
+
+        private BlastFurnaceProcessingLogic() {
+            super(MegaElectricBlastFurnace.this);
+        }
 
         @Nonnull
         @Override
         protected CheckRecipeResult validateRecipe(@Nonnull GTRecipe recipe) {
-            return recipe.mSpecialValue <= heatingCapacity ? CheckRecipeResultRegistry.SUCCESSFUL
-                : CheckRecipeResultRegistry.insufficientHeat(recipe.mSpecialValue);
+            CheckRecipeResult result = super.validateRecipe(recipe);
+            if (result.wasSuccessful() && recipe.mSpecialValue > heatingCapacity) {
+                return CheckRecipeResultRegistry.insufficientHeat(recipe.mSpecialValue);
+            }
+            return result;
         }
 
         @Nonnull

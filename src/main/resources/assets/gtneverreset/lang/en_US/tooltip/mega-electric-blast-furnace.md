@@ -5,8 +5,8 @@ The furnace needs enough heat to start. Combined input power must cover the reci
 For recipes that require at least {red:{var:discountHeat} K}, every extra {red:{var:discountHeat} K} {aqua:halves} the base EU/t.
 Before overclocking, each parallel uses at least {aqua:{var:minEUt} EU/t}.
 For every {red:{var:perfectOverclockHeat} K} above the recipe temperature, one regular overclock becomes {light_purple:perfect}.
-Each overclock multiplies EU/t by {aqua:4}. Regular overclocks halve the time. {light_purple:Perfect overclocks} quarter it.
 {hr}
 Cupronickel coils at {aqua:LV} start with a theoretical limit of {gold:{var:baseParallels}} parallels.
 The limit is {gold:{var:parallelsPerKelvin}} × temperature (K) × coil multiplier. Actual parallels depend on power, inputs, and output space.
-Switch modes in the machine UI. In blast furnace mode, use the circuit shown in NEI. Some recipes run faster with a protective gas.
+A {light_purple:Cross-Recipe ME Pattern Buffer} can run patterns from both recipe maps at once. Ordinary inputs use the selected mode.
+In blast furnace mode, use the circuit shown in NEI. Some recipes run faster with a protective gas.

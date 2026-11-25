@@ -5,8 +5,8 @@
 配方要求至少 {red:{var:discountHeat} K} 时，炉温每高出要求 {red:{var:discountHeat} K}，基础耗电就{aqua:减半}。
 每并行在超频前至少消耗 {aqua:{var:minEUt} EU/t}。
 炉温每高出配方要求 {red:{var:perfectOverclockHeat} K}，就有一次普通超频变为{light_purple:无损超频}。
-每次超频的 EU/t 都乘 {aqua:4}。普通超频耗时减半，{light_purple:无损超频}耗时缩到四分之一。
 {hr}
 用白铜线圈和 {aqua:LV} 供电，刚成型时的理论并行上限是 {gold:{var:baseParallels}}。
 理论并行上限为 {gold:{var:parallelsPerKelvin}} × 炉温(K) × 线圈倍率。实际能跑多少取决于供电、原料和输出余量。
-可在机器界面切换模式。工业高炉模式按 NEI 配方放电路，部分配方通保护气烧得更快。
+{light_purple:跨配方 ME 样板仓}可同时加工两种配方池的样板。普通输入按机器界面选定的模式加工。
+工业高炉模式按 NEI 配方放电路，部分配方通保护气烧得更快。

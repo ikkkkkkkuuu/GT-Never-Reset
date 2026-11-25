@@ -28,6 +28,12 @@ public final class RecipeThreadTask {
         this.outputs = outputs;
     }
 
+    public RecipeThreadTask(int thread, long eut, int duration, int parallels, RecipeThreadOutputs outputs,
+        int progress) {
+        this(thread, eut, duration, parallels, outputs);
+        this.progress = Math.max(0, Math.min(duration, progress));
+    }
+
     RecipeThreadTask(int thread, long eut, int duration, int parallels, RecipeThreadOutputs outputs,
         OverclockSettings overclock) {
         this(thread, eut, duration, parallels, outputs);
@@ -128,8 +134,8 @@ public final class RecipeThreadTask {
             tag.getLong("eut"),
             tag.getInteger("duration"),
             tag.getInteger("parallels"),
-            RecipeThreadOutputs.load(tag.getCompoundTag("outputs")));
-        task.progress = Math.max(0, Math.min(task.duration, tag.getInteger("progress")));
+            RecipeThreadOutputs.load(tag.getCompoundTag("outputs")),
+            tag.getInteger("progress"));
         if (tag.hasKey("overclock", 10)) {
             NBTTagCompound settings = tag.getCompoundTag("overclock");
             int rateDuration = settings.getInteger("rateDuration");

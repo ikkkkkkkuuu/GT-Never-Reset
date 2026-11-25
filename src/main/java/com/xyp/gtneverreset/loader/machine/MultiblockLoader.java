@@ -156,8 +156,8 @@ public final class MultiblockLoader {
                     StatCollector.translateToLocal("gtnr.machine.large_bee_breeder.name")));
         }
         // #tr gtnr.machine.mega_electric_blast_furnace.name
-        // # Mega Electric Blast Furnace
-        // # zh_CN 巨型电力高炉
+        // # Entrodynamically Phase Changer
+        // # zh_CN 熵动力学相变发生器
         register(
             GTNRItemList.MegaElectricBlastFurnace,
             new MegaElectricBlastFurnace(
