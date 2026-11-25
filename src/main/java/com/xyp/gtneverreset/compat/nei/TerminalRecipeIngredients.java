@@ -1,7 +1,9 @@
 package com.xyp.gtneverreset.compat.nei;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -20,8 +22,8 @@ import gregtech.nei.GTNEIDefaultHandler;
 
 final class TerminalRecipeIngredients {
 
-    static List<Ingredient<?>> inputs(IRecipeHandler recipe, int index, boolean fluidsFirst) {
-        List<PositionedStack> stacks = new ArrayList<>(safeList(recipe.getIngredientStacks(index)));
+    static List<Ingredient<?>> inputs(IRecipeHandler recipe, List<PositionedStack> recipeInputs, boolean fluidsFirst) {
+        List<PositionedStack> stacks = new ArrayList<>(recipeInputs);
         String identifier = recipe.getOverlayIdentifier();
         if ("gt.recipe.scanner".equals(identifier) || "gt.recipe.fakeAssemblylineProcess".equals(identifier)) {
             for (int i = stacks.size() - 1; i >= 0; i--) {
@@ -33,7 +35,10 @@ final class TerminalRecipeIngredients {
                 }
             }
         }
-        List<Ingredient<?>> ingredients = collect(stacks, isThaumcraft(identifier));
+        List<Ingredient<?>> ingredients = collect(
+            stacks,
+            isThaumcraft(identifier),
+            TerminalRecipeIngredients::selectedInput);
         if (fluidsFirst) ingredients.sort(
             (first, second) -> Boolean
                 .compare(!(first.getStack() instanceof FluidStack), !(second.getStack() instanceof FluidStack)));
@@ -49,7 +54,45 @@ final class TerminalRecipeIngredients {
         if (includeOther && !isThaumcraft(recipe.getOverlayIdentifier())) {
             stacks.addAll(safeList(recipe.getOtherStacks(index)));
         }
-        return collect(stacks, isThaumcraft(recipe.getOverlayIdentifier()));
+        return collect(stacks, isThaumcraft(recipe.getOverlayIdentifier()), positioned -> positioned.item);
+    }
+
+    static List<ItemStack> inputAlternatives(PositionedStack positioned) {
+        if (positioned == null || positioned.items == null || positioned.items.length == 0) return List.of();
+        for (ItemStack stack : positioned.items) {
+            if (stack == null || stack.getItem() == null) {
+                List<ItemStack> valid = Arrays.stream(positioned.items)
+                    .filter(item -> item != null && item.getItem() != null)
+                    .toList();
+                return valid.isEmpty() ? List.of()
+                    : new PositionedStack(valid, positioned.relx, positioned.rely, false).getFilteredPermutations();
+            }
+        }
+        return positioned.getFilteredPermutations();
+    }
+
+    static ItemStack selectedInput(PositionedStack positioned) {
+        if (positioned == null) return null;
+        // The handler can retain a rendered permutation that the current NEI filters hide.
+        ItemStack displayed = positioned.item;
+        ItemStack firstVisible = null;
+        for (ItemStack alternative : inputAlternatives(positioned)) {
+            ItemStack rendered = renderedInput(alternative);
+            if (displayed != null && rendered.isItemEqual(displayed)
+                && ItemStack.areItemStackTagsEqual(rendered, displayed)) return displayed;
+            if (firstVisible == null) firstVisible = rendered;
+        }
+        return firstVisible == null ? displayed : firstVisible;
+    }
+
+    private static ItemStack renderedInput(ItemStack alternative) {
+        if (alternative.getItemDamage() != OreDictionary.WILDCARD_VALUE || !alternative.getItem()
+            .isRepairable()) {
+            return alternative;
+        }
+        ItemStack rendered = alternative.copy();
+        rendered.setItemDamage(0);
+        return rendered;
     }
 
     static List<Ingredient<?>> compress(List<Ingredient<?>> ingredients) {
@@ -132,7 +175,8 @@ final class TerminalRecipeIngredients {
     static NBTTagList arcaneLayout(List<PositionedStack> ingredients) {
         NBTTagCompound[] cells = new NBTTagCompound[9];
         for (PositionedStack ingredient : ingredients) {
-            if (ingredient == null || ingredient.item == null || isAspectDisplay(ingredient.item)) continue;
+            ItemStack selected = selectedInput(ingredient);
+            if (selected == null || isAspectDisplay(selected)) continue;
             int x = ingredient.relx - 47;
             int y = ingredient.rely - 38;
             if (x < 0 || y < 0 || x % 28 != 0 || y % 27 != 0 || x / 28 > 2 || y / 27 > 2) {
@@ -140,7 +184,7 @@ final class TerminalRecipeIngredients {
             }
             int slot = x / 28 + y / 27 * 3;
             if (cells[slot] != null) throw new IllegalArgumentException("duplicate arcane recipe position");
-            ItemStack item = ingredient.item.copy();
+            ItemStack item = selected.copy();
             item.stackSize = 1;
             cells[slot] = item.writeToNBT(new NBTTagCompound());
         }
@@ -149,11 +193,14 @@ final class TerminalRecipeIngredients {
         return layout;
     }
 
-    private static List<Ingredient<?>> collect(List<PositionedStack> stacks, boolean physicalItemsOnly) {
+    private static List<Ingredient<?>> collect(List<PositionedStack> stacks, boolean physicalItemsOnly,
+        Function<PositionedStack, ItemStack> selectStack) {
         List<Ingredient<?>> result = new ArrayList<>();
         for (PositionedStack positioned : stacks) {
-            if (positioned == null || positioned.item == null) continue;
-            ItemStack item = positioned.item.copy();
+            if (positioned == null) continue;
+            ItemStack selected = selectStack.apply(positioned);
+            if (selected == null) continue;
+            ItemStack item = selected.copy();
             if (physicalItemsOnly && isAspectDisplay(item)) continue;
             FluidStack fluid = StackInfo.isFluidDisplayItem(item) ? StackInfo.getFluid(item) : null;
             result.add(

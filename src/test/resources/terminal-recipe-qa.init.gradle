@@ -1,12 +1,23 @@
 // Run with: gradlew.bat -I src/test/resources/terminal-recipe-qa.init.gradle :runClient17 --no-configuration-cache
 // Add -Dgtnr.terminal.auto.upload.qa=true to check pattern identity and substitution during automatic upload.
+// Add -Dgtnr.terminal.ingredient.selection.qa=true to check filtered NEI recipe ingredients.
 gradle.projectsEvaluated {
     def root = gradle.rootProject
     root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
     def autoUpload = Boolean.getBoolean('gtnr.terminal.auto.upload.qa')
-    def fixture = autoUpload ? 'TerminalAutoUploadChecks' : 'TerminalRecipeChecks'
-    def directoryName = autoUpload ? 'terminal-auto-upload-qa' : 'terminal-recipe-qa'
-    def marker = autoUpload ? 'gtnr.terminal.auto.upload.qa' : 'gtnr.terminal.recipe.qa'
+    def ingredientSelection = !autoUpload && Boolean.getBoolean('gtnr.terminal.ingredient.selection.qa')
+    def fixture = 'TerminalRecipeChecks'
+    def directoryName = 'terminal-recipe-qa'
+    def marker = 'gtnr.terminal.recipe.qa'
+    if (autoUpload) {
+        fixture = 'TerminalAutoUploadChecks'
+        directoryName = 'terminal-auto-upload-qa'
+        marker = 'gtnr.terminal.auto.upload.qa'
+    } else if (ingredientSelection) {
+        fixture = 'TerminalIngredientSelectionChecks'
+        directoryName = 'terminal-ingredient-selection-qa'
+        marker = 'gtnr.terminal.ingredient.selection.qa'
+    }
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
 
     root.tasks.named('compileTestJava').configure {
@@ -42,6 +53,11 @@ gradle.projectsEvaluated {
                     'screenshots/auto-upload-failed-keeps-old-pattern.png'].each {
                     java.nio.file.Files.deleteIfExists(new File(workingDir, it).toPath())
                 }
+            } else if (ingredientSelection) {
+                def config = new File(workingDir, 'config')
+                config.mkdirs()
+                new File(config, 'DreamCoreMod.properties').text = 'showConfirmExitWindow=false\n'
+                java.nio.file.Files.deleteIfExists(new File(workingDir, 'report.txt').toPath())
             }
             new File(workingDir, 'options.txt').setText(
                 'lang:zh_CN\nguiScale:2\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsoundCategory_music:0.0\nmusic:0.0\nsound:0.0\n',

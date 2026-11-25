@@ -47,8 +47,7 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
     private static final int CRAFTING_RECIPE_Y = 6;
     private static final int RECIPE_SLOT_SIZE = 18;
 
-    private static IRecipeHandler lastRecipe;
-    private static int lastRecipeIndex;
+    private static List<PositionedStack> lastRecipeInputs = List.of();
 
     private QuickTerminalRecipeTransferHandler() {}
 
@@ -61,15 +60,14 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
     public void overlayRecipe(GuiContainer gui, IRecipeHandler recipe, int recipeIndex, boolean shift) {
         if (!(gui instanceof QuickEncodingTerminalGui terminal)) return;
 
-        lastRecipe = recipe;
-        lastRecipeIndex = recipeIndex;
         try {
             boolean crafting = isCraftingRecipe(recipe);
+            List<PositionedStack> recipeInputs = safeList(recipe.getIngredientStacks(recipeIndex));
             var arcaneLayout = TerminalRecipeIngredients.isArcane(recipe.getOverlayIdentifier())
-                ? TerminalRecipeIngredients.arcaneLayout(safeList(recipe.getIngredientStacks(recipeIndex)))
+                ? TerminalRecipeIngredients.arcaneLayout(recipeInputs)
                 : null;
             List<Ingredient<?>> namedInputs = TerminalRecipeIngredients
-                .inputs(recipe, recipeIndex, !crafting && terminal.shouldPrioritizeFluids());
+                .inputs(recipe, recipeInputs, !crafting && terminal.shouldPrioritizeFluids());
             String interfaceSearch = ClientConfig.wirelessTerminal.fillSearchFromNeiRecipes
                 ? interfaceSearchText(recipe, namedInputs, crafting)
                 : null;
@@ -94,8 +92,7 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
                     return;
                 }
             }
-            IAEStack<?>[] inputs = crafting ? collectCraftingInputs(recipe, recipeIndex)
-                : collectStacks(transferInputs);
+            IAEStack<?>[] inputs = crafting ? collectCraftingInputs(recipeInputs) : collectStacks(transferInputs);
             if (arcaneLayout != null) {
                 inputs = new IAEStack<?>[DualTerminalGuiObject.PATTERN_SLOT_COUNT];
                 for (int i = 0; i < 9; i++) {
@@ -104,7 +101,7 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
             }
             IAEStack<?>[] outputs = crafting ? new IAEStack<?>[DualTerminalGuiObject.PATTERN_SLOT_COUNT]
                 : collectStacks(transferOutputs);
-            boolean hasInterchangeableInputs = hasInterchangeableInputs(recipe, recipeIndex, crafting);
+            boolean hasInterchangeableInputs = hasInterchangeableInputs(recipeInputs, crafting);
             boolean encode = (shift || isAltDown()) && !hasInterchangeableInputs;
 
             // GT-Never-Reset has one processing layout: every processing recipe is
@@ -121,6 +118,7 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
                     recipe instanceof GTNEIDefaultHandler gt ? PatternRecipeMap.nameForImport(gt.getRecipeMap())
                         : null),
                 interfaceSearch);
+            lastRecipeInputs = new ArrayList<>(recipeInputs);
         } catch (RuntimeException | LinkageError failure) {
             AELog.warn(failure, "Failed to transfer an NEI recipe to the GT-Never-Reset quick terminal");
         }
@@ -171,17 +169,17 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
         return !"smelting".equals(identifier) && !"brewing".equals(identifier);
     }
 
-    private static IAEStack<?>[] collectCraftingInputs(IRecipeHandler recipe, int recipeIndex) {
+    private static IAEStack<?>[] collectCraftingInputs(List<PositionedStack> recipeInputs) {
         IAEStack<?>[] result = new IAEStack<?>[DualTerminalGuiObject.PATTERN_SLOT_COUNT];
         int fallbackSlot = 0;
-        for (PositionedStack positioned : safeList(recipe.getIngredientStacks(recipeIndex))) {
+        for (PositionedStack positioned : recipeInputs) {
             if (positioned == null) continue;
             int column = (positioned.relx - CRAFTING_RECIPE_X) / RECIPE_SLOT_SIZE;
             int row = (positioned.rely - CRAFTING_RECIPE_Y) / RECIPE_SLOT_SIZE;
             int slot = column >= 0 && column < 3 && row >= 0 && row < 3 ? column + row * 3 : fallbackSlot;
             fallbackSlot = Math.max(fallbackSlot, slot + 1);
             if (slot >= 9) continue;
-            IAEStack<?> stack = toAEStack(positioned, false);
+            IAEStack<?> stack = toAlternativeStack(TerminalRecipeIngredients.selectedInput(positioned), true);
             if (stack != null) result[slot] = stack.setStackSize(1);
         }
         return result;
@@ -208,30 +206,13 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
         return null;
     }
 
-    private static IAEStack<?> toAEStack(PositionedStack positioned, boolean allowFluid) {
-        if (positioned == null) return null;
-        ItemStack item = positioned.item;
-        if (item == null && positioned.items != null) {
-            for (ItemStack alternative : positioned.items) {
-                if (alternative != null) {
-                    item = alternative;
-                    break;
-                }
-            }
-        }
-        if (item == null) return null;
-        ItemStack copy = item.copy();
-        return allowFluid ? toProcessingStack(copy) : AEItemStack.create(copy);
-    }
-
-    private static boolean hasInterchangeableInputs(IRecipeHandler recipe, int recipeIndex, boolean crafting) {
-        for (PositionedStack positioned : safeList(recipe.getIngredientStacks(recipeIndex))) {
-            if (positioned == null || positioned.items == null || positioned.items.length < 2) continue;
+    private static boolean hasInterchangeableInputs(List<PositionedStack> recipeInputs, boolean crafting) {
+        for (PositionedStack positioned : recipeInputs) {
+            List<ItemStack> alternatives = TerminalRecipeIngredients.inputAlternatives(positioned);
+            if (alternatives.size() < 2) continue;
             IAEStack<?> firstType = null;
-            for (ItemStack alternative : positioned.items) {
-                if (alternative == null) continue;
-                ItemStack copy = alternative.copy();
-                IAEStack<?> candidate = crafting ? AEItemStack.create(copy) : toProcessingStack(copy);
+            for (ItemStack alternative : alternatives) {
+                IAEStack<?> candidate = toAlternativeStack(alternative, crafting);
                 if (candidate == null) continue;
                 candidate.setStackSize(1);
                 if (firstType == null) {
@@ -256,11 +237,10 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
     public static boolean cycleRecipeIngredient(QuickEncodingTerminalGui terminal, int wheel) {
 
         IAEStack<?> current = terminal.getHoveredRecipeInput();
-        if (lastRecipe == null || current == null || current.getStackSize() <= 0) return false;
+        if (current == null || current.getStackSize() <= 0) return false;
 
         int direction = wheel < 0 ? 1 : -1;
-        List<PositionedStack> ingredients = safeList(lastRecipe.getIngredientStacks(lastRecipeIndex));
-        for (PositionedStack ingredient : ingredients) {
+        for (PositionedStack ingredient : lastRecipeInputs) {
             IAEStack<?> replacement = findAdjacentAlternative(
                 ingredient,
                 current,
@@ -277,11 +257,12 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
 
     private static IAEStack<?> findAdjacentAlternative(PositionedStack ingredient, IAEStack<?> current, int direction,
         boolean crafting) {
-        if (ingredient == null || ingredient.items == null || ingredient.items.length < 2) return null;
+        List<ItemStack> alternatives = TerminalRecipeIngredients.inputAlternatives(ingredient);
+        if (alternatives.size() < 2) return null;
 
         int currentIndex = -1;
-        for (int index = 0; index < ingredient.items.length; index++) {
-            IAEStack<?> candidate = toAlternativeStack(ingredient.items[index], crafting);
+        for (int index = 0; index < alternatives.size(); index++) {
+            IAEStack<?> candidate = toAlternativeStack(alternatives.get(index), crafting);
             if (sameIngredientType(candidate, current)) {
                 currentIndex = index;
                 break;
@@ -289,9 +270,9 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
         }
         if (currentIndex < 0) return null;
 
-        for (int step = 1; step < ingredient.items.length; step++) {
-            int index = Math.floorMod(currentIndex + direction * step, ingredient.items.length);
-            IAEStack<?> candidate = toAlternativeStack(ingredient.items[index], crafting);
+        for (int step = 1; step < alternatives.size(); step++) {
+            int index = Math.floorMod(currentIndex + direction * step, alternatives.size());
+            IAEStack<?> candidate = toAlternativeStack(alternatives.get(index), crafting);
             if (candidate != null && !sameIngredientType(candidate, current)) return candidate;
         }
         return null;
