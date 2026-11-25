@@ -209,6 +209,11 @@ public final class UniversalJointFactory extends CrossRecipeMultiblockBase<Unive
     }
 
     @Override
+    protected boolean supportsRunningThreadOverclock() {
+        return true;
+    }
+
+    @Override
     public int getMaxRecipeThreads() {
         return threadsForTier(GTUtility.getTier(getMaxInputVoltage()));
     }

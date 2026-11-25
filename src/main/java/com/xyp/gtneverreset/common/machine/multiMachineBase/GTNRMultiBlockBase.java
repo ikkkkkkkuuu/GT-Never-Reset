@@ -28,7 +28,6 @@ import com.xyp.gtneverreset.common.gui.modularui.multiblock.GTNRMultiBlockBaseGu
 import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeCandidateCache;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadInputPreflight;
-import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadOutputs;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadTask;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
@@ -95,6 +94,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     private boolean useRemainingPower;
     private boolean paused = true;
     private boolean pendingThreadFill;
+    private boolean pendingThreadAcceleration;
     private RecipeThreadTask pendingTask;
     private TooltipProbeState tooltipProbeState;
 
@@ -197,12 +197,16 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         return false;
     }
 
+    protected boolean supportsRunningThreadOverclock() {
+        return false;
+    }
+
     @Override
     protected void setupProcessingLogic(ProcessingLogic logic) {
         super.setupProcessingLogic(logic);
         RecipeThreadProcessingLogic threadedLogic = (RecipeThreadProcessingLogic) logic;
         long power = availableThreadPower();
-        long voltage = Math.min(power, Math.max(0, Math.min(getMaxInputVoltage(), getMachineVoltageLimit())));
+        long voltage = Math.min(power, processingVoltageLimit());
         logic.setAvailableVoltage(voltage)
             .setAvailableAmperage(voltage == 0 ? 0 : Math.max(1, power / voltage))
             .setAmperageOC(false)
@@ -211,6 +215,10 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             .setEuModifier(getEUtMultiplier())
             .setOverclock(getOverclockTimeReduction(), getOverclockPowerIncrease());
         if (preparingThread >= 0) threadedLogic.prepareRecipe(power);
+    }
+
+    private long processingVoltageLimit() {
+        return Math.max(0, Math.min(getMaxInputVoltage(), getMachineVoltageLimit()));
     }
 
     @Override
@@ -272,12 +280,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             if (!inputResult.wasSuccessful()) return inputResult;
             long eutLimit = availableThreadPower();
             if (eut > eutLimit) return CheckRecipeResultRegistry.insufficientPower(eut);
-            RecipeThreadTask task = new RecipeThreadTask(
-                slot,
-                eut,
-                Math.max(1, logic.getDuration()),
-                Math.max(1, logic.getCurrentParallels()),
-                new RecipeThreadOutputs(logic.getOutputItems(), logic.getOutputFluids()));
+            RecipeThreadTask task = logic.createThreadTask(slot);
             if (!logic.commitInputs()) return CheckRecipeResultRegistry.INTERNAL_ERROR;
             committed = true;
             threadTasks.put(slot, task);
@@ -303,11 +306,16 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             return;
         }
         int total = getTotalRecipeThreads();
+        long inputPower = Math.max(0, getMaxInputEu());
         long power = usedThreadPower();
-        paused = power > Math.max(0, getMaxInputEu());
+        if (power > inputPower && supportsRunningThreadOverclock() && restoreRecipeThreadRates(total)) {
+            power = usedThreadPower();
+        }
+        paused = power > inputPower;
         boolean hasRunning = threadTasks.values()
             .stream()
             .anyMatch(task -> task.getThread() < total && !task.isFinished());
+        boolean releasedPower = false;
         if (!paused && hasRunning) {
             mEfficiency = Math.max(1000, 10000 - (getIdealStatus() - getRepairStatus()) * 1000);
             lEUt = -power;
@@ -315,7 +323,9 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
                 || !polluteEnvironment(getPollutionPerTick(getControllerSlot()));
             if (!paused) {
                 for (RecipeThreadTask task : threadTasks.values()) {
-                    if (task.getThread() < total) task.advance();
+                    if (task.getThread() >= total || task.isFinished()) continue;
+                    task.advance();
+                    if (task.isFinished() && task.getEUt() > 0) releasedPower = true;
                 }
                 markDirty();
             }
@@ -352,7 +362,53 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
                 }
             }
         }
+        if (releasedPower && supportsRunningThreadOverclock()) pendingThreadAcceleration = true;
+        if (pendingThreadAcceleration && !pendingThreadFill && !paused && tile.isAllowedToWork()) {
+            pendingThreadAcceleration = false;
+            if (getIdealStatus() <= getRepairStatus()) accelerateRecipeThreads(total, inputPower);
+        }
         updateThreadDisplay();
+    }
+
+    private void accelerateRecipeThreads(int total, long inputPower) {
+        if (threadTasks.isEmpty()) return;
+        long usedPower = usedThreadPower();
+        if (usedPower >= inputPower) return;
+        long sparePower = Math.min(inputPower, getBufferedThreadPower(inputPower)) - usedPower;
+        if (sparePower <= 0) return;
+        long voltage = processingVoltageLimit();
+        for (RecipeThreadTask task : threadTasks.values()) {
+            if (task.getThread() >= total) break;
+            long previousEUt = task.getEUt();
+            if (task.accelerate(voltage, sparePower)) {
+                sparePower -= task.getEUt() - previousEUt;
+                if (sparePower == 0) break;
+            }
+        }
+    }
+
+    private long getBufferedThreadPower(long limit) {
+        long buffered = 0;
+        for (var hatch : validMTEList(getExoticAndNormalEnergyHatchList())) {
+            buffered += Math.min(
+                limit - buffered,
+                Math.max(
+                    0,
+                    hatch.getBaseMetaTileEntity()
+                        .getStoredEU()));
+            if (buffered == limit) break;
+        }
+        return buffered;
+    }
+
+    private boolean restoreRecipeThreadRates(int total) {
+        boolean restored = false;
+        for (RecipeThreadTask task : threadTasks.values()) {
+            if (task.getThread() >= total) break;
+            restored |= task.restoreLaunchRate();
+        }
+        if (restored) markDirty();
+        return restored;
     }
 
     /** Round-robin chooses the input inventory. Every start uses the controller's normal processing parameters. */
@@ -404,6 +460,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         preparingThread = -1;
         useRemainingPower = false;
         pendingThreadFill = false;
+        pendingThreadAcceleration = false;
         patternScheduler.endPass();
         paused = true;
         updateThreadDisplay();
@@ -451,6 +508,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         clearCraftingIcons(parameterModules);
         parameterModules.clear();
         pendingThreadFill = false;
+        pendingThreadAcceleration = false;
         patternScheduler.endPass();
     }
 
@@ -760,6 +818,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
             }
         }
         pendingThreadFill = false;
+        pendingThreadAcceleration = false;
         patternScheduler.endPass();
         paused = true;
         updateThreadDisplay();

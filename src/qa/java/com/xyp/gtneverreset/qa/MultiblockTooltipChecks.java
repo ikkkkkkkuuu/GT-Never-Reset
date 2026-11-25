@@ -3,6 +3,7 @@ package com.xyp.gtneverreset.qa;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -11,14 +12,20 @@ import net.minecraft.client.audio.SoundCategory;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.resources.Language;
 import net.minecraft.util.ScreenShotHelper;
+import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 
+import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
+import com.xyp.gtneverreset.utils.text.AnimatedText;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import gregtech.api.GregTechAPI;
+import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
 
 @Mod(
     modid = "structuretooltipclientqa",
@@ -35,7 +42,9 @@ public final class MultiblockTooltipChecks {
         "SingularityDataHub",
         "LargeBeeBreeder",
         "LargeCropBreeder",
-        "UniversalJointFactory");
+        "UniversalJointFactory",
+        "LightHunterSpaceStation",
+        "MetalFormingSatelliteMkI");
     private boolean started;
     private boolean finished;
     private boolean advance;
@@ -74,7 +83,8 @@ public final class MultiblockTooltipChecks {
                 page++;
                 if (page == NAMES.size() * 4) {
                     Files.write(new File(output(), "result.txt").toPath(), "PASS".getBytes(StandardCharsets.UTF_8));
-                    System.out.println("STRUCTURE_TOOLTIP_CLIENT_QA PASS: 32 English/Chinese machine tooltip pages");
+                    System.out.println(
+                        "STRUCTURE_TOOLTIP_CLIENT_QA PASS: " + NAMES.size() * 4 + " English/Chinese tooltip pages");
                     finished = true;
                 } else show();
             }
@@ -123,20 +133,23 @@ public final class MultiblockTooltipChecks {
                 if (!net.minecraft.util.StatCollector.canTranslate(key))
                     throw new AssertionError("Missing translation " + code + ": " + key);
             }
+            verifyAddedBySignatures(code);
         }
-        var id = com.xyp.gtneverreset.utils.enums.GTNRMachineID.valueOf(NAMES.get(page % NAMES.size()));
-        var machine = (gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase<?>) gregtech.api.GregTechAPI.METATILEENTITIES[id.id];
+        var id = GTNRMachineID.valueOf(NAMES.get(page % NAMES.size()));
+        var machine = (MTEEnhancedMultiBlockBase<?>) GregTechAPI.METATILEENTITIES[id.id];
         if (machine == null) throw new AssertionError("Missing registered machine " + id);
         var builder = new AutoMultiblockTooltipBuilder().addAutoTooltip(machine)
             .toolTipFinisher();
         boolean structure = (page / NAMES.size()) % 2 != 0;
-        List<String> lines = Arrays.asList(structure ? builder.getStructureInformation() : builder.getInformation());
+        List<String> lines = new ArrayList<>(
+            Arrays.asList(structure ? builder.getStructureInformation() : builder.getInformation()));
         if (lines.isEmpty()) throw new AssertionError("Empty tooltip " + name());
+        if (!structure) appendAnimatedTooltip(machine, lines);
         if (lines.stream()
             .anyMatch(line -> line.contains("gtnr.") || line.contains("{var:") || line.contains("%s"))) {
             throw new AssertionError("Unresolved tooltip " + name() + ": " + lines);
         }
-        if (id == com.xyp.gtneverreset.utils.enums.GTNRMachineID.LargeBeeBreeder && !structure
+        if (id == GTNRMachineID.LargeBeeBreeder && !structure
             && lines.stream()
                 .noneMatch(line -> line.contains("100%") && (line.contains("每") || line.contains("per")))) {
             throw new AssertionError("Bee voltage doubling must be derived from its valid HV-and-higher range");
@@ -145,6 +158,27 @@ public final class MultiblockTooltipChecks {
         preview = new Preview(name(), lines);
         mc.displayGuiScreen(preview);
         frames = 0;
+    }
+
+    private static void verifyAddedBySignatures(String language) {
+        String signature = AnimatedText.GT_NEVER_RESET.get();
+        int checked = 0;
+        for (var id : GTNRMachineID.values()) {
+            if (!(GregTechAPI.METATILEENTITIES[id.id] instanceof MTEEnhancedMultiBlockBase<?>machine)) continue;
+            List<String> lines = new ArrayList<>();
+            appendAnimatedTooltip(machine, lines);
+            long matches = lines.stream()
+                .filter(signature::equals)
+                .count();
+            if (matches != 1)
+                throw new AssertionError("Expected one " + language + " signature for " + id + ", found " + matches);
+            checked++;
+        }
+        System.out.println("MULTIBLOCK_ADDED_BY_QA PASS: " + checked + " " + language + " item signatures");
+    }
+
+    private static void appendAnimatedTooltip(MTEEnhancedMultiBlockBase<?> machine, List<String> lines) {
+        AnimatedTooltipHandler.renderTooltip(new ItemTooltipEvent(machine.getStackForm(1), null, lines, false));
     }
 
     private static void verifyPerformanceContracts() {

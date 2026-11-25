@@ -26,13 +26,15 @@ import com.xyp.gtneverreset.utils.text.AnimatedText;
 import com.xyp.gtnrlib.mod.ModList;
 
 import gregtech.api.enums.Textures;
+import gregtech.api.metatileentity.implementations.MTEEnhancedMultiBlockBase;
 import gregtech.api.render.TextureFactory;
 import gregtech.api.util.GTUtility;
 
 public final class MultiblockLoader {
 
     public static void registry() {
-        GTNRItemList.LightHunterSpaceStation.set(
+        register(
+            GTNRItemList.LightHunterSpaceStation,
             new LightHunterSpaceStation(
                 GTNRMachineID.LightHunterSpaceStation.id,
                 "gtneverreset.light_hunter_station",
@@ -41,97 +43,97 @@ public final class MultiblockLoader {
         // #tr gtnr.machine.star_core_stripper.name
         // # Star Core Stripper
         // # zh_CN 星核剥离装置
-        GTNRItemList.StarCoreStripper.set(
+        register(
+            GTNRItemList.StarCoreStripper,
             new StarCoreStripper(
                 GTNRMachineID.StarCoreStripper.id,
                 "gtneverreset.star_core_stripper",
                 StatCollector.translateToLocal("gtnr.machine.star_core_stripper.name")));
-        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.StarCoreStripper.get(1), AnimatedText.GT_NEVER_RESET);
         if (ChaosConfig.enableBottleInChaos) {
             // #tr gtnr.machine.bottle_in_chaos.name
             // # Bottle in Chaos
             // # zh_CN 混沌中瓶
-            GTNRItemList.BottleInChaos.set(
+            register(
+                GTNRItemList.BottleInChaos,
                 new BottleInChaos(
                     GTNRMachineID.BottleInChaos.id,
                     "gtneverreset.bottle_in_chaos",
                     StatCollector.translateToLocal("gtnr.machine.bottle_in_chaos.name")));
-            AnimatedTooltipHandler.addItemTooltip(GTNRItemList.BottleInChaos.get(1), AnimatedText.GT_NEVER_RESET);
         }
         // #tr gtnr.machine.large_ore_processor.name
         // # Large Ore Processor
         // # zh_CN 大型矿石处理机
-        GTNRItemList.LargeOreProcessor.set(
+        register(
+            GTNRItemList.LargeOreProcessor,
             new LargeOreProcessor(
                 GTNRMachineID.LargeOreProcessor.id,
                 "gtneverreset.large_ore_processor",
                 StatCollector.translateToLocal("gtnr.machine.large_ore_processor.name")));
-        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.LargeOreProcessor.get(1), AnimatedText.GT_NEVER_RESET);
         // #tr gtnr.machine.large_furnace.name
         // # Large Furnace
         // # zh_CN 大型熔炉
-        GTNRItemList.LargeFurnace.set(
+        register(
+            GTNRItemList.LargeFurnace,
             new LargeFurnace(
                 GTNRMachineID.LargeFurnace.id,
                 "gtneverreset.large_furnace",
                 StatCollector.translateToLocal("gtnr.machine.large_furnace.name")));
-        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.LargeFurnace.get(1), AnimatedText.GT_NEVER_RESET);
         // #tr gtnr.machine.universal_joint_factory.name
         // # Universal Joint Factory
         // # zh_CN 通用联合工厂
-        GTNRItemList.UniversalJointFactory.set(
+        register(
+            GTNRItemList.UniversalJointFactory,
             new UniversalJointFactory(
                 GTNRMachineID.UniversalJointFactory.id,
                 "gtneverreset.universal_joint_factory",
                 StatCollector.translateToLocal("gtnr.machine.universal_joint_factory.name")));
-        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.UniversalJointFactory.get(1), AnimatedText.GT_NEVER_RESET);
         // #tr gtnr.machine.hadron_catalytic_refinery.name
         // # Hadron Catalytic Refinery
         // # zh_CN 强子流态催化精炼塔
-        GTNRItemList.HadronCatalyticRefinery.set(
+        register(
+            GTNRItemList.HadronCatalyticRefinery,
             new HadronCatalyticRefinery(
                 GTNRMachineID.HadronCatalyticRefinery.id,
                 "gtneverreset.hadron_catalytic_refinery",
                 StatCollector.translateToLocal("gtnr.machine.hadron_catalytic_refinery.name")));
-        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.HadronCatalyticRefinery.get(1), AnimatedText.GT_NEVER_RESET);
         // #tr gtnr.machine.quantum_computer.name
         // # Quantum Computer
         // # zh_CN 量子计算机
-        GTNRItemList.QuantumComputer.set(
+        register(
+            GTNRItemList.QuantumComputer,
             new QuantumComputer(
                 GTNRMachineID.QuantumComputer.id,
                 "gtneverreset.quantum_computer",
                 StatCollector.translateToLocal("gtnr.machine.quantum_computer.name")));
-        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.QuantumComputer.get(1), AnimatedText.GT_NEVER_RESET);
         // #tr gtnr.machine.assembler_matrix.name
         // # Assembler Matrix
         // # zh_CN 装配矩阵
-        GTNRItemList.AssemblerMatrix.set(
+        register(
+            GTNRItemList.AssemblerMatrix,
             new AssemblerMatrix(
                 GTNRMachineID.AssemblerMatrix.id,
                 "gtneverreset.assembler_matrix",
                 StatCollector.translateToLocal("gtnr.machine.assembler_matrix.name")));
-        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.AssemblerMatrix.get(1), AnimatedText.GT_NEVER_RESET);
 
         // #tr gtnr.machine.singularity_data_hub.name
         // # Vault
         // # zh_CN 保险库
-        GTNRItemList.SingularityDataHub.set(
+        register(
+            GTNRItemList.SingularityDataHub,
             new SingularityDataHub(
                 GTNRMachineID.SingularityDataHub.id,
                 "gtneverreset.singularity_data_hub",
                 StatCollector.translateToLocal("gtnr.machine.singularity_data_hub.name")));
-        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.SingularityDataHub.get(1), AnimatedText.GT_NEVER_RESET);
         if (ModList.CropsNH.isModLoaded()) {
             // #tr gtnr.machine.large_crop_breeder.name
             // # Large Crop Breeder
             // # zh_CN 大型作物杂交机
-            GTNRItemList.LargeCropBreeder.set(
+            register(
+                GTNRItemList.LargeCropBreeder,
                 new LargeCropBreeder(
                     GTNRMachineID.LargeCropBreeder.id,
                     "gtneverreset.large_crop_breeder",
                     StatCollector.translateToLocal("gtnr.machine.large_crop_breeder.name")));
-            AnimatedTooltipHandler.addItemTooltip(GTNRItemList.LargeCropBreeder.get(1), AnimatedText.GT_NEVER_RESET);
         }
         if (ModList.Forestry.isModLoaded()) {
             ItemStack beeCasing = LargeBeeBreeder.getCasingMaterial()
@@ -145,12 +147,12 @@ public final class MultiblockLoader {
             // #tr gtnr.machine.large_bee_breeder.name
             // # Large Bee Breeder
             // # zh_CN 大型蜜蜂杂交机
-            GTNRItemList.LargeBeeBreeder.set(
+            register(
+                GTNRItemList.LargeBeeBreeder,
                 new LargeBeeBreeder(
                     GTNRMachineID.LargeBeeBreeder.id,
                     "gtneverreset.large_bee_breeder",
                     StatCollector.translateToLocal("gtnr.machine.large_bee_breeder.name")));
-            AnimatedTooltipHandler.addItemTooltip(GTNRItemList.LargeBeeBreeder.get(1), AnimatedText.GT_NEVER_RESET);
         }
     }
 
@@ -303,7 +305,8 @@ public final class MultiblockLoader {
 
     private static void registerSatellite(GTNRItemList item, GTNRMachineID machine, String key, int category,
         int grade) {
-        item.set(
+        register(
+            item,
             new NexusSatelliteFactory(
                 machine.id,
                 "gtneverreset." + machine.name(),
@@ -311,5 +314,10 @@ public final class MultiblockLoader {
                 key,
                 category,
                 grade));
+    }
+
+    private static void register(GTNRItemList item, MTEEnhancedMultiBlockBase<?> machine) {
+        item.set(machine);
+        AnimatedTooltipHandler.addItemTooltip(item.get(1), AnimatedText.GT_NEVER_RESET);
     }
 }

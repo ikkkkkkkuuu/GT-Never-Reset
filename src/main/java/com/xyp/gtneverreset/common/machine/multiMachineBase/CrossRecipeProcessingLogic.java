@@ -11,6 +11,7 @@ import net.minecraftforge.fluids.FluidStack;
 import com.xyp.gtneverreset.api.me.RecipeMapPatternInventory;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadTask.OverclockSettings;
 import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 
 import appeng.api.networking.crafting.ICraftingPatternDetails;
@@ -23,6 +24,8 @@ import gregtech.api.recipe.check.CheckRecipeResult;
 import gregtech.api.recipe.check.CheckRecipeResultRegistry;
 import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTRecipe;
+import gregtech.api.util.OverclockCalculator;
+import gregtech.api.util.ParallelHelper;
 import gregtech.common.tileentities.machines.IDualInputInventoryWithPattern;
 import gregtech.common.tileentities.machines.MTEHatchCraftingInputME;
 
@@ -32,6 +35,7 @@ public class CrossRecipeProcessingLogic extends RecipeThreadProcessingLogic {
     private ICraftingPatternDetails pattern;
     private RecipeMap<?> patternRecipeMap;
     private GTRecipe matchedPatternRecipe;
+    private OverclockSettings overclockSettings;
 
     public CrossRecipeProcessingLogic(CrossRecipeMultiblockBase<?> controller) {
         this.controller = controller;
@@ -58,6 +62,7 @@ public class CrossRecipeProcessingLogic extends RecipeThreadProcessingLogic {
     @Override
     @Nonnull
     protected CheckRecipeResult processRecipe() {
+        overclockSettings = null;
         try {
             return super.processRecipe();
         } finally {
@@ -67,6 +72,35 @@ public class CrossRecipeProcessingLogic extends RecipeThreadProcessingLogic {
             resetPatternInventory();
             controller.setProcessingRecipeMap(null);
         }
+    }
+
+    @Override
+    @Nonnull
+    protected CheckRecipeResult applyRecipe(@Nonnull GTRecipe recipe, @Nonnull ParallelHelper helper,
+        @Nonnull OverclockCalculator calculator, @Nonnull CheckRecipeResult result) {
+        CheckRecipeResult applied = super.applyRecipe(recipe, helper, calculator, result);
+        // GT batch mode may queue extra crafts behind a smaller set of simultaneous parallels.
+        if (applied.wasSuccessful() && controller.supportsRunningThreadOverclock()
+            && recipe.mEUt > 0
+            && getDuration() > 1
+            && helper.getDurationMultiplierDouble() == 1D
+            && euModifier > 0
+            && overClockPowerIncrease >= 1
+            && overClockTimeReduction > 1) {
+            overclockSettings = new OverclockSettings(
+                recipe.mEUt,
+                recipe.mDuration,
+                euModifier,
+                speedBoost,
+                overClockPowerIncrease,
+                overClockTimeReduction);
+        }
+        return applied;
+    }
+
+    @Override
+    protected OverclockSettings getThreadOverclockSettings() {
+        return overclockSettings;
     }
 
     @Override

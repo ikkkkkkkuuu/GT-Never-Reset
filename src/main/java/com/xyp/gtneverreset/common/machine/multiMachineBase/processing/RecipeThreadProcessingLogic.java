@@ -69,6 +69,20 @@ public class RecipeThreadProcessingLogic extends ProcessingLogic {
         return createOverclockCalculator(recipe);
     }
 
+    public final RecipeThreadTask createThreadTask(int slot) {
+        return new RecipeThreadTask(
+            slot,
+            getCalculatedEut(),
+            Math.max(1, getDuration()),
+            Math.max(1, getCurrentParallels()),
+            new RecipeThreadOutputs(getOutputItems(), getOutputFluids()),
+            getThreadOverclockSettings());
+    }
+
+    protected RecipeThreadTask.OverclockSettings getThreadOverclockSettings() {
+        return null;
+    }
+
     @Override
     @Nonnull
     protected ParallelHelper createParallelHelper(@Nonnull GTRecipe recipe) {
