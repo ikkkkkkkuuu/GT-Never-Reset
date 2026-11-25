@@ -105,6 +105,9 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("structurelib.TooltipLazyStructureElementMixin");
         }
         if (loadedMods.contains(ModList.ModIds.APPLIED_ENERGISTICS_2)) {
+            if (loadedMods.contains("structurecompat")) {
+                mixins.add("structurecompat.WirelessTerminalRangeMixin");
+            }
             if (loadedMods.contains(ModList.ModIds.MATTER_MANIPULATOR)) {
                 mixins.addAll(
                     Arrays.asList(
