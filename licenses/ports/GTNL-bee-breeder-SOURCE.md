@@ -10,7 +10,7 @@ https://github.com/GTNotLeisure/GT-Not-Leisure/commit/a82b454
 Updated MBS1 layout, controller offsets and casing materials from GTNL PR #668 at b6d67377cd2b56ae44766016e13781e65f72e907.
 https://github.com/GTNotLeisure/GT-Not-Leisure/pull/668
 
-Right-side tabs, inventory and control layout adapted from GTNL revision 538a1d236a0e72e1a144299bf07c19285b496e60. The shared right-cover tab atlas is from the same revision.
+Right-side tabs, inventory and control layout adapted from GTNL revision 538a1d236a0e72e1a144299bf07c19285b496e60.
 https://github.com/GTNotLeisure/GT-Not-Leisure/commit/538a1d236a0e72e1a144299bf07c19285b496e60
 
 Persistent seed bank, parent preparation and selective export adapted from GTNL revision ccc1c716e7b0141b1e396159173f017b08db119b, retaining GTNR's enhanced output genomes and migrating existing bee state.

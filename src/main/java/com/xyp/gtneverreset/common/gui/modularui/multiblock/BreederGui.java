@@ -1,8 +1,8 @@
 package com.xyp.gtneverreset.common.gui.modularui.multiblock;
 
-import com.cleanroommc.modularui.api.GuiAxis;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.drawable.TabTexture;
 import com.cleanroommc.modularui.drawable.UITexture;
 import com.cleanroommc.modularui.screen.ModularPanel;
@@ -12,7 +12,6 @@ import com.cleanroommc.modularui.widgets.PageButton;
 import com.cleanroommc.modularui.widgets.PagedWidget;
 import com.cleanroommc.modularui.widgets.SlotGroupWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
-import com.xyp.gtneverreset.GTNeverReset;
 
 import gregtech.api.metatileentity.implementations.MTEExtendedPowerMultiBlockBase;
 
@@ -24,17 +23,9 @@ abstract class BreederGui<T extends MTEExtendedPowerMultiBlockBase<?>> extends G
     private static final int INVENTORY_HEIGHT = 76;
     private static final int INVENTORY_WIDTH = 9 * 18;
     private static final int ROUTE_PAGE = 3;
-    private static final TabTexture RIGHT_COVER_TAB = TabTexture.of(
-        UITexture.builder()
-            .location(GTNeverReset.MODID, "gui/tab/right_cover_tabs")
-            .fullImage()
-            .canApplyTheme()
-            .build(),
-        GuiAxis.X,
-        true,
-        32,
-        28,
-        4);
+    private static final TabTexture RIGHT_TAB = GuiTextures.TAB_RIGHT;
+    private static final IDrawable ACTIVE_TAB = panelTinted(RIGHT_TAB.getStart(true));
+    private static final IDrawable INACTIVE_TAB = panelTinted(RIGHT_TAB.getStart(false));
 
     protected final PagedWidget.Controller pages = new PagedWidget.Controller();
     private final int bodyHeight;
@@ -59,7 +50,7 @@ abstract class BreederGui<T extends MTEExtendedPowerMultiBlockBase<?>> extends G
         PageButton[] tabs = createPageTabs();
         ParentWidget<?> tabStrip = new ParentWidget<>().name("breeder_tabs")
             .pos(getBasePanelWidth() - 3, 0)
-            .size(RIGHT_COVER_TAB.getWidth(), RIGHT_COVER_TAB.getHeight() * tabs.length)
+            .size(RIGHT_TAB.getWidth(), RIGHT_TAB.getHeight() * tabs.length)
             .excludeAreaInRecipeViewer();
         for (PageButton tab : tabs) tabStrip.child(tab);
         panel.child(tabStrip);
@@ -95,13 +86,28 @@ abstract class BreederGui<T extends MTEExtendedPowerMultiBlockBase<?>> extends G
     protected abstract PageButton[] createPageTabs();
 
     protected final PageButton tab(int index, IDrawable icon, String tooltipKey) {
-        return new PageButton(index, pages).tab(RIGHT_COVER_TAB, -1)
+        return new PageButton(index, pages).background(true, ACTIVE_TAB)
+            .background(false, INACTIVE_TAB)
             .name("breeder_tab_" + index)
-            .pos(0, index * RIGHT_COVER_TAB.getHeight())
+            .size(RIGHT_TAB.getWidth(), RIGHT_TAB.getHeight())
+            .pos(0, index * RIGHT_TAB.getHeight())
             .overlay(
                 icon.asIcon()
                     .size(16, 16)
                     .center())
             .tooltipBuilder(t -> t.addLine(IKey.lang(tooltipKey)));
+    }
+
+    private static IDrawable panelTinted(UITexture texture) {
+        return (context, x, y, width, height, theme) -> texture.draw(
+            context,
+            x,
+            y,
+            width,
+            height,
+            context.getMuiContext()
+                .getTheme()
+                .getPanelTheme()
+                .getTheme());
     }
 }
