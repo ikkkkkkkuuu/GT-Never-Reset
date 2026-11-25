@@ -2,6 +2,8 @@ package com.xyp.gtneverreset.common.machine.multiMachineBase;
 
 import java.util.List;
 
+import net.minecraft.util.StatCollector;
+
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.CrossRecipeMultiblockGui;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
@@ -50,6 +52,24 @@ public abstract class CrossRecipeMultiblockBase<T extends CrossRecipeMultiblockB
         return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
             .addRecipeMaps(getAvailableRecipeMaps())
             .toolTipFinisher();
+    }
+
+    @Override
+    public List<String> getTooltipFeatureLines() {
+        List<String> lines = super.getTooltipFeatureLines();
+        if (supportsMachineModeSwitch() && getAvailableRecipeMaps().size() > 1) {
+            // #tr gtnr.machine.tooltip.cross_recipe_pattern_buffer
+            // # Cross-Recipe ME Pattern Buffer
+            // # zh_CN 跨配方 ME 样板仓
+            String buffer = AutoMultiblockTooltipBuilder
+                .mechanicName("gtnr.machine.tooltip.cross_recipe_pattern_buffer");
+            // #tr gtnr.machine.tooltip.cross_recipe_pattern_modes
+            // # A %s can run patterns across maps at once. Other inputs and untyped patterns use the selected mode.
+            // # zh_CN %s可同时加工不同配方池的样板。普通输入和未标注配方类型的样板按机器界面选定的模式加工。
+            lines.add(
+                StatCollector.translateToLocalFormatted("gtnr.machine.tooltip.cross_recipe_pattern_modes", buffer));
+        }
+        return lines;
     }
 
     @Override

@@ -8,5 +8,3 @@ For every {red:{var:perfectOverclockHeat} K} above the recipe temperature, one r
 {hr}
 Cupronickel coils at {aqua:LV} start with a theoretical limit of {gold:{var:baseParallels}} parallels.
 The limit is {gold:{var:parallelsPerKelvin}} × temperature (K) × coil multiplier. Actual parallels depend on power, inputs, and output space.
-A {light_purple:Cross-Recipe ME Pattern Buffer} can run patterns from both recipe maps at once. Ordinary inputs use the selected mode.
-In blast furnace mode, use the circuit shown in NEI. Some recipes run faster with a protective gas.

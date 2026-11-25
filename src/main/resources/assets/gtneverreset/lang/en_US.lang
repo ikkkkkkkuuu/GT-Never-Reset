@@ -1591,6 +1591,8 @@ gtnr.chaos.info.eu=Energy multiplier
 gtnr.chaos.info.output=High-capacity output
 tst.shared.machine_info.running_mode=Running Mode :
 gtnr.chaos.structure.one_module_each=Install at most one controller of each parameter module type.
+gtnr.machine.tooltip.cross_recipe_pattern_buffer=Cross-Recipe ME Pattern Buffer
+gtnr.machine.tooltip.cross_recipe_pattern_modes=A %s can run patterns across maps at once. Other inputs and untyped patterns use the selected mode.
 gtnr.multiblock.threads=Running threads: §b%s§r / §b%s§r
 gtnr.structure.hatch.alternative=%s or %s
 gtnr.tooltip.glass.energy_limit=Below %s glass: energy hatch tier <= glass tier; no laser energy hatches

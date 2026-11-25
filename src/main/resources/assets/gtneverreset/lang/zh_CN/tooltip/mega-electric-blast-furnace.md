@@ -8,5 +8,3 @@
 {hr}
 用白铜线圈和 {aqua:LV} 供电，刚成型时的理论并行上限是 {gold:{var:baseParallels}}。
 理论并行上限为 {gold:{var:parallelsPerKelvin}} × 炉温(K) × 线圈倍率。实际能跑多少取决于供电、原料和输出余量。
-{light_purple:跨配方 ME 样板仓}可同时加工两种配方池的样板。普通输入按机器界面选定的模式加工。
-工业高炉模式按 NEI 配方放电路，部分配方通保护气烧得更快。
