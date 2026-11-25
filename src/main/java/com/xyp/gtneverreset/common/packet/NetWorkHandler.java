@@ -156,6 +156,11 @@ public final class NetWorkHandler {
             ProjectorDeploymentPacket.class,
             nextPacketId++,
             Side.CLIENT);
+        CHANNEL.registerMessage(
+            new PayloadHandler.Client<>(),
+            CraftingCompletionPacket.class,
+            nextPacketId++,
+            Side.CLIENT);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);

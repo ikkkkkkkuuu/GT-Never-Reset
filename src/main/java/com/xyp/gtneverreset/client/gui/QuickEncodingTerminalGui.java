@@ -43,6 +43,8 @@ import org.lwjgl.opengl.GL11;
 import com.glodblock.github.FluidCraft;
 import com.glodblock.github.client.gui.GuiFCImgButton;
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.api.mixinHelper.CraftingCompletionRepoAccess;
+import com.xyp.gtneverreset.api.mixinHelper.CraftingCompletionTerminalAccess;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalMagnetGui;
 import com.xyp.gtneverreset.common.gui.container.QuickEncodingTerminalContainer;
 import com.xyp.gtneverreset.common.packet.InterfacePatternTarget;
@@ -53,6 +55,7 @@ import com.xyp.gtneverreset.common.packet.SwitchGuisPacket;
 import com.xyp.gtneverreset.common.packet.TeleportToInterfacePacket;
 import com.xyp.gtneverreset.common.packet.ToggleInterfaceVisibilityPacket;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
+import com.xyp.gtneverreset.compat.ae2conveniencefeatures.AE2ConvenienceCompletion;
 import com.xyp.gtneverreset.compat.nei.NeiCraftingFluid;
 import com.xyp.gtneverreset.compat.nei.QuickTerminalRecipeTransferHandler;
 import com.xyp.gtneverreset.config.ClientConfig;
@@ -113,7 +116,8 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
-public final class QuickEncodingTerminalGui extends GuiPatternTerm implements IInterfaceTerminalPostUpdate {
+public final class QuickEncodingTerminalGui extends GuiPatternTerm
+    implements IInterfaceTerminalPostUpdate, CraftingCompletionTerminalAccess {
 
     private static final int ITEM_COLUMNS = QuickEncodingTerminalContainer.STORAGE_COLUMNS;
     private static final int ITEM_PANEL_WIDTH = 29 + ITEM_COLUMNS * 18;
@@ -422,10 +426,36 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
 
     private void configureItemPanel() {
         itemRepo = readItemRepo();
-        if (itemRepo != null) itemRepo.setRowSize(ITEM_COLUMNS);
+        if (itemRepo != null && itemRepo.getRowSize() != ITEM_COLUMNS) {
+            itemRepo.setRowSize(ITEM_COLUMNS);
+            AE2ConvenienceCompletion.reflow(itemRepo);
+        }
         ensureItemPanelSlots();
+        updateItemScrollBar();
+        layoutItemPanelSlots();
 
-        layoutPinSlots();
+        searchField.x = guiLeft + ITEM_PANEL_X + 3;
+        searchField.y = guiTop + itemPanelY + 4;
+        searchField.w = ITEM_COLUMNS * 18 + 2;
+        getScrollBar().setVisible(false);
+    }
+
+    @Override
+    public void gtnr$refreshCompletionLayout(boolean scrollToTop) {
+        if (scrollToTop) storageScrollPosition = 0;
+        if (itemRepo == null) return;
+        updateItemScrollBar();
+        layoutItemPanelSlots();
+    }
+
+    // This optional entry point lets AE2 Convenience Features use the compact layout and scroll position.
+    public void ae2cf$refreshLayout(boolean scrollToTop) {
+        gtnr$refreshCompletionLayout(scrollToTop);
+    }
+
+    private void layoutItemPanelSlots() {
+        int completionSlots = visibleCompletionSlots();
+        layoutPinSlots(completionSlots);
         if (monitorableSlots != null) {
             int visiblePinSlotCount = pinDisplayRows * ITEM_COLUMNS;
             for (int i = 0; i < monitorableSlots.length; i++) {
@@ -433,18 +463,20 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
                 boolean visible = i < visibleItemSlots;
                 slot.setHidden(!visible);
                 if (visible) {
-                    int panelIndex = visiblePinSlotCount + i;
+                    int panelIndex = i < completionSlots ? i : visiblePinSlotCount + i;
                     slot.setX(ITEM_PANEL_X + 5 + panelIndex % ITEM_COLUMNS * 18);
                     slot.setY(itemPanelY + 18 + panelIndex / ITEM_COLUMNS * 18);
                 }
             }
         }
 
-        searchField.x = guiLeft + ITEM_PANEL_X + 3;
-        searchField.y = guiTop + itemPanelY + 4;
-        searchField.w = ITEM_COLUMNS * 18 + 2;
-        updateItemScrollBar();
-        getScrollBar().setVisible(false);
+    }
+
+    private int visibleCompletionSlots() {
+        int prefix = itemRepo instanceof CraftingCompletionRepoAccess completion ? completion.gtnr$completionSlots()
+            : AE2ConvenienceCompletion.prefixSlots(itemRepo);
+        int remainingSlots = prefix - storageScrollPosition * ITEM_COLUMNS;
+        return Math.min(visibleItemSlots, Math.max(0, remainingSlots));
     }
 
     private void ensureItemPanelSlots() {
@@ -496,7 +528,7 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
      * requested prefix of each crafting/player section is visible; surplus
      * native capacity remains hidden and available to AE2's original backend.
      */
-    private void layoutPinSlots() {
+    private void layoutPinSlots(int completionSlots) {
         if (pinSlots == null || pinSlots.length == 0) {
             visiblePinSlots = new VirtualMEPinSlot[0];
             return;
@@ -514,7 +546,7 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
             slot.setHidden(!show);
             if (!show) continue;
 
-            int panelIndex = visible.size();
+            int panelIndex = completionSlots + visible.size();
             slot.setX(ITEM_PANEL_X + 5 + panelIndex % ITEM_COLUMNS * 18);
             slot.setY(itemPanelY + 18 + panelIndex / ITEM_COLUMNS * 18);
             visible.add(slot);
@@ -918,6 +950,8 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
         // GuiMEMonitorable may have applied its native nine-column range immediately before AEBaseGui calls drawBG.
         // Restore the compact range here, before virtual ME slots query ItemRepo with the current scroll position.
         updateItemScrollBar();
+        // The optional mod's native draw hook runs before drawBG and positions its rows for standard terminals.
+        if (ModList.AE2ConvenienceFeatures.isModLoaded()) layoutItemPanelSlots();
         interfaceTerminal.drawCentralBackground(offsetX, offsetY, mouseX, mouseY);
         interfaceTerminal.drawHighlightedPatternSlot(offsetX, offsetY);
 
@@ -1078,6 +1112,7 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
 
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int button) {
+        if (ModList.AE2ConvenienceFeatures.isModLoaded()) layoutItemPanelSlots();
         currentMouseX = mouseX;
         currentMouseY = mouseY;
         draggedStorageSlots.clear();
@@ -1335,6 +1370,7 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm implements II
 
     @Override
     protected boolean mouseWheelEvent(int mouseX, int mouseY, int wheel) {
+        if (ModList.AE2ConvenienceFeatures.isModLoaded()) layoutItemPanelSlots();
         if (isShiftKeyDown() && QuickTerminalRecipeTransferHandler.cycleRecipeIngredient(this, wheel)) return true;
         int patternSide = patternScrollSide(mouseX, mouseY, false);
         if (patternSide >= 0 && !isCtrlKeyDown() && !isShiftKeyDown()) {
