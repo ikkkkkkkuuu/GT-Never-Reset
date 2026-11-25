@@ -12,6 +12,7 @@ import com.xyp.gtneverreset.common.machine.multiblock.CatalyticReformerControlle
 import com.xyp.gtneverreset.common.machine.multiblock.HadronCatalyticRefinery;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeBeeBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeCropBreeder;
+import com.xyp.gtneverreset.common.machine.multiblock.LargeFragmentWorldCollector;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeOreProcessor;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeSteelKilnController;
@@ -43,6 +44,15 @@ public final class MultiblockLoader {
                 "gtneverreset.light_hunter_station",
                 StatCollector.translateToLocal("gtnr.machine.light_hunter.name")));
         registerSatellites();
+        // #tr gtnr.machine.large_fragment_world_collector.name
+        // # Large Fragment World Collector
+        // # zh_CN 大型碎片世界采集器
+        register(
+            GTNRItemList.LargeFragmentWorldCollector,
+            new LargeFragmentWorldCollector(
+                GTNRMachineID.LargeFragmentWorldCollector.id,
+                "gtneverreset.large_fragment_world_collector",
+                StatCollector.translateToLocal("gtnr.machine.large_fragment_world_collector.name")));
         // #tr gtnr.machine.star_core_stripper.name
         // # Star Core Stripper
         // # zh_CN 星核剥离装置
