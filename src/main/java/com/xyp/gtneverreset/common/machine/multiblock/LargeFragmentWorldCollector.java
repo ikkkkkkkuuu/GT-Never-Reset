@@ -24,17 +24,19 @@ import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructa
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
+import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeMultiblockBase;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeProcessingLogic;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
 import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectionBackend;
-import com.xyp.gtneverreset.utils.enums.BlockIcons;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
 import gregtech.api.casing.Casings;
+import gregtech.api.enums.Textures;
 import gregtech.api.interfaces.IHatchElement;
+import gregtech.api.interfaces.IIconContainer;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.ICasingTextureProvider;
@@ -60,6 +62,18 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
     private static final int SPEED_MULTIPLIER = 4;
     private static final int ENERGY_MULTIPLIER = 256;
     private static final IHatchElement<MTEMultiBlockBase> ENERGY_INPUT = Energy.or(ExoticEnergy);
+    private static final String FRONT_PATH = "large_fragment_world_collector/overlay_front";
+    private static final IIconContainer FRONT = Textures.BlockIcons.custom(GTNeverReset.MODID, FRONT_PATH);
+    private static final IIconContainer FRONT_EMISSIVE = Textures.BlockIcons
+        .custom(GTNeverReset.MODID, FRONT_PATH + "_emissive");
+    private static final IIconContainer FRONT_ACTIVE = Textures.BlockIcons
+        .custom(GTNeverReset.MODID, FRONT_PATH + "_active");
+    private static final IIconContainer FRONT_ACTIVE_EMISSIVE = Textures.BlockIcons
+        .custom(GTNeverReset.MODID, FRONT_PATH + "_active_emissive");
+    private static final IIconContainer FRONT_PAUSED = Textures.BlockIcons
+        .custom(GTNeverReset.MODID, FRONT_PATH + "_paused");
+    private static final IIconContainer FRONT_PAUSED_EMISSIVE = Textures.BlockIcons
+        .custom(GTNeverReset.MODID, FRONT_PATH + "_paused_emissive");
 
     private static IStructureDefinition<LargeFragmentWorldCollector> createStructure() {
         int texture = CASING.getTextureId();
@@ -192,10 +206,21 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
     public ITexture[] getTexture(IGregTechTileEntity tile, ForgeDirection side, ForgeDirection facing, int color,
         boolean active, boolean redstone) {
         if (side != facing) return new ITexture[] { getCasingTexture() };
+        IIconContainer overlay = active ? FRONT_ACTIVE : FRONT;
+        IIconContainer emissive = active ? FRONT_ACTIVE_EMISSIVE : FRONT_EMISSIVE;
+        if (tile != null && !tile.isAllowedToWork()) {
+            overlay = FRONT_PAUSED;
+            emissive = FRONT_PAUSED_EMISSIVE;
+        }
         return new ITexture[] { getCasingTexture(), TextureFactory.builder()
-            .addIcon(active ? BlockIcons.FragmentCollectorFrontActive : BlockIcons.FragmentCollectorFront)
+            .addIcon(overlay)
             .extFacing()
-            .build() };
+            .build(),
+            TextureFactory.builder()
+                .addIcon(emissive)
+                .extFacing()
+                .glow()
+                .build() };
     }
 
     @Override
