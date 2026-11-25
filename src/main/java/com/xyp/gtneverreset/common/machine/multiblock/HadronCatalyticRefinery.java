@@ -173,6 +173,11 @@ public final class HadronCatalyticRefinery extends CrossRecipeMultiblockBase<Had
     }
 
     @Override
+    protected boolean supportsRunningThreadOverclock() {
+        return true;
+    }
+
+    @Override
     public int getMaxRecipeThreads() {
         return 32;
     }
