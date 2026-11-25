@@ -1,9 +1,11 @@
 package com.xyp.gtneverreset.loader;
 
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 
 import com.xyp.gtneverreset.api.packaged.PackagedCoreRegistry;
+import com.xyp.gtneverreset.client.GTNRCreativeTabs;
 import com.xyp.gtneverreset.common.item.items.ChaosCredentialItem;
 import com.xyp.gtneverreset.common.item.items.ChaosRouteItem;
 import com.xyp.gtneverreset.common.item.items.ChaosStructureModuleItem;
@@ -143,6 +145,26 @@ public final class ItemLoader {
         GameRegistry.registerItem(stockIOInterface, ItemStockIOInterface.REGISTRY_NAME);
         GTNRItemList.StockIOInterfacePart.set(stockIOInterface);
         GameRegistry.registerItem(universalWand, "universal_wand");
+
+        var aluminiumSulfate = new Item()
+            // #tr item.gtneverreset.aluminium_sulfate_dust.name
+            // # Aluminium Sulfate Dust
+            // # zh_CN 硫酸铝粉
+            .setUnlocalizedName("gtneverreset.aluminium_sulfate_dust")
+            .setTextureName("gregtech:materialicons/FINE/dust")
+            .setCreativeTab(GTNRCreativeTabs.ITEMS);
+        GameRegistry.registerItem(aluminiumSulfate, "aluminium_sulfate_dust");
+        GTNRItemList.AluminiumSulfateDust.set(aluminiumSulfate);
+
+        var zsm5Plate = new Item()
+            // #tr item.gtneverreset.zsm5_plate.name
+            // # ZSM-5 Plate
+            // # zh_CN ZSM-5 分子筛板
+            .setUnlocalizedName("gtneverreset.zsm5_plate")
+            .setTextureName("gregtech:materialicons/ROUGH/plate")
+            .setCreativeTab(GTNRCreativeTabs.ITEMS);
+        GameRegistry.registerItem(zsm5Plate, "zsm5_plate");
+        GTNRItemList.Zsm5Plate.set(zsm5Plate);
         var pickaxe = new VeinMiningPickaxe();
         MinecraftForge.EVENT_BUS.register(pickaxe);
         FMLCommonHandler.instance()

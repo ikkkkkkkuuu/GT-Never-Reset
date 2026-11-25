@@ -8,12 +8,15 @@ import net.minecraft.util.StatCollector;
 import com.gtnewhorizon.gtnhlib.util.AnimatedTooltipHandler;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
 import com.xyp.gtneverreset.common.machine.multiblock.BottleInChaos;
+import com.xyp.gtneverreset.common.machine.multiblock.CatalyticReformerController;
 import com.xyp.gtneverreset.common.machine.multiblock.HadronCatalyticRefinery;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeBeeBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeCropBreeder;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeOreProcessor;
+import com.xyp.gtneverreset.common.machine.multiblock.LargeSteelKilnController;
 import com.xyp.gtneverreset.common.machine.multiblock.LightHunterSpaceStation;
+import com.xyp.gtneverreset.common.machine.multiblock.MegaElectricBlastFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.NexusSatelliteFactory;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
@@ -78,6 +81,15 @@ public final class MultiblockLoader {
                 GTNRMachineID.LargeFurnace.id,
                 "gtneverreset.large_furnace",
                 StatCollector.translateToLocal("gtnr.machine.large_furnace.name")));
+        // #tr gtnr.machine.large_steel_kiln.name
+        // # Large Steel Kiln
+        // # zh_CN 大型炼钢窑
+        register(
+            GTNRItemList.LargeSteelKiln,
+            new LargeSteelKilnController(
+                GTNRMachineID.LargeSteelKiln.id,
+                "gtneverreset.large_steel_kiln",
+                StatCollector.translateToLocal("gtnr.machine.large_steel_kiln.name")));
         // #tr gtnr.machine.universal_joint_factory.name
         // # Universal Joint Factory
         // # zh_CN 通用联合工厂
@@ -96,6 +108,15 @@ public final class MultiblockLoader {
                 GTNRMachineID.HadronCatalyticRefinery.id,
                 "gtneverreset.hadron_catalytic_refinery",
                 StatCollector.translateToLocal("gtnr.machine.hadron_catalytic_refinery.name")));
+        // #tr gtnr.machine.catalytic_reformer.name
+        // # Catalytic Reformer
+        // # zh_CN 催化重整机
+        register(
+            GTNRItemList.CatalyticReformer,
+            new CatalyticReformerController(
+                GTNRMachineID.CatalyticReformer.id,
+                "gtneverreset.catalytic_reformer",
+                StatCollector.translateToLocal("gtnr.machine.catalytic_reformer.name")));
         // #tr gtnr.machine.quantum_computer.name
         // # Quantum Computer
         // # zh_CN 量子计算机
@@ -154,6 +175,15 @@ public final class MultiblockLoader {
                     "gtneverreset.large_bee_breeder",
                     StatCollector.translateToLocal("gtnr.machine.large_bee_breeder.name")));
         }
+        // #tr gtnr.machine.mega_electric_blast_furnace.name
+        // # Entrodynamically Phase Changer
+        // # zh_CN 熵动力学相变发生器
+        register(
+            GTNRItemList.MegaElectricBlastFurnace,
+            new MegaElectricBlastFurnace(
+                GTNRMachineID.MegaElectricBlastFurnace.id,
+                "gtneverreset.mega_electric_blast_furnace",
+                StatCollector.translateToLocal("gtnr.machine.mega_electric_blast_furnace.name")));
     }
 
     private static void registerSatellites() {

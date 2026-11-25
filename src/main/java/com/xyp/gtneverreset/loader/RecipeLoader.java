@@ -9,6 +9,7 @@ import com.xyp.gtneverreset.common.recipe.gregtech.BenderRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.BlastFurnaceRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.ExtruderRecipes;
 import com.xyp.gtneverreset.common.recipe.gregtech.LargeChemicalReactorRecipes;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.CatalyticReformerRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.DisassemblerRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.LightningProcessorRecipes;
@@ -81,6 +82,7 @@ public final class RecipeLoader implements IContentLoader {
         BlastFurnaceRecipes.register();
         FurnaceRecipes.register();
         OreProcessingRecipes.register();
+        CatalyticReformerRecipes.register();
     }
 
     public static void registerLateRecipes() {

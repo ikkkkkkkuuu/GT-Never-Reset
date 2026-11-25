@@ -58,6 +58,19 @@ public final class GTNRRecipeMaps {
         .neiHandlerInfo(b -> b.setDisplayStack(GTNRItemList.AssemblySatelliteMkI.get(1)))
         .build();
 
+    public static final RecipeMap<RecipeMapBackend> CATALYTIC_REFORMER = RecipeMapBuilder
+        // #tr gtnr.recipe.catalytic_reformer
+        // # Catalytic Reforming
+        // # zh_CN 催化重整
+        .of("gtnr.recipe.catalytic_reformer")
+        .maxIO(1, 0, 1, 4)
+        .minInputs(1, 1)
+        .progressBar(GTUITextures.PROGRESSBAR_ARROW_MULTIPLE)
+        .progressBarMUI2(GTGuiTextures.PROGRESSBAR_ARROW_MULTIPLE)
+        .frontend(LargeNEIFrontend::new)
+        .neiHandlerInfo(builder -> builder.setDisplayStack(GTNRItemList.CatalyticReformer.get(1)))
+        .build();
+
     public static final RecipeMap<RecipeMapBackend> CHAOS_CREDENTIAL_RECIPES = ChaosConfig.enableBottleInChaos
         ? RecipeMapBuilder
             // #tr gtnr.recipe.chaos_credential

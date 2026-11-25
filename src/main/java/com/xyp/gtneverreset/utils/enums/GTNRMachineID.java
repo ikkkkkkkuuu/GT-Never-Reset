@@ -32,7 +32,10 @@ public enum GTNRMachineID {
     AssemblySatelliteMkIII(29425),
     AssemblySatelliteMkIV(29426),
     LightHunterSpaceStation(29427),
-    // 预留：29428–29499（72 个）。
+    MegaElectricBlastFurnace(29428),
+    CatalyticReformer(29429),
+    LargeSteelKiln(29430),
+    // 预留：29431–29499（69 个）。
     // endregion
 
     // region 舱室

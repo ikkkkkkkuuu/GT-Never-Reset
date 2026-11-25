@@ -325,7 +325,10 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
                 for (RecipeThreadTask task : threadTasks.values()) {
                     if (task.getThread() >= total || task.isFinished()) continue;
                     task.advance();
-                    if (task.isFinished() && task.getEUt() > 0) releasedPower = true;
+                    if (task.isFinished()) {
+                        onRecipeThreadFinished();
+                        releasedPower |= task.getEUt() > 0;
+                    }
                 }
                 markDirty();
             }
@@ -369,6 +372,9 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         }
         updateThreadDisplay();
     }
+
+    /** Called once when processing reaches its final tick, even if outputs are still waiting for space. */
+    protected void onRecipeThreadFinished() {}
 
     private void accelerateRecipeThreads(int total, long inputPower) {
         if (threadTasks.isEmpty()) return;
@@ -817,11 +823,20 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
                 throw new IllegalStateException("Duplicate saved recipe thread");
             }
         }
+        if (!tag.hasKey("gtnrRecipeThreads")) {
+            RecipeThreadTask legacyThread = createLegacyRecipeThread();
+            if (legacyThread != null) threadTasks.put(legacyThread.getThread(), legacyThread);
+        }
         pendingThreadFill = false;
         pendingThreadAcceleration = false;
         patternScheduler.endPass();
         paused = true;
         updateThreadDisplay();
+    }
+
+    /** Converts a saved GT recipe after native NBT decoding and before the thread display clears its fields. */
+    protected RecipeThreadTask createLegacyRecipeThread() {
+        return null;
     }
 
     @Override
