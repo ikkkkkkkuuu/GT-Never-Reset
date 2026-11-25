@@ -13,6 +13,8 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -34,6 +36,8 @@ import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingCpuCluste
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
+import com.xyp.gtneverreset.common.me.CraftingMachineMonitor;
+import com.xyp.gtneverreset.common.me.CraftingMachineMonitor.Dispatch;
 import com.xyp.gtneverreset.common.me.DireCraftingPatternDetails;
 
 import appeng.api.config.Actionable;
@@ -200,12 +204,14 @@ public abstract class MixinCraftingCPUCluster {
         require = 1)
     private boolean gtnr$commitAcceptedBatch(ICraftingMedium medium, ICraftingPatternDetails details,
         InventoryCrafting craftingInventory, Operation<Boolean> original,
-        @Share("gtnr$batchDispatch") LocalRef<BatchDispatchState> contextRef) {
+        @Share("gtnr$batchDispatch") LocalRef<BatchDispatchState> contextRef,
+        @Share("gtnr$monitorDispatch") LocalRef<Dispatch> dispatchRef) {
+        dispatchRef.set(null);
         BatchDispatchState context = contextRef.get();
         if (context == null || !context.isPlannedBatch()) {
             if (craftingInventory instanceof LargeInventoryCrafting largeInventory)
                 largeInventory.gtnr$setAssemblerSize(1);
-            return original.call(medium, details, craftingInventory);
+            return gtnr$pushAndObserve(medium, details, craftingInventory, original, dispatchRef);
         }
         if (context.isRejected()) return false;
         if (!(craftingInventory instanceof LargeInventoryCrafting largeInventory)) {
@@ -229,7 +235,7 @@ public abstract class MixinCraftingCPUCluster {
                 .getCrafts());
         boolean accepted;
         try {
-            accepted = original.call(medium, details, craftingInventory);
+            accepted = gtnr$pushAndObserve(medium, details, craftingInventory, original, dispatchRef);
         } finally {
             largeInventory.gtnr$setAssemblerSize(1);
         }
@@ -289,17 +295,22 @@ public abstract class MixinCraftingCPUCluster {
         require = 1)
     private IAEStack<?>[] gtnr$scaleCommittedOutputs(ICraftingPatternDetails details, Operation<IAEStack<?>[]> original,
         @Local(name = "expandedInputs") LocalRef<List<IAEStack<?>>> expandedInputs,
-        @Share("gtnr$batchDispatch") LocalRef<BatchDispatchState> contextRef) {
+        @Share("gtnr$batchDispatch") LocalRef<BatchDispatchState> contextRef,
+        @Share("gtnr$monitorDispatch") LocalRef<Dispatch> dispatchRef) {
         IAEStack<?>[] outputs = original.call(details);
         BatchDispatchState context = contextRef.get();
-        if (context == null || !context.isCommitted()) return outputs;
-        // A second delivery in this loop must plan again from one craft and the remaining stock.
-        if (context.mediumStrategy()
-            .isPatternBuffer()) expandedInputs.set(null);
-        return GTNR$BATCH_PLANNER.scaleOutputs(
-            outputs,
-            context.plan()
-                .getCrafts());
+        if (context != null && context.isCommitted()) {
+            // A second delivery in this loop must plan again from one craft and the remaining stock.
+            if (context.mediumStrategy()
+                .isPatternBuffer()) expandedInputs.set(null);
+            outputs = GTNR$BATCH_PLANNER.scaleOutputs(
+                outputs,
+                context.plan()
+                    .getCrafts());
+        }
+        Dispatch dispatch = dispatchRef.get();
+        if (dispatch != null) CraftingMachineMonitor.record((CraftingCPUCluster) (Object) this, dispatch, outputs);
+        return outputs;
     }
 
     /**
@@ -337,6 +348,35 @@ public abstract class MixinCraftingCPUCluster {
             IAEStack<?> sessionOutput = scaledOutput.copy();
             sessionOutput.setStackSize(GTNR$BATCH_PLANNER.checkedMultiply(baseOutput, allocation.getCrafts()));
             original.call(diagnostics, sessionOutput, outputObservedAtTick, allocation.getSessionId());
+        }
+    }
+
+    @Inject(method = "recordReturnedOutputs", at = @At("RETURN"), require = 1)
+    private void gtnr$forgetReturnedOutput(IAEStack<?> stack, CallbackInfo ci) {
+        CraftingMachineMonitor.returned((CraftingCPUCluster) (Object) this, stack);
+    }
+
+    @Inject(method = { "cancel", "destroy" }, at = @At("RETURN"), require = 1)
+    private void gtnr$forgetCraftingMachines(CallbackInfo ci) {
+        CraftingMachineMonitor.clear((CraftingCPUCluster) (Object) this);
+    }
+
+    @Inject(method = "completeJob", at = @At("RETURN"), require = 1)
+    private void gtnr$forgetCompletedCraftingMachines(CallbackInfo ci) {
+        CraftingCPUCluster cpu = (CraftingCPUCluster) (Object) this;
+        if (cpu.getLastCraftingLink() == null) CraftingMachineMonitor.clear(cpu);
+    }
+
+    @Unique
+    private static boolean gtnr$pushAndObserve(ICraftingMedium medium, ICraftingPatternDetails details,
+        InventoryCrafting craftingInventory, Operation<Boolean> original, LocalRef<Dispatch> dispatchRef) {
+        Dispatch dispatch = CraftingMachineMonitor.begin(medium);
+        try {
+            boolean accepted = original.call(medium, details, craftingInventory);
+            if (accepted) dispatchRef.set(dispatch);
+            return accepted;
+        } finally {
+            CraftingMachineMonitor.end(dispatch);
         }
     }
 

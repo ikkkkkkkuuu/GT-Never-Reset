@@ -1,0 +1,137 @@
+package com.xyp.gtneverreset.mixins.late.appliedenergistics2;
+
+import java.util.List;
+
+import net.minecraft.inventory.Container;
+
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.sugar.Local;
+import com.xyp.gtneverreset.api.mixinHelper.CraftingMonitorScreen;
+import com.xyp.gtneverreset.client.gui.crafting.CraftingMonitorTooltip;
+
+import appeng.api.storage.data.IAEStack;
+import appeng.client.gui.AEBaseGui;
+import appeng.client.gui.implementations.GuiCraftingCPU;
+import appeng.container.implementations.CraftingCpuEntry;
+import appeng.util.ScheduledReason;
+
+@Mixin(value = GuiCraftingCPU.class, remap = false)
+public abstract class CraftingMonitorGuiMixin extends AEBaseGui implements CraftingMonitorScreen {
+
+    @Shadow
+    @Final
+    protected static int SECTION_LENGTH;
+    @Shadow
+    @Final
+    protected static int SECTION_HEIGHT;
+    @Shadow
+    @Final
+    private static int ITEMSTACK_LEFT_OFFSET;
+    @Shadow
+    @Final
+    private static int ITEMSTACK_TOP_OFFSET;
+
+    @Unique
+    private final CraftingMonitorTooltip gtnr$monitorTooltip = new CraftingMonitorTooltip();
+
+    private CraftingMonitorGuiMixin(Container container) {
+        super(container);
+    }
+
+    @Shadow
+    private int getCraftingStateColor(ScheduledReason reason, boolean active) {
+        throw new AssertionError();
+    }
+
+    @ModifyExpressionValue(
+        method = "drawEntry",
+        at = @At(value = "FIELD", target = "Lappeng/core/AEConfig;useColoredCraftingStatus:Z"))
+    private boolean gtnr$drawCellProgress(boolean colored, @Local(argsOnly = true) CraftingCpuEntry entry,
+        @Local(argsOnly = true, ordinal = 1) int column, @Local(argsOnly = true, ordinal = 2) int row) {
+        if (!colored || !entry.hasActiveAmount()) return colored;
+        // AE draws this part of the cell with a half-scale matrix.
+        int x = 2 * (column * (1 + SECTION_LENGTH) + ITEMSTACK_LEFT_OFFSET);
+        int y = 2 * (row * SECTION_HEIGHT + ITEMSTACK_TOP_OFFSET - 3);
+        return !gtnr$monitorTooltip.drawCellProgress(
+            entry.getStack(),
+            x,
+            y,
+            2 * SECTION_LENGTH,
+            2 * SECTION_HEIGHT - 2,
+            getCraftingStateColor(entry.getScheduledReason(), true));
+    }
+
+    @WrapOperation(
+        method = "drawEntry",
+        at = @At(
+            value = "INVOKE",
+            target = "Lappeng/client/gui/implementations/GuiCraftingCPU;buildTooltipMessage(Lappeng/api/storage/data/IAEStack;Ljava/util/List;Z)Ljava/lang/String;"))
+    private String gtnr$prepareMonitorCard(GuiCraftingCPU screen, IAEStack<?> visual, List<String> lines,
+        boolean changed, Operation<String> original, @Local(argsOnly = true) CraftingCpuEntry entry) {
+        int amountLines = lines.size();
+        String nativeTooltip = original.call(screen, visual, lines, changed);
+        IAEStack<?> monitored = entry.hasActiveAmount() || entry.hasPendingAmount() ? entry.getStack() : null;
+        return gtnr$monitorTooltip.prepareCard(
+            monitored,
+            inventorySlots.windowId,
+            nativeTooltip,
+            lines,
+            amountLines,
+            width,
+            height,
+            fontRendererObj);
+    }
+
+    @Inject(method = "drawScreen", at = @At("HEAD"), remap = true)
+    private void gtnr$beginMonitorFrame(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        gtnr$monitorTooltip.beginFrame();
+    }
+
+    @Inject(method = "drawScreen", at = @At("RETURN"), remap = true)
+    private void gtnr$drawMonitorOverlay(int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        gtnr$monitorTooltip.endFrame(mouseX, mouseY, width, height, inventorySlots.windowId, fontRendererObj);
+    }
+
+    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)
+    private void gtnr$clickMonitorMenu(int mouseX, int mouseY, int button, CallbackInfo ci) {
+        if (gtnr$monitorTooltip.click(mouseX, mouseY, button, inventorySlots.windowId, guiLeft, guiTop, xSize, ySize)) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "keyTyped", at = @At("HEAD"), cancellable = true, remap = true)
+    private void gtnr$closeMonitorMenu(char character, int key, CallbackInfo ci) {
+        if (gtnr$monitorTooltip.keyPressed(key)) ci.cancel();
+    }
+
+    @Inject(method = "initGui", at = @At("RETURN"), remap = true)
+    private void gtnr$resetMonitorMenu(CallbackInfo ci) {
+        gtnr$monitorTooltip.clear();
+    }
+
+    @Inject(method = "clearItems", at = @At("HEAD"))
+    private void gtnr$clearMonitor(CallbackInfo ci) {
+        gtnr$monitorTooltip.clear();
+    }
+
+    @Inject(method = "postVisualEntryUpdate", at = @At("HEAD"))
+    private void gtnr$resetMonitorOnCpuChange(CraftingCpuEntry[] updates, boolean clearFirst, int remainingOperations,
+        CallbackInfo ci) {
+        if (clearFirst) gtnr$monitorTooltip.clear();
+    }
+
+    @Override
+    public CraftingMonitorTooltip gtnr$craftingMonitor() {
+        return gtnr$monitorTooltip;
+    }
+}
