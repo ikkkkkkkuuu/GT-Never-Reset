@@ -15,6 +15,8 @@ import net.minecraft.util.ChatComponentTranslation;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
+import com.cleanroommc.modularui.ModularUIConfig;
+import com.cleanroommc.modularui.theme.WidgetTheme;
 import com.xyp.gtneverreset.api.mixinHelper.CraftingMonitorScreen;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorRequestPacket;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorRequestPacket.Action;
@@ -33,6 +35,7 @@ import appeng.client.render.highlighter.BlockPosHighlighter;
 import appeng.core.localization.PlayerMessages;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import gregtech.api.modularui2.GTGuiTextures;
 
 @SideOnly(Side.CLIENT)
 public final class CraftingMonitorTooltip {
@@ -295,7 +298,8 @@ public final class CraftingMonitorTooltip {
         private static final int POINTER_GAP = 12;
         private static final int LINE_HEIGHT = 11;
         private static final int COLUMN_GAP = 8;
-        private static final int BAR_HEIGHT = 6;
+        private static final int BAR_HEIGHT = 7;
+        private static final int BAR_TEXTURE_WIDTH = 130;
 
         private static Card create(String title, List<String> amounts, List<String> details, int screenWidth,
             int screenHeight, FontRenderer font, List<Machine> machines, List<ProgressSample> samples) {
@@ -483,11 +487,24 @@ public final class CraftingMonitorTooltip {
             @Override
             public void draw(int x, int y, int width, FontRenderer font) {
                 int top = y + (LINE_HEIGHT - BAR_HEIGHT) / 2;
-                LOOK.drawWell(x, top, width, BAR_HEIGHT);
-                int filled = (int) Math.round((width - 2) * fraction);
-                if (filled <= 0) return;
-                Gui.drawRect(x + 1, top + 1, x + 1 + filled, top + BAR_HEIGHT - 1, SKIN.highlight);
-                Gui.drawRect(x + 1, top + 1, x + 1 + filled, top + 2, SKIN.highlightTop);
+                GL11.glColor4f(1, 1, 1, 1);
+                GTGuiTextures.PROGRESSBAR_GODFORGE_MILESTONE_BACKGROUND.draw(x, top, width, BAR_HEIGHT);
+                float progress = (float) fraction;
+                if (!ModularUIConfig.smoothProgressBar) {
+                    progress = (float) (Math.floor(progress * BAR_TEXTURE_WIDTH) / BAR_TEXTURE_WIDTH);
+                }
+                if (progress <= 0) return;
+                GTGuiTextures.PROGRESSBAR_GODFORGE_MILESTONE_PURPLE.drawSubArea(
+                    x,
+                    top,
+                    width * progress,
+                    BAR_HEIGHT,
+                    0,
+                    0,
+                    progress,
+                    1,
+                    WidgetTheme.getDefault()
+                        .getTheme());
             }
         }
 
