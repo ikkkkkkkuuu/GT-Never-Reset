@@ -91,8 +91,8 @@ public final class CraftingMonitorTooltip {
         cells.beginFrame();
     }
 
-    public boolean drawCellProgress(IAEStack<?> stack, int x, int y, int width, int height) {
-        return cells.draw(stack, x, y, width, height);
+    public boolean drawCellProgress(IAEStack<?> stack, int x, int y, int width, int height, int stateColor) {
+        return cells.draw(stack, x, y, width, height, stateColor);
     }
 
     public String prepareCard(IAEStack<?> stack, int windowId, String nativeTooltip, List<String> lines,

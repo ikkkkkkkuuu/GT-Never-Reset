@@ -16,7 +16,6 @@ import com.xyp.gtneverreset.client.gui.crafting.CraftingMonitorTooltip.ProgressS
 import com.xyp.gtneverreset.common.packet.CraftingMonitorCellProgressPacket;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorCellRequestPacket;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
-import com.xyp.gtnrlib.gui.theme.AE2Theme.Variant;
 
 import appeng.api.storage.data.IAEStack;
 import cpw.mods.fml.relauncher.Side;
@@ -27,7 +26,8 @@ final class CraftingMonitorCellOverlay {
 
     private static final long REFRESH_MS = 500;
     private static final long REPLY_TIMEOUT_MS = 2000;
-    private static final Variant SKIN = Variant.DARK_PURPLE;
+    private static final int FILLED_ALPHA = 0x90000000;
+    private static final int UNFILLED_ALPHA = 0x30000000;
     private static int nextRequestId;
 
     private final Set<IAEStack<?>> visible = new LinkedHashSet<>();
@@ -42,16 +42,18 @@ final class CraftingMonitorCellOverlay {
         visible.clear();
     }
 
-    boolean draw(IAEStack<?> stack, int x, int y, int width, int height) {
+    boolean draw(IAEStack<?> stack, int x, int y, int width, int height, int stateColor) {
         visible.add(stack);
         Sample sample = samples.get(stack);
         if (sample == null) return false;
         long now = Minecraft.getSystemTime();
         if (now >= sample.expiresAt()) return false;
-        int filled = (int) (width * sample.fill()
-            .valueAt(now));
-        Gui.drawRect(x, y, x + width, y + height, SKIN.highlightShadow);
-        if (filled > 0) Gui.drawRect(x, y, x + filled, y + height, SKIN.highlight);
+        int filled = (int) Math.round(
+            width * sample.fill()
+                .valueAt(now));
+        int rgb = stateColor & 0xFFFFFF;
+        if (filled > 0) Gui.drawRect(x, y, x + filled, y + height, rgb | FILLED_ALPHA);
+        if (filled < width) Gui.drawRect(x + filled, y, x + width, y + height, rgb | UNFILLED_ALPHA);
         return true;
     }
 
