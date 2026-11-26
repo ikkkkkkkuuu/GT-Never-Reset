@@ -35,6 +35,7 @@ import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTRecipeBuilder;
 import gregtech.api.util.GTUtility;
 import gtPlusPlus.core.material.MaterialsAlloy;
+import gtPlusPlus.xmod.gregtech.api.enums.GregtechItemList;
 
 public final class AssemblerRecipes {
 
@@ -70,6 +71,12 @@ public final class AssemblerRecipes {
             .itemOutputs(GTNRItemList.MEDataAccessHatch.get(1))
             .duration(20 * SECONDS)
             .eut(TierEU.RECIPE_IV)
+            .addTo(assemblerRecipes);
+        GTRecipeBuilder.builder()
+            .itemInputs(ItemList.Hatch_Input_MV.get(1), ItemList.FluidRegulator_MV.get(1))
+            .itemOutputs(GregtechItemList.Hatch_Air_Intake_Atmospheric.get(1))
+            .duration(10 * SECONDS)
+            .eut(TierEU.RECIPE_MV)
             .addTo(assemblerRecipes);
         registerPatternInputRecipes();
         registerMaxCapacityMEOutputRecipes();
