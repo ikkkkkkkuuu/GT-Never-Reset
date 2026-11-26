@@ -2,6 +2,7 @@ package com.xyp.gtneverreset.qa;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
@@ -32,6 +33,7 @@ import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
 import gregtech.api.enums.ItemList;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 
 @Mod(
@@ -48,6 +50,8 @@ public final class ProjectorDeploymentServerChecks {
     private ProjectorPlan plan;
     private long start;
     private int build;
+    private boolean cancelTest;
+    private long cancelDeadline = -1;
 
     @Mod.EventHandler
     public void ready(FMLServerStartedEvent event) throws Exception {
@@ -92,11 +96,17 @@ public final class ProjectorDeploymentServerChecks {
         try {
             long elapsed = world.getTotalWorldTime() - start;
             require(elapsed < 480, "projector did not finish on the dedicated server");
+            if (cancelTest) {
+                checkCancelledWarp();
+                return;
+            }
             if (!(world.getTileEntity(plan.x, Y, plan.z) instanceof IGregTechTileEntity tile)) return;
             require(tile.getMetaTileID() == plan.machine, "projector placed the wrong controller");
             int delay = switch (plan.buildStyle) {
                 case SUMMON -> StructureDeployment.IMPACT_TICK;
                 case REVEAL, FLIGHT -> plan.buildStyle.bandReadyTick(0);
+                case SINGULARITY -> StructureDeploymentStyle.SINGULARITY_LAUNCH_TICKS
+                    + plan.buildStyle.bandReadyTick(0);
                 case NONE -> 0;
             };
             require(elapsed >= delay, "projector skipped the animation wait for " + plan.buildStyle);
@@ -104,15 +114,55 @@ public final class ProjectorDeploymentServerChecks {
             var bounds = new StructureDeployment(start, plan.x - 1, Y, plan.z, plan.x + 2, plan.z + 3, Y + 19);
             checkPacket(new ProjectorDeploymentPacket(1, 0, bounds, plan, false));
             checkPacket(new ProjectorDeploymentPacket(1, 0, Phase.IMPACT));
+            if (plan.buildStyle == StructureDeploymentStyle.SINGULARITY) {
+                var launch = new StructureDeployment.Launch(plan.x + .5, Y + 1.3, plan.z - 3.9);
+                var tallBounds = new StructureDeployment(
+                    start,
+                    plan.x - 1,
+                    Y,
+                    plan.z,
+                    plan.x + 2,
+                    plan.z + 3,
+                    Y + 19,
+                    Y + 17);
+                checkPacket(new ProjectorDeploymentPacket(1, 0, tallBounds, plan, false, launch));
+                checkPacket(new ProjectorDeploymentPacket(1, 0, world.getTotalWorldTime()));
+            }
             checkPacket(new ProjectorDeploymentPacket(1, 0, Phase.COMPLETE));
             checkPacket(new ProjectorDeploymentPacket(1, 0, Phase.CANCEL));
             checkPacket(new ProjectorDeploymentPacket(1, 0, 1));
             if (++build < StructureDeploymentStyle.values().length) {
                 plan.x += 8;
                 request(StructureDeploymentStyle.values()[build]);
-            } else finish(null);
+            } else {
+                cancelTest = true;
+                plan.x += 8;
+                request(StructureDeploymentStyle.SINGULARITY);
+            }
         } catch (Throwable failure) {
             finish(failure);
+        }
+    }
+
+    private void checkCancelledWarp() throws Exception {
+        var jobsField = ProjectorBuilder.class.getDeclaredField("jobs");
+        jobsField.setAccessible(true);
+        var jobs = (Map<?, ?>) jobsField.get(ProjectorBuilder.INSTANCE);
+        Object job = jobs.get(player.getUniqueID());
+        if (cancelDeadline < 0) {
+            require(job != null, "cancel test did not start a build");
+            var animationField = job.getClass()
+                .getDeclaredField("deployment");
+            animationField.setAccessible(true);
+            var animation = (StructureDeployment) animationField.get(job);
+            if (animation == null || world.getTotalWorldTime() < animation.startTick() - 4) return;
+            player.inventory.setInventorySlotContents(player.inventory.currentItem, null);
+            cancelDeadline = animation.startTick() + plan.buildStyle.bandReadyTick(0) + 10;
+        } else if (world.getTotalWorldTime() >= cancelDeadline) {
+            require(job == null, "cancelled warp remained active");
+            for (int x = plan.x - 3; x <= plan.x + 3; x++) for (int z = plan.z - 3; z <= plan.z + 3; z++)
+                for (int y = Y - 3; y < Y + 4; y++) require(world.isAirBlock(x, y, z), "cancelled warp placed a block");
+            finish(null);
         }
     }
 
@@ -130,13 +180,18 @@ public final class ProjectorDeploymentServerChecks {
 
     private void checkPacket(ProjectorDeploymentPacket packet) {
         var buffer = Unpooled.buffer();
+        var encoded = Unpooled.buffer();
         try {
             packet.toBytes(buffer);
+            var original = buffer.duplicate();
             var decoded = new ProjectorDeploymentPacket();
             decoded.fromBytes(buffer);
             require(!buffer.isReadable(), "deployment packet was not fully decoded");
+            decoded.toBytes(encoded);
+            require(ByteBufUtil.equals(original, encoded), "deployment packet changed on round trip");
             NetWorkHandler.sendToAllAround(decoded, new TargetPoint(0, plan.x, Y, plan.z, 64));
         } finally {
+            encoded.release();
             buffer.release();
         }
     }

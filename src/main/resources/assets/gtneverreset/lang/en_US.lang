@@ -232,6 +232,7 @@ gtneverreset.projector.gui.build_style_summon=Summoning Circle
 gtneverreset.projector.gui.build_style_reveal=White Reveal
 gtneverreset.projector.gui.build_style_flight=Segmented Flight
 gtneverreset.projector.gui.build_style_none=None
+gtneverreset.projector.gui.build_style_singularity=Singularity Warp
 gtneverreset.projector.gui.generate_hint=Survival: all materials must be available in your inventory or linked ME storage.
 gtneverreset.projector.gui.batch_count=Additional machines per direction
 gtneverreset.projector.gui.batch_share=Share
