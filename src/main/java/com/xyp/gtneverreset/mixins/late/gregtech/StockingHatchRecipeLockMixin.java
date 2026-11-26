@@ -19,6 +19,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.xyp.gtneverreset.common.me.MERecipeFluidStack;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import gregtech.api.recipe.check.SingleRecipeCheck;
 
@@ -36,7 +37,7 @@ public abstract class StockingHatchRecipeLockMixin {
 
         Map<Fluid, Long> totals = new IdentityHashMap<>();
         for (FluidStack fluid : fluids) if (fluid != null) {
-            totals.merge(fluid.getFluid(), MERecipeFluidStack.getAmount(fluid), MERecipeFluidStack::addAmounts);
+            totals.merge(fluid.getFluid(), MERecipeFluidStack.getAmount(fluid), LongMath::saturatedAdd);
         }
         int possible = maxParallel;
         for (var cost : fluidCost.entrySet()) {

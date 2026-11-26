@@ -11,6 +11,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalLongRef;
 import com.xyp.gtneverreset.common.me.MERecipeFluidStack;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import gregtech.api.util.GTRecipe;
 import it.unimi.dsi.fastutil.longs.LongBinaryOperator;
@@ -27,11 +28,8 @@ public abstract class StockingHatchRecipeMixin {
             ordinal = 0))
     private long gtnr$countAvailableFluids(Reference2LongMap<Fluid> amounts, Object fluid, long amount,
         LongBinaryOperator merger, Operation<Long> original, @Local FluidStack input) {
-        return original.call(
-            amounts,
-            fluid,
-            MERecipeFluidStack.getAmount(input),
-            (LongBinaryOperator) MERecipeFluidStack::addAmounts);
+        return original
+            .call(amounts, fluid, MERecipeFluidStack.getAmount(input), (LongBinaryOperator) LongMath::saturatedAdd);
     }
 
     @WrapOperation(
@@ -46,7 +44,7 @@ public abstract class StockingHatchRecipeMixin {
         long available = totalAvailable.get();
         if (!(input instanceof MERecipeFluidStack) && (input.amount <= 0 || available <= Long.MAX_VALUE - input.amount))
             return true;
-        totalAvailable.set(MERecipeFluidStack.addAmounts(available, MERecipeFluidStack.getAmount(input)));
+        totalAvailable.set(LongMath.saturatedAdd(available, MERecipeFluidStack.getAmount(input)));
         return false;
     }
 

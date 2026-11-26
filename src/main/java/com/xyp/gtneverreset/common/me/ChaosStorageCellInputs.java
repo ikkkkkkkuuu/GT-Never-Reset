@@ -57,7 +57,7 @@ public final class ChaosStorageCellInputs {
             this(owner, template, available, extract, nativeLong, available.getAsLong());
         }
 
-        public InputSource(Object owner, Object template, LongSupplier available, LongUnaryOperator extract,
+        private InputSource(Object owner, Object template, LongSupplier available, LongUnaryOperator extract,
             boolean nativeLong, long initialAmount) {
             this.owner = owner;
             this.template = template;
@@ -89,12 +89,23 @@ public final class ChaosStorageCellInputs {
         }
 
         public static InputSource of(Object owner, FluidStack stack) {
-            if (stack == null || stack.amount <= 0) return null;
-            return new InputSource(owner, GTUtility.copyAmount(1, stack), () -> Math.max(0, stack.amount), amount -> {
-                int taken = (int) Math.min(amount, Math.max(0, stack.amount));
-                stack.amount -= taken;
-                return taken;
-            }, false);
+            if (stack == null) return null;
+            long initial = MERecipeFluidStack.getAmount(stack);
+            if (initial <= 0) return null;
+            return new InputSource(
+                owner,
+                new FluidStack(stack, 1),
+                () -> stack instanceof MERecipeFluidStack stocked
+                    ? Math.min(MERecipeFluidStack.getAmount(stocked), stocked.getCurrentOffer())
+                    : Math.max(0, stack.amount),
+                amount -> {
+                    long available = Math.max(0, MERecipeFluidStack.getAmount(stack));
+                    long taken = Math.min(amount, available);
+                    MERecipeFluidStack.setAmount(stack, available - taken);
+                    return taken;
+                },
+                stack instanceof MERecipeFluidStack,
+                initial);
         }
 
         /** Reuse the source identity across views; native long access supersedes an int ME alias. */

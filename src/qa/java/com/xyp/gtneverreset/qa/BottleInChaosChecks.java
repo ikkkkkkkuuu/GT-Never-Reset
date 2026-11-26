@@ -41,6 +41,7 @@ import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.ChaosLongInputMachineBase.FluidStackLong;
 import com.xyp.gtneverreset.common.machine.multiblock.BottleInChaos;
 import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
+import com.xyp.gtneverreset.common.me.MERecipeFluidStack;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
@@ -442,32 +443,29 @@ public final class BottleInChaosChecks {
         fluidHatch.getPolicy(0).reserve = reserve;
         machine.startRecipeProcessing();
         try {
-            var inputs = new BottledChaosInputReservation();
-            var view = inputs.new View();
-            machine.getNativeFluidSources()
-                .forEach(view::add);
-            var snapshot = inputs.snapshot(view);
-            FluidStackLong[] fluids = snapshot.getInputFluids();
-            require(
-                fluids.length == 1 && fluids[0].fluidStack()
-                    .isFluidEqual(water) && fluids[0].amount() == stocked - reserve,
-                "controller sees all available fluid above the long reserve");
-            fluids[0] = new FluidStackLong(water, fluids[0].amount() - consumed);
-            inputs.accept(snapshot);
+            var inputs = reserveBottleFluid(water, stocked - reserve, consumed);
             require(fluidStock(storage, request, action) == stocked, "reserving long fluid does not debit ME");
+            var result = inputs.commit();
+            machine.setCheckRecipeResult(result);
+            require(result.wasSuccessful(), "controller commits a three-billion-mB reservation to its input snapshot");
+            var offered = fluidHatch.getStoredFluids();
             require(
-                inputs.commit()
-                    .wasSuccessful(),
-                "controller commits a three-billion-mB extraction");
+                offered.length == 1 && MERecipeFluidStack.getAmount(offered[0]) == stocked - reserve - consumed,
+                "controller reservation lowers the live ME fluid snapshot by three billion mB");
             require(
-                fluidStock(storage, request, action) == stocked - consumed,
-                "ME is debited exactly three billion mB");
+                fluidStock(storage, request, action) == stocked,
+                "controller reservation keeps physical ME stock until recipe processing ends");
         } finally {
             machine.endRecipeProcessing();
         }
         require(
+            machine.getCheckRecipeResult()
+                .wasSuccessful() && fluidStock(storage, request, action) == stocked - consumed,
+            "recipe processing end debits ME exactly three billion mB");
+        machine.endRecipeProcessing();
+        require(
             fluidStock(storage, request, action) == stocked - consumed,
-            "recipe completion cannot debit the extraction again");
+            "repeating recipe processing end cannot debit ME again");
 
         fluidHatch.setFixedMode(true);
         fluidHatch.getPolicy(0).batch = 12_000;
@@ -484,6 +482,51 @@ public final class BottleInChaosChecks {
             machine.endRecipeProcessing();
         }
         fluidHatch.setFixedMode(false);
+
+        require(
+            storage.injectItems(
+                request.copy()
+                    .setStackSize(consumed),
+                Actionable.MODULATE,
+                action) == null,
+            "ME cell refills before the shortfall check");
+        long externalDebit = stocked - reserve - consumed + 1;
+        machine.startRecipeProcessing();
+        try {
+            var result = reserveBottleFluid(water, stocked - reserve, consumed).commit();
+            machine.setCheckRecipeResult(result);
+            require(result.wasSuccessful(), "controller stages a full extraction before the stock change");
+            var extracted = storage.extractItems(
+                request.copy()
+                    .setStackSize(externalDebit),
+                Actionable.MODULATE,
+                action);
+            require(
+                extracted != null && extracted.getStackSize() == externalDebit,
+                "another ME consumer leaves one mB less than the planned extraction above the reserve");
+        } finally {
+            machine.endRecipeProcessing();
+        }
+        require(
+            !machine.getCheckRecipeResult()
+                .wasSuccessful() && fluidStock(storage, request, action) == stocked - externalDebit,
+            "recipe processing end rejects the shortfall without debiting the remaining ME stock");
+    }
+
+    private BottledChaosInputReservation reserveBottleFluid(FluidStack fluid, long expectedOffer, long amount) {
+        var inputs = new BottledChaosInputReservation();
+        var view = inputs.new View();
+        machine.getNativeFluidSources()
+            .forEach(view::add);
+        var snapshot = inputs.snapshot(view);
+        FluidStackLong[] fluids = snapshot.getInputFluids();
+        require(
+            fluids.length == 1 && fluids[0].fluidStack()
+                .isFluidEqual(fluid) && fluids[0].amount() == expectedOffer,
+            "controller sees all available fluid above the long reserve");
+        fluids[0] = new FluidStackLong(fluid, expectedOffer - amount);
+        inputs.accept(snapshot);
+        return inputs;
     }
 
     private void verifyStandardLongFluidExtraction() throws Exception {
