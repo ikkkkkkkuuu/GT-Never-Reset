@@ -130,7 +130,7 @@ public final class CraftingTableRecipes {
         registerStockIOInterfaceRecipes();
         registerCompactAEMachineRecipes();
         registerStableEndCrystalRecipe();
-        registerFragmentWorldCollectorRecipe();
+        registerFragmentWorldCollectorRecipes();
         GTModHandler.addCraftingRecipe(
             GTNRItemList.CatalyticReformer.get(1),
             GTModHandler.RecipeBits.BITS,
@@ -432,12 +432,17 @@ public final class CraftingTableRecipes {
             Items.ghast_tear);
     }
 
-    private static void registerFragmentWorldCollectorRecipe() {
+    private static void registerFragmentWorldCollectorRecipes() {
         GTModHandler.addCraftingRecipe(
             GTNRItemList.FragmentWorldCollector.get(1),
             new Object[] { "WNW", "PCQ", "XNX", 'W', OrePrefixes.cableGt01.get(Materials.Lead), 'N', "logRubber", 'P',
                 ItemList.Sensor_LV.get(1), 'Q', ItemList.Emitter_LV.get(1), 'C', ItemList.Hull_LV.get(1), 'X',
                 new ItemStack(Blocks.anvil) });
+        GTModHandler.addCraftingRecipe(
+            GTNRItemList.LargeFragmentWorldCollector.get(1),
+            new Object[] { "WNW", "PCQ", "XNX", 'W', OrePrefixes.circuit.get(Materials.IV), 'N',
+                ItemList.Field_Generator_EV.get(1), 'P', ItemList.Sensor_LV.get(1), 'Q', ItemList.Emitter_LV.get(1),
+                'C', GTNRItemList.FragmentWorldCollector.get(1), 'X', ItemList.Casing_Gearbox_TungstenSteel.get(1) });
     }
 
     private static final class WirelessTerminalUpgradeRecipe extends ShapelessRecipes {

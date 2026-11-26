@@ -75,6 +75,7 @@ public enum GTNRItemList implements IItemContainer {
     AssemblySatelliteMkIII,
     AssemblySatelliteMkIV,
     StarCoreStripper,
+    LargeFragmentWorldCollector,
     LargeOreProcessor,
     LargeFurnace,
     MegaElectricBlastFurnace,

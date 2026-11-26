@@ -2149,6 +2149,7 @@ gtnr.hatch.super_mirror.name=超级样板输入镜像 (ME)
 gtnr.hatch.circuit_mirror.name=电路样板输入镜像 (ME)
 gtnr.hatch.cross_recipe_mirror.name=超级跨配方类型样板输入镜像 (ME)
 gtnr.hatch.vault_port.name=保险库接口
+gtnr.machine.large_fragment_world_collector.name=大型碎片世界采集器
 gtnr.machine.star_core_stripper.name=星核剥离装置
 gtnr.machine.bottle_in_chaos.name=混沌中瓶
 gtnr.machine.large_ore_processor.name=大型矿石处理机

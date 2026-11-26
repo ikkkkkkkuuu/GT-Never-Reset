@@ -35,7 +35,8 @@ public enum GTNRMachineID {
     MegaElectricBlastFurnace(29428),
     CatalyticReformer(29429),
     LargeSteelKiln(29430),
-    // 预留：29431–29499（69 个）。
+    LargeFragmentWorldCollector(29431),
+    // 预留：29432–29499（68 个）。
     // endregion
 
     // region 舱室
