@@ -65,6 +65,7 @@ import appeng.core.sync.GuiBridge;
 import appeng.helpers.IInterfaceHost;
 import appeng.helpers.InventoryAction;
 import appeng.helpers.MonitorableAction;
+import appeng.items.misc.ItemEncodedPattern;
 import appeng.tile.inventory.AppEngInternalInventory;
 import appeng.tile.inventory.IAEStackInventory;
 import appeng.util.Platform;
@@ -481,6 +482,8 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
     @Override
     public void doAction(EntityPlayerMP player, InventoryAction action, int slot, long id) {
         if (isInterfaceEntry(id)) {
+            if (action == InventoryAction.PICKUP_OR_SET_DOWN
+                && hasDuplicatePattern(trackedPatterns(id), player.inventory.getItemStack())) return;
             interfaceDelegate.doAction(player, action, slot, id);
         } else {
             super.doAction(player, action, slot, id);
@@ -814,40 +817,34 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
      * so no world-coordinate lookup or cross-dimensional tile access is needed.
      */
     private void placeEncodedPattern(InterfacePatternTarget target, ItemStack pattern) {
-        if (pattern == null || encodedPatternSlot.getStack() != pattern || TRACKED_BY_ID == null) return;
-        try {
-            Object tracker = ((Map<?, ?>) TRACKED_BY_ID.get(interfaceDelegate)).get(target.getEntryId());
-            if (tracker == null) return;
-            Field patternsField = findField(tracker.getClass(), "patterns");
-            if (patternsField == null) return;
-            IInventory patterns = (IInventory) patternsField.get(tracker);
-            int slot = target.getSlot();
-            if (slot < 0 || slot >= patterns.getSizeInventory() || patterns.getStackInSlot(slot) != null) return;
+        if (pattern == null || encodedPatternSlot.getStack() != pattern) return;
+        IInventory patterns = trackedPatterns(target.getEntryId());
+        int slot = target.getSlot();
+        if (patterns == null || slot < 0
+            || slot >= patterns.getSizeInventory()
+            || patterns.getStackInSlot(slot) != null
+            || !patterns.isItemValidForSlot(slot, pattern)
+            || hasDuplicatePattern(patterns, pattern)) return;
 
-            if (!patterns.isItemValidForSlot(slot, pattern)) return;
-            InventoryPlayer playerInventory = getPlayerInv();
-            if (!(playerInventory.player instanceof EntityPlayerMP player) || playerInventory.getItemStack() != null)
-                return;
+        InventoryPlayer playerInventory = getPlayerInv();
+        if (!(playerInventory.player instanceof EntityPlayerMP player) || playerInventory.getItemStack() != null)
+            return;
 
-            // ContainerInterfaceTerminal.doAction is the authoritative path:
-            // besides changing the real interface inventory it also updates
-            // InvTracker's NBT cache and queues the exact client-side slot delta.
-            encodedPatternSlot.putStack(null);
-            playerInventory.setItemStack(pattern.copy());
-            interfaceDelegate.doAction(player, InventoryAction.PICKUP_OR_SET_DOWN, slot, target.getEntryId());
-            if (playerInventory.getItemStack() != null) {
-                // The target changed between selection and this action. Restore
-                // the encoder output instead of leaving an unexpected cursor item.
-                encodedPatternSlot.putStack(playerInventory.getItemStack());
-                playerInventory.setItemStack(null);
-                updateHeld(player);
-                return;
-            }
-            interfaceDelegate.scheduleUpdate();
-            queuePatternOutputs(pattern);
-            refreshCraftingAvailability(target);
-            detectAndSendChanges();
-        } catch (IllegalAccessException ignored) {}
+        // AE2 updates the real inventory, the tracker's NBT cache and the client slot together.
+        encodedPatternSlot.putStack(null);
+        playerInventory.setItemStack(pattern.copy());
+        interfaceDelegate.doAction(player, InventoryAction.PICKUP_OR_SET_DOWN, slot, target.getEntryId());
+        if (playerInventory.getItemStack() != null) {
+            // AE2 rejected the insertion, so return the pattern to the encoder output.
+            encodedPatternSlot.putStack(playerInventory.getItemStack());
+            playerInventory.setItemStack(null);
+            updateHeld(player);
+            return;
+        }
+        interfaceDelegate.scheduleUpdate();
+        queuePatternOutputs(pattern);
+        refreshCraftingAvailability(target);
+        detectAndSendChanges();
     }
 
     /**
@@ -868,6 +865,8 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
     private void performInterfacePatternAction(InterfacePatternTarget target, InventoryAction action) {
         if (!(getPlayerInv().player instanceof EntityPlayerMP player) || !isInterfaceEntry(target.getEntryId())) return;
         IInventory patterns = trackedPatterns(target.getEntryId());
+        if (action == InventoryAction.PICKUP_OR_SET_DOWN
+            && hasDuplicatePattern(patterns, player.inventory.getItemStack())) return;
         ItemStack previous = stackAt(patterns, target.getSlot());
         interfaceDelegate.doAction(player, action, target.getSlot(), target.getEntryId());
         interfaceDelegate.scheduleUpdate();
@@ -875,6 +874,34 @@ public final class QuickEncodingTerminalContainer extends ContainerPatternTerm {
         queuePatternOutputs(previous);
         queuePatternOutputs(stackAt(patterns, target.getSlot()));
         detectAndSendChanges();
+    }
+
+    private static boolean hasDuplicatePattern(IInventory inventory, ItemStack incoming) {
+        if (inventory == null || incoming == null
+            || !(incoming.getItem() instanceof ItemEncodedPattern)
+            || !incoming.hasTagCompound()) return false;
+        NBTTagCompound incomingTag = incoming.getTagCompound();
+        for (int slot = 0; slot < inventory.getSizeInventory(); slot++) {
+            ItemStack stored = inventory.getStackInSlot(slot);
+            if (Platform.isSameItem(stored, incoming) && stored.hasTagCompound()
+                && haveSamePatternTags(incomingTag, stored.getTagCompound())) return true;
+        }
+        return false;
+    }
+
+    private static boolean haveSamePatternTags(NBTTagCompound incoming, NBTTagCompound stored) {
+        // AE2's crafting pattern identity ignores these two top-level bookkeeping fields.
+        int remaining = stored.func_150296_c()
+            .size();
+        if (stored.hasKey("author")) remaining--;
+        if (stored.hasKey("encodedAt")) remaining--;
+        for (String key : incoming.func_150296_c()) {
+            if (key.equals("author") || key.equals("encodedAt")) continue;
+            var storedTag = stored.getTag(key);
+            if (storedTag == null || !Platform.NBTEqualityTest(incoming.getTag(key), storedTag)) return false;
+            remaining--;
+        }
+        return remaining == 0;
     }
 
     private IInventory trackedPatterns(long entryId) {
