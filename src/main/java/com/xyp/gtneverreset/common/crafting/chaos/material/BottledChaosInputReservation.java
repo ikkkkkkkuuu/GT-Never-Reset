@@ -125,8 +125,7 @@ public final class BottledChaosInputReservation {
             initial = new long[sources.size()];
             for (int i = 0; i < sources.size(); i++) {
                 InputSource source = sources.get(i);
-                initial[i] = Math
-                    .min(view.limits.get(source), Math.max(0, source.amount - reserved.getOrDefault(source, 0L)));
+                initial[i] = source.remaining(view.limits.get(source), reserved.getOrDefault(source, 0L));
                 if (i < itemCount) items[i] = new ItemStackLong(((ItemStack) source.template).copy(), initial[i]);
                 else fluids[i - itemCount] = new FluidStackLong(((FluidStack) source.template).copy(), initial[i]);
             }

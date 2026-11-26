@@ -25,8 +25,10 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.common.gui.modularui.hatch.SuperAdvancedMEInputHatchGui;
+import com.xyp.gtneverreset.common.me.MERecipeFluidStack;
 
 import appeng.api.config.Actionable;
+import appeng.api.networking.IGrid;
 import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.security.IActionHost;
@@ -319,13 +321,23 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
             slot.resetExtracted();
             return;
         }
-        int amount = availableAmount(
-            index,
+        long offered = getPolicy(index).offeredLong(
             available(
                 getProxy().getStorage()
                     .getFluidInventory(),
-                slot.config));
-        slot.extracted = amount == 0 ? null : GTUtility.copyAmount(amount, slot.config);
+                slot.config),
+            limitedMode,
+            fixedMode);
+        int amount = (int) Math.min(Integer.MAX_VALUE, offered);
+        if (processingRecipe && offered > Integer.MAX_VALUE) {
+            IGrid network = getProxy().getGrid();
+            slot.extracted = new MERecipeFluidStack(
+                slot.config,
+                offered,
+                stack -> getLiveFluidOffer(network, index, slot, stack));
+        } else {
+            slot.extracted = amount == 0 ? null : GTUtility.copyAmount(amount, slot.config);
+        }
         slot.extractedAmount = amount;
     }
 
@@ -404,18 +416,16 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
             for (int i = 0; i < SLOT_COUNT; i++) {
                 Slot slot = slots[i];
                 if (slot == null || slot.extracted == null) continue;
-                int consumed = slot.extractedAmount - slot.extracted.amount;
+                MERecipeFluidStack stocked = slot.extracted instanceof MERecipeFluidStack wide ? wide : null;
+                long consumed = stocked != null ? stocked.getConsumedAmount()
+                    : (long) slot.extractedAmount - slot.extracted.amount;
                 slot.extractedAmount = slot.extracted.amount;
                 if (consumed <= 0) continue;
                 // Another hatch may have consumed stock since the simulation. Recheck the reserve at commit.
-                if (availableAmount(i, available(inventory, slot.config)) < consumed) {
-                    result = extractionFailed(controller);
-                    break;
-                }
-                IAEFluidStack request = AEFluidStack.create(slot.config);
-                request.setStackSize(consumed);
-                IAEFluidStack extracted = Platform.poweredExtraction(energy, inventory, request, actionSource());
-                if (extracted == null || extracted.getStackSize() != consumed) {
+                long offered = stocked == null ? availableAmount(i, available(inventory, slot.config))
+                    : stocked.getCurrentOffer();
+                if (offered < consumed
+                    || extractFluid(inventory, energy, slot.config, consumed, stocked != null) != consumed) {
                     result = extractionFailed(controller);
                     break;
                 }
@@ -431,6 +441,33 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
     private CheckRecipeResult extractionFailed(MTEMultiBlockBase controller) {
         controller.stopMachine(ShutDownReasonRegistry.CRITICAL_NONE);
         return SimpleCheckRecipeResult.ofFailurePersistOnShutdown("stocking_hatch_fail_extraction");
+    }
+
+    private long getLiveFluidOffer(IGrid network, int index, Slot slot, MERecipeFluidStack stack) {
+        try {
+            if (!processingRecipe || !isAllowedToWork()
+                || slots[index] != slot
+                || slot.extracted != stack
+                || getProxy().getGrid() != network) return 0;
+            var inventory = getProxy().getStorage()
+                .getFluidInventory();
+            return getPolicy(index).offeredLong(available(inventory, slot.config), limitedMode, fixedMode);
+        } catch (GridAccessException ignored) {
+            return 0;
+        }
+    }
+
+    private long extractFluid(IMEMonitor<IAEFluidStack> inventory, IEnergyGrid energy, FluidStack fluid, long amount,
+        boolean preflight) {
+        IAEFluidStack request = AEFluidStack.create(fluid);
+        if (amount > Long.MAX_VALUE - request.getAmountPerUnit()) return 0;
+        request.setStackSize(amount);
+        if (preflight) {
+            var simulated = Platform.poweredExtraction(energy, inventory, request, actionSource(), Actionable.SIMULATE);
+            if (simulated == null || simulated.getStackSize() != amount) return 0;
+        }
+        var extracted = Platform.poweredExtraction(energy, inventory, request, actionSource());
+        return extracted == null ? 0 : extracted.getStackSize();
     }
 
     private NBTTagList writeConfiguration() {
@@ -729,16 +766,20 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
         }
     }
 
-    /** Reserve uses long ME quantities; Forge recipe stacks remain bounded to an int. */
+    /** The same reserve and batch rules apply to both legacy and long recipe inputs. */
     public static final class FluidPolicy {
 
         public long reserve;
         public int batch = 1000;
 
         public int offered(long stored, boolean limited, boolean fixed) {
+            return (int) Math.min(Integer.MAX_VALUE, offeredLong(stored, limited, fixed));
+        }
+
+        private long offeredLong(long stored, boolean limited, boolean fixed) {
             long usable = Math.max(0, stored - (limited ? Math.max(0, reserve) : 0));
             int quantity = Math.max(1, batch);
-            return fixed ? (usable >= quantity ? quantity : 0) : (int) Math.min(Integer.MAX_VALUE, usable);
+            return fixed ? (usable >= quantity ? quantity : 0) : usable;
         }
 
         private void write(NBTTagCompound tag) {

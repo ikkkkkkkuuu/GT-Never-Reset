@@ -8,6 +8,8 @@ import javax.annotation.Nonnull;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.xyp.gtneverreset.common.me.MERecipeFluidStack;
+
 import gregtech.api.logic.ProcessingLogic;
 import gregtech.api.recipe.check.CheckRecipeResult;
 import gregtech.api.util.GTRecipe;
@@ -22,7 +24,7 @@ public class RecipeThreadProcessingLogic extends ProcessingLogic {
     private final Map<ItemStack, ItemStack> itemCopies = new IdentityHashMap<>();
     private final Map<FluidStack, FluidStack> fluidCopies = new IdentityHashMap<>();
     private final Map<ItemStack, Integer> itemAmounts = new IdentityHashMap<>();
-    private final Map<FluidStack, Integer> fluidAmounts = new IdentityHashMap<>();
+    private final Map<FluidStack, Long> fluidAmounts = new IdentityHashMap<>();
 
     public final void resetPatternInventory() {
         activeDualInv = null;
@@ -117,7 +119,7 @@ public class RecipeThreadProcessingLogic extends ProcessingLogic {
             if (copy == null) {
                 copy = fluid.copy();
                 fluidCopies.put(fluid, copy);
-                fluidAmounts.put(fluid, fluid.amount);
+                fluidAmounts.put(fluid, MERecipeFluidStack.getAmount(fluid));
             }
             copies[i] = copy;
         }
@@ -132,7 +134,8 @@ public class RecipeThreadProcessingLogic extends ProcessingLogic {
                 || !ItemStack.areItemStackTagsEqual(original, copy)) return false;
         }
         for (Map.Entry<FluidStack, FluidStack> entry : fluidCopies.entrySet()) {
-            if (entry.getKey().amount != fluidAmounts.get(entry.getKey()) || entry.getValue().amount < 0
+            if (MERecipeFluidStack.getAmount(entry.getKey()) != fluidAmounts.get(entry.getKey())
+                || MERecipeFluidStack.getAmount(entry.getValue()) < 0
                 || !entry.getKey()
                     .isFluidEqual(entry.getValue()))
                 return false;
@@ -145,15 +148,16 @@ public class RecipeThreadProcessingLogic extends ProcessingLogic {
         return copy == null ? 0 : Math.max(0, itemAmounts.get(original) - copy.stackSize);
     }
 
-    public final int getPlannedConsumption(FluidStack original) {
+    public final long getPlannedConsumption(FluidStack original) {
         FluidStack copy = fluidCopies.get(original);
-        return copy == null ? 0 : Math.max(0, fluidAmounts.get(original) - copy.amount);
+        return copy == null ? 0 : Math.max(0, fluidAmounts.get(original) - MERecipeFluidStack.getAmount(copy));
     }
 
     public final boolean commitInputs() {
         if (!preparing || !canCommitInputs()) return false;
         itemCopies.forEach((original, copy) -> original.stackSize = copy.stackSize);
-        fluidCopies.forEach((original, copy) -> original.amount = copy.amount);
+        fluidCopies
+            .forEach((original, copy) -> MERecipeFluidStack.setAmount(original, MERecipeFluidStack.getAmount(copy)));
         finishRecipe();
         return true;
     }
