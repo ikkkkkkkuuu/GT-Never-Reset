@@ -15,7 +15,7 @@ public enum StructureDeploymentStyle {
     public static final int REVEAL_BAND_TICKS = 3;
     public static final int FLIGHT_TRAVEL_TICKS = 32;
     public static final int FLIGHT_BAND_TICKS = 8;
-    public static final int SINGULARITY_LAUNCH_TICKS = 14;
+    public static final int SINGULARITY_LAUNCH_TICKS = 22;
     public static final int SINGULARITY_CHARGE_TICKS = 14;
     public static final int SINGULARITY_GROWTH_TICKS = 22;
     public static final int SINGULARITY_COLLAPSE_TICK = 34;

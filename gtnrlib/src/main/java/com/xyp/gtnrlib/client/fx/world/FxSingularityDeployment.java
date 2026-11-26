@@ -33,10 +33,13 @@ final class FxSingularityDeployment {
     private static final int[] DISCHARGE_PERIODS = { 17, 19, 23, 21, 27, 18, 25, 20, 29, 22, 24, 26 };
     private static final Vec3d[] SPHERE = sphereVertices();
     private static final Vec3d UP = new Vec3d(0, 1, 0);
+    private static final ShotColor ICE = new ShotColor(.014f, .048f, .073f, .18f, .70f, .68f, .97f);
+    private static final ShotColor VIOLET = new ShotColor(.036f, .012f, .072f, .61f, .19f, .93f, .70f);
 
     private final World world;
     private final StructureDeployment bounds;
-    private final Vec3d center, launchOrigin;
+    private final Vec3d center, launchOrigin, leftLaunchOrigin;
+    private final Flight flight;
     private final double radius, height, width, depth;
     private final long seed;
     private final Discharge[] discharges = new Discharge[DISCHARGE_PERIODS.length];
@@ -55,6 +58,8 @@ final class FxSingularityDeployment {
         radius = Math.min(22, 1.65 + .29 * Math.sqrt(width * depth) + .13 * height);
         center = new Vec3d(bounds.centerX(), bounds.minY() + Math.max(radius + .65, height * .54), bounds.centerZ());
         launchOrigin = launch == null ? null : new Vec3d(launch.x(), launch.y(), launch.z());
+        leftLaunchOrigin = launch == null ? null : new Vec3d(launch.leftX(), launch.y(), launch.leftZ());
+        flight = launch == null ? null : Flight.between(launchOrigin, leftLaunchOrigin, center);
         seed = MathUtils.hash(bounds.startTick(), bounds.minX(), bounds.minY(), bounds.minZ());
     }
 
@@ -76,11 +81,10 @@ final class FxSingularityDeployment {
     }
 
     void tick(long age) {
-        if (!launched && launchOrigin != null
-            && age >= -SINGULARITY_LAUNCH_TICKS
-            && age < -SINGULARITY_LAUNCH_TICKS + 4) {
+        if (!launched && flight != null && age >= -SINGULARITY_LAUNCH_TICKS && age < -SINGULARITY_LAUNCH_TICKS + 4) {
             launched = true;
-            world.playSound(launchOrigin.x(), launchOrigin.y(), launchOrigin.z(), "random.bow", .70f, .56f, false);
+            Vec3d origin = flight.midpoint;
+            world.playSound(origin.x(), origin.y(), origin.z(), "random.bow", .70f, .56f, false);
         }
         if (!started && age >= 0 && age < SINGULARITY_GROWTH_TICKS) {
             started = true;
@@ -98,8 +102,8 @@ final class FxSingularityDeployment {
     void draw(double age, double cameraX, double cameraY, double cameraZ) {
         Vec3d camera = FxCamera.position();
         if (age < 0) {
-            if (launchOrigin != null && age >= -SINGULARITY_LAUNCH_TICKS)
-                drawProjectile(age, camera, cameraX, cameraY, cameraZ);
+            if (flight != null && age >= -SINGULARITY_LAUNCH_TICKS)
+                drawProjectiles(age, camera, cameraX, cameraY, cameraZ);
             return;
         }
         double impactAge = impactAge(age);
@@ -126,6 +130,7 @@ final class FxSingularityDeployment {
                     double charge = smooth(age / SINGULARITY_CHARGE_TICKS);
                     drawPinprick(viewer, radius * (.08 + .14 * charge), .96f);
                     drawDischarges(age, 0, viewer, .75 + .25 * charge, false);
+                    if (flight != null && flight.paired && age < 5) drawMerger(age, viewer);
                 }
                 if (contraction > 0) drawCollapseStar(viewer, aperture, contraction);
             }
@@ -185,37 +190,46 @@ final class FxSingularityDeployment {
         return ((direction > 0 ? high : low) - position) / direction;
     }
 
-    private void drawProjectile(double age, Vec3d camera, double cameraX, double cameraY, double cameraZ) {
+    private void drawProjectiles(double age, Vec3d camera, double cameraX, double cameraY, double cameraZ) {
+        if (flight.distance < .01) return;
         double time = 1 + age / SINGULARITY_LAUNCH_TICKS;
-        Vec3d travel = center.subtract(launchOrigin);
-        double distance = travel.length();
-        if (distance < .01) return;
-        Vec3d direction = travel.scale(1 / distance);
-        double moved = distance * time * (1.075 - .075 * time);
-        Vec3d head = launchOrigin.add(direction.scale(moved));
-        double tailLength = Math.min(moved, Math.min(19, distance * .42));
-        double size = (.25 + Math.min(.21, radius * .026)) * (.21 + .79 * smooth(time * 5));
-        Vec3d middle = head.add(direction.scale(-tailLength / 2));
-        if (!FxCamera.inView(middle, tailLength / 2 + size * 3.5)) return;
+        double start = Math.max(0, time - Math.min(.56, 24 / flight.distance));
+        Vec3d spineHead = flight.spine(time), spineTail = flight.spine(start);
+        Vec3d middle = spineHead.add(spineTail)
+            .scale(.5);
+        double extent = spineHead.subtract(spineTail)
+            .length() * .5 + flight.spread
+            + flight.separation
+            + 2;
+        if (!FxCamera.inView(middle, extent)) return;
+        prepareEffects();
+        if (flight.paired) drawProjectile(age, time, start, -1, ICE, camera, cameraX, cameraY, cameraZ);
+        drawProjectile(age, time, start, 1, VIOLET, camera, cameraX, cameraY, cameraZ);
+    }
 
+    private void drawProjectile(double age, double time, double start, int hand, ShotColor color, Vec3d camera,
+        double cameraX, double cameraY, double cameraZ) {
+        Vec3d head = flight.position(time, hand);
+        double size = (.25 + Math.min(.21, radius * .026)) * (.21 + .79 * smooth(time * 5));
+        if (flight.paired) size *= 1 - .26 * smooth((time - .85) / .15);
         Vec3d towardViewer = camera.subtract(head);
         double range = towardViewer.length();
         Vec3d view = range < .01 ? FxCamera.forward()
             .scale(-1) : towardViewer.scale(1 / range);
-        Vec3d side = direction.cross(view)
-            .normalize();
-        if (side.length() < .2) side = Vec3d.rightOf(direction);
-        Vec3d up = side.cross(direction)
-            .normalize();
-        prepareEffects();
         GL11.glPushMatrix();
         try {
             GL11.glTranslated(head.x() - cameraX, head.y() - cameraY, head.z() - cameraZ);
-            if (range > size * 1.10) solidSphere(size, .036f, .012f, .072f);
+            if (range > size * 1.10) solidSphere(size, color.darkRed, color.darkGreen, color.darkBlue, 2);
             additive();
-            if (tailLength > .04) {
-                projectileTrail(direction, side, up, tailLength, size, time);
-                projectileMotes(direction, side, up, tailLength, size, time);
+            if (time - start > .006) {
+                Vec3d[] trail = new Vec3d[TRAIL_SEGMENTS + 1];
+                for (int i = 0; i <= TRAIL_SEGMENTS; i++) {
+                    double sampleAge = time - (time - start) * i / TRAIL_SEGMENTS;
+                    trail[i] = flight.position(sampleAge, hand)
+                        .subtract(head);
+                }
+                projectileTrail(trail, view, size, time, color);
+                projectileMotes(head, start, time, hand, size, color);
             }
             Vec3d right = Vec3d.rightOf(view);
             Vec3d vertical = right.cross(view)
@@ -223,30 +237,40 @@ final class FxSingularityDeployment {
             double depth = Math.min(size * .80, size * size / Math.max(size, range));
             Vec3d edge = view.scale(depth + size * .03);
             double apparent = Math.sqrt(size * size - depth * depth);
-            horizonRing(age, edge, right, vertical, apparent, 1.06, 2.75, .55f, .14f, 1, .82f, 0);
-            horizonRing(age, edge, right, vertical, apparent, 1.02, 1.35, .82f, .38f, 1, .94f, .16f);
-            horizonRing(age, edge, right, vertical, apparent, 1.01, 1.13, .91f, .74f, 1, 1, .32f);
+            horizonRing(age, edge, right, vertical, apparent, 1.06, 2.75, color.red, color.green, 1, .82f, 0);
+            horizonRing(age, edge, right, vertical, apparent, 1.02, 1.35, color.red, color.green, 1, .94f, .16f);
+            horizonRing(age, edge, right, vertical, apparent, 1.01, 1.13, color.paleRed, color.paleGreen, 1, 1, .32f);
         } finally {
             GL11.glPopMatrix();
         }
     }
 
-    private static void projectileTrail(Vec3d axis, Vec3d side, Vec3d up, double length, double size, double time) {
+    private static void projectileTrail(Vec3d[] trail, Vec3d view, double size, double time, ShotColor color) {
         for (int strand = 0; strand < 3; strand++) {
             for (int edge = -1; edge <= 1; edge += 2) {
                 GL11.glBegin(GL11.GL_TRIANGLE_STRIP);
                 for (int sample = 0; sample <= TRAIL_SEGMENTS; sample++) {
                     double t = sample / (double) TRAIL_SEGMENTS;
+                    Vec3d tangent = trail[Math.max(0, sample - 1)].subtract(trail[Math.min(TRAIL_SEGMENTS, sample + 1)])
+                        .normalize();
+                    Vec3d side = tangent.cross(view)
+                        .normalize();
+                    if (side.length() < .01) side = Vec3d.rightOf(tangent);
+                    Vec3d up = side.cross(tangent)
+                        .normalize();
                     double angle = strand * TAU / 3 + t * 9 - time * 17;
-                    double curl = size * Math.sin(t * Math.PI) * (strand == 0 ? .25 : .94);
-                    Vec3d point = axis.scale(-length * t)
-                        .add(side.scale(Math.cos(angle) * curl))
+                    double curl = size * Math.sin(t * Math.PI) * (strand == 0 ? .22 : .76);
+                    Vec3d point = trail[sample].add(side.scale(Math.cos(angle) * curl))
                         .add(up.scale(Math.sin(angle) * curl));
-                    double thickness = size * (1 - t) * (strand == 0 ? 1.06 : .29);
-                    float strength = (float) ((1 - t) * (strand == 0 ? .62 : .86));
-                    GL11.glColor4f(strand == 0 ? .58f : .83f, strand == 0 ? .15f : .50f, 1, strength);
+                    double thickness = size * (1 - t) * (strand == 0 ? 1.16 : .32);
+                    float strength = (float) ((1 - t) * (strand == 0 ? .64 : .92));
+                    GL11.glColor4f(
+                        strand == 0 ? color.red : color.paleRed,
+                        strand == 0 ? color.green : color.paleGreen,
+                        1,
+                        strength);
                     vertex(point, 1);
-                    GL11.glColor4f(.47f, .10f, 1, 0);
+                    GL11.glColor4f(color.red, color.green, 1, 0);
                     vertex(point.add(side.scale(edge * thickness)), 1);
                 }
                 GL11.glEnd();
@@ -254,22 +278,52 @@ final class FxSingularityDeployment {
         }
     }
 
-    private void projectileMotes(Vec3d axis, Vec3d side, Vec3d up, double length, double size, double time) {
+    private void projectileMotes(Vec3d head, double start, double time, int hand, double size, ShotColor color) {
         GL11.glPointSize(3);
         GL11.glBegin(GL11.GL_POINTS);
         for (int i = 0; i < TRAIL_MOTES; i++) {
-            double t = MathUtils.hashUnit(seed, i, 19, 0) + time * 2.2;
+            double t = MathUtils.hashUnit(seed, i, 19, hand) + time * 2.2;
             t -= Math.floor(t);
-            double a = TAU * MathUtils.hashUnit(seed, i, 21, 0) - t * 4;
-            double drift = size * Math.sin(t * Math.PI) * (1.12 + MathUtils.hashUnit(seed, i, 22, 0));
-            GL11.glColor4f(.74f, .47f, 1, (float) (.75 * (1 - t)));
+            double a = TAU * MathUtils.hashUnit(seed, i, 21, hand) - t * 4;
+            double drift = size * Math.sin(t * Math.PI) * (1.12 + MathUtils.hashUnit(seed, i, 22, hand));
+            Vec3d point = flight.position(time - (time - start) * t, hand)
+                .subtract(head);
+            GL11.glColor4f(color.paleRed, color.paleGreen, 1, (float) (.75 * (1 - t)));
             vertex(
-                axis.scale(-length * t)
-                    .add(side.scale(Math.cos(a) * drift))
-                    .add(up.scale(Math.sin(a) * drift)),
+                point.add(flight.side.scale(Math.cos(a) * drift))
+                    .add(flight.up.scale(Math.sin(a) * drift)),
                 1);
         }
         GL11.glEnd();
+    }
+
+    private void drawMerger(double age, Vec3d viewer) {
+        additive();
+        double progress = clampUnit(age / 5);
+        float intensity = (float) ((1 - progress) * (1 - progress));
+        double size = Math.max(.62, radius * (.17 + .20 * progress));
+        Vec3d axis = viewer.normalize();
+        Vec3d right = Vec3d.rightOf(axis);
+        Vec3d up = right.cross(axis)
+            .normalize();
+        for (int hand = -1; hand <= 1; hand += 2) {
+            ShotColor color = hand < 0 ? ICE : VIOLET;
+            GL11.glBegin(GL11.GL_TRIANGLE_FAN);
+            GL11.glColor4f(.96f, .97f, 1, intensity * .71f);
+            GL11.glVertex3d(0, 0, 0);
+            for (int segment = 0; segment <= 24; segment++) {
+                double t = segment / 24d;
+                double angle = TAU * (t * .55 + progress * .34 + (hand < 0 ? .25 : -.25));
+                double wing = .43 + 1.48 * Math.pow(Math.sin(Math.PI * t), 3);
+                GL11.glColor4f(color.red, color.green, 1, 0);
+                planeVertex(Vec3d.ZERO, right, up, Math.cos(angle), Math.sin(angle), size * wing);
+            }
+            GL11.glEnd();
+            double angle = Math.PI * (hand < 0 ? 1 : 0) + TAU * progress * .27;
+            Vec3d offset = right.scale(Math.cos(angle) * size * .18)
+                .add(up.scale(Math.sin(angle) * size * .18));
+            horizonRing(age, offset, right, up, size, .33, 1.40, color.red, color.green, 1, intensity * .49f, 0);
+        }
     }
 
     private static void prepareEffects() {
@@ -320,7 +374,7 @@ final class FxSingularityDeployment {
             drawDischarges(age, 0, viewer, .85, false);
             return;
         }
-        solidSphere(sphereRadius, .012f, .018f, .033f);
+        solidSphere(sphereRadius, .012f, .018f, .033f, 1);
 
         additive();
         Vec3d axis = viewer.scale(1 / distance);
@@ -337,15 +391,15 @@ final class FxSingularityDeployment {
         drawDischarges(age, aperture, viewer, .76 + .24 * aperture, false);
     }
 
-    private static void solidSphere(double size, float red, float green, float blue) {
+    private static void solidSphere(double size, float red, float green, float blue, int step) {
         GL11.glDisable(GL11.GL_BLEND);
         GL11.glDepthMask(true);
         GL11.glColor4f(red, green, blue, 1);
-        for (int row = 0; row < SPHERE_STACKS; row++) {
+        for (int row = 0; row < SPHERE_STACKS; row += step) {
             GL11.glBegin(GL11.GL_TRIANGLE_STRIP);
-            for (int column = 0; column <= SPHERE_SLICES; column++) {
+            for (int column = 0; column <= SPHERE_SLICES; column += step) {
                 int index = row * (SPHERE_SLICES + 1) + column;
-                vertex(SPHERE[index + SPHERE_SLICES + 1], size);
+                vertex(SPHERE[index + step * (SPHERE_SLICES + 1)], size);
                 vertex(SPHERE[index], size);
             }
             GL11.glEnd();
@@ -680,6 +734,59 @@ final class FxSingularityDeployment {
     private static double smooth(double t) {
         t = clampUnit(t);
         return t * t * (3 - 2 * t);
+    }
+
+    private record ShotColor(float darkRed, float darkGreen, float darkBlue, float red, float green, float paleRed,
+        float paleGreen) {}
+
+    private record Flight(Vec3d left, Vec3d right, Vec3d target, Vec3d midpoint, Vec3d travel, Vec3d side, Vec3d up,
+        Vec3d along, double separation, double spread, double distance, boolean paired) {
+
+        static Flight between(Vec3d right, Vec3d left, Vec3d target) {
+            Vec3d midpoint = right.add(left)
+                .scale(.5);
+            Vec3d travel = target.subtract(midpoint);
+            double distance = travel.length();
+            Vec3d direction = travel.normalize();
+            Vec3d handOffset = right.subtract(midpoint);
+            Vec3d along = direction.scale(handOffset.dot(direction));
+            Vec3d across = handOffset.subtract(along);
+            double separation = across.length();
+            Vec3d side = separation > .001 ? across.scale(1 / separation) : Vec3d.rightOf(direction);
+            Vec3d up = direction.cross(side)
+                .normalize();
+            double spread = Math.min(5.2, Math.max(.68, distance * .112));
+            return new Flight(
+                left,
+                right,
+                target,
+                midpoint,
+                travel,
+                side,
+                up,
+                along,
+                separation,
+                spread,
+                distance,
+                right.distanceToSqr(left) > 1e-5);
+        }
+
+        Vec3d spine(double progress) {
+            return midpoint.add(travel.scale(progress * (1.075 - .075 * progress)));
+        }
+
+        Vec3d position(double progress, int hand) {
+            if (progress <= 0) return hand < 0 ? left : right;
+            if (progress >= 1) return target;
+            Vec3d base = spine(progress);
+            if (!paired) return base;
+            double remaining = 1 - progress;
+            double angle = TAU * 1.18 * smooth(progress);
+            double spiralRadius = separation * remaining + spread * Math.pow(Math.sin(Math.PI * progress), 1.24);
+            return base.add(side.scale(hand * spiralRadius * Math.cos(angle)))
+                .add(up.scale(hand * spiralRadius * Math.sin(angle)))
+                .add(along.scale(hand * remaining * remaining));
+        }
     }
 
     private record Discharge(int cycle, boolean forming, Vec3d root, Vec3d[] main, Vec3d[] branch, Vec3d[] fork,

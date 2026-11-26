@@ -22,6 +22,8 @@ public final class ProjectorDeploymentPacket extends ClientboundPacket {
 
     private static final int MAX_PLAN_BYTES = 1_048_576;
     private static final int LAUNCH_POSITION_BYTES = 3 * Double.BYTES;
+    private static final int LAUNCH_WITH_HEIGHT_BYTES = LAUNCH_POSITION_BYTES + Integer.BYTES;
+    private static final int DUAL_LAUNCH_BYTES = LAUNCH_WITH_HEIGHT_BYTES + 2 * Double.BYTES;
 
     private long id;
     private int dimension;
@@ -94,15 +96,15 @@ public final class ProjectorDeploymentPacket extends ClientboundPacket {
         }
         launch = null;
         int extraBytes = buffer.readableBytes();
-        if (extraBytes != 0) {
-            if (extraBytes != LAUNCH_POSITION_BYTES && extraBytes != LAUNCH_POSITION_BYTES + Integer.BYTES)
-                throw new IllegalArgumentException("Invalid projector deployment launch length");
-            double x = buffer.readDouble(), y = buffer.readDouble(), z = buffer.readDouble();
-            if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z))
-                throw new IllegalArgumentException("Invalid projector deployment launch position");
-            launch = new Launch(x, y, z);
+        if (extraBytes == 0) {
+            deployment = new StructureDeployment(startTick, minX, minY, minZ, maxX, maxZ, openingY);
+            return;
         }
-        if (buffer.isReadable()) {
+        if (extraBytes != LAUNCH_POSITION_BYTES && extraBytes != LAUNCH_WITH_HEIGHT_BYTES
+            && extraBytes != DUAL_LAUNCH_BYTES)
+            throw new IllegalArgumentException("Invalid projector deployment launch length");
+        double x = buffer.readDouble(), y = buffer.readDouble(), z = buffer.readDouble();
+        if (extraBytes >= LAUNCH_WITH_HEIGHT_BYTES) {
             int maxY = buffer.readInt();
             if (maxY <= minY || maxY > openingY)
                 throw new IllegalArgumentException("Invalid projector deployment structure height");
@@ -110,6 +112,17 @@ public final class ProjectorDeploymentPacket extends ClientboundPacket {
         } else {
             deployment = new StructureDeployment(startTick, minX, minY, minZ, maxX, maxZ, openingY);
         }
+        double leftX = x, leftZ = z;
+        if (extraBytes == DUAL_LAUNCH_BYTES) {
+            leftX = buffer.readDouble();
+            leftZ = buffer.readDouble();
+        }
+        if (!Double.isFinite(x) || !Double.isFinite(y)
+            || !Double.isFinite(z)
+            || !Double.isFinite(leftX)
+            || !Double.isFinite(leftZ))
+            throw new IllegalArgumentException("Invalid projector deployment launch position");
+        launch = new Launch(x, y, z, leftX, leftZ);
     }
 
     @Override
@@ -140,6 +153,8 @@ public final class ProjectorDeploymentPacket extends ClientboundPacket {
             buffer.writeDouble(launch.y());
             buffer.writeDouble(launch.z());
             buffer.writeInt(deployment.maxY());
+            buffer.writeDouble(launch.leftX());
+            buffer.writeDouble(launch.leftZ());
         }
     }
 

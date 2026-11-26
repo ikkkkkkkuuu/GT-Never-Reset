@@ -21,6 +21,7 @@ import com.xyp.gtneverreset.common.projector.ProjectorBuilder;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtnrlib.animation.StructureDeployment;
+import com.xyp.gtnrlib.animation.StructureDeployment.Launch;
 import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -115,7 +116,7 @@ public final class ProjectorDeploymentServerChecks {
             checkPacket(new ProjectorDeploymentPacket(1, 0, bounds, plan, false));
             checkPacket(new ProjectorDeploymentPacket(1, 0, Phase.IMPACT));
             if (plan.buildStyle == StructureDeploymentStyle.SINGULARITY) {
-                var launch = new StructureDeployment.Launch(plan.x + .5, Y + 1.3, plan.z - 3.9);
+                var launch = new Launch(plan.x + .06, Y + 1.3, plan.z - 3.9, plan.x + .94, plan.z - 3.7);
                 var tallBounds = new StructureDeployment(
                     start,
                     plan.x - 1,
@@ -125,7 +126,9 @@ public final class ProjectorDeploymentServerChecks {
                     plan.z + 3,
                     Y + 19,
                     Y + 17);
-                checkPacket(new ProjectorDeploymentPacket(1, 0, tallBounds, plan, false, launch));
+                var startPacket = new ProjectorDeploymentPacket(1, 0, tallBounds, plan, false, launch);
+                checkPacket(startPacket);
+                checkLaunchSuffixes(startPacket, launch);
                 checkPacket(new ProjectorDeploymentPacket(1, 0, world.getTotalWorldTime()));
             }
             checkPacket(new ProjectorDeploymentPacket(1, 0, Phase.COMPLETE));
@@ -156,6 +159,10 @@ public final class ProjectorDeploymentServerChecks {
             animationField.setAccessible(true);
             var animation = (StructureDeployment) animationField.get(job);
             if (animation == null || world.getTotalWorldTime() < animation.startTick() - 4) return;
+            var packetField = job.getClass()
+                .getDeclaredField("deploymentStart");
+            packetField.setAccessible(true);
+            checkHandOrigins(readLaunch((ProjectorDeploymentPacket) packetField.get(job)));
             player.inventory.setInventorySlotContents(player.inventory.currentItem, null);
             cancelDeadline = animation.startTick() + plan.buildStyle.bandReadyTick(0) + 10;
         } else if (world.getTotalWorldTime() >= cancelDeadline) {
@@ -194,6 +201,62 @@ public final class ProjectorDeploymentServerChecks {
             encoded.release();
             buffer.release();
         }
+    }
+
+    private static void checkLaunchSuffixes(ProjectorDeploymentPacket packet, Launch launch) throws Exception {
+        var buffer = Unpooled.buffer();
+        try {
+            packet.toBytes(buffer);
+            int end = buffer.writerIndex();
+            var decoded = new ProjectorDeploymentPacket();
+            decoded.fromBytes(buffer.duplicate());
+            require(launch.equals(readLaunch(decoded)), "both hand origins must survive the packet");
+
+            var previous = new Launch(launch.x(), launch.y(), launch.z());
+            for (int removed : new int[] { 2 * Double.BYTES, 2 * Double.BYTES + Integer.BYTES }) {
+                var legacy = buffer.duplicate()
+                    .writerIndex(end - removed);
+                decoded.fromBytes(legacy);
+                require(!legacy.isReadable(), "legacy launch packet was not fully decoded");
+                require(previous.equals(readLaunch(decoded)), "legacy launch must supply its original position");
+            }
+
+            buffer.setDouble(end - Double.BYTES, Double.NaN);
+            try {
+                decoded.fromBytes(buffer.duplicate());
+                throw new AssertionError("non-finite left launch position was accepted");
+            } catch (IllegalArgumentException expected) {
+                require(
+                    expected.getMessage()
+                        .contains("launch position"),
+                    "invalid launch was rejected for another reason");
+            }
+        } finally {
+            buffer.release();
+        }
+    }
+
+    private static Launch readLaunch(ProjectorDeploymentPacket packet) throws Exception {
+        var field = ProjectorDeploymentPacket.class.getDeclaredField("launch");
+        field.setAccessible(true);
+        return (Launch) field.get(packet);
+    }
+
+    private void checkHandOrigins(Launch launch) {
+        require(launch != null, "server omitted the projectile launch");
+        double yaw = Math.toRadians(player.rotationYaw);
+        double stepX = launch.leftX() - launch.x(), stepZ = launch.leftZ() - launch.z();
+        require(Math.abs(Math.hypot(stepX, stepZ) - .88) < .001, "hand origins must be .88 blocks apart");
+        require(stepX * Math.cos(yaw) + stepZ * Math.sin(yaw) > .87, "hand origins were reversed");
+        var look = player.getLookVec();
+        double midpointX = (launch.x() + launch.leftX()) * .5 - player.posX;
+        double midpointZ = (launch.z() + launch.leftZ()) * .5 - player.posZ;
+        require(
+            Math.hypot(midpointX - look.xCoord * .55, midpointZ - look.zCoord * .55) < .001,
+            "hand origins must straddle the point ahead of the player");
+        require(
+            Math.abs(launch.y() - (player.posY + player.getEyeHeight() - .36 + look.yCoord * .55)) < .001,
+            "hand origins must be near the player's chest");
     }
 
     private void finish(Throwable failure) throws Exception {

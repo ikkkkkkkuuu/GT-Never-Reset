@@ -65,5 +65,10 @@ public record StructureDeployment(long startTick, int minX, int minY, int minZ, 
     }
 
     @Desugar
-    public record Launch(double x, double y, double z) {}
+    public record Launch(double x, double y, double z, double leftX, double leftZ) {
+
+        public Launch(double x, double y, double z) {
+            this(x, y, z, x, z);
+        }
+    }
 }

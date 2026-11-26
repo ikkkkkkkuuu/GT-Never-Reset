@@ -46,7 +46,7 @@ public final class ProjectorBuilder {
     private static final int REQUEST_COOLDOWN_TICKS = 40;
     private static final int ANIMATION_RANGE = 128, SPECTATOR_REFRESH_TICKS = 20;
     private static final int LAUNCH_SPECTATOR_REFRESH_TICKS = 4;
-    private static final double LAUNCH_FORWARD = .55, LAUNCH_RIGHT = .28, LAUNCH_BELOW_EYES = .36;
+    private static final double LAUNCH_FORWARD = .55, LAUNCH_LATERAL = .44, LAUNCH_BELOW_EYES = .36;
     private final Deque<Build> pending = new ArrayDeque<>();
     private final Deque<Build> active = new ArrayDeque<>();
     private final Map<UUID, Build> jobs = new HashMap<>();
@@ -411,10 +411,12 @@ public final class ProjectorBuilder {
         private Launch launchOrigin() {
             var look = player.getLookVec();
             double yaw = Math.toRadians(player.rotationYaw);
-            return new Launch(
-                player.posX + look.xCoord * LAUNCH_FORWARD - Math.cos(yaw) * LAUNCH_RIGHT,
-                player.posY + player.getEyeHeight() - LAUNCH_BELOW_EYES + look.yCoord * LAUNCH_FORWARD,
-                player.posZ + look.zCoord * LAUNCH_FORWARD - Math.sin(yaw) * LAUNCH_RIGHT);
+            double x = player.posX + look.xCoord * LAUNCH_FORWARD;
+            double y = player.posY + player.getEyeHeight() - LAUNCH_BELOW_EYES + look.yCoord * LAUNCH_FORWARD;
+            double z = player.posZ + look.zCoord * LAUNCH_FORWARD;
+            double lateralX = Math.cos(yaw) * LAUNCH_LATERAL;
+            double lateralZ = Math.sin(yaw) * LAUNCH_LATERAL;
+            return new Launch(x - lateralX, y, z - lateralZ, x + lateralX, z + lateralZ);
         }
 
         private StructureDeployment deploymentAt(long startTick) {

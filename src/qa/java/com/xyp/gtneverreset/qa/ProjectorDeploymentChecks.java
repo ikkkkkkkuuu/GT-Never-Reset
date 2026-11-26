@@ -465,7 +465,8 @@ public class ProjectorDeploymentChecks {
         private volatile boolean complete, finalPicture;
         private Vec3d launchEye, launchLook;
         private boolean guiRequested, batchPage, styleSelected, sawStart, stowed;
-        private boolean projectilePicture, chargePicture, arcsPicture, collapsePicture, formingPicture, arrivalPicture;
+        private boolean projectilePicture, mergePicture, chargePicture, arcsPicture, collapsePicture, formingPicture,
+            arrivalPicture;
         private long lastFrame = Long.MIN_VALUE;
         private int frameCount, projectileFrames;
 
@@ -690,14 +691,7 @@ public class ProjectorDeploymentChecks {
                         var bounds = (StructureDeployment) field(effects, "bounds");
                         if (bounds.startTick() != startTick || z < bounds.minZ() || z >= bounds.maxZ()) continue;
                         require(field(effects, "style") == STYLE, "Client received the wrong deployment style");
-                        var origin = (Vec3d) field(field(effects, "singularity"), "launchOrigin");
-                        require(origin != null, "Singularity start did not include the launch origin");
-                        Vec3d hand = origin.subtract(launchEye);
-                        require(
-                            hand.length() < 1.1 && hand.y() < 0
-                                && hand.dot(launchLook) > .2
-                                && hand.dot(Vec3d.rightOf(launchLook)) > .1,
-                            "Projectile origin is not in front of the player's right hand");
+                        checkTwinLaunch(field(effects, "singularity"));
                         sawStart = true;
                         break;
                     }
@@ -715,12 +709,24 @@ public class ProjectorDeploymentChecks {
                 lastFrame = age;
                 if (age < 0) {
                     projectileFrames++;
-                    if (!projectilePicture && age >= -flight + 2 && violetPixels(frame) >= 35) {
-                        copyFrame(frame, shotPrefix + "-projectile.png");
-                        System.out
-                            .println("[projector-singularity-qa] violet projectile visible before arrival at " + age);
-                        projectilePicture = true;
+                    if (!projectilePicture && age >= -flight + 3) {
+                        var colors = launchColors(frame);
+                        if (colors.ice() >= 35 && colors.violet() >= 35) {
+                            copyFrame(frame, shotPrefix + "-projectile.png");
+                            System.out.println(
+                                "[projector-singularity-qa] both projectile colors visible at " + age
+                                    + " (ice "
+                                    + colors.ice()
+                                    + ", violet "
+                                    + colors.violet()
+                                    + ")");
+                            projectilePicture = true;
+                        }
                     }
+                }
+                if (!mergePicture && age >= 0 && age < 5) {
+                    copyFrame(frame, shotPrefix + "-merge.png");
+                    mergePicture = true;
                 }
                 if (!chargePicture && age >= 6 && age < StructureDeploymentStyle.SINGULARITY_CHARGE_TICKS) {
                     copyFrame(frame, shotPrefix + "-charge.png");
@@ -750,6 +756,7 @@ public class ProjectorDeploymentChecks {
                     return;
                 require(
                     projectilePicture && projectileFrames >= 3
+                        && mergePicture
                         && chargePicture
                         && arcsPicture
                         && collapsePicture
@@ -811,16 +818,54 @@ public class ProjectorDeploymentChecks {
             return darkCore >= 200 && linedRows >= 14;
         }
 
-        private int violetPixels(Path frame) throws java.io.IOException {
+        private void checkTwinLaunch(Object effect) throws ReflectiveOperationException {
+            var right = (Vec3d) field(effect, "launchOrigin");
+            var left = (Vec3d) field(effect, "leftLaunchOrigin");
+            require(right != null && left != null, "Singularity start did not include both launch origins");
+            Vec3d rightHand = right.subtract(launchEye), leftHand = left.subtract(launchEye);
+            Vec3d handAxis = Vec3d.rightOf(launchLook);
+            require(
+                rightHand.length() < 1.1 && leftHand.length() < 1.1
+                    && rightHand.y() < 0
+                    && leftHand.y() < 0
+                    && rightHand.dot(launchLook) > .2
+                    && leftHand.dot(launchLook) > .2
+                    && rightHand.dot(handAxis) > .1
+                    && leftHand.dot(handAxis) < -.1
+                    && Math.abs(rightHand.dot(handAxis) + leftHand.dot(handAxis)) < .01,
+                "Launch starts symmetrically in front of the player's hands");
+            var flight = field(effect, "flight");
+            var position = flight.getClass()
+                .getDeclaredMethod("position", double.class, int.class);
+            position.setAccessible(true);
+            require(
+                right.equals(position.invoke(flight, 0.0, 1)) && left.equals(position.invoke(flight, 0.0, -1)),
+                "Projectile paths start at their hand origins");
+            Vec3d rightHalfway = (Vec3d) position.invoke(flight, .46, 1);
+            Vec3d leftHalfway = (Vec3d) position.invoke(flight, .46, -1);
+            require(
+                rightHalfway.subtract(leftHalfway)
+                    .dot(handAxis) < -.1,
+                "Twin projectiles orbit across their axis");
+            Object center = field(effect, "center");
+            require(
+                center.equals(position.invoke(flight, 1.0, 1)) && center.equals(position.invoke(flight, 1.0, -1)),
+                "Both projectiles reach the same portal center");
+        }
+
+        private LaunchColors launchColors(Path frame) throws java.io.IOException {
             var image = ImageIO.read(frame.toFile());
-            int width = image.getWidth(), height = image.getHeight(), violet = 0;
+            int width = image.getWidth(), height = image.getHeight(), ice = 0, violet = 0;
             int[] pixels = image.getRGB(0, 0, width, height, null, 0, width);
             for (int rgb : pixels) {
                 int red = rgb >> 16 & 255, green = rgb >> 8 & 255, blue = rgb & 255;
+                if (blue >= 175 && green >= 125 && green - red >= 24 && blue - green >= 10) ice++;
                 if (red >= 95 && blue >= 150 && red - green >= 18 && blue - green >= 40) violet++;
             }
-            return violet;
+            return new LaunchColors(ice, violet);
         }
+
+        private record LaunchColors(int ice, int violet) {}
 
         private void copyFrame(Path frame, String name) throws java.io.IOException {
             Files.copy(frame, Path.of("screenshots", name), StandardCopyOption.REPLACE_EXISTING);
