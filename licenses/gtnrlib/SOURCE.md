@@ -163,3 +163,13 @@ widget entry points, translations and color utility.
 The expanded theme widgets, gallery, tests and texture sharing are adapted from
 GTNLLib commit 768ed2970a3ec21ab969270872475684413ddcfc. GTNRLib retains the
 existing theme identifiers and previously exposed type names.
+
+## Mod ID catalog (2026-11-26)
+
+Added Forge mod IDs and display names from GTNLLib's ModList at
+a92153fb14e7385932ab687bcef4c19197d88bca.
+https://github.com/GTNotLeisure/GTNLLib/commit/a92153fb14e7385932ab687bcef4c19197d88bca
+
+GTNRLib retains its existing entries and uses the additions for mod ID detection.
+The adapted catalog is distributed under GPL-3.0.txt and the applicable terms
+in LICENSE-ADDITIONAL-TERMS.md. Project attribution is included in GTNRLib's mod metadata.
