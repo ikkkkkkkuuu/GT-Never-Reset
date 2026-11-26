@@ -232,6 +232,7 @@ gtneverreset.projector.gui.build_style_summon=法阵降临
 gtneverreset.projector.gui.build_style_reveal=白光显现
 gtneverreset.projector.gui.build_style_flight=分段飞入
 gtneverreset.projector.gui.build_style_none=无动画
+gtneverreset.projector.gui.build_style_singularity=奇点跃迁
 gtneverreset.projector.gui.generate_hint=生存模式：背包和已连接的 ME 库存合计备齐材料后才会生成。
 gtneverreset.projector.gui.batch_count=各方向追加台数
 gtneverreset.projector.gui.batch_share=共用外壳

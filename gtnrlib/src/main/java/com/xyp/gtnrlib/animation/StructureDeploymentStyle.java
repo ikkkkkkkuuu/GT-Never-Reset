@@ -5,7 +5,8 @@ public enum StructureDeploymentStyle {
     SUMMON,
     REVEAL,
     FLIGHT,
-    NONE;
+    NONE,
+    SINGULARITY;
 
     private static final int MAX_BANDS = 6;
     public static final int REVEAL_FLASH_TICKS = 5;
@@ -14,6 +15,13 @@ public enum StructureDeploymentStyle {
     public static final int REVEAL_BAND_TICKS = 3;
     public static final int FLIGHT_TRAVEL_TICKS = 32;
     public static final int FLIGHT_BAND_TICKS = 8;
+    public static final int SINGULARITY_LAUNCH_TICKS = 22;
+    public static final int SINGULARITY_CHARGE_TICKS = 14;
+    public static final int SINGULARITY_GROWTH_TICKS = 22;
+    public static final int SINGULARITY_COLLAPSE_TICK = 34;
+    public static final int SINGULARITY_FORM_TICK = 42;
+    public static final int SINGULARITY_IMPACT_TICK = 72;
+    public static final int SINGULARITY_AFTERSHOCK_TICKS = 34;
 
     public boolean segmented() {
         return this == REVEAL || this == FLIGHT;
@@ -29,6 +37,7 @@ public enum StructureDeploymentStyle {
             case FLIGHT -> FLIGHT_TRAVEL_TICKS + band * FLIGHT_BAND_TICKS;
             case SUMMON -> StructureDeployment.IMPACT_TICK;
             case NONE -> 0;
+            case SINGULARITY -> SINGULARITY_IMPACT_TICK;
         };
     }
 

@@ -29,6 +29,7 @@ import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket.Phase;
 import com.xyp.gtneverreset.config.ProjectorConfig;
 import com.xyp.gtneverreset.config.ToolsConfig;
 import com.xyp.gtnrlib.animation.StructureDeployment;
+import com.xyp.gtnrlib.animation.StructureDeployment.Launch;
 import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -43,7 +44,9 @@ public final class ProjectorBuilder {
     private static final long MAX_BATCH_CELLS = 4_000_000L;
     private static final int SIMULATION_ROUND_CELLS = 256;
     private static final int REQUEST_COOLDOWN_TICKS = 40;
-    private static final int PORTAL_CLEARANCE = 15, ANIMATION_RANGE = 128, SPECTATOR_REFRESH_TICKS = 20;
+    private static final int ANIMATION_RANGE = 128, SPECTATOR_REFRESH_TICKS = 20;
+    private static final int LAUNCH_SPECTATOR_REFRESH_TICKS = 4;
+    private static final double LAUNCH_FORWARD = .55, LAUNCH_LATERAL = .44, LAUNCH_BELOW_EYES = .36;
     private final Deque<Build> pending = new ArrayDeque<>();
     private final Deque<Build> active = new ArrayDeque<>();
     private final Map<UUID, Build> jobs = new HashMap<>();
@@ -181,6 +184,7 @@ public final class ProjectorBuilder {
         private StructureDeployment deployment;
         private long deploymentId;
         private ProjectorDeploymentPacket deploymentStart;
+        private ProjectorDeploymentPacket deploymentImpact;
         private List<EntityPlayerMP> spectators;
 
         private Build(EntityPlayerMP player, int location, ItemStack projector, ProjectorPlan plan, boolean batch) {
@@ -387,7 +391,9 @@ public final class ProjectorBuilder {
             stage = Stage.PLACE;
             if (supplementing || bounds[3] == Integer.MIN_VALUE || plan.buildStyle == StructureDeploymentStyle.NONE)
                 return true;
-            deployment = deploymentAt(now + StructureDeployment.START_DELAY_TICKS);
+            Launch launch = plan.buildStyle == StructureDeploymentStyle.SINGULARITY ? launchOrigin() : null;
+            int travelTicks = launch == null ? 0 : StructureDeploymentStyle.SINGULARITY_LAUNCH_TICKS;
+            deployment = deploymentAt(now + StructureDeployment.START_DELAY_TICKS + travelTicks);
             nextBandTick = deployment.startTick() + plan.buildStyle.bandReadyTick(0);
             deploymentId = ++INSTANCE.nextDeploymentId;
             spectators = new ArrayList<>();
@@ -396,9 +402,21 @@ public final class ProjectorBuilder {
                 plan.dimension,
                 deployment,
                 plan,
-                layout != null);
+                layout != null,
+                launch);
             refreshSpectators(now);
             return true;
+        }
+
+        private Launch launchOrigin() {
+            var look = player.getLookVec();
+            double yaw = Math.toRadians(player.rotationYaw);
+            double x = player.posX + look.xCoord * LAUNCH_FORWARD;
+            double y = player.posY + player.getEyeHeight() - LAUNCH_BELOW_EYES + look.yCoord * LAUNCH_FORWARD;
+            double z = player.posZ + look.zCoord * LAUNCH_FORWARD;
+            double lateralX = Math.cos(yaw) * LAUNCH_LATERAL;
+            double lateralZ = Math.sin(yaw) * LAUNCH_LATERAL;
+            return new Launch(x - lateralX, y, z - lateralZ, x + lateralX, z + lateralZ);
         }
 
         private StructureDeployment deploymentAt(long startTick) {
@@ -409,11 +427,15 @@ public final class ProjectorBuilder {
                 bounds[2],
                 bounds[3],
                 bounds[5],
-                Math.min(world.getHeight(), bounds[4] + PORTAL_CLEARANCE));
+                Math.min(world.getHeight(), bounds[4] + StructureDeployment.PORTAL_CLEARANCE),
+                bounds[4]);
         }
 
         private void refreshSpectators(long now) {
-            nextSpectatorRefresh = now + SPECTATOR_REFRESH_TICKS;
+            int interval = plan.buildStyle == StructureDeploymentStyle.SINGULARITY && now < deployment.startTick()
+                ? LAUNCH_SPECTATOR_REFRESH_TICKS
+                : SPECTATOR_REFRESH_TICKS;
+            nextSpectatorRefresh = now + interval;
             spectators.removeIf(
                 observer -> observer.worldObj != world || !observer.playerNetServerHandler.netManager.isChannelOpen());
             for (Object entry : world.playerEntities) {
@@ -429,6 +451,7 @@ public final class ProjectorBuilder {
                 NetWorkHandler.sendTo(deploymentStart, observer);
                 if (band > 0)
                     NetWorkHandler.sendTo(new ProjectorDeploymentPacket(deploymentId, plan.dimension, band), observer);
+                if (deploymentImpact != null) NetWorkHandler.sendTo(deploymentImpact, observer);
             }
         }
 
@@ -448,6 +471,7 @@ public final class ProjectorBuilder {
             sendDeploymentUpdate(completed ? Phase.COMPLETE : Phase.CANCEL);
             spectators = null;
             deploymentStart = null;
+            deploymentImpact = null;
             if (materials != null && !player.isDead
                 && player.playerNetServerHandler.netManager.isChannelOpen()
                 && ProjectorBuildMaterials.refund(player)) {
@@ -594,7 +618,16 @@ public final class ProjectorBuilder {
             placed++;
             if (!expected.hasTileEntity(meta)) expected.onBlockAdded(world, x, y, z);
             world.markAndNotifyBlock(x, y, z, null, changes.get(0).replacedBlock, expected, 3);
-            if (placed == 1 && plan.buildStyle == StructureDeploymentStyle.SUMMON) sendDeploymentUpdate(Phase.IMPACT);
+            if (placed == 1 && deploymentStart != null) {
+                if (plan.buildStyle == StructureDeploymentStyle.SUMMON) sendDeploymentUpdate(Phase.IMPACT);
+                if (plan.buildStyle == StructureDeploymentStyle.SINGULARITY) {
+                    deploymentImpact = new ProjectorDeploymentPacket(
+                        deploymentId,
+                        plan.dimension,
+                        world.getTotalWorldTime());
+                    sendDeploymentPacket(deploymentImpact);
+                }
+            }
             return true;
         }
 

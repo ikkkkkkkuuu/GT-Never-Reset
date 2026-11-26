@@ -4,6 +4,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 
@@ -15,25 +17,30 @@ import com.xyp.gtneverreset.common.projector.ProjectorBatch;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
 import com.xyp.gtnrlib.animation.StructureDeployment;
+import com.xyp.gtnrlib.animation.StructureDeployment.Launch;
+import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 import com.xyp.gtnrlib.client.fx.world.FxBlockMesh;
 import com.xyp.gtnrlib.client.fx.world.FxCamera;
 import com.xyp.gtnrlib.client.fx.world.FxStructureDeployment;
+import com.xyp.gtnrlib.client.fx.world.FxVoxelOutline;
 import com.xyp.gtnrlib.utils.Vec3d;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 @SideOnly(Side.CLIENT)
 public final class ProjectorDeploymentRenderer {
 
     private static final long COMPILE_NANOS = 3_000_000L;
     private static final long LAYOUT_NANOS = 2_000_000L;
+    private static final int MAX_OUTLINE_BLOCKS = 32_768;
     private static final Map<Long, Presentation> ACTIVE = new LinkedHashMap<>();
 
     private ProjectorDeploymentRenderer() {}
 
     public static void receive(Minecraft minecraft, long id, int dimension, Phase phase, StructureDeployment animation,
-        NBTTagCompound data, boolean batch, int finishedBands) {
+        NBTTagCompound data, boolean batch, int finishedBands, long impactTick, Launch launch) {
         var connection = minecraft.getNetHandler();
         var world = minecraft.theWorld;
         if (connection == null || world == null) return;
@@ -44,22 +51,23 @@ public final class ProjectorDeploymentRenderer {
             if (phase == Phase.START) {
                 ProjectorPlan plan = new ProjectorPlan();
                 plan.readFromNBT(data);
-                start(id, world, animation, plan, batch);
+                start(id, world, animation, plan, batch, launch);
             } else {
-                update(id, phase, finishedBands);
+                update(id, phase, finishedBands, impactTick);
             }
         });
     }
 
-    private static void start(long id, World world, StructureDeployment animation, ProjectorPlan plan, boolean batch) {
-        ACTIVE.putIfAbsent(id, new Presentation(world, animation, plan, batch));
+    private static void start(long id, World world, StructureDeployment animation, ProjectorPlan plan, boolean batch,
+        Launch launch) {
+        ACTIVE.putIfAbsent(id, new Presentation(world, animation, plan, batch, launch));
     }
 
-    private static void update(long id, Phase phase, int finishedBands) {
+    private static void update(long id, Phase phase, int finishedBands, long impactTick) {
         Presentation presentation = ACTIVE.get(id);
         if (presentation == null) return;
         switch (phase) {
-            case IMPACT -> presentation.effects.impact();
+            case IMPACT -> presentation.effects.impact(impactTick);
             case COMPLETE -> presentation.effects.complete();
             case PROGRESS -> presentation.effects.progress(finishedBands);
             case CANCEL -> {
@@ -124,42 +132,63 @@ public final class ProjectorDeploymentRenderer {
                 cameraZ,
                 hasModel ? presentation.mesh : null,
                 compileDeadline - System.nanoTime(),
-                hasModel ? (x, y, z) -> drawModels(presentation, x, y, z, cameraX, cameraY, cameraZ) : null);
+                hasModel ? (x, y, z) -> drawModels(presentation, x, y, z, cameraX, cameraY, cameraZ, 0, 0) : null,
+                hasModel && presentation.outlineModel != null
+                    ? (rgb, alpha) -> drawModels(presentation, 0, 0, 0, cameraX, cameraY, cameraZ, rgb, alpha)
+                    : null);
         }
     }
 
     private static void drawModels(Presentation presentation, double offsetX, double offsetY, double offsetZ,
-        double cameraX, double cameraY, double cameraZ) {
+        double cameraX, double cameraY, double cameraZ, int outlineRgb, int outlineAlpha) {
         ProjectorPlan plan = presentation.plan;
-        if (presentation.repeatedModel) {
+        ProjectorStructure shape = outlineAlpha == 0 ? presentation.model : presentation.outlineModel;
+        if (presentation.batch && shape == presentation.template) {
             ProjectorBatch.Layout layout = presentation.layout;
             for (int copy = 0; copy < plan.batch.machines(); copy++) {
                 var at = layout.placement(copy);
                 double x = plan.x + at.x() + offsetX, y = plan.y + at.y() + offsetY, z = plan.z + at.z() + offsetZ;
-                if (FxCamera.inView(new Vec3d(x, y, z), presentation.modelRadius))
-                    drawModel(presentation, at.facing(), x, y, z, cameraX, cameraY, cameraZ);
+                if (FxCamera.inView(new Vec3d(x, y, z), presentation.modelRadius)) drawModel(
+                    presentation,
+                    shape,
+                    at.facing(),
+                    x,
+                    y,
+                    z,
+                    cameraX,
+                    cameraY,
+                    cameraZ,
+                    outlineRgb,
+                    outlineAlpha);
             }
         } else {
             drawModel(
                 presentation,
+                shape,
                 plan.facing,
                 plan.x + offsetX,
                 plan.y + offsetY,
                 plan.z + offsetZ,
                 cameraX,
                 cameraY,
-                cameraZ);
+                cameraZ,
+                outlineRgb,
+                outlineAlpha);
         }
     }
 
-    private static void drawModel(Presentation presentation, ExtendedFacing facing, double x, double y, double z,
-        double cameraX, double cameraY, double cameraZ) {
+    private static void drawModel(Presentation presentation, ProjectorStructure shape, ExtendedFacing facing, double x,
+        double y, double z, double cameraX, double cameraY, double cameraZ, int outlineRgb, int outlineAlpha) {
         GL11.glPushMatrix();
         try {
             GL11.glTranslated(x - cameraX, y - cameraY, z - cameraZ);
-            boolean mirrored = ProjectorRenderer.applyFacing(presentation.model, facing);
-            GL11.glFrontFace(mirrored ? GL11.GL_CW : GL11.GL_CCW);
-            presentation.mesh.draw(ProjectorRenderer.sectionsInView(presentation.model, facing, x, y, z));
+            boolean mirrored = ProjectorRenderer.applyFacing(shape, facing);
+            if (outlineAlpha > 0) {
+                presentation.drawOutline(outlineRgb, outlineAlpha);
+            } else {
+                GL11.glFrontFace(mirrored ? GL11.GL_CW : GL11.GL_CCW);
+                presentation.mesh.draw(ProjectorRenderer.sectionsInView(shape, facing, x, y, z));
+            }
         } finally {
             GL11.glPopMatrix();
         }
@@ -172,16 +201,19 @@ public final class ProjectorDeploymentRenderer {
         private final boolean batch;
         private final FxStructureDeployment effects;
         private final ProjectorModelMesh mesh = new ProjectorModelMesh();
-        private ProjectorStructure template, model;
+        private ProjectorStructure template, model, outlineModel;
         private ProjectorBatch.Layout layout;
-        private boolean repeatedModel, unavailable;
+        private boolean unavailable;
+        private float[] outlineLines;
+        private int[] outlineBounds;
         private double modelRadius;
 
-        private Presentation(World world, StructureDeployment animation, ProjectorPlan plan, boolean batch) {
+        private Presentation(World world, StructureDeployment animation, ProjectorPlan plan, boolean batch,
+            Launch launch) {
             this.world = world;
             this.plan = plan;
             this.batch = batch;
-            effects = new FxStructureDeployment(world, plan.buildStyle, animation);
+            effects = new FxStructureDeployment(world, plan.buildStyle, animation, launch);
         }
 
         private void release() {
@@ -208,18 +240,52 @@ public final class ProjectorDeploymentRenderer {
                     unavailable = true;
                     return;
                 }
-                repeatedModel = (long) plan.batch.machines() * (template.size + template.emptyCells.length)
+                boolean repeated = (long) plan.batch.machines() * (template.size + template.emptyCells.length)
                     > FxBlockMesh.MAX_BLOCKS;
-                model = repeatedModel ? template : ProjectorBatchPreview.expand(template, plan, plan.facing, layout);
-                if (repeatedModel) {
-                    double x = Math.max(Math.abs(template.minA), Math.abs(template.maxA)) + 1;
-                    double y = Math.max(Math.abs(template.minB), Math.abs(template.maxB)) + 1;
-                    double z = Math.max(Math.abs(template.minC), Math.abs(template.maxC)) + 1;
-                    modelRadius = Math.sqrt(x * x + y * y + z * z);
-                }
+                model = repeated ? template : ProjectorBatchPreview.expand(template, plan, plan.facing, layout);
+                double x = Math.max(Math.abs(template.minA), Math.abs(template.maxA)) + 1;
+                double y = Math.max(Math.abs(template.minB), Math.abs(template.maxB)) + 1;
+                double z = Math.max(Math.abs(template.minC), Math.abs(template.maxC)) + 1;
+                modelRadius = Math.sqrt(x * x + y * y + z * z);
             }
             mesh.prepare(model);
+            if (plan.buildStyle == StructureDeploymentStyle.SINGULARITY && !model.isEmpty()) prepareOutline();
         }
 
+        private void prepareOutline() {
+            // Reuse a template for large batches instead of building edges across every copy at once.
+            outlineModel = batch && model.size > MAX_OUTLINE_BLOCKS ? template : model;
+            if (outlineModel.size > MAX_OUTLINE_BLOCKS) {
+                outlineBounds = outlineModel.worldBounds(outlineModel.canonical);
+                return;
+            }
+            int[][] points = outlineModel.simulationPositions();
+            var cells = new LongOpenHashSet(outlineModel.size);
+            for (int i = 0; i < outlineModel.size; i++) {
+                if (outlineModel.blocks[i] != Blocks.air)
+                    cells.add(FxVoxelOutline.pack(points[0][i], points[1][i], points[2][i]));
+            }
+            outlineLines = FxVoxelOutline.mergedLines(cells);
+        }
+
+        private void drawOutline(int rgb, int alpha) {
+            Tessellator tessellator = Tessellator.instance;
+            if (outlineLines != null) {
+                FxVoxelOutline.draw(tessellator, outlineLines, rgb, alpha);
+                return;
+            }
+            var shape = outlineModel;
+            tessellator.startDrawing(GL11.GL_LINES);
+            tessellator.setColorRGBA_I(rgb, alpha);
+            FxVoxelOutline.box(
+                tessellator,
+                shape.originX + outlineBounds[0],
+                shape.originY + outlineBounds[1],
+                shape.originZ + outlineBounds[2],
+                shape.originX + outlineBounds[3] + 1,
+                shape.originY + outlineBounds[4] + 1,
+                shape.originZ + outlineBounds[5] + 1);
+            tessellator.draw();
+        }
     }
 }

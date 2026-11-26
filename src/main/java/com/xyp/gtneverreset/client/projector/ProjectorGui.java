@@ -420,6 +420,10 @@ public class ProjectorGui extends ModularPanel {
             // # None
             // # zh_CN 无动画
             case NONE -> LANG + "build_style_none";
+            // #tr gtneverreset.projector.gui.build_style_singularity
+            // # Singularity Warp
+            // # zh_CN 奇点跃迁
+            case SINGULARITY -> LANG + "build_style_singularity";
         });
     }
 
