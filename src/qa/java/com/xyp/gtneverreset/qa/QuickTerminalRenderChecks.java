@@ -25,6 +25,7 @@ import net.minecraft.world.WorldType;
 
 import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
+import com.xyp.gtneverreset.common.packet.InterfacePatternTarget;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
@@ -35,6 +36,7 @@ import appeng.api.implementations.tiles.IWirelessAccessPoint;
 import appeng.client.gui.AEBaseGui;
 import appeng.client.gui.IInterfaceTerminalPostUpdate;
 import appeng.client.gui.implementations.GuiInterfaceTerminal;
+import appeng.client.gui.widgets.GuiScrollbar;
 import appeng.client.gui.widgets.MEGuiTextField;
 import appeng.container.implementations.ContainerInterfaceTerminal;
 import appeng.core.AEConfig;
@@ -58,12 +60,16 @@ import gregtech.api.metatileentity.BaseMetaTileEntity;
     dependencies = "after:gtneverreset")
 public final class QuickTerminalRenderChecks {
 
+    private static final int SCROLL_MODE = 8;
+    private static final int SCROLL_ENTRIES = 48;
+    private static final int SLOTS_PER_ROW = 9;
     private static SuperMTEHatchCraftingInputME provider;
     private volatile List<List<PacketEntry>> updates;
     private volatile Throwable failure;
     private boolean launched, checked, finished;
     private int ticks, networkTicks, step, frames;
     private int mode = Integer.getInteger("gtnr.quick.terminal.render.mode", 0);
+    private int bottomScroll;
     private AEBaseGui gui;
 
     @Mod.EventHandler
@@ -208,12 +214,21 @@ public final class QuickTerminalRenderChecks {
         return field;
     }
 
+    private static Method method(Class<?> type, String name, Class<?>... parameters) throws Exception {
+        Method method = type.getDeclaredMethod(name, parameters);
+        method.setAccessible(true);
+        return method;
+    }
+
     @SubscribeEvent
     public void client(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END || finished) return;
         Minecraft mc = Minecraft.getMinecraft();
         try {
-            if (!launched && mc.currentScreen instanceof GuiMainMenu) {
+            if (!launched && mc.currentScreen != null
+                && (mc.currentScreen instanceof GuiMainMenu || mc.currentScreen.getClass()
+                    .getName()
+                    .equals("galaxyspace.core.gui.GSGuiMainMenu"))) {
                 launched = true;
                 mc.launchIntegratedServer(
                     "terminal-" + System.currentTimeMillis(),
@@ -226,7 +241,8 @@ public final class QuickTerminalRenderChecks {
             if (updates == null) return;
             if (gui == null) {
                 AEConfig.instance.showOnlyInterfacesWithFreeSlotsInInterfaceTerminal = mode == 1 || mode == 5;
-                gui = mode >= 6 ? new GuiInterfaceTerminal(mc.thePlayer.inventory, terminal(mc.thePlayer))
+                gui = mode >= 6 && mode != SCROLL_MODE
+                    ? new GuiInterfaceTerminal(mc.thePlayer.inventory, terminal(mc.thePlayer))
                     : new QuickEncodingTerminalGui(mc.thePlayer.inventory, terminal(mc.thePlayer));
                 mc.displayGuiScreen(gui);
                 if (gui instanceof QuickEncodingTerminalGui) {
@@ -239,7 +255,7 @@ public final class QuickTerminalRenderChecks {
                     search.setAccessible(true);
                     search.invoke(embedded, "QA");
                 }
-                if (mode >= 3) {
+                if (mode >= 3 && mode != SCROLL_MODE) {
                     Object embedded = interfaceGui();
                     var search = (MEGuiTextField) field(
                         GuiInterfaceTerminal.class,
@@ -249,6 +265,10 @@ public final class QuickTerminalRenderChecks {
             }
             if (++frames < 8) return;
             frames = 0;
+            if (mode == SCROLL_MODE) {
+                checkScrolledPatterns();
+                return;
+            }
             if (step == 10) screenshot("expanded-" + mode);
             if (step < updates.size()) {
                 Object embedded = interfaceGui();
@@ -266,13 +286,94 @@ public final class QuickTerminalRenderChecks {
             }
             screenshot("empty-" + mode);
             System.out.println("[quick-terminal-render-qa] PASS render sequence mode=" + mode);
-            if (++mode < 8) {
+            if (++mode <= SCROLL_MODE) {
                 mc.displayGuiScreen(null);
                 gui = null;
                 step = 0;
             } else finish(null);
         } catch (Throwable error) {
             finish(error);
+        }
+    }
+
+    private void checkScrolledPatterns() throws Exception {
+        Object embedded = interfaceGui();
+        Class<?> type = embedded.getClass();
+        var scrollbar = (GuiScrollbar) method(AEBaseGui.class, "getScrollBar").invoke(embedded);
+        int left = (int) method(type, "left").invoke(embedded);
+        int top = (int) method(type, "top").invoke(embedded) + GuiInterfaceTerminal.HEADER_HEIGHT;
+        int height = field(GuiInterfaceTerminal.class, "viewHeight").getInt(embedded);
+        int slotX = left + GuiInterfaceTerminal.VIEW_LEFT + GuiInterfaceTerminal.VIEW_WIDTH - SLOTS_PER_ROW * 18 + 6;
+        int firstRowY = top + 18;
+        int bottomRowY = top + height - 12;
+        var terminal = (IInterfaceTerminalPostUpdate) gui;
+        switch (step++) {
+            case 0 -> {
+                for (String name : new String[] { "searchFieldInputs", "searchFieldNames" }) {
+                    ((MEGuiTextField) field(GuiInterfaceTerminal.class, name).get(embedded)).setText("");
+                }
+                var search = (MEGuiTextField) field(GuiInterfaceTerminal.class, "searchFieldOutputs").get(embedded);
+                search.setText(new ItemStack(Items.stick).getDisplayName());
+                var packet = new PacketInterfaceTerminalUpdate();
+                for (int id = 1; id <= SCROLL_ENTRIES; id++) {
+                    var items = new NBTTagList();
+                    items.appendTag(pattern(id).writeToNBT(new NBTTagCompound()));
+                    for (int slot = 1; slot < SLOTS_PER_ROW; slot++) items.appendTag(new NBTTagCompound());
+                    packet.addNewEntry(id, "QA Scroll " + id, true)
+                        .setTerminalVisible(true)
+                        .setSupportedStackTypes(provider.getSupportedStackTypes())
+                        .setItems(1, SLOTS_PER_ROW, SLOTS_PER_ROW, items);
+                }
+                terminal.postUpdate(commands(packet), PacketInterfaceTerminalUpdate.CLEAR_ALL_BIT);
+            }
+            case 1 -> {
+                assertPatternTarget(embedded, slotX, firstRowY, 1);
+                Method wheel = method(
+                    QuickEncodingTerminalGui.class,
+                    "mouseWheelEvent",
+                    int.class,
+                    int.class,
+                    int.class);
+                // Scroll 624 px so the twenty-first section's slot overlaps the first section's old hit box.
+                for (int i = 0; i < 52; i++) wheel.invoke(gui, slotX, firstRowY, -120);
+            }
+            case 2 -> {
+                assertPatternTarget(embedded, slotX, firstRowY, 21);
+                screenshot("scroll-target");
+                scrollbar.setCurrentScroll(Integer.MAX_VALUE);
+                bottomScroll = scrollbar.getCurrentScroll();
+            }
+            case 3 -> {
+                assertPatternTarget(embedded, slotX, bottomRowY, SCROLL_ENTRIES);
+                method(type, "freezeSearchResults").invoke(embedded);
+                var packet = new PacketInterfaceTerminalUpdate();
+                var items = new NBTTagList();
+                items.appendTag(new NBTTagCompound());
+                packet.addOverwriteEntry(SCROLL_ENTRIES)
+                    .setItems(new int[] { 0 }, items);
+                terminal.postUpdate(commands(packet), 0);
+                if (scrollbar.getCurrentScroll() != bottomScroll) {
+                    throw new AssertionError(
+                        "Removing the last matching pattern moved the interface scrollbar from " + bottomScroll
+                            + " to "
+                            + scrollbar.getCurrentScroll());
+                }
+            }
+            case 4 -> {
+                assertPatternTarget(embedded, slotX, bottomRowY, SCROLL_ENTRIES);
+                screenshot("scroll-after-pattern-removal");
+                System.out.println("[quick-terminal-render-qa] PASS scrolled pattern targets and scroll retention");
+                finish(null);
+            }
+        }
+    }
+
+    private static void assertPatternTarget(Object embedded, int x, int y, long expectedEntry) throws Exception {
+        var target = (InterfacePatternTarget) method(embedded.getClass(), "patternSlotAt", int.class, int.class)
+            .invoke(embedded, x, y);
+        if (target == null || target.getEntryId() != expectedEntry || target.getSlot() != 0) {
+            String actual = target == null ? "none" : target.getEntryId() + " slot " + target.getSlot();
+            throw new AssertionError("Expected interface " + expectedEntry + " slot 0, got " + actual);
         }
     }
 

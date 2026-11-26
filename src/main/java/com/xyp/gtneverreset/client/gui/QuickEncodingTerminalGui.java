@@ -2158,8 +2158,13 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm
                     rename.suffix = normalizeSuffix(rename.suffix);
                 }
             }
+            int scroll = getScrollBar().getCurrentScroll();
             super.postUpdate(updates, statusFlags);
-            if (restore && frozenSearchResults != null) frozenSearchResults.restore(this);
+            if (restore && frozenSearchResults != null) {
+                frozenSearchResults.restore(this);
+                // AE2 may have clamped the scroll against the briefly shortened search result.
+                getScrollBar().setCurrentScroll(scroll);
+            }
             entryHitBoxesDirty = true;
         }
 
@@ -2328,7 +2333,7 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm
         }
 
         private void drawHighlightedPatternSlot(int offsetX, int offsetY) {
-            if (highlightedEntry == null || highlightedTarget == null) return;
+            if (highlightedEntry == null || highlightedTarget == null || !isEntryInViewport(highlightedEntry)) return;
             IInventory inventory = entryInventory(highlightedEntry);
             int targetSlot = highlightedTarget.getSlot();
             if (inventory == null || targetSlot < 0 || targetSlot >= inventory.getSizeInventory()) return;
@@ -2393,9 +2398,7 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm
             Object value = objectField(masterList, ENTRIES_BY_ID);
             if (!(value instanceof Map<?, ?>entries)) return false;
             for (Object entry : entries.values()) {
-                cacheEntryFields(entry);
-                Object section = objectField(entry, entrySection);
-                if (section == null || !readBooleanField(section, sectionVisible, false)) continue;
+                if (!isEntryInViewport(entry)) continue;
                 Object optionValue = objectField(entry, entryOptionsButton);
                 if (!(optionValue instanceof GuiButton option) || option.yPosition < 0) continue;
                 if (relativeX < option.xPosition || relativeX >= option.xPosition + option.width
@@ -2765,16 +2768,16 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm
             if (!isInsideViewport(mouseX, mouseY)) return null;
             Object masterList = objectField(this, MASTER_LIST);
             if (masterList == null) return null;
-            // AE2's hoveredEntry can still name a slot from the previous frame after an entry is hidden.
-            // Resolve the click against the current filtered section list instead.
-            int relativeX = mouseX - guiLeft - 10;
-            int relativeY = mouseY - guiTop - 52;
+            // AE2 can keep the previous coordinates of entries in sections skipped during drawing.
+            int relativeX = mouseX - guiLeft - VIEWPORT_LEFT;
+            int relativeY = mouseY - guiTop - VIEWPORT_TOP;
 
             try {
                 Method visibleSections = masterList.getClass()
                     .getDeclaredMethod("getVisibleSections");
                 visibleSections.setAccessible(true);
                 for (Object section : (List<?>) visibleSections.invoke(masterList)) {
+                    if (!readBooleanField(section, sectionVisible, false)) continue;
                     Method visibleEntries = section.getClass()
                         .getDeclaredMethod("getVisible");
                     visibleEntries.setAccessible(true);
@@ -2786,7 +2789,7 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm
                         int displayY = intField(entry, "dispY", -9999);
                         if (rowSize <= 0 || numSlots <= 0 || displayY <= -9000) continue;
 
-                        int offsetX = relativeX - (174 - rowSize * 18) - 1;
+                        int offsetX = relativeX - (VIEWPORT_WIDTH - rowSize * 18) - 1;
                         int offsetY = relativeY - displayY - 1;
                         if (offsetX < 0 || offsetX >= rowSize * 18 || offsetY < 0) continue;
                         int slot = ((InterfacePatternRows) entry)
@@ -2840,6 +2843,12 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm
             } catch (IllegalAccessException ignored) {
                 return fallback;
             }
+        }
+
+        private static boolean isEntryInViewport(Object entry) {
+            cacheEntryFields(entry);
+            Object section = objectField(entry, entrySection);
+            return section != null && readBooleanField(section, sectionVisible, false);
         }
 
         private static void cacheEntryFields(Object entry) {
