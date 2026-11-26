@@ -92,6 +92,10 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("gregtech.AutoStructureTooltipMixin");
             mixins.add("gregtech.PatternInputHatchElementMixin");
             mixins.add("gregtech.PatternRecipeProcessingMixin");
+            if (LateMixinsLoader.class.getResource("/gregtech/api/util/LongFluidStack.class") == null) {
+                mixins.add("gregtech.StockingHatchRecipeMixin");
+                mixins.add("gregtech.StockingHatchRecipeLockMixin");
+            }
             mixins.add("gregtech.PatternInputFallbackMixin");
             mixins.add("gregtech.RecipeLookupMixin");
             mixins.add("gregtech.MultiblockProcessingAccessor");

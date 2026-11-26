@@ -12,6 +12,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputBus;
+import com.xyp.gtnrlib.utils.LongMath;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
@@ -80,7 +81,7 @@ public final class RecipeThreadInputPreflight {
                 IEnergyGrid grid = proxy.getEnergy();
                 for (FluidStack stack : stocking.getStoredFluids()) {
                     if (stack == null || !seenFluids.add(stack)) continue;
-                    int amount = logic.getPlannedConsumption(stack);
+                    long amount = logic.getPlannedConsumption(stack);
                     if (amount <= 0) continue;
                     if (!(stocking.getBaseMetaTileEntity() instanceof IActionHost host))
                         return CheckRecipeResultRegistry.INTERNAL_ERROR;
@@ -147,7 +148,7 @@ public final class RecipeThreadInputPreflight {
             Map<IEnergyGrid, Long> energy, boolean fluid) {
             T stock = inventory.extractItems(stack.copy(), Actionable.SIMULATE, source);
             if (stock == null || stock.getStackSize() != stack.getStackSize()) return stockUnavailable(fluid);
-            long units = (stack.getStackSize() + stack.getAmountPerUnit() - 1) / stack.getAmountPerUnit();
+            long units = LongMath.ceilDiv(stack.getStackSize(), stack.getAmountPerUnit());
             double power = grid.extractAEPower(units, Actionable.SIMULATE, PowerMultiplier.CONFIG);
             // Match Platform.poweredExtraction's conversion from AE power to extractable units.
             if ((long) (power * stack.getAmountPerUnit() + 0.9) < stack.getStackSize()) return energyUnavailable();

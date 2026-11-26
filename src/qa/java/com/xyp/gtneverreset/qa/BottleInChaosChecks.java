@@ -40,6 +40,7 @@ import com.xyp.gtneverreset.common.machine.hatch.ChaosCredentialHatch;
 import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.ChaosLongInputMachineBase.FluidStackLong;
 import com.xyp.gtneverreset.common.machine.multiblock.BottleInChaos;
+import com.xyp.gtneverreset.common.machine.multiblock.UniversalJointFactory;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
@@ -59,10 +60,14 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.GregTechAPI;
+import gregtech.api.enums.GTValues;
+import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.metatileentity.implementations.*;
 import gregtech.api.recipe.RecipeMap;
+import gregtech.api.recipe.RecipeMaps;
+import gregtech.common.tileentities.machines.multi.MTEMegaChemicalReactor;
 import io.netty.buffer.Unpooled;
 
 @Mod(modid = "bottleinchaosqa", name = "Bottle in Chaos QA", version = "1", dependencies = "after:gtneverreset")
@@ -481,6 +486,125 @@ public final class BottleInChaosChecks {
         fluidHatch.setFixedMode(false);
     }
 
+    private void verifyStandardLongFluidExtraction() throws Exception {
+        int amountPerRecipe = 50_000_000;
+        int parallel = 60;
+        long consumed = (long) amountPerRecipe * parallel;
+        long stocked = 6_000_000_000L;
+        var world = tile.getWorldObj();
+        var reactorTile = place(
+            world,
+            32,
+            80,
+            0,
+            ItemList.MegaChemicalReactor.get(1)
+                .getItemDamage());
+        reactorTile.disableWorking();
+        var reactor = (MTEMegaChemicalReactor) reactorTile.getMetaTileEntity();
+        var inputs = place(
+            world,
+            33,
+            80,
+            0,
+            ItemList.Hatch_Input_Bus_LV.get(1)
+                .getItemDamage());
+        var outputs = place(
+            world,
+            34,
+            80,
+            0,
+            ItemList.Hatch_Output_Bus_LV.get(1)
+                .getItemDamage());
+        var power = place(
+            world,
+            35,
+            80,
+            0,
+            ItemList.Hatch_Energy_EV.get(1)
+                .getItemDamage());
+        require(
+            reactor.addInputHatchToMachineList(fluidHatch.getBaseMetaTileEntity(), 0)
+                && reactor.addInputBusToMachineList(inputs, 0)
+                && reactor.addOutputBusToMachineList(outputs, 0)
+                && reactor.addEnergyInputToMachineList(power, 0),
+            "native reactor accepts the real ME fluid input hatch and ordinary buses");
+
+        var factoryTile = place(world, 36, 80, 0, GTNRMachineID.UniversalJointFactory.id);
+        factoryTile.disableWorking();
+        var factory = (UniversalJointFactory) factoryTile.getMetaTileEntity();
+        factory.setMachineMode(UniversalJointFactory.RECIPE_MAPS.indexOf(RecipeMaps.multiblockChemicalReactorRecipes));
+        var factoryPower = place(
+            world,
+            37,
+            80,
+            0,
+            ItemList.Hatch_Energy_UV.get(1)
+                .getItemDamage());
+        require(
+            factory.addInputHatchToMachineList(fluidHatch.getBaseMetaTileEntity(), 0)
+                && factory.addInputBusToMachineList(inputs, 0)
+                && factory.addOutputBusToMachineList(outputs, 0)
+                && factory.addEnergyInputToMachineList(factoryPower, 0),
+            "universal factory accepts the same ME fluid input hatch and ordinary buses");
+
+        GTValues.RA.stdBuilder()
+            .itemInputs(new ItemStack(Items.poisonous_potato))
+            .fluidInputs(new FluidStack(FluidRegistry.WATER, amountPerRecipe))
+            .itemOutputs(new ItemStack(Items.golden_carrot))
+            .duration(40)
+            .eut(8)
+            .addTo(RecipeMaps.multiblockChemicalReactorRecipes);
+
+        reactor.setRecipeLocking(true);
+        var request = AEFluidStack.create(new FluidStack(FluidRegistry.WATER, 1));
+        var action = new BaseActionSource();
+        var storage = fluidHatch.getProxy()
+            .getStorage()
+            .getFluidInventory();
+        MTEMultiBlockBase[] controllers = { reactor, reactor, factory };
+        String[] passes = { "native recipe lock build", "native locked recipe", "universal factory recipe thread" };
+        for (int i = 0; i < controllers.length; i++) {
+            MTEMultiBlockBase controller = controllers[i];
+            String pass = passes[i];
+            long refill = stocked - fluidStock(storage, request, action);
+            require(
+                storage.injectItems(
+                    request.copy()
+                        .setStackSize(refill),
+                    Actionable.MODULATE,
+                    action) == null,
+                pass + " starts with refilled ME stock");
+            inputs.setInventorySlotContents(0, new ItemStack(Items.poisonous_potato, parallel));
+            controller.startRecipeProcessing();
+            try {
+                var result = controller.checkProcessing();
+                controller.setCheckRecipeResult(result);
+                require(result.wasSuccessful(), pass + " processes long fluid: " + result.getID());
+                if (controller == factory) {
+                    var tasks = factory.getRecipeThreadTasks();
+                    require(
+                        tasks.size() == 1 && tasks.get(0)
+                            .getParallels() == parallel,
+                        pass + " computes 60 parallels");
+                } else {
+                    int products = 0;
+                    for (ItemStack product : reactor.mOutputItems) {
+                        if (product.getItem() == Items.golden_carrot) products += product.stackSize;
+                    }
+                    require(products == parallel, pass + " computes all 60 parallel products");
+                    require(reactor.getSingleRecipeCheck() != null, pass + " retains the single-recipe lock");
+                }
+                require(fluidStock(storage, request, action) == stocked, pass + " defers the ME debit");
+            } finally {
+                controller.endRecipeProcessing();
+            }
+            require(
+                controller.getCheckRecipeResult()
+                    .wasSuccessful() && fluidStock(storage, request, action) == stocked - consumed,
+                pass + " commits exactly three billion mB");
+        }
+    }
+
     private static long fluidStock(IMEMonitor<IAEFluidStack> storage, IAEFluidStack request, BaseActionSource action) {
         var stock = storage.extractItems(
             request.copy()
@@ -543,6 +667,7 @@ public final class BottleInChaosChecks {
                 return;
             }
             verifyLongFluidExtraction();
+            verifyStandardLongFluidExtraction();
             longFluidVerified = true;
             processingTicks = 0;
             prepareLiveProcessing();

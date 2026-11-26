@@ -26,6 +26,7 @@ import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.common.gui.modularui.hatch.SuperAdvancedMEInputHatchGui;
 import com.xyp.gtneverreset.common.me.ChaosStorageCellInputs.InputSource;
+import com.xyp.gtneverreset.common.me.MERecipeFluidStack;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
@@ -331,7 +332,11 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
             fixedMode);
         fluidOffers[index] = offered;
         int amount = (int) Math.min(Integer.MAX_VALUE, offered);
-        slot.extracted = amount == 0 ? null : GTUtility.copyAmount(amount, slot.config);
+        if (processingRecipe && offered > Integer.MAX_VALUE) {
+            slot.extracted = new MERecipeFluidStack(slot.config, offered);
+        } else {
+            slot.extracted = amount == 0 ? null : GTUtility.copyAmount(amount, slot.config);
+        }
         slot.extractedAmount = amount;
     }
 
@@ -410,18 +415,15 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
             for (int i = 0; i < SLOT_COUNT; i++) {
                 Slot slot = slots[i];
                 if (slot == null || slot.extracted == null) continue;
-                int consumed = slot.extractedAmount - slot.extracted.amount;
+                boolean longInput = slot.extracted instanceof MERecipeFluidStack;
+                long remaining = MERecipeFluidStack.getAmount(slot.extracted);
+                long consumed = (longInput ? fluidOffers[i] : slot.extractedAmount) - remaining;
+                fluidOffers[i] = remaining;
                 slot.extractedAmount = slot.extracted.amount;
                 if (consumed <= 0) continue;
                 // Another hatch may have consumed stock since the simulation. Recheck the reserve at commit.
-                if (availableAmount(i, available(inventory, slot.config)) < consumed) {
-                    result = extractionFailed(controller);
-                    break;
-                }
-                IAEFluidStack request = AEFluidStack.create(slot.config);
-                request.setStackSize(consumed);
-                IAEFluidStack extracted = Platform.poweredExtraction(energy, inventory, request, actionSource());
-                if (extracted == null || extracted.getStackSize() != consumed) {
+                if (getPolicy(i).offeredLong(available(inventory, slot.config), limitedMode, fixedMode) < consumed
+                    || extractFluid(inventory, energy, slot.config, consumed, longInput) != consumed) {
                     result = extractionFailed(controller);
                     break;
                 }
@@ -478,17 +480,24 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
                 .getFluidInventory();
             if (getPolicy(index).offeredLong(available(inventory, slot.config), limitedMode, fixedMode) < amount)
                 return 0;
-            var energy = getProxy().getEnergy();
-            IAEFluidStack request = AEFluidStack.create(slot.config);
-            request.setStackSize(amount);
-            var simulated = Platform.poweredExtraction(energy, inventory, request, actionSource(), Actionable.SIMULATE);
-            if (simulated == null || simulated.getStackSize() != amount) return 0;
             // The reservation debits ME directly. The legacy snapshot stays intact for endRecipeProcessing.
-            var extracted = Platform.poweredExtraction(energy, inventory, request, actionSource());
-            return extracted == null ? 0 : extracted.getStackSize();
+            return extractFluid(inventory, getProxy().getEnergy(), slot.config, amount, true);
         } catch (GridAccessException ignored) {
             return 0;
         }
+    }
+
+    private long extractFluid(IMEMonitor<IAEFluidStack> inventory, IEnergyGrid energy, FluidStack fluid, long amount,
+        boolean preflight) {
+        IAEFluidStack request = AEFluidStack.create(fluid);
+        if (amount > Long.MAX_VALUE - request.getAmountPerUnit()) return 0;
+        request.setStackSize(amount);
+        if (preflight) {
+            var simulated = Platform.poweredExtraction(energy, inventory, request, actionSource(), Actionable.SIMULATE);
+            if (simulated == null || simulated.getStackSize() != amount) return 0;
+        }
+        var extracted = Platform.poweredExtraction(energy, inventory, request, actionSource());
+        return extracted == null ? 0 : extracted.getStackSize();
     }
 
     private boolean canExtractLongFluid(IGrid network, int index, Slot slot) throws GridAccessException {
