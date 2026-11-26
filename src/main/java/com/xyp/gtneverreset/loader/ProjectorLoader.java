@@ -9,6 +9,7 @@ import com.xyp.gtneverreset.client.projector.ProjectorInput;
 import com.xyp.gtneverreset.common.command.ProjectorSimulationCommand;
 import com.xyp.gtneverreset.common.projector.ProjectorBuildMaterials;
 import com.xyp.gtneverreset.common.projector.ProjectorBuilder;
+import com.xyp.gtneverreset.common.projector.ProjectorMaterialCrafting;
 import com.xyp.gtneverreset.common.projector.ProjectorSimulation;
 import com.xyp.gtneverreset.common.projector.ProjectorSimulationWorld;
 import com.xyp.gtneverreset.config.ToolsConfig;
@@ -31,6 +32,9 @@ public class ProjectorLoader implements IContentLoader {
         FMLCommonHandler.instance()
             .bus()
             .register(ProjectorBuilder.INSTANCE);
+        FMLCommonHandler.instance()
+            .bus()
+            .register(ProjectorMaterialCrafting.INSTANCE);
         MinecraftForge.EVENT_BUS.register(new ProjectorSimulation.Visits());
         GregTechAPI.addDummyWorld(ProjectorSimulationWorld.class);
     }
@@ -38,6 +42,7 @@ public class ProjectorLoader implements IContentLoader {
     @Override
     public void serverStopping() {
         ProjectorBuilder.INSTANCE.clear();
+        ProjectorMaterialCrafting.INSTANCE.clear();
     }
 
     @Override

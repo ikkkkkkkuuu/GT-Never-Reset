@@ -4,10 +4,12 @@ gradle.projectsEvaluated {
     root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
     def fixture = root.hasProperty('projectorFormationChecks') ? 'ProjectorFormationChecks' : root.hasProperty('projectorBatchHatchChecks') ? 'ProjectorBatchHatchChecks' : root.hasProperty('projectorSurvivalChecks') ? 'ProjectorSurvivalChecks' : root.hasProperty('projectorMirrorChecks') ? 'ProjectorMirrorChecks' : 'ProjectorCreativeChecks'
     if (root.hasProperty('projectorDeploymentChecks')) fixture = 'ProjectorDeploymentChecks'
+    def materialCrafting = root.hasProperty('projectorMaterialCraftingChecks')
+    if (materialCrafting) fixture = 'ProjectorSurvivalChecks'
     root.spotless.java { target root.file("src/qa/java/com/xyp/gtneverreset/qa/${fixture}.java") }
     def crossDimension = Boolean.getBoolean('gtnr.projector.crossDimensionQa')
     def baseline = crossDimension && Boolean.getBoolean('gtnr.projector.crossDimensionBaseline')
-    def directoryName = crossDimension ? (baseline ? 'projector-cross-dimension-baseline' : 'projector-cross-dimension-qa') : 'projector-creative-qa'
+    def directoryName = materialCrafting ? 'projector-material-crafting-qa' : crossDimension ? (baseline ? 'projector-cross-dimension-baseline' : 'projector-cross-dimension-qa') : 'projector-creative-qa'
     def marker = 'gtnr.projector.creative.qa'
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
 
@@ -30,6 +32,7 @@ gradle.projectsEvaluated {
         classpath += root.files(qaDirectory.map { it.dir('classes') })
         workingDir root.file("build/${directoryName}/run")
         systemProperty marker, 'true'
+        systemProperty 'gtnr.projector.materialCraftingQa', materialCrafting
         systemProperty 'gtnr.projector.crossDimensionQa', crossDimension
         systemProperty 'gtnr.projector.crossDimensionBaseline', baseline
         systemProperty 'java.security.manager', 'allow'

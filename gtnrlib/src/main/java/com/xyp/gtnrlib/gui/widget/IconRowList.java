@@ -540,8 +540,7 @@ public class IconRowList extends ParentWidget<IconRowList> implements Interactab
                 GuiDraw.drawRect(left, top, rowRight - left, rowHeight, look.hover());
             int textLeft = left + 3;
             if (row.icon != null) {
-                new ItemDrawable(row.icon)
-                    .draw(context, left + 1, top + (rowHeight - ICON) / 2, ICON, ICON, widgetTheme.getTheme());
+                drawItemIcon(context, widgetTheme, row, left + 1, top + (rowHeight - ICON) / 2);
                 textLeft = left + 19;
             }
             int right = textRight;
@@ -564,6 +563,10 @@ public class IconRowList extends ParentWidget<IconRowList> implements Interactab
             else font.drawString(text, textLeft, textY, textColor, shadow);
         }
         GL11.glColor4f(1f, 1f, 1f, 1f);
+    }
+
+    protected void drawItemIcon(ModularGuiContext context, WidgetThemeEntry<?> theme, Row row, int x, int y) {
+        new ItemDrawable(row.icon()).draw(context, x, y, ICON, ICON, theme.getTheme());
     }
 
     // Set through a call so that other mods read the marker colors at run time instead of compiling their values in.
