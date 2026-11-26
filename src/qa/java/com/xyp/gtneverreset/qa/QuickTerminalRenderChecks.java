@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
@@ -22,7 +24,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
+import net.minecraftforge.client.event.GuiScreenEvent;
+import net.minecraftforge.common.MinecraftForge;
 
+import com.glodblock.github.loader.ItemAndBlockHolder;
 import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.packet.InterfacePatternTarget;
@@ -33,9 +38,11 @@ import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import appeng.api.AEApi;
 import appeng.api.features.IWirelessTermHandler;
 import appeng.api.implementations.tiles.IWirelessAccessPoint;
+import appeng.api.storage.ITerminalHost;
 import appeng.client.gui.AEBaseGui;
 import appeng.client.gui.IInterfaceTerminalPostUpdate;
 import appeng.client.gui.implementations.GuiInterfaceTerminal;
+import appeng.client.gui.implementations.GuiPatternTerm;
 import appeng.client.gui.widgets.GuiScrollbar;
 import appeng.client.gui.widgets.MEGuiTextField;
 import appeng.container.implementations.ContainerInterfaceTerminal;
@@ -46,8 +53,10 @@ import appeng.helpers.InventoryAction;
 import appeng.helpers.WirelessTerminalGuiObject;
 import appeng.tile.networking.TileCreativeEnergyCell;
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.GregTechAPI;
@@ -63,6 +72,8 @@ public final class QuickTerminalRenderChecks {
     private static final int SCROLL_MODE = 8;
     private static final int SCROLL_ENTRIES = 48;
     private static final int SLOTS_PER_ROW = 9;
+    private static final boolean NEO_ECO_QA = Boolean.getBoolean("gtnr.quick.terminal.neoeco.qa");
+    private static final String NEO_ECO_UPLOAD_BUTTON = "cn.dancingsnow.neoecoae.platform.ui.upload.PatternUploadButton";
     private static SuperMTEHatchCraftingInputME provider;
     private volatile List<List<PacketEntry>> updates;
     private volatile Throwable failure;
@@ -71,17 +82,26 @@ public final class QuickTerminalRenderChecks {
     private int mode = Integer.getInteger("gtnr.quick.terminal.render.mode", 0);
     private int bottomScroll;
     private AEBaseGui gui;
+    private List<GuiButton> neoEcoButtonsBeforeFiltering;
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         FMLCommonHandler.instance()
             .bus()
             .register(this);
+        if (NEO_ECO_QA) MinecraftForge.EVENT_BUS.register(this);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public void captureUploadButtons(GuiScreenEvent.InitGuiEvent.Post event) {
+        if (event.gui instanceof GuiPatternTerm) {
+            neoEcoButtonsBeforeFiltering = uploadButtons(event.buttonList);
+        }
     }
 
     @SubscribeEvent
     public void server(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || checked || !GregTechAPI.sFullLoadFinished) return;
+        if (NEO_ECO_QA || event.phase != TickEvent.Phase.END || checked || !GregTechAPI.sFullLoadFinished) return;
         var players = MinecraftServer.getServer()
             .getConfigurationManager().playerEntityList;
         if (players.isEmpty()) return;
@@ -238,6 +258,13 @@ public final class QuickTerminalRenderChecks {
             if (failure != null) throw new AssertionError("Server checks failed", failure);
             if (mc.thePlayer == null) return;
             if (++ticks > 1800) throw new AssertionError("QA timeout");
+            if (NEO_ECO_QA) {
+                if (++frames >= 8) {
+                    frames = 0;
+                    checkNeoEcoUploadButtons(mc);
+                }
+                return;
+            }
             if (updates == null) return;
             if (gui == null) {
                 AEConfig.instance.showOnlyInterfacesWithFreeSlotsInInterfaceTerminal = mode == 1 || mode == 5;
@@ -375,6 +402,61 @@ public final class QuickTerminalRenderChecks {
             String actual = target == null ? "none" : target.getEntryId() + " slot " + target.getSlot();
             throw new AssertionError("Expected interface " + expectedEntry + " slot 0, got " + actual);
         }
+    }
+
+    private void checkNeoEcoUploadButtons(Minecraft minecraft) throws Exception {
+        EntityPlayer player = minecraft.thePlayer;
+        neoEcoButtonsBeforeFiltering = null;
+        boolean combined = step == 1 || step == 2;
+        switch (step) {
+            case 0, 3 -> {
+                if (!Loader.isModLoaded("neoecoae")) throw new AssertionError("Neo ECO dev JAR did not load");
+                if (step == 3) screenshot("neoeco-combined-wireless");
+                var item = ItemAndBlockHolder.WIRELESS_PATTERN_TERM;
+                var stack = new ItemStack(item);
+                stack.setTagCompound(new NBTTagCompound());
+                player.inventory.setInventorySlotContents(0, stack);
+                var host = (ITerminalHost) item.getGuiObject(stack, player.worldObj, player, 0, 1, 0);
+                gui = new GuiPatternTerm(player.inventory, host);
+                minecraft.displayGuiScreen(gui);
+            }
+            case 1 -> {
+                screenshot("neoeco-original-wireless");
+                gui = new QuickEncodingTerminalGui(player.inventory, terminal(player));
+                minecraft.displayGuiScreen(gui);
+                field(QuickEncodingTerminalGui.class, "pendingPinRefresh").setBoolean(gui, false);
+            }
+            case 2 -> {
+                gui.setWorldAndResolution(minecraft, gui.width, gui.height);
+                field(QuickEncodingTerminalGui.class, "pendingPinRefresh").setBoolean(gui, false);
+            }
+            case 4 -> {
+                finish(null);
+                return;
+            }
+        }
+        if (neoEcoButtonsBeforeFiltering == null || neoEcoButtonsBeforeFiltering.size() != 2) {
+            throw new AssertionError("Neo ECO did not create both upload buttons at step " + step);
+        }
+        List<GuiButton> remaining = uploadButtons((List<?>) field(GuiScreen.class, "buttonList").get(gui));
+        if (remaining.size() != (combined ? 0 : 2) || neoEcoButtonsBeforeFiltering.stream()
+            .anyMatch(button -> button.visible == combined)) {
+            throw new AssertionError("Unexpected upload button availability at step " + step);
+        }
+        System.out.println("[neoeco-terminal-buttons-qa] PASS step=" + step + " buttons=" + remaining.size());
+        step++;
+    }
+
+    private static List<GuiButton> uploadButtons(List<?> buttons) {
+        var upload = new ArrayList<GuiButton>();
+        for (Object button : buttons) {
+            if (button instanceof GuiButton guiButton && guiButton.getClass()
+                .getName()
+                .equals(NEO_ECO_UPLOAD_BUTTON)) {
+                upload.add(guiButton);
+            }
+        }
+        return upload;
     }
 
     private Object interfaceGui() throws Exception {

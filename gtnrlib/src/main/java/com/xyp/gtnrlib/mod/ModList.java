@@ -55,6 +55,7 @@ public enum ModList implements IMod, ITargetMod {
     NHUtilities("NHUtilities", "NH-Utilities", "com.xir.NHUtilities.main.NHUtilitiesCore"),
     AE2Thing("ae2thing", "AE2 Things"),
     AE2ConvenienceFeatures(ModIds.AE2_CONVENIENCE_FEATURES, "AE2 Convenience Features", false),
+    NeoEcoAEExtension("neoecoae", "Neo ECO AE Extension", false),
     QzMiner("qz_miner", "Qz Miner", false),
     OTHTechnology("123Technology", "123Technology"),
     Baubles("Baubles", "Baubles", false),

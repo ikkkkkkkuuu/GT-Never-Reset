@@ -25,6 +25,7 @@ import com.xyp.gtneverreset.compat.betterquesting.QuestSkipMenu;
 import com.xyp.gtneverreset.compat.bloodmagic.BloodMagicCompat;
 import com.xyp.gtneverreset.compat.nei.NEIWirelessTerminalConfig;
 import com.xyp.gtneverreset.compat.nei.WildcardRecipeImport;
+import com.xyp.gtneverreset.compat.neoecoae.NeoEcoPatternUploadCompat;
 import com.xyp.gtneverreset.compat.thaumcraft.ThaumcraftCompat;
 import com.xyp.gtneverreset.config.ChaosConfig;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
@@ -80,6 +81,9 @@ public final class ClientLoader {
             .bus()
             .register(WirelessMonitorHud.INSTANCE);
         MinecraftForge.EVENT_BUS.register(new WildcardRecipeImport());
+        if (ModList.NeoEcoAEExtension.isModLoaded()) {
+            MinecraftForge.EVENT_BUS.register(new NeoEcoPatternUploadCompat());
+        }
         MinecraftForge.EVENT_BUS.register(WirelessWorldHighlightRender.INSTANCE);
         RecursivePatternReport.register();
         FMLCommonHandler.instance()
