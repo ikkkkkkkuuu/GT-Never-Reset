@@ -21,6 +21,8 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import org.lwjgl.opengl.GL11;
+
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
@@ -29,11 +31,14 @@ import com.cleanroommc.modularui.factory.inventory.InventoryTypes;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.RichTooltip;
+import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
+import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.BoolValue;
 import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
+import com.github.bsideup.jabel.Desugar;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.gui.ProjectorMaterialSync;
@@ -73,6 +78,7 @@ import com.xyp.gtnrlib.gui.widget.NumberEntryWidget;
 import com.xyp.gtnrlib.gui.widget.PageTabs;
 import com.xyp.gtnrlib.gui.widget.VerticalButtonBar;
 
+import appeng.util.item.AEItemStack;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
@@ -309,7 +315,7 @@ public class ProjectorGui extends ModularPanel {
         pages.child(onPage(machines.build(), MACHINES));
         pages.child(onPage(new ProjectorParameterTab(this).build(), PARAMETERS));
         pages.child(onPage(new ProjectorHatchTab(this).build(), HATCHES));
-        pages.child(onPage(new IconRowList(this::materialRows).sizeRel(1f), MATERIALS));
+        pages.child(onPage(materialsPage(), MATERIALS));
         pages.child(onPage(generationPage(), GENERATION));
         pages.child(onPage(batchPage(), BATCH));
         return column().size(RIGHT_WIDTH, BODY_HEIGHT)
@@ -350,6 +356,20 @@ public class ProjectorGui extends ModularPanel {
             tabs.tab(() -> TAB_ICONS[index], () -> StatCollector.translateToLocal(LANG + TAB_NAMES[index]));
         }
         child(tabs.pos(WIDTH - BODY_RIGHT - AE2Theme.PAGE_TAB_INSET, TABS_TOP));
+    }
+
+    private Widget<?> materialsPage() {
+        return column().size(RIGHT_WIDTH, PAGE_HEIGHT)
+            .childPadding(4)
+            .child(onPage(new MaterialList().size(RIGHT_WIDTH, PAGE_HEIGHT - BUTTON - 4), MATERIALS))
+            .child(
+                // #tr gtneverreset.projector.gui.craft_missing
+                // # Craft missing materials
+                // # zh_CN 一键合成
+                new AE2Button(() -> StatCollector.translateToLocal(LANG + "craft_missing"), this::craftMissingMaterials)
+                    .available(() -> canCraftMaterials(previewStructure()))
+                    .name("craft_missing_materials")
+                    .size(RIGHT_WIDTH, BUTTON));
     }
 
     private Widget<?> generationPage() {
@@ -852,6 +872,27 @@ public class ProjectorGui extends ModularPanel {
         }
     }
 
+    private void craftMissingMaterials() {
+        if (canCraftMaterials(previewStructure())) materialStock.craft(working);
+    }
+
+    private boolean canCraftMaterials(ProjectorStructure shape) {
+        if (shape == null || shape.isEmpty()
+            || !shape.settings.equals(working.settings())
+            || !shape.failure.isEmpty()
+            || !shape.limit.isEmpty()) return false;
+        if (shape instanceof ProjectorBatchPreview array && (array.outlineOnly || !array.compatible || array.limited))
+            return false;
+        List<Material> materials = shape.materials;
+        for (int i = 0; i < materials.size(); i++) {
+            if (!materialStock.isCraftable(materials, i)) continue;
+            int owned = materialStock.count(materials, i);
+            if (owned >= 0 && owned < materials.get(i)
+                .count()) return true;
+        }
+        return false;
+    }
+
     private List<Row> materialRows() {
         List<Row> rows = new ArrayList<>();
         ProjectorStructure structure = previewStructure();
@@ -876,7 +917,8 @@ public class ProjectorGui extends ModularPanel {
                     stack,
                     stack.getDisplayName(),
                     (owned < 0 ? "…" : Integer.toString(owned)) + "/" + material.count(),
-                    owned < 0 ? muted : owned >= material.count() ? IconRowList.GOOD : IconRowList.BAD));
+                    owned < 0 ? muted : owned >= material.count() ? IconRowList.GOOD : IconRowList.BAD)
+                    .withKey(new MaterialRow(i, materialStock.isCraftable(structure.materials, i))));
         }
         return rows;
     }
@@ -1092,4 +1134,33 @@ public class ProjectorGui extends ModularPanel {
         return structure.items[cell] == null ? structure.blocks[cell].getLocalizedName()
             : structure.items[cell].getDisplayName();
     }
+
+    @Desugar
+    private record MaterialRow(int index, boolean craftable) {}
+
+    private final class MaterialList extends IconRowList {
+
+        private MaterialList() {
+            super(ProjectorGui.this::materialRows);
+        }
+
+        @Override
+        protected void drawItemIcon(ModularGuiContext context, WidgetThemeEntry<?> theme, Row row, int x, int y) {
+            super.drawItemIcon(context, theme, row, x, y);
+            if (!(row.key() instanceof MaterialRow material) || !material.craftable()) return;
+            var overlay = AEItemStack.create(row.icon());
+            if (overlay == null) return;
+            GL11.glPushMatrix();
+            GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT);
+            try {
+                overlay.setStackSize(1)
+                    .setCraftable(true)
+                    .drawOverlayInGui(Minecraft.getMinecraft(), x, y, false, false, true, true);
+            } finally {
+                GL11.glPopAttrib();
+                GL11.glPopMatrix();
+            }
+        }
+    }
+
 }

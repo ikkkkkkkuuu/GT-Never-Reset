@@ -1,6 +1,5 @@
 package com.xyp.gtneverreset.client.projector;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -12,21 +11,18 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.gtnewhorizon.gtnhlib.util.map.ItemStackMap;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.common.projector.ProjectorBatch;
+import com.xyp.gtneverreset.common.projector.ProjectorBatchCells;
 import com.xyp.gtneverreset.common.projector.ProjectorBatchHatches;
 import com.xyp.gtneverreset.common.projector.ProjectorBatchHatches.Sample;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.common.projector.ProjectorSimulationWorld;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
-import com.xyp.gtnrlib.client.fx.world.FxBlockMesh;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import it.unimi.dsi.fastutil.longs.Long2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2IntMaps;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 @SideOnly(Side.CLIENT)
 final class ProjectorBatchPreview extends ProjectorStructure {
@@ -88,23 +84,28 @@ final class ProjectorBatchPreview extends ProjectorStructure {
         }
     }
 
-    private ProjectorBatchPreview(ProjectorStructure template, Long2IntLinkedOpenHashMap cells, long[] empty,
-        int[] bounds, ExtendedFacing baseFacing, boolean compatible, boolean limited, ProjectorBatchHatches edits,
-        Formation formation) {
-        super(template, cells.size(), empty, bounds, new PreviewWorld());
+    private ProjectorBatchPreview(ProjectorStructure template, ProjectorBatchCells batch, int[] bounds,
+        ExtendedFacing baseFacing, Formation formation) {
+        super(
+            template,
+            batch.cells()
+                .size(),
+            batch.emptyCells(),
+            bounds,
+            new PreviewWorld());
         this.template = template;
-        this.edits = edits;
+        edits = batch.hatches();
         this.formation = formation;
         this.baseFacing = baseFacing;
-        this.compatible = compatible;
-        this.limited = limited;
+        compatible = batch.compatible();
+        limited = batch.limited();
         copyPoses = new ExtendedFacing[size];
         ((PreviewWorld) world).array = this;
-        outlineOnly = cells.isEmpty();
+        outlineOnly = batch.cells()
+            .isEmpty();
         originals = new int[size];
-        Map<ItemStack, Integer> totals = new ItemStackMap<>(true);
         int i = 0;
-        for (var it = Long2IntMaps.fastIterator(cells); it.hasNext(); i++) {
+        for (var it = Long2IntMaps.fastIterator(batch.cells()); it.hasNext(); i++) {
             var entry = it.next();
             long pos = entry.getLongKey();
             int src = entry.getIntValue() % template.size;
@@ -112,7 +113,6 @@ final class ProjectorBatchPreview extends ProjectorStructure {
             originals[i] = src;
             Sample edit = edits == null ? null : edits.get(pos);
             ItemStack item = edit == null ? template.items[src] : edit.item();
-            if (item != null) totals.merge(item, 1, Integer::sum);
             set(
                 i,
                 ProjectorPlan.unpackA(pos),
@@ -136,12 +136,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
             if (neighbor >= 0 && blocks[neighbor] != Blocks.air) hidden++;
         }
         blockedControllers = hidden;
-        materials = new ArrayList<>();
-        for (Material entry : template.materials) {
-            Integer count = totals.remove(entry.stack());
-            if (count != null) materials.add(new Material(entry.stack(), count));
-        }
-        totals.forEach((stack, count) -> materials.add(new Material(stack, count)));
+        materials = batch.materials(template);
     }
 
     Sample editAt(int i) {
@@ -275,66 +270,9 @@ final class ProjectorBatchPreview extends ProjectorStructure {
             bounds[axis] += Math.min(first[axis], last[axis]);
             bounds[axis + 3] += Math.max(first[axis], last[axis]);
         }
-        var cells = new Long2IntLinkedOpenHashMap();
         var formation = new Formation(copies);
-        if ((long) copies * (shape.size + shape.emptyCells.length) > FxBlockMesh.MAX_BLOCKS)
-            return new ProjectorBatchPreview(shape, cells, new long[0], bounds, facing, true, false, null, formation);
-        cells.defaultReturnValue(-1);
-        var empty = new LongOpenHashSet();
-        int[] abc = new int[3];
-        boolean compatible = layout.solve();
-        var edits = plan.batchOverrides.isEmpty() ? null : new ProjectorBatchHatches(shape, plan);
-        int[] source = new int[3];
-        for (int copy = 0; copy < copies; copy++) {
-            var at = layout.placement(copy);
-            Map<Long, Integer> localOverrides = null;
-            for (int i = 0; i < shape.size + shape.emptyCells.length; i++) {
-                if (i < shape.size) {
-                    source[0] = shape.a[i];
-                    source[1] = shape.b[i];
-                    source[2] = shape.c[i];
-                } else {
-                    long pos = shape.emptyCells[i - shape.size];
-                    source[0] = ProjectorPlan.unpackA(pos);
-                    source[1] = ProjectorPlan.unpackB(pos);
-                    source[2] = ProjectorPlan.unpackC(pos);
-                }
-                at.facing()
-                    .getWorldOffset(source, world);
-                world[0] += at.x();
-                world[1] += at.y();
-                world[2] += at.z();
-                facing.getOffsetABC(world, abc);
-                long key = ProjectorPlan.pack(abc[0], abc[1], abc[2]);
-                if (edits != null) {
-                    var hatch = edits.sample(key, i);
-                    if (hatch != null && i < shape.size) {
-                        if (localOverrides == null) localOverrides = new TreeMap<>();
-                        localOverrides.put(ProjectorPlan.pack(source[0], source[1], source[2]), hatch.machine());
-                    }
-                }
-                if (i >= shape.size) {
-                    empty.add(key);
-                    continue;
-                }
-                int value = at.facing()
-                    .getIndex() * shape.size + i;
-                int previous = cells.putIfAbsent(key, value);
-                if (previous >= 0 && shape.blocks[previous % shape.size] == Blocks.air && shape.blocks[i] != Blocks.air)
-                    cells.put(key, value);
-            }
-            formation.pending.merge(localOverrides == null ? Collections.emptyMap() : localOverrides, 1, Integer::sum);
-        }
-        empty.removeAll(cells.keySet());
-        return new ProjectorBatchPreview(
-            shape,
-            cells,
-            empty.toLongArray(),
-            bounds,
-            facing,
-            compatible && (edits == null || !edits.incompatible),
-            layout.searchLimited(),
-            edits,
-            formation);
+        var batch = ProjectorBatchCells
+            .collect(shape, plan, facing, layout, overrides -> formation.pending.merge(overrides, 1, Integer::sum));
+        return new ProjectorBatchPreview(shape, batch, bounds, facing, formation);
     }
 }

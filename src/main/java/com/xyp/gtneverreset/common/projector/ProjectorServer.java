@@ -9,6 +9,7 @@ import com.cleanroommc.modularui.factory.GuiFactories;
 import com.xyp.gtneverreset.common.item.items.MultiblockProjector;
 import com.xyp.gtneverreset.common.wireless.WirelessCardInventory;
 import com.xyp.gtneverreset.common.wireless.WirelessCardInventory.CardSlot;
+import com.xyp.gtneverreset.config.ToolsConfig;
 import com.xyp.gtnrlib.animation.ProjectorArmSessions;
 
 public class ProjectorServer {
@@ -26,6 +27,20 @@ public class ProjectorServer {
     public static void applyPlan(EntityPlayerMP player, int location, NBTTagCompound tag) {
         ItemStack stack = projectorAt(player, location);
         if (stack == null) return;
+        ProjectorPlan plan = readPlan(tag);
+        plan.write(stack);
+        WirelessCardInventory.sync(player, stack);
+    }
+
+    public static void craftMaterials(EntityPlayerMP player, NBTTagCompound draft) {
+        if (!ToolsConfig.enableMultiblockProjector) return;
+        ProjectorPlan plan = readPlan(draft);
+        if (!plan.hasMachine() || !ProjectorMachines.validFacings(plan.machine)
+            .test(plan.facing)) return;
+        ProjectorMaterialCrafting.request(player, plan);
+    }
+
+    private static ProjectorPlan readPlan(NBTTagCompound tag) {
         ProjectorPlan plan = new ProjectorPlan();
         plan.readFromNBT(tag);
         if (plan.hasMachine() && !ProjectorMachines.isSupported(plan.machine)) plan.clear();
@@ -33,8 +48,7 @@ public class ProjectorServer {
             .removeIf(id -> id != ProjectorPlan.CASING && !ProjectorMachines.isHatch(id));
         plan.batchOverrides.values()
             .removeIf(id -> id != ProjectorPlan.CASING && !ProjectorMachines.isHatch(id));
-        plan.write(stack);
-        WirelessCardInventory.sync(player, stack);
+        return plan;
     }
 
     public static void openGui(EntityPlayerMP player, int location) {
