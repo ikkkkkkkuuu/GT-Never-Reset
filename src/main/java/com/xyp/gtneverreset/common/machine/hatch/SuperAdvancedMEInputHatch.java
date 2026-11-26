@@ -25,8 +25,10 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.xyp.gtneverreset.common.gui.modularui.hatch.SuperAdvancedMEInputHatchGui;
+import com.xyp.gtneverreset.common.me.ChaosStorageCellInputs.InputSource;
 
 import appeng.api.config.Actionable;
+import appeng.api.networking.IGrid;
 import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.networking.security.IActionHost;
@@ -67,6 +69,7 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
     private static final String DATA_IDENTIFIER = "superAdvancedStockingHatch";
     protected final Slot[] slots = new Slot[SLOT_COUNT];
     private final FluidPolicy[] policies = new FluidPolicy[SLOT_COUNT];
+    private final long[] fluidOffers = new long[SLOT_COUNT];
     private boolean autoPull;
     private boolean limitedMode;
     private boolean fixedMode;
@@ -319,12 +322,15 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
             slot.resetExtracted();
             return;
         }
-        int amount = availableAmount(
-            index,
+        long offered = getPolicy(index).offeredLong(
             available(
                 getProxy().getStorage()
                     .getFluidInventory(),
-                slot.config));
+                slot.config),
+            limitedMode,
+            fixedMode);
+        fluidOffers[index] = offered;
+        int amount = (int) Math.min(Integer.MAX_VALUE, offered);
         slot.extracted = amount == 0 ? null : GTUtility.copyAmount(amount, slot.config);
         slot.extractedAmount = amount;
     }
@@ -431,6 +437,66 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
     private CheckRecipeResult extractionFailed(MTEMultiBlockBase controller) {
         controller.stopMachine(ShutDownReasonRegistry.CRITICAL_NONE);
         return SimpleCheckRecipeResult.ofFailurePersistOnShutdown("stocking_hatch_fail_extraction");
+    }
+
+    /** Associates wide offers with the live stacks returned by getStoredFluids during this recipe check. */
+    public void addLongFluidSources(IGrid network, Map<FluidStack, InputSource> sources) {
+        if (!processingRecipe || !isAllowedToWork()) return;
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            Slot slot = slots[i];
+            if (fluidOffers[i] <= Integer.MAX_VALUE || slot == null
+                || slot.extracted == null
+                || slot.extracted.amount != Integer.MAX_VALUE) continue;
+            int index = i;
+            sources.put(
+                slot.extracted,
+                new InputSource(
+                    network,
+                    GTUtility.copyAmount(1, slot.config),
+                    () -> getLongFluidOffer(network, index, slot),
+                    amount -> extractLongFluid(network, index, slot, amount),
+                    true,
+                    fluidOffers[i]));
+        }
+    }
+
+    private long getLongFluidOffer(IGrid network, int index, Slot slot) {
+        try {
+            if (!canExtractLongFluid(network, index, slot)) return 0;
+            var inventory = getProxy().getStorage()
+                .getFluidInventory();
+            return getPolicy(index).offeredLong(available(inventory, slot.config), limitedMode, fixedMode);
+        } catch (GridAccessException ignored) {
+            return 0;
+        }
+    }
+
+    private long extractLongFluid(IGrid network, int index, Slot slot, long amount) {
+        try {
+            if (!canExtractLongFluid(network, index, slot)) return 0;
+            var inventory = getProxy().getStorage()
+                .getFluidInventory();
+            if (getPolicy(index).offeredLong(available(inventory, slot.config), limitedMode, fixedMode) < amount)
+                return 0;
+            var energy = getProxy().getEnergy();
+            IAEFluidStack request = AEFluidStack.create(slot.config);
+            request.setStackSize(amount);
+            var simulated = Platform.poweredExtraction(energy, inventory, request, actionSource(), Actionable.SIMULATE);
+            if (simulated == null || simulated.getStackSize() != amount) return 0;
+            // The reservation debits ME directly. The legacy snapshot stays intact for endRecipeProcessing.
+            var extracted = Platform.poweredExtraction(energy, inventory, request, actionSource());
+            return extracted == null ? 0 : extracted.getStackSize();
+        } catch (GridAccessException ignored) {
+            return 0;
+        }
+    }
+
+    private boolean canExtractLongFluid(IGrid network, int index, Slot slot) throws GridAccessException {
+        return processingRecipe && isAllowedToWork()
+            && slots[index] == slot
+            && slot.extracted != null
+            && slot.extracted.amount == Integer.MAX_VALUE
+            && getProxy().getGrid() == network;
     }
 
     private NBTTagList writeConfiguration() {
@@ -729,16 +795,20 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
         }
     }
 
-    /** Reserve uses long ME quantities; Forge recipe stacks remain bounded to an int. */
+    /** The same reserve and batch rules apply to both legacy and long recipe inputs. */
     public static final class FluidPolicy {
 
         public long reserve;
         public int batch = 1000;
 
         public int offered(long stored, boolean limited, boolean fixed) {
+            return (int) Math.min(Integer.MAX_VALUE, offeredLong(stored, limited, fixed));
+        }
+
+        private long offeredLong(long stored, boolean limited, boolean fixed) {
             long usable = Math.max(0, stored - (limited ? Math.max(0, reserve) : 0));
             int quantity = Math.max(1, batch);
-            return fixed ? (usable >= quantity ? quantity : 0) : (int) Math.min(Integer.MAX_VALUE, usable);
+            return fixed ? (usable >= quantity ? quantity : 0) : usable;
         }
 
         private void write(NBTTagCompound tag) {

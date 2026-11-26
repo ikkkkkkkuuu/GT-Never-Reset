@@ -18,6 +18,8 @@ import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
 import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.fluids.FluidRegistry;
+import net.minecraftforge.fluids.FluidStack;
 
 import com.cleanroommc.modularui.api.RecipeViewerSettings;
 import com.cleanroommc.modularui.factory.PosGuiData;
@@ -28,17 +30,28 @@ import com.cleanroommc.modularui.value.sync.ModularSyncManager;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.value.sync.ValueSyncHandler;
 import com.cleanroommc.modularui.widget.WidgetTree;
+import com.glodblock.github.loader.ItemAndBlockHolder;
 import com.xyp.gtneverreset.common.crafting.chaos.*;
+import com.xyp.gtneverreset.common.crafting.chaos.material.BottledChaosInputReservation;
 import com.xyp.gtneverreset.common.crafting.chaos.processing.BottledChaosPowerAllocator;
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.BottleInChaosGui;
 import com.xyp.gtneverreset.common.item.items.*;
 import com.xyp.gtneverreset.common.machine.hatch.ChaosCredentialHatch;
+import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputHatch;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.ChaosLongInputMachineBase.FluidStackLong;
 import com.xyp.gtneverreset.common.machine.multiblock.BottleInChaos;
 import com.xyp.gtneverreset.utils.enums.GTNRItemList;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
 import appeng.api.AEApi;
+import appeng.api.config.Actionable;
+import appeng.api.networking.security.BaseActionSource;
+import appeng.api.storage.IMEMonitor;
+import appeng.api.storage.data.IAEFluidStack;
+import appeng.tile.networking.TileCreativeEnergyCell;
+import appeng.tile.storage.TileDrive;
+import appeng.util.item.AEFluidStack;
 import appeng.util.item.AEItemStack;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
@@ -66,6 +79,8 @@ public final class BottleInChaosChecks {
     private BaseMetaTileEntity tile;
     private BottleInChaos machine;
     private BaseMetaTileEntity inputBus, outputBus, energyHatch;
+    private SuperAdvancedMEInputHatch fluidHatch;
+    private boolean longFluidVerified;
     private boolean processingVerified;
     private boolean waitingForRoundOutputs;
     private PanelSyncManager[] viewers;
@@ -316,7 +331,7 @@ public final class BottleInChaosChecks {
         verifyPackagingTransactions();
         verifyNativeProfiles();
         verifyFormation(world, shape);
-        prepareLiveProcessing();
+        connectFluidInputGrid(world);
         player.playerNetServerHandler.setPlayerLocation(0.5, 80, -4, 0, 0);
     }
 
@@ -343,15 +358,13 @@ public final class BottleInChaosChecks {
             gregtech.api.enums.ItemList.Hatch_Output_LV, gregtech.api.enums.ItemList.Hatch_Energy_LV };
         for (int i = 0; i < hatches.length; i++) {
             int[] position = central.get(i);
-            BaseMetaTileEntity placed = place(
-                world,
-                position[0],
-                position[1],
-                position[2],
-                hatches[i].get(1)
-                    .getItemDamage());
+            int id = i == 2 && !PREVIEW ? GTNRMachineID.SuperAdvancedMEInputHatch.id
+                : hatches[i].get(1)
+                    .getItemDamage();
+            BaseMetaTileEntity placed = place(world, position[0], position[1], position[2], id);
             if (i == 0) inputBus = placed;
             if (i == 1) outputBus = placed;
+            if (i == 2 && !PREVIEW) fluidHatch = (SuperAdvancedMEInputHatch) placed.getMetaTileEntity();
             if (i == 4) energyHatch = placed;
         }
         var errors = new java.util.ArrayList<gregtech.api.structure.error.StructureError>();
@@ -376,6 +389,105 @@ public final class BottleInChaosChecks {
             machine.getInstalledCredentialHatchCount() == 15,
             "all fifteen independent processing groups are connected");
         require(machine.getBottledChaosCapacity() == 4096, "four top-tier capacity regions provide 4096 capacity");
+    }
+
+    private void connectFluidInputGrid(World world) throws Exception {
+        var power = new TileCreativeEnergyCell();
+        power.setWorldObj(world);
+        power.xCoord = 1;
+        var drive = new TileDrive();
+        drive.setWorldObj(world);
+        drive.xCoord = 2;
+        drive.setInventorySlotContents(0, new ItemStack(ItemAndBlockHolder.SINGULARITY_CELL));
+        var powerProxy = power.getProxy();
+        var driveProxy = drive.getProxy();
+        var hatchProxy = fluidHatch.getProxy();
+        powerProxy.onReady();
+        driveProxy.onReady();
+        hatchProxy.onReady();
+        AEApi.instance()
+            .createGridConnection(hatchProxy.getNode(), powerProxy.getNode());
+        AEApi.instance()
+            .createGridConnection(driveProxy.getNode(), powerProxy.getNode());
+        fluidHatch.getBaseMetaTileEntity()
+            .enableWorking();
+    }
+
+    private void verifyLongFluidExtraction() throws Exception {
+        long stocked = 6_000_000_000L;
+        long reserve = 2_500_000_000L;
+        long consumed = 3_000_000_000L;
+        var water = new FluidStack(FluidRegistry.WATER, 1);
+        var request = AEFluidStack.create(water);
+        var action = new BaseActionSource();
+        var storage = fluidHatch.getProxy()
+            .getStorage()
+            .getFluidInventory();
+        require(
+            storage.injectItems(
+                request.copy()
+                    .setStackSize(stocked),
+                Actionable.MODULATE,
+                action) == null,
+            "ME cell accepts six billion mB in a single fluid stack");
+
+        fluidHatch.setAutoPullFluidList(false);
+        fluidHatch.setSlotConfig(0, water);
+        fluidHatch.setLimitedMode(true);
+        fluidHatch.getPolicy(0).reserve = reserve;
+        machine.startRecipeProcessing();
+        try {
+            var inputs = new BottledChaosInputReservation();
+            var view = inputs.new View();
+            machine.getNativeFluidSources()
+                .forEach(view::add);
+            var snapshot = inputs.snapshot(view);
+            FluidStackLong[] fluids = snapshot.getInputFluids();
+            require(
+                fluids.length == 1 && fluids[0].fluidStack()
+                    .isFluidEqual(water) && fluids[0].amount() == stocked - reserve,
+                "controller sees all available fluid above the long reserve");
+            fluids[0] = new FluidStackLong(water, fluids[0].amount() - consumed);
+            inputs.accept(snapshot);
+            require(fluidStock(storage, request, action) == stocked, "reserving long fluid does not debit ME");
+            require(
+                inputs.commit()
+                    .wasSuccessful(),
+                "controller commits a three-billion-mB extraction");
+            require(
+                fluidStock(storage, request, action) == stocked - consumed,
+                "ME is debited exactly three billion mB");
+        } finally {
+            machine.endRecipeProcessing();
+        }
+        require(
+            fluidStock(storage, request, action) == stocked - consumed,
+            "recipe completion cannot debit the extraction again");
+
+        fluidHatch.setFixedMode(true);
+        fluidHatch.getPolicy(0).batch = 12_000;
+        machine.startRecipeProcessing();
+        try {
+            var inputs = new BottledChaosInputReservation();
+            var view = inputs.new View();
+            machine.getNativeFluidSources()
+                .forEach(view::add);
+            var fluids = inputs.snapshot(view)
+                .getInputFluids();
+            require(fluids.length == 1 && fluids[0].amount() == 12_000, "long fluid input respects fixed batch policy");
+        } finally {
+            machine.endRecipeProcessing();
+        }
+        fluidHatch.setFixedMode(false);
+    }
+
+    private static long fluidStock(IMEMonitor<IAEFluidStack> storage, IAEFluidStack request, BaseActionSource action) {
+        var stock = storage.extractItems(
+            request.copy()
+                .setStackSize(Long.MAX_VALUE),
+            Actionable.SIMULATE,
+            action);
+        return stock == null ? 0 : stock.getStackSize();
     }
 
     private void prepareLiveProcessing() {
@@ -424,6 +536,17 @@ public final class BottleInChaosChecks {
     }
 
     private void verifyLiveProcessing() throws Exception {
+        if (!longFluidVerified) {
+            if (!fluidHatch.getProxy()
+                .isActive()) {
+                if (++processingTicks > 200) throw new AssertionError("Fluid hatch ME grid did not activate");
+                return;
+            }
+            verifyLongFluidExtraction();
+            longFluidVerified = true;
+            processingTicks = 0;
+            prepareLiveProcessing();
+        }
         energyHatch.increaseStoredEnergyUnits(64000, true);
         if (waitingForRoundOutputs) {
             if (viewerTicks < 24) sampleViewers();

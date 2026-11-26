@@ -54,6 +54,11 @@ public final class ChaosStorageCellInputs {
 
         public InputSource(Object owner, Object template, LongSupplier available, LongUnaryOperator extract,
             boolean nativeLong) {
+            this(owner, template, available, extract, nativeLong, available.getAsLong());
+        }
+
+        public InputSource(Object owner, Object template, LongSupplier available, LongUnaryOperator extract,
+            boolean nativeLong, long initialAmount) {
             this.owner = owner;
             this.template = template;
             type = template instanceof ItemStack item ? GTUtility.ItemId.create(item)
@@ -61,7 +66,12 @@ public final class ChaosStorageCellInputs {
             this.available = available;
             this.extract = extract;
             this.nativeLong = nativeLong;
-            amount = Math.max(0, available.getAsLong());
+            amount = Math.max(0, initialAmount);
+        }
+
+        public long remaining(long viewLimit, long reserved) {
+            if (nativeLong) return Math.max(0, Math.min(viewLimit, amount) - reserved);
+            return Math.min(viewLimit, Math.max(0, amount - reserved));
         }
 
         public static InputSource of(Object owner, ItemStack stack) {

@@ -7,6 +7,7 @@ import static net.minecraftforge.common.util.Constants.NBT.TAG_COMPOUND;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +40,7 @@ import com.xyp.gtneverreset.common.crafting.chaos.ChaosLocalization;
 import com.xyp.gtneverreset.common.crafting.chaos.material.ChaosMEOutputTransaction;
 import com.xyp.gtneverreset.common.crafting.chaos.processing.ChaosOverclockType;
 import com.xyp.gtneverreset.common.gui.modularui.multiblock.ChaosMachineGuiBase;
+import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.ChaosLongProcessingLogic;
 import com.xyp.gtneverreset.common.me.ChaosStorageCellInputs;
 import com.xyp.gtneverreset.common.me.ChaosStorageCellInputs.SegmentedInputs;
@@ -592,18 +594,25 @@ public abstract class ChaosLongInputMachineBase<T extends ChaosLongInputMachineB
     }
 
     public List<ChaosStorageCellInputs.InputSource> getNativeFluidSources() {
-        java.util.IdentityHashMap<FluidStack, Object> owners = new java.util.IdentityHashMap<>();
+        var owners = new IdentityHashMap<FluidStack, Object>();
+        var longSources = new IdentityHashMap<FluidStack, ChaosStorageCellInputs.InputSource>();
         for (MTEHatchInput hatch : validMTEList(mInputHatches)) {
             if (!(hatch instanceof MTEHatchInputME me)) continue;
-            Object network = ChaosStorageCellInputs.getNetwork(me.getProxy());
+            var network = ChaosStorageCellInputs.getNetwork(me.getProxy());
             if (network == null) continue;
             for (FluidStack stack : me.getStoredFluids()) {
                 if (stack != null) owners.put(stack, network);
             }
+            if (hatch instanceof SuperAdvancedMEInputHatch advanced) {
+                advanced.addLongFluidSources(network, longSources);
+            }
         }
         List<ChaosStorageCellInputs.InputSource> sources = new ArrayList<>();
         for (FluidStack stack : getStoredFluidsForColor(Optional.empty())) {
-            sources.add(ChaosStorageCellInputs.InputSource.of(owners.getOrDefault(stack, stack), stack));
+            var source = longSources.get(stack);
+            sources.add(
+                source != null ? source
+                    : ChaosStorageCellInputs.InputSource.of(owners.getOrDefault(stack, stack), stack));
         }
         return sources;
     }
