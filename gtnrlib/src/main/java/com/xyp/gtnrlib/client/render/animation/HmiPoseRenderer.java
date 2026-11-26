@@ -80,7 +80,7 @@ public final class HmiPoseRenderer {
     }
 
     public static boolean render(ItemRenderer renderer, ItemStack stack, float partial, float dip) {
-        return ProjectorArmAnimation.renderRaisedFirstPerson(stack, partial, dip)
+        return ProjectorArmAnimation.renderRaisedFirstPerson(partial, dip)
             || !FirstPersonAnimations.INSTANCE.applies(stack) && MAIN.renderHand(renderer, stack, partial, dip);
     }
 
@@ -111,7 +111,7 @@ public final class HmiPoseRenderer {
                             pose.forgeRenderer(),
                             partial,
                             left -> {
-                                if (!left || !FirstPersonAnimations.offhandOwnsLeftArm(partial)) gripHand(left, stack);
+                                if (!left || !FirstPersonAnimations.offhandOwnsLeftArm(partial)) gripHand(left);
                             });
                     } catch (RuntimeException ex) {
                         pose.disableTool(stack, ex);
@@ -184,12 +184,12 @@ public final class HmiPoseRenderer {
         }
     }
 
-    private static void gripHand(boolean left, ItemStack stack) {
+    private static void gripHand(boolean left) {
         GL11.glPushMatrix();
         try {
             apply(com.xyp.gtnrlib.client.animation.FirstPersonItemActions.INSTANCE.grip(left));
             GL11.glTranslatef((left ? -6 : 6) / 16f, -10f / 16, 0);
-            FirstPersonArmRenderer.render(left, 0, stack);
+            FirstPersonArmRenderer.render(left, 0);
         } finally {
             GL11.glPopMatrix();
         }

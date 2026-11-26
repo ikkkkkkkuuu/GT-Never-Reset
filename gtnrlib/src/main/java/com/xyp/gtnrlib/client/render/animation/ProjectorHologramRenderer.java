@@ -12,7 +12,7 @@ import org.lwjgl.util.glu.GLU;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-/** Draws a lens-to-screen projection behind the existing interactive screen. */
+/** Draws the wrist-to-screen projection behind the existing interactive screen. */
 @SideOnly(Side.CLIENT)
 public final class ProjectorHologramRenderer {
 
@@ -20,6 +20,8 @@ public final class ProjectorHologramRenderer {
         | GL11.GL_DEPTH_BUFFER_BIT
         | GL11.GL_COLOR_BUFFER_BIT
         | GL11.GL_LINE_BIT;
+    // Biped right-arm coordinates relative to its shoulder pivot.
+    private static final float WRIST_X = -1f / 16, WRIST_Y = 8f / 16, WRIST_Z = -2.25f / 16;
     private static final FloatBuffer MODEL = BufferUtils.createFloatBuffer(16);
     private static final FloatBuffer PROJECTION = BufferUtils.createFloatBuffer(16);
     private static final FloatBuffer LENS = BufferUtils.createFloatBuffer(3);
@@ -33,7 +35,12 @@ public final class ProjectorHologramRenderer {
         lensVisible = false;
     }
 
-    static void captureLens(float x, float y, float z, float strength) {
+    public static void renderFromWrist(float strength, boolean localView) {
+        if (localView) captureLens(WRIST_X, WRIST_Y, WRIST_Z, strength);
+        else drawWorldProjection(WRIST_X, WRIST_Y, WRIST_Z, strength);
+    }
+
+    private static void captureLens(float x, float y, float z, float strength) {
         MODEL.clear();
         PROJECTION.clear();
         VIEWPORT.clear();
@@ -100,7 +107,7 @@ public final class ProjectorHologramRenderer {
         }
     }
 
-    static void drawWorldProjection(float x, float y, float z, float strength) {
+    private static void drawWorldProjection(float x, float y, float z, float strength) {
         float distance = .53f * strength;
         float front = z - distance;
         float width = .47f * strength, height = .24f * strength;
