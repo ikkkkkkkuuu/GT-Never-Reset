@@ -1,12 +1,19 @@
 // Run with: gradlew.bat -I src/qa/resources/quick-terminal-render-qa.init.gradle :runClient17 --no-configuration-cache
 // Add -Dgtnr.quick.terminal.sorting.qa=true to verify bundled sorting rules and existing-file compatibility.
+// Add -PgtnrNeoEcoQaJar=C:/path/neoecoae-7.3.15-dev.jar to check the real addon's upload buttons.
 gradle.projectsEvaluated {
     def root = gradle.rootProject
     root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
     def sorting = Boolean.getBoolean('gtnr.quick.terminal.sorting.qa')
+    def neoEcoJarPath = root.findProperty('gtnrNeoEcoQaJar')
+    def neoEcoJar = neoEcoJarPath ? root.file(neoEcoJarPath) : null
+    if (neoEcoJar != null && !neoEcoJar.isFile()) throw new GradleException("Missing Neo ECO dev JAR: ${neoEcoJar}")
+    if (neoEcoJar != null && sorting) throw new GradleException('Run sorting and Neo ECO QA separately')
     def fixture = sorting ? 'WirelessTerminalSortingChecks' : 'QuickTerminalRenderChecks'
-    def directoryName = sorting ? 'wireless-terminal-sorting-qa' : 'quick-terminal-render-qa'
-    def marker = sorting ? 'gtnr.quick.terminal.sorting.qa' : 'gtnr.quick.terminal.render.qa'
+    def directoryName = neoEcoJar != null ? 'neoeco-terminal-buttons-qa'
+        : sorting ? 'wireless-terminal-sorting-qa' : 'quick-terminal-render-qa'
+    def marker = neoEcoJar != null ? 'gtnr.quick.terminal.neoeco.qa'
+        : sorting ? 'gtnr.quick.terminal.sorting.qa' : 'gtnr.quick.terminal.render.qa'
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
 
     root.tasks.named('compileTestJava').configure {
@@ -41,6 +48,12 @@ gradle.projectsEvaluated {
             java.nio.file.Files.deleteIfExists(new File(workingDir, 'result.txt').toPath())
             if (sorting) {
                 java.nio.file.Files.deleteIfExists(new File(workingDir, 'config/AppliedEnergistics2/InvTweaksTree.txt').toPath())
+            }
+            if (neoEcoJar != null) {
+                def mods = new File(workingDir, 'mods')
+                mods.mkdirs()
+                java.nio.file.Files.copy(neoEcoJar.toPath(), new File(mods, 'neoecoae-dev.jar').toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING)
             }
             new File(workingDir, 'options.txt').setText(
                 'lang:zh_CN\nguiScale:3\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsoundCategory_music:0.0\nmusic:0.0\nsound:0.0\n',
