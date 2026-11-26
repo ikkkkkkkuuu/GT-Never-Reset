@@ -50,7 +50,8 @@ gradle.projectsEvaluated {
             java.nio.file.Files.deleteIfExists(new File(workingDir, 'result.txt').toPath())
             if (autoUpload) {
                 ['report.txt', 'screenshots/auto-upload-success-new-pattern.png',
-                    'screenshots/auto-upload-failed-keeps-old-pattern.png'].each {
+                    'screenshots/auto-upload-failed-keeps-old-pattern.png',
+                    'screenshots/auto-upload-duplicate-keeps-encoded-pattern.png'].each {
                     java.nio.file.Files.deleteIfExists(new File(workingDir, it).toPath())
                 }
             } else if (ingredientSelection) {

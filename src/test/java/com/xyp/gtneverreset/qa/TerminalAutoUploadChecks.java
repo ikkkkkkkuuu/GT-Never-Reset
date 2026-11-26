@@ -31,7 +31,9 @@ import net.minecraftforge.common.MinecraftForge;
 
 import com.xyp.gtneverreset.client.gui.QuickEncodingTerminalGui;
 import com.xyp.gtneverreset.common.gui.container.QuickEncodingTerminalContainer;
+import com.xyp.gtneverreset.common.me.PatternRecipeMap;
 import com.xyp.gtneverreset.common.packet.InterfacePatternTarget;
+import com.xyp.gtneverreset.common.packet.RecipeTransferPayload;
 import com.xyp.gtneverreset.common.terminal.DualTerminalGuiObject;
 import com.xyp.gtneverreset.compat.nei.QuickTerminalRecipeTransferHandler;
 import com.xyp.gtneverreset.config.ClientConfig;
@@ -41,15 +43,19 @@ import appeng.api.AEApi;
 import appeng.api.features.IWirelessTermHandler;
 import appeng.api.implementations.ICraftingPatternItem;
 import appeng.api.implementations.tiles.IWirelessAccessPoint;
+import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.storage.IStorageGrid;
 import appeng.api.storage.StorageName;
+import appeng.api.storage.data.IAEStack;
 import appeng.client.gui.implementations.GuiInterfaceTerminal;
 import appeng.client.gui.implementations.GuiPatternTerm;
 import appeng.container.implementations.ContainerInterfaceTerminal;
+import appeng.helpers.InventoryAction;
 import appeng.helpers.WirelessTerminalGuiObject;
 import appeng.tile.misc.TileInterface;
 import appeng.tile.networking.TileCreativeEnergyCell;
 import appeng.util.Platform;
+import appeng.util.item.AEFluidStack;
 import appeng.util.item.AEItemStack;
 import codechicken.nei.PositionedStack;
 import codechicken.nei.recipe.IRecipeHandler;
@@ -59,6 +65,10 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.GregTechAPI;
+import gregtech.api.enums.Materials;
+import gregtech.api.enums.OrePrefixes;
+import gregtech.api.recipe.RecipeMaps;
+import gregtech.api.util.GTOreDictUnificator;
 
 @Mod(
     modid = "terminalautouploadqa",
@@ -78,6 +88,8 @@ public final class TerminalAutoUploadChecks {
     private QuickEncodingTerminalContainer serverContainer;
     private QuickEncodingTerminalGui clientGui;
     private ItemStack oldPattern;
+    private ItemStack storedProcessingPattern;
+    private ItemStack retainedDuplicatePattern;
     private long targetId;
     private int networkTicks, clientTicks;
     private boolean launched, finished;
@@ -118,6 +130,9 @@ public final class TerminalAutoUploadChecks {
                 }
                 case INVALID_CLOSED -> acknowledgeClose(true, player);
                 case INVALID_VERIFY -> verifyFailedPlacement(player);
+                case PROCESSING_SEED_SENT -> seedProcessingPattern(player);
+                case DUPLICATE_VERIFY -> verifyDuplicatePlacement(player);
+                case SCALED_SENT -> verifyScaledPlacement(player);
                 default -> {}
             }
         } catch (Throwable error) {
@@ -162,6 +177,11 @@ public final class TerminalAutoUploadChecks {
                 case INVALID_OFF -> submitOverlay(true);
                 case INVALID_SENT -> awaitInvalidUploadAttempt();
                 case INVALID_RETAINED -> collectScreenshot(mc, true);
+                case PROCESSING_READY -> submitProcessingOverlay(Phase.PROCESSING_SEED_SENT, 1);
+                case PROCESSING_SEEDED -> submitDuplicateWhenSynchronized();
+                case DUPLICATE_SENT -> awaitDuplicateUploadAttempt();
+                case DUPLICATE_RETAINED -> captureRetainedDuplicate(mc);
+                case SCALED_READY -> submitProcessingOverlay(Phase.SCALED_SENT, 2);
                 case DONE -> finish(null);
                 default -> {}
             }
@@ -183,7 +203,12 @@ public final class TerminalAutoUploadChecks {
                 .saveScreenshot(new File("."), screenshotName, mc.displayWidth, mc.displayHeight, mc.getFramebuffer());
             require(Files.exists(Path.of("screenshots", screenshotName)), "screenshot " + screenshotName);
             screenshotLines = null;
-            phase = phase == Phase.VALID_STORED ? Phase.VALID_CAPTURED : Phase.DONE;
+            phase = switch (phase) {
+                case VALID_STORED -> Phase.VALID_CAPTURED;
+                case INVALID_RETAINED -> Phase.PROCESSING_READY;
+                case DUPLICATE_RETAINED -> Phase.SCALED_READY;
+                default -> throw new AssertionError("unexpected screenshot at " + phase);
+            };
         } catch (Throwable error) {
             finish(error);
         }
@@ -415,6 +440,120 @@ public final class TerminalAutoUploadChecks {
                 + describe(received, mc.thePlayer));
     }
 
+    private void submitProcessingOverlay(Phase next, int multiplier) {
+        ItemStack ingots = GTOreDictUnificator.get(OrePrefixes.ingot, Materials.StainlessSteel, multiplier);
+        var payload = new RecipeTransferPayload(
+            false,
+            true,
+            4,
+            false,
+            new IAEStack<?>[] { AEItemStack.create(ingots) },
+            new IAEStack<?>[] { AEFluidStack.create(Materials.StainlessSteel.getMolten(144L * multiplier)) },
+            null,
+            RecipeMaps.fluidExtractionRecipes.unlocalizedName);
+        phase = next;
+        clientGui.transferRecipe(payload, assemblerName());
+    }
+
+    private void seedProcessingPattern(EntityPlayerMP player) throws Exception {
+        IInventory patterns = provider.getPatterns();
+        ItemStack pattern = patterns.getStackInSlot(1);
+        if (pattern == null) return;
+        require(encoded(serverTerminal) == null, "first processing upload consumes the encoder output slot");
+        requireProcessingOutput(pattern, player, 144);
+        storedProcessingPattern = pattern.copy();
+        receiptKeepNonConsumables = !serverTerminal.shouldKeepNonConsumables();
+        report("first processing pattern uploaded with 144 mB molten stainless steel");
+        phase = Phase.PROCESSING_SEEDED;
+    }
+
+    private void submitDuplicateWhenSynchronized() throws Exception {
+        IInventory patterns = clientInterfaceInventory();
+        if (patterns == null || !samePattern(patterns.getStackInSlot(1), storedProcessingPattern)) return;
+        submitProcessingOverlay(Phase.DUPLICATE_SENT, 1);
+    }
+
+    private void awaitDuplicateUploadAttempt() throws Exception {
+        if (field(QuickEncodingTerminalGui.class, "pendingAutoPlace").getBoolean(clientGui)) return;
+        Object embedded = field(QuickEncodingTerminalGui.class, "interfaceTerminal").get(clientGui);
+        var target = (InterfacePatternTarget) field(embedded.getClass(), "highlightedTarget").get(embedded);
+        require(
+            target != null && target.getEntryId() == targetId && target.getSlot() == 2,
+            "duplicate automatic upload targets the next empty slot");
+        phase = Phase.DUPLICATE_VERIFY;
+        var container = (QuickEncodingTerminalContainer) clientGui.inventorySlots;
+        container.requestKeepNonConsumables(receiptKeepNonConsumables);
+    }
+
+    private void verifyDuplicatePlacement(EntityPlayerMP player) throws Exception {
+        if (serverTerminal.shouldKeepNonConsumables() != receiptKeepNonConsumables) return;
+        IInventory patterns = provider.getPatterns();
+        require(patterns.getStackInSlot(2) == null, "duplicate upload leaves the next interface slot empty");
+        require(samePattern(patterns.getStackInSlot(1), storedProcessingPattern), "existing pattern remains unchanged");
+        ItemStack duplicate = encoded(serverTerminal);
+        require(duplicate != null, "duplicate upload retains the newly encoded processing pattern");
+        requireProcessingOutput(duplicate, player, 144);
+        require(
+            tag(duplicate).getLong("encodedAt") != tag(storedProcessingPattern).getLong("encodedAt"),
+            "the two patterns were encoded at different times");
+        require(
+            details(storedProcessingPattern, player).equals(details(duplicate, player)),
+            "the two patterns describe the same recipe");
+        ItemStack hand = duplicate.copy();
+        tag(hand).setString("author", "QA different encoder");
+        player.inventory.setItemStack(hand);
+        try {
+            serverContainer.doAction(player, InventoryAction.PICKUP_OR_SET_DOWN, 2, targetId);
+            require(player.inventory.getItemStack() == hand, "manual insertion leaves the duplicate on the cursor");
+            require(patterns.getStackInSlot(2) == null, "manual insertion also rejects the duplicate");
+        } finally {
+            player.inventory.setItemStack(null);
+        }
+        retainedDuplicatePattern = duplicate.copy();
+        report("duplicate upload and manual insertion both rejected; original and newly encoded patterns retained");
+        phase = Phase.DUPLICATE_RETAINED;
+    }
+
+    private void captureRetainedDuplicate(Minecraft mc) throws Exception {
+        if (screenshotLines != null) return;
+        IInventory patterns = clientInterfaceInventory();
+        var container = (QuickEncodingTerminalContainer) clientGui.inventorySlots;
+        ItemStack retained = encoded((DualTerminalGuiObject) container.getTarget());
+        if (patterns == null || !samePattern(retained, retainedDuplicatePattern)) return;
+        require(patterns.getStackInSlot(2) == null, "client sees the duplicate destination still empty");
+        require(samePattern(patterns.getStackInSlot(1), storedProcessingPattern), "client sees the original pattern");
+        screenshotName = "auto-upload-duplicate-keeps-encoded-pattern.png";
+        var lines = new ArrayList<>(List.of("重复配方留在编码槽", "接口保留原样板，目标槽为空"));
+        for (Object line : retained.getTooltip(mc.thePlayer, false)) lines.add((String) line);
+        screenshotLines = lines;
+    }
+
+    private void verifyScaledPlacement(EntityPlayerMP player) throws Exception {
+        IInventory patterns = provider.getPatterns();
+        ItemStack scaled = patterns.getStackInSlot(2);
+        if (scaled == null) return;
+        require(encoded(serverTerminal) == null, "scaled processing pattern uploads successfully");
+        requireProcessingOutput(scaled, player, 288);
+        require(
+            samePattern(patterns.getStackInSlot(1), storedProcessingPattern),
+            "scaled upload preserves the original");
+        report("scaled processing pattern with 288 mB of the same fluid uploaded to the same interface");
+        phase = Phase.DONE;
+    }
+
+    private static void requireProcessingOutput(ItemStack pattern, EntityPlayer player, int amount) {
+        ICraftingPatternDetails decoded = details(pattern, player);
+        require(!decoded.isCraftable(), "fixture uses an actual processing pattern");
+        IAEStack<?> output = decoded.getCondensedAEOutputs()[0];
+        require(
+            output.isSameType(AEFluidStack.create(Materials.StainlessSteel.getMolten(amount)))
+                && output.getStackSize() == amount,
+            "processing output is " + amount + " mB of molten stainless steel");
+        require(
+            RecipeMaps.fluidExtractionRecipes.unlocalizedName.equals(PatternRecipeMap.name(pattern)),
+            "processing pattern carries the fluid extractor recipe map");
+    }
+
     private IInventory clientInterfaceInventory() throws Exception {
         Object embedded = field(QuickEncodingTerminalGui.class, "interfaceTerminal").get(clientGui);
         Object master = field(GuiInterfaceTerminal.class, "masterList").get(embedded);
@@ -473,8 +612,11 @@ public final class TerminalAutoUploadChecks {
     }
 
     private static ItemStack output(ItemStack pattern, EntityPlayer player) {
-        return ((ICraftingPatternItem) pattern.getItem()).getPatternForItem(pattern, player.worldObj)
-            .getCondensedAEOutputs()[0].getItemStackForNEI();
+        return details(pattern, player).getCondensedAEOutputs()[0].getItemStackForNEI();
+    }
+
+    private static ICraftingPatternDetails details(ItemStack pattern, EntityPlayer player) {
+        return ((ICraftingPatternItem) pattern.getItem()).getPatternForItem(pattern, player.worldObj);
     }
 
     private static String describe(ItemStack pattern, EntityPlayer player) {
@@ -545,6 +687,14 @@ public final class TerminalAutoUploadChecks {
         INVALID_SENT,
         INVALID_VERIFY,
         INVALID_RETAINED,
+        PROCESSING_READY,
+        PROCESSING_SEED_SENT,
+        PROCESSING_SEEDED,
+        DUPLICATE_SENT,
+        DUPLICATE_VERIFY,
+        DUPLICATE_RETAINED,
+        SCALED_READY,
+        SCALED_SENT,
         DONE
     }
 }
