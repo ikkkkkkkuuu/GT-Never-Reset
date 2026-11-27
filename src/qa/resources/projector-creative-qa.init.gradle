@@ -4,13 +4,15 @@ gradle.projectsEvaluated {
     root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
     def fixture = root.hasProperty('projectorFormationChecks') ? 'ProjectorFormationChecks' : root.hasProperty('projectorBatchHatchChecks') ? 'ProjectorBatchHatchChecks' : root.hasProperty('projectorSurvivalChecks') ? 'ProjectorSurvivalChecks' : root.hasProperty('projectorMirrorChecks') ? 'ProjectorMirrorChecks' : 'ProjectorCreativeChecks'
     def tallSingularity = root.hasProperty('projectorSingularityTallChecks')
-    if (root.hasProperty('projectorDeploymentChecks') || tallSingularity) fixture = 'ProjectorDeploymentChecks'
+    def coldShaders = root.hasProperty('projectorColdShaders')
+    if (root.hasProperty('projectorDeploymentChecks') || tallSingularity || coldShaders) fixture = 'ProjectorDeploymentChecks'
     def materialCrafting = root.hasProperty('projectorMaterialCraftingChecks')
     if (materialCrafting) fixture = 'ProjectorSurvivalChecks'
     root.spotless.java { target root.file("src/qa/java/com/xyp/gtneverreset/qa/${fixture}.java") }
     def crossDimension = Boolean.getBoolean('gtnr.projector.crossDimensionQa')
     def baseline = crossDimension && Boolean.getBoolean('gtnr.projector.crossDimensionBaseline')
     def directoryName = tallSingularity ? 'projector-singularity-tall-qa' : materialCrafting ? 'projector-material-crafting-qa' : crossDimension ? (baseline ? 'projector-cross-dimension-baseline' : 'projector-cross-dimension-qa') : 'projector-creative-qa'
+    if (coldShaders) directoryName = 'projector-cold-shader-qa'
     def marker = 'gtnr.projector.creative.qa'
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
 
@@ -57,9 +59,29 @@ gradle.projectsEvaluated {
             if (crossDimension) {
                 java.nio.file.Files.deleteIfExists(new File(workingDir, 'projector-cross-dimension-report.txt').toPath())
             }
-            new File(workingDir, 'options.txt').setText(
-                ('lang:zh_CN\nguiScale:2\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsoundCategory_music:0.0\nmusic:0.0\nsound:0.0\n'),
-                'UTF-8')
+            def options = 'lang:zh_CN\nguiScale:2\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsoundCategory_music:0.0\nmusic:0.0\nsound:0.0\n'
+            if (coldShaders) {
+                def uniform = 'qaCold_' + UUID.randomUUID().toString().replace('-', '')
+                def pack = new File(workingDir, 'resourcepacks/projector-cold-shaders')
+                def shaderPath = 'assets/gtnrlib/shaders/fx'
+                def shaders = new File(pack, shaderPath)
+                shaders.mkdirs()
+                new File(pack, 'pack.mcmeta').setText('{"pack":{"pack_format":1,"description":"Cold shader QA"}}', 'UTF-8')
+                ['plasma_star.frag.glsl', 'backdrop_refraction.frag.glsl'].each { name ->
+                    def source = root.file("gtnrlib/src/main/resources/${shaderPath}/${name}").getText('UTF-8')
+                    def shader = source.replace('#version 120', "#version 120\nuniform float ${uniform};")
+                    def color = shader.lastIndexOf('gl_FragColor = ')
+                    def end = color >= 0 ? shader.indexOf(';', color) : -1
+                    if (shader == source || end < 0) throw new GradleException("Cannot create cold shader QA variant for ${name}")
+                    // Linked GLSL uniforms default to zero. Distinct active uniforms keep the image and change the compiled program.
+                    new File(shaders, name).setText(
+                        shader.substring(0, end) + " + vec4(${uniform}, 0.0, 0.0, 0.0)" + shader.substring(end), 'UTF-8')
+                }
+                options += 'resourcePacks:["projector-cold-shaders"]\n'
+                systemProperty 'gtnr.projector.coldShaderUniform', uniform
+                logger.lifecycle("[projector-singularity-qa] cold shader pack with active uniform ${uniform}")
+            }
+            new File(workingDir, 'options.txt').setText(options, 'UTF-8')
             if (System.getProperty('os.name').startsWith('Windows')) {
                 def ready = new File(output, 'window-helper.ready')
                 java.nio.file.Files.deleteIfExists(ready.toPath())

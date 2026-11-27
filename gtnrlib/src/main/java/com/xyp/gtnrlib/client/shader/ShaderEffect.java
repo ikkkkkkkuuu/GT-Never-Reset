@@ -44,6 +44,10 @@ public class ShaderEffect {
         unavailable = false;
     }
 
+    public boolean prepare() {
+        return OpenGlHelper.shadersSupported && program() != null;
+    }
+
     public boolean begin() {
         if (!OpenGlHelper.shadersSupported) return false;
         int previous = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
@@ -57,6 +61,10 @@ public class ShaderEffect {
     public void end() {
         GL20.glUseProgram(previousProgram);
         previousProgram = 0;
+    }
+
+    public void uniform1i(String uniform, int value) {
+        if (program != null) program.uniform1i(uniform, value);
     }
 
     public void uniform1f(String uniform, float value) {

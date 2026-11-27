@@ -11,11 +11,14 @@ import static com.xyp.gtnrlib.utils.MathUtils.clampUnit;
 
 import java.util.Random;
 
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 
 import org.lwjgl.opengl.GL11;
 
+import com.xyp.gtnrlib.GTNRLib;
 import com.xyp.gtnrlib.animation.StructureDeployment;
+import com.xyp.gtnrlib.client.shader.ShaderEffect;
 import com.xyp.gtnrlib.utils.MathUtils;
 import com.xyp.gtnrlib.utils.Vec3d;
 
@@ -27,10 +30,20 @@ final class FxSingularityDeployment {
 
     private static final double TAU = Math.PI * 2;
     private static final int SPHERE_SLICES = 48, SPHERE_STACKS = 24, RING_SEGMENTS = 88;
+    private static final int CORONA_SEGMENTS = RING_SEGMENTS * 2;
     private static final int BRANCH_NODE = 9, FORK_NODE = 17, TWIG_NODE = 24, MAIN_SEGMENTS = 32;
     private static final int TRAIL_SEGMENTS = 24, TRAIL_MOTES = 20;
+    private static final int COLLAPSE_RIBBONS = 6, COLLAPSE_RIBBON_SEGMENTS = 24, COLLAPSE_FLASH_TICKS = 8;
+    private static final double COLLAPSE_FLASH_ONSET = .45;
+    private static final double STAR_RADIUS_PER_DIAGONAL = .42;
+    private static final double LENS_RADIUS_FACTOR = 2.36, LENS_STRENGTH = .64;
     private static final double DISCHARGE_DURATION = 11;
-    private static final int[] DISCHARGE_PERIODS = { 17, 19, 23, 21, 27, 18, 25, 20, 29, 22, 24, 26 };
+    private static final int DETAILED_DISCHARGE_LANES = 12;
+    private static final int[] DISCHARGE_PERIODS = { 17, 19, 23, 21, 27, 18, 25, 20, 29, 22, 24, 26, 18, 24, 20, 27, 19,
+        23 };
+    private static final ShaderEffect PLASMA_SURFACE = new ShaderEffect(
+        new ResourceLocation(GTNRLib.MODID, "shaders/fx/plasma_star.vert.glsl"),
+        new ResourceLocation(GTNRLib.MODID, "shaders/fx/plasma_star.frag.glsl"));
     private static final Vec3d[] SPHERE = sphereVertices();
     private static final Vec3d UP = new Vec3d(0, 1, 0);
     private static final ShotColor ICE = new ShotColor(.014f, .048f, .073f, .18f, .70f, .68f, .97f);
@@ -40,8 +53,9 @@ final class FxSingularityDeployment {
     private final StructureDeployment bounds;
     private final Vec3d center, launchOrigin, leftLaunchOrigin;
     private final Flight flight;
-    private final double radius, height, width, depth;
+    private final double radius, impactRadius, height, width, depth;
     private final long seed;
+    private final FxBackdropRefraction refraction = new FxBackdropRefraction();
     private final Discharge[] discharges = new Discharge[DISCHARGE_PERIODS.length];
     private final Vec3d[] lightningPoints = new Vec3d[MAIN_SEGMENTS + 1];
     private final Vec3d[] lightningSides = new Vec3d[MAIN_SEGMENTS + 1];
@@ -55,7 +69,8 @@ final class FxSingularityDeployment {
         width = Math.max(1, bounds.maxX() - bounds.minX());
         height = Math.max(1, bounds.maxY() - bounds.minY());
         depth = Math.max(1, bounds.maxZ() - bounds.minZ());
-        radius = Math.min(22, 1.65 + .29 * Math.sqrt(width * depth) + .13 * height);
+        radius = STAR_RADIUS_PER_DIAGONAL * Math.hypot(Math.hypot(width, depth), height);
+        impactRadius = Math.min(22, 1.65 + .29 * Math.sqrt(width * depth) + .13 * height);
         center = new Vec3d(bounds.centerX(), bounds.minY() + Math.max(radius + .65, height * .54), bounds.centerZ());
         launchOrigin = launch == null ? null : new Vec3d(launch.x(), launch.y(), launch.z());
         leftLaunchOrigin = launch == null ? null : new Vec3d(launch.leftX(), launch.y(), launch.leftZ());
@@ -65,6 +80,10 @@ final class FxSingularityDeployment {
 
     void impact(long tick) {
         if (impactTick < 0) impactTick = tick;
+    }
+
+    void close() {
+        refraction.close();
     }
 
     boolean hasImpact() {
@@ -125,14 +144,14 @@ final class FxSingularityDeployment {
             } else {
                 double contraction = collapse(age);
                 double aperture = aperture(age, contraction);
-                if (aperture > .055) drawHorizon(age, aperture, viewer);
+                if (aperture > .055) drawHorizon(age, aperture, contraction, viewer);
                 if (age <= SINGULARITY_GROWTH_TICKS && aperture <= .055) {
                     double charge = smooth(age / SINGULARITY_CHARGE_TICKS);
                     drawPinprick(viewer, radius * (.08 + .14 * charge), .96f);
                     drawDischarges(age, 0, viewer, .75 + .25 * charge, false);
                     if (flight != null && flight.paired && age < 5) drawMerger(age, viewer);
                 }
-                if (contraction > 0) drawCollapseStar(viewer, aperture, contraction);
+                if (contraction > COLLAPSE_FLASH_ONSET) drawCollapseStar(viewer, aperture, contraction);
             }
         } finally {
             GL11.glPopMatrix();
@@ -149,12 +168,12 @@ final class FxSingularityDeployment {
         if (released) {
             double flash = 1 - elapsed / 9;
             strength = flash * flash;
-            size = radius * (.285 + .18 * (1 - flash));
+            size = impactRadius * (.285 + .18 * (1 - flash));
         } else {
-            double charge = clampUnit(
-                (age - SINGULARITY_FORM_TICK) / (SINGULARITY_IMPACT_TICK - SINGULARITY_FORM_TICK));
-            size = radius * (.191 + .091 * charge + .012 * Math.sin(age * .72));
-            strength = .87;
+            double flash = 1 - clampUnit((age - SINGULARITY_FORM_TICK) / COLLAPSE_FLASH_TICKS);
+            if (flash <= 0) return;
+            size = radius * (.23 + .12 * (1 - flash));
+            strength = .94 * flash * flash;
         }
         Vec3d viewer = FxCamera.position()
             .subtract(center);
@@ -326,7 +345,7 @@ final class FxSingularityDeployment {
         }
     }
 
-    private static void prepareEffects() {
+    static void prepareEffects() {
         GL11.glDisable(GL11.GL_TEXTURE_2D);
         GL11.glDisable(GL11.GL_LIGHTING);
         GL11.glDisable(GL11.GL_ALPHA_TEST);
@@ -344,12 +363,13 @@ final class FxSingularityDeployment {
     private static double aperture(double age, double collapse) {
         double growth = smooth(
             (age - SINGULARITY_CHARGE_TICKS) / (SINGULARITY_GROWTH_TICKS - SINGULARITY_CHARGE_TICKS));
-        return growth * Math.pow(1 - collapse * collapse, 2);
+        return growth * (1 - collapse * collapse);
     }
 
     private void drawCollapseStar(Vec3d viewer, double aperture, double contraction) {
-        double size = radius * (.067 + .136 * smooth(contraction));
-        float intensity = (float) (.89 * smooth(contraction * 3.8));
+        double flash = smooth((contraction - COLLAPSE_FLASH_ONSET) / (1 - COLLAPSE_FLASH_ONSET));
+        double size = radius * (.08 + .15 * flash);
+        float intensity = (float) (.94 * flash);
         double distance = viewer.length();
         double surface = radius * aperture;
         if (aperture <= .055 || distance < surface * 1.08) {
@@ -357,26 +377,25 @@ final class FxSingularityDeployment {
             return;
         }
         // Offset along the sightline just enough to put the star on the visible face. Its centre stays fixed on screen.
-        Vec3d foreground = viewer.scale(surface * 1.013 / distance);
+        double offset = surface * 1.013 / distance;
+        Vec3d foreground = viewer.scale(offset);
         GL11.glPushMatrix();
         try {
             GL11.glTranslated(foreground.x(), foreground.y(), foreground.z());
-            drawPinprick(viewer, size, intensity);
+            drawPinprick(viewer, size * (1 - offset), intensity);
         } finally {
             GL11.glPopMatrix();
         }
     }
 
-    private void drawHorizon(double age, double aperture, Vec3d viewer) {
+    private void drawHorizon(double age, double aperture, double contraction, Vec3d viewer) {
         double sphereRadius = radius * aperture;
         double distance = viewer.length();
         if (distance < sphereRadius * 1.08) {
+            if (distance > sphereRadius) drawPlasmaSurface(age, sphereRadius);
             drawDischarges(age, 0, viewer, .85, false);
             return;
         }
-        solidSphere(sphereRadius, .012f, .018f, .033f, 1);
-
-        additive();
         Vec3d axis = viewer.scale(1 / distance);
         Vec3d right = Vec3d.rightOf(axis);
         Vec3d up = right.cross(axis)
@@ -384,11 +403,58 @@ final class FxSingularityDeployment {
         double depth = sphereRadius * sphereRadius / distance;
         double apparentRadius = Math.sqrt(sphereRadius * sphereRadius - depth * depth);
         Vec3d limb = axis.scale(depth + sphereRadius * .020);
-        horizonRing(age, limb, right, up, apparentRadius, .94, 1.15, .10f, .42f, 1, .42f, .11f);
-        horizonRing(age, limb, right, up, apparentRadius, .985, 1.074, .27f, .66f, 1, .88f, .12f);
-        horizonRing(age, limb, right, up, apparentRadius, 1, 1.032, .71f, .86f, 1, .96f, .12f);
+        refraction
+            .draw(limb, right, up, apparentRadius * LENS_RADIUS_FACTOR, (float) (LENS_STRENGTH * smooth(aperture)));
+        drawPlasmaSurface(age, sphereRadius);
+        additive();
+        if (contraction > 0) drawCollapseRibbons(age, limb, right, up, apparentRadius, contraction);
+        double glow = contraction * contraction;
+        horizonRing(age, limb, right, up, apparentRadius, .986, 1.16 + .18 * glow, .18f, .58f, 1, .47f, .07f);
         drawCorona(age, limb, right, up, apparentRadius);
-        drawDischarges(age, aperture, viewer, .76 + .24 * aperture, false);
+        drawDischarges(age, aperture, viewer, .74 + .26 * aperture, false);
+    }
+
+    private void drawCollapseRibbons(double age, Vec3d limb, Vec3d right, Vec3d up, double innerRadius,
+        double contraction) {
+        double strength = Math.sin(Math.PI * contraction);
+        double outerRadius = radius * (1.36 - .21 * contraction);
+        for (int lane = 0; lane < COLLAPSE_RIBBONS; lane++) {
+            ShotColor color = (lane & 1) == 0 ? ICE : VIOLET;
+            double heading = lane * TAU / COLLAPSE_RIBBONS + age * .25;
+            for (int side = -1; side <= 1; side += 2) {
+                GL11.glBegin(GL11.GL_TRIANGLE_STRIP);
+                for (int sample = 0; sample <= COLLAPSE_RIBBON_SEGMENTS; sample++) {
+                    double t = sample / (double) COLLAPSE_RIBBON_SEGMENTS;
+                    double distance = innerRadius + (outerRadius - innerRadius) * t * t;
+                    double angle = heading + (2.1 + 1.2 * contraction) * t;
+                    double edge = angle + side * (.045 + .19 * t) * (1 - .5 * contraction);
+                    double pulse = .80 + .20 * Math.sin(t * TAU * 2 + age * .8 + lane);
+                    float alpha = (float) (strength * (1 - t) * pulse * .82);
+                    GL11.glColor4f(color.paleRed, color.paleGreen, 1, alpha);
+                    planeVertex(limb, right, up, Math.cos(angle), Math.sin(angle), distance);
+                    GL11.glColor4f(color.red, color.green, 1, 0);
+                    planeVertex(limb, right, up, Math.cos(edge), Math.sin(edge), distance);
+                }
+                GL11.glEnd();
+            }
+        }
+    }
+
+    static boolean preparePlasmaShader() {
+        return PLASMA_SURFACE.prepare();
+    }
+
+    static void drawPlasmaSurface(double age, double size) {
+        boolean shaded = PLASMA_SURFACE.begin();
+        try {
+            if (shaded) {
+                PLASMA_SURFACE.uniform1f("age", (float) age);
+                PLASMA_SURFACE.uniform1f("coronaPass", 0);
+            }
+            solidSphere(size, .025f, .075f, .77f, 1);
+        } finally {
+            if (shaded) PLASMA_SURFACE.end();
+        }
     }
 
     private static void solidSphere(double size, float red, float green, float blue, int step) {
@@ -423,21 +489,47 @@ final class FxSingularityDeployment {
         GL11.glEnd();
     }
 
-    private static void drawCorona(double age, Vec3d center, Vec3d right, Vec3d up, double radius) {
+    static void drawCorona(double age, Vec3d center, Vec3d right, Vec3d up, double radius) {
+        additive();
+        if (!PLASMA_SURFACE.begin()) {
+            drawFixedCorona(age, center, right, up, radius);
+            return;
+        }
+        try {
+            PLASMA_SURFACE.uniform1f("age", (float) age);
+            PLASMA_SURFACE.uniform1f("coronaPass", 1);
+            GL11.glBegin(GL11.GL_QUADS);
+            coronaCorner(center, right, up, radius, -1, -1);
+            coronaCorner(center, right, up, radius, 1, -1);
+            coronaCorner(center, right, up, radius, 1, 1);
+            coronaCorner(center, right, up, radius, -1, 1);
+            GL11.glEnd();
+        } finally {
+            PLASMA_SURFACE.end();
+        }
+    }
+
+    private static void coronaCorner(Vec3d center, Vec3d right, Vec3d up, double radius, int x, int y) {
+        GL11.glTexCoord2f(x * 1.55f, y * 1.55f);
+        planeVertex(center, right, up, x, y, radius * 1.55);
+    }
+
+    private static void drawFixedCorona(double age, Vec3d center, Vec3d right, Vec3d up, double radius) {
         for (int layer = 0; layer < 3; layer++) {
             GL11.glBegin(GL11.GL_TRIANGLE_STRIP);
-            for (int i = 0; i <= RING_SEGMENTS; i++) {
-                double angle = TAU * i / RING_SEGMENTS;
-                double turbulence = .52 + .22 * Math.sin(3 * angle - age * .12 + layer)
-                    + .17 * Math.sin(7 * angle + age * .20 - layer * 2)
-                    + .09 * Math.sin(16 * angle - age * .43);
-                double inner = 1.004 + .012 * Math.sin(11 * angle + age * .29);
-                double extent = .105 + (.13 + .068 * layer) * turbulence;
-                float intensity = (float) ((.27 - .061 * layer) * (.56 + .44 * turbulence));
-                GL11.glColor4f(.16f, .53f, 1, intensity);
+            for (int i = 0; i <= CORONA_SEGMENTS; i++) {
+                double angle = TAU * i / CORONA_SEGMENTS;
+                double drift = 2.0 * Math.sin(5 * angle - age * .16);
+                double crest = .5 + .5 * Math.sin(17 * angle + drift + age * .33 + layer * .44);
+                double filament = .5 + .5 * Math.sin(31 * angle - age * .41 + layer * 1.16);
+                double plume = crest * crest * crest * (.57 + .43 * filament);
+                double inner = 1.002 + .018 * layer + .009 * Math.sin(19 * angle + age * .31);
+                double extent = (.058 + .245 * plume + .077 * filament) * (.69 + .30 * layer);
+                float intensity = (float) ((.60 - .16 * layer) * (.43 + .38 * crest + .19 * filament));
+                GL11.glColor4f(.51f - .12f * layer, .89f - .12f * layer, 1, intensity);
                 planeVertex(center, right, up, Math.cos(angle), Math.sin(angle), radius * inner);
-                double curl = angle + (.035 + layer * .02) * turbulence;
-                GL11.glColor4f(.14f, .40f, 1, 0);
+                double curl = angle + (.040 + .028 * layer) * (.53 + crest) * Math.sin(5 * angle + age * .17);
+                GL11.glColor4f(.08f, .44f, 1, 0);
                 planeVertex(center, right, up, Math.cos(curl), Math.sin(curl), radius * (inner + extent));
             }
             GL11.glEnd();
@@ -449,7 +541,10 @@ final class FxSingularityDeployment {
         Vec3d view = viewer.length() < .01 ? FxCamera.forward()
             .scale(-1) : viewer.normalize();
         Vec3d eye = aperture > .055 ? viewer.scale(1 / radius) : null;
-        for (int lane = 0; lane < discharges.length; lane++) {
+        int lanes = forming ? DETAILED_DISCHARGE_LANES : discharges.length;
+        double thickness = forming ? 1 : 1.48;
+        float greenScale = forming ? 1 : .64f;
+        for (int lane = 0; lane < lanes; lane++) {
             int period = DISCHARGE_PERIODS[lane];
             double time = age + lane * 7 + (seed & 3);
             int cycle = (int) (time / period);
@@ -457,17 +552,49 @@ final class FxSingularityDeployment {
             if (phase >= DISCHARGE_DURATION) continue;
             Discharge bolt = discharges[lane];
             if (bolt == null || bolt.cycle != cycle || bolt.forming != forming) {
-                bolt = discharge(lane, cycle, forming);
+                bolt = discharge(lane, cycle, lanes, forming);
                 discharges[lane] = bolt;
             }
             double pulse = Math.sin(Math.PI * phase / DISCHARGE_DURATION);
             float light = (float) (Math.sqrt(pulse) * intensity * (.83 + .17 * Math.sin(age * 3.1 + lane)));
             if (light <= .012f) continue;
             Vec3d shift = bolt.root.scale(aperture - 1);
-            lightningPath(bolt.main, shift, view, eye, aperture, 0, .013, .91f, .70f, light);
-            lightningPath(bolt.branch, shift, view, eye, aperture, BRANCH_NODE, .007, .76f, .43f, light * .78f);
-            lightningPath(bolt.fork, shift, view, eye, aperture, FORK_NODE, .006, .70f, .36f, light * .68f);
-            lightningPath(bolt.twig, shift, view, eye, aperture, TWIG_NODE, .004, .67f, .33f, light * .56f);
+            lightningPath(bolt.main, shift, view, eye, aperture, 0, .013 * thickness, .91f, .70f * greenScale, light);
+            lightningPath(
+                bolt.branch,
+                shift,
+                view,
+                eye,
+                aperture,
+                BRANCH_NODE,
+                .007 * thickness,
+                .76f,
+                .43f * greenScale,
+                light * .78f);
+            if (bolt.fork != null) {
+                lightningPath(
+                    bolt.fork,
+                    shift,
+                    view,
+                    eye,
+                    aperture,
+                    FORK_NODE,
+                    .006 * thickness,
+                    .70f,
+                    .36f * greenScale,
+                    light * .68f);
+                lightningPath(
+                    bolt.twig,
+                    shift,
+                    view,
+                    eye,
+                    aperture,
+                    TWIG_NODE,
+                    .004 * thickness,
+                    .67f,
+                    .33f * greenScale,
+                    light * .56f);
+            }
         }
     }
 
@@ -516,9 +643,9 @@ final class FxSingularityDeployment {
         return (float) smooth((normalized - 1.003) * 12);
     }
 
-    private Discharge discharge(int lane, int cycle, boolean forming) {
+    private Discharge discharge(int lane, int cycle, int lanes, boolean forming) {
         Random random = new Random(seed + lane * 8191L + cycle * 65537L);
-        double angle = TAU * (lane + .86 * random.nextDouble()) / discharges.length;
+        double angle = TAU * (lane + .86 * random.nextDouble()) / lanes;
         Vec3d radial = new Vec3d(Math.cos(angle), 0, Math.sin(angle));
         Vec3d tangent = radial.cross(UP);
         Vec3d root = forming ? Vec3d.ZERO
@@ -533,7 +660,7 @@ final class FxSingularityDeployment {
             double spread = .45 + random.nextDouble() * .18;
             end = new Vec3d(radial.x() * width * spread, y, radial.z() * depth * spread).scale(1 / radius);
         } else {
-            double reach = 1.44 + .93 * random.nextDouble();
+            double reach = 1.63 + 1.21 * random.nextDouble();
             double x = center.x() + radius * reach * radial.x(), z = center.z() + radius * reach * radial.z();
             double endY = groundStrike ? ground(x, z) : center.y() + radius * (.34 + random.nextDouble() * 1.01);
             end = radial.scale(reach)
@@ -544,6 +671,14 @@ final class FxSingularityDeployment {
         Vec3d branchEnd = main[BRANCH_NODE].add(tangent.scale(.36 + random.nextDouble() * .35))
             .add(radial.scale(.39))
             .add(0, forkRise, 0);
+        if (lane >= DETAILED_DISCHARGE_LANES) return new Discharge(
+            cycle,
+            forming,
+            root,
+            main,
+            crack(main[BRANCH_NODE], branchEnd, 17, .18, random),
+            null,
+            null);
         Vec3d forkEnd = main[FORK_NODE].subtract(tangent.scale(.26 + random.nextDouble() * .25))
             .add(radial.scale(.31))
             .add(0, forkRise * .67, 0);
@@ -626,8 +761,8 @@ final class FxSingularityDeployment {
         double progress = clampUnit(age / SINGULARITY_AFTERSHOCK_TICKS);
         double fade = (1 - progress) * (1 - progress);
         double expansion = .10 + .90 * (1 - Math.pow(1 - progress, 2));
-        double radiusX = Math.max(radius * 3.8, width * .65 + radius);
-        double radiusZ = Math.max(radius * 3.8, depth * .65 + radius);
+        double radiusX = Math.max(impactRadius * 3.8, width * .65 + impactRadius);
+        double radiusZ = Math.max(impactRadius * 3.8, depth * .65 + impactRadius);
         double y = bounds.minY() - center.y() + .25 + .62 * progress;
         ripple(age, radiusX * expansion, radiusZ * expansion, y, .35, (float) (fade * .44), .16f, .48f);
         ripple(age, radiusX * expansion, radiusZ * expansion, y + .11, .13, (float) (fade * .63), .31f, .65f);
@@ -640,7 +775,7 @@ final class FxSingularityDeployment {
     private void drawImpulseShell(double age, Vec3d viewer) {
         double progress = age / 19;
         double envelope = Math.sin(progress * Math.PI) * (1 - progress);
-        double size = radius * (.42 + 2.72 * progress);
+        double size = impactRadius * (.42 + 2.72 * progress);
         Vec3d axis = viewer.normalize();
         for (int row = 0; row < SPHERE_STACKS; row += 2) {
             GL11.glBegin(GL11.GL_TRIANGLE_STRIP);
