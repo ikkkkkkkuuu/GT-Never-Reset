@@ -20,6 +20,7 @@ import com.xyp.gtneverreset.common.machine.multiblock.LightHunterSpaceStation;
 import com.xyp.gtneverreset.common.machine.multiblock.MegaElectricBlastFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.NexusSatelliteFactory;
 import com.xyp.gtneverreset.common.machine.multiblock.PetrochemicalPlantController;
+import com.xyp.gtneverreset.common.machine.multiblock.PlatinumProcessingPlantController;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
 import com.xyp.gtneverreset.common.machine.multiblock.StarCoreStripper;
@@ -137,6 +138,15 @@ public final class MultiblockLoader {
                 GTNRMachineID.PetrochemicalPlant.id,
                 "gtneverreset.petrochemical_plant",
                 StatCollector.translateToLocal("gtnr.machine.petrochemical_plant.name")));
+        // #tr gtnr.machine.platinum_processing_plant.name
+        // # Platinum Gate
+        // # zh_CN 铂德之门
+        register(
+            GTNRItemList.PlatinumProcessingPlant,
+            new PlatinumProcessingPlantController(
+                GTNRMachineID.PlatinumProcessingPlant.id,
+                "gtneverreset.platinum_processing_plant",
+                StatCollector.translateToLocal("gtnr.machine.platinum_processing_plant.name")));
         // #tr gtnr.machine.quantum_computer.name
         // # Quantum Computer
         // # zh_CN 量子计算机

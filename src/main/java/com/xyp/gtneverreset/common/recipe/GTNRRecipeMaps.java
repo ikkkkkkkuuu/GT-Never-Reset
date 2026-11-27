@@ -71,6 +71,21 @@ public final class GTNRRecipeMaps {
         .neiHandlerInfo(builder -> builder.setDisplayStack(GTNRItemList.CatalyticReformer.get(1)))
         .build();
 
+    public static final RecipeMap<RecipeMapBackend> PLATINUM_PROCESSING = RecipeMapBuilder
+        // #tr gtnr.recipe.platinum_processing
+        // # Platinum Group Processing
+        // # zh_CN 铂族金属处理
+        .of("gtnr.recipe.platinum_processing")
+        .maxIO(2, 9, 2, 3)
+        .progressBar(GTUITextures.PROGRESSBAR_ARROW_MULTIPLE)
+        .progressBarMUI2(GTGuiTextures.PROGRESSBAR_ARROW_MULTIPLE)
+        .frontend(LargeNEIFrontend::new)
+        .neiHandlerInfo(
+            builder -> builder.setDisplayStack(GTNRItemList.PlatinumProcessingPlant.get(1))
+                .setHeight(160)
+                .setMaxRecipesPerPage(1))
+        .build();
+
     public static final RecipeMap<RecipeMapBackend> PETROCHEMICAL_PLANT = RecipeMapBuilder
         // #tr gtnr.recipe.petrochemical_plant
         // # Integrated Petrochemistry

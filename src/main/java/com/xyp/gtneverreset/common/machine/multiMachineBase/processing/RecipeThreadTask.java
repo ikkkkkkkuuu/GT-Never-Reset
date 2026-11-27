@@ -1,12 +1,14 @@
 package com.xyp.gtneverreset.common.machine.multiMachineBase.processing;
 
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraftforge.common.util.Constants.NBT;
 
 import gregtech.api.util.OverclockCalculator;
 
 public final class RecipeThreadTask {
 
     private final int thread;
+    private final int station;
     private final int parallels;
     private final RecipeThreadOutputs outputs;
     private long eut;
@@ -18,25 +20,36 @@ public final class RecipeThreadTask {
     private int launchDuration;
 
     public RecipeThreadTask(int thread, long eut, int duration, int parallels, RecipeThreadOutputs outputs) {
-        if (thread < 0 || eut < 0 || duration < 1 || parallels < 1 || outputs == null) {
-            throw new IllegalArgumentException("Invalid recipe thread task");
-        }
-        this.thread = thread;
-        this.eut = eut;
-        this.duration = duration;
-        this.parallels = parallels;
-        this.outputs = outputs;
+        this(thread, eut, duration, parallels, outputs, 0, -1);
     }
 
     public RecipeThreadTask(int thread, long eut, int duration, int parallels, RecipeThreadOutputs outputs,
         int progress) {
-        this(thread, eut, duration, parallels, outputs);
+        this(thread, eut, duration, parallels, outputs, progress, -1);
+    }
+
+    private RecipeThreadTask(int thread, long eut, int duration, int parallels, RecipeThreadOutputs outputs,
+        int progress, int station) {
+        if (thread < 0 || eut < 0 || duration < 1 || parallels < 1 || outputs == null) {
+            throw new IllegalArgumentException("Invalid recipe thread task");
+        }
+        this.thread = thread;
+        this.station = Math.max(-1, station);
+        this.eut = eut;
+        this.duration = duration;
+        this.parallels = parallels;
+        this.outputs = outputs;
         this.progress = Math.max(0, Math.min(duration, progress));
     }
 
     RecipeThreadTask(int thread, long eut, int duration, int parallels, RecipeThreadOutputs outputs,
         OverclockSettings overclock) {
-        this(thread, eut, duration, parallels, outputs);
+        this(thread, eut, duration, parallels, outputs, overclock, -1);
+    }
+
+    RecipeThreadTask(int thread, long eut, int duration, int parallels, RecipeThreadOutputs outputs,
+        OverclockSettings overclock, int station) {
+        this(thread, eut, duration, parallels, outputs, 0, station);
         this.overclock = overclock;
         fullDurationAtCurrentRate = duration;
         launchEUt = eut;
@@ -45,6 +58,10 @@ public final class RecipeThreadTask {
 
     public int getThread() {
         return thread;
+    }
+
+    public int getStation() {
+        return station;
     }
 
     public long getEUt() {
@@ -113,6 +130,7 @@ public final class RecipeThreadTask {
     public NBTTagCompound save() {
         NBTTagCompound tag = new NBTTagCompound();
         tag.setInteger("thread", thread);
+        if (station >= 0) tag.setInteger("station", station);
         tag.setLong("eut", eut);
         tag.setInteger("duration", duration);
         tag.setInteger("progress", progress);
@@ -135,7 +153,8 @@ public final class RecipeThreadTask {
             tag.getInteger("duration"),
             tag.getInteger("parallels"),
             RecipeThreadOutputs.load(tag.getCompoundTag("outputs")),
-            tag.getInteger("progress"));
+            tag.getInteger("progress"),
+            tag.hasKey("station", NBT.TAG_INT) ? tag.getInteger("station") : -1);
         if (tag.hasKey("overclock", 10)) {
             NBTTagCompound settings = tag.getCompoundTag("overclock");
             int rateDuration = settings.getInteger("rateDuration");

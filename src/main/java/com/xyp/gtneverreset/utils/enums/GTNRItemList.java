@@ -90,6 +90,7 @@ public enum GTNRItemList implements IItemContainer {
     LargeCropBreeder,
     LargeSteelKiln,
     PetrochemicalPlant,
+    PlatinumProcessingPlant,
 
     SuperMTEHatchCraftingInputME,
     CircuitMEPatternBuffer,
