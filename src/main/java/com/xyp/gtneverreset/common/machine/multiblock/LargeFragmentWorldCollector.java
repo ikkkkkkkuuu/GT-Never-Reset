@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.common.machine.multiblock;
 
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofChain;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
 import static gregtech.api.enums.HatchElement.Energy;
 import static gregtech.api.enums.HatchElement.ExoticEnergy;
@@ -8,6 +9,7 @@ import static gregtech.api.enums.HatchElement.InputHatch;
 import static gregtech.api.enums.HatchElement.OutputBus;
 import static gregtech.api.enums.HatchElement.OutputHatch;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
+import static gregtech.api.util.GTStructureUtility.ofHatchAdder;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -25,9 +27,12 @@ import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.GTNeverReset;
+import com.xyp.gtneverreset.common.machine.hatch.ParameterModuleHatch;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeMultiblockBase;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeProcessingLogic;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadProcessingLogic;
+import com.xyp.gtneverreset.common.machine.tooltip.AutoMultiblockTooltipBuilder;
+import com.xyp.gtneverreset.common.machine.tooltip.StructureTooltipHooks;
 import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectionBackend;
 import com.xyp.gtneverreset.utils.enums.MachineModuleType;
@@ -48,6 +53,7 @@ import gregtech.api.recipe.check.CheckRecipeResultRegistry;
 import gregtech.api.render.TextureFactory;
 import gregtech.api.structure.error.StructureError;
 import gregtech.api.util.GTRecipe;
+import gregtech.api.util.MultiblockTooltipBuilder;
 import gregtech.api.util.OverclockCalculator;
 import gregtech.api.util.ParallelHelper;
 
@@ -59,8 +65,8 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
     private static final int OFFSET_X = 1, OFFSET_Y = 3, OFFSET_Z = 0;
     private static final Casings CASING = Casings.StableTitaniumMachineCasing;
     private static final int RECIPE_THREADS = 64;
-    private static final int SPEED_MULTIPLIER = 4;
-    private static final int ENERGY_MULTIPLIER = 256;
+    private static final double SPEED_MULTIPLIER = 1.5;
+    private static final int ENERGY_MULTIPLIER = 64;
     private static final IHatchElement<MTEMultiBlockBase> ENERGY_INPUT = Energy.or(ExoticEnergy);
     private static final String FRONT_PATH = "large_fragment_world_collector/overlay_front";
     private static final IIconContainer FRONT = Textures.BlockIcons.custom(GTNeverReset.MODID, FRONT_PATH);
@@ -82,14 +88,17 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
         casingHatches.put(InputBus, 0);
         casingHatches.put(InputHatch, 0);
         casingHatches.put(OutputHatch, 0);
+        var ports = ofChain(
+            StructureTooltipHooks.describeAsHatch(
+                ofHatchAdder(LargeFragmentWorldCollector::addParameterModuleToMachineList, texture, 1),
+                ParameterModuleHatch.NAME_KEY),
+            buildHatchAdder(LargeFragmentWorldCollector.class).atLeast(casingHatches)
+                .casingIndex(texture)
+                .hint(1)
+                .buildAndChain(CASING.asElement()));
         return StructureDefinition.<LargeFragmentWorldCollector>builder()
             .addShape(PIECE, transpose(MultiblockStructureLoader.load("large_fragment_world_collector")))
-            .addElement(
-                'X',
-                buildHatchAdder(LargeFragmentWorldCollector.class).atLeast(casingHatches)
-                    .casingIndex(texture)
-                    .hint(1)
-                    .buildAndChain(CASING.asElement()))
+            .addElement('X', ports)
             .addElement(
                 'I',
                 buildHatchAdder(LargeFragmentWorldCollector.class).anyOf(InputBus)
@@ -158,9 +167,7 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
             @Override
             @Nonnull
             protected OverclockCalculator createOverclockCalculator(@Nonnull GTRecipe recipe) {
-                return super.createOverclockCalculator(recipe).setNoOverclock(true)
-                    .setDuration(Math.max(1, recipe.mDuration / SPEED_MULTIPLIER))
-                    .setDurationModifier(1);
+                return super.createOverclockCalculator(recipe).setNoOverclock(true);
             }
 
             @Override
@@ -229,6 +236,12 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
     }
 
     @Override
+    protected MultiblockTooltipBuilder createTooltip() {
+        return new AutoMultiblockTooltipBuilder().addAutoTooltip(this)
+            .toolTipFinisher();
+    }
+
+    @Override
     public String getLocalNameKey() {
         return "gtnr.machine.large_fragment_world_collector.name";
     }
@@ -260,7 +273,7 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
 
     @Override
     public int getParameterModuleLimit(MachineModuleType type) {
-        return 0;
+        return type == MachineModuleType.Overclock ? 0 : super.getParameterModuleLimit(type);
     }
 
     @Override
