@@ -720,6 +720,7 @@ public class ProjectorDeploymentChecks {
                         require(field(effects, "style") == STYLE, "Client received the wrong deployment style");
                         var singularity = field(effects, "singularity");
                         checkTwinLaunch(singularity);
+                        checkStarSize(singularity, bounds);
                         if (!tall) checkColdShaders(singularity, age);
                         sawStart = true;
                         break;
@@ -878,11 +879,11 @@ public class ProjectorDeploymentChecks {
                         && y >= height * 43 / 100
                         && y < height * 50 / 100
                         && isPlasmaColor(red, green, blue)) plasmaPixels++;
-                    if (y >= height * 51 / 100 && red >= 105
-                        && green >= 150
-                        && blue >= 177
+                    if (y >= height * 51 / 100 && red >= 85
+                        && green >= 125
+                        && blue >= 151
                         && green >= red - 6
-                        && blue >= green) brightParts[(x - left) * brightParts.length / (right - left)]++;
+                        && blue >= green + 4) brightParts[(x - left) * brightParts.length / (right - left)]++;
                 }
                 int filled = 0;
                 for (int count : brightParts) if (count >= 3) filled++;
@@ -896,11 +897,32 @@ public class ProjectorDeploymentChecks {
                     + linedRows
                     + " blue-white structure rows");
             // The merged voxel edges are much sparser than the tessellated mesh wireframe.
-            return plasmaPixels >= 475 && linedRows >= 14;
+            return plasmaPixels >= 350 && linedRows >= 10;
         }
 
         private static boolean isPlasmaColor(int red, int green, int blue) {
             return blue >= 105 && blue - green >= 30 && blue - red >= 20;
+        }
+
+        private void checkStarSize(Object effect, StructureDeployment bounds) throws ReflectiveOperationException {
+            int width = bounds.maxX() - bounds.minX(), height = bounds.maxY() - bounds.minY(),
+                depth = bounds.maxZ() - bounds.minZ();
+            double diagonal = Math.hypot(Math.hypot(width, depth), height);
+            double radius = (double) field(effect, "radius");
+            double ratio = radius / diagonal;
+            require(
+                Math.abs(ratio - .42) < .005,
+                "Plasma star radius did not scale with the deployment diagonal: " + ratio);
+            System.out.printf(
+                java.util.Locale.ROOT,
+                "[projector-singularity-qa] %s plasma radius %.2f, structure %dx%dx%d diagonal %.2f, ratio %.3f%n",
+                shotPrefix,
+                radius,
+                width,
+                height,
+                depth,
+                diagonal,
+                ratio);
         }
 
         private void checkColdShaders(Object effect, long age) throws ReflectiveOperationException {

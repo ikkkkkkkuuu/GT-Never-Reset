@@ -71,13 +71,17 @@ final class FxDeploymentShaderWarmup {
             GL11.glLoadIdentity();
             GL11.glTranslated(0, 0, -2);
             FxSingularityDeployment.prepareEffects();
+            Vec3d right = new Vec3d(1, 0, 0), up = new Vec3d(0, 1, 0);
             boolean drewRefraction = false;
             if (refraction) {
                 try (var lens = new FxBackdropRefraction()) {
-                    drewRefraction = lens.draw(Vec3d.ZERO, new Vec3d(1, 0, 0), new Vec3d(0, 1, 0), .82, .64f);
+                    drewRefraction = lens.draw(Vec3d.ZERO, right, up, .82, .64f);
                 }
             }
-            if (plasma) FxSingularityDeployment.drawPlasmaSurface(22, .54);
+            if (plasma) {
+                FxSingularityDeployment.drawPlasmaSurface(22, .54);
+                FxSingularityDeployment.drawCorona(22, new Vec3d(0, 0, .14), right, up, .54);
+            }
             GL11.glFinish();
             return !refraction || drewRefraction;
         } finally {
