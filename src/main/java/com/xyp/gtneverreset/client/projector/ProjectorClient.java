@@ -36,7 +36,6 @@ import com.xyp.gtneverreset.common.projector.ProjectorServer;
 import com.xyp.gtneverreset.common.projector.ProjectorSimulation;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure.Choice;
-import com.xyp.gtnrlib.compat.gtneverreset.ProjectorArmAnimation;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -346,12 +345,8 @@ public class ProjectorClient {
         var minecraft = Minecraft.getMinecraft();
         var player = minecraft.thePlayer;
         if (slot == Integer.MIN_VALUE || player == null) return;
-        ItemStack terminal = ProjectorServer.projectorAt(player, slot);
-        if (terminal == null) return;
-        ProjectorArmAnimation.requestOpen(terminal, () -> {
-            if (minecraft.thePlayer == player && ProjectorServer.projectorAt(player, slot) != null)
-                NetWorkHandler.sendToServer(new OpenProjectorPacket(slot));
-        });
+        if (ProjectorServer.projectorAt(player, slot) == null) return;
+        NetWorkHandler.sendToServer(new OpenProjectorPacket(slot));
     }
 
     public static void openAt(ProjectorStructure shown, int cell) {

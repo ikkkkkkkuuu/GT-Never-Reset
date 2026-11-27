@@ -32,14 +32,6 @@ public final class FirstPersonArmRenderer {
     private static ModelBiped defaultChestplate;
 
     static void render(boolean left, float shoulderRoll) {
-        render(left, shoulderRoll, 0);
-    }
-
-    public static void renderRaisedProjectorArm(float projection) {
-        render(false, 0, projection);
-    }
-
-    private static void render(boolean left, float shoulderRoll, float projection) {
         var mc = Minecraft.getMinecraft();
         var player = mc.thePlayer;
         var renderer = RenderManager.instance.getEntityRenderObject(player);
@@ -63,7 +55,6 @@ public final class FirstPersonArmRenderer {
             GL11.glAlphaFunc(GL11.GL_GREATER, .1f);
             drawAtShoulder(arm, MODEL_UNIT);
             renderChestplate(player, left);
-            if (projection > .01f) ProjectorHologramRenderer.renderFromWrist(projection, true);
         } finally {
             GL11.glPopAttrib();
             GL11.glPopMatrix();
