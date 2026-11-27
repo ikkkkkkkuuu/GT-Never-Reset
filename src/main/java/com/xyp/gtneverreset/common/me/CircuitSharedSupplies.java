@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -40,8 +40,10 @@ public final class CircuitSharedSupplies {
         IAEItemStack::getItemStack,
         stack -> stack.stackSize);
     private final NetworkInputs<IAEFluidStack, FluidStack> networkFluids = new NetworkInputs<>(
-        IAEFluidStack::getFluidStack,
-        stack -> stack.amount);
+        fluid -> fluid.getStackSize() > Integer.MAX_VALUE
+            ? new MERecipeFluidStack(fluid.getFluidStack(), fluid.getStackSize(), null)
+            : fluid.getFluidStack(),
+        MERecipeFluidStack::getAmount);
     private IGrid offeredGrid;
     private boolean bufferedItems;
     private boolean bufferedFluids;
@@ -59,7 +61,7 @@ public final class CircuitSharedSupplies {
     public CircuitSharedSupplies(Runnable changed, Runnable configurationChanged) {
         this.changed = changed;
         this.configurationChanged = configurationChanged;
-        stock = new LongCircuitBuffer(null, changed, items, fluids);
+        stock = new LongCircuitBuffer(null, changed, items, fluids, true);
     }
 
     public IAEStack<?> target(int slot) {
@@ -79,8 +81,9 @@ public final class CircuitSharedSupplies {
             for (int i = 0; i < targets.length; i++) {
                 if (i != slot && targets[i] != null && targets[i].isSameType(target)) return false;
             }
+            long limit = target.isItem() ? Integer.MAX_VALUE : LongCircuitBuffer.maxPoweredAmount(target);
             target = target.copy()
-                .setStackSize(Math.max(1, Math.min(Integer.MAX_VALUE, target.getStackSize())));
+                .setStackSize(Math.max(1, Math.min(limit, target.getStackSize())));
         }
         targets[slot] = target;
         return true;
@@ -340,7 +343,7 @@ public final class CircuitSharedSupplies {
         lastPullTick = Long.MIN_VALUE;
         exposed = false;
         stock.clear();
-        stock = new LongCircuitBuffer(saved, changed, items, fluids);
+        stock = new LongCircuitBuffer(saved, changed, items, fluids, true);
         configurationChanged.run();
     }
 
@@ -350,9 +353,9 @@ public final class CircuitSharedSupplies {
         private final List<T> original = new ArrayList<>();
         private final List<V> views = new ArrayList<>();
         private final Function<T, V> toView;
-        private final ToIntFunction<V> count;
+        private final ToLongFunction<V> count;
 
-        NetworkInputs(Function<T, V> toView, ToIntFunction<V> count) {
+        NetworkInputs(Function<T, V> toView, ToLongFunction<V> count) {
             this.toView = toView;
             this.count = count;
         }
@@ -381,7 +384,7 @@ public final class CircuitSharedSupplies {
             var result = new ArrayList<T>();
             for (int i = 0; i < views.size(); i++) {
                 T offered = original.get(i);
-                long used = offered.getStackSize() - Math.max(0, count.applyAsInt(views.get(i)));
+                long used = offered.getStackSize() - Math.max(0, count.applyAsLong(views.get(i)));
                 if (used > 0) result.add(
                     offered.copy()
                         .setStackSize(used));

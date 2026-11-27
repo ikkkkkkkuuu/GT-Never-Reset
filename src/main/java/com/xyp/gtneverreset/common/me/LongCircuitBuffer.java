@@ -3,8 +3,8 @@ package com.xyp.gtneverreset.common.me;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.ObjIntConsumer;
-import java.util.function.ToIntFunction;
+import java.util.function.ObjLongConsumer;
+import java.util.function.ToLongFunction;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -26,7 +26,7 @@ import appeng.util.item.AEFluidStack;
 import appeng.util.item.AEItemStack;
 import gregtech.api.util.GTUtility;
 
-/** Long totals with stable int-sized recipe views; GT's in-place debits are settled before the next buffer access. */
+/** Long totals with stable recipe views whose debits are settled before the next buffer access. */
 public final class LongCircuitBuffer {
 
     private static final int MAX_TYPES_PER_CHANNEL = 64;
@@ -36,16 +36,24 @@ public final class LongCircuitBuffer {
 
     public LongCircuitBuffer(NBTTagCompound saved, Runnable changed, List<ItemStack> itemViews,
         List<FluidStack> fluidViews) {
+        this(saved, changed, itemViews, fluidViews, false);
+    }
+
+    LongCircuitBuffer(NBTTagCompound saved, Runnable changed, List<ItemStack> itemViews, List<FluidStack> fluidViews,
+        boolean wideFluidViews) {
         items = new Buffer<>(
             IAEItemStack::getItemStack,
             stack -> stack.stackSize,
-            (stack, count) -> stack.stackSize = count,
+            (stack, count) -> stack.stackSize = (int) count,
+            Integer.MAX_VALUE,
             changed,
             itemViews);
         fluids = new Buffer<>(
-            IAEFluidStack::getFluidStack,
-            stack -> stack.amount,
-            (stack, count) -> stack.amount = count,
+            fluid -> wideFluidViews ? new MERecipeFluidStack(fluid.getFluidStack(), fluid.getStackSize(), null)
+                : fluid.getFluidStack(),
+            MERecipeFluidStack::getAmount,
+            MERecipeFluidStack::setAmount,
+            wideFluidViews ? Long.MAX_VALUE : Integer.MAX_VALUE,
             changed,
             fluidViews);
         if (saved == null) return;
@@ -186,11 +194,15 @@ public final class LongCircuitBuffer {
         return list;
     }
 
+    static long maxPoweredAmount(IAEStack<?> stack) {
+        // AE2 ceilDiv adds the divisor before subtracting one.
+        return Long.MAX_VALUE - Math.max(1, stack.getAmountPerUnit());
+    }
+
     private static <T extends IAEStack<T>, V> void refund(Entry<T, V> entry, AENetworkProxy proxy,
         IMEMonitor<T> inventory, BaseActionSource source) throws GridAccessException {
         entry.settle();
-        // AE2 ceilDiv adds the divisor before subtracting one. Keep that addition within long and send any tail next.
-        long safeRequest = Long.MAX_VALUE - Math.max(1, entry.stored.getAmountPerUnit());
+        long safeRequest = maxPoweredAmount(entry.stored);
         for (int attempt = 0; attempt < 2 && entry.stored.getStackSize() > 0; attempt++) {
             long sent = Math.min(entry.stored.getStackSize(), safeRequest);
             T rest = Platform.poweredInsert(
@@ -209,15 +221,17 @@ public final class LongCircuitBuffer {
         private final List<Entry<T, V>> entries = new ArrayList<>();
         private final List<V> views;
         private final Function<T, V> view;
-        private final ToIntFunction<V> count;
-        private final ObjIntConsumer<V> setCount;
+        private final ToLongFunction<V> count;
+        private final ObjLongConsumer<V> setCount;
+        private final long viewLimit;
         private final Runnable changed;
 
-        Buffer(Function<T, V> view, ToIntFunction<V> count, ObjIntConsumer<V> setCount, Runnable changed,
-            List<V> views) {
+        Buffer(Function<T, V> view, ToLongFunction<V> count, ObjLongConsumer<V> setCount, long viewLimit,
+            Runnable changed, List<V> views) {
             this.view = view;
             this.count = count;
             this.setCount = setCount;
+            this.viewLimit = viewLimit;
             this.changed = changed;
             this.views = views;
         }
@@ -255,14 +269,15 @@ public final class LongCircuitBuffer {
                 }
                 long excess = entry.stored.getStackSize() - limit;
                 if (excess <= 0) continue;
+                long sent = Math.min(excess, maxPoweredAmount(entry.stored));
                 T rejected = Platform.poweredInsert(
                     energy,
                     inventory,
                     entry.stored.copy()
-                        .setStackSize(excess),
+                        .setStackSize(sent),
                     source);
-                entry.refunded(excess, rejected);
-                modified |= rejected == null || rejected.getStackSize() < excess;
+                entry.refunded(sent, rejected);
+                modified |= rejected == null || rejected.getStackSize() < sent;
             }
             settle();
             for (T target : targets) {
@@ -279,7 +294,7 @@ public final class LongCircuitBuffer {
                     energy,
                     inventory,
                     target.copy()
-                        .setStackSize(missing),
+                        .setStackSize(Math.min(missing, maxPoweredAmount(target))),
                     source);
                 if (received != null && received.getStackSize() > 0) {
                     load(received);
@@ -334,7 +349,7 @@ public final class LongCircuitBuffer {
         private final T stored;
         private final V view;
         private final Buffer<T, V> owner;
-        private int exposed;
+        private long exposed;
 
         Entry(T stored, Buffer<T, V> owner) {
             this.stored = stored;
@@ -346,12 +361,12 @@ public final class LongCircuitBuffer {
         }
 
         void refresh() {
-            exposed = (int) Math.min(Integer.MAX_VALUE, stored.getStackSize());
+            exposed = Math.min(owner.viewLimit, stored.getStackSize());
             owner.setCount.accept(view, exposed);
         }
 
         void settle() {
-            int consumed = exposed - Math.max(0, owner.count.applyAsInt(view));
+            long consumed = exposed - Math.max(0, owner.count.applyAsLong(view));
             if (consumed > 0) {
                 stored.setStackSize(stored.getStackSize() - consumed);
                 owner.changed.run();

@@ -7,7 +7,7 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtnrlib.utils.LongMath;
 
-/** A stocking hatch's temporary recipe input with an int view for Forge callers. */
+/** A temporary ME recipe input with an int view for Forge callers. */
 public final class MERecipeFluidStack extends FluidStack {
 
     private final long offered;

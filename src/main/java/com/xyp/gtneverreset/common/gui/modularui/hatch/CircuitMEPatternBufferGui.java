@@ -2,6 +2,7 @@ package com.xyp.gtneverreset.common.gui.modularui.hatch;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.item.ItemStack;
@@ -23,6 +24,7 @@ import com.cleanroommc.modularui.value.sync.BooleanSyncValue;
 import com.cleanroommc.modularui.value.sync.GenericSyncValue;
 import com.cleanroommc.modularui.value.sync.IntSyncValue;
 import com.cleanroommc.modularui.value.sync.InteractionSyncHandler;
+import com.cleanroommc.modularui.value.sync.LongSyncValue;
 import com.cleanroommc.modularui.value.sync.PanelSyncManager;
 import com.cleanroommc.modularui.widget.sizer.Unit;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
@@ -30,6 +32,7 @@ import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.glodblock.github.common.item.ItemFluidPacket;
+import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.me.CircuitSharedSupplies;
 import com.xyp.gtneverreset.compat.ae2fc.FluidDropCompat;
@@ -51,6 +54,7 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
 
     private static final int PANEL_WIDTH = 188;
     private static final String PANEL = "shared_supplies";
+    private static final Pattern FLUID_LIMIT_PATTERN = Pattern.compile("[0-9]*");
     private final CircuitSharedSupplies supplies;
 
     public CircuitMEPatternBufferGui(CircuitMEPatternBuffer hatch) {
@@ -198,7 +202,7 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
             .nullable()
             .build();
         sync.syncValue("sample", slot, icon);
-        var amount = new IntSyncValue(() -> amount(slot));
+        var amount = new LongSyncValue(() -> amount(slot));
         sync.syncValue("amount", slot, amount);
         String name = "supply_limit_" + slot;
         var editor = sync.syncedPanel(name, true, (manager, handler) -> amountPanel(name, slot));
@@ -236,7 +240,8 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
                             () -> icon.getValue() == null ? ""
                                 : icon.getValue()
                                     .getDisplayName() + " × "
-                                    + amount.getIntValue()))
+                                    + (itemSlot ? Long.toString(amount.getLongValue())
+                                        : String.format("%,d mB", amount.getLongValue()))))
                         .addLine(IKey.lang("gtnr.gui.circuit_supplies.sample")));
     }
 
@@ -260,10 +265,10 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
         implements RecipeViewerGhostIngredientSlot<ItemStack> {
 
         private final boolean itemSlot;
-        private final IntSyncValue amount;
+        private final LongSyncValue amount;
         private final Consumer<ItemStack> drop;
 
-        private SupplySampleSlot(Supplier<ItemStack> icon, boolean itemSlot, IntSyncValue amount,
+        private SupplySampleSlot(Supplier<ItemStack> icon, boolean itemSlot, LongSyncValue amount,
             Consumer<ItemStack> drop) {
             super(icon);
             this.itemSlot = itemSlot;
@@ -275,14 +280,15 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
         @SideOnly(Side.CLIENT)
         public void draw(ModularGuiContext context, WidgetThemeEntry<?> theme) {
             super.draw(context, theme);
-            int count = amount.getIntValue();
-            if (!itemSlot || count <= 0) return;
+            long count = amount.getLongValue();
+            if (count <= 0) return;
 
             // Match GT's fluid display label within the centered 16-pixel inventory icon.
             var font = Minecraft.getMinecraft().fontRenderer;
-            float scale = font.getUnicodeFlag() ? 0.75f : 0.5f;
-            String text = count < 10000 ? Integer.toString(count)
-                : ReadableNumberConverter.INSTANCE.toWideReadableForm(count);
+            String text = itemSlot
+                ? count < 10000 ? Long.toString(count) : ReadableNumberConverter.INSTANCE.toWideReadableForm(count)
+                : NumberFormatUtil.formatFluidCompact(count);
+            float scale = Math.min(font.getUnicodeFlag() ? 0.75f : 0.5f, 16f / font.getStringWidth(text));
             GlStateManager.pushMatrix();
             GlStateManager.translate((getArea().width - 16) / 2, (getArea().height - 16) / 2, 0);
             GlStateManager.scale(scale, scale, 1);
@@ -301,19 +307,20 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
         }
     }
 
-    private int amount(int slot) {
+    private long amount(int slot) {
         var target = supplies.target(slot);
-        return target == null ? 0 : (int) target.getStackSize();
+        return target == null ? 0 : target.getStackSize();
     }
 
     private static ItemStack display(IAEStack<?> target) {
-        if (target instanceof IAEFluidStack fluid) return GTUtility.getFluidDisplayStack(fluid.getFluidStack(), true);
+        if (target instanceof IAEFluidStack fluid)
+            return GTUtility.getFluidDisplayStack(fluid.getFluidStack(), false, true);
         if (target instanceof IAEItemStack item) return GTUtility.copyAmount(1, item.getItemStack());
         return null;
     }
 
     private ModularPanel amountPanel(String name, int slot) {
-        var limit = new IntSyncValue(null, null, () -> amount(slot), value -> {
+        var limit = new LongSyncValue(null, null, () -> amount(slot), value -> {
             var target = supplies.target(slot);
             if (target != null) supplies.setTarget(slot, target.setStackSize(value));
         }).allowC2S();
@@ -323,8 +330,20 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
         // #tr gtnr.gui.circuit_supplies.fluid_limit
         // # Fluid limit (mB)
         // # zh_CN 流体用量上限（mB）
-        String key = slot < CircuitSharedSupplies.SLOTS_PER_CHANNEL ? "gtnr.gui.circuit_supplies.item_limit"
-            : "gtnr.gui.circuit_supplies.fluid_limit";
+        boolean itemSlot = slot < CircuitSharedSupplies.SLOTS_PER_CHANNEL;
+        String key = itemSlot ? "gtnr.gui.circuit_supplies.item_limit" : "gtnr.gui.circuit_supplies.fluid_limit";
+        var field = new TextFieldWidget().name("supply_limit")
+            .value(limit)
+            .size(138, 16)
+            .pos(6, 23);
+        if (itemSlot) {
+            field.numbersInt(1, Integer.MAX_VALUE)
+                .setMaxLength(10);
+        } else {
+            field.setPattern(FLUID_LIMIT_PATTERN)
+                .setValidator(CircuitMEPatternBufferGui::validateFluidLimit)
+                .setMaxLength(19);
+        }
         return GTGuis.createPopUpPanel(name)
             .background(GTGuiTextures.BACKGROUND_POPUP_STANDARD)
             .size(152, 48)
@@ -332,12 +351,15 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
                 IKey.lang(key)
                     .asWidget()
                     .pos(6, 6))
-            .child(
-                new TextFieldWidget().name("supply_limit")
-                    .value(limit)
-                    .numbersInt(1, Integer.MAX_VALUE)
-                    .setMaxLength(10)
-                    .size(138, 16)
-                    .pos(6, 23));
+            .child(field);
+    }
+
+    private static String validateFluidLimit(String text) {
+        if (text.isEmpty()) return "1";
+        try {
+            return Long.toString(Math.max(1, Long.parseLong(text)));
+        } catch (NumberFormatException ignored) {
+            return Long.toString(Long.MAX_VALUE);
+        }
     }
 }

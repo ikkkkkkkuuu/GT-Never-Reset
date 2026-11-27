@@ -3,6 +3,7 @@ package com.xyp.gtneverreset.qa;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
@@ -28,10 +29,14 @@ import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.glodblock.github.loader.ItemAndBlockHolder;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
+import com.xyp.gtneverreset.common.me.MERecipeFluidStack;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 
 import appeng.api.AEApi;
 import appeng.api.config.Actionable;
+import appeng.api.networking.security.BaseActionSource;
+import appeng.api.storage.IMEMonitor;
+import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.storage.data.IAEStack;
 import appeng.container.ContainerNull;
 import appeng.tile.networking.TileCreativeEnergyCell;
@@ -46,7 +51,9 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import gregtech.api.GregTechAPI;
+import gregtech.api.enums.ItemList;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
+import gregtech.api.metatileentity.implementations.MTEMultiBlockBase;
 import gregtech.api.util.GTRecipe;
 import gregtech.api.util.GTUtility;
 
@@ -56,6 +63,8 @@ public final class CircuitSupplyChecks {
     private static final boolean CROSS_RECIPE = Boolean.getBoolean("gtnr.cross.recipe.supplies.qa");
     private static final GTNRMachineID HATCH = CROSS_RECIPE ? GTNRMachineID.CrossRecipeMEPatternBuffer
         : GTNRMachineID.CircuitMEPatternBuffer;
+    private static final long WIDE_FLUID_LIMIT = 3_500_000_000L;
+    private static final long GUI_FLUID_LIMIT = 9_007_199_254_740_993L;
 
     private CircuitMEPatternBuffer guiHatch;
     private int waitForTile;
@@ -114,7 +123,7 @@ public final class CircuitSupplyChecks {
                     .getStackSize() == 1234567;
                 edited = guiHatch.getSharedSupplies()
                     .target(16)
-                    .getStackSize() == 1234567;
+                    .getStackSize() == GUI_FLUID_LIMIT;
                 return;
             }
             if (serverHatch == null) {
@@ -133,7 +142,7 @@ public final class CircuitSupplyChecks {
                         .cell1k()
                         .maybeStack(1)
                         .get());
-                drive.setInventorySlotContents(1, new ItemStack(ItemAndBlockHolder.CELL1K));
+                drive.setInventorySlotContents(1, new ItemStack(ItemAndBlockHolder.SINGULARITY_CELL));
                 power.getProxy()
                     .onReady();
                 drive.getProxy()
@@ -188,6 +197,7 @@ public final class CircuitSupplyChecks {
     }
 
     private void verify(EntityPlayerMP player) throws Exception {
+        verifyWideFluidSupply(player.worldObj);
         var supplies = serverHatch.getSharedSupplies();
         var grid = serverHatch.getProxy();
         var storage = grid.getStorage();
@@ -345,6 +355,161 @@ public final class CircuitSupplyChecks {
             "dropped hatch retains reserve");
     }
 
+    private void verifyWideFluidSupply(World world) throws Exception {
+        long stocked = 6_000_000_000L;
+        int parallel = 60, perRecipe = 50_000_000;
+        long consumed = (long) parallel * perRecipe;
+        var supplies = serverHatch.getSharedSupplies();
+        var proxy = serverHatch.getProxy();
+        var storage = proxy.getStorage()
+            .getFluidInventory();
+        var source = serverHatch.getMEOutputActionSource();
+        var lava = AEFluidStack.create(new FluidStack(FluidRegistry.LAVA, 1));
+        require(
+            storage.injectItems(
+                lava.copy()
+                    .setStackSize(stocked),
+                Actionable.MODULATE,
+                source) == null,
+            "ME stores six billion mB of lava");
+        supplies.setTarget(
+            17,
+            lava.copy()
+                .setStackSize(WIDE_FLUID_LIMIT));
+        require(
+            supplies.target(17)
+                .getStackSize() == WIDE_FLUID_LIMIT,
+            "shared fluid limit keeps all 64 bits");
+        var saved = new NBTTagCompound();
+        serverHatch.saveNBTData(saved);
+        var restored = hatch(world);
+        restored.loadNBTData(saved);
+        require(
+            restored.getSharedSupplies()
+                .target(17)
+                .getStackSize() == WIDE_FLUID_LIMIT,
+            "long fluid limit survives save and reload");
+
+        var input = new ItemStack(Items.clay_ball);
+        var product = new ItemStack(Items.paper);
+        serverHatch.onPatternChange(0, pattern(new IAEStack<?>[] { AEItemStack.create(input) }, product));
+        var order = serverHatch.inventories()
+            .next();
+        var recipe = new GTRecipe(
+            false,
+            new ItemStack[] { input },
+            new ItemStack[] { product },
+            null,
+            null,
+            null,
+            null,
+            null,
+            new FluidStack[] { new FluidStack(FluidRegistry.LAVA, perRecipe) },
+            null,
+            20,
+            8,
+            0);
+
+        var reactorTile = new BaseMetaTileEntity();
+        reactorTile.setWorldObj(world);
+        reactorTile.setInitialValuesAsNBT(
+            null,
+            (short) ItemList.MegaChemicalReactor.get(1)
+                .getItemDamage());
+        var controller = (MTEMultiBlockBase) reactorTile.getMetaTileEntity();
+        controller.mDualInputHatches.add(serverHatch);
+        controller.startRecipeProcessing();
+        try {
+            require(supplies.isCheckingNetwork(), "multiblock opens the pattern hatch network check");
+            var delivery = new MEInventoryCrafting(new ContainerNull(), 1, 1);
+            delivery.setInventorySlotContents(
+                0,
+                AEItemStack.create(input)
+                    .setStackSize(parallel));
+            require(order.insertItemsAndFluids(delivery), "pattern receives 60 delivered recipe inputs");
+            var fluids = order.getFluidInputs();
+            require(fluidAmount(fluids) == WIDE_FLUID_LIMIT, "pattern receives a 3.5-billion-mB direct ME offer");
+            var items = order.getItemInputs();
+            require(
+                recipe.maxParallelCalculatedByInputs(parallel, fluids, items) == parallel,
+                "GT computes 60 parallels");
+            recipe.consumeInput(parallel, fluids, items);
+            require(fluidAmount(fluids) == WIDE_FLUID_LIMIT - consumed, "GT consumes three billion mB from the offer");
+            require(fluidStock(storage, lava, source) == stocked, "the recipe check has not debited physical ME stock");
+        } finally {
+            controller.endRecipeProcessing();
+        }
+        require(!supplies.isCheckingNetwork(), "settlement closes the pattern hatch network check");
+        require(fluidStock(storage, lava, source) == stocked - consumed, "settlement debits exactly three billion mB");
+        controller.endRecipeProcessing();
+        require(fluidStock(storage, lava, source) == stocked - consumed, "repeating settlement cannot debit ME twice");
+
+        supplies.setDirectFluids(false);
+        require(
+            storage.injectItems(
+                lava.copy()
+                    .setStackSize(1_000_000_000L),
+                Actionable.MODULATE,
+                source) == null,
+            "ME refills before the long buffered check");
+        require(supplies.pull(proxy, source, Long.MIN_VALUE + 1), "buffered mode pulls the long fluid limit");
+        require(
+            fluidAmount(
+                supplies.fluidInputs()
+                    .toArray(new FluidStack[0]))
+                == WIDE_FLUID_LIMIT && fluidStock(storage, lava, source) == 500_000_000L,
+            "buffered mode retains 3.5 billion mB and debits the exact refill once");
+        var delivery = new MEInventoryCrafting(new ContainerNull(), 1, 1);
+        delivery.setInventorySlotContents(
+            0,
+            AEItemStack.create(input)
+                .setStackSize(parallel));
+        require(order.insertItemsAndFluids(delivery), "pattern receives 60 more inputs for buffered fluid processing");
+        var bufferedFluids = order.getFluidInputs();
+        var bufferedItems = order.getItemInputs();
+        require(
+            recipe.maxParallelCalculatedByInputs(parallel, bufferedFluids, bufferedItems) == parallel,
+            "GT computes 60 parallels from the buffered fluid");
+        recipe.consumeInput(parallel, bufferedFluids, bufferedItems);
+        require(
+            fluidAmount(
+                supplies.fluidInputs()
+                    .toArray(new FluidStack[0]))
+                == 500_000_000L && fluidStock(storage, lava, source) == 500_000_000L,
+            "buffered processing consumes three billion mB locally and leaves ME stock unchanged");
+        supplies.refund(proxy, source);
+        require(
+            supplies.fluidInputs()
+                .isEmpty() && fluidStock(storage, lava, source) == 1_000_000_000L,
+            "refunding the buffer returns the exact 500-million-mB remainder");
+        supplies.setDirectFluids(true);
+        supplies.setTarget(17, null);
+        serverHatch.onPatternChange(0, null);
+        storage.extractItems(
+            lava.copy()
+                .setStackSize(1_000_000_000L),
+            Actionable.MODULATE,
+            source);
+        require(
+            fluidStock(storage, lava, source) == 0,
+            "clear lava from the single-type ME cell before the water checks");
+    }
+
+    private static long fluidAmount(FluidStack[] stacks) {
+        return Arrays.stream(stacks)
+            .mapToLong(MERecipeFluidStack::getAmount)
+            .sum();
+    }
+
+    private static long fluidStock(IMEMonitor<IAEFluidStack> storage, IAEFluidStack fluid, BaseActionSource source) {
+        var stock = storage.extractItems(
+            fluid.copy()
+                .setStackSize(Long.MAX_VALUE),
+            Actionable.SIMULATE,
+            source);
+        return stock == null ? 0 : stock.getStackSize();
+    }
+
     @SubscribeEvent
     public void client(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END || finished) return;
@@ -396,26 +561,38 @@ public final class CircuitSupplyChecks {
                 fluid.onMousePressed(1);
             } else if (stage == 3) {
                 if (!screen.isPanelOpen("supply_limit_16")) return;
-                shot("circuit-supplies-fluid-limit.png");
                 var field = (TextFieldWidget) find(panel, "supply_limit");
-                field.setText("1234567");
+                field.setText(Long.toString(GUI_FLUID_LIMIT));
                 field.onRemoveFocus(screen.getContext());
             } else if (stage == 4) {
                 if (!edited) return;
+                require(true, "server receives all digits from the long fluid limit editor");
                 panel.closeIfOpen();
             } else if (stage == 5) {
+                var fluid = (ButtonWidget<?>) find(panel, "supply_sample_16");
+                if (fluid == null) return;
+                fluid.onMousePressed(1);
+            } else if (stage == 6) {
+                if (!screen.isPanelOpen("supply_limit_16")) return;
+                var field = (TextFieldWidget) find(panel, "supply_limit");
+                if (!Long.toString(GUI_FLUID_LIMIT)
+                    .equals(field.getText())) return;
+                require(true, "reopened client editor reads back the exact server value above 2^53");
+                shot("circuit-supplies-fluid-limit.png");
+                panel.closeIfOpen();
+            } else if (stage == 7) {
                 var item = (ButtonWidget<?>) find(panel, "supply_sample_1");
                 if (item == null) return;
                 item.onMousePressed(1);
-            } else if (stage == 6) {
+            } else if (stage == 8) {
                 if (!screen.isPanelOpen("supply_limit_1")) return;
                 var field = (TextFieldWidget) find(panel, "supply_limit");
                 field.setText("1234567");
                 field.onRemoveFocus(screen.getContext());
-            } else if (stage == 7) {
+            } else if (stage == 9) {
                 if (!itemEdited) return;
                 panel.closeIfOpen();
-            } else if (stage == 8) {
+            } else if (stage == 10) {
                 var toggle = (ToggleButton) find(panel, "direct_fluids");
                 if (toggle == null) return;
                 shot("circuit-supplies-item-count.png");
