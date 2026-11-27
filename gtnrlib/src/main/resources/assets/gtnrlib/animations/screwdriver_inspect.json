@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "clips": {
+    "gtnrlib:screwdriver_inspect": {
+      "duration": 2.2,
+      "tracks": [
+        {
+          "bone": "wrist", "property": "position",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0], "curve": "catmull_rom"},
+            {"time": 0.12, "value": [-0.024, -0.005, -0.013], "curve": "catmull_rom"},
+            {"time": 0.32, "value": [-0.188, 0.071, -0.082], "curve": "catmull_rom"},
+            {"time": 0.54, "value": [-0.373, 0.141, -0.179], "curve": "catmull_rom"},
+            {"time": 0.72, "value": [-0.376, 0.142, -0.18], "curve": "catmull_rom"},
+            {"time": 0.91, "value": [-0.388, 0.131, -0.196], "curve": "catmull_rom"},
+            {"time": 1.09, "value": [-0.391, 0.123, -0.207], "curve": "catmull_rom"},
+            {"time": 1.25, "value": [-0.389, 0.132, -0.193], "curve": "catmull_rom"},
+            {"time": 1.5, "value": [-0.312, 0.119, -0.153], "curve": "catmull_rom"},
+            {"time": 1.74, "value": [-0.178, 0.068, -0.098], "curve": "catmull_rom"},
+            {"time": 2.04, "value": [-0.032, 0.014, -0.024], "curve": "catmull_rom"},
+            {"time": 2.2, "value": [0, 0, 0]}
+          ]
+        },
+        {
+          "bone": "wrist", "property": "rotation",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0], "curve": "catmull_rom"},
+            {"time": 0.12, "value": [0.5, -0.4, 0.3], "curve": "catmull_rom"},
+            {"time": 0.32, "value": [2, -1.5, 1], "curve": "catmull_rom"},
+            {"time": 0.54, "value": [3, -1, 1.5], "curve": "catmull_rom"},
+            {"time": 0.72, "value": [3, -1, 1.5], "curve": "catmull_rom"},
+            {"time": 0.91, "value": [3, 0, 1.5], "curve": "catmull_rom"},
+            {"time": 1.09, "value": [3, 1, 2], "curve": "catmull_rom"},
+            {"time": 1.25, "value": [3, 1, 2], "curve": "catmull_rom"},
+            {"time": 1.5, "value": [2.5, 1, 1.5], "curve": "catmull_rom"},
+            {"time": 1.74, "value": [1.5, 0.5, 0.7], "curve": "catmull_rom"},
+            {"time": 2.04, "value": [0.5, 0, 0], "curve": "catmull_rom"},
+            {"time": 2.2, "value": [0, 0, 0]}
+          ]
+        },
+        {
+          "bone": "item", "property": "position",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0], "curve": "catmull_rom"},
+            {"time": 0.12, "value": [0.00754, -0.0052, -0.00572], "curve": "catmull_rom"},
+            {"time": 0.32, "value": [0.03627, -0.01116, -0.01351], "curve": "catmull_rom"},
+            {"time": 0.54, "value": [0.06059, -0.00069, -0.00666], "curve": "catmull_rom"},
+            {"time": 0.72, "value": [0.06093, 0.00055, -0.00594], "curve": "catmull_rom"},
+            {"time": 0.91, "value": [0.07912, 0.02691, 0.0224], "curve": "catmull_rom"},
+            {"time": 1.09, "value": [0.0828, 0.04603, 0.06713], "curve": "catmull_rom"},
+            {"time": 1.25, "value": [0.083, 0.04549, 0.06478], "curve": "catmull_rom"},
+            {"time": 1.5, "value": [0.07593, 0.01223, 0.00667], "curve": "catmull_rom"},
+            {"time": 1.74, "value": [0.0504, -0.00498, -0.01046], "curve": "catmull_rom"},
+            {"time": 2.04, "value": [0.01131, -0.00385, -0.00635], "curve": "catmull_rom"},
+            {"time": 2.2, "value": [0, 0, 0]}
+          ]
+        },
+        {
+          "bone": "item", "property": "rotation",
+          "keys": [
+            {"time": 0, "value": [0, 0, 0], "curve": "catmull_rom"},
+            {"time": 0.12, "value": [-1.5, -7.12, 4.03], "curve": "catmull_rom"},
+            {"time": 0.32, "value": [1.49, -29.73, 17.21], "curve": "catmull_rom"},
+            {"time": 0.54, "value": [26.19, -47.85, 48.65], "curve": "catmull_rom"},
+            {"time": 0.72, "value": [28.31, -48.04, 50.82], "curve": "catmull_rom"},
+            {"time": 0.91, "value": [70.71, -55.21, 83.13], "curve": "catmull_rom"},
+            {"time": 1.09, "value": [117.09, -44.93, 118.32], "curve": "catmull_rom"},
+            {"time": 1.25, "value": [115.63, -45.13, 118.24], "curve": "catmull_rom"},
+            {"time": 1.5, "value": [43.58, -56.43, 59.71], "curve": "catmull_rom"},
+            {"time": 1.74, "value": [7.03, -38.85, 20.61], "curve": "catmull_rom"},
+            {"time": 2.04, "value": [-0.12, -10.05, 5.08], "curve": "catmull_rom"},
+            {"time": 2.2, "value": [0, 0, 0]}
+          ]
+        }
+      ]
+    }
+  }
+}

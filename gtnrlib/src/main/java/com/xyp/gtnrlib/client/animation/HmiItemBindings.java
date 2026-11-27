@@ -68,6 +68,11 @@ public final class HmiItemBindings {
     /** A model and two hand grips drawn together in the player's moving first-person frame. */
     public interface TwoHandedModel extends HandheldTool {
 
+        /** Whether the current tool state permits an inspection pose. */
+        default boolean canInspect(ItemStack stack) {
+            return true;
+        }
+
         void renderGripped(ItemStack stack, IItemRenderer renderer, float partial, GripHands hands);
     }
 

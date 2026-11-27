@@ -23,14 +23,18 @@ public final class AnimationCrossbowChecks {
 
     private static final String FIRE = "gtnrlib:crossbow_fire";
 
+    static ItemStack buildCrossbow() {
+        var bows = new ArrayList<ItemStack>();
+        ToolCore crossbow = TinkerWeaponry.crossbow;
+        crossbow.buildTool(0, null, bows);
+        return bows.get(0);
+    }
+
     static void check(AnimationClientChecks qa, Minecraft mc) throws Exception {
         var p = mc.thePlayer;
         var actions = FirstPersonItemActions.INSTANCE;
         var hmi = HmiFirstPerson.INSTANCE;
-        var bows = new ArrayList<ItemStack>();
-        ToolCore crossbow = TinkerWeaponry.crossbow;
-        crossbow.buildTool(0, null, bows);
-        var bow = bows.get(0);
+        var bow = buildCrossbow();
         var stats = bow.getTagCompound()
             .getCompoundTag("InfiTool");
         int tick = p.ticksExisted;
@@ -60,6 +64,13 @@ public final class AnimationCrossbowChecks {
             bow.useItemRightClick(mc.theWorld, p);
             int duration = stats.getInteger("DrawSpeed");
             qa.require(duration > 2 && stats.getInteger("Reloading") == duration, "started material-timed reload");
+            if (Boolean.getBoolean("gtnrlib.animation.qa.defaults")) {
+                AnimationBlockInspectChecks.press(AnimationSpecialToolInspectChecks.key(qa));
+                qa.require(
+                    !actions.playing(AnimationSpecialToolInspectChecks.CROSSBOW)
+                        && stats.getInteger("Reloading") == duration,
+                    "winding refuses inspection without altering reload progress");
+            }
             int afterPull = checkStringDraw(qa, mc, bow, duration);
             int presentTick = Math.round(duration * .75f);
             advance(p, bow, presentTick - afterPull);
@@ -100,6 +111,7 @@ public final class AnimationCrossbowChecks {
             qa.require(
                 seatedFeathers.distance(marker(released, mc.displayWidth, false)) < 6,
                 "last loose-bolt frame meets the loaded bolt at the same rail position");
+            if (Boolean.getBoolean("gtnrlib.animation.qa.defaults")) checkLoadedInspection(qa, mc, bow);
             p.movementInput.sneak = true;
             bow.useItemRightClick(mc.theWorld, p);
             qa.require(!stats.getBoolean("Loaded") && !actions.playing(FIRE), "sneaking unloads a seated bolt");
@@ -130,6 +142,33 @@ public final class AnimationCrossbowChecks {
             p.ticksExisted = tick;
             qa.equip(mc, held);
             hmi.detach();
+        }
+    }
+
+    private static void checkLoadedInspection(AnimationClientChecks qa, Minecraft mc, ItemStack bow) throws Exception {
+        var player = mc.thePlayer;
+        var actions = FirstPersonItemActions.INSTANCE;
+        int start = player.ticksExisted;
+        var saved = bow.copy();
+        AnimationBlockInspectChecks.press(AnimationSpecialToolInspectChecks.key(qa));
+        qa.require(
+            actions.playing(AnimationSpecialToolInspectChecks.CROSSBOW),
+            "idle loaded crossbow can be inspected");
+        try {
+            player.ticksExisted = start + 16;
+            var inspected = qa.draw(mc, "crossbow-loaded-inspect");
+            qa.require(
+                marker(inspected, mc.displayWidth, true).distance(marker(inspected, mc.displayWidth, false)) > 15,
+                "the native loaded bolt stays visible during inspection");
+            player.ticksExisted = start + 56;
+            qa.draw(mc, "crossbow-loaded-inspect-restored");
+            qa.require(
+                !actions.playing(AnimationSpecialToolInspectChecks.CROSSBOW)
+                    && ItemStack.areItemStacksEqual(bow, saved),
+                "loaded inspection preserves the bolt, tension and native state");
+        } finally {
+            player.ticksExisted = start;
+            HmiFirstPerson.INSTANCE.detach();
         }
     }
 

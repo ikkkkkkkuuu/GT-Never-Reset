@@ -40,9 +40,12 @@ public final class TinkersCrossbowAnimation implements HmiItemBindings.TwoHanded
     private static final Vector3fc ABOVE_RAIL = new Vector3f(0, .22f, -.045f);
     private static final Vector3fc SEATED = new Vector3f(0, .063f, -.16f);
     private static final Vector3fc FOREGRIP = new Vector3f(-.14f, -.09f, -.43f);
+    private static final Vector3fc INSPECTION_FOREGRIP = new Vector3f(-.11f, -.12f, -.28f);
+    private static final Vector3fc REAR_GRIP = new Vector3f(.035f, -.06f, .015f);
     // The resting 16px string crosses the stock 0.32 units ahead of the rear grip, between the two limb tips.
     private static final float LIMB_SPAN = .50f, REST_Z = -.318f, CATCH_Z = .012f, CATCH_HEIGHT = .038f;
     private static final float BOLT_IN_HAND = .65f;
+    private static final float INSPECTION_SUPPORT_SHIFT_DEPTH = .16f;
     private static final DoubleBuffer LEFT_HALF = halfPlane(-1), RIGHT_HALF = halfPlane(1);
     // FlexibleToolRenderer reads ten part and modifier passes; the crossbow string occupies pass two.
     private static final int TOOL_PASSES = 10, STRING_PASS = 2;
@@ -75,6 +78,13 @@ public final class TinkersCrossbowAnimation implements HmiItemBindings.TwoHanded
     }
 
     @Override
+    public boolean canInspect(ItemStack stack) {
+        return stack.hasTagCompound() && stack.getTagCompound()
+            .getCompoundTag("InfiTool")
+            .getInteger("Reloading") <= 0;
+    }
+
+    @Override
     public void renderGripped(ItemStack stack, IItemRenderer renderer, float partial, HmiItemBindings.GripHands hands) {
         var stats = stack.getTagCompound()
             .getCompoundTag("InfiTool");
@@ -103,6 +113,18 @@ public final class TinkersCrossbowAnimation implements HmiItemBindings.TwoHanded
             (float) Math.toRadians(16 + 13 * tilt),
             (float) Math.toRadians(8 + 15 * tilt),
             (float) Math.toRadians(28 * tilt));
+        var inspection = FirstPersonItemActions.INSTANCE.sampleRigInspection(stack, partial);
+        if (inspection != null) {
+            var shift = inspection.position();
+            var turn = inspection.rotation();
+            GL11.glTranslated(shift.x(), shift.y(), shift.z());
+            stock.translate(REAR_GRIP)
+                .rotateXYZ(
+                    (float) Math.toRadians(turn.x()),
+                    (float) Math.toRadians(turn.y()),
+                    (float) Math.toRadians(turn.z()))
+                .translate(-REAR_GRIP.x(), -REAR_GRIP.y(), -REAR_GRIP.z());
+        }
         Minecraft.getMinecraft()
             .getTextureManager()
             .bindTexture(TextureMap.locationItemsTexture);
@@ -114,7 +136,7 @@ public final class TinkersCrossbowAnimation implements HmiItemBindings.TwoHanded
             sampledBow = null;
             sampledAmmo = null;
         }
-        hand(hands, false, .035f, -.06f, .015f, 25);
+        hand(hands, false, REAR_GRIP.x(), REAR_GRIP.y(), REAR_GRIP.z(), 25);
         // The hooked fist tracks the same nocking point that bends the string. Leave it on the catch during pickup.
         grip.set(-.073f, CATCH_HEIGHT * tension - .055f, REST_Z + stringTravel(tension));
         support.set(FOREGRIP)
@@ -123,6 +145,13 @@ public final class TinkersCrossbowAnimation implements HmiItemBindings.TwoHanded
             .add(-.055f, -.077f, .015f);
         support.lerp(grip, fetch)
             .lerp(FOREGRIP, release);
+        if (inspection != null) {
+            // The support hand slides back under the stock as it is brought closer for inspection.
+            float slide = smooth(
+                (float) inspection.position()
+                    .z() / INSPECTION_SUPPORT_SHIFT_DEPTH);
+            support.lerp(INSPECTION_FOREGRIP, slide);
+        }
         hand(hands, true, support.x, support.y, support.z, -38);
     }
 

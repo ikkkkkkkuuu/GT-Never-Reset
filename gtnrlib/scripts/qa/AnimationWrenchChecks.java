@@ -6,6 +6,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.renderer.entity.RenderPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemBlock;
@@ -19,6 +21,7 @@ import org.joml.Vector3f;
 
 import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
+import com.xyp.gtnrlib.client.input.KeyBindingLookup;
 import com.xyp.gtnrlib.compat.gregtech.GregTechWrenchAnimation;
 import com.xyp.gtnrlib.network.GregTechToolUsePacket;
 
@@ -40,6 +43,7 @@ import xonin.backhand.api.core.BackhandUtils;
 /** Host-only integrated-server checks. The normal GT interaction manager delivers the acknowledgement. */
 public final class AnimationWrenchChecks implements Runnable {
 
+    private static final String INSPECT = "gtnrlib:wrench_inspect";
     private final AnimationClientChecks qa;
     private final Minecraft mc = Minecraft.getMinecraft();
     private final UUID actor = mc.thePlayer.getUniqueID();
@@ -128,6 +132,7 @@ public final class AnimationWrenchChecks implements Runnable {
                     qa.require(changed > 40, "GT material changes visible wrench pixels: " + changed);
                     qa.require(gripContact > 8, "wrench handle meets the fist along " + gripContact + " pixels");
                     checkLooseningStroke();
+                    if (Boolean.getBoolean("gtnrlib.animation.qa.defaults")) checkInspection();
                     var electric = new ItemStack(MetaGeneratedTool01.INSTANCE, 1, IDMetaTool01.WRENCH_LV.ID);
                     qa.require(
                         hmi.sample(electric, .5f, 0) && hmi.handheldTool() == null,
@@ -279,6 +284,95 @@ public final class AnimationWrenchChecks implements Runnable {
             player.ticksExisted = tick;
             hmi.detach();
         }
+    }
+
+    private void checkInspection() throws Exception {
+        var player = mc.thePlayer;
+        var actions = FirstPersonItemActions.INSTANCE;
+        var hmi = HmiFirstPerson.INSTANCE;
+        var key = KeyBindingLookup.find("gtnrlib.key.inspect_block", null);
+        qa.require(key != null, "inspection key available for the manual GT wrench");
+        int previousTick = player.ticksExisted;
+        var previous = player.getHeldItem();
+        var tool = wrench(Materials.Steel);
+        var model = ((RenderPlayer) RenderManager.instance.getEntityRenderObject(player)).modelBipedMain;
+        try (var rightArm = new AnimationBlockInspectChecks.ArmProbe(model, false);
+            var leftArm = new AnimationBlockInspectChecks.ArmProbe(model, true)) {
+            qa.equip(mc, new ItemStack(MetaGeneratedTool01.INSTANCE, 1, IDMetaTool01.WRENCH_LV.ID));
+            AnimationBlockInspectChecks.press(key);
+            qa.require(!actions.playing(INSPECT), "powered GT wrench ignores the manual inspection");
+            qa.equip(mc, tool);
+            hmi.detach();
+            for (int warmup = 0; warmup < 30; warmup++) {
+                player.ticksExisted++;
+                hmi.sample(tool, 0, 0);
+            }
+            int tick = player.ticksExisted;
+            qa.draw(mc, "wrench-inspect-idle");
+            var shoulder = rightArm.shoulder();
+            var saved = tool.copy();
+            boolean swinging = player.isSwingInProgress;
+            AnimationBlockInspectChecks.press(key);
+            qa.require(
+                actions.playing(INSPECT) && !turning(),
+                "manual GT wrench starts inspection on the registered key");
+
+            drawInspection(tick + 9, "jaw");
+            var firstFace = hmi.item.transformDirection(new Vector3f(0, 0, 1));
+            drawInspection(tick + 19, "other-face");
+            float faceChange = hmi.item.transformDirection(new Vector3f(0, 0, 1))
+                .distance(firstFace);
+            float shoulderDrift = rightArm.shoulder()
+                .distance(shoulder);
+            qa.require(faceChange > .15f, "right hand shows a different wrench face, direction change " + faceChange);
+            qa.require(
+                shoulderDrift < .07f,
+                "the right shoulder stays anchored while examining, drift " + shoulderDrift);
+            AnimationBlockInspectChecks.press(key);
+
+            var handoff = drawInspection(tick + 26, "right-hold");
+            var exchange = drawInspection(tick + 29, "handoff");
+            var leftHold = drawInspection(tick + 33, "left-hold");
+            qa.require(
+                handoff.x > exchange.x && exchange.x > leftHold.x
+                    && exchange.y < Math.max(handoff.y, leftHold.y) + .10f,
+                "wrench passes directly to the left hand without a toss arc");
+            qa.require(
+                leftHold.distance(leftArm.hand()) < leftHold.distance(rightArm.hand()),
+                "the left hand takes the wrench by its handle");
+
+            var release = drawInspection(tick + 38, "left-release");
+            var airborne = drawInspection(tick + 42, "flight");
+            var catchPose = drawInspection(tick + 47, "right-catch");
+            qa.require(
+                airborne.x > release.x && airborne.x < catchPose.x
+                    && airborne.y > Math.max(release.y, catchPose.y) + .08f,
+                "the only throw arcs from the left hand to the right");
+            qa.require(
+                catchPose.distance(rightArm.hand()) < catchPose.distance(leftArm.hand()),
+                "the right hand receives the returning wrench");
+
+            drawInspection(tick + 68, "recovered");
+            qa.require(!actions.playing(INSPECT), "wrench inspection finishes on schedule after a repeated press");
+            qa.require(
+                player.getHeldItem() == tool && ItemStack.areItemStacksEqual(tool, saved)
+                    && player.isSwingInProgress == swinging
+                    && !player.isUsingItem()
+                    && !turning(),
+                "the wrench handoff and toss leave the held tool and its gameplay state alone");
+        } finally {
+            player.ticksExisted = previousTick;
+            qa.equip(mc, previous);
+            qa.tickPlayer();
+            hmi.detach();
+        }
+    }
+
+    private Vector3f drawInspection(int tick, String name) throws Exception {
+        mc.thePlayer.ticksExisted = tick;
+        qa.draw(mc, "wrench-inspect-" + name);
+        // Match the lower handle point used by the real wrench stroke fixture.
+        return HmiFirstPerson.INSTANCE.item.transformPosition(new Vector3f(0, -.046f, .083f));
     }
 
     private boolean turning() {

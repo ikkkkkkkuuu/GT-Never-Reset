@@ -13,6 +13,7 @@ import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraft.client.resources.ResourcePackRepository;
+import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemBow;
@@ -21,6 +22,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.MinecraftForgeClient;
+
+import org.lwjgl.input.Keyboard;
 
 import com.xyp.gtnrlib.GTNRLib;
 import com.xyp.gtnrlib.api.animation.AnimationClip;
@@ -35,9 +38,11 @@ import com.xyp.gtnrlib.compat.punchy.PunchyPack;
 import com.xyp.gtnrlib.compat.punchy.PunchyPack.Motion;
 import com.xyp.gtnrlib.config.GTNRLibConfig;
 
+import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.InputEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -52,6 +57,16 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     private static final Marker CHAIN_PLACEMENT = new Marker(0, "gtnrlib:chain_placement");
     private static final Marker EMPTY_PUNCH = new Marker(0, "gtnrlib:empty_punch");
     private static final double HANDOFF_SECONDS = .075;
+    private final KeyBinding inspectHeldItem = new KeyBinding(
+        // #tr gtnrlib.key.inspect_block
+        // # Inspect held item
+        // # zh_CN 检视手持物品
+        "gtnrlib.key.inspect_block",
+        Keyboard.KEY_I,
+        // #tr gtnrlib.key.category
+        // # GTNRLib
+        // # zh_CN GTNRLib
+        "gtnrlib.key.category");
     private final FirstPersonHandMotion handMotion = new FirstPersonHandMotion();
     private final List<Consumer<Marker>> listeners = new ArrayList<>();
     private final AnimationPlayer player = new AnimationPlayer(
@@ -96,11 +111,28 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     }
 
     public void register() {
+        ClientRegistry.registerKeyBinding(inspectHeldItem);
         FMLCommonHandler.instance()
             .bus()
             .register(this);
         ((IReloadableResourceManager) Minecraft.getMinecraft()
             .getResourceManager()).registerReloadListener(this);
+    }
+
+    @SubscribeEvent
+    public void inspectKey(InputEvent.KeyInputEvent event) {
+        inspectPressed();
+    }
+
+    @SubscribeEvent
+    public void inspectMouse(InputEvent.MouseInputEvent event) {
+        inspectPressed();
+    }
+
+    private void inspectPressed() {
+        while (inspectHeldItem.isPressed()) {
+            FirstPersonItemActions.INSTANCE.inspectHeld();
+        }
     }
 
     public void bind(String id, Binding binding) {

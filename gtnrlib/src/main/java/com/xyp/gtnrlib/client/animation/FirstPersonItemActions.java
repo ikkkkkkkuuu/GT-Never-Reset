@@ -15,8 +15,11 @@ import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.client.IItemRenderer.ItemRenderType;
+import net.minecraftforge.client.MinecraftForgeClient;
 
 import org.joml.Matrix4f;
 
@@ -26,7 +29,9 @@ import com.xyp.gtnrlib.animation.resource.NativeAnimationResource;
 import com.xyp.gtnrlib.api.animation.AnimationClip;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Channel;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Property;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
 import com.xyp.gtnrlib.api.animation.AnimationPlayer;
+import com.xyp.gtnrlib.client.render.animation.HmiPoseRenderer;
 import com.xyp.gtnrlib.compat.backhand.BackhandAnimationCompat;
 
 import cpw.mods.fml.relauncher.Side;
@@ -38,8 +43,34 @@ public final class FirstPersonItemActions {
 
     public static final FirstPersonItemActions INSTANCE = new FirstPersonItemActions(false);
     public static final FirstPersonItemActions OFFHAND = new FirstPersonItemActions(true);
+    private static final String BLOCK_INSPECT = "gtnrlib:block_inspect";
+    private static final String WRENCH_INSPECT = "gtnrlib:wrench_inspect";
+    private static final String CUTTER_INSPECT = "gtnrlib:wire_cutter_inspect";
+    private static final String SCREWDRIVER_INSPECT = "gtnrlib:screwdriver_inspect";
+    private static final String CROSSBOW_INSPECT = "gtnrlib:crossbow_inspect";
+    private static final String WAND_INSPECT = "gtnrlib:wand_inspect";
+    private static final String SWORD_INSPECT = "gtnrlib:sword_inspect";
+    private static final String PICKAXE_INSPECT = "gtnrlib:pickaxe_inspect";
+    private static final List<String> ITEM_INSPECTIONS = List
+        .of(WRENCH_INSPECT, CUTTER_INSPECT, SCREWDRIVER_INSPECT, CROSSBOW_INSPECT, WAND_INSPECT);
+    private static final Map<String, Key> INSPECTION_DEFAULTS = Map.of(
+        BLOCK_INSPECT,
+        new Key("#block", -1, BLOCK_INSPECT),
+        SWORD_INSPECT,
+        new Key("#sword", -1, SWORD_INSPECT),
+        PICKAXE_INSPECT,
+        new Key("#pickaxe", -1, PICKAXE_INSPECT));
     private static final double BLEND = .08;
     private static final Set<String> BONES = Set.of("wrist", "item", "left_arm", "right_arm");
+    private static final Channel INSPECTION_TRANSFER = new Channel("transfer", Property.POSITION);
+    private static final Channel HINGE_POSITION = new Channel("hinge", Property.POSITION);
+    private static final Channel HINGE_ROTATION = new Channel("hinge", Property.ROTATION);
+    private static final Channel JAW_ROTATION = new Channel("jaw", Property.ROTATION);
+    private static final Channel STOCK_POSITION = new Channel("stock", Property.POSITION);
+    private static final Channel STOCK_ROTATION = new Channel("stock", Property.ROTATION);
+    private static final Set<Channel> CUTTER_INSPECTION_CHANNELS = Set.of(HINGE_POSITION, HINGE_ROTATION, JAW_ROTATION);
+    private static final Set<Channel> CROSSBOW_INSPECTION_CHANNELS = Set.of(STOCK_POSITION, STOCK_ROTATION);
+    private static final Vec NO_TRANSFER = new Vec(0, 0, 0);
     private static final Bone WRIST = new Bone("wrist"), ITEM = new Bone("item"), MAIN = new Bone("right_arm"),
         SUPPORT = new Bone("left_arm");
     private static Map<Key, Binding> rules = Map.of();
@@ -49,10 +80,12 @@ public final class FirstPersonItemActions {
     private final AnimationPlayer player = new AnimationPlayer(marker -> {});
     private AnimationPlayer.Playback action;
     private Key selected;
+    private ItemStack inspectedStack;
+    private HmiItemBindings.TwoHandedModel inspectedRig;
     private EntityPlayer owner, useOwner;
     private ItemStack useStack;
     private int useSlot, useDamage;
-    private boolean overridesUse;
+    private boolean overridesUse, transferAllowed, inspectionLeftArm;
     private int slot, dimension, startedTick;
     private double tick;
 
@@ -134,7 +167,11 @@ public final class FirstPersonItemActions {
             || clip.tracks()
                 .keySet()
                 .stream()
-                .anyMatch(channel -> !BONES.contains(channel.bone())))
+                .anyMatch(
+                    channel -> !BONES.contains(channel.bone())
+                        && !(supportsInspectionTransfer(key.trigger) && INSPECTION_TRANSFER.equals(channel))
+                        && !(CUTTER_INSPECT.equals(key.trigger) && CUTTER_INSPECTION_CHANNELS.contains(channel))
+                        && !(CROSSBOW_INSPECT.equals(key.trigger) && CROSSBOW_INSPECTION_CHANNELS.contains(channel))))
             throw new IllegalArgumentException("Invalid first-person clip " + clipId + " for " + key);
         double fadeIn = json.has("fadeIn") ? json.get("fadeIn")
             .getAsDouble() : .025;
@@ -157,12 +194,53 @@ public final class FirstPersonItemActions {
         rules.put(key, new Binding(clip, fadeIn, fadeOut, rotation, transition));
     }
 
+    void inspectHeld() {
+        var p = Minecraft.getMinecraft().thePlayer;
+        var stack = p == null ? null : held(p);
+        if (stack == null) return;
+        if (stack.getItem() instanceof ItemBlock) {
+            trigger(BLOCK_INSPECT);
+            return;
+        }
+        for (String inspection : ITEM_INSPECTIONS) {
+            if (trigger(inspection)) return;
+        }
+        var grip = ToolGrip.resolve(stack);
+        if (grip == ToolGrip.SWORD) trigger(SWORD_INSPECT);
+        else if (grip == ToolGrip.PICKAXE) trigger(PICKAXE_INSPECT);
+    }
+
+    private static boolean isPalmInspection(String trigger) {
+        return supportsInspectionTransfer(trigger) || SCREWDRIVER_INSPECT.equals(trigger)
+            || WAND_INSPECT.equals(trigger)
+            || SWORD_INSPECT.equals(trigger)
+            || PICKAXE_INSPECT.equals(trigger);
+    }
+
+    private static boolean supportsInspectionTransfer(String trigger) {
+        return BLOCK_INSPECT.equals(trigger) || WRENCH_INSPECT.equals(trigger);
+    }
+
     /** Play a named accepted action on the currently held stack. Unknown item/action pairs fall through. */
     public boolean trigger(String trigger) {
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
-        if (!enabled() || p == null || mc.gameSettings.thirdPersonView != 0 || rules.isEmpty()) return false;
+        if (trigger == null || !enabled() || p == null || mc.gameSettings.thirdPersonView != 0 || rules.isEmpty())
+            return false;
         var stack = held(p);
+        boolean blockInspection = BLOCK_INSPECT.equals(trigger);
+        boolean cutterInspection = CUTTER_INSPECT.equals(trigger);
+        boolean rigInspection = cutterInspection || CROSSBOW_INSPECT.equals(trigger);
+        boolean inspecting = isPalmInspection(trigger) || rigInspection;
+        if (inspecting && (offhand || stack == null
+            || blockInspection && !(stack.getItem() instanceof ItemBlock)
+            || !canInspect(mc, p))) return false;
+        ToolGrip toolGrip = switch (trigger) {
+            case SWORD_INSPECT -> ToolGrip.SWORD;
+            case PICKAXE_INSPECT -> ToolGrip.PICKAXE;
+            default -> null;
+        };
+        if (toolGrip != null && ToolGrip.resolve(stack) != toolGrip) return false;
         String id = id(stack);
         Key key = new Key(id, stack == null ? -1 : stack.getItemDamage(), trigger);
         var binding = rules.get(key);
@@ -170,14 +248,31 @@ public final class FirstPersonItemActions {
             key = new Key(id, -1, trigger);
             binding = rules.get(key);
         }
-        if (binding == null) return false;
-        if (!matches(p, stack)) clear();
+        var defaultKey = INSPECTION_DEFAULTS.get(trigger);
+        if (binding == null && defaultKey != null
+            && (toolGrip == null
+                || MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON) == null))
+            binding = rules.get(defaultKey);
+        if (binding == null) {
+            if (inspectedStack != null && switch (trigger) {
+                case "attack", "mining", "interact", "place", "use" -> true;
+                default -> false;
+            }) clear();
+            return false;
+        }
+        var rig = rigInspection ? inspectionRig(stack, cutterInspection) : null;
+        if (rigInspection && rig == null) return false;
+        if (!matches(p, stack) || !inspecting && inspectedStack != null) clear();
         advance(p.ticksExisted);
         boolean chaining = action != null && action.active();
+        if (inspecting && chaining) return false;
         owner = p;
         dimension = p.dimension;
         slot = currentSlot(p);
-        selected = key;
+        selected = inspecting ? new Key(id, stack.getItemDamage(), trigger) : key;
+        inspectedStack = blockInspection ? stack.copy() : inspecting ? stack : null;
+        inspectedRig = rig;
+        transferAllowed = supportsInspectionTransfer(trigger) && !FirstPersonAnimations.offhandOwnsLeftArm(1);
         startedTick = p.ticksExisted;
         tick = Math.max(tick, p.ticksExisted);
         if (chaining) action = player
@@ -191,6 +286,7 @@ public final class FirstPersonItemActions {
     }
 
     void apply(ItemStack stack, float partial, Matrix4f main, Matrix4f support, Matrix4f item) {
+        inspectionLeftArm = false;
         if (action == null) return;
         var p = Minecraft.getMinecraft().thePlayer;
         if (!matches(p, held(p))) {
@@ -200,19 +296,57 @@ public final class FirstPersonItemActions {
         // The outgoing stack may still be lowering while the server has already acknowledged the incoming tool.
         if (!matches(p, stack)) return;
         advance(p.ticksExisted);
-        if (action == null) return;
+        if (action == null || inspectedRig != null) return;
         double ahead = Math.max(0, (p.ticksExisted + (double) partial - tick) / 20);
         WRIST.sample(player, ahead, local);
         item.invert(changeOfBasis)
             .mulLocal(local)
             .mulLocal(item);
-        main.mulLocal(changeOfBasis);
         item.mul(local);
+        item.mul(ITEM.sample(player, ahead, local));
+        if (isPalmInspection(selected.trigger)) {
+            if (transferAllowed && FirstPersonAnimations.offhandOwnsLeftArm(partial)) transferAllowed = false;
+            var transfer = transferAllowed ? player.sample(INSPECTION_TRANSFER, ahead) : NO_TRANSFER;
+            inspectionLeftArm = transfer.z() > 0;
+            HmiPoseRenderer
+                .poseInspection(main, support, item, changeOfBasis, transfer, BLOCK_INSPECT.equals(selected.trigger));
+        } else main.mulLocal(changeOfBasis);
         MAIN.sample(player, ahead, rightGrip);
         SUPPORT.sample(player, ahead, leftGrip);
         main.mul(rightGrip);
         support.mul(leftGrip);
-        item.mul(ITEM.sample(player, ahead, local));
+    }
+
+    public boolean inspectionUsesLeftArm() {
+        return inspectionLeftArm;
+    }
+
+    public RigInspection sampleRigInspection(ItemStack rendered, float partial) {
+        if (!rigInspectionActive(rendered, partial)) return null;
+        var p = Minecraft.getMinecraft().thePlayer;
+        double ahead = Math.max(0, (p.ticksExisted + (double) partial - tick) / 20);
+        boolean crossbow = CROSSBOW_INSPECT.equals(selected.trigger);
+        return new RigInspection(
+            player.sample(crossbow ? STOCK_POSITION : HINGE_POSITION, ahead),
+            player.sample(crossbow ? STOCK_ROTATION : HINGE_ROTATION, ahead),
+            player.sample(JAW_ROTATION, ahead));
+    }
+
+    private boolean rigInspectionActive(ItemStack rendered, float partial) {
+        if (inspectedRig == null) return false;
+        var p = Minecraft.getMinecraft().thePlayer;
+        if (p == null || !matches(p, rendered)) return false;
+        if (!FirstPersonAnimations.offhandOwnsLeftArm(partial) && inspectedRig.canInspect(rendered)) return true;
+        clear();
+        return false;
+    }
+
+    boolean inspecting() {
+        return inspectedStack != null;
+    }
+
+    void interruptInspection() {
+        if (inspecting()) clear();
     }
 
     public org.joml.Matrix4fc grip(boolean left) {
@@ -251,8 +385,25 @@ public final class FirstPersonItemActions {
         var p = mc.gameSettings.thirdPersonView == 0 && enabled() ? mc.thePlayer : null;
         observeUse(p);
         if (action == null) return;
-        if (p == null || !matches(p, held(p))) clear();
+        var stack = p == null ? null : held(p);
+        if (p == null || !matches(p, stack)
+            || inspectedStack != null && !canInspect(mc, p)
+            || inspectedRig != null && !inspectedRig.canInspect(stack)) clear();
         else advance(p.ticksExisted);
+    }
+
+    private static boolean canInspect(Minecraft mc, EntityPlayer p) {
+        return mc.currentScreen == null && !p.isInvisible() && !p.isUsingItem() && !p.isSwingInProgress;
+    }
+
+    private static HmiItemBindings.TwoHandedModel inspectionRig(ItemStack stack, boolean cutter) {
+        if (FirstPersonAnimations.offhandOwnsLeftArm(1) || cutter && HmiFirstPerson.INSTANCE.strokeActive())
+            return null;
+        var renderer = MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.EQUIPPED_FIRST_PERSON);
+        if (!(HmiItemBindings.tool(stack, renderer) instanceof HmiItemBindings.TwoHandedModel rig)
+            || cutter && !(rig instanceof HmiItemBindings.TwoHandedTool)
+            || !rig.canInspect(stack)) return null;
+        return rig;
     }
 
     private void advance(double now) {
@@ -267,7 +418,10 @@ public final class FirstPersonItemActions {
             && p.dimension == dimension
             && currentSlot(p) == slot
             && selected.item.equals(id(stack))
-            && (selected.damage < 0 || stack != null && stack.getItemDamage() == selected.damage);
+            && (selected.damage < 0 || stack != null && stack.getItemDamage() == selected.damage)
+            && (inspectedStack == null
+                || (BLOCK_INSPECT.equals(selected.trigger) ? ItemStack.areItemStackTagsEqual(inspectedStack, stack)
+                    : inspectedStack == stack));
     }
 
     private static String id(ItemStack stack) {
@@ -285,11 +439,16 @@ public final class FirstPersonItemActions {
         player.clear();
         action = null;
         selected = null;
+        inspectedStack = null;
+        inspectedRig = null;
+        transferAllowed = inspectionLeftArm = false;
         owner = null;
         tick = 0;
         rightGrip.identity();
         leftGrip.identity();
     }
+
+    public record RigInspection(Vec position, Vec rotation, Vec jawRotation) {}
 
     private record Bone(Channel position, Channel rotation, Channel scale) {
 

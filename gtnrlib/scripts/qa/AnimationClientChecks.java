@@ -161,6 +161,8 @@ public final class AnimationClientChecks {
                         .builtIn(),
                     "built-in player active on the first ordinary world frame");
                 checkAnimationToggle(mc, "built-in");
+                AnimationBlockInspectChecks.verify(this, mc);
+                AnimationHandheldInspectChecks.verify(this, mc);
                 AnimationBlockUseChecks.verify(mc);
                 checkHmi(mc);
                 Item chest = (Item) Item.itemRegistry.getObject("DraconicEvolution:draconicChest");
