@@ -69,6 +69,7 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
     private static final String DATA_IDENTIFIER = "superAdvancedStockingHatch";
     protected final Slot[] slots = new Slot[SLOT_COUNT];
     private final FluidPolicy[] policies = new FluidPolicy[SLOT_COUNT];
+    private final long[] recipeAvailableAmounts = new long[SLOT_COUNT];
     private boolean autoPull;
     private boolean limitedMode;
     private boolean fixedMode;
@@ -94,6 +95,10 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
 
     public Slot[] getStorageSlots() {
         return slots;
+    }
+
+    public long getRecipeAvailableAmount(int index) {
+        return recipeAvailableAmounts[index];
     }
 
     public FluidPolicy getPolicy(int index) {
@@ -197,6 +202,7 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
         try {
             Slot[] refreshed = new Slot[SLOT_COUNT];
             FluidPolicy[] refreshedPolicies = new FluidPolicy[SLOT_COUNT];
+            long[] refreshedAmounts = new long[SLOT_COUNT];
             int index = 0;
             boolean newFluids = false;
             for (IAEFluidStack stack : getProxy().getStorage()
@@ -216,12 +222,14 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
                 }
                 if (slot == null) slot = new Slot(config);
                 if (policy == null) policy = new FluidPolicy();
-                int amount = policy.offered(stack.getStackSize(), limitedMode, fixedMode);
+                long offered = policy.offeredLong(stack.getStackSize(), limitedMode, fixedMode);
+                int amount = (int) Math.min(Integer.MAX_VALUE, offered);
                 if (amount > slot.extractedAmount) newFluids = true;
                 slot.extracted = amount == 0 ? null : GTUtility.copyAmount(amount, slot.config);
                 slot.extractedAmount = amount;
                 refreshed[index] = slot;
                 refreshedPolicies[index] = policy;
+                refreshedAmounts[index] = offered;
                 if (++index == SLOT_COUNT) break;
             }
             boolean changed = false;
@@ -230,6 +238,7 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
             }
             System.arraycopy(refreshed, 0, slots, 0, SLOT_COUNT);
             System.arraycopy(refreshedPolicies, 0, policies, 0, SLOT_COUNT);
+            System.arraycopy(refreshedAmounts, 0, recipeAvailableAmounts, 0, SLOT_COUNT);
             if (changed) {
                 configureWatchers();
                 policyChanged();
@@ -288,6 +297,7 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
         if (slots[index] != null && GTUtility.areFluidsEqual(slots[index].config, config)) return;
         slots[index] = config == null ? null : new Slot(GTUtility.copyAmount(1, config));
         policies[index] = null;
+        recipeAvailableAmounts[index] = 0;
         configureWatchers();
         policyChanged();
     }
@@ -297,6 +307,7 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
         if (processingRecipe) return;
         Arrays.fill(slots, null);
         Arrays.fill(policies, null);
+        Arrays.fill(recipeAvailableAmounts, 0);
         configureWatchers();
         policyChanged();
     }
@@ -319,6 +330,7 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
         Slot slot = slots[index];
         if (!isAllowedToWork() || (autoPull && !matchesFluidFilter(slot.config))) {
             slot.resetExtracted();
+            recipeAvailableAmounts[index] = 0;
             return;
         }
         long offered = getPolicy(index).offeredLong(
@@ -339,6 +351,7 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
             slot.extracted = amount == 0 ? null : GTUtility.copyAmount(amount, slot.config);
         }
         slot.extractedAmount = amount;
+        recipeAvailableAmounts[index] = offered;
     }
 
     @Override
@@ -420,6 +433,7 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
                 long consumed = stocked != null ? stocked.getConsumedAmount()
                     : (long) slot.extractedAmount - slot.extracted.amount;
                 slot.extractedAmount = slot.extracted.amount;
+                recipeAvailableAmounts[i] = MERecipeFluidStack.getAmount(slot.extracted);
                 if (consumed <= 0) continue;
                 // Another hatch may have consumed stock since the simulation. Recheck the reserve at commit.
                 long offered = stocked == null ? availableAmount(i, available(inventory, slot.config))
@@ -486,6 +500,7 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
     private void readConfiguration(NBTTagList list) {
         Arrays.fill(slots, null);
         Arrays.fill(policies, null);
+        Arrays.fill(recipeAvailableAmounts, 0);
         for (int i = 0; i < list.tagCount(); i++) {
             NBTTagCompound tag = list.getCompoundTagAt(i);
             int index = tag.getInteger("index");
@@ -683,6 +698,7 @@ public class SuperAdvancedMEInputHatch extends MTEHatchInputME {
     }
 
     protected void clearExtractedStacks() {
+        Arrays.fill(recipeAvailableAmounts, 0);
         for (Slot slot : slots) {
             if (slot == null) continue;
 
