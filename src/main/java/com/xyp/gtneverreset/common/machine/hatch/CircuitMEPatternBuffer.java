@@ -36,9 +36,13 @@ import com.xyp.gtneverreset.common.me.wildcard.WildcardPatternGenerator;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.crafting.ICraftingProviderHelper;
 import appeng.api.networking.security.BaseActionSource;
+import appeng.api.networking.storage.IStackWatcher;
+import appeng.api.networking.storage.IStackWatcherHost;
+import appeng.api.storage.StorageChannel;
 import appeng.api.storage.data.IAEFluidStack;
 import appeng.api.storage.data.IAEItemStack;
 import appeng.api.storage.data.IAEStack;
+import appeng.api.storage.data.IItemList;
 import appeng.me.GridAccessException;
 import appeng.me.helpers.AENetworkProxy;
 import appeng.util.inv.MEInventoryCrafting;
@@ -50,12 +54,15 @@ import gregtech.api.objects.GTDualInputPattern;
 import gregtech.api.util.GTUtility;
 
 /** Per-pattern virtual circuits and molds with atomic ingredient buffers using GTNH's native dual-input API. */
-public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
+public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME implements IStackWatcherHost {
 
     public static final int PATTERN_COUNT = 540;
     private final List<CircuitSlot> pendingRefunds = new ArrayList<>();
     private final Map<ICraftingPatternDetails, CircuitRecipe> craftingSlots = new HashMap<>();
-    private final CircuitSharedSupplies sharedSupplies = new CircuitSharedSupplies(this::markDirty);
+    private final CircuitSharedSupplies sharedSupplies = new CircuitSharedSupplies(
+        this::markDirty,
+        this::sharedConfigurationChanged);
+    private IStackWatcher supplyWatcher;
     private boolean craftingSlotsDirty = true;
     private boolean inputsChanged;
     private boolean inputsSerializedIntoDrop;
@@ -157,6 +164,27 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
         if (tile.isServerSide() && timer % 20 == 0 && !pendingRefunds.isEmpty() && isActive()) retryRefunds(4);
     }
 
+    private void sharedConfigurationChanged() {
+        if (supplyWatcher != null) sharedSupplies.watchNetworkInputs(supplyWatcher);
+        patternInputsChanged();
+        inputsChanged = true;
+    }
+
+    @Override
+    public void updateWatcher(IStackWatcher watcher) {
+        supplyWatcher = watcher;
+        sharedConfigurationChanged();
+    }
+
+    @Override
+    public void onStackChange(IItemList list, IAEStack fullStack, IAEStack diffStack, BaseActionSource source,
+        StorageChannel channel) {
+        if (diffStack.getStackSize() > 0) {
+            patternInputsChanged();
+            inputsChanged = true;
+        }
+    }
+
     private void pullSharedSupplies() {
         var tile = getBaseMetaTileEntity();
         if (!tile.isServerSide() || !tile.isAllowedToWork() || !isActive()) return;
@@ -170,6 +198,10 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
                 inputsChanged = true;
             }
         } catch (GridAccessException ignored) {}
+    }
+
+    private boolean canUseNetworkInputs() {
+        return sharedSupplies.isCheckingNetwork() && getBaseMetaTileEntity().isAllowedToWork() && isActive();
     }
 
     private CircuitSharedSupplies suppliesForRecipe() {
@@ -477,13 +509,20 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
             List<ItemStack> items = buffer.itemViews();
             if (items.isEmpty() && buffer.fluidViews()
                 .isEmpty()) return GTValues.emptyItemStackArray;
-            var shared = ((CircuitMEPatternBuffer) parentMTE).suppliesForRecipe()
-                .itemInputs();
+            var hatch = (CircuitMEPatternBuffer) parentMTE;
+            var supplies = hatch.suppliesForRecipe();
+            var shared = supplies.itemInputs();
+            var network = hatch.canUseNetworkInputs()
+                ? supplies.networkItemInputs(hatch.getProxy(), hatch.getMEOutputActionSource())
+                : Collections.<ItemStack>emptyList();
             int toolCount = activeRecipe == null ? 0 : activeRecipe.molds.length + (activeRecipe.circuit >= 0 ? 1 : 0);
-            if (items.isEmpty() && shared.isEmpty() && toolCount == 0) return GTValues.emptyItemStackArray;
-            ItemStack[] inputs = items.toArray(new ItemStack[items.size() + shared.size() + toolCount]);
+            if (items.isEmpty() && shared.isEmpty() && network.isEmpty() && toolCount == 0)
+                return GTValues.emptyItemStackArray;
+            ItemStack[] inputs = items
+                .toArray(new ItemStack[items.size() + shared.size() + network.size() + toolCount]);
             int index = items.size();
             for (ItemStack stack : shared) inputs[index++] = stack;
+            for (ItemStack stack : network) inputs[index++] = stack;
             addRecipeTools(inputs, index);
             return inputs;
         }
@@ -493,12 +532,17 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME {
             List<FluidStack> fluids = buffer.fluidViews();
             if (fluids.isEmpty() && buffer.itemViews()
                 .isEmpty()) return GTValues.emptyFluidStackArray;
-            var shared = ((CircuitMEPatternBuffer) parentMTE).suppliesForRecipe()
-                .fluidInputs();
-            if (fluids.isEmpty() && shared.isEmpty()) return GTValues.emptyFluidStackArray;
-            FluidStack[] inputs = fluids.toArray(new FluidStack[fluids.size() + shared.size()]);
+            var hatch = (CircuitMEPatternBuffer) parentMTE;
+            var supplies = hatch.suppliesForRecipe();
+            var shared = supplies.fluidInputs();
+            var network = hatch.canUseNetworkInputs()
+                ? supplies.networkFluidInputs(hatch.getProxy(), hatch.getMEOutputActionSource())
+                : Collections.<FluidStack>emptyList();
+            if (fluids.isEmpty() && shared.isEmpty() && network.isEmpty()) return GTValues.emptyFluidStackArray;
+            FluidStack[] inputs = fluids.toArray(new FluidStack[fluids.size() + shared.size() + network.size()]);
             int index = fluids.size();
             for (FluidStack fluid : shared) inputs[index++] = fluid;
+            for (FluidStack fluid : network) inputs[index++] = fluid;
             return inputs;
         }
 

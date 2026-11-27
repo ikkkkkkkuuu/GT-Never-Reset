@@ -102,6 +102,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             mixins.add("gregtech.CraftingMonitorHatchAccessor");
             mixins.add("gregtech.CircuitAssemblyLinePatternModeMixin");
             mixins.add("gregtech.PatternMEOutputMultiblockMixin");
+            mixins.add("gregtech.PatternNetworkInputMixin");
             mixins.add("gregtech.PatternAssemblyControllerNameMixin");
             mixins.add("gregtech.wireless.MixinWirelessControllerVersion");
             mixins.add("gregtech.wireless.MixinWirelessHatchOwner");

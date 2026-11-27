@@ -92,7 +92,7 @@ public final class WildcardCableOrderChecks {
             serverTicks++;
             for (Rig rig : rigs) rig.tick(serverTicks);
             if (rigs.stream()
-                .allMatch(r -> r.order == 2)) {
+                .allMatch(r -> r.order == 3)) {
                 Files.writeString(Path.of("orders.txt"), report);
                 complete = true;
             }
@@ -113,7 +113,8 @@ public final class WildcardCableOrderChecks {
         Future<ICraftingJob> plan;
         ICraftingLink link;
         boolean seeded;
-        int order, before;
+        int order, before, seededAt, insufficientTicks;
+        boolean toppedUp, dustAdded;
 
         Rig(World world, int x, int z, GTNRMachineID type) {
             this.type = type;
@@ -173,14 +174,19 @@ public final class WildcardCableOrderChecks {
                     .maybeStack(1)
                     .get());
             drive.setInventorySlotContents(1, new ItemStack(ItemAndBlockHolder.CELL1K));
+            drive.setInventorySlotContents(2, new ItemStack(ItemAndBlockHolder.CELL1K));
             placeAE(world, hx, hy, hz - 2, blocks.creativeEnergyController());
             placeAE(world, hx, hy, hz - 3, blocks.craftingStorage1k());
+            installPattern(1, "^(Tin|Lead)$", true);
+        }
+
+        private void installPattern(int batch, String materials, boolean withCircuit) {
             ItemStack wildcard = GTNRItemList.WildcardPattern.get(1);
             WildcardPatternGenerator.markAsWildcard(wildcard);
-            WildcardModelState.setInputs(wildcard, List.of(new PrefixIOComponent(OrePrefixes.wireGt01, 1)));
-            WildcardModelState.setOutputs(wildcard, List.of(new PrefixIOComponent(OrePrefixes.cableGt01, 1)));
-            WildcardModelState.setFilters(wildcard, List.of(new StringFilterComponent("^(Tin|Lead)$", true)));
-            wildcard.getTagCompound()
+            WildcardModelState.setInputs(wildcard, List.of(new PrefixIOComponent(OrePrefixes.wireGt01, batch)));
+            WildcardModelState.setOutputs(wildcard, List.of(new PrefixIOComponent(OrePrefixes.cableGt01, batch)));
+            WildcardModelState.setFilters(wildcard, List.of(new StringFilterComponent(materials, true)));
+            if (withCircuit) wildcard.getTagCompound()
                 .setInteger(CircuitPatternCodec.CIRCUIT, 24);
             PatternRecipeMap.write(wildcard, RecipeMaps.cableRecipes.unlocalizedName);
             hatch.setInventorySlotContents(0, wildcard);
@@ -205,7 +211,7 @@ public final class WildcardCableOrderChecks {
         }
 
         void tick(int ticks) throws Exception {
-            if (order == 2) return;
+            if (order == 3) return;
             energy.increaseStoredEnergyUnits(8192, true);
             if (ticks > 1200) throw new AssertionError(
                 type + " timeout order="
@@ -234,8 +240,8 @@ public final class WildcardCableOrderChecks {
             cpu = crafting.getCpus()
                 .iterator()
                 .next();
-            Materials material = order == 0 ? Materials.Tin : Materials.Lead;
-            int count = order == 0 ? 2 : 3;
+            Materials material = order == 0 ? Materials.Tin : order == 1 ? Materials.Lead : Materials.Zinc;
+            int count = order == 0 ? 2 : order == 1 ? 3 : 4;
             var wire = item(OrePrefixes.wireGt01, material, count);
             var cable = item(OrePrefixes.cableGt01, material, count);
             var options = crafting.getCraftingFor((IAEStack<?>) cable, null, 0, world);
@@ -243,9 +249,22 @@ public final class WildcardCableOrderChecks {
             var src = hatch.getMEOutputActionSource();
             var fluidInv = proxy.getStorage()
                 .getFluidInventory();
-            var rubberStack = AEFluidStack.create(Materials.Rubber.getMolten(1000));
+            var rubberStack = AEFluidStack
+                .create((order == 2 ? Materials.RubberSilicone : Materials.Rubber).getMolten(1000));
+            var storageItems = proxy.getStorage()
+                .getItemInventory();
+            var dust = AEItemStack.create(Materials.PolyvinylChloride.getDust(5));
             if (!seeded) {
-                require(fluidInv.injectItems(rubberStack.copy(), Actionable.MODULATE, src) == null, "load rubber");
+                require(storageItems.injectItems(dust.copy(), Actionable.MODULATE, src) == null, "seed PVC dust");
+                hatch.getSharedSupplies()
+                    .setTarget(0, dust);
+                require(
+                    fluidInv.injectItems(
+                        rubberStack.copy()
+                            .setStackSize(100),
+                        Actionable.MODULATE,
+                        src) == null,
+                    "load rubber");
                 for (Materials metal : new Materials[] { Materials.Tin, Materials.Lead }) {
                     require(
                         proxy.getStorage()
@@ -261,28 +280,40 @@ public final class WildcardCableOrderChecks {
                     .setTarget(CircuitSharedSupplies.SLOTS_PER_CHANNEL, rubberStack);
                 hatch.getSharedSupplies()
                     .setInterval(1);
+                require(
+                    hatch.getSharedSupplies()
+                        .directFluids(),
+                    "default mode draws fluid from ME");
+                hatch.getSharedSupplies()
+                    .setOnRecipeCheck(true);
+                seededAt = ticks;
                 seeded = true;
                 return;
             }
+            require(
+                hatch.getSharedSupplies()
+                    .itemInputs()
+                    .isEmpty(),
+                "marked items never prefill the hatch");
+            if (order < 2) require(stored(dust) == 5, "unused marked items remain in ME");
             if (plan == null) {
-                if (order == 0 && rubber() != 1000) return;
-                hatch.getSharedSupplies()
-                    .setInterval(0);
-                hatch.getSharedSupplies()
-                    .setOnRecipeCheck(false);
+                if (ticks - seededAt < 60) return;
+                require(rubber() == 0, "idle timer never moves network fluid into the hatch");
+                var available = fluidInv.extractItems(rubberStack, Actionable.SIMULATE, src);
                 require(
-                    fluidInv.extractItems(rubberStack, Actionable.SIMULATE, src) == null,
-                    "ME contains no coating fluid");
+                    available != null && available.getStackSize() == (order == 0 ? 100 : order == 1 ? 730 : 1000),
+                    "idle ME balance");
                 var inputs = options.iterator()
                     .next()
                     .getCondensedAEInputs();
                 require(
-                    inputs.length == 1 && wire.isSameType(inputs[0]) && inputs[0].getStackSize() == 1,
-                    "AE requests only one bare wire per cable");
+                    inputs.length == 1 && wire.isSameType(inputs[0])
+                        && inputs[0].getStackSize() == (order == 2 ? 4 : 1),
+                    "AE requests only bare wires");
                 require(
                     stored(cable) == 0 && stored(wire) == count,
                     "order starts with bare wire and zero finished cables");
-                before = rubber();
+                before = (int) available.getStackSize();
                 plan = crafting.beginCraftingJob(world, proxy.getGrid(), src, (IAEStack<?>) cable, null);
                 return;
             }
@@ -295,26 +326,83 @@ public final class WildcardCableOrderChecks {
                 return;
             }
             require(!link.isCanceled(), "AE job canceled");
+            require(rubber() == 0, "recipe checks never prefill the hatch");
+            if (!toppedUp) {
+                if (hatch.getFirstNonEmptyInventory()
+                    .isEmpty() || ++insufficientTicks < 100) return;
+                require(
+                    stored(cable) == 0 && coater.mMaxProgresstime == 0
+                        && fluidInv.extractItems(rubberStack, Actionable.SIMULATE, src)
+                            .getStackSize() == 100,
+                    "insufficient rubber leaves the entire ME balance untouched");
+                require(
+                    fluidInv.injectItems(
+                        rubberStack.copy()
+                            .setStackSize(900),
+                        Actionable.MODULATE,
+                        src) == null,
+                    "supply remaining rubber");
+                toppedUp = true;
+                before += 900;
+            }
+            if (order == 2 && !dustAdded) {
+                if (hatch.getFirstNonEmptyInventory()
+                    .isEmpty() || ++insufficientTicks < 100) return;
+                require(
+                    stored(cable) == 0 && stored(dust) == 0
+                        && coater.mMaxProgresstime == 0
+                        && fluidInv.extractItems(rubberStack, Actionable.SIMULATE, src)
+                            .getStackSize() == 1000,
+                    "missing marked item leaves fluid in ME");
+                require(storageItems.injectItems(dust.copy(), Actionable.MODULATE, src) == null, "deliver PVC dust");
+                dustAdded = true;
+            }
             if (cpu.isBusy() || stored(cable) != count) return;
-            int after = rubber();
+            int after = (int) fluidInv.extractItems(rubberStack, Actionable.SIMULATE, src)
+                .getStackSize();
             require(
-                before - after == 135 * count && stored(wire) == 0
-                    && fluidInv.extractItems(rubberStack, Actionable.SIMULATE, src) == null,
-                "unexpected debit for " + type + " / " + material + ": " + before + " -> " + after);
+                before - after == (order == 2 ? 135 : 135 * count) && stored(wire) == 0 && rubber() == 0,
+                "unexpected network debit for " + type + " / " + material + ": " + before + " -> " + after);
             String line = type + " "
                 + material
                 + " cables ordered="
                 + count
                 + " returned="
                 + stored(cable)
-                + " bare wire remaining=0; shared molten rubber "
+                + " bare wire remaining=0; ME molten rubber "
                 + before
                 + " -> "
                 + after
-                + " mB; ME rubber remaining=0";
+                + " mB; local rubber=0";
+            if (order == 2) {
+                require(
+                    stored(dust) == 4 && hatch.getSharedSupplies()
+                        .itemInputs()
+                        .isEmpty(),
+                    "exactly one dust debited from ME");
+                line += "; ME PVC dust 5 -> 4; local dust=0";
+            }
             report.append(line)
                 .append(System.lineSeparator());
             System.out.println("[wildcard-cable-orders] " + line);
+            if (order == 1) {
+                require(
+                    storageItems.extractItems(dust.copy(), Actionable.MODULATE, src)
+                        .getStackSize() == 5,
+                    "empty dust cell for missing item check");
+                require(
+                    storageItems.injectItems(item(OrePrefixes.wireGt01, Materials.Zinc, 4), Actionable.MODULATE, src)
+                        == null,
+                    "seed zinc wire");
+                var silicone = AEFluidStack.create(Materials.RubberSilicone.getMolten(1000));
+                require(
+                    fluidInv.injectItems(silicone.copy(), Actionable.MODULATE, src) == null,
+                    "seed silicone rubber");
+                hatch.getSharedSupplies()
+                    .setTarget(CircuitSharedSupplies.SLOTS_PER_CHANNEL, silicone);
+                installPattern(4, "^Zinc$", false);
+                insufficientTicks = 0;
+            }
             order++;
             plan = null;
             link = null;

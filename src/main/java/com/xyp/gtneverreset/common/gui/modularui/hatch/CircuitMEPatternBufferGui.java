@@ -78,7 +78,7 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
     private ModularPanel supplyPanel(ModularPanel parent, PanelSyncManager sync) {
         var panel = GTGuis.createPopUpPanel(PANEL)
             .background(GTGuiTextures.BACKGROUND_POPUP_STANDARD)
-            .size(PANEL_WIDTH, 184)
+            .size(PANEL_WIDTH, 224)
             .relative(parent)
             .left(() -> Math.max(-PANEL_WIDTH - 3, -parent.getArea().x), Unit.Measure.PIXEL)
             .top(0);
@@ -135,6 +135,32 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
                 .pos(134, 141)
                 .overlay(true, IKey.lang("options.on"))
                 .overlay(false, IKey.lang("options.off")));
+        addSupplyMode(
+            panel,
+            165,
+            "direct_items",
+            // #tr gtnr.gui.circuit_supplies.direct_items
+            // # Draw items from ME on use
+            // # zh_CN 物品按需从 ME 扣除
+            IKey.lang("gtnr.gui.circuit_supplies.direct_items"),
+            // #tr gtnr.gui.circuit_supplies.direct_items_hint
+            // # On: use network items when a recipe starts. Off: refill the hatch on the configured schedule.
+            // # zh_CN 开启时，配方启动才扣除 ME 物品；关闭时，按补货设置预存到总成。
+            IKey.lang("gtnr.gui.circuit_supplies.direct_items_hint"),
+            new BooleanSyncValue(null, null, supplies::directItems, supplies::setDirectItems).allowC2S());
+        addSupplyMode(
+            panel,
+            185,
+            "direct_fluids",
+            // #tr gtnr.gui.circuit_supplies.direct_fluids
+            // # Draw fluid from ME on use
+            // # zh_CN 流体按需从 ME 扣除
+            IKey.lang("gtnr.gui.circuit_supplies.direct_fluids"),
+            // #tr gtnr.gui.circuit_supplies.direct_fluids_hint
+            // # On: use network fluid when a recipe starts. Off: refill the hatch on the configured schedule.
+            // # zh_CN 开启时，配方启动才扣除 ME 流体；关闭时，按补货设置预存到总成。
+            IKey.lang("gtnr.gui.circuit_supplies.direct_fluids_hint"),
+            new BooleanSyncValue(null, null, supplies::directFluids, supplies::setDirectFluids).allowC2S());
         var left = new IntSyncValue(supplies::remainingSeconds);
         sync.syncValue("seconds_left", left);
         // #tr gtnr.gui.circuit_supplies.next
@@ -144,9 +170,24 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
             IKey.dynamic(
                 () -> StatCollector.translateToLocalFormatted("gtnr.gui.circuit_supplies.next", left.getIntValue()))
                 .asWidget()
-                .pos(6, 165)
-                .setEnabledIf(w -> interval.getIntValue() > 0));
+                .pos(6, 205)
+                .setEnabledIf(w -> interval.getIntValue() > 0 && left.getIntValue() > 0));
         return panel;
+    }
+
+    private static void addSupplyMode(ModularPanel panel, int y, String name, IKey label, IKey hint,
+        BooleanSyncValue mode) {
+        panel.child(
+            label.asWidget()
+                .pos(6, y));
+        panel.child(
+            new ToggleButton().name(name)
+                .value(mode)
+                .size(48, 16)
+                .pos(134, y - 4)
+                .overlay(true, IKey.lang("options.on"))
+                .overlay(false, IKey.lang("options.off"))
+                .addTooltipLine(hint));
     }
 
     private SlotLikeButtonWidget sampleSlot(PanelSyncManager sync, int slot) {
@@ -277,11 +318,11 @@ public class CircuitMEPatternBufferGui extends SuperMTEHatchCraftingInputMEGui {
             if (target != null) supplies.setTarget(slot, target.setStackSize(value));
         }).allowC2S();
         // #tr gtnr.gui.circuit_supplies.item_limit
-        // # Target item count
-        // # zh_CN 物品补货上限（个）
+        // # Item limit
+        // # zh_CN 物品用量上限（个）
         // #tr gtnr.gui.circuit_supplies.fluid_limit
-        // # Target fluid amount (mB)
-        // # zh_CN 流体补货上限（mB）
+        // # Fluid limit (mB)
+        // # zh_CN 流体用量上限（mB）
         String key = slot < CircuitSharedSupplies.SLOTS_PER_CHANNEL ? "gtnr.gui.circuit_supplies.item_limit"
             : "gtnr.gui.circuit_supplies.fluid_limit";
         return GTGuis.createPopUpPanel(name)

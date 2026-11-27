@@ -24,6 +24,7 @@ import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.viewport.LocatedWidget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
+import com.cleanroommc.modularui.widgets.ToggleButton;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.glodblock.github.loader.ItemAndBlockHolder;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
@@ -58,7 +59,7 @@ public final class CircuitSupplyChecks {
 
     private CircuitMEPatternBuffer guiHatch;
     private int waitForTile;
-    private volatile boolean edited, itemEdited, dropsReceived;
+    private volatile boolean edited, itemEdited, dropsReceived, directEnabled;
     private CircuitMEPatternBuffer serverHatch;
     private boolean launched, verified, opened, finished;
     private int ticks, stage, frames;
@@ -84,6 +85,10 @@ public final class CircuitSupplyChecks {
                     require(guiHatch.onRightclick(guiHatch.getBaseMetaTileEntity(), player), "native hatch GUI opens");
                     opened = true;
                 }
+                directEnabled = guiHatch.getSharedSupplies()
+                    .directItems()
+                    && guiHatch.getSharedSupplies()
+                        .directFluids();
                 if (!dropsReceived) {
                     var samples = guiHatch.getSharedSupplies();
                     var item = samples.target(1);
@@ -205,6 +210,39 @@ public final class CircuitSupplyChecks {
             16,
             water.copy()
                 .setStackSize(1000));
+        require(supplies.directItems() && supplies.directFluids(), "new hatches use network fluids by default");
+        require(supplies.beginNetworkCheck(), "open a direct-fluid recipe check");
+        FluidStack offer = supplies.networkFluidInputs(grid, source)
+            .get(0);
+        require(
+            offer.amount == 1000 && supplies.networkFluidInputs(grid, source)
+                .get(0) == offer,
+            "one capped view for the whole check");
+        var offeredItems = supplies.networkItemInputs(grid, source);
+        require(offeredItems.size() == 1 && offeredItems.get(0).stackSize == 8, "item offer is capped at eight");
+        offeredItems.get(0).stackSize -= 2;
+        var fluids = storage.getFluidInventory();
+        var moved = fluids.extractItems(
+            water.copy()
+                .setStackSize(2499),
+            Actionable.MODULATE,
+            source);
+        offer.amount -= 5;
+        require(
+            !supplies.endNetworkCheck(grid, source) && fluids.extractItems(water, Actionable.SIMULATE, source)
+                .getStackSize() == 1
+                && supplies.fluidInputs()
+                    .isEmpty(),
+            "lost network stock fails settlement without taking a partial payment");
+        require(fluids.injectItems(moved, Actionable.MODULATE, source) == null, "restore fixture stock");
+        require(
+            storage.getItemInventory()
+                .extractItems(iron, Actionable.SIMULATE, source)
+                .getStackSize() == 12 && supplies.itemInputs()
+                    .isEmpty(),
+            "failed mixed check leaves items in ME");
+        supplies.setDirectItems(false);
+        supplies.setDirectFluids(false);
         supplies.setInterval(1);
         for (int tick = 1; tick <= 20; tick++) serverHatch.onPostTick(serverHatch.getBaseMetaTileEntity(), tick);
         require(
@@ -274,6 +312,30 @@ public final class CircuitSupplyChecks {
                     .fluidInputs()
                     .get(0).amount == 750,
             "save/load preserves policy and exact remainder");
+        require(
+            !restored.getSharedSupplies()
+                .directFluids(),
+            "explicit fluid buffering survives reload");
+        var legacy = (NBTTagCompound) saved.copy();
+        legacy.getCompoundTag("circuitSharedSupplies")
+            .removeTag("bufferedItems");
+        legacy.getCompoundTag("circuitSharedSupplies")
+            .removeTag("bufferedFluids");
+        restored.loadNBTData(legacy);
+        require(
+            restored.getSharedSupplies()
+                .directFluids()
+                && restored.getSharedSupplies()
+                    .fluidInputs()
+                    .get(0).amount == 750,
+            "old save enables direct ME fluids and retains previously withdrawn fluid");
+        require(
+            restored.getSharedSupplies()
+                .directItems()
+                && restored.getSharedSupplies()
+                    .itemInputs()
+                    .get(0).stackSize == 6,
+            "old save enables direct ME items and retains previously withdrawn items");
         serverHatch.setItemNBT(saved);
         restored.loadNBTData(saved);
         require(
@@ -353,9 +415,15 @@ public final class CircuitSupplyChecks {
             } else if (stage == 7) {
                 if (!itemEdited) return;
                 panel.closeIfOpen();
-            } else {
-                if (find(panel, "supply_sample_1") == null) return;
+            } else if (stage == 8) {
+                var toggle = (ToggleButton) find(panel, "direct_fluids");
+                if (toggle == null) return;
                 shot("circuit-supplies-item-count.png");
+                toggle.onMousePressed(0);
+                ((ToggleButton) find(panel, "direct_items")).onMousePressed(0);
+            } else {
+                if (!directEnabled) return;
+                shot("circuit-supplies-direct-fluids.png");
                 finish(null);
             }
             stage++;

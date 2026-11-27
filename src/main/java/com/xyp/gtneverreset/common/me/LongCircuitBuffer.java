@@ -138,6 +138,18 @@ public final class LongCircuitBuffer {
         return fluids.restock(energy, storage.getFluidInventory(), source, fluidTargets) || changed;
     }
 
+    boolean canRecover(List<IAEItemStack> itemRequests, List<IAEFluidStack> fluidRequests) {
+        return items.canRecover(itemRequests) && fluids.canRecover(fluidRequests);
+    }
+
+    void recoverItem(IAEItemStack remainder) {
+        items.load(remainder);
+    }
+
+    void recoverFluid(IAEFluidStack remainder) {
+        fluids.load(remainder);
+    }
+
     public void clear() {
         items.clear();
         fluids.clear();
@@ -275,6 +287,13 @@ public final class LongCircuitBuffer {
                 }
             }
             return modified;
+        }
+
+        boolean canRecover(List<T> requests) {
+            if (requests.isEmpty() || entries.isEmpty()) return requests.size() <= MAX_TYPES_PER_CHANNEL;
+            List<T> staged = stacks();
+            for (T request : requests) if (!add(staged, request)) return false;
+            return true;
         }
 
         void load(T stack) {
