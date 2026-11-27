@@ -5,7 +5,6 @@ import net.minecraftforge.common.MinecraftForge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.xyp.gtnrlib.animation.ProjectorArmSessions;
 import com.xyp.gtnrlib.client.GTNRLibClient;
 import com.xyp.gtnrlib.command.CommandItemInfo;
 import com.xyp.gtnrlib.command.CommandSuicide;
@@ -19,7 +18,6 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
-import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 
 @Mod(
     modid = GTNRLib.MODID,
@@ -45,7 +43,6 @@ public class GTNRLib {
     public void init(FMLInitializationEvent event) {
         WorldListener listener = WorldListener.INSTANCE;
         MinecraftForge.EVENT_BUS.register(listener);
-        ProjectorArmSessions.register();
         LOG.info("GTNRLib initialized");
     }
 
@@ -61,8 +58,4 @@ public class GTNRLib {
         event.registerServerCommand(new CommandSuicide());
     }
 
-    @Mod.EventHandler
-    public void serverStopping(FMLServerStoppingEvent event) {
-        ProjectorArmSessions.clear();
-    }
 }

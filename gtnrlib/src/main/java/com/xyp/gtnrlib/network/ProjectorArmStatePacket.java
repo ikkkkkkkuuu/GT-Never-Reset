@@ -2,8 +2,6 @@ package com.xyp.gtnrlib.network;
 
 import net.minecraft.client.Minecraft;
 
-import com.xyp.gtnrlib.compat.gtneverreset.ProjectorArmAnimation;
-
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
@@ -14,12 +12,6 @@ public final class ProjectorArmStatePacket extends ClientboundPacket {
     private boolean open;
 
     public ProjectorArmStatePacket() {}
-
-    ProjectorArmStatePacket(int entity, int dimension, boolean open) {
-        this.entity = entity;
-        this.dimension = dimension;
-        this.open = open;
-    }
 
     @Override
     protected void read(ByteBuf buffer) {
@@ -38,6 +30,6 @@ public final class ProjectorArmStatePacket extends ClientboundPacket {
     @Override
     @SideOnly(Side.CLIENT)
     public void handleClient(Minecraft minecraft) {
-        ProjectorArmAnimation.receivePose(minecraft, entity, dimension, open);
+        // Older servers may still send this packet on discriminator 4.
     }
 }

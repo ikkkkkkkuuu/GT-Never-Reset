@@ -10,7 +10,6 @@ import com.xyp.gtneverreset.common.item.items.MultiblockProjector;
 import com.xyp.gtneverreset.common.wireless.WirelessCardInventory;
 import com.xyp.gtneverreset.common.wireless.WirelessCardInventory.CardSlot;
 import com.xyp.gtneverreset.config.ToolsConfig;
-import com.xyp.gtnrlib.animation.ProjectorArmSessions;
 
 public class ProjectorServer {
 
@@ -53,11 +52,9 @@ public class ProjectorServer {
 
     public static void openGui(EntityPlayerMP player, int location) {
         if (projectorAt(player, location) == null) return;
-        var previous = player.openContainer;
         var factory = GuiFactories.playerInventory();
         if (location < 0) factory.openFromBaubles(player, -location - 1);
         else if (location == 0) factory.openFromMainHand(player);
         else factory.openFromPlayerInventory(player, location - 1);
-        ProjectorArmSessions.opened(player, previous);
     }
 }

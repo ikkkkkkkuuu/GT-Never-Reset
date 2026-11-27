@@ -5,7 +5,6 @@ import com.xyp.gtnrlib.compat.gregtech.GregTechToolGrips;
 import com.xyp.gtnrlib.compat.gregtech.GregTechToolboxAnimation;
 import com.xyp.gtnrlib.compat.gregtech.GregTechWireCutterAnimation;
 import com.xyp.gtnrlib.compat.gregtech.GregTechWrenchAnimation;
-import com.xyp.gtnrlib.compat.gtneverreset.ProjectorArmAnimation;
 import com.xyp.gtnrlib.compat.ic2.IndustrialCraftToolGrips;
 import com.xyp.gtnrlib.compat.tconstruct.TinkersCrossbowAnimation;
 import com.xyp.gtnrlib.compat.tconstruct.TinkersToolGrips;
@@ -28,7 +27,6 @@ public final class ToolAnimationCompat {
 
     @SideOnly(Side.CLIENT)
     public static void register() {
-        if (Loader.isModLoaded("gtneverreset")) ProjectorArmAnimation.register();
         if (ModList.GregTech.isModLoaded()) {
             if (!legacyClass("compat/gregtech/GregTechToolGrips")) GregTechToolGrips.register();
             if (!legacyClass("compat/gregtech/GregTechWrenchAnimation")) GregTechWrenchAnimation.register();

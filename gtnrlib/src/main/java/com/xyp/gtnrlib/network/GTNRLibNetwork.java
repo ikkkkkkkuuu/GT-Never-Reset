@@ -31,14 +31,6 @@ public final class GTNRLibNetwork {
         channel.sendTo(packet, player);
     }
 
-    public static void broadcastProjectorPose(int entity, int dimension, boolean open) {
-        channel.sendToDimension(new ProjectorArmStatePacket(entity, dimension, open), dimension);
-    }
-
-    public static void sendProjectorPose(EntityPlayerMP observer, int entity, int dimension) {
-        sendTo(new ProjectorArmStatePacket(entity, dimension, true), observer);
-    }
-
     public static void sendCommands(byte[] data, EntityPlayerMP player) {
         channel.sendTo(new CommandTreePacket(data), player);
     }
