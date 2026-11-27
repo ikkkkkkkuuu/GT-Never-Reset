@@ -15,6 +15,7 @@ import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRec
 import com.xyp.gtneverreset.common.recipe.gtneverreset.LightningProcessorRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.ModernNonCellRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.OreProcessingRecipes;
+import com.xyp.gtneverreset.common.recipe.gtneverreset.PetrochemicalPlantRecipes;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.SatelliteRockBreakingRecipes;
 import com.xyp.gtneverreset.compat.etfuturum.EtFuturumCompat;
 import com.xyp.gtneverreset.config.ChaosConfig;
@@ -89,6 +90,7 @@ public final class RecipeLoader implements IContentLoader {
         ExtruderRecipes.register();
         OreProcessingRecipes.registerExternalRecipes();
         ModernNonCellRecipes.registerLateRecipes();
+        PetrochemicalPlantRecipes.register();
         FragmentWorldCollectorRecipes.scheduleRecipes();
         DisassemblerRecipes.register();
         if (ChaosConfig.enableBottleInChaos) {

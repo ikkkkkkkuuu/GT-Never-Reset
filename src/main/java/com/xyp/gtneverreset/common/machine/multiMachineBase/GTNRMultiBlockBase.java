@@ -337,8 +337,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         for (Iterator<RecipeThreadTask> iterator = threadTasks.values()
             .iterator(); iterator.hasNext();) {
             RecipeThreadTask task = iterator.next();
-            if (task.isFinished() && task.getOutputs()
-                .flush(this)) {
+            if (task.isFinished() && flushRecipeThreadOutputs(task)) {
                 iterator.remove();
                 recipesDone += task.getParallels();
                 outputAfterRecipe();
@@ -375,6 +374,11 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
 
     /** Called once when processing reaches its final tick, even if outputs are still waiting for space. */
     protected void onRecipeThreadFinished() {}
+
+    protected boolean flushRecipeThreadOutputs(RecipeThreadTask task) {
+        return task.getOutputs()
+            .flush(this);
+    }
 
     private void accelerateRecipeThreads(int total, long inputPower) {
         if (threadTasks.isEmpty()) return;
@@ -946,7 +950,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
     }
 
     @Override
-    public final boolean supportsSingleRecipeLocking() {
+    public boolean supportsSingleRecipeLocking() {
         return true;
     }
 

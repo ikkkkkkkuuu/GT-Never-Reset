@@ -19,6 +19,7 @@ import com.xyp.gtneverreset.common.machine.multiblock.LargeSteelKilnController;
 import com.xyp.gtneverreset.common.machine.multiblock.LightHunterSpaceStation;
 import com.xyp.gtneverreset.common.machine.multiblock.MegaElectricBlastFurnace;
 import com.xyp.gtneverreset.common.machine.multiblock.NexusSatelliteFactory;
+import com.xyp.gtneverreset.common.machine.multiblock.PetrochemicalPlantController;
 import com.xyp.gtneverreset.common.machine.multiblock.QuantumComputer;
 import com.xyp.gtneverreset.common.machine.multiblock.SingularityDataHub;
 import com.xyp.gtneverreset.common.machine.multiblock.StarCoreStripper;
@@ -127,6 +128,15 @@ public final class MultiblockLoader {
                 GTNRMachineID.CatalyticReformer.id,
                 "gtneverreset.catalytic_reformer",
                 StatCollector.translateToLocal("gtnr.machine.catalytic_reformer.name")));
+        // #tr gtnr.machine.petrochemical_plant.name
+        // # Petrochemical Plant
+        // # zh_CN 石化工厂
+        register(
+            GTNRItemList.PetrochemicalPlant,
+            new PetrochemicalPlantController(
+                GTNRMachineID.PetrochemicalPlant.id,
+                "gtneverreset.petrochemical_plant",
+                StatCollector.translateToLocal("gtnr.machine.petrochemical_plant.name")));
         // #tr gtnr.machine.quantum_computer.name
         // # Quantum Computer
         // # zh_CN 量子计算机
