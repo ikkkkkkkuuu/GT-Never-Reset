@@ -4,6 +4,8 @@ import static com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputHatc
 import static gregtech.api.modularui2.GTGuis.createPopUpPanel;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -64,7 +66,9 @@ public class SuperAdvancedMEInputHatchGui extends MTEHatchBaseGui<SuperAdvancedM
     private static final int FILTER_SLOT_PER_ROW = 9;
     private static final int STOCK_SLOT_ROW = 100;
     private static final int STOCK_SLOT_PER_ROW = 9;
+    private static final MTEHatchInputMESlotAdapter SLOT_ADAPTER = new MTEHatchInputMESlotAdapter();
     private final Slot[] slots;
+    private final long[] availableAmounts = new long[SLOT_COUNT];
     private final VerticalScrollData fluidScroll = new VerticalScrollData();
     private FluidStack selectedFluid;
     private IPanelHandler policyPanel;
@@ -78,18 +82,42 @@ public class SuperAdvancedMEInputHatchGui extends MTEHatchBaseGui<SuperAdvancedM
     public void registerSyncValues(PanelSyncManager syncManager) {
         super.registerSyncValues(syncManager);
 
-        GenericListSyncHandler<Slot> slotSyncHandler = GenericListSyncHandler.<Slot>builder()
-            .getter(() -> GTDataUtils.mapToList(slots, slot -> {
-                if (slot == null) return null;
-                Slot copy = new Slot(slot.config.copy());
-                copy.extracted = slot.extracted == null ? null : slot.extracted.copy();
-                copy.extractedAmount = slot.extractedAmount;
-                return copy;
-            }))
-            .setter(slots2 -> System.arraycopy(slots2.toArray(new Slot[0]), 0, slots, 0, SLOT_COUNT))
-            .adapter(new MTEHatchInputMESlotAdapter())
+        var slotSyncHandler = GenericListSyncHandler.<SlotPreview>builder()
+            .getter(this::collectSlotPreviews)
+            .setter(this::applySlotPreviews)
+            .adapter(ByteBufAdapters.makeAdapter(buffer -> {
+                Slot slot = SLOT_ADAPTER.deserialize(buffer);
+                return slot == null ? null : new SlotPreview(slot, buffer.readLong());
+            }, (buffer, preview) -> {
+                SLOT_ADAPTER.serialize(buffer, preview == null ? null : preview.slot());
+                if (preview != null) buffer.writeLong(preview.available());
+            }, null))
             .build();
         syncManager.syncValue("slots", slotSyncHandler);
+    }
+
+    private List<SlotPreview> collectSlotPreviews() {
+        List<SlotPreview> previews = new ArrayList<>(SLOT_COUNT);
+        for (int index = 0; index < SLOT_COUNT; index++) {
+            Slot slot = slots[index];
+            if (slot == null) {
+                previews.add(null);
+                continue;
+            }
+            Slot copy = new Slot(slot.config.copy());
+            copy.extracted = slot.extracted == null ? null : slot.extracted.copy();
+            copy.extractedAmount = slot.extractedAmount;
+            previews.add(new SlotPreview(copy, machine.getRecipeAvailableAmount(index)));
+        }
+        return previews;
+    }
+
+    private void applySlotPreviews(List<SlotPreview> previews) {
+        for (int index = 0; index < SLOT_COUNT; index++) {
+            SlotPreview preview = previews.get(index);
+            slots[index] = preview == null ? null : preview.slot();
+            availableAmounts[index] = preview == null ? 0 : preview.available();
+        }
     }
 
     @Override
@@ -406,6 +434,11 @@ public class SuperAdvancedMEInputHatchGui extends MTEHatchBaseGui<SuperAdvancedM
         return new Grid().gridOfWidthHeight(STOCK_SLOT_PER_ROW, STOCK_SLOT_ROW, ($x, $y, index) -> new FluidSlot() {
 
             @Override
+            public double getBaseUnitAmount(double amount) {
+                return super.getBaseUnitAmount(availableAmounts[index]);
+            }
+
+            @Override
             protected void addToolTip(RichTooltip tooltip) {
                 FluidStack fluid = getFluidStack();
 
@@ -414,8 +447,8 @@ public class SuperAdvancedMEInputHatchGui extends MTEHatchBaseGui<SuperAdvancedM
                     tooltip.addLine(
                         IKey.lang(
                             "modularui2.fluid.phantom.amount",
-                            this.formatFluidTooltipAmount(fluid.amount),
-                            this.getBaseUnit()));
+                            String.format("%,d", availableAmounts[index]),
+                            getUnit()));
                     addAdditionalFluidInfo(tooltip, fluid);
 
                     if (!Interactable.hasShiftDown()) {
@@ -656,4 +689,6 @@ public class SuperAdvancedMEInputHatchGui extends MTEHatchBaseGui<SuperAdvancedM
             return null;
         }
     }
+
+    private record SlotPreview(Slot slot, long available) {}
 }

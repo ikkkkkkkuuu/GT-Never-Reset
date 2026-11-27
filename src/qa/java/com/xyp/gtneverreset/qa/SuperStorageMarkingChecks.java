@@ -1,31 +1,42 @@
 package com.xyp.gtneverreset.qa;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
+import net.minecraftforge.fluids.FluidRegistry;
+import net.minecraftforge.fluids.FluidStack;
 
 import com.cleanroommc.modularui.api.widget.IWidget;
+import com.cleanroommc.modularui.drawable.text.RichText;
 import com.cleanroommc.modularui.factory.GuiFactories;
 import com.cleanroommc.modularui.factory.PosGuiData;
 import com.cleanroommc.modularui.factory.SimpleGuiFactory;
 import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.widgets.slot.FluidSlot;
 import com.cleanroommc.modularui.widgets.slot.PhantomItemSlot;
+import com.glodblock.github.loader.ItemAndBlockHolder;
 import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputBus;
 import com.xyp.gtneverreset.common.machine.hatch.SuperAdvancedMEInputHatch;
 import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 
+import appeng.api.AEApi;
+import appeng.api.config.Actionable;
+import appeng.api.networking.security.BaseActionSource;
+import appeng.tile.networking.TileCreativeEnergyCell;
+import appeng.tile.storage.TileDrive;
+import appeng.util.item.AEFluidStack;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -42,14 +53,21 @@ import gregtech.api.metatileentity.BaseMetaTileEntity;
     dependencies = "after:gtneverreset")
 public final class SuperStorageMarkingChecks {
 
+    private static final long INITIAL_LAVA = 6_000_000_000L;
+    private static final long LAVA_RESERVE = 2_500_000_000L;
+    private static final long EXTERNAL_LAVA_EXTRACTION = 250_000_000L;
+
     private SimpleGuiFactory busFactory;
     private SimpleGuiFactory hatchFactory;
     private SuperAdvancedMEInputBus serverBus;
     private SuperAdvancedMEInputHatch serverHatch;
     private SuperAdvancedMEInputBus clientBus;
     private SuperAdvancedMEInputHatch clientHatch;
-    private boolean launched, finished;
-    private int ticks, stage, serverTicks, frames;
+    private ModularScreen availabilityScreen;
+    private FluidSlot availabilitySlot;
+    private String lastAvailabilityTooltip = "";
+    private boolean launched, finished, fluidGridConnected;
+    private int menuTicks, ticks, stage, serverTicks, frames;
     private volatile int request;
     private volatile int acknowledged;
     private volatile Throwable failure;
@@ -114,9 +132,36 @@ public final class SuperStorageMarkingChecks {
                 setCursor(player, null);
                 acknowledged = 9;
             } else if (request == 10 && acknowledged < 10) {
-                require(serverHatch.getSlotConfig(0) == null, "empty-hand click clears the fluid mark");
+                if (!fluidGridConnected) {
+                    require(serverHatch.getSlotConfig(0) == null, "empty-hand click clears the fluid mark");
+                    connectFluidGrid(player.worldObj);
+                    fluidGridConnected = true;
+                }
+                if (!serverHatch.isAllowedToWork()) return;
+                var lava = AEFluidStack.create(new FluidStack(FluidRegistry.LAVA, 1));
+                lava.setStackSize(INITIAL_LAVA);
+                var storage = serverHatch.getProxy()
+                    .getStorage()
+                    .getFluidInventory();
+                require(
+                    storage.injectItems(lava, Actionable.MODULATE, new BaseActionSource()) == null,
+                    "ME stores six billion mB of marked lava");
+                serverHatch.getPolicy(1).reserve = LAVA_RESERVE;
+                serverHatch.setLimitedMode(true);
+                serverHatch.updateInformationSlot(1);
                 acknowledged = 10;
-                finish(null);
+            } else if (request == 11 && acknowledged < 11) {
+                var lava = AEFluidStack.create(new FluidStack(FluidRegistry.LAVA, 1));
+                lava.setStackSize(EXTERNAL_LAVA_EXTRACTION);
+                var extracted = serverHatch.getProxy()
+                    .getStorage()
+                    .getFluidInventory()
+                    .extractItems(lava, Actionable.MODULATE, new BaseActionSource());
+                require(
+                    extracted != null && extracted.getStackSize() == EXTERNAL_LAVA_EXTRACTION,
+                    "another ME consumer removes 250 million mB of lava");
+                serverHatch.updateInformationSlot(1);
+                acknowledged = 11;
             }
         } catch (Throwable error) {
             failure = error;
@@ -129,7 +174,7 @@ public final class SuperStorageMarkingChecks {
         if (event.phase != TickEvent.Phase.END || finished) return;
         Minecraft mc = Minecraft.getMinecraft();
         try {
-            if (!launched && mc.currentScreen instanceof GuiMainMenu) {
+            if (!launched && mc.theWorld == null && mc.currentScreen != null && ++menuTicks > 100) {
                 launched = true;
                 mc.launchIntegratedServer(
                     "storage-marking-" + System.currentTimeMillis(),
@@ -142,9 +187,17 @@ public final class SuperStorageMarkingChecks {
                 clientBus = bus(mc.theWorld);
                 clientHatch = hatch(mc.theWorld);
             }
-            if (++ticks > 2400) throw new AssertionError("Marking QA timeout at stage " + stage);
+            if (++ticks > 2400) {
+                throw new AssertionError(
+                    "Marking QA timeout at stage " + stage
+                        + ", server acknowledgement "
+                        + acknowledged
+                        + ", availability tooltip "
+                        + lastAvailabilityTooltip);
+            }
             ModularScreen screen = ModularScreen.getCurrent();
             if (screen == null) return;
+            if (stage >= 9) return;
             if (stage == 5) {
                 if (acknowledged >= 6) stage = 6;
                 return;
@@ -213,13 +266,110 @@ public final class SuperStorageMarkingChecks {
                     .onMousePressed(0);
                 request = 10;
                 stage = 9;
-            } else if (acknowledged >= 10) {
-                finish(null);
             }
         } catch (Throwable error) {
             failure = error;
             finish(error);
         }
+    }
+
+    @SubscribeEvent
+    public void render(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || finished || stage < 9 || acknowledged < stage + 1) return;
+        try {
+            var screen = ModularScreen.getCurrent();
+            if (screen == null) return;
+            if (availabilitySlot == null) {
+                var slots = widgets(screen.getMainPanel(), FluidSlot.class);
+                int stockIndex = SuperAdvancedMEInputHatch.SLOT_COUNT + 1;
+                require(slots.size() > stockIndex, "fluid GUI contains the right availability grid");
+                availabilitySlot = slots.get(stockIndex);
+                require(
+                    availabilitySlot.getArea()
+                        .x()
+                        > slots.get(1)
+                            .getArea()
+                            .x(),
+                    "availability slot is right of the marked slot");
+                availabilityScreen = screen;
+            }
+            if (screen != availabilityScreen)
+                throw new AssertionError("fluid GUI reopened before availability updated");
+            var lava = availabilitySlot.getFluidStack();
+            if (lava == null || lava.getFluid() != FluidRegistry.LAVA) return;
+
+            long expected = INITIAL_LAVA - LAVA_RESERVE - (stage == 9 ? 0 : EXTERNAL_LAVA_EXTRACTION);
+            var tooltip = availabilitySlot.getTooltip();
+            tooltip.buildTooltip();
+            var lines = ((RichText) tooltip.getRichText()).getAsStrings();
+            lastAvailabilityTooltip = lines.toString();
+            String formatted = availabilitySlot.formatFluidTooltipAmount(expected);
+            if (lines.stream()
+                .noneMatch(line -> line.contains(formatted))) return;
+            require(true, "right availability tooltip shows " + formatted + " for marked lava");
+            require(
+                availabilitySlot.getBaseUnitAmount(lava.amount)
+                    == expected * availabilitySlot.getBaseUnitSiPrefix().factor,
+                "right availability badge uses the full synchronized amount " + formatted);
+            if (stage == 9) {
+                captureAvailability(
+                    screen,
+                    availabilitySlot,
+                    "fluid-availability-3500000000.png",
+                    event.renderTickTime);
+                stage = 10;
+                request = 11;
+            } else {
+                require(screen == availabilityScreen, "long availability updates without reopening the fluid GUI");
+                captureAvailability(
+                    screen,
+                    availabilitySlot,
+                    "fluid-availability-3250000000.png",
+                    event.renderTickTime);
+                finish(null);
+            }
+        } catch (Throwable error) {
+            finish(error);
+        }
+    }
+
+    private static void captureAvailability(ModularScreen screen, FluidSlot slot, String name, float partialTicks) {
+        var mc = Minecraft.getMinecraft();
+        var context = screen.getContext();
+        int previousX = context.getAbsMouseX(), previousY = context.getAbsMouseY();
+        var area = slot.getArea();
+        try {
+            mc.entityRenderer.setupOverlayRendering();
+            context.updateState(area.x(0.5f), area.y(0.5f), partialTicks);
+            slot.getTooltip()
+                .draw(context);
+            ScreenShotHelper
+                .saveScreenshot(new File("."), name, mc.displayWidth, mc.displayHeight, mc.getFramebuffer());
+        } finally {
+            context.updateState(previousX, previousY, partialTicks);
+        }
+    }
+
+    private void connectFluidGrid(World world) throws Exception {
+        var power = new TileCreativeEnergyCell();
+        power.setWorldObj(world);
+        power.xCoord = 1;
+        var drive = new TileDrive();
+        drive.setWorldObj(world);
+        drive.xCoord = 2;
+        drive.setInventorySlotContents(0, new ItemStack(ItemAndBlockHolder.SINGULARITY_CELL));
+        var powerProxy = power.getProxy();
+        var driveProxy = drive.getProxy();
+        var hatchProxy = serverHatch.getProxy();
+        powerProxy.onReady();
+        driveProxy.onReady();
+        hatchProxy.onReady();
+        AEApi.instance()
+            .createGridConnection(hatchProxy.getNode(), powerProxy.getNode());
+        AEApi.instance()
+            .createGridConnection(driveProxy.getNode(), powerProxy.getNode());
+        serverHatch.getBaseMetaTileEntity()
+            .enableWorking();
     }
 
     private void setup(EntityPlayerMP player) {
