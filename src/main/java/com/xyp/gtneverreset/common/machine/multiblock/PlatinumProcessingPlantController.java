@@ -62,7 +62,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     implements ISurvivalConstructable, ICasingTextureProvider {
 
     private static final String STRUCTURE_PIECE = "main";
-    private static final int HORIZONTAL_OFFSET = 11, VERTICAL_OFFSET = 17, DEPTH_OFFSET = 1;
+    private static final int HORIZONTAL_OFFSET = 12, VERTICAL_OFFSET = 21, DEPTH_OFFSET = 1;
     private static final Casings HULL = Casings.ChemicallyInertMachineCasing;
 
     private static IStructureDefinition<PlatinumProcessingPlantController> createStructure() {
