@@ -2,6 +2,7 @@ package com.xyp.gtneverreset.common.me.stockio;
 
 import java.util.Arrays;
 import java.util.function.IntSupplier;
+import java.util.function.Predicate;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -14,6 +15,7 @@ import com.xyp.gtneverreset.common.part.PartStockIOInterface;
 
 import appeng.api.parts.IPartHost;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
+import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.metatileentity.implementations.MTEBasicMachine;
 
 /**
@@ -31,6 +33,20 @@ public final class StockIORecipeBridge {
             && machine.mMaxProgresstime <= 0
             && base.isAllowedToWork()
             && find(base) != null) base.markInventoryBeenModified();
+    }
+
+    /** Called once after the native completion check, before the items or fluid enter physical slots. */
+    public static void completeRecipe(MTEBasicMachine machine, IGregTechTileEntity base) {
+        StockIOLogic logic = find(base, StockIOLogic::isRecycle);
+        if (logic != null && base instanceof BaseMetaTileEntity tile) logic.acceptMachineOutputs(machine, tile);
+    }
+
+    public static boolean hasBlockedOutput(IGregTechTileEntity base) {
+        return find(base, StockIORecipeBridge::hasBlockedOutput) != null;
+    }
+
+    private static boolean hasBlockedOutput(StockIOLogic logic) {
+        return logic.isRecycle() && logic.hasPending();
     }
 
     /**
@@ -77,21 +93,29 @@ public final class StockIORecipeBridge {
 
     /** Finds one already-loaded interface whose machine-facing side touches this controller. */
     static StockIOLogic find(IGregTechTileEntity base) {
+        return find(base, StockIOLogic::isOnline);
+    }
+
+    private static StockIOLogic find(IGregTechTileEntity base, Predicate<StockIOLogic> accepts) {
         if (base == null || !base.isServerSide()) return null;
         World world = base.getWorld();
         if (world == null) return null;
+        int baseX = base.getXCoord();
+        int baseY = base.getYCoord();
+        int baseZ = base.getZCoord();
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
-            int x = base.getXCoord() + side.offsetX;
-            int y = base.getYCoord() + side.offsetY;
-            int z = base.getZCoord() + side.offsetZ;
-            if (!world.blockExists(x, y, z)) continue;
-            TileEntity tile = world.getTileEntity(x, y, z);
+            int x = baseX + side.offsetX;
+            int y = baseY + side.offsetY;
+            int z = baseZ + side.offsetZ;
+            if (((x >> 4) != (baseX >> 4) || (z >> 4) != (baseZ >> 4)) && !world.blockExists(x, y, z)) continue;
+            TileEntity tile = base.getTileEntityAtSide(side);
             if (tile == null || tile.isInvalid()) continue;
             StockIOLogic logic = null;
+            ForgeDirection targetSide = side.getOpposite();
             if (tile instanceof TileEntityStockIOInterface block) logic = block.getLogic();
-            else if (tile instanceof IPartHost host
-                && host.getPart(side.getOpposite()) instanceof PartStockIOInterface part) logic = part.getLogic();
-            if (logic != null && logic.getTargetSide() == side.getOpposite() && logic.isEnabled() && logic.isOnline())
+            else if (tile instanceof IPartHost host && host.getPart(targetSide) instanceof PartStockIOInterface part)
+                logic = part.getLogic();
+            if (logic != null && logic.getTargetSide() == targetSide && logic.isEnabled() && accepts.test(logic))
                 return logic;
         }
         return null;

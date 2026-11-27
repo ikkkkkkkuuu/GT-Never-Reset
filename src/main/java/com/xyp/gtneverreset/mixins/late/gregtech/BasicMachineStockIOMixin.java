@@ -3,6 +3,7 @@ package com.xyp.gtneverreset.mixins.late.gregtech;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -26,6 +27,26 @@ public abstract class BasicMachineStockIOMixin {
     @Inject(method = "onPostTick", at = @At("HEAD"))
     private void gtnr$stockIORetry(IGregTechTileEntity base, long tick, CallbackInfo ci) {
         StockIORecipeBridge.retryIdle((MTEBasicMachine) (Object) this, base, tick);
+    }
+
+    @Inject(
+        method = "onPostTick",
+        at = @At(
+            value = "FIELD",
+            target = "Lgregtech/api/metatileentity/implementations/MTEBasicMachine;mOutputItems:[Lnet/minecraft/item/ItemStack;",
+            opcode = Opcodes.GETFIELD,
+            ordinal = 0))
+    private void gtnr$stockIOComplete(IGregTechTileEntity base, long tick, CallbackInfo ci) {
+        StockIORecipeBridge.completeRecipe((MTEBasicMachine) (Object) this, base);
+    }
+
+    @WrapOperation(
+        method = "onPostTick",
+        at = @At(
+            value = "INVOKE",
+            target = "Lgregtech/api/metatileentity/implementations/MTEBasicMachine;checkRecipe()I"))
+    private int gtnr$stockIOWaitForOutput(MTEBasicMachine machine, Operation<Integer> original) {
+        return StockIORecipeBridge.hasBlockedOutput(machine.getBaseMetaTileEntity()) ? 1 : original.call(machine);
     }
 
     @WrapMethod(method = "checkRecipe(Z)I")

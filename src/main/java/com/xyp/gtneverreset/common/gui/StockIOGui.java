@@ -230,8 +230,8 @@ public final class StockIOGui {
         // # zh_CN 回收
         IKey recycleLabel = IKey.lang("gtnr.gui.stock_io.recycle");
         // #tr gtnr.gui.stock_io.recycle_help
-        // # Returns GT item and fluid outputs to ME without extracting recipe inputs.
-        // # zh_CN 将 GT 物品与流体输出送回 ME，不抽取配方输入。
+        // # Sends supported GT machines' products directly to ME. Unsent products are held until ME can accept them.
+        // # zh_CN 将受支持的 GT 机器产物直接送入 ME。未送出的产物暂存在接口中，待 ME 接收后继续加工。
         IKey recycleHelp = IKey.lang("gtnr.gui.stock_io.recycle_help");
         panel.child(
             toggle(toggleValue("recycle", logic::isRecycle, logic::setRecycle), recycleLabel, recycleHelp)

@@ -28,6 +28,7 @@ import appeng.util.Platform;
 import appeng.util.item.AEFluidStack;
 import appeng.util.item.AEItemStack;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
+import gregtech.api.metatileentity.implementations.MTEBasicMachine;
 
 /**
  * Shared cable-part/block storage policy and recipe transaction. Marks stay in ME until an accepted
@@ -277,6 +278,40 @@ public final class StockIOLogic {
 
     private static void checkSlot(int index) {
         if (index < 0 || index >= SLOT_COUNT) throw new IndexOutOfBoundsException("Stock IO slot " + index);
+    }
+
+    /** Takes ownership of finished products before GT writes them to its inventory and tank. */
+    void acceptMachineOutputs(MTEBasicMachine machine, BaseMetaTileEntity tile) {
+        if (transferring || activeRecipe != null) return;
+        ForgeDirection face = getTargetFace();
+        int previousTransfers = pending.size();
+        transferring = true;
+        try {
+            int firstSlot = machine.getOutputSlot();
+            for (int index = 0; index < machine.mOutputItems.length; index++) {
+                ItemStack item = machine.mOutputItems[index];
+                if (BusTarget.canExtractNativeOutput(tile, face, firstSlot + index, item)
+                    && queueOutput(AEItemStack.create(item))) machine.mOutputItems[index] = null;
+            }
+            FluidStack fluid = machine.mOutputFluid;
+            if (fluid != null && fluid.amount > 0
+                && BusTarget.allowsNativeDrain(tile, face, fluid)
+                && queueOutput(AEFluidStack.create(fluid))) machine.mOutputFluid = null;
+            if (pending.size() == previousTransfers) return;
+            refreshRequested = true;
+            host.markDirty();
+            if (previousTransfers == 0 && isOnline()) flushPending();
+        } catch (GridAccessException ignored) {
+            // The remaining products stay in escrow for the interface's regular retry.
+        } finally {
+            transferring = false;
+        }
+    }
+
+    private boolean queueOutput(IAEStack<?> stack) {
+        if (stack == null) return false;
+        pending.add(new Pending(stack, false));
+        return true;
     }
 
     /** Never writes configured inputs into the target: only product recycling runs periodically. */
@@ -692,25 +727,34 @@ public final class StockIOLogic {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private boolean flushPending() throws GridAccessException {
-        for (int index = 0; index < pending.size();) {
-            Pending transfer = pending.get(index);
-            IMEInventory network = inventory(transfer.stack);
-            IAEStack remainder = transfer.rollback
-                ? network.injectItems((IAEStack) transfer.stack.copy(), Actionable.MODULATE, host.getActionSource())
-                : Platform.poweredInsert(
-                    host.getProxy()
-                        .getEnergy(),
-                    network,
-                    (IAEStack) transfer.stack.copy(),
-                    host.getActionSource());
-            if (remainder == null || remainder.getStackSize() <= 0) pending.remove(index);
-            else {
-                transfer.stack = remainder;
-                index++;
+        boolean changed = false;
+        try {
+            for (int index = 0; index < pending.size();) {
+                Pending transfer = pending.get(index);
+                IMEInventory network = inventory(transfer.stack);
+                IAEStack remainder = transfer.rollback
+                    ? network.injectItems((IAEStack) transfer.stack.copy(), Actionable.MODULATE, host.getActionSource())
+                    : Platform.poweredInsert(
+                        host.getProxy()
+                            .getEnergy(),
+                        network,
+                        (IAEStack) transfer.stack.copy(),
+                        host.getActionSource());
+                if (remainder == null || remainder.getStackSize() <= 0) {
+                    pending.remove(index);
+                    changed = true;
+                } else {
+                    if (remainder.getStackSize() < transfer.stack.getStackSize()) {
+                        transfer.stack = remainder;
+                        changed = true;
+                    }
+                    index++;
+                }
             }
-            host.markDirty();
+            return pending.isEmpty();
+        } finally {
+            if (changed) host.markDirty();
         }
-        return pending.isEmpty();
     }
 
     public boolean hasPending() {
