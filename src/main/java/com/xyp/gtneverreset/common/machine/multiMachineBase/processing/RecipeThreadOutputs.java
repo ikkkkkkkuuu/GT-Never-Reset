@@ -1,8 +1,11 @@
 package com.xyp.gtneverreset.common.machine.multiMachineBase.processing;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -56,6 +59,14 @@ public final class RecipeThreadOutputs {
         return false;
     }
 
+    public BigInteger getFluidAmount(FluidStack stack) {
+        BigInteger amount = BigInteger.ZERO;
+        for (int i = 0; i < fluids.length; i++) {
+            if (fluids[i] != null && fluids[i].isFluidEqual(stack)) amount = amount.add(fluidAmounts[i]);
+        }
+        return amount;
+    }
+
     private BigInteger largest() {
         BigInteger largest = BigInteger.ZERO;
         for (BigInteger n : itemAmounts) largest = largest.max(n);
@@ -95,21 +106,25 @@ public final class RecipeThreadOutputs {
      * Remaining amounts are reduced only after both output transactions commit, and persist in the task NBT.
      */
     public boolean flush(MTEMultiBlockBase machine) {
+        return flush(machine, null);
+    }
+
+    public boolean flush(MTEMultiBlockBase machine, @Nullable FluidOutputRouter router) {
         BigInteger largest = largest();
         if (largest.signum() == 0) return true;
         int high = largest.min(BigInteger.valueOf(Integer.MAX_VALUE))
             .intValueExact();
         // transfer stages both channels and only commits after the entire slice fits.
-        if (transfer(machine, largest, high, true)) return largest().signum() == 0;
-        if (high == 1 || !transfer(machine, largest, 1, false)) return false;
+        if (transfer(machine, router, largest, high, true)) return largest().signum() == 0;
+        if (high == 1 || !transfer(machine, router, largest, 1, false)) return false;
         int low = 1;
         high--;
         while (low < high) {
             int middle = (int) (((long) low + high + 1) / 2);
-            if (transfer(machine, largest, middle, false)) low = middle;
+            if (transfer(machine, router, largest, middle, false)) low = middle;
             else high = middle - 1;
         }
-        if (low > 0) transfer(machine, largest, low, true);
+        if (low > 0) transfer(machine, router, largest, low, true);
         return largest().signum() == 0;
     }
 
@@ -121,13 +136,16 @@ public final class RecipeThreadOutputs {
             .intValueExact();
     }
 
-    private boolean transfer(MTEMultiBlockBase machine, BigInteger largest, int units, boolean commit) {
+    private boolean transfer(MTEMultiBlockBase machine, @Nullable FluidOutputRouter router, BigInteger largest,
+        int units, boolean commit) {
         ItemEjectionHelper itemHelper = new ItemEjectionHelper(machine.getOutputBusses(), machine.protectsExcessItem());
         FluidEjectionHelper fluidHelper = new FluidEjectionHelper(
             machine.getOutputHatches(),
             machine.protectsExcessFluid());
         int[] itemSlice = new int[items.length];
         int[] fluidSlice = new int[fluids.length];
+        List<FluidStack> routed = router == null ? Collections.emptyList() : new ArrayList<>();
+        List<FluidStack> external = router == null ? Collections.emptyList() : new ArrayList<>();
         for (int i = 0; i < items.length; i++) {
             itemSlice[i] = slice(itemAmounts[i], largest, units);
             if (itemSlice[i] > 0
@@ -136,13 +154,23 @@ public final class RecipeThreadOutputs {
         }
         for (int i = 0; i < fluids.length; i++) {
             fluidSlice[i] = slice(fluidAmounts[i], largest, units);
-            if (fluidSlice[i] > 0
-                && fluidHelper.ejectFluids(Collections.singletonList(fluids[i]), fluidSlice[i]) != fluidSlice[i])
+            if (fluidSlice[i] == 0) continue;
+            if (router != null) {
+                FluidStack stack = fluids[i].copy();
+                stack.amount = fluidSlice[i];
+                (router.routes(stack) ? routed : external).add(stack);
+            } else if (fluidHelper.ejectFluids(Collections.singletonList(fluids[i]), fluidSlice[i]) != fluidSlice[i]) {
                 return false;
+            }
+        }
+        if (router != null) {
+            if (!routed.isEmpty() && !router.canStore(routed)) return false;
+            if (!external.isEmpty() && fluidHelper.ejectFluids(external, 1) != 1) return false;
         }
         if (commit) {
             itemHelper.commit();
             fluidHelper.commit();
+            if (router != null && !routed.isEmpty()) router.store(routed);
             for (int i = 0; i < items.length; i++)
                 itemAmounts[i] = itemAmounts[i].subtract(BigInteger.valueOf(itemSlice[i]));
             for (int i = 0; i < fluids.length; i++)
@@ -191,5 +219,14 @@ public final class RecipeThreadOutputs {
                 fluidTags.getCompoundTagAt(i)
                     .getString("bigAmount"));
         return result;
+    }
+
+    public interface FluidOutputRouter {
+
+        boolean routes(FluidStack stack);
+
+        boolean canStore(List<FluidStack> stacks);
+
+        void store(List<FluidStack> stacks);
     }
 }

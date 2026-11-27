@@ -71,6 +71,19 @@ public final class GTNRRecipeMaps {
         .neiHandlerInfo(builder -> builder.setDisplayStack(GTNRItemList.CatalyticReformer.get(1)))
         .build();
 
+    public static final RecipeMap<RecipeMapBackend> PETROCHEMICAL_PLANT = RecipeMapBuilder
+        // #tr gtnr.recipe.petrochemical_plant
+        // # Integrated Petrochemistry
+        // # zh_CN 石化工厂
+        .of("gtnr.recipe.petrochemical_plant")
+        .maxIO(0, 1, 2, 11)
+        .minInputs(0, 1)
+        .progressBar(GTUITextures.PROGRESSBAR_ARROW_MULTIPLE)
+        .progressBarMUI2(GTGuiTextures.PROGRESSBAR_ARROW_MULTIPLE)
+        .frontend(LargeNEIFrontend::new)
+        .neiHandlerInfo(builder -> builder.setDisplayStack(GTNRItemList.PetrochemicalPlant.get(1)))
+        .build();
+
     public static final RecipeMap<RecipeMapBackend> CHAOS_CREDENTIAL_RECIPES = ChaosConfig.enableBottleInChaos
         ? RecipeMapBuilder
             // #tr gtnr.recipe.chaos_credential
