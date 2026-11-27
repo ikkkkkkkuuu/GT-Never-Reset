@@ -296,7 +296,10 @@ public final class HmiFirstPerson {
             frame.set("climb", LuaValue.valueOf(p.isOnLadder()));
             frame.set("water", LuaValue.valueOf(p.isInWater()));
             frame.set("sneak", LuaValue.valueOf(p.isSneaking()));
-            frame.set("inspect", LuaValue.valueOf(mc.currentScreen == null && Keyboard.isKeyDown(Keyboard.KEY_J)));
+            frame.set(
+                "inspect",
+                LuaValue.valueOf(
+                    !(held instanceof ItemBlock) && mc.currentScreen == null && Keyboard.isKeyDown(Keyboard.KEY_J)));
             frame.set("swings", swings);
             frame.set("speed", Math.sqrt(p.motionX * p.motionX + p.motionY * p.motionY + p.motionZ * p.motionZ));
             frame.set("vertical", p.motionY);

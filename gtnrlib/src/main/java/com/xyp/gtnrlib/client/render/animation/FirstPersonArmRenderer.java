@@ -11,6 +11,8 @@ import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.ForgeHooksClient;
 
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 
 import com.xyp.gtnrlib.compat.draconicevolution.DraconicArmorArms;
@@ -42,15 +44,7 @@ public final class FirstPersonArmRenderer {
     private static void render(boolean left, float shoulderRoll, float projection) {
         var mc = Minecraft.getMinecraft();
         var player = mc.thePlayer;
-        var renderer = RenderManager.instance.getEntityRenderObject(player);
-        ModelBiped model;
-        if (renderer instanceof RenderPlayer playerRenderer) {
-            model = playerRenderer.modelBipedMain;
-        } else {
-            if (fallbackSkin == null) fallbackSkin = new ModelBiped(0);
-            model = fallbackSkin;
-        }
-        var arm = left ? model.bipedLeftArm : model.bipedRightArm;
+        var arm = skinArm(player, left);
         GL11.glPushMatrix();
         GL11.glPushAttrib(ARM_ATTRIBUTES);
         try {
@@ -68,6 +62,29 @@ public final class FirstPersonArmRenderer {
             GL11.glPopAttrib();
             GL11.glPopMatrix();
         }
+    }
+
+    static void armEndpoints(Matrix4f mount, boolean left, float shoulderRoll, Vector3f shoulder, Vector3f hand) {
+        var arm = skinArm(Minecraft.getMinecraft().thePlayer, left);
+        float handX = left ? MODEL_UNIT : -MODEL_UNIT;
+        mount.translate(5 * handX, arm.rotationPointY * MODEL_UNIT, 0)
+            .rotateZ(shoulderRoll)
+            .translate(arm.offsetX, arm.offsetY, arm.offsetZ);
+        // The vanilla arm is 4 x 12 x 4, with its proximal face at Y=-2 and its palm end at Y=10.
+        mount.transformPosition(handX, -2 * MODEL_UNIT, 0, shoulder);
+        mount.transformPosition(handX, 10 * MODEL_UNIT, 0, hand);
+    }
+
+    private static ModelRenderer skinArm(EntityPlayer player, boolean left) {
+        var renderer = RenderManager.instance.getEntityRenderObject(player);
+        ModelBiped model;
+        if (renderer instanceof RenderPlayer playerRenderer) {
+            model = playerRenderer.modelBipedMain;
+        } else {
+            if (fallbackSkin == null) fallbackSkin = new ModelBiped(0);
+            model = fallbackSkin;
+        }
+        return left ? model.bipedLeftArm : model.bipedRightArm;
     }
 
     public static void renderOverVanillaArm(EntityPlayer player, RenderPlayer renderer, boolean renderArmor) {

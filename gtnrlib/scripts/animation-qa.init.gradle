@@ -51,6 +51,7 @@ gradle.projectsEvaluated {
     def fixture = host.tasks.register('compileAnimationQA', JavaCompile) {
         dependsOn lib.tasks.named('classes')
         source lib.file('scripts/qa/AnimationClientChecks.java')
+        source lib.file('scripts/qa/AnimationBlockInspectChecks.java')
         source lib.file('scripts/qa/AnimationBlockUseChecks.java')
         source lib.file('scripts/qa/AnimationOffhandChecks.java')
         source lib.file('scripts/qa/AnimationGripChecks.java')

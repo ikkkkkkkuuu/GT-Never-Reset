@@ -22,11 +22,15 @@ import net.minecraftforge.client.IItemRenderer.ItemRendererHelper;
 
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 
+import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
 import com.xyp.gtnrlib.client.animation.FirstPersonAnimations;
+import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
 import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.client.animation.ToolGrip;
@@ -49,6 +53,18 @@ public final class HmiPoseRenderer {
     private static final Matrix4fc ROD = display(0, 4, 2.5f, 0, 90, 55, .85f);
     private static final Matrix4fc BOW = display(-1, -2, 2.5f, -80, 260, -40, .9f);
     private static final Matrix4fc GENERATED = display(0, 3, 1, 0, 0, 0, .55f);
+    private static final float SHOULDER_ROLL = .1f;
+    private static final Matrix4fc RIGHT_HELD_ARM = armMount(1, true);
+    private static final Matrix4fc RIGHT_EMPTY_ARM = armMount(1, false);
+    private static final Matrix4fc LEFT_HELD_ARM = armMount(-1, true);
+    private static final Matrix4fc LEFT_EMPTY_ARM = armMount(-1, false);
+    private static final float LEFT_CATCH_INSET = .11f;
+    private static final float LEFT_ARM_REST_DROP = .65f;
+    private static final float BLOCK_GRIP_SPAN = .22f;
+    private static final Matrix4f ARM_MOUNT = new Matrix4f();
+    private static final Vector3f SHOULDER = new Vector3f(), HAND = new Vector3f(), TARGET = new Vector3f();
+    private static final Vector3f RIGHT_PALM = new Vector3f(), BLOCK_OFFSET = new Vector3f();
+    private static final Quaternionf REACH_ROTATION = new Quaternionf();
     private static HmiItemModels models;
     private static IIcon bowIcon;
     private static ItemStack mountedStack;
@@ -119,7 +135,8 @@ public final class HmiPoseRenderer {
                     }
                 } else {
                     arm(false, stack != null);
-                    if (!offhand && !FirstPersonAnimations.offhandOwnsLeftArm(partial)) arm(true, false);
+                    if (!offhand && !FirstPersonAnimations.offhandOwnsLeftArm(partial))
+                        arm(true, FirstPersonItemActions.INSTANCE.inspectionUsesLeftArm());
                     if (stack != null) {
                         apply(pose.item);
                         if (stack.getItem() instanceof ItemMap map) map(mc, stack, map);
@@ -152,42 +169,106 @@ public final class HmiPoseRenderer {
         GL11.glPushMatrix();
         try {
             apply(left ? pose.left : pose.right);
-            if (holding) {
-                GL11.glTranslated(1.5 * side, -.3, -.6);
-                GL11.glTranslated(.5 * side, .5, .5);
-                GL11.glRotatef(15, 1, 0, 0);
-                GL11.glRotatef(35 * side, 0, 1, 0);
-                GL11.glRotatef(-65 * side, 0, 0, 1);
-                GL11.glTranslated(-.5 * side, -.5, -.5);
-                GL11.glScalef(.9f, .9f, .9f);
-            }
-            GL11.glTranslated(.64 * side, -.6, -.72);
-            GL11.glRotatef(45 * side, 0, 1, 0);
-            GL11.glTranslated(-side, 3.6, 3.5);
-            GL11.glRotatef(120 * side, 0, 0, 1);
-            GL11.glRotatef(200, 1, 0, 0);
-            GL11.glRotatef(-135 * side, 0, 1, 0);
-            GL11.glTranslated(5.6 * side, 0, 0);
+            apply(holding ? left ? LEFT_HELD_ARM : RIGHT_HELD_ARM : left ? LEFT_EMPTY_ARM : RIGHT_EMPTY_ARM);
             if (offhand) {
                 // Backhand already mirrors the scene. Unmirror the mesh to draw the actual left sleeve and armor.
                 GL11.glPushAttrib(GL11.GL_POLYGON_BIT);
                 try {
                     GL11.glScalef(-1, 1, 1);
                     GL11.glCullFace(GL11.GL_BACK);
-                    FirstPersonArmRenderer.render(true, -.1f);
+                    FirstPersonArmRenderer.render(true, -SHOULDER_ROLL);
                 } finally {
                     GL11.glPopAttrib();
                 }
-            } else FirstPersonArmRenderer.render(left, side * .1f);
+            } else FirstPersonArmRenderer.render(left, side * SHOULDER_ROLL);
         } finally {
             GL11.glPopMatrix();
         }
     }
 
+    private static Matrix4fc armMount(int side, boolean holding) {
+        var mount = new Matrix4f();
+        if (holding) {
+            mount.translate(1.5f * side, -.3f, -.6f)
+                .translate(.5f * side, .5f, .5f)
+                .rotateX((float) Math.toRadians(15))
+                .rotateY((float) Math.toRadians(35 * side))
+                .rotateZ((float) Math.toRadians(-65 * side))
+                .translate(-.5f * side, -.5f, -.5f)
+                .scale(.9f);
+        }
+        return mount.translate(.64f * side, -.6f, -.72f)
+            .rotateY((float) Math.toRadians(45 * side))
+            .translate(-side, 3.6f, 3.5f)
+            .rotateZ((float) Math.toRadians(120 * side))
+            .rotateX((float) Math.toRadians(200))
+            .rotateY((float) Math.toRadians(-135 * side))
+            .translate(5.6f * side, 0, 0);
+    }
+
+    /** Hold the shoulders in place and move the rendered block between the reachable palms. */
+    public static void poseBlockInspection(Matrix4f main, Matrix4f support, Matrix4f item, Matrix4f wristMotion,
+        Vec transfer) {
+        boolean reaching = transfer.z() > 0;
+        if (reaching) {
+            // The relaxed left arm is already lowered off screen. Start the reach from the mirrored right shoulder.
+            support.set(main)
+                .scaleLocal(-1, 1, 1)
+                .scale(-1, 1, 1);
+        }
+        inspectionArmEndpoints(main, false);
+        wristMotion.transformPosition(HAND, TARGET);
+        reachFromShoulder(main, wristMotion);
+        item.translateLocal(HAND.x - TARGET.x, HAND.y - TARGET.y, HAND.z - TARGET.z);
+        if (!reaching) return;
+
+        RIGHT_PALM.set(HAND);
+        inspectionArmEndpoints(support, true);
+        float reach = (float) Math.min(1.2, transfer.z());
+        TARGET.set(
+            -RIGHT_PALM.x + LEFT_CATCH_INSET * reach,
+            RIGHT_PALM.y - LEFT_ARM_REST_DROP * (1 - reach),
+            RIGHT_PALM.z);
+        reachFromShoulder(support, wristMotion);
+
+        // The block touches opposite edges of the two palms. Keep the model rotation through the flight.
+        float fraction = (float) Math.max(0, Math.min(1, transfer.x()));
+        item.transformDirection(BLOCK_GRIP_SPAN, 0, 0, BLOCK_OFFSET)
+            .add(HAND)
+            .sub(RIGHT_PALM)
+            .mul(fraction)
+            .add(0, (float) transfer.y(), 0);
+        item.translateLocal(BLOCK_OFFSET);
+    }
+
+    private static void inspectionArmEndpoints(Matrix4f arm, boolean left) {
+        FirstPersonArmRenderer.armEndpoints(
+            ARM_MOUNT.set(arm)
+                .mul(left ? LEFT_HELD_ARM : RIGHT_HELD_ARM),
+            left,
+            left ? -SHOULDER_ROLL : SHOULDER_ROLL,
+            SHOULDER,
+            HAND);
+    }
+
+    private static void reachFromShoulder(Matrix4f arm, Matrix4f motion) {
+        TARGET.sub(SHOULDER);
+        HAND.sub(SHOULDER);
+        if (HAND.lengthSquared() > 1e-8f && TARGET.lengthSquared() > 1e-8f) REACH_ROTATION.rotationTo(HAND, TARGET);
+        else REACH_ROTATION.identity();
+        motion.translation(SHOULDER)
+            .rotate(REACH_ROTATION)
+            .translate(-SHOULDER.x, -SHOULDER.y, -SHOULDER.z);
+        arm.mulLocal(motion);
+        HAND.rotate(REACH_ROTATION)
+            .add(SHOULDER);
+        TARGET.add(SHOULDER);
+    }
+
     private static void gripHand(boolean left) {
         GL11.glPushMatrix();
         try {
-            apply(com.xyp.gtnrlib.client.animation.FirstPersonItemActions.INSTANCE.grip(left));
+            apply(FirstPersonItemActions.INSTANCE.grip(left));
             GL11.glTranslatef((left ? -6 : 6) / 16f, -10f / 16, 0);
             FirstPersonArmRenderer.render(left, 0);
         } finally {

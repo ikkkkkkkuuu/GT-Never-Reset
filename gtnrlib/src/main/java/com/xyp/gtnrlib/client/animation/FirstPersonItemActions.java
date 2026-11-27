@@ -15,6 +15,7 @@ import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 
@@ -26,7 +27,9 @@ import com.xyp.gtnrlib.animation.resource.NativeAnimationResource;
 import com.xyp.gtnrlib.api.animation.AnimationClip;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Channel;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Property;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
 import com.xyp.gtnrlib.api.animation.AnimationPlayer;
+import com.xyp.gtnrlib.client.render.animation.HmiPoseRenderer;
 import com.xyp.gtnrlib.compat.backhand.BackhandAnimationCompat;
 
 import cpw.mods.fml.relauncher.Side;
@@ -38,8 +41,12 @@ public final class FirstPersonItemActions {
 
     public static final FirstPersonItemActions INSTANCE = new FirstPersonItemActions(false);
     public static final FirstPersonItemActions OFFHAND = new FirstPersonItemActions(true);
+    static final String BLOCK_INSPECT = "gtnrlib:block_inspect";
+    private static final Key BLOCK_INSPECT_DEFAULT = new Key("#block", -1, BLOCK_INSPECT);
     private static final double BLEND = .08;
     private static final Set<String> BONES = Set.of("wrist", "item", "left_arm", "right_arm");
+    private static final Channel BLOCK_TRANSFER = new Channel("transfer", Property.POSITION);
+    private static final Vec NO_TRANSFER = new Vec(0, 0, 0);
     private static final Bone WRIST = new Bone("wrist"), ITEM = new Bone("item"), MAIN = new Bone("right_arm"),
         SUPPORT = new Bone("left_arm");
     private static Map<Key, Binding> rules = Map.of();
@@ -49,10 +56,11 @@ public final class FirstPersonItemActions {
     private final AnimationPlayer player = new AnimationPlayer(marker -> {});
     private AnimationPlayer.Playback action;
     private Key selected;
+    private ItemStack inspectedStack;
     private EntityPlayer owner, useOwner;
     private ItemStack useStack;
     private int useSlot, useDamage;
-    private boolean overridesUse;
+    private boolean overridesUse, transferAllowed, inspectionLeftArm;
     private int slot, dimension, startedTick;
     private double tick;
 
@@ -134,7 +142,9 @@ public final class FirstPersonItemActions {
             || clip.tracks()
                 .keySet()
                 .stream()
-                .anyMatch(channel -> !BONES.contains(channel.bone())))
+                .anyMatch(
+                    channel -> !BONES.contains(channel.bone())
+                        && !(BLOCK_INSPECT.equals(key.trigger) && BLOCK_TRANSFER.equals(channel))))
             throw new IllegalArgumentException("Invalid first-person clip " + clipId + " for " + key);
         double fadeIn = json.has("fadeIn") ? json.get("fadeIn")
             .getAsDouble() : .025;
@@ -161,8 +171,12 @@ public final class FirstPersonItemActions {
     public boolean trigger(String trigger) {
         var mc = Minecraft.getMinecraft();
         var p = mc.thePlayer;
-        if (!enabled() || p == null || mc.gameSettings.thirdPersonView != 0 || rules.isEmpty()) return false;
+        if (trigger == null || !enabled() || p == null || mc.gameSettings.thirdPersonView != 0 || rules.isEmpty())
+            return false;
         var stack = held(p);
+        boolean inspecting = BLOCK_INSPECT.equals(trigger);
+        if (inspecting && (offhand || stack == null || !(stack.getItem() instanceof ItemBlock) || !canInspect(mc, p)))
+            return false;
         String id = id(stack);
         Key key = new Key(id, stack == null ? -1 : stack.getItemDamage(), trigger);
         var binding = rules.get(key);
@@ -170,14 +184,24 @@ public final class FirstPersonItemActions {
             key = new Key(id, -1, trigger);
             binding = rules.get(key);
         }
-        if (binding == null) return false;
-        if (!matches(p, stack)) clear();
+        if (binding == null && inspecting) binding = rules.get(BLOCK_INSPECT_DEFAULT);
+        if (binding == null) {
+            if (playing(BLOCK_INSPECT) && switch (trigger) {
+                case "attack", "mining", "interact", "place", "use" -> true;
+                default -> false;
+            }) clear();
+            return false;
+        }
+        if (!matches(p, stack) || !inspecting && playing(BLOCK_INSPECT)) clear();
         advance(p.ticksExisted);
         boolean chaining = action != null && action.active();
+        if (inspecting && chaining) return false;
         owner = p;
         dimension = p.dimension;
         slot = currentSlot(p);
-        selected = key;
+        selected = inspecting ? new Key(id, stack.getItemDamage(), trigger) : key;
+        inspectedStack = inspecting ? stack.copy() : null;
+        transferAllowed = inspecting && !FirstPersonAnimations.offhandOwnsLeftArm(1);
         startedTick = p.ticksExisted;
         tick = Math.max(tick, p.ticksExisted);
         if (chaining) action = player
@@ -191,6 +215,7 @@ public final class FirstPersonItemActions {
     }
 
     void apply(ItemStack stack, float partial, Matrix4f main, Matrix4f support, Matrix4f item) {
+        inspectionLeftArm = false;
         if (action == null) return;
         var p = Minecraft.getMinecraft().thePlayer;
         if (!matches(p, held(p))) {
@@ -206,13 +231,22 @@ public final class FirstPersonItemActions {
         item.invert(changeOfBasis)
             .mulLocal(local)
             .mulLocal(item);
-        main.mulLocal(changeOfBasis);
         item.mul(local);
+        item.mul(ITEM.sample(player, ahead, local));
+        if (playing(BLOCK_INSPECT)) {
+            if (transferAllowed && FirstPersonAnimations.offhandOwnsLeftArm(partial)) transferAllowed = false;
+            var transfer = transferAllowed ? player.sample(BLOCK_TRANSFER, ahead) : NO_TRANSFER;
+            inspectionLeftArm = transfer.z() > 0;
+            HmiPoseRenderer.poseBlockInspection(main, support, item, changeOfBasis, transfer);
+        } else main.mulLocal(changeOfBasis);
         MAIN.sample(player, ahead, rightGrip);
         SUPPORT.sample(player, ahead, leftGrip);
         main.mul(rightGrip);
         support.mul(leftGrip);
-        item.mul(ITEM.sample(player, ahead, local));
+    }
+
+    public boolean inspectionUsesLeftArm() {
+        return inspectionLeftArm;
     }
 
     public org.joml.Matrix4fc grip(boolean left) {
@@ -251,8 +285,12 @@ public final class FirstPersonItemActions {
         var p = mc.gameSettings.thirdPersonView == 0 && enabled() ? mc.thePlayer : null;
         observeUse(p);
         if (action == null) return;
-        if (p == null || !matches(p, held(p))) clear();
+        if (p == null || !matches(p, held(p)) || inspectedStack != null && !canInspect(mc, p)) clear();
         else advance(p.ticksExisted);
+    }
+
+    private static boolean canInspect(Minecraft mc, EntityPlayer p) {
+        return mc.currentScreen == null && !p.isInvisible() && !p.isUsingItem() && !p.isSwingInProgress;
     }
 
     private void advance(double now) {
@@ -267,7 +305,8 @@ public final class FirstPersonItemActions {
             && p.dimension == dimension
             && currentSlot(p) == slot
             && selected.item.equals(id(stack))
-            && (selected.damage < 0 || stack != null && stack.getItemDamage() == selected.damage);
+            && (selected.damage < 0 || stack != null && stack.getItemDamage() == selected.damage)
+            && (inspectedStack == null || ItemStack.areItemStackTagsEqual(inspectedStack, stack));
     }
 
     private static String id(ItemStack stack) {
@@ -285,6 +324,8 @@ public final class FirstPersonItemActions {
         player.clear();
         action = null;
         selected = null;
+        inspectedStack = null;
+        transferAllowed = inspectionLeftArm = false;
         owner = null;
         tick = 0;
         rightGrip.identity();
