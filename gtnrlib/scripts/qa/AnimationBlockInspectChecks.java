@@ -53,7 +53,7 @@ final class AnimationBlockInspectChecks {
             qa.equip(mc, null);
             press(key);
             qa.require(!actions.playing(INSPECT), "empty hand ignores the inspection key");
-            qa.equip(mc, new ItemStack(Items.iron_sword));
+            qa.equip(mc, new ItemStack(Items.stick));
             press(key);
             qa.require(!actions.playing(INSPECT), "ordinary item ignores the block inspection key");
             qa.equip(mc, block);

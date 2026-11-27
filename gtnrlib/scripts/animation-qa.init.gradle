@@ -52,6 +52,7 @@ gradle.projectsEvaluated {
         dependsOn lib.tasks.named('classes')
         source lib.file('scripts/qa/AnimationClientChecks.java')
         source lib.file('scripts/qa/AnimationBlockInspectChecks.java')
+        source lib.file('scripts/qa/AnimationHandheldInspectChecks.java')
         source lib.file('scripts/qa/AnimationBlockUseChecks.java')
         source lib.file('scripts/qa/AnimationOffhandChecks.java')
         source lib.file('scripts/qa/AnimationGripChecks.java')
@@ -64,6 +65,7 @@ gradle.projectsEvaluated {
         if (host != lib) {
             source lib.file('scripts/qa/AnimationWrenchChecks.java')
             source lib.file('scripts/qa/AnimationToolChecks.java')
+            source lib.file('scripts/qa/AnimationSpecialToolInspectChecks.java')
             source lib.file('scripts/qa/AnimationCutterChecks.java')
             source lib.file('scripts/qa/AnimationCrossbowChecks.java')
             source lib.file('scripts/qa/AnimationToolboxChecks.java')

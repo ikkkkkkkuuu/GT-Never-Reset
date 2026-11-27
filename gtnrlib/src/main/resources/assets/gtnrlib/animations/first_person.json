@@ -1,8 +1,13 @@
 {
   "bindings": [
     {"item": "#block", "trigger": "gtnrlib:block_inspect", "clip": "gtnrlib:block_inspect", "rotationBlend": "shortest"},
+    {"item": "#sword", "trigger": "gtnrlib:sword_inspect", "clip": "gtnrlib:sword_inspect", "rotationBlend": "shortest"},
+    {"item": "#pickaxe", "trigger": "gtnrlib:pickaxe_inspect", "clip": "gtnrlib:pickaxe_inspect", "rotationBlend": "shortest"},
     {"item": "gregtech:gt.metatool.01", "damage": 16, "trigger": "gtnrlib:wrench_inspect", "clip": "gtnrlib:wrench_inspect", "rotationBlend": "shortest"},
     {"item": "gregtech:gt.metatool.01", "damage": 26, "trigger": "gtnrlib:wire_cutter_inspect", "clip": "gtnrlib:wire_cutter_inspect"},
+    {"item": "gregtech:gt.metatool.01", "damage": 22, "trigger": "gtnrlib:screwdriver_inspect", "clip": "gtnrlib:screwdriver_inspect", "rotationBlend": "shortest"},
+    {"item": "TConstruct:Crossbow", "trigger": "gtnrlib:crossbow_inspect", "clip": "gtnrlib:crossbow_inspect"},
+    {"item": "Thaumcraft:WandCasting", "trigger": "gtnrlib:wand_inspect", "clip": "gtnrlib:wand_inspect", "rotationBlend": "shortest"},
     {"item": "TConstruct:Crossbow", "trigger": "gtnrlib:crossbow_fire", "clip": "gtnrlib:crossbow_fire", "fadeIn": 0, "fadeOut": 0.04},
     {"item": "gregtech:gt.metatool.01", "damage": 22, "trigger": "gtnrlib:screwdriver_turn", "clip": "gtnrlib:screwdriver_turn"},
     {"item": "Thaumcraft:WandCasting", "trigger": "attack", "clip": "gtnrlib:wand_flick"},

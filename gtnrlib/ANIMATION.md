@@ -14,6 +14,12 @@
 
 主手拿普通 GT 手动剪线钳且左手空闲时，同一按键会让两手举起剪钳，张开钳口，转动展示铰点和刃口，再缓缓合拢一次并回到握持姿势。钳柄和手掌沿用剪线时的握点，实际操作会中断检视并播放对应的剪切动作。
 
+主手拿使用标准持物渲染的剑或镐时，按 `I` 可各自检视。剑先抬起给玩家看剑面，再转到刃口角度。镐斜着抬起，转动展示镐头两端和柄的连接处。两段动作都保持单手持握。
+
+主手拿普通 GT 手动螺丝刀时，按 `I` 可抬手转柄，查看刀尖和刀杆。神秘时代的法杖、长杖和权杖可用同一键转看杖端及当前安装的核心。
+
+主手持匠魂弩、左手空闲时，按 `I` 可双手翻看弦和箭槽。装填完成的弩会展示当前的弩箭，装填中继续播放装填动作。
+
 安装 Backhand 后，左手使用独立的第一人称播放器。副手的握持、移动、挥动、进食、拉弓和换物由副手槽及其使用状态驱动。同一份物品 JSON 绑定可分别在两手播放；在副手播放时，主握手轨道随画面镜像到左臂。例如双手都拿苹果时，哪只手进食，哪只手抬起。副手空闲时遵循 Backhand 的空手显示设置。副手占用左臂时，主手动作让出辅助手。
 
 GT 手动扳手和螺丝刀支持左手握姿，服务端操作确认按使用的槽位播放。双手地图、神秘测量计、需要同时控制两臂的专用模型，以及使用原生专用绘制的物品继续走 Backhand 的渲染入口。未安装 Backhand 时可独立使用主手动画。
@@ -75,6 +81,10 @@ HMI 5.1.1 在第一人称画面中按 `thirdperson_righthand` 提交物品。0.1
 检视按键为方块触发 `gtnrlib:block_inspect`，为普通 GT 手动扳手触发 `gtnrlib:wrench_inspect`。方块的注册名和元数据绑定优先于通用 `"item": "#block"` 绑定。可选的 `transfer` 位移轨道控制双手抛接。X 从 0 到 1 表示物品从右掌到左掌，Y 是离开双手连线的高度，Z 控制左手抬起和收回。动作关键帧位于 [block_inspect.json](src/main/resources/assets/gtnrlib/animations/block_inspect.json) 和 [wrench_inspect.json](src/main/resources/assets/gtnrlib/animations/wrench_inspect.json)。
 
 普通 GT 手动剪线钳触发 `gtnrlib:wire_cutter_inspect`，关键帧位于 [wire_cutter_inspect.json](src/main/resources/assets/gtnrlib/animations/wire_cutter_inspect.json)。该动作的 `hinge` 轨道控制铰点位移和整把剪钳的角度，`jaw` 的 Z 旋转值表示每片钳刃相对握持张角收拢的度数。
+
+剑和镐分别触发 `gtnrlib:sword_inspect` 和 `gtnrlib:pickaxe_inspect`。标准持物渲染可使用 `#sword` 或 `#pickaxe` 通用绑定，确切物品或元数据绑定优先。两段曲线分别在 [sword_inspect.json](src/main/resources/assets/gtnrlib/animations/sword_inspect.json) 和 [pickaxe_inspect.json](src/main/resources/assets/gtnrlib/animations/pickaxe_inspect.json)。
+
+螺丝刀和法杖使用 `wrist` 和 `item` 轨道，关键帧位于 [screwdriver_inspect.json](src/main/resources/assets/gtnrlib/animations/screwdriver_inspect.json) 和 [wand_inspect.json](src/main/resources/assets/gtnrlib/animations/wand_inspect.json)。匠魂弩的整把模型绕后握点转动，共享 `stock` 位移及旋转轨道，关键帧位于 [crossbow_inspect.json](src/main/resources/assets/gtnrlib/animations/crossbow_inspect.json)。
 
 `wrist` 同时带动主手和物品；`right_arm`、`left_arm`、`item` 可分别添加局部变换。位移使用游戏单位，角度使用度，时间使用秒。切换堆栈或卸载世界时清理播放状态。库内的 [扳手绑定](src/main/resources/assets/gtneverreset/animations/first_person.json) 和 [拧腕曲线](src/main/resources/assets/gtneverreset/animations/wrench_turn.json) 是实际发行的例子。剪线钳的双柄、铰点与握点由库内的 GT 模型提供，其前伸和开合幅度在 [剪线钳曲线](src/main/resources/assets/gtneverreset/animations/wire_cutter.json) 内调整。这三份 JSON 随 GTNRLib 发行，保留原来的 `assets/gtneverreset/animations/` 路径和动作 ID，以便旧资源包继续覆盖。新的内置动作在 `gtnrlib/src/main/resources/assets/gtnrlib/animations/` 维护。
 

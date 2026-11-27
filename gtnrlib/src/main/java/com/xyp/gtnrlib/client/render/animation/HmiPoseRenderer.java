@@ -64,7 +64,7 @@ public final class HmiPoseRenderer {
     private static final float HANDOFF_REACH = .33f;
     private static final float GRIPPED_ARM_X = 6f / 16;
     private static final float GRIPPED_ARM_Y = -10f / 16;
-    private static final float INSPECTION_ARM_AIM_HEIGHT = .12f;
+    private static final float INSPECTION_ARM_AIM_DISTANCE = .12f;
     private static final Matrix4f ARM_MOUNT = new Matrix4f();
     private static final Vector3f SHOULDER = new Vector3f(), HAND = new Vector3f(), TARGET = new Vector3f();
     private static final Vector3f RIGHT_PALM = new Vector3f(), BLOCK_OFFSET = new Vector3f();
@@ -133,8 +133,12 @@ public final class HmiPoseRenderer {
                             0,
                             Math.min(
                                 1,
-                                (float) inspection.position()
-                                    .y() / INSPECTION_ARM_AIM_HEIGHT));
+                                (float) Math.max(
+                                    inspection.position()
+                                        .y(),
+                                    inspection.position()
+                                        .z())
+                                    / INSPECTION_ARM_AIM_DISTANCE));
                     if (aim > 0) aimRigArmsAtShoulders();
                     apply(pose.item);
                     try {

@@ -109,11 +109,20 @@ public final class AnimationToolChecks {
         movingTool.setItemDamage(IDMetaTool01.CHAINSAW_LV.ID);
         qa.require(ToolGrip.resolve(movingTool) == ToolGrip.AXE, "same-slot GT metadata changes the grip immediately");
         if (hmi.enabled()) {
+            if (Boolean.getBoolean("gtnrlib.animation.qa.defaults")) AnimationSpecialToolInspectChecks.verify(qa, mc);
             AnimationCrossbowChecks.check(qa, mc);
             checkWand(qa, mc);
             checkCutter(qa, mc);
             checkScrewdriver(qa, mc);
         }
+    }
+
+    static ItemStack greatwoodWand() {
+        var wand = (ItemWandCasting) ConfigItems.itemWandCasting;
+        var stack = new ItemStack(wand);
+        wand.setCap(stack, ConfigItems.WAND_CAP_GOLD);
+        wand.setRod(stack, ConfigItems.WAND_ROD_GREATWOOD);
+        return stack;
     }
 
     private static void checkWand(AnimationClientChecks qa, Minecraft mc) throws Exception {
@@ -122,13 +131,11 @@ public final class AnimationToolChecks {
         var p = mc.thePlayer;
         int savedTick = p.ticksExisted;
         var hit = mc.objectMouseOver;
-        var wand = (ItemWandCasting) ConfigItems.itemWandCasting;
-        var stack = new ItemStack(wand);
+        var stack = greatwoodWand();
+        var wand = (ItemWandCasting) stack.getItem();
         try {
             hmi.detach();
             mc.objectMouseOver = null;
-            wand.setCap(stack, ConfigItems.WAND_CAP_GOLD);
-            wand.setRod(stack, ConfigItems.WAND_ROD_GREATWOOD);
             qa.equip(mc, stack);
             for (int i = 0; i < 32; i++) {
                 p.ticksExisted++;
@@ -190,6 +197,12 @@ public final class AnimationToolChecks {
         stack.useItemRightClick(p.worldObj, p);
         HmiFirstPerson.INSTANCE.sample(stack, .5f, 0);
         qa.require(p.getItemInUse() == stack && actions.playing("use"), name + " starts a fire cast");
+        if (Boolean.getBoolean("gtnrlib.animation.qa.defaults")) {
+            AnimationBlockInspectChecks.press(AnimationSpecialToolInspectChecks.key(qa));
+            qa.require(
+                !actions.playing(AnimationSpecialToolInspectChecks.WAND),
+                name + " cast retains control of the grip");
+        }
         var extended = rest;
         for (int tick = 1; tick <= 36; tick++) {
             if (tick == 29) {
@@ -285,6 +298,12 @@ public final class AnimationToolChecks {
                 qa.require(
                     hmi.sample(other, 0, 0) && hmi.handheldTool() == null && !actions.trigger(SCREWDRIVER_TURN),
                     "manual turn excluded for " + variant);
+                if (Boolean.getBoolean("gtnrlib.animation.qa.defaults")) {
+                    AnimationBlockInspectChecks.press(AnimationSpecialToolInspectChecks.key(qa));
+                    qa.require(
+                        !actions.playing(AnimationSpecialToolInspectChecks.SCREWDRIVER),
+                        "manual inspection excluded for " + variant);
+                }
             }
         } finally {
             p.ticksExisted = savedTick;
