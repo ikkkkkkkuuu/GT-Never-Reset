@@ -72,7 +72,7 @@ public final class BusTarget {
         if (nativeTile != null) {
             for (int slot = nativeOutputStart(); slot < nativeOutputEnd(); slot++) {
                 ItemStack stack = nativeTile.getStackInSlot(slot);
-                if (canExtractNativeOutput(slot, stack)) add(result, AEItemStack.create(stack));
+                if (canExtractNativeOutput(nativeTile, face, slot, stack)) add(result, AEItemStack.create(stack));
             }
             FluidStack output = nativeMachine == null ? null : nativeMachine.getDrainableStack();
             if (output != null && allowsUntypedDrain(output)) {
@@ -164,11 +164,10 @@ public final class BusTarget {
             + (nativeMachine == null ? 1 : nativeMachine.mOutputItems == null ? 0 : nativeMachine.mOutputItems.length);
     }
 
-    private boolean canExtractNativeOutput(int slot, ItemStack stack) {
-        if (stack == null || stack.stackSize <= 0 || !nativeTile.canExtractItem(slot, stack, face.ordinal()))
-            return false;
-        for (int accessible : nativeTile.getAccessibleSlotsFromSide(face.ordinal()))
-            if (accessible == slot) return true;
+    public static boolean canExtractNativeOutput(BaseMetaTileEntity tile, ForgeDirection face, int slot,
+        ItemStack stack) {
+        if (stack == null || stack.stackSize <= 0 || !tile.canExtractItem(slot, stack, face.ordinal())) return false;
+        for (int accessible : tile.getAccessibleSlotsFromSide(face.ordinal())) if (accessible == slot) return true;
         return false;
     }
 
@@ -177,7 +176,8 @@ public final class BusTarget {
         long taken = 0;
         for (int slot = nativeOutputStart(); slot < nativeOutputEnd() && remaining > 0; slot++) {
             ItemStack stack = nativeTile.getStackInSlot(slot);
-            if (!canExtractNativeOutput(slot, stack) || !requested.isSameType(AEItemStack.create(stack))) continue;
+            if (!canExtractNativeOutput(nativeTile, face, slot, stack)
+                || !requested.isSameType(AEItemStack.create(stack))) continue;
             int quantity = (int) Math.min(remaining, stack.stackSize);
             ItemStack actual = simulate ? stack : nativeTile.decrStackSize(slot, quantity);
             int extracted = actual == null ? 0 : Math.min(quantity, actual.stackSize);
@@ -190,12 +190,14 @@ public final class BusTarget {
     }
 
     private boolean allowsUntypedDrain(FluidStack requested) {
-        if (fluids instanceof BaseMetaTileEntity tile) {
-            return tile.getMetaTileEntity() != null && tile.getMetaTileEntity()
-                .isLiquidOutput(face)
-                && tile.getCoverAtSide(face)
-                    .letsFluidOut(requested.getFluid());
-        }
+        if (fluids instanceof BaseMetaTileEntity tile) return allowsNativeDrain(tile, face, requested);
         return fluids.canDrain(face, requested.getFluid());
+    }
+
+    public static boolean allowsNativeDrain(BaseMetaTileEntity tile, ForgeDirection face, FluidStack requested) {
+        return tile.getMetaTileEntity() != null && tile.getMetaTileEntity()
+            .isLiquidOutput(face)
+            && tile.getCoverAtSide(face)
+                .letsFluidOut(requested.getFluid());
     }
 }
