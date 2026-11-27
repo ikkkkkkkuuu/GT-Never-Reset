@@ -46,6 +46,7 @@ import com.xyp.gtneverreset.common.projector.ProjectorStructure;
 import com.xyp.gtneverreset.config.ProjectorConfig;
 import com.xyp.gtnrlib.animation.StructureDeployment;
 import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
+import com.xyp.gtnrlib.client.shader.GlslProgram;
 import com.xyp.gtnrlib.gui.widget.AE2Button;
 import com.xyp.gtnrlib.gui.widget.PageTabs;
 import com.xyp.gtnrlib.gui.widget.ThemedButton;
@@ -324,7 +325,7 @@ public class ProjectorDeploymentChecks {
     public void capture(TickEvent.RenderTickEvent event) {
         if (done) return;
         if (event.phase == TickEvent.Phase.START) {
-            if (stage.singularity()) singularity.renderStarted = System.nanoTime();
+            if (stage.singularity()) singularity.beginRender();
             return;
         }
         captureImpact();
@@ -454,13 +455,17 @@ public class ProjectorDeploymentChecks {
     private final class SingularityScenario {
 
         private static final StructureDeploymentStyle STYLE = StructureDeploymentStyle.SINGULARITY;
+        private static final int OPENING_FIRST_TICK = StructureDeploymentStyle.SINGULARITY_CHARGE_TICKS - 2;
+        private static final int OPENING_LAST_TICK = StructureDeploymentStyle.SINGULARITY_GROWTH_TICKS + 6;
         private final boolean tall;
         private final String shotPrefix;
         private final List<TargetCell> targets = new ArrayList<>();
         private final List<Long> renderingTimes = new ArrayList<>();
         private final File frames;
         private int anchorY = Y;
-        private long renderStarted;
+        private long renderStarted, previousRenderStarted, previousCaptureTime;
+        private long longestOpeningRender, longestOpeningRenderAge, longestOpeningFrameGap, longestOpeningFrameGapAge;
+        private long longestOpeningCaptureGap, longestOpeningCaptureGapAge, largestOpeningCaptureTickGap;
         private volatile long startTick = -1, firstPlacement = -1;
         private volatile boolean complete, finalPicture;
         private Vec3d launchEye, launchLook;
@@ -468,7 +473,7 @@ public class ProjectorDeploymentChecks {
         private boolean projectilePicture, mergePicture, chargePicture, arcsPicture, collapsePicture, formingPicture,
             arrivalPicture;
         private long lastFrame = Long.MIN_VALUE;
-        private int frameCount, projectileFrames;
+        private int frameCount, projectileFrames, openingFrames;
 
         private SingularityScenario(boolean tall) {
             this.tall = tall;
@@ -673,15 +678,37 @@ public class ProjectorDeploymentChecks {
                 "First real block appeared before the singularity collapsed");
         }
 
+        private void beginRender() {
+            previousRenderStarted = renderStarted;
+            renderStarted = System.nanoTime();
+        }
+
         private void capture() {
             var mc = Minecraft.getMinecraft();
             if (finalPicture || startTick < 0 || mc.theWorld == null || mc.currentScreen != null) return;
             long age = mc.theWorld.getTotalWorldTime() - startTick;
             int flight = StructureDeploymentStyle.SINGULARITY_LAUNCH_TICKS;
-            if (age >= 0 && age < StructureDeploymentStyle.SINGULARITY_IMPACT_TICK && renderStarted > 0)
-                renderingTimes.add(System.nanoTime() - renderStarted);
+            if (age >= 0 && age < StructureDeploymentStyle.SINGULARITY_IMPACT_TICK && renderStarted > 0) {
+                long renderTime = System.nanoTime() - renderStarted;
+                renderingTimes.add(renderTime);
+                if (age >= OPENING_FIRST_TICK && age <= OPENING_LAST_TICK) {
+                    openingFrames++;
+                    if (renderTime > longestOpeningRender) {
+                        longestOpeningRender = renderTime;
+                        longestOpeningRenderAge = age;
+                    }
+                    long frameGap = renderStarted - previousRenderStarted;
+                    if (previousRenderStarted > 0 && frameGap > longestOpeningFrameGap) {
+                        longestOpeningFrameGap = frameGap;
+                        longestOpeningFrameGapAge = age;
+                    }
+                }
+            }
+            boolean collapsing = age >= StructureDeploymentStyle.SINGULARITY_COLLAPSE_TICK
+                && age < StructureDeploymentStyle.SINGULARITY_FORM_TICK;
             int frameDelay = tall && age > StructureDeploymentStyle.SINGULARITY_IMPACT_TICK
                 + StructureDeploymentStyle.SINGULARITY_AFTERSHOCK_TICKS ? 8 : 2;
+            if (collapsing) frameDelay = 1;
             if (age < -flight || lastFrame != Long.MIN_VALUE && age - lastFrame < frameDelay) return;
             try {
                 if (!sawStart && age < StructureDeploymentStyle.SINGULARITY_IMPACT_TICK) {
@@ -691,12 +718,24 @@ public class ProjectorDeploymentChecks {
                         var bounds = (StructureDeployment) field(effects, "bounds");
                         if (bounds.startTick() != startTick || z < bounds.minZ() || z >= bounds.maxZ()) continue;
                         require(field(effects, "style") == STYLE, "Client received the wrong deployment style");
-                        checkTwinLaunch(field(effects, "singularity"));
+                        var singularity = field(effects, "singularity");
+                        checkTwinLaunch(singularity);
+                        if (!tall) checkColdShaders(singularity, age);
                         sawStart = true;
                         break;
                     }
                 }
                 if (!sawStart) return;
+                long captureTime = System.nanoTime();
+                if (age >= OPENING_FIRST_TICK && age <= OPENING_LAST_TICK && previousCaptureTime > 0) {
+                    largestOpeningCaptureTickGap = Math.max(largestOpeningCaptureTickGap, age - lastFrame);
+                    long captureGap = captureTime - previousCaptureTime;
+                    if (captureGap > longestOpeningCaptureGap) {
+                        longestOpeningCaptureGap = captureGap;
+                        longestOpeningCaptureGapAge = age;
+                    }
+                }
+                previousCaptureTime = captureTime;
                 mc.gameSettings.hideGUI = true;
                 frames.mkdirs();
                 String name = String
@@ -733,12 +772,13 @@ public class ProjectorDeploymentChecks {
                     chargePicture = true;
                 }
                 if (!arcsPicture && age >= StructureDeploymentStyle.SINGULARITY_GROWTH_TICKS + 4
-                    && age < StructureDeploymentStyle.SINGULARITY_COLLAPSE_TICK) {
+                    && age < StructureDeploymentStyle.SINGULARITY_COLLAPSE_TICK
+                    && (tall || showsPlasmaSurface(frame))) {
                     copyFrame(frame, shotPrefix + "-arcs.png");
                     arcsPicture = true;
                 }
-                if (!collapsePicture && age >= StructureDeploymentStyle.SINGULARITY_COLLAPSE_TICK
-                    && age < StructureDeploymentStyle.SINGULARITY_FORM_TICK
+                if (!collapsePicture && collapsing
+                    && age >= StructureDeploymentStyle.SINGULARITY_FORM_TICK - 2
                     && (tall || showsCollapseOverlap(frame, age))) {
                     copyFrame(frame, shotPrefix + "-collapse.png");
                     collapsePicture = true;
@@ -768,6 +808,24 @@ public class ProjectorDeploymentChecks {
                     targets.stream()
                         .allMatch(cell -> cell.matches(mc.theWorld)),
                     "Final client blocks did not match the server result");
+                require(openingFrames > 0, "No rendering timing samples for the singularity opening");
+                System.out.printf(
+                    java.util.Locale.ROOT,
+                    "[projector-singularity-qa] %s opening ticks %d-%d, PID %d: max render %.2f ms at %d, "
+                        + "max frame gap %.2f ms at %d, max capture gap %.2f ms at %d, max capture tick gap %d (%d frames)%n",
+                    shotPrefix,
+                    OPENING_FIRST_TICK,
+                    OPENING_LAST_TICK,
+                    ProcessHandle.current()
+                        .pid(),
+                    longestOpeningRender / 1_000_000.0,
+                    longestOpeningRenderAge,
+                    longestOpeningFrameGap / 1_000_000.0,
+                    longestOpeningFrameGapAge,
+                    longestOpeningCaptureGap / 1_000_000.0,
+                    longestOpeningCaptureGapAge,
+                    largestOpeningCaptureTickGap,
+                    openingFrames);
                 copyFrame(frame, shotPrefix + "-final.png");
                 if (!renderingTimes.isEmpty()) {
                     renderingTimes.sort(Long::compareTo);
@@ -786,17 +844,40 @@ public class ProjectorDeploymentChecks {
             }
         }
 
+        private boolean showsPlasmaSurface(Path frame) throws java.io.IOException {
+            var image = ImageIO.read(frame.toFile());
+            int width = image.getWidth(), height = image.getHeight();
+            int surfacePixels = 0, brightPixels = 0;
+            for (int y = height * 43 / 100; y < height * 50 / 100; y++) {
+                for (int x = width * 45 / 100; x < width * 49 / 100; x++) {
+                    int rgb = image.getRGB(x, y);
+                    int red = rgb >> 16 & 255, green = rgb >> 8 & 255, blue = rgb & 255;
+                    if (isPlasmaColor(red, green, blue)) surfacePixels++;
+                    if (blue >= 210 && Math.max(red, green) >= 175) brightPixels++;
+                }
+            }
+            System.out.printf(
+                java.util.Locale.ROOT,
+                "[projector-singularity-qa] open plasma surface: %d saturated pixels, %d bright detail pixels%n",
+                surfacePixels,
+                brightPixels);
+            return surfacePixels >= 350 && brightPixels >= 200;
+        }
+
         private boolean showsCollapseOverlap(Path frame, long age) throws java.io.IOException {
             var image = ImageIO.read(frame.toFile());
             int width = image.getWidth(), height = image.getHeight();
-            int darkCore = 0, linedRows = 0;
+            int plasmaPixels = 0, linedRows = 0;
             int left = width * 39 / 100, right = width * 57 / 100;
             for (int y = height * 27 / 100; y < height * 63 / 100; y++) {
                 int[] brightParts = new int[4];
                 for (int x = left; x < right; x++) {
                     int rgb = image.getRGB(x, y);
                     int red = rgb >> 16 & 255, green = rgb >> 8 & 255, blue = rgb & 255;
-                    if (red < 10 && green < 12 && blue < 16 && y < height * 56 / 100) darkCore++;
+                    if (x >= width * 45 / 100 && x < width * 49 / 100
+                        && y >= height * 43 / 100
+                        && y < height * 50 / 100
+                        && isPlasmaColor(red, green, blue)) plasmaPixels++;
                     if (y >= height * 51 / 100 && red >= 105
                         && green >= 150
                         && blue >= 177
@@ -810,12 +891,33 @@ public class ProjectorDeploymentChecks {
             System.out.println(
                 "[projector-singularity-qa] collapse frame " + age
                     + ": "
-                    + darkCore
-                    + " dark core pixels, "
+                    + plasmaPixels
+                    + " saturated plasma pixels, "
                     + linedRows
                     + " blue-white structure rows");
             // The merged voxel edges are much sparser than the tessellated mesh wireframe.
-            return darkCore >= 200 && linedRows >= 14;
+            return plasmaPixels >= 475 && linedRows >= 14;
+        }
+
+        private static boolean isPlasmaColor(int red, int green, int blue) {
+            return blue >= 105 && blue - green >= 30 && blue - red >= 20;
+        }
+
+        private void checkColdShaders(Object effect, long age) throws ReflectiveOperationException {
+            String uniform = System.getProperty("gtnr.projector.coldShaderUniform");
+            if (uniform == null) return;
+            require(age < OPENING_FIRST_TICK, "Cold shader QA did not observe the first deployment before expansion");
+            var plasmaShader = staticField(effect.getClass(), "PLASMA_SURFACE");
+            var refractionShader = staticField(field(effect, "refraction").getClass(), "SHADER");
+            var plasmaProgram = (GlslProgram) field(plasmaShader, "program");
+            var refractionProgram = (GlslProgram) field(refractionShader, "program");
+            require(
+                plasmaProgram != null && plasmaProgram.uniform(uniform) >= 0
+                    && refractionProgram != null
+                    && refractionProgram.uniform(uniform) >= 0,
+                "Cold shader variants were not both linked before the first expansion");
+            System.out
+                .println("[projector-singularity-qa] both cold shader variants linked before opening at tick " + age);
         }
 
         private void checkTwinLaunch(Object effect) throws ReflectiveOperationException {

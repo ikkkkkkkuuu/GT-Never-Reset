@@ -104,7 +104,10 @@ public final class FxStructureDeployment {
 
     public void close() {
         if (summoning != null) summoning.close();
-        if (singularity != null) SINGULARITY_SHAKES.remove(this);
+        if (singularity != null) {
+            SINGULARITY_SHAKES.remove(this);
+            singularity.close();
+        }
     }
 
     public void tick(Minecraft minecraft) {
@@ -197,7 +200,8 @@ public final class FxStructureDeployment {
                 }
                 case SINGULARITY -> {
                     singularity.draw(age, cameraX, cameraY, cameraZ);
-                    if (model != null && age >= StructureDeploymentStyle.SINGULARITY_COLLAPSE_TICK) {
+                    if (model != null
+                        && age >= StructureDeploymentStyle.SINGULARITY_FORM_TICK - WIREFRAME_FADE_IN_TICKS) {
                         double impactAge = singularity.impactAge(age);
                         if (impactAge < 0) drawCharging(minecraft, age, model, outline);
                         else drawArrival(minecraft, impactAge, model);
@@ -305,15 +309,11 @@ public final class FxStructureDeployment {
     }
 
     private static void drawCharging(Minecraft minecraft, double age, Model model, Outline outline) {
-        double collapseAge = age - StructureDeploymentStyle.SINGULARITY_COLLAPSE_TICK;
-        double edges = clamp(collapseAge / WIREFRAME_FADE_IN_TICKS);
-        double collapse = clamp(
-            collapseAge / (StructureDeploymentStyle.SINGULARITY_FORM_TICK
-                - StructureDeploymentStyle.SINGULARITY_COLLAPSE_TICK));
+        double formAge = age - StructureDeploymentStyle.SINGULARITY_FORM_TICK;
+        double edges = clamp(1 + formAge / WIREFRAME_FADE_IN_TICKS);
         double formDuration = StructureDeploymentStyle.SINGULARITY_IMPACT_TICK
             - StructureDeploymentStyle.SINGULARITY_FORM_TICK;
-        double charge = clamp(
-            (age - StructureDeploymentStyle.SINGULARITY_FORM_TICK) / (formDuration * SOLID_FORM_FRACTION));
+        double charge = clamp(formAge / (formDuration * SOLID_FORM_FRACTION));
         double formed = charge * (2 - charge);
         prepareStructureRendering(minecraft);
         GL11.glDisable(GL11.GL_FOG);
@@ -328,7 +328,7 @@ public final class FxStructureDeployment {
             (float) (.62 + .37 * formed),
             (float) (.84 + .16 * formed),
             1,
-            (float) (.06 * collapse + .94 * formed));
+            (float) (.06 * edges + .94 * formed));
         model.draw(0, 0, 0);
         int opacity = (int) ((.75 - .35 * formed) * edges * 255);
         if (outline != null && opacity > 0) {

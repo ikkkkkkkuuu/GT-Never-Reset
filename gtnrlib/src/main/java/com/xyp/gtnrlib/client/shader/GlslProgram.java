@@ -46,6 +46,10 @@ public class GlslProgram implements AutoCloseable {
         return uniforms.computeIfAbsent(name, (String key) -> GL20.glGetUniformLocation(program, key));
     }
 
+    public void uniform1i(String name, int value) {
+        GL20.glUniform1i(uniform(name), value);
+    }
+
     public void uniform1f(String name, float value) {
         GL20.glUniform1f(uniform(name), value);
     }
