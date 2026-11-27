@@ -5,6 +5,8 @@ import java.nio.FloatBuffer;
 import java.util.Arrays;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.renderer.entity.RenderPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.IItemRenderer;
 
@@ -13,7 +15,10 @@ import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
+import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
+import com.xyp.gtnrlib.client.animation.HmiFirstPerson;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
+import com.xyp.gtnrlib.client.input.KeyBindingLookup;
 
 import gregtech.api.enums.Materials;
 import gregtech.common.items.IDMetaTool01;
@@ -23,6 +28,7 @@ import gregtech.common.items.MetaGeneratedTool01;
 final class AnimationCutterChecks implements IItemRenderer {
 
     private static final int GRID = 32;
+    private static final String INSPECT = "gtnrlib:wire_cutter_inspect";
     private final int[] coverage = new int[GRID * GRID];
     private final FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
     private final DoubleBuffer equation = BufferUtils.createDoubleBuffer(4);
@@ -91,15 +97,105 @@ final class AnimationCutterChecks implements IItemRenderer {
         }
     }
 
+    static void checkInspection(AnimationClientChecks qa, ItemStack tool) throws Exception {
+        var mc = Minecraft.getMinecraft();
+        var player = mc.thePlayer;
+        var hmi = HmiFirstPerson.INSTANCE;
+        var actions = FirstPersonItemActions.INSTANCE;
+        var key = KeyBindingLookup.find("gtnrlib.key.inspect_block", null);
+        qa.require(key != null, "inspection key available for the manual GT wire cutter");
+        int previousTick = player.ticksExisted;
+        var powered = player.getHeldItem();
+        var model = ((RenderPlayer) RenderManager.instance.getEntityRenderObject(player)).modelBipedMain;
+        try (var rightArm = new AnimationBlockInspectChecks.ArmProbe(model, false);
+            var leftArm = new AnimationBlockInspectChecks.ArmProbe(model, true)) {
+            player.isSwingInProgress = false;
+            AnimationBlockInspectChecks.press(key);
+            qa.require(!actions.playing(INSPECT), "powered GT cutter ignores manual inspection");
+            qa.equip(mc, tool);
+            hmi.detach();
+            for (int warmup = 0; warmup < 30; warmup++) {
+                player.ticksExisted++;
+                hmi.sample(tool, 0, 0);
+            }
+            int start = player.ticksExisted;
+            qa.draw(mc, "cutter-inspect-idle");
+            var saved = tool.copy();
+            var restSpan = rightArm.palm()
+                .distance(leftArm.palm());
+            var probe = new AnimationCutterChecks(
+                (HmiItemBindings.TwoHandedTool) hmi.handheldTool(),
+                hmi.forgeRenderer());
+            var restGap = probe.gap(probe.view(qa, "inspect-reference-open", tool, 0, false, false));
+
+            AnimationBlockInspectChecks.press(key);
+            qa.require(
+                actions.playing(INSPECT) && hmi.strokeSeconds() == 0,
+                "manual cutter inspection is separate from the snip");
+            player.ticksExisted = start + 15;
+            qa.draw(mc, "cutter-inspect-wide");
+            float wideSpan = rightArm.palm()
+                .distance(leftArm.palm());
+            int wideGap = probe.gap(probe.view(qa, "inspect-wide", tool, 0, false, false, true));
+            var firstView = probe.mount.transformDirection(new Vector3f(0, 0, 1));
+            qa.require(wideGap > restGap, "the visible blade gap grows from " + restGap + " to " + wideGap);
+            qa.require(wideSpan > restSpan + .03f, "both palms widen from " + restSpan + " to " + wideSpan);
+
+            player.ticksExisted = start + 23;
+            qa.draw(mc, "cutter-inspect-other-side");
+            probe.view(qa, "inspect-other-side", tool, 0, false, false, true);
+            qa.require(
+                probe.mount.transformDirection(new Vector3f(0, 0, 1))
+                    .distance(firstView) > .10f,
+                "both hands tilt the opened blades to examine the other side");
+            AnimationBlockInspectChecks.press(key);
+
+            player.ticksExisted = start + 35;
+            qa.draw(mc, "cutter-inspect-closed");
+            float closedSpan = rightArm.palm()
+                .distance(leftArm.palm());
+            int[] closed = probe.view(qa, "inspect-closed", tool, 0, false, false, true);
+            int[] stock = probe.view(qa, "inspect-reference-stock", tool, 0, true, false, true);
+            qa.require(
+                closedSpan < wideSpan - .03f && Arrays.equals(closed, stock),
+                "both hands close the cutter, matching the stock GT sprite at contact");
+
+            player.ticksExisted = start + 62;
+            qa.draw(mc, "cutter-inspect-recovered");
+            qa.require(
+                !actions.playing(INSPECT) && Math.abs(
+                    rightArm.palm()
+                        .distance(leftArm.palm()) - restSpan)
+                    < .05f,
+                "both grips return to rest on schedule after a repeated inspection key");
+            qa.require(
+                player.getHeldItem() == tool && ItemStack.areItemStacksEqual(tool, saved)
+                    && !player.isSwingInProgress
+                    && !player.isUsingItem()
+                    && hmi.strokeSeconds() == 0,
+                "cutter inspection preserves the tool and its gameplay state");
+        } finally {
+            player.ticksExisted = previousTick;
+            qa.equip(mc, powered);
+            qa.tickPlayer();
+            hmi.detach();
+        }
+    }
+
     private int[] view(AnimationClientChecks qa, String name, ItemStack stack, double time, boolean stock,
         boolean angled) throws Exception {
+        return view(qa, name, stack, time, stock, angled, false);
+    }
+
+    private int[] view(AnimationClientChecks qa, String name, ItemStack stack, double time, boolean stock,
+        boolean angled, boolean inspecting) throws Exception {
         return qa.draw(mc, "cutter-face-" + name, .5f, () -> {
             GL11.glDisable(GL11.GL_LIGHTING);
             // Read the clip equations actually installed for every GT draw and the stationary pin's model matrix.
             Arrays.fill(coverage, 0);
             GL11.glPushMatrix();
             try {
-                rig.render(stack, this, time, left -> {});
+                renderPose(stack, this, time, inspecting);
             } finally {
                 GL11.glPopMatrix();
             }
@@ -126,8 +222,13 @@ final class AnimationCutterChecks implements IItemRenderer {
             if (stock) {
                 GL11.glLoadMatrix(mount.get(buffer));
                 gt.renderItem(ItemRenderType.EQUIPPED_FIRST_PERSON, stack);
-            } else rig.render(stack, gt, time, left -> {});
+            } else renderPose(stack, gt, time, inspecting);
         });
+    }
+
+    private void renderPose(ItemStack stack, IItemRenderer renderer, double time, boolean inspecting) {
+        if (inspecting) rig.renderGripped(stack, renderer, .5f, left -> {});
+        else rig.render(stack, renderer, time, left -> {});
     }
 
     private int gap(int[] pixels) {

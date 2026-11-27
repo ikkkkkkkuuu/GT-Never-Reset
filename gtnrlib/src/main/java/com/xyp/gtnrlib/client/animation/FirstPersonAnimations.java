@@ -57,10 +57,10 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     private static final Marker CHAIN_PLACEMENT = new Marker(0, "gtnrlib:chain_placement");
     private static final Marker EMPTY_PUNCH = new Marker(0, "gtnrlib:empty_punch");
     private static final double HANDOFF_SECONDS = .075;
-    private final KeyBinding inspectBlock = new KeyBinding(
+    private final KeyBinding inspectHeldItem = new KeyBinding(
         // #tr gtnrlib.key.inspect_block
-        // # Inspect held block
-        // # zh_CN 检视手持方块
+        // # Inspect held item
+        // # zh_CN 检视手持物品
         "gtnrlib.key.inspect_block",
         Keyboard.KEY_I,
         // #tr gtnrlib.key.category
@@ -111,7 +111,7 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     }
 
     public void register() {
-        ClientRegistry.registerKeyBinding(inspectBlock);
+        ClientRegistry.registerKeyBinding(inspectHeldItem);
         FMLCommonHandler.instance()
             .bus()
             .register(this);
@@ -130,8 +130,8 @@ public final class FirstPersonAnimations implements IResourceManagerReloadListen
     }
 
     private void inspectPressed() {
-        while (inspectBlock.isPressed()) {
-            FirstPersonItemActions.INSTANCE.trigger(FirstPersonItemActions.BLOCK_INSPECT);
+        while (inspectHeldItem.isPressed()) {
+            FirstPersonItemActions.INSTANCE.inspectHeld();
         }
     }
 

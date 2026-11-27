@@ -8,7 +8,11 @@
 
 空手出拳、剑的地面连击和空中挥砍、镐和其他采掘工具、双手拉弓与松弦、进食、饮用和换物都使用同一个播放器。它分别求主手、物品和辅助手的姿势，再按当前握点合成呼吸、步态、转头滞后和垂直惯性。起跳后仍能挥剑、挖掘或拉弓，收招时回到角色当时的移动姿势。同一帧重复绘制不会重复推进运动。辅助手可参与持弓及双手工具动作，默认持物来自 1.7.10 的主手槽。
 
-第一人称主手拿着方块时，按一次 `I` 可以检视。右臂绕肩部抬起，把方块托到面前翻面。左手空闲时，右手把方块抛给左手，左手接稳后再抛回右手，随后回到握持姿势。可在“选项 → 控制 → GTNRLib”修改“检视手持方块”按键。动作在本机播放，切换物品、打开界面或开始挥动时会中断。
+第一人称主手拿着方块时，按一次 `I` 可以检视。右臂绕肩部抬起，把方块托到面前翻面。左手空闲时，右手把方块抛给左手，左手接稳后再抛回右手，随后回到握持姿势。可在“选项 → 控制 → GTNRLib”修改“检视手持物品”按键。动作在本机播放，切换物品、打开界面或开始挥动时会中断。
+
+主手拿普通 GT 手动扳手时，同一按键会抬起扳手转动，展示扳口两侧。左手空闲时，右手将柄交给左手，左手稳住后抛回右手。抛接沿用手中扳手的材质和既有握点。
+
+主手拿普通 GT 手动剪线钳且左手空闲时，同一按键会让两手举起剪钳，张开钳口，转动展示铰点和刃口，再缓缓合拢一次并回到握持姿势。钳柄和手掌沿用剪线时的握点，实际操作会中断检视并播放对应的剪切动作。
 
 安装 Backhand 后，左手使用独立的第一人称播放器。副手的握持、移动、挥动、进食、拉弓和换物由副手槽及其使用状态驱动。同一份物品 JSON 绑定可分别在两手播放；在副手播放时，主握手轨道随画面镜像到左臂。例如双手都拿苹果时，哪只手进食，哪只手抬起。副手空闲时遵循 Backhand 的空手显示设置。副手占用左臂时，主手动作让出辅助手。
 
@@ -68,7 +72,9 @@ HMI 5.1.1 在第一人称画面中按 `thirdperson_righthand` 提交物品。0.1
 
 `damage` 省略时匹配该注册名的全部元数据。精确元数据优先，然后查同物品的通配绑定。一次只替换所选触发行为，未绑定的行为继续使用默认姿势。可用触发有 `attack`（点击空气或攻击实体）、`mining`（对准方块挥动）、`place`（ItemBlock 成功放置）、`interact`（右键交互产生挥动）、`use`（物品开始持续使用）。`use` 支持持续片段，松开时淡出。已有的模组专用触发同样可写进 JSON，例如 `gtneverreset:wrench_turn`、`gtneverreset:wire_cutter_snip`。全新的业务事件需由其提供者发出一次 `FirstPersonItemActions.INSTANCE.trigger("域:事件")`。
 
-检视按键触发 `gtnrlib:block_inspect`。方块的注册名和元数据绑定优先于通用 `"item": "#block"` 绑定。可选的 `transfer` 位移轨道控制双手抛接。X 从 0 到 1 表示方块从右掌到左掌，Y 是离开双手连线的高度，Z 控制左手抬起和收回。通用动作的关键帧位于 [block_inspect.json](src/main/resources/assets/gtnrlib/animations/block_inspect.json)。
+检视按键为方块触发 `gtnrlib:block_inspect`，为普通 GT 手动扳手触发 `gtnrlib:wrench_inspect`。方块的注册名和元数据绑定优先于通用 `"item": "#block"` 绑定。可选的 `transfer` 位移轨道控制双手抛接。X 从 0 到 1 表示物品从右掌到左掌，Y 是离开双手连线的高度，Z 控制左手抬起和收回。动作关键帧位于 [block_inspect.json](src/main/resources/assets/gtnrlib/animations/block_inspect.json) 和 [wrench_inspect.json](src/main/resources/assets/gtnrlib/animations/wrench_inspect.json)。
+
+普通 GT 手动剪线钳触发 `gtnrlib:wire_cutter_inspect`，关键帧位于 [wire_cutter_inspect.json](src/main/resources/assets/gtnrlib/animations/wire_cutter_inspect.json)。该动作的 `hinge` 轨道控制铰点位移和整把剪钳的角度，`jaw` 的 Z 旋转值表示每片钳刃相对握持张角收拢的度数。
 
 `wrist` 同时带动主手和物品；`right_arm`、`left_arm`、`item` 可分别添加局部变换。位移使用游戏单位，角度使用度，时间使用秒。切换堆栈或卸载世界时清理播放状态。库内的 [扳手绑定](src/main/resources/assets/gtneverreset/animations/first_person.json) 和 [拧腕曲线](src/main/resources/assets/gtneverreset/animations/wrench_turn.json) 是实际发行的例子。剪线钳的双柄、铰点与握点由库内的 GT 模型提供，其前伸和开合幅度在 [剪线钳曲线](src/main/resources/assets/gtneverreset/animations/wire_cutter.json) 内调整。这三份 JSON 随 GTNRLib 发行，保留原来的 `assets/gtneverreset/animations/` 路径和动作 ID，以便旧资源包继续覆盖。新的内置动作在 `gtnrlib/src/main/resources/assets/gtnrlib/animations/` 维护。
 

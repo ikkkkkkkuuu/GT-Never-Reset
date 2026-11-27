@@ -393,6 +393,7 @@ public final class AnimationToolChecks {
             qa.equip(mc, gt(IDMetaTool01.WIRECUTTER_LV));
             qa.draw(mc, "cutter-powered-generic");
             qa.require(hmi.handheldTool() == null && hmi.strokeSeconds() == 0, "powered cutter retains generic grip");
+            if (Boolean.getBoolean("gtnrlib.animation.qa.defaults")) AnimationCutterChecks.checkInspection(qa, tool);
         } finally {
             p.ticksExisted = tick;
             p.isSwingInProgress = false;

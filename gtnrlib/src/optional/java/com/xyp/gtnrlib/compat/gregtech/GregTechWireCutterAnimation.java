@@ -25,6 +25,8 @@ import com.xyp.gtnrlib.animation.resource.NativeAnimationResource;
 import com.xyp.gtnrlib.api.animation.AnimationClip;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Channel;
 import com.xyp.gtnrlib.api.animation.AnimationClip.Property;
+import com.xyp.gtnrlib.api.animation.AnimationClip.Vec;
+import com.xyp.gtnrlib.client.animation.FirstPersonItemActions;
 import com.xyp.gtnrlib.client.animation.HmiItemBindings;
 import com.xyp.gtnrlib.network.GregTechToolUsePacket;
 
@@ -98,15 +100,45 @@ public final class GregTechWireCutterAnimation
     }
 
     @Override
-    public void render(ItemStack stack, IItemRenderer renderer, double seconds, HmiItemBindings.GripHands hands) {
-        var reach = clip.sample(REACH, seconds);
-        // GT's stock icon already shows the blades touching. The JSON supplies the squeeze from the open rest pose.
-        float opening = Math.max(
-            0,
-            REST_OPEN_DEGREES - (float) clip.sample(JAW, seconds)
+    public void renderGripped(ItemStack stack, IItemRenderer renderer, float partial, HmiItemBindings.GripHands hands) {
+        var inspection = FirstPersonItemActions.INSTANCE.sampleRigInspection(stack, partial);
+        if (inspection == null) {
+            HmiItemBindings.TwoHandedTool.super.renderGripped(stack, renderer, partial, hands);
+            return;
+        }
+        renderPose(
+            stack,
+            renderer,
+            hands,
+            inspection.position(),
+            inspection.rotation(),
+            inspection.jawRotation()
                 .z());
+    }
+
+    @Override
+    public void render(ItemStack stack, IItemRenderer renderer, double seconds, HmiItemBindings.GripHands hands) {
+        renderPose(
+            stack,
+            renderer,
+            hands,
+            clip.sample(REACH, seconds),
+            null,
+            clip.sample(JAW, seconds)
+                .z());
+    }
+
+    private static void renderPose(ItemStack stack, IItemRenderer renderer, HmiItemBindings.GripHands hands, Vec reach,
+        Vec rotation, double squeeze) {
+        // GT's stock icon already shows the blades touching. The JSON supplies the squeeze from the open rest pose.
+        float opening = Math.max(0, REST_OPEN_DEGREES - (float) squeeze);
         GL11.glTranslated(.03 + reach.x(), .055 + reach.y(), -1.18 + reach.z());
         GL11.glRotatef(-38, 1, 0, 0);
+        if (rotation != null) {
+            GL11.glRotated(rotation.x(), 1, 0, 0);
+            GL11.glRotated(rotation.y(), 0, 1, 0);
+            GL11.glRotated(rotation.z(), 0, 0, 1);
+        }
         half(stack, renderer, hands, true, opening);
         half(stack, renderer, hands, false, opening);
         // At contact the stock mesh is already the whole tool, including its extruded edges.

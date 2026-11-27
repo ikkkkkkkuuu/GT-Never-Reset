@@ -182,7 +182,7 @@ final class AnimationBlockInspectChecks {
         return Math.toDegrees(2 * Math.acos(Math.min(1, Math.abs(from.dot(to)))));
     }
 
-    private static void press(KeyBinding key) {
+    static void press(KeyBinding key) {
         press(key.getKeyCode());
     }
 
@@ -193,7 +193,7 @@ final class AnimationBlockInspectChecks {
             .post(new InputEvent.KeyInputEvent());
     }
 
-    private static final class ArmProbe extends ModelRenderer implements AutoCloseable {
+    static final class ArmProbe extends ModelRenderer implements AutoCloseable {
 
         private final ModelBiped model;
         private final ModelRenderer arm;
@@ -201,7 +201,7 @@ final class AnimationBlockInspectChecks {
         private final FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
         private final Matrix4f matrix = new Matrix4f();
 
-        private ArmProbe(ModelBiped model, boolean left) {
+        ArmProbe(ModelBiped model, boolean left) {
             super(model);
             this.model = model;
             arm = left ? model.bipedLeftArm : model.bipedRightArm;
@@ -215,12 +215,16 @@ final class AnimationBlockInspectChecks {
             matrix.set(buffer);
         }
 
-        private Vector3f shoulder() {
+        Vector3f shoulder() {
             return matrix.transformPosition(new Vector3f(centerX, -2f / 16, 0));
         }
 
-        private Vector3f hand() {
+        Vector3f hand() {
             return matrix.transformPosition(new Vector3f(centerX, 8f / 16, 0));
+        }
+
+        Vector3f palm() {
+            return matrix.transformPosition(new Vector3f(centerX, 10f / 16, 0));
         }
 
         @Override
