@@ -40,29 +40,37 @@ import static bartworks.system.material.WerkstoffLoader.SodiumNitrate;
 import static bartworks.system.material.WerkstoffLoader.SodiumRuthenate;
 import static bartworks.system.material.WerkstoffLoader.ZincSulfate;
 import static bartworks.system.material.WerkstoffLoader.Zirconium;
+import static gregtech.api.enums.OrePrefixes.block;
 import static gregtech.api.enums.OrePrefixes.crushed;
 import static gregtech.api.enums.OrePrefixes.dust;
 import static gregtech.api.enums.OrePrefixes.ingot;
 import static gregtech.api.enums.OrePrefixes.ingotHot;
+import static gregtech.api.enums.OrePrefixes.milled;
+import static gregtech.api.recipe.RecipeMaps.arcFurnaceRecipes;
 import static gregtech.api.recipe.RecipeMaps.blastFurnaceRecipes;
 import static gregtech.api.recipe.RecipeMaps.centrifugeRecipes;
 import static gregtech.api.recipe.RecipeMaps.chemicalBathRecipes;
 import static gregtech.api.recipe.RecipeMaps.chemicalDehydratorRecipes;
+import static gregtech.api.recipe.RecipeMaps.crackingRecipes;
 import static gregtech.api.recipe.RecipeMaps.distillationTowerRecipes;
 import static gregtech.api.recipe.RecipeMaps.electroMagneticSeparatorRecipes;
 import static gregtech.api.recipe.RecipeMaps.electrolyzerNonCellRecipes;
 import static gregtech.api.recipe.RecipeMaps.electrolyzerRecipes;
+import static gregtech.api.recipe.RecipeMaps.flotationCellRecipes;
 import static gregtech.api.recipe.RecipeMaps.fluidExtractionRecipes;
 import static gregtech.api.recipe.RecipeMaps.fluidHeaterRecipes;
 import static gregtech.api.recipe.RecipeMaps.fluidSolidifierRecipes;
 import static gregtech.api.recipe.RecipeMaps.hammerRecipes;
 import static gregtech.api.recipe.RecipeMaps.maceratorRecipes;
+import static gregtech.api.recipe.RecipeMaps.millingRecipes;
 import static gregtech.api.recipe.RecipeMaps.mixerNonCellRecipes;
 import static gregtech.api.recipe.RecipeMaps.mixerRecipes;
 import static gregtech.api.recipe.RecipeMaps.multiblockChemicalReactorRecipes;
 import static gregtech.api.recipe.RecipeMaps.sifterRecipes;
 import static gregtech.api.recipe.RecipeMaps.thermalCentrifugeRecipes;
 import static gregtech.api.recipe.RecipeMaps.vacuumFreezerRecipes;
+import static gregtech.api.recipe.RecipeMaps.vacuumFurnaceRecipes;
+import static gregtech.api.util.GTModHandler.getModItem;
 import static gregtech.api.util.GTRecipeConstants.COIL_HEAT;
 import static gtPlusPlus.core.material.MaterialMisc.RARE_EARTH_HIGH;
 import static gtPlusPlus.core.material.MaterialMisc.RARE_EARTH_LOW;
@@ -115,6 +123,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -123,7 +132,9 @@ import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
 
 import bartworks.system.material.Werkstoff;
 import gregtech.api.enums.GTValues;
+import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
+import gregtech.api.enums.Mods;
 import gregtech.api.recipe.RecipeMap;
 import gregtech.api.recipe.RecipeMetadataKey;
 import gregtech.api.recipe.metadata.SimpleRecipeMetadataKey;
@@ -131,7 +142,9 @@ import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTRecipe;
 import gregtech.api.util.GTRecipeBuilder;
 import gregtech.api.util.GTUtility;
+import gtPlusPlus.core.fluids.GTPPFluids;
 import gtPlusPlus.core.material.Material;
+import gtPlusPlus.core.material.MaterialsElements;
 
 public final class PlatinumProcessingRecipes {
 
@@ -141,11 +154,12 @@ public final class PlatinumProcessingRecipes {
         .create(Integer.class, "gtnr_platinum_processing_ring_requirement");
     public static final RecipeMetadataKey<Integer> DIGESTER_HEAT = SimpleRecipeMetadataKey
         .create(Integer.class, "gtnr_platinum_processing_digester_heat");
-    public static final int STATION_COUNT = 3;
+    public static final int STATION_COUNT = 4;
 
     private static final int PLATINUM_CONCENTRATE_BATCHES = 20;
     private static final int RARE_EARTH_BATH_BATCHES = 3;
     private static final int MONAZITE_DIGESTION_BATCHES = 10;
+    private static final int NETHERITE_BATH_BATCHES = 3;
 
     private PlatinumProcessingRecipes() {}
 
@@ -153,6 +167,7 @@ public final class PlatinumProcessingRecipes {
         registerFamily(1, PlatinumProcessingRecipes::platinum);
         registerFamily(2, PlatinumProcessingRecipes::rareEarth);
         registerFamily(3, PlatinumProcessingRecipes::monazite);
+        if (Mods.EtFuturumRequiem.isModLoaded()) registerFamily(4, PlatinumProcessingRecipes::netherite);
     }
 
     public static int getStationLimit(int ringCount) {
@@ -472,6 +487,62 @@ public final class PlatinumProcessingRecipes {
         route.replenish(electrolyzerNonCellRecipes, 1, Materials.Water.getFluid(1), hydrogen);
     }
 
+    private static GTRecipeBuilder netherite() {
+        Route route = new Route();
+        ItemStack scrap = getModItem(Mods.EtFuturumRequiem.ID, "netherite_scrap", 1);
+        if (scrap == null) throw new IllegalStateException("missing Et Futurum netherite scrap");
+        ItemStack hotScrap = ItemList.Hot_Netherite_Scrap.get(1);
+        ItemStack brittleScrap = ItemList.Brittle_Netherite_Scrap.get(1);
+        ItemStack nanoparticles = ItemList.Netherite_Nanoparticles.get(1);
+        ItemStack bondedNanoparticles = ItemList.Intensely_Bonded_Netherite_Nanoparticles.get(1);
+        ItemStack netheriteIngot = Materials.Netherite.getIngots(1);
+        route.add(chemicalBathRecipes, -1, hotScrap, brittleScrap, NETHERITE_BATH_BATCHES);
+        route.consume(chemicalBathRecipes, -1, scrap, hotScrap);
+        route.consume(maceratorRecipes, -1, brittleScrap, nanoparticles);
+        route.consume(blastFurnaceRecipes, 1, nanoparticles, bondedNanoparticles);
+        route.consume(arcFurnaceRecipes, -1, bondedNanoparticles, netheriteIngot);
+        prepareNetheriteBathReagents(route);
+
+        // The native rhodium electrolysis stage is supplied by the core mod's Thaumic Tinkerer integration.
+        if (Mods.NewHorizonsCoreMod.isModLoaded() && Mods.ThaumicTinkerer.isModLoaded()) {
+            ItemStack hellishMetalBlock = GTOreDictUnificator.get(block, Materials.HellishMetal, 1);
+            ItemStack rhodiumBlock = MaterialsElements.getInstance().RHODIUM.getBlock(1);
+            GTRecipe synthesis = route
+                .find(electrolyzerNonCellRecipes, -1, rhodiumBlock, recipe -> outputs(recipe, hellishMetalBlock), true);
+            if (synthesis != null) {
+                route.replenish(fluidExtractionRecipes, -1, hellishMetalBlock, Materials.HellishMetal.getMolten(1));
+                route.batch.replenish(synthesis, hellishMetalBlock);
+            }
+        }
+        return route.build(netheriteIngot);
+    }
+
+    private static void prepareNetheriteBathReagents(Route route) {
+        FluidStack froth = new FluidStack(GTPPFluids.NetherrackFlotationFroth, 1);
+        ItemStack milledNetherrack = GTOreDictUnificator.get(milled, Materials.Netherrack, 1);
+        route.replenish(vacuumFurnaceRecipes, -1, froth, Materials.PoorNetherWaste.getFluid(1));
+        route.replenish(flotationCellRecipes, -1, milledNetherrack, froth);
+        GTRecipe milling = route
+            .find(millingRecipes, 10, new ItemStack(Blocks.netherrack), recipe -> outputs(recipe, milledNetherrack));
+        route.batch.replenish(milling, milledNetherrack);
+
+        FluidStack netherGas = Materials.NefariousGas.getFluid(1);
+        FluidStack oil = Materials.NefariousOil.getFluid(1);
+        route.batch.replenish(
+            route.find(
+                crackingRecipes,
+                1,
+                netherGas,
+                recipe -> outputs(recipe, oil)
+                    && contains(recipe.mInputs, recipe.mFluidInputs, Materials.Grade2PurifiedWater.getFluid(1))),
+            oil);
+        FluidStack netherSemiFluid = Materials.NetherSemiFluid.getFluid(1);
+        ItemStack mud = ItemList.Heavy_Hellish_Mud.get(1);
+        route.batch
+            .replenish(route.find(distillationTowerRecipes, -1, netherSemiFluid, recipe -> outputs(recipe, mud)), mud);
+        route.replenish(vacuumFreezerRecipes, -1, Materials.NetherAir.getFluid(1), netherSemiFluid);
+    }
+
     private static boolean matchesCircuit(GTRecipe recipe, int circuit) {
         for (ItemStack item : recipe.mInputs) {
             if (item != null && GTUtility.isAnyIntegratedCircuit(item)) return item.getItemDamage() == circuit;
@@ -519,6 +590,11 @@ public final class PlatinumProcessingRecipes {
         }
 
         private GTRecipe find(RecipeMap<?> map, int circuit, Object input, Predicate<GTRecipe> match) {
+            return find(map, circuit, input, match, false);
+        }
+
+        private GTRecipe find(RecipeMap<?> map, int circuit, Object input, Predicate<GTRecipe> match,
+            boolean optional) {
             List<GTRecipe> candidates = map.getAllRecipes()
                 .stream()
                 .filter(
@@ -530,6 +606,7 @@ public final class PlatinumProcessingRecipes {
                         && match.test(recipe))
                 .limit(2)
                 .toList();
+            if (optional && candidates.isEmpty()) return null;
             if (candidates.size() != 1) throw new IllegalStateException(
                 "expected one recipe in " + map.unlocalizedName
                     + " for "
@@ -539,7 +616,7 @@ public final class PlatinumProcessingRecipes {
                     + "), found "
                     + candidates.size());
             GTRecipe source = candidates.get(0);
-            if (map == blastFurnaceRecipes)
+            if (map == blastFurnaceRecipes || map == vacuumFurnaceRecipes)
                 furnaceHeat = Math.max(furnaceHeat, source.getMetadataOrDefault(COIL_HEAT, source.mSpecialValue));
             if (map == digesterRecipes)
                 digesterHeat = Math.max(digesterHeat, source.getMetadataOrDefault(COIL_HEAT, source.mSpecialValue));

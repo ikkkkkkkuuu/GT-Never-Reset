@@ -47,6 +47,7 @@ import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
 import gregtech.api.casing.Casings;
+import gregtech.api.enums.Mods;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.ICasingTextureProvider;
@@ -71,7 +72,8 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     private static final String MAIN_RING = "main";
     private static final String RARE_EARTH_RING = "rare_earth";
     private static final String MONAZITE_RING = "monazite";
-    private static final String[] RING_PIECES = { MAIN_RING, RARE_EARTH_RING, MONAZITE_RING };
+    private static final String NETHERITE_RING = "netherite";
+    private static final String[] RING_PIECES = { MAIN_RING, RARE_EARTH_RING, MONAZITE_RING, NETHERITE_RING };
     private static final int HORIZONTAL_OFFSET = 12, VERTICAL_OFFSET = 21, DEPTH_OFFSET = 1;
     private static final int RING_SPACING = 7;
     private static final Casings HULL = Casings.ChemicallyInertMachineCasing;
@@ -79,6 +81,8 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     private static final Casings STAINLESS = Casings.CleanStainlessSteelMachineCasing;
     private static final Casings RARE_EARTH_HULL = Casings.RobustTungstenSteelMachineCasing;
     private static final Casings MONAZITE_HULL = Casings.VacuumCasing;
+    private static final Casings NETHERITE_HULL = Casings.RadiantNaquadahAlloyCasing;
+    private static final Casings[] REAR_HULLS = { RARE_EARTH_HULL, MONAZITE_HULL, NETHERITE_HULL };
 
     private int ringCount = 1;
 
@@ -102,6 +106,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
             .addShape(MAIN_RING, transpose(MultiblockStructureLoader.load("platinum_processing_plant")))
             .addShape(RARE_EARTH_RING, transpose(MultiblockStructureLoader.load("platinum_gate_rare_earth_ring")))
             .addShape(MONAZITE_RING, transpose(MultiblockStructureLoader.load("platinum_gate_monazite_ring")))
+            .addShape(NETHERITE_RING, transpose(MultiblockStructureLoader.load("platinum_gate_netherite_ring")))
             .addElement(
                 'A',
                 hatchBuilder
@@ -120,6 +125,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
                     activeCoils(
                         ofCoil((machine, level) -> { machine.mCoilLevel = level; }, machine -> machine.mCoilLevel))))
             .addElement('M', Muffler.newAny(MONAZITE_HULL.getTextureId(), 2))
+            .addElement('N', NETHERITE_HULL.asElement())
             .addElement('S', STAINLESS.asElement())
             .addElement('#', isAir())
             .build();
@@ -145,7 +151,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
 
     @Override
     public void construct(ItemStack stack, boolean hintsOnly) {
-        int rings = Math.clamp(stack.stackSize, 1, RING_PIECES.length);
+        int rings = Math.clamp(stack.stackSize, 1, getMaxRingCount());
         ItemStack trigger = ringBuildTrigger(stack);
         for (int ring = hintsOnly || !mMachine ? 0 : ringCount; ring < rings; ring++) {
             buildPiece(
@@ -160,7 +166,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
 
     @Override
     public int survivalConstruct(ItemStack stack, int elementBudget, ISurvivalBuildEnvironment environment) {
-        int rings = Math.clamp(stack.stackSize, 1, RING_PIECES.length);
+        int rings = Math.clamp(stack.stackSize, 1, getMaxRingCount());
         ItemStack trigger = ringBuildTrigger(stack);
         for (int ring = mMachine ? ringCount : 0; ring < rings; ring++) {
             int built = survivalBuildPiece(
@@ -191,26 +197,28 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
         ringCount = 1;
         if (!checkPiece(MAIN_RING, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors)) return;
 
-        boolean hasRareEarthRing = hasRingAnchor(tile, 1, RARE_EARTH_HULL);
-        boolean hasMonaziteRing = hasRingAnchor(tile, 2, MONAZITE_HULL);
-        if (!hasRareEarthRing) {
-            if (hasMonaziteRing) {
-                // #tr gtnr.structure.platinum_gate.requires_rare_earth_ring
-                // # The monazite ring requires the rare earth ring in front of it.
-                // # zh_CN 独居石环前方必须先建好稀土环。
-                errors.add(StructureErrors.of("gtnr.structure.platinum_gate.requires_rare_earth_ring"));
+        int lastRing = getMaxRingCount() - 1;
+        while (lastRing > 0 && !hasRingAnchor(tile, lastRing)) lastRing--;
+        for (int ring = 1; ring <= lastRing; ring++) {
+            if (!hasRingAnchor(tile, ring)) {
+                // #tr gtnr.structure.platinum_gate.requires_previous_rings
+                // # Build the preceding rings before adding rear rings.
+                // # zh_CN 请先建好前面的环，再向后扩建。
+                errors.add(StructureErrors.of("gtnr.structure.platinum_gate.requires_previous_rings"));
+                return;
             }
-            return;
+            if (!checkPiece(
+                RING_PIECES[ring],
+                HORIZONTAL_OFFSET,
+                VERTICAL_OFFSET,
+                DEPTH_OFFSET - ring * RING_SPACING,
+                errors)) return;
+            ringCount = ring + 1;
         }
-        if (!checkPiece(RARE_EARTH_RING, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET - RING_SPACING, errors))
-            return;
-        ringCount = 2;
-        if (hasMonaziteRing
-            && checkPiece(MONAZITE_RING, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET - 2 * RING_SPACING, errors))
-            ringCount = 3;
     }
 
-    private boolean hasRingAnchor(IGregTechTileEntity tile, int ring, Casings casing) {
+    private boolean hasRingAnchor(IGregTechTileEntity tile, int ring) {
+        Casings casing = REAR_HULLS[ring - 1];
         ForgeDirection back = getExtendedFacing().getRelativeBackInWorld();
         int distance = ring * RING_SPACING;
         int x = tile.getXCoord() + distance * back.offsetX;
@@ -297,7 +305,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
 
     @Override
     public void onValueUpdate(byte value) {
-        ringCount = Math.clamp(value, 1, RING_PIECES.length);
+        ringCount = Math.clamp(value, 1, getMaxRingCount());
     }
 
     public int getRingCount() {
@@ -305,7 +313,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     }
 
     public int getMaxRingCount() {
-        return RING_PIECES.length;
+        return Mods.EtFuturumRequiem.isModLoaded() ? RING_PIECES.length : RING_PIECES.length - 1;
     }
 
     @Override
@@ -362,6 +370,11 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
         // # zh_CN 需要独居石处理环
         private static final CheckRecipeResult NEEDS_MONAZITE_RING = SimpleCheckRecipeResult
             .ofFailure("gtnr.platinum_gate.needs_monazite_ring");
+        // #tr GT5U.gui.text.recipe_result.gtnr.platinum_gate.needs_netherite_ring
+        // # Requires the netherite ring
+        // # zh_CN 需要下界合金处理环
+        private static final CheckRecipeResult NEEDS_NETHERITE_RING = SimpleCheckRecipeResult
+            .ofFailure("gtnr.platinum_gate.needs_netherite_ring");
         // #tr GT5U.gui.text.recipe_result.gtnr.platinum_gate.digester_exhaust
         // # The digester needs an unobstructed muffler
         // # zh_CN 消化工序需要排气口畅通的消声仓
@@ -377,7 +390,11 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
                 return CheckRecipeResultRegistry.NO_RECIPE;
             }
             int needed = recipe.getMetadataOrDefault(PlatinumProcessingRecipes.RING_REQUIREMENT, 1);
-            if (getRingCount() < needed) return needed == 2 ? NEEDS_RARE_EARTH_RING : NEEDS_MONAZITE_RING;
+            if (getRingCount() < needed) return switch (needed) {
+                case 2 -> NEEDS_RARE_EARTH_RING;
+                case 3 -> NEEDS_MONAZITE_RING;
+                default -> NEEDS_NETHERITE_RING;
+            };
             if (getRecipeThreadTasks().stream()
                 .anyMatch(task -> task.getStation() == station)) {
                 return CheckRecipeResultRegistry.NO_RECIPE;
