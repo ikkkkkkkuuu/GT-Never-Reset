@@ -26,6 +26,7 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -251,8 +252,6 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
         super.setupProcessingLogic(logic);
         setProcessingLogicPower(logic);
         ((PlatinumProcessingLogic) logic).limitPowerToThread();
-        logic.setBatchSize(1);
-        logic.setRecipeLocking(this, false);
     }
 
     @Override
@@ -298,6 +297,13 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     }
 
     @Override
+    public void loadNBTData(NBTTagCompound tag) {
+        super.loadNBTData(tag);
+        // Older Gates saved batch mode as false and did not write a recipe-lock flag.
+        if (!tag.hasKey("mLockedToSingleRecipe")) batchMode = getDefaultBatchMode();
+    }
+
+    @Override
     public byte getUpdateData() {
         return (byte) ringCount;
     }
@@ -338,17 +344,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     }
 
     @Override
-    public boolean supportsBatchMode() {
-        return false;
-    }
-
-    @Override
     public boolean getDefaultInputSeparationMode() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsSingleRecipeLocking() {
         return false;
     }
 

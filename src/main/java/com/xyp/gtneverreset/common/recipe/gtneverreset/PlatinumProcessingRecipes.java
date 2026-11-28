@@ -42,11 +42,11 @@ import static bartworks.system.material.WerkstoffLoader.ZincSulfate;
 import static bartworks.system.material.WerkstoffLoader.Zirconium;
 import static gregtech.api.enums.OrePrefixes.block;
 import static gregtech.api.enums.OrePrefixes.crushed;
+import static gregtech.api.enums.OrePrefixes.crushedPurified;
 import static gregtech.api.enums.OrePrefixes.dust;
 import static gregtech.api.enums.OrePrefixes.ingot;
 import static gregtech.api.enums.OrePrefixes.ingotHot;
 import static gregtech.api.enums.OrePrefixes.milled;
-import static gregtech.api.recipe.RecipeMaps.arcFurnaceRecipes;
 import static gregtech.api.recipe.RecipeMaps.blastFurnaceRecipes;
 import static gregtech.api.recipe.RecipeMaps.centrifugeRecipes;
 import static gregtech.api.recipe.RecipeMaps.chemicalBathRecipes;
@@ -166,6 +166,7 @@ public final class PlatinumProcessingRecipes {
     public static void register() {
         registerFamily(1, PlatinumProcessingRecipes::platinum);
         registerFamily(2, PlatinumProcessingRecipes::rareEarth);
+        registerFamily(2, PlatinumProcessingRecipes::indium);
         registerFamily(3, PlatinumProcessingRecipes::monazite);
         if (Mods.EtFuturumRequiem.isModLoaded()) registerFamily(4, PlatinumProcessingRecipes::netherite);
     }
@@ -333,6 +334,28 @@ public final class PlatinumProcessingRecipes {
         }
     }
 
+    private static GTRecipeBuilder indium() {
+        Route route = new Route();
+        ItemStack purifiedGalena = GTOreDictUnificator.get(crushedPurified, Materials.Galena, 1);
+        ItemStack purifiedSphalerite = GTOreDictUnificator.get(crushedPurified, Materials.Sphalerite, 1);
+        FluidStack concentrate = new FluidStack(ItemList.sIndiumConcentrate, 1);
+        FluidStack leadZincSolution = new FluidStack(ItemList.sLeadZincSolution, 1);
+        ItemStack indium = Materials.Indium.getDust(1);
+        ItemStack lead = Materials.Lead.getDust(1);
+        route.add(multiblockChemicalReactorRecipes, 8, purifiedGalena, concentrate, 1);
+        route.batch.replaceItemInput(purifiedGalena, Materials.Galena.getDust(1));
+        route.batch.replaceItemInput(purifiedSphalerite, Materials.Sphalerite.getDust(1));
+        route.consume(multiblockChemicalReactorRecipes, 9, concentrate, indium);
+        route.consume(electrolyzerNonCellRecipes, -1, leadZincSolution, lead);
+        return route.build(
+            new FluidStack[] { Materials.Water.getFluid(1) },
+            indium,
+            lead,
+            Materials.Silver.getDust(1),
+            Materials.Zinc.getDust(1),
+            Materials.Sulfur.getDust(1));
+    }
+
     private static GTRecipeBuilder monazite() {
         Route route = new Route();
         ItemStack crushedMonazite = GTOreDictUnificator.get(crushed, Materials.Monazite, 1);
@@ -491,12 +514,10 @@ public final class PlatinumProcessingRecipes {
         ItemStack brittleScrap = ItemList.Brittle_Netherite_Scrap.get(1);
         ItemStack nanoparticles = ItemList.Netherite_Nanoparticles.get(1);
         ItemStack bondedNanoparticles = ItemList.Intensely_Bonded_Netherite_Nanoparticles.get(1);
-        ItemStack netheriteIngot = Materials.Netherite.getIngots(1);
         route.add(chemicalBathRecipes, -1, hotScrap, brittleScrap, NETHERITE_BATH_BATCHES);
         route.consume(chemicalBathRecipes, -1, scrap, hotScrap);
         route.consume(maceratorRecipes, -1, brittleScrap, nanoparticles);
         route.consume(blastFurnaceRecipes, 1, nanoparticles, bondedNanoparticles);
-        route.consume(arcFurnaceRecipes, -1, bondedNanoparticles, netheriteIngot);
         prepareNetheriteBathReagents(route);
 
         // The native rhodium electrolysis stage is supplied by the core mod's Thaumic Tinkerer integration.
@@ -510,7 +531,7 @@ public final class PlatinumProcessingRecipes {
                 route.batch.replenish(synthesis, hellishMetalBlock);
             }
         }
-        return route.build(netheriteIngot);
+        return route.build(bondedNanoparticles);
     }
 
     private static void prepareNetheriteBathReagents(Route route) {
@@ -620,11 +641,15 @@ public final class PlatinumProcessingRecipes {
         }
 
         private GTRecipeBuilder build(ItemStack... products) {
+            return build(GTValues.emptyFluidStackArray, products);
+        }
+
+        private GTRecipeBuilder build(FluidStack[] fluidProducts, ItemStack... products) {
             int eut = batch.maxEut();
             int duration = batch.energy()
                 .divide(BigDecimal.valueOf(eut), 0, RoundingMode.CEILING)
                 .intValueExact();
-            GTRecipeBuilder builder = batch.build(products, GTValues.emptyFluidStackArray)
+            GTRecipeBuilder builder = batch.build(products, fluidProducts)
                 .duration(duration)
                 .eut(eut)
                 .specialValue(furnaceHeat);

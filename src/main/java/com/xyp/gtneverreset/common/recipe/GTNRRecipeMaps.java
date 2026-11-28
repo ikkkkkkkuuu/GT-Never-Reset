@@ -77,7 +77,7 @@ public final class GTNRRecipeMaps {
         // # Platinum Gate Processing
         // # zh_CN 铂德之门整线处理
         .of("gtnr.recipe.platinum_processing")
-        .maxIO(16, 27, 16, 0)
+        .maxIO(16, 27, 16, 1)
         .progressBar(GTUITextures.PROGRESSBAR_ARROW_MULTIPLE)
         .progressBarMUI2(GTGuiTextures.PROGRESSBAR_ARROW_MULTIPLE)
         .frontend(PlatinumGateRecipeFrontend::new)
