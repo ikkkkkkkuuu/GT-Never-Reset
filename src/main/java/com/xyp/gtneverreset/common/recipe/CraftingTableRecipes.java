@@ -443,6 +443,11 @@ public final class CraftingTableRecipes {
             new Object[] { "WNW", "PCQ", "XNX", 'W', OrePrefixes.circuit.get(Materials.IV), 'N',
                 ItemList.Field_Generator_EV.get(1), 'P', ItemList.Sensor_LV.get(1), 'Q', ItemList.Emitter_LV.get(1),
                 'C', GTNRItemList.FragmentWorldCollector.get(1), 'X', ItemList.Casing_Gearbox_TungstenSteel.get(1) });
+        GTModHandler.addCraftingRecipe(
+            GTNRItemList.FragmentDimensionHatch.get(1),
+            new Object[] { " W ", "SHQ", " C ", 'W', OrePrefixes.circuit.get(Materials.IV), 'S',
+                ItemList.Sensor_LV.get(1), 'Q', ItemList.Emitter_LV.get(1), 'H', ItemList.Hull_EV.get(1), 'C',
+                ItemList.Casing_Gearbox_TungstenSteel.get(1) });
     }
 
     private static final class WirelessTerminalUpgradeRecipe extends ShapelessRecipes {

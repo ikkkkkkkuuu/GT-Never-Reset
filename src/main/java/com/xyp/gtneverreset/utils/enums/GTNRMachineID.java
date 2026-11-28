@@ -114,7 +114,8 @@ public enum GTNRMachineID {
     ThreadControllerT7(29562),
     ThreadControllerT8(29563),
     ChaosCredentialHatch(29564),
-    // 预留：29565–29599（35 个）。
+    FragmentDimensionHatch(29565),
+    // 预留：29566–29599（34 个）。
     // endregion
 
     // region 单方块机器

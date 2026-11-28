@@ -1,0 +1,67 @@
+// Run with: gradlew.bat -I src/qa/resources/fragment-dimension-hatch-qa.init.gradle :runClient17 --no-configuration-cache
+gradle.projectsEvaluated {
+    def root = gradle.rootProject
+    root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
+    def fixture = 'FragmentDimensionHatchChecks'
+    def directoryName = 'fragment-dimension-hatch-qa'
+    def marker = 'gtnr.fragment.dimension.hatch.qa'
+    def qaDirectory = root.layout.buildDirectory.dir(directoryName)
+    def fixtureSource = root.file("src/qa/java/com/xyp/gtneverreset/qa/${fixture}.java")
+    root.spotless.java { target fixtureSource }
+
+    root.tasks.named('compileTestJava').configure {
+        options.incremental = false
+        options.release.set(17)
+        destinationDirectory.set(qaDirectory.map { it.dir('test-classes') })
+        setSource(root.files(fixtureSource))
+    }
+    def snapshot = root.tasks.register('snapshotFragmentDimensionHatchQA', Sync) {
+        dependsOn root.tasks.named('testClasses')
+        from qaDirectory.map { it.dir('test-classes') }
+        include "**/${fixture}*.class"
+        into qaDirectory.map { it.dir('classes') }
+    }
+    root.tasks.named('runClient17').configure {
+        javaLauncher.set(root.javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21) })
+        classpath += root.configurations.testRuntimeClasspath.filter { it.name.startsWith('jvmdowngrader-java-api-') }
+        dependsOn snapshot
+        classpath += root.files(qaDirectory.map { it.dir('classes') })
+        workingDir root.file("build/${directoryName}/run")
+        systemProperty marker, 'true'
+        systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
+        systemProperty 'sun.net.client.defaultReadTimeout', '15000'
+        args '--width', '1100', '--height', '740'
+        notCompatibleWithConfigurationCache('isolated live-client verification')
+        doFirst {
+            def output = root.file("build/${directoryName}")
+            output.mkdirs()
+            workingDir.mkdirs()
+            new File(workingDir, 'config').mkdirs()
+            new File(workingDir, 'config/splash.properties').text = 'enabled=false\n'
+            new File(workingDir, 'config/DreamCoreMod.properties').text = 'showConfirmExitWindow=false\n'
+            ['result.txt', 'report.txt', 'screenshots/fragment-dimension-hatch.png'].each {
+                java.nio.file.Files.deleteIfExists(new File(workingDir, it).toPath())
+            }
+            new File(workingDir, 'options.txt').setText(
+                'lang:zh_CN\nguiScale:2\npauseOnLostFocus:false\nsoundCategory_master:0.0\nsoundCategory_music:0.0\nmusic:0.0\nsound:0.0\n',
+                'UTF-8')
+            if (System.getProperty('os.name').startsWith('Windows')) {
+                def ready = new File(output, 'window-helper.ready')
+                java.nio.file.Files.deleteIfExists(ready.toPath())
+                def helper = new ProcessBuilder('powershell.exe', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
+                    '-ExecutionPolicy', 'Bypass', '-File', root.file('gtnrlib/scripts/qa/HideTestClient.ps1').absolutePath,
+                    '-Workspace', root.projectDir.absolutePath, '-Marker', "-D${marker}=true".toString(),
+                    '-ReadyFile', "build/${directoryName}/window-helper.ready".toString())
+                    .redirectErrorStream(true).redirectOutput(new File(output, 'window-helper.log')).start()
+                for (int i = 0; i < 100 && !ready.exists() && helper.isAlive(); i++) Thread.sleep(100)
+                if (!ready.exists()) throw new GradleException('Background window guard did not start')
+            }
+        }
+        doLast {
+            def result = new File(workingDir, 'result.txt')
+            if (!result.isFile() || result.text.trim() != 'PASS') {
+                throw new GradleException('Fragment dimension hatch checks failed. See the isolated run directory.')
+            }
+        }
+    }
+}

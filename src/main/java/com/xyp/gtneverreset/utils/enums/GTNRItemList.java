@@ -106,6 +106,7 @@ public enum GTNRItemList implements IItemContainer {
     VaultPortHatch,
     MEDataAccessHatch,
     ChaosCredentialHatch,
+    FragmentDimensionHatch,
 
     StaticParallelControllerT1,
     StaticParallelControllerT2,
