@@ -8,10 +8,10 @@
 
 | GTNH 版本 | 模组版本 | 现状 | 下载 |
 | --- | --- | --- | --- |
-| `2.9.0`（当前开发基准） | `0.1.58` | 已发布 | [下载](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.58) |
+| `2.9.0`（当前开发基准） | `0.1.59` | 已发布 | [下载](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.59) |
 | `2.9.0-RC-2` | `0.1.10` | 已发布 | [![Download Releases](https://img.shields.io/badge/Download-Releases-blue)](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.10) |
 
-可在 [0.1.58 发行页](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.58) 下载正式模组文件 `gtneverreset-0.1.58.jar`。构建状态与日志可在 [Actions](https://github.com/ikkkkkkkuuu/GT-Never-Reset/actions) 查看。
+可在 [0.1.59 发行页](https://github.com/ikkkkkkkuuu/GT-Never-Reset/releases/tag/0.1.59) 下载正式模组文件 `gtneverreset-0.1.59.jar`。构建状态与日志可在 [Actions](https://github.com/ikkkkkkkuuu/GT-Never-Reset/actions) 查看。
 
 开发环境使用 Minecraft `1.7.10`、Forge `10.13.4.1614`，主模组与 GTNRLib 共用 GTNH [`2.9.0` 正式版依赖清单](https://github.com/GTNewHorizons/DreamAssemblerXXL/blob/master/releases/manifests/2.9.0.json)，由 `gradle.properties` 中的 `elytra.manifest.version` 统一选择；其他 GTNH 版本的兼容性尚待验证。
 
@@ -19,7 +19,7 @@
 
 ### 第一人称手臂动画
 
-在 GTNH 实例中安装 GTNRLib 0.1.38，进入游戏并切到第一人称即可体验类似《Hold My Items》的持物动画。走动和转头时手臂会跟随摆动，起跳和落地时有惯性。拿起镐挖矿、拉弓，或使用 GT 手动扳手和剪线钳，都有对应的动作。默认动画随库启用，无需加载资源包。多人游戏中，服务端也需安装 GTNRLib 才能在工具操作成功时同步动作。
+在 GTNH 实例中安装 GTNRLib 0.1.39，进入游戏并切到第一人称即可体验类似《Hold My Items》的持物动画。走动和转头时手臂会跟随摆动，起跳和落地时有惯性。拿起镐挖矿、拉弓，或使用 GT 手动扳手和剪线钳，都有对应的动作。默认动画随库启用，无需加载资源包。多人游戏中，服务端也需安装 GTNRLib 才能在工具操作成功时同步动作。
 
 可以在配置里关掉如果你看着不舒服
 
