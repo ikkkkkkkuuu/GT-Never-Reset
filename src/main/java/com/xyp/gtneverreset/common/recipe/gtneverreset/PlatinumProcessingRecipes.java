@@ -72,6 +72,7 @@ import static gregtech.api.recipe.RecipeMaps.vacuumFreezerRecipes;
 import static gregtech.api.recipe.RecipeMaps.vacuumFurnaceRecipes;
 import static gregtech.api.util.GTModHandler.getModItem;
 import static gregtech.api.util.GTRecipeConstants.COIL_HEAT;
+import static gregtech.api.util.GTRecipeConstants.NFR_COIL_TIER;
 import static gtPlusPlus.core.material.MaterialMisc.RARE_EARTH_HIGH;
 import static gtPlusPlus.core.material.MaterialMisc.RARE_EARTH_LOW;
 import static gtPlusPlus.core.material.MaterialMisc.RARE_EARTH_MID;
@@ -129,6 +130,8 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
+import com.xyp.gtneverreset.utils.recipes.FuelRefiningRecipeSource;
+import com.xyp.gtneverreset.utils.recipes.FuelRefiningRecipeSource.RefiningRecipe;
 
 import bartworks.system.material.Werkstoff;
 import gregtech.api.enums.GTValues;
@@ -165,11 +168,34 @@ public final class PlatinumProcessingRecipes {
 
     public static void register() {
         registerFamily(1, PlatinumProcessingRecipes::platinum);
+        for (RefiningRecipe recipe : FuelRefiningRecipeSource.rocketFuels()) {
+            registerFamily(1, () -> fuelRefining(recipe));
+        }
         registerFamily(2, PlatinumProcessingRecipes::rareEarth);
         registerFamily(2, PlatinumProcessingRecipes::indium);
         registerFamily(3, PlatinumProcessingRecipes::monazite);
         registerFamily(3, PlatinumProcessingRecipes::polybenzimidazole);
         if (Mods.EtFuturumRequiem.isModLoaded()) registerFamily(4, PlatinumProcessingRecipes::netherite);
+        for (RefiningRecipe recipe : FuelRefiningRecipeSource.naquadahFuels()) {
+            registerFamily(4, () -> fuelRefining(recipe));
+        }
+    }
+
+    private static GTRecipeBuilder fuelRefining(RefiningRecipe formula) {
+        GTRecipe recipe = formula.recipe();
+        int heat = recipe.getMetadataOrDefault(COIL_HEAT, 0);
+        int coilTier = recipe.getMetadataOrDefault(NFR_COIL_TIER, 0);
+        GTRecipeBuilder builder = GTValues.RA.stdBuilder()
+            .itemInputsUnified(recipe.mInputs)
+            .fluidInputs(recipe.mFluidInputs)
+            .fluidOutputs(recipe.mFluidOutputs)
+            .duration(recipe.mDuration)
+            .eut(recipe.mEUt)
+            .specialValue(Math.max(heat, coilTier));
+        if (formula.circuit() > 0) builder.circuit(formula.circuit());
+        if (heat > 0) builder.metadata(COIL_HEAT, heat);
+        if (coilTier > 0) builder.metadata(NFR_COIL_TIER, coilTier);
+        return builder;
     }
 
     private static void registerFamily(int ring, Supplier<GTRecipeBuilder> recipe) {
