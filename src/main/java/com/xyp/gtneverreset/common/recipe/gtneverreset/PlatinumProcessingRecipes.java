@@ -2,7 +2,9 @@ package com.xyp.gtneverreset.common.recipe.gtneverreset;
 
 import static bartworks.system.material.WerkstoffLoader.AcidicIridiumSolution;
 import static bartworks.system.material.WerkstoffLoader.AcidicOsmiumSolution;
+import static bartworks.system.material.WerkstoffLoader.AmmoniumChloride;
 import static bartworks.system.material.WerkstoffLoader.AquaRegia;
+import static bartworks.system.material.WerkstoffLoader.CalciumChloride;
 import static bartworks.system.material.WerkstoffLoader.CrudeRhMetall;
 import static bartworks.system.material.WerkstoffLoader.HotRutheniumTetroxideSollution;
 import static bartworks.system.material.WerkstoffLoader.IrLeachResidue;
@@ -21,6 +23,7 @@ import static bartworks.system.material.WerkstoffLoader.PTRawPowder;
 import static bartworks.system.material.WerkstoffLoader.PTResidue;
 import static bartworks.system.material.WerkstoffLoader.PTSaltCrude;
 import static bartworks.system.material.WerkstoffLoader.PTSaltRefined;
+import static bartworks.system.material.WerkstoffLoader.PotassiumDisulfate;
 import static bartworks.system.material.WerkstoffLoader.RHFilterCakeSolution;
 import static bartworks.system.material.WerkstoffLoader.RHNitrate;
 import static bartworks.system.material.WerkstoffLoader.RHSalt;
@@ -33,192 +36,440 @@ import static bartworks.system.material.WerkstoffLoader.Rhodium;
 import static bartworks.system.material.WerkstoffLoader.Ruthenium;
 import static bartworks.system.material.WerkstoffLoader.RutheniumTetroxide;
 import static bartworks.system.material.WerkstoffLoader.RutheniumTetroxideSollution;
+import static bartworks.system.material.WerkstoffLoader.SodiumNitrate;
 import static bartworks.system.material.WerkstoffLoader.SodiumRuthenate;
+import static bartworks.system.material.WerkstoffLoader.ZincSulfate;
+import static bartworks.system.material.WerkstoffLoader.Zirconium;
+import static gregtech.api.enums.OrePrefixes.crushed;
 import static gregtech.api.enums.OrePrefixes.dust;
-import static gregtech.api.enums.OrePrefixes.dustTiny;
+import static gregtech.api.enums.OrePrefixes.ingot;
+import static gregtech.api.enums.OrePrefixes.ingotHot;
 import static gregtech.api.recipe.RecipeMaps.blastFurnaceRecipes;
+import static gregtech.api.recipe.RecipeMaps.centrifugeRecipes;
+import static gregtech.api.recipe.RecipeMaps.chemicalBathRecipes;
+import static gregtech.api.recipe.RecipeMaps.chemicalDehydratorRecipes;
 import static gregtech.api.recipe.RecipeMaps.distillationTowerRecipes;
+import static gregtech.api.recipe.RecipeMaps.electroMagneticSeparatorRecipes;
+import static gregtech.api.recipe.RecipeMaps.electrolyzerNonCellRecipes;
+import static gregtech.api.recipe.RecipeMaps.electrolyzerRecipes;
+import static gregtech.api.recipe.RecipeMaps.fluidExtractionRecipes;
 import static gregtech.api.recipe.RecipeMaps.fluidHeaterRecipes;
 import static gregtech.api.recipe.RecipeMaps.fluidSolidifierRecipes;
+import static gregtech.api.recipe.RecipeMaps.hammerRecipes;
+import static gregtech.api.recipe.RecipeMaps.maceratorRecipes;
+import static gregtech.api.recipe.RecipeMaps.mixerNonCellRecipes;
 import static gregtech.api.recipe.RecipeMaps.mixerRecipes;
 import static gregtech.api.recipe.RecipeMaps.multiblockChemicalReactorRecipes;
-import static gregtech.api.recipe.RecipeMaps.packagerRecipes;
 import static gregtech.api.recipe.RecipeMaps.sifterRecipes;
+import static gregtech.api.recipe.RecipeMaps.thermalCentrifugeRecipes;
+import static gregtech.api.recipe.RecipeMaps.vacuumFreezerRecipes;
 import static gregtech.api.util.GTRecipeConstants.COIL_HEAT;
+import static gtPlusPlus.core.material.MaterialMisc.RARE_EARTH_HIGH;
+import static gtPlusPlus.core.material.MaterialMisc.RARE_EARTH_LOW;
+import static gtPlusPlus.core.material.MaterialMisc.RARE_EARTH_MID;
+import static gtnhlanth.api.recipe.LanthanidesRecipeMaps.digesterRecipes;
+import static gtnhlanth.api.recipe.LanthanidesRecipeMaps.dissolutionTankRecipes;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.AcidicMonazitePowder;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.CeriumChloride;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.CeriumDioxide;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.CeriumIIIOxide;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.CeriumOxalate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.CooledMonaziteRareEarthConcentrate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.DilutedMonaziteSulfate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.DilutedRareEarthMonaziteMud;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.DriedMonaziteRareEarthConcentrate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.EuropiumIIIOxide;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.EuropiumOxide;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.Hafnia;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.HafniaZirconiaBlend;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.Hafnium;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.HafniumIodide;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.HafniumTetrachloride;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.HafniumTetrachlorideSolution;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.LowPurityHafnium;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.MonaziteHeterogenousHalogenicRareEarthMixture;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.MonaziteRareEarthFiltrate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.MonaziteRareEarthHydroxideConcentrate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.MonaziteRarerEarthSediment;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.MonaziteSulfate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.MuddyRareEarthMonaziteSolution;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.NeutralizedMonaziteRareEarthFiltrate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.NeutralizedUraniumFiltrate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.NitratedRareEarthMonaziteConcentrate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.NitricLeachedMonaziteMixture;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.NitricMonaziteLeachedConcentrate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.SamaricResidue;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.SaturatedMonaziteRareEarthMixture;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.ThoriumPhosphateCake;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.ThoriumPhosphateConcentrate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.UraniumFiltrate;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.Zirconia;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.ZirconiumTetrachloride;
+import static gtnhlanth.common.register.WerkstoffMaterialPool.ZirconiumTetrachlorideSolution;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.IntUnaryOperator;
 import java.util.function.Predicate;
-import java.util.stream.IntStream;
+import java.util.function.Supplier;
 
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.oredict.OreDictionary;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
 
 import bartworks.system.material.Werkstoff;
 import gregtech.api.enums.GTValues;
-import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
 import gregtech.api.recipe.RecipeMap;
 import gregtech.api.recipe.RecipeMetadataKey;
 import gregtech.api.recipe.metadata.SimpleRecipeMetadataKey;
+import gregtech.api.util.GTOreDictUnificator;
 import gregtech.api.util.GTRecipe;
 import gregtech.api.util.GTRecipeBuilder;
 import gregtech.api.util.GTUtility;
+import gtPlusPlus.core.material.Material;
 
 public final class PlatinumProcessingRecipes {
 
-    @SuppressWarnings("unchecked")
-    public static final RecipeMetadataKey<RecipeMap<?>> SOURCE = (RecipeMetadataKey<RecipeMap<?>>) (RecipeMetadataKey<?>) SimpleRecipeMetadataKey
-        .create(RecipeMap.class, "gtnr_platinum_processing_source");
     public static final RecipeMetadataKey<Integer> STATION = SimpleRecipeMetadataKey
         .create(Integer.class, "gtnr_platinum_processing_station");
-    public static final int STATION_COUNT = 44;
+    public static final RecipeMetadataKey<Integer> RING_REQUIREMENT = SimpleRecipeMetadataKey
+        .create(Integer.class, "gtnr_platinum_processing_ring_requirement");
+    public static final RecipeMetadataKey<Integer> DIGESTER_HEAT = SimpleRecipeMetadataKey
+        .create(Integer.class, "gtnr_platinum_processing_digester_heat");
+    public static final int STATION_COUNT = 3;
+
+    private static final int PLATINUM_CONCENTRATE_BATCHES = 20;
+    private static final int RARE_EARTH_BATH_BATCHES = 3;
+    private static final int MONAZITE_DIGESTION_BATCHES = 10;
 
     private PlatinumProcessingRecipes() {}
 
     public static void register() {
-        List<NativeStage> stages;
+        registerFamily(1, PlatinumProcessingRecipes::platinum);
+        registerFamily(2, PlatinumProcessingRecipes::rareEarth);
+        registerFamily(3, PlatinumProcessingRecipes::monazite);
+    }
+
+    public static int getStationLimit(int ringCount) {
+        return Math.max(0, Math.min(ringCount, STATION_COUNT));
+    }
+
+    private static void registerFamily(int ring, Supplier<GTRecipeBuilder> recipe) {
         try {
-            // Resolve the entire route before publishing any of its stages.
-            stages = List.of(
-                // Platinum and its salt recovery loop.
-                stage(multiblockChemicalReactorRecipes, 9, PTMetallicPowder.get(dust), PTResidue.get(dust)),
-                stage(multiblockChemicalReactorRecipes, 1, PTMetallicPowder.get(dust), PTResidue.get(dustTiny)),
-                stage(multiblockChemicalReactorRecipes, 3, fluid(PTConcentrate), PTSaltCrude.get(dust)),
-                stage(multiblockChemicalReactorRecipes, 1, fluid(PTConcentrate), PTSaltCrude.get(dustTiny)),
-                stage(multiblockChemicalReactorRecipes, -1, PTRawPowder.get(dust), Materials.Platinum.getDust(1)),
-                stage(sifterRecipes, -1, PTSaltCrude.get(dust), PTSaltRefined.get(dust)),
-                stage(blastFurnaceRecipes, 1, PTSaltRefined.get(dust), PTMetallicPowder.get(dust)),
-                // Palladium digestion, enrichment, and salt recovery.
-                stage(multiblockChemicalReactorRecipes, 9, PDMetallicPowder.get(dust), PDRawPowder.get(dust)),
-                stage(multiblockChemicalReactorRecipes, 1, PDMetallicPowder.get(dust), PDRawPowder.get(dustTiny)),
-                stage(multiblockChemicalReactorRecipes, 1, PDMetallicPowder.get(dust), fluid(PDAmmonia)),
-                stage(multiblockChemicalReactorRecipes, 2, fluid(PDAmmonia), PDSalt.get(dust)),
-                stage(sifterRecipes, -1, PDSalt.get(dust), PDMetallicPowder.get(dust)),
-                stage(multiblockChemicalReactorRecipes, -1, PDRawPowder.get(dust), Materials.Palladium.getDust(1)),
-                // Platinum residue splits into the rhodium and ruthenium branches.
-                stage(blastFurnaceRecipes, 11, PTResidue.get(dust), LeachResidue.get(dust)),
-                stage(multiblockChemicalReactorRecipes, 3, fluid(RHSulfate), fluid(RHSulfateSolution)),
-                stage(multiblockChemicalReactorRecipes, 1, fluid(RHSulfate), fluid(RHSulfateSolution)),
-                stage(multiblockChemicalReactorRecipes, -1, fluid(RHSulfateSolution), CrudeRhMetall.get(dust)),
-                stage(blastFurnaceRecipes, -1, CrudeRhMetall.get(dust), RHSalt.get(dust)),
-                stage(mixerRecipes, -1, RHSalt.get(dust), fluid(RHSaltSolution)),
-                stage(multiblockChemicalReactorRecipes, 1, fluid(RHSaltSolution), RHNitrate.get(dust)),
-                stage(sifterRecipes, -1, RHNitrate.get(dust), RhFilterCake.get(dust)),
-                stage(mixerRecipes, -1, RhFilterCake.get(dust), fluid(RHFilterCakeSolution)),
-                stage(multiblockChemicalReactorRecipes, -1, fluid(RHFilterCakeSolution), ReRh.get(dust)),
-                stage(multiblockChemicalReactorRecipes, -1, ReRh.get(dust), Rhodium.get(dust)),
-                stage(blastFurnaceRecipes, -1, LeachResidue.get(dust), SodiumRuthenate.get(dust)),
-                stage(
-                    multiblockChemicalReactorRecipes,
-                    -1,
-                    SodiumRuthenate.get(dust),
-                    fluid(RutheniumTetroxideSollution)),
-                stage(
-                    fluidHeaterRecipes,
-                    -1,
-                    fluid(RutheniumTetroxideSollution),
-                    fluid(HotRutheniumTetroxideSollution)),
-                stage(distillationTowerRecipes, -1, fluid(HotRutheniumTetroxideSollution), fluid(RutheniumTetroxide)),
-                stage(fluidSolidifierRecipes, 1, fluid(RutheniumTetroxide), RutheniumTetroxide.get(dust)),
-                stage(multiblockChemicalReactorRecipes, -1, RutheniumTetroxide.get(dust), Ruthenium.get(dust)),
-                // Ruthenium extraction leaves the common residue for osmium and iridium.
-                stage(blastFurnaceRecipes, 11, IrOsLeachResidue.get(dust), fluid(AcidicOsmiumSolution)),
-                stage(distillationTowerRecipes, -1, fluid(AcidicOsmiumSolution), fluid(OsmiumSolution)),
-                stage(multiblockChemicalReactorRecipes, -1, fluid(OsmiumSolution), Materials.Osmium.getDust(1)),
-                stage(blastFurnaceRecipes, 1, IrLeachResidue.get(dust), IridiumDioxide.get(dust)),
-                stage(multiblockChemicalReactorRecipes, -1, IridiumDioxide.get(dust), fluid(AcidicIridiumSolution)),
-                stage(multiblockChemicalReactorRecipes, -1, fluid(AcidicIridiumSolution), IridiumChloride.get(dust)),
-                stage(multiblockChemicalReactorRecipes, -1, IridiumChloride.get(dust), Materials.Iridium.getDust(1)),
-                packing(PTResidue),
-                packing(PTSaltCrude),
-                packing(PTRawPowder),
-                packing(PDSalt),
-                packing(PDRawPowder),
-                packing(LeachResidue));
-        } catch (IllegalStateException exception) {
-            GTNeverReset.LOG.warn("cannot register platinum processing stages: {}", exception.getMessage());
-            return;
-        }
-        for (int station = 0; station < stages.size(); station++) {
-            registerStage(stages.get(station), station);
-        }
-        registerPurifiedOreFeeds();
-    }
-
-    private static void registerPurifiedOreFeeds() {
-        FluidStack aquaRegia = fluid(AquaRegia);
-        FluidStack concentrate = fluid(PTConcentrate);
-        for (GTRecipe recipe : multiblockChemicalReactorRecipes.getAllRecipes()) {
-            if (usable(recipe) && matchesCircuit(recipe, 1)
-                && recipe.mInputs.length == 2
-                && recipe.mFluidInputs.length == 1
-                && recipe.mFluidInputs[0].isFluidEqual(aquaRegia)
-                && recipe.mOutputs.length == 0
-                && recipe.mFluidOutputs.length == 1
-                && recipe.mFluidOutputs[0].isFluidEqual(concentrate)
-                && Arrays.stream(recipe.mInputs)
-                    .anyMatch(PlatinumProcessingRecipes::isPurifiedOre)) {
-                registerStage(new NativeStage(multiblockChemicalReactorRecipes, recipe), STATION_COUNT - 1);
-            }
+            recipe.get()
+                .metadata(STATION, ring - 1)
+                .metadata(RING_REQUIREMENT, ring)
+                .addTo(GTNRRecipeMaps.PLATINUM_PROCESSING);
+        } catch (IllegalStateException | ArithmeticException exception) {
+            GTNeverReset.LOG.warn("cannot register platinum gate recipe for ring {}: {}", ring, exception.getMessage());
         }
     }
 
-    private static boolean isPurifiedOre(ItemStack item) {
-        if (item == null || item.stackSize != 1 || GTUtility.isAnyIntegratedCircuit(item)) return false;
-        for (int ore : OreDictionary.getOreIDs(item)) {
-            if (OreDictionary.getOreName(ore)
-                .startsWith("crushedPurified")) return true;
-        }
-        return false;
-    }
+    private static GTRecipeBuilder platinum() {
+        Route route = new Route();
+        route.add(
+            multiblockChemicalReactorRecipes,
+            9,
+            PTMetallicPowder.get(dust),
+            PTResidue.get(dust),
+            2L * PLATINUM_CONCENTRATE_BATCHES);
+        route.consume(multiblockChemicalReactorRecipes, 3, fluid(PTConcentrate), PTSaltCrude.get(dust));
+        route.consume(sifterRecipes, -1, PTSaltCrude.get(dust), PTSaltRefined.get(dust));
+        route.consume(blastFurnaceRecipes, 1, PTSaltRefined.get(dust), PTMetallicPowder.get(dust));
+        route.consume(multiblockChemicalReactorRecipes, -1, PTRawPowder.get(dust), Materials.Platinum.getDust(1));
 
-    private static NativeStage stage(RecipeMap<?> map, int circuit, Object input, Object output) {
-        return stage(map, circuit, input, output, recipe -> true);
-    }
+        // Two palladium digestion batches per platinum concentrate batch consume the enriched ammonia.
+        // Native salt recovery reduces the required fresh feed without including a return loop in the recipe.
+        route.add(
+            multiblockChemicalReactorRecipes,
+            1,
+            PDMetallicPowder.get(dust),
+            fluid(PDAmmonia),
+            PLATINUM_CONCENTRATE_BATCHES * 72L / 5);
+        route.consume(multiblockChemicalReactorRecipes, 9, fluid(PDAmmonia), PDRawPowder.get(dust));
+        route.consume(sifterRecipes, -1, PDSalt.get(dust), PDMetallicPowder.get(dust));
+        route.consume(multiblockChemicalReactorRecipes, -1, PDRawPowder.get(dust), Materials.Palladium.getDust(1));
 
-    private static NativeStage packing(Werkstoff material) {
-        ItemStack schematic = ItemList.Schematic_Dust.get(1);
-        return stage(
-            packagerRecipes,
+        route.consume(blastFurnaceRecipes, 11, PTResidue.get(dust), LeachResidue.get(dust));
+        route.consume(multiblockChemicalReactorRecipes, 3, fluid(RHSulfate), fluid(RHSulfateSolution));
+        route.consume(multiblockChemicalReactorRecipes, -1, fluid(RHSulfateSolution), CrudeRhMetall.get(dust));
+        route.consume(blastFurnaceRecipes, -1, CrudeRhMetall.get(dust), RHSalt.get(dust));
+        route.consume(mixerRecipes, -1, RHSalt.get(dust), fluid(RHSaltSolution));
+        route.consume(multiblockChemicalReactorRecipes, 1, fluid(RHSaltSolution), RHNitrate.get(dust));
+        route.consume(sifterRecipes, -1, RHNitrate.get(dust), RhFilterCake.get(dust));
+        route.consume(mixerRecipes, -1, RhFilterCake.get(dust), fluid(RHFilterCakeSolution));
+        route.consume(multiblockChemicalReactorRecipes, -1, fluid(RHFilterCakeSolution), ReRh.get(dust));
+        route.consume(multiblockChemicalReactorRecipes, -1, ReRh.get(dust), Rhodium.get(dust));
+
+        route.consume(blastFurnaceRecipes, -1, LeachResidue.get(dust), SodiumRuthenate.get(dust));
+        route.consume(
+            multiblockChemicalReactorRecipes,
             -1,
-            material.get(dustTiny),
-            material.get(dust),
-            recipe -> Arrays.stream(recipe.mInputs)
-                .anyMatch(input -> GTUtility.areStacksEqual(input, schematic)));
+            SodiumRuthenate.get(dust),
+            fluid(RutheniumTetroxideSollution));
+        route
+            .consume(fluidHeaterRecipes, -1, fluid(RutheniumTetroxideSollution), fluid(HotRutheniumTetroxideSollution));
+        route.consume(distillationTowerRecipes, -1, fluid(HotRutheniumTetroxideSollution), fluid(RutheniumTetroxide));
+        route.consume(fluidSolidifierRecipes, 1, fluid(RutheniumTetroxide), RutheniumTetroxide.get(dust));
+        route.consume(multiblockChemicalReactorRecipes, -1, RutheniumTetroxide.get(dust), Ruthenium.get(dust));
+
+        route.consume(blastFurnaceRecipes, 11, IrOsLeachResidue.get(dust), fluid(AcidicOsmiumSolution));
+        route.consume(distillationTowerRecipes, -1, fluid(AcidicOsmiumSolution), fluid(OsmiumSolution));
+        route.consume(multiblockChemicalReactorRecipes, -1, fluid(OsmiumSolution), Materials.Osmium.getDust(1));
+        route.consume(blastFurnaceRecipes, 1, IrLeachResidue.get(dust), IridiumDioxide.get(dust));
+        route.consume(multiblockChemicalReactorRecipes, -1, IridiumDioxide.get(dust), fluid(AcidicIridiumSolution));
+        route.consume(multiblockChemicalReactorRecipes, -1, fluid(AcidicIridiumSolution), IridiumChloride.get(dust));
+        route.consume(multiblockChemicalReactorRecipes, -1, IridiumChloride.get(dust), Materials.Iridium.getDust(1));
+        recoverPlatinumReagents(route);
+
+        return route.build(
+            Materials.Platinum.getDust(1),
+            Materials.Palladium.getDust(1),
+            Rhodium.get(dust),
+            Ruthenium.get(dust),
+            Materials.Osmium.getDust(1),
+            Materials.Iridium.getDust(1));
     }
 
-    private static NativeStage stage(RecipeMap<?> map, int circuit, Object input, Object output,
-        Predicate<GTRecipe> extraMatch) {
-        List<GTRecipe> candidates = map.getAllRecipes()
-            .stream()
-            .filter(
-                recipe -> usable(recipe) && matchesCircuit(recipe, circuit)
-                    && contains(recipe.mInputs, recipe.mFluidInputs, input)
-                    && contains(recipe.mOutputs, recipe.mFluidOutputs, output)
-                    && extraMatch.test(recipe))
-            .limit(2)
-            .toList();
-        if (candidates.size() != 1) throw new IllegalStateException(
-            "expected one recipe in " + map.unlocalizedName
-                + " for "
-                + input
-                + " -> "
-                + output
-                + " (circuit "
-                + circuit
-                + "), found "
-                + candidates.size());
-        return new NativeStage(map, candidates.get(0));
+    private static void recoverPlatinumReagents(Route route) {
+        FluidStack nitricAcid = Materials.NitricAcid.getFluid(1);
+        route.consume(multiblockChemicalReactorRecipes, 24, Materials.NitrogenDioxide.getGas(1), nitricAcid);
+        route.replenish(GTNRRecipeMaps.MODERN_MIXER_RECIPES, 3, nitricAcid, fluid(AquaRegia));
+
+        FluidStack saltWater = Materials.SaltWater.getFluid(1);
+        route.replenish(mixerRecipes, 3, Materials.Salt.getDust(1), saltWater);
+        recoverSodiumNitrate(route);
+        FluidStack calciumChloride = fluid(CalciumChloride);
+        route.consume(fluidExtractionRecipes, -1, CalciumChloride.get(dust), calciumChloride);
+        route.consume(electrolyzerRecipes, -1, calciumChloride, Materials.Calcium.getDust(1));
+
+        route.consume(multiblockChemicalReactorRecipes, -1, ZincSulfate.get(dust), Materials.Zinc.getDust(1));
+        recoverPotassiumDisulfate(route);
+
+        FluidStack hydrochloricAcid = Materials.HydrochloricAcid.getFluid(1);
+        FluidStack chlorine = Materials.Chlorine.getGas(1);
+        route.batch.replenish(
+            route.find(multiblockChemicalReactorRecipes, 8, chlorine, recipe -> outputs(recipe, hydrochloricAcid)),
+            hydrochloricAcid,
+            route.batch.fluidBalance(chlorine));
+        FluidStack ammoniumChloride = fluid(AmmoniumChloride);
+        route.batch.replenish(
+            route.find(
+                multiblockChemicalReactorRecipes,
+                9,
+                hydrochloricAcid,
+                recipe -> outputs(recipe, ammoniumChloride)),
+            ammoniumChloride,
+            route.batch.fluidBalance(hydrochloricAcid));
     }
 
-    private static boolean usable(GTRecipe recipe) {
-        return recipe.mEnabled && !recipe.mFakeRecipe && recipe.mDuration > 0 && recipe.mEUt > 0;
+    private static void recoverPotassiumDisulfate(Route route) {
+        ItemStack potassiumIngot = Materials.Potassium.getIngots(1);
+        ItemStack potassiumDust = Materials.Potassium.getDust(1);
+        ItemStack disulfateDust = PotassiumDisulfate.get(dust);
+        route.consume(fluidSolidifierRecipes, -1, Materials.Potassium.getMolten(1), potassiumIngot);
+        route.consume(maceratorRecipes, -1, potassiumIngot, potassiumDust);
+        route.consume(multiblockChemicalReactorRecipes, -1, potassiumDust, disulfateDust);
+        route.consume(fluidExtractionRecipes, -1, disulfateDust, PotassiumDisulfate.getMolten(1));
+    }
+
+    private static void recoverSodiumNitrate(Route route) {
+        ItemStack sodium = Materials.Sodium.getDust(1);
+        ItemStack salt = Materials.Salt.getDust(1);
+        ItemStack nitrate = SodiumNitrate.get(dust);
+        // Each pair of returned salt dust yields one sodium dust for five nitrate dust.
+        BigDecimal recoverableNitrate = route.batch.itemBalance(salt)
+            .multiply(BigDecimal.valueOf(2.5));
+        route.batch.replenish(
+            route.find(multiblockChemicalReactorRecipes, -1, sodium, recipe -> outputs(recipe, nitrate)),
+            nitrate,
+            recoverableNitrate);
+        route.batch.replenish(route.find(electrolyzerRecipes, -1, salt, recipe -> outputs(recipe, sodium)), sodium);
+    }
+
+    private static GTRecipeBuilder rareEarth() {
+        Route route = new Route();
+        List<ItemStack> products = new ArrayList<>();
+        processRareEarth(route, RARE_EARTH_LOW, Materials.SulfuricAcid.getFluid(1), products);
+        processRareEarth(route, RARE_EARTH_MID, Materials.HydrochloricAcid.getFluid(1), products);
+        processRareEarth(route, RARE_EARTH_HIGH, Materials.HydrofluoricAcid.getFluid(1), products);
+        return route.build(products.toArray(ItemStack[]::new));
+    }
+
+    private static void processRareEarth(Route route, Material grade, FluidStack acid, List<ItemStack> products) {
+        ItemStack feed = Materials.RareEarth.getDust(1);
+        ItemStack crushedOre = grade.getCrushed(1);
+        ItemStack centrifugedOre = grade.getCrushedCentrifuged(1);
+        ItemStack gradeDust = grade.getDust(1);
+        GTRecipe bath = route.find(
+            chemicalBathRecipes,
+            -1,
+            feed,
+            recipe -> outputs(recipe, crushedOre) && contains(recipe.mInputs, recipe.mFluidInputs, acid));
+        route.batch.add(bath, RARE_EARTH_BATH_BATCHES);
+        route.consume(thermalCentrifugeRecipes, -1, crushedOre, centrifugedOre);
+        route.consume(hammerRecipes, -1, centrifugedOre, gradeDust);
+        GTRecipe dehydrator = route
+            .find(chemicalDehydratorRecipes, -1, gradeDust, recipe -> recipe.mOutputs.length == 9);
+        route.batch.consume(dehydrator, gradeDust);
+        for (ItemStack product : dehydrator.mOutputs) {
+            products.add(product);
+        }
+    }
+
+    private static GTRecipeBuilder monazite() {
+        Route route = new Route();
+        ItemStack crushedMonazite = GTOreDictUnificator.get(crushed, Materials.Monazite, 1);
+        route.add(
+            digesterRecipes,
+            -1,
+            crushedMonazite,
+            fluid(MuddyRareEarthMonaziteSolution),
+            MONAZITE_DIGESTION_BATCHES);
+        route.batch.replaceItemInput(crushedMonazite, Materials.Monazite.getDust(1));
+        route.consume(
+            dissolutionTankRecipes,
+            9,
+            fluid(MuddyRareEarthMonaziteSolution),
+            fluid(DilutedRareEarthMonaziteMud));
+        route.consume(sifterRecipes, -1, fluid(DilutedRareEarthMonaziteMud), MonaziteSulfate.get(dust));
+        route.consume(mixerRecipes, -1, MonaziteSulfate.get(dust), fluid(DilutedMonaziteSulfate));
+        route.consume(
+            multiblockChemicalReactorRecipes,
+            14,
+            fluid(DilutedMonaziteSulfate),
+            AcidicMonazitePowder.get(dust));
+        route.consume(sifterRecipes, -1, AcidicMonazitePowder.get(dust), MonaziteRareEarthFiltrate.get(dust));
+        route.consume(blastFurnaceRecipes, -1, ThoriumPhosphateCake.get(dust), ThoriumPhosphateConcentrate.get(dust));
+        route
+            .consume(thermalCentrifugeRecipes, -1, ThoriumPhosphateConcentrate.get(dust), Materials.Thorium.getDust(1));
+
+        route.consume(
+            chemicalBathRecipes,
+            -1,
+            MonaziteRareEarthFiltrate.get(dust),
+            NeutralizedMonaziteRareEarthFiltrate.get(dust));
+        route.consume(
+            sifterRecipes,
+            -1,
+            NeutralizedMonaziteRareEarthFiltrate.get(dust),
+            MonaziteRareEarthHydroxideConcentrate.get(dust));
+        route.consume(chemicalBathRecipes, -1, UraniumFiltrate.get(dust), NeutralizedUraniumFiltrate.get(dust));
+        route.consume(sifterRecipes, -1, NeutralizedUraniumFiltrate.get(dust), Materials.Uranium.getDust(1));
+
+        route.consume(
+            blastFurnaceRecipes,
+            -1,
+            MonaziteRareEarthHydroxideConcentrate.get(dust),
+            DriedMonaziteRareEarthConcentrate.get(dust));
+        route.consume(
+            multiblockChemicalReactorRecipes,
+            -1,
+            DriedMonaziteRareEarthConcentrate.get(dust),
+            fluid(NitratedRareEarthMonaziteConcentrate));
+        FluidStack nitrated = fluid(NitratedRareEarthMonaziteConcentrate);
+        GTRecipe leaching = route.find(
+            mixerNonCellRecipes,
+            -1,
+            nitrated,
+            recipe -> outputs(recipe, fluid(NitricLeachedMonaziteMixture))
+                && contains(recipe.mInputs, recipe.mFluidInputs, Materials.Water.getFluid(1)));
+        route.batch.consume(leaching, nitrated);
+        route.consume(sifterRecipes, -1, fluid(NitricLeachedMonaziteMixture), fluid(NitricMonaziteLeachedConcentrate));
+        route.consume(
+            vacuumFreezerRecipes,
+            -1,
+            fluid(NitricMonaziteLeachedConcentrate),
+            CooledMonaziteRareEarthConcentrate.get(dust));
+        route.consume(
+            electroMagneticSeparatorRecipes,
+            -1,
+            CooledMonaziteRareEarthConcentrate.get(dust),
+            MonaziteRarerEarthSediment.get(dust));
+        route.consume(
+            blastFurnaceRecipes,
+            -1,
+            MonaziteRarerEarthSediment.get(dust),
+            MonaziteHeterogenousHalogenicRareEarthMixture.get(dust));
+        ItemStack halogenicMixture = MonaziteHeterogenousHalogenicRareEarthMixture.get(dust);
+        GTRecipe saturation = route.find(
+            mixerRecipes,
+            -1,
+            halogenicMixture,
+            recipe -> outputs(recipe, SaturatedMonaziteRareEarthMixture.get(dust))
+                && contains(recipe.mInputs, recipe.mFluidInputs, Materials.Salt.getDust(1)));
+        route.batch.consume(saturation, halogenicMixture);
+        route.consume(centrifugeRecipes, -1, SaturatedMonaziteRareEarthMixture.get(dust), SamaricResidue.get(dust));
+        route.consume(sifterRecipes, -1, SamaricResidue.get(dust), Materials.Samarium.getDust(1));
+
+        route.consume(multiblockChemicalReactorRecipes, -1, EuropiumIIIOxide.get(dust), EuropiumOxide.get(dust));
+        route.consume(electrolyzerRecipes, -1, EuropiumOxide.get(dust), Materials.Europium.getDust(1));
+        route.consume(multiblockChemicalReactorRecipes, -1, CeriumDioxide.get(dust), CeriumChloride.get(dust));
+        route.consume(multiblockChemicalReactorRecipes, 1, CeriumChloride.get(dust), CeriumOxalate.get(dust));
+        route.consume(blastFurnaceRecipes, -1, CeriumOxalate.get(dust), CeriumIIIOxide.get(dust));
+        route.consume(electrolyzerNonCellRecipes, -1, CeriumIIIOxide.get(dust), Materials.Cerium.getDust(1));
+        recoverMonaziteMetals(route);
+        recoverMonaziteReagents(route);
+
+        return route.build(
+            Materials.Cerium.getDust(1),
+            Materials.Thorium.getDust(1),
+            Materials.Uranium.getDust(1),
+            Materials.Uranium235.getDust(1),
+            Materials.Samarium.getDust(1),
+            Materials.Gadolinium.getDust(1),
+            Materials.Europium.getDust(1),
+            Hafnium.get(ingot),
+            Zirconium.get(ingot));
+    }
+
+    private static void recoverMonaziteMetals(Route route) {
+        route.consume(centrifugeRecipes, -1, HafniaZirconiaBlend.get(dust), Hafnia.get(dust));
+        route.consume(multiblockChemicalReactorRecipes, 1, Zirconia.get(dust), ZirconiumTetrachloride.get(dust));
+        route.consume(
+            multiblockChemicalReactorRecipes,
+            1,
+            ZirconiumTetrachloride.get(dust),
+            fluid(ZirconiumTetrachlorideSolution));
+        route.consume(blastFurnaceRecipes, 2, fluid(ZirconiumTetrachlorideSolution), Zirconium.get(ingotHot));
+        route.consume(vacuumFreezerRecipes, -1, Zirconium.get(ingotHot), Zirconium.get(ingot));
+
+        route.consume(multiblockChemicalReactorRecipes, 1, Hafnia.get(dust), HafniumTetrachloride.get(dust));
+        route.consume(
+            multiblockChemicalReactorRecipes,
+            1,
+            HafniumTetrachloride.get(dust),
+            fluid(HafniumTetrachlorideSolution));
+        route.consume(blastFurnaceRecipes, 2, fluid(HafniumTetrachlorideSolution), LowPurityHafnium.get(dust));
+        route.consume(multiblockChemicalReactorRecipes, 1, LowPurityHafnium.get(dust), HafniumIodide.get(dust));
+        route.consume(blastFurnaceRecipes, 12, HafniumIodide.get(dust), Hafnium.get(ingotHot));
+        route.consume(vacuumFreezerRecipes, -1, Hafnium.get(ingotHot), Hafnium.get(ingot));
+    }
+
+    private static void recoverMonaziteReagents(Route route) {
+        route.replenish(multiblockChemicalReactorRecipes, 9, Materials.Ammonia.getGas(1), fluid(AmmoniumChloride));
+
+        ItemStack magnesium = Materials.Magnesium.getDust(1);
+        ItemStack sodium = Materials.Sodium.getDust(1);
+        ItemStack salt = Materials.Salt.getDust(1);
+        route.consume(multiblockChemicalReactorRecipes, -1, Materials.Magnesiumchloride.getDust(1), magnesium);
+        route.batch.replenish(route.find(electrolyzerRecipes, -1, salt, recipe -> outputs(recipe, sodium)), sodium);
+
+        ItemStack carbon = Materials.Carbon.getDust(1);
+        FluidStack hydrochloricAcid = Materials.HydrochloricAcid.getFluid(1);
+        FluidStack chlorine = Materials.Chlorine.getGas(1);
+        FluidStack hydrogen = Materials.Hydrogen.getGas(1);
+        route.consume(electrolyzerNonCellRecipes, -1, Materials.Chloromethane.getGas(1), carbon);
+        route.batch.replenish(
+            route.find(electrolyzerRecipes, 1, Materials.CarbonMonoxide.getGas(1), recipe -> outputs(recipe, carbon)),
+            carbon);
+        route.replenish(multiblockChemicalReactorRecipes, 8, chlorine, hydrochloricAcid);
+        route.replenish(electrolyzerNonCellRecipes, 1, Materials.Water.getFluid(1), hydrogen);
     }
 
     private static boolean matchesCircuit(GTRecipe recipe, int circuit) {
@@ -226,6 +477,10 @@ public final class PlatinumProcessingRecipes {
             if (item != null && GTUtility.isAnyIntegratedCircuit(item)) return item.getItemDamage() == circuit;
         }
         return circuit < 0;
+    }
+
+    private static boolean outputs(GTRecipe recipe, Object ingredient) {
+        return contains(recipe.mOutputs, recipe.mFluidOutputs, ingredient);
     }
 
     private static boolean contains(ItemStack[] items, FluidStack[] fluids, Object ingredient) {
@@ -240,30 +495,69 @@ public final class PlatinumProcessingRecipes {
         return material.getFluidOrGas(1);
     }
 
-    private static void registerStage(NativeStage stage, int station) {
-        GTRecipe source = stage.recipe()
-            .copy();
-        GTRecipeBuilder builder = GTValues.RA.stdBuilder()
-            .itemInputsUnified(source.mInputs, chances(source.mInputs.length, source::getInputChance))
-            .itemOutputs(source.mOutputs, chances(source.mOutputs.length, source::getOutputChance))
-            .fluidInputs(source.mFluidInputs, chances(source.mFluidInputs.length, source::getFluidInputChance))
-            .fluidOutputs(source.mFluidOutputs, chances(source.mFluidOutputs.length, source::getFluidOutputChance))
-            .duration(source.mDuration)
-            .eut(source.mEUt)
-            .specialValue(source.mSpecialValue)
-            .metadata(SOURCE, stage.map())
-            .metadata(STATION, station);
-        Integer heat = stage.recipe()
-            .getMetadata(COIL_HEAT);
-        if (heat != null) builder.metadata(COIL_HEAT, heat);
-        builder.addTo(GTNRRecipeMaps.PLATINUM_PROCESSING);
-    }
+    private static final class Route {
 
-    private static int[] chances(int count, IntUnaryOperator chance) {
-        return IntStream.range(0, count)
-            .map(chance)
-            .toArray();
-    }
+        private final PlatinumGateBatch batch = new PlatinumGateBatch();
+        private int furnaceHeat;
+        private int digesterHeat;
 
-    private record NativeStage(RecipeMap<?> map, GTRecipe recipe) {}
+        private void add(RecipeMap<?> map, int circuit, Object input, Object output, long count) {
+            batch.add(find(map, circuit, input, recipe -> outputs(recipe, output)), count);
+        }
+
+        private void consume(RecipeMap<?> map, int circuit, Object input, Object output) {
+            GTRecipe recipe = find(map, circuit, input, candidate -> outputs(candidate, output));
+            switch (input) {
+                case ItemStack item -> batch.consume(recipe, item);
+                case FluidStack fluid -> batch.consume(recipe, fluid);
+                default -> throw new IllegalStateException("unsupported native input " + input);
+            }
+        }
+
+        private void replenish(RecipeMap<?> map, int circuit, Object input, FluidStack output) {
+            batch.replenish(find(map, circuit, input, recipe -> outputs(recipe, output)), output);
+        }
+
+        private GTRecipe find(RecipeMap<?> map, int circuit, Object input, Predicate<GTRecipe> match) {
+            List<GTRecipe> candidates = map.getAllRecipes()
+                .stream()
+                .filter(
+                    recipe -> recipe.mEnabled && !recipe.mFakeRecipe
+                        && recipe.mDuration > 0
+                        && recipe.mEUt > 0
+                        && matchesCircuit(recipe, circuit)
+                        && contains(recipe.mInputs, recipe.mFluidInputs, input)
+                        && match.test(recipe))
+                .limit(2)
+                .toList();
+            if (candidates.size() != 1) throw new IllegalStateException(
+                "expected one recipe in " + map.unlocalizedName
+                    + " for "
+                    + input
+                    + " (circuit "
+                    + circuit
+                    + "), found "
+                    + candidates.size());
+            GTRecipe source = candidates.get(0);
+            if (map == blastFurnaceRecipes)
+                furnaceHeat = Math.max(furnaceHeat, source.getMetadataOrDefault(COIL_HEAT, source.mSpecialValue));
+            if (map == digesterRecipes)
+                digesterHeat = Math.max(digesterHeat, source.getMetadataOrDefault(COIL_HEAT, source.mSpecialValue));
+            return source;
+        }
+
+        private GTRecipeBuilder build(ItemStack... products) {
+            int eut = batch.maxEut();
+            int duration = batch.energy()
+                .divide(BigDecimal.valueOf(eut), 0, RoundingMode.CEILING)
+                .intValueExact();
+            GTRecipeBuilder builder = batch.build(products, GTValues.emptyFluidStackArray)
+                .duration(duration)
+                .eut(eut)
+                .specialValue(furnaceHeat);
+            if (furnaceHeat > 0) builder.metadata(COIL_HEAT, furnaceHeat);
+            if (digesterHeat > 0) builder.metadata(DIGESTER_HEAT, digesterHeat);
+            return builder;
+        }
+    }
 }

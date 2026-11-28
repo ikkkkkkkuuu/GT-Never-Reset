@@ -1,4 +1,6 @@
-Runs native refining recipes for platinum, palladium, rhodium, ruthenium, osmium, and iridium. Each stage has its own station. Purified ore variants share the leaching station.
-All intermediates, finished products, and byproducts leave through the outputs. Return intermediates through pipes or an ME network to continue processing.
-Chemical reactions use the native perfect overclock. Blast furnace heat follows coil and voltage tiers. Sifting keeps its original chances. Osmium distillation needs IV voltage.
-Set the recipe circuits and supply the reagents. Leave a reusable Dust Schematic in an input bus for the packager.
+NEI lists three complete routes for platinum-group metals, rare earths, and monazite. Supply the listed raw materials and reagents for a single batch of finished products.
+Recycled materials offset consumption. Supply only the net materials consumed per batch.
+Each batch uses the highest native EU/t. Duration is calculated from the total native energy. Chanced outputs contribute their expected yields.
+Routes retain the native furnace heat requirements. Monazite also requires a clear muffler exhaust.
+Attach a robust tungstensteel casing ring behind the main ring to unlock rare-earth processing. Attach a vacuum casing ring with its muffler next to unlock monazite processing. Set the trigger stack size to 1, 2, or 3 for hints and assisted construction.
+The main hull accepts Chemically Inert, Solid Steel, and Clean Stainless Steel Machine Casings. The controller and shared hatches take their casing texture from the block directly below the controller.

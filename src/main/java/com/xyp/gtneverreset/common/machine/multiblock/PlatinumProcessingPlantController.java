@@ -1,11 +1,13 @@
 package com.xyp.gtneverreset.common.machine.multiblock;
 
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.isAir;
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofBlocksFlat;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
 import static gregtech.api.enums.HatchElement.Energy;
 import static gregtech.api.enums.HatchElement.InputBus;
 import static gregtech.api.enums.HatchElement.InputHatch;
 import static gregtech.api.enums.HatchElement.Maintenance;
+import static gregtech.api.enums.HatchElement.Muffler;
 import static gregtech.api.enums.HatchElement.OutputBus;
 import static gregtech.api.enums.HatchElement.OutputHatch;
 import static gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_LARGE_CHEMICAL_REACTOR;
@@ -18,18 +20,23 @@ import static gregtech.common.tileentities.machines.multi.MTEElectricBlastFurnac
 import static gregtech.common.tileentities.machines.multi.MTEElectricBlastFurnace.HEAT_PER_VOLTAGE_TIER;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 
+import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.StatCollector;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.structurelib.alignment.IAlignmentLimits;
+import com.gtnewhorizon.structurelib.alignment.constructable.ChannelDataAccessor;
 import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
 import com.gtnewhorizon.structurelib.alignment.enumerable.Flip;
 import com.gtnewhorizon.structurelib.alignment.enumerable.Rotation;
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition;
+import com.gtnewhorizon.structurelib.structure.IStructureElement;
 import com.gtnewhorizon.structurelib.structure.ISurvivalBuildEnvironment;
 import com.gtnewhorizon.structurelib.structure.StructureDefinition;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.GTNRMultiBlockBase;
@@ -46,14 +53,14 @@ import gregtech.api.interfaces.tileentity.ICasingTextureProvider;
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 import gregtech.api.logic.ProcessingLogic;
 import gregtech.api.recipe.RecipeMap;
-import gregtech.api.recipe.RecipeMaps;
 import gregtech.api.recipe.check.CheckRecipeResult;
 import gregtech.api.recipe.check.CheckRecipeResultRegistry;
+import gregtech.api.recipe.check.SimpleCheckRecipeResult;
 import gregtech.api.render.TextureFactory;
 import gregtech.api.structure.error.StructureError;
+import gregtech.api.structure.error.StructureErrors;
 import gregtech.api.util.GTRecipe;
 import gregtech.api.util.GTUtility;
-import gregtech.api.util.OverclockCalculator;
 import gregtech.api.util.ParallelHelper;
 import gregtech.common.misc.GTStructureChannels;
 
@@ -61,29 +68,59 @@ import gregtech.common.misc.GTStructureChannels;
 public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<PlatinumProcessingPlantController>
     implements ISurvivalConstructable, ICasingTextureProvider {
 
-    private static final String STRUCTURE_PIECE = "main";
+    private static final String MAIN_RING = "main";
+    private static final String RARE_EARTH_RING = "rare_earth";
+    private static final String MONAZITE_RING = "monazite";
+    private static final String[] RING_PIECES = { MAIN_RING, RARE_EARTH_RING, MONAZITE_RING };
     private static final int HORIZONTAL_OFFSET = 12, VERTICAL_OFFSET = 21, DEPTH_OFFSET = 1;
+    private static final int RING_SPACING = 7;
     private static final Casings HULL = Casings.ChemicallyInertMachineCasing;
+    private static final Casings STEEL = Casings.SolidSteelMachineCasing;
+    private static final Casings STAINLESS = Casings.CleanStainlessSteelMachineCasing;
+    private static final Casings RARE_EARTH_HULL = Casings.RobustTungstenSteelMachineCasing;
+    private static final Casings MONAZITE_HULL = Casings.VacuumCasing;
+
+    private int ringCount = 1;
 
     private static IStructureDefinition<PlatinumProcessingPlantController> createStructure() {
+        IStructureElement<PlatinumProcessingPlantController> hull = ofBlocksFlat(
+            Map.of(
+                HULL.getBlock(),
+                HULL.getBlockMeta(),
+                STEEL.getBlock(),
+                STEEL.getBlockMeta(),
+                STAINLESS.getBlock(),
+                STAINLESS.getBlockMeta()),
+            HULL.getBlock(),
+            HULL.getBlockMeta());
+        var hatchBuilder = buildHatchAdder(PlatinumProcessingPlantController.class)
+            .atLeast(InputBus, InputHatch, OutputBus, OutputHatch, Energy, Maintenance)
+            .casingIndex(HULL.getTextureId())
+            .hint(1);
+        var hatchAdder = hatchBuilder.getAdder();
         return StructureDefinition.<PlatinumProcessingPlantController>builder()
-            .addShape(STRUCTURE_PIECE, transpose(MultiblockStructureLoader.load("platinum_processing_plant")))
+            .addShape(MAIN_RING, transpose(MultiblockStructureLoader.load("platinum_processing_plant")))
+            .addShape(RARE_EARTH_RING, transpose(MultiblockStructureLoader.load("platinum_gate_rare_earth_ring")))
+            .addShape(MONAZITE_RING, transpose(MultiblockStructureLoader.load("platinum_gate_monazite_ring")))
             .addElement(
                 'A',
-                buildHatchAdder(PlatinumProcessingPlantController.class)
-                    .atLeast(InputBus, InputHatch, OutputBus, OutputHatch, Energy, Maintenance)
-                    .casingIndex(HULL.getTextureId())
-                    .hint(1)
-                    .buildAndChain(HULL.asElement()))
+                hatchBuilder
+                    .adder(
+                        (machine, hatch, texture) -> hatchAdder
+                            .apply(machine, hatch, (short) casingBelow(machine.getBaseMetaTileEntity()).getTextureId()))
+                    .buildAndChain(hull))
             .addElement('B', Casings.Firebricks.asElement())
-            .addElement('C', HULL.asElement())
-            .addElement('D', Casings.SolidSteelMachineCasing.asElement())
+            .addElement('C', hull)
+            .addElement('D', STEEL.asElement())
+            .addElement('F', MONAZITE_HULL.asElement())
+            .addElement('H', RARE_EARTH_HULL.asElement())
             .addElement(
                 'K',
                 GTStructureChannels.HEATING_COIL.use(
                     activeCoils(
                         ofCoil((machine, level) -> { machine.mCoilLevel = level; }, machine -> machine.mCoilLevel))))
-            .addElement('S', Casings.CleanStainlessSteelMachineCasing.asElement())
+            .addElement('M', Muffler.newAny(MONAZITE_HULL.getTextureId(), 2))
+            .addElement('S', STAINLESS.asElement())
             .addElement('#', isAir())
             .build();
     }
@@ -108,27 +145,80 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
 
     @Override
     public void construct(ItemStack stack, boolean hintsOnly) {
-        buildPiece(STRUCTURE_PIECE, stack, hintsOnly, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET);
+        int rings = Math.clamp(stack.stackSize, 1, RING_PIECES.length);
+        ItemStack trigger = ringBuildTrigger(stack);
+        for (int ring = hintsOnly || !mMachine ? 0 : ringCount; ring < rings; ring++) {
+            buildPiece(
+                RING_PIECES[ring],
+                trigger,
+                hintsOnly,
+                HORIZONTAL_OFFSET,
+                VERTICAL_OFFSET,
+                DEPTH_OFFSET - ring * RING_SPACING);
+        }
     }
 
     @Override
     public int survivalConstruct(ItemStack stack, int elementBudget, ISurvivalBuildEnvironment environment) {
-        if (mMachine) return -1;
-        return survivalBuildPiece(
-            STRUCTURE_PIECE,
-            stack,
-            HORIZONTAL_OFFSET,
-            VERTICAL_OFFSET,
-            DEPTH_OFFSET,
-            elementBudget,
-            environment,
-            false,
-            true);
+        int rings = Math.clamp(stack.stackSize, 1, RING_PIECES.length);
+        ItemStack trigger = ringBuildTrigger(stack);
+        for (int ring = mMachine ? ringCount : 0; ring < rings; ring++) {
+            int built = survivalBuildPiece(
+                RING_PIECES[ring],
+                trigger,
+                HORIZONTAL_OFFSET,
+                VERTICAL_OFFSET,
+                DEPTH_OFFSET - ring * RING_SPACING,
+                elementBudget,
+                environment,
+                false,
+                true);
+            if (built >= 0) return built;
+        }
+        return -1;
+    }
+
+    private static ItemStack ringBuildTrigger(ItemStack stack) {
+        if (stack.stackSize == 1 || ChannelDataAccessor.hasSubChannel(stack, GTStructureChannels.HEATING_COIL.get()))
+            return stack;
+        ItemStack trigger = stack.copy();
+        trigger.stackSize = 1;
+        return trigger;
     }
 
     @Override
     protected void checkMachineStructure(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
-        checkPiece(STRUCTURE_PIECE, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors);
+        ringCount = 1;
+        if (!checkPiece(MAIN_RING, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors)) return;
+
+        boolean hasRareEarthRing = hasRingAnchor(tile, 1, RARE_EARTH_HULL);
+        boolean hasMonaziteRing = hasRingAnchor(tile, 2, MONAZITE_HULL);
+        if (!hasRareEarthRing) {
+            if (hasMonaziteRing) {
+                // #tr gtnr.structure.platinum_gate.requires_rare_earth_ring
+                // # The monazite ring requires the rare earth ring in front of it.
+                // # zh_CN 独居石环前方必须先建好稀土环。
+                errors.add(StructureErrors.of("gtnr.structure.platinum_gate.requires_rare_earth_ring"));
+            }
+            return;
+        }
+        if (!checkPiece(RARE_EARTH_RING, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET - RING_SPACING, errors))
+            return;
+        ringCount = 2;
+        if (hasMonaziteRing
+            && checkPiece(MONAZITE_RING, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET - 2 * RING_SPACING, errors))
+            ringCount = 3;
+    }
+
+    private boolean hasRingAnchor(IGregTechTileEntity tile, int ring, Casings casing) {
+        ForgeDirection back = getExtendedFacing().getRelativeBackInWorld();
+        int distance = ring * RING_SPACING;
+        int x = tile.getXCoord() + distance * back.offsetX;
+        int y = tile.getYCoord();
+        int z = tile.getZCoord() + distance * back.offsetZ;
+        World world = tile.getWorld();
+        return world.blockExists(x, y, z) && world.getBlock(x, y, z) == casing.getBlock()
+            && world.getBlockMetadata(x, y, z) == casing.getBlockMeta();
     }
 
     @Override
@@ -136,7 +226,6 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
         checkHatchMin(errors, InputBus, 1);
         checkHatchMin(errors, InputHatch, 1);
         checkHatchMin(errors, OutputBus, 1);
-        checkHatchMin(errors, OutputHatch, 1);
         checkHatchRange(errors, Energy, 1, 2);
         checkHatchRange(errors, Maintenance, shouldCheckMaintenance() ? 1 : 0, 1);
     }
@@ -172,7 +261,18 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
 
     @Override
     public ITexture getCasingTexture() {
-        return HULL.getCasingTexture();
+        return casingBelow(getBaseMetaTileEntity()).getCasingTexture();
+    }
+
+    private static Casings casingBelow(IGregTechTileEntity tile) {
+        if (tile == null || tile.getWorld() == null || tile.getYCoord() <= 0) return HULL;
+        World world = tile.getWorld();
+        int x = tile.getXCoord(), y = tile.getYCoord() - 1, z = tile.getZCoord();
+        Block block = world.getBlock(x, y, z);
+        int meta = world.getBlockMetadata(x, y, z);
+        if (block == STEEL.getBlock() && meta == STEEL.getBlockMeta()) return STEEL;
+        if (block == STAINLESS.getBlock() && meta == STAINLESS.getBlockMeta()) return STAINLESS;
+        return HULL;
     }
 
     @Override
@@ -191,6 +291,24 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     }
 
     @Override
+    public byte getUpdateData() {
+        return (byte) ringCount;
+    }
+
+    @Override
+    public void onValueUpdate(byte value) {
+        ringCount = Math.clamp(value, 1, RING_PIECES.length);
+    }
+
+    public int getRingCount() {
+        return ringCount;
+    }
+
+    public int getMaxRingCount() {
+        return RING_PIECES.length;
+    }
+
+    @Override
     protected IAlignmentLimits getInitialAlignmentLimits() {
         return (direction, rotation, flip) -> direction != ForgeDirection.UNKNOWN && direction.offsetY == 0
             && rotation == Rotation.NORMAL
@@ -204,11 +322,16 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
 
     @Override
     public int getMaxRecipeThreads() {
-        return PlatinumProcessingRecipes.STATION_COUNT;
+        return PlatinumProcessingRecipes.getStationLimit(getRingCount());
     }
 
     @Override
     public boolean supportsBatchMode() {
+        return false;
+    }
+
+    @Override
+    public boolean getDefaultInputSeparationMode() {
         return false;
     }
 
@@ -229,20 +352,43 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
 
     private final class PlatinumProcessingLogic extends RecipeThreadProcessingLogic {
 
+        // #tr GT5U.gui.text.recipe_result.gtnr.platinum_gate.needs_rare_earth_ring
+        // # Requires the rare-earth ring
+        // # zh_CN 需要稀土处理环
+        private static final CheckRecipeResult NEEDS_RARE_EARTH_RING = SimpleCheckRecipeResult
+            .ofFailure("gtnr.platinum_gate.needs_rare_earth_ring");
+        // #tr GT5U.gui.text.recipe_result.gtnr.platinum_gate.needs_monazite_ring
+        // # Requires the monazite ring
+        // # zh_CN 需要独居石处理环
+        private static final CheckRecipeResult NEEDS_MONAZITE_RING = SimpleCheckRecipeResult
+            .ofFailure("gtnr.platinum_gate.needs_monazite_ring");
+        // #tr GT5U.gui.text.recipe_result.gtnr.platinum_gate.digester_exhaust
+        // # The digester needs an unobstructed muffler
+        // # zh_CN 消化工序需要排气口畅通的消声仓
+        private static final CheckRecipeResult DIGESTER_EXHAUST_BLOCKED = SimpleCheckRecipeResult
+            .ofFailure("gtnr.platinum_gate.digester_exhaust");
         private int selectedStation;
 
         @Override
         @Nonnull
         protected CheckRecipeResult validateRecipe(@Nonnull GTRecipe recipe) {
             int station = recipe.getMetadataOrDefault(PlatinumProcessingRecipes.STATION, -1);
-            if (station < 0 || station >= PlatinumProcessingRecipes.STATION_COUNT
-                || getRecipeThreadTasks().stream()
-                    .anyMatch(task -> task.getStation() == station)) {
+            if (station < 0 || station >= PlatinumProcessingRecipes.STATION_COUNT) {
                 return CheckRecipeResultRegistry.NO_RECIPE;
             }
-            if (source(recipe) == RecipeMaps.blastFurnaceRecipes && requiredHeat(recipe) > getFurnaceHeat()) {
-                return CheckRecipeResultRegistry.insufficientHeat(requiredHeat(recipe));
+            int needed = recipe.getMetadataOrDefault(PlatinumProcessingRecipes.RING_REQUIREMENT, 1);
+            if (getRingCount() < needed) return needed == 2 ? NEEDS_RARE_EARTH_RING : NEEDS_MONAZITE_RING;
+            if (getRecipeThreadTasks().stream()
+                .anyMatch(task -> task.getStation() == station)) {
+                return CheckRecipeResultRegistry.NO_RECIPE;
             }
+            int furnaceHeat = recipe.getMetadataOrDefault(COIL_HEAT, 0);
+            if (furnaceHeat > getFurnaceHeat()) return CheckRecipeResultRegistry.insufficientHeat(furnaceHeat);
+            int digesterHeat = recipe.getMetadataOrDefault(PlatinumProcessingRecipes.DIGESTER_HEAT, 0);
+            if (digesterHeat > mCoilLevel.getHeat()) {
+                return CheckRecipeResultRegistry.insufficientHeat(digesterHeat);
+            }
+            if (digesterHeat > 0 && !hasClearDigesterExhaust()) return DIGESTER_EXHAUST_BLOCKED;
             var result = super.validateRecipe(recipe);
             if (!result.wasSuccessful()) return result;
             selectedStation = station;
@@ -260,29 +406,14 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
             return super.createParallelHelper(recipe).setAvailableEUt(availableVoltage * availableAmperage);
         }
 
-        @Override
-        @Nonnull
-        protected OverclockCalculator createOverclockCalculator(@Nonnull GTRecipe recipe) {
-            OverclockCalculator calculator = super.createOverclockCalculator(recipe);
-            RecipeMap<?> map = source(recipe);
-            if (map == RecipeMaps.multiblockChemicalReactorRecipes) {
-                calculator.setDurationDecreasePerOC(4);
-            } else if (map == RecipeMaps.blastFurnaceRecipes) {
-                calculator.setRecipeHeat(requiredHeat(recipe))
-                    .setMachineHeat(getFurnaceHeat())
-                    .setHeatOC(true)
-                    .setHeatDiscount(true);
+        private boolean hasClearDigesterExhaust() {
+            for (var hatch : mMufflerHatches) {
+                IGregTechTileEntity tile = hatch.getBaseMetaTileEntity();
+                if (tile != null && tile.getAirAtSide(tile.getFrontFacing())) return true;
             }
-            return calculator;
+            return false;
         }
 
-        private RecipeMap<?> source(GTRecipe recipe) {
-            return recipe.getMetadata(PlatinumProcessingRecipes.SOURCE);
-        }
-
-        private int requiredHeat(GTRecipe recipe) {
-            return recipe.getMetadataOrDefault(COIL_HEAT, recipe.mSpecialValue);
-        }
     }
 
     private static final class StructureHolder {

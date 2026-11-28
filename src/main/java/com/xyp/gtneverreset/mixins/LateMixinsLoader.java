@@ -53,6 +53,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
         if (loadedMods.contains(ModList.ModIds.GREGTECH)) {
             if (FMLLaunchHandler.side()
                 .isClient() && loadedMods.contains("blockrenderer6343")) {
+                mixins.add("blockrenderer.PlatinumGatePreviewSliderMixin");
                 mixins.add("blockrenderer.StarCorePreviewPlacementMixin");
                 mixins.add("blockrenderer.StarCorePreviewSceneMixin");
             }
