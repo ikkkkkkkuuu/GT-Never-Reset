@@ -78,6 +78,26 @@ HMI 5.1.1 在第一人称画面中按 `thirdperson_righthand` 提交物品。0.1
 
 `damage` 省略时匹配该注册名的全部元数据。精确元数据优先，然后查同物品的通配绑定。一次只替换所选触发行为，未绑定的行为继续使用默认姿势。可用触发有 `attack`（点击空气或攻击实体）、`mining`（对准方块挥动）、`place`（ItemBlock 成功放置）、`interact`（右键交互产生挥动）、`use`（物品开始持续使用）。`use` 支持持续片段，松开时淡出。已有的模组专用触发同样可写进 JSON，例如 `gtneverreset:wrench_turn`、`gtneverreset:wire_cutter_snip`。全新的业务事件需由其提供者发出一次 `FirstPersonItemActions.INSTANCE.trigger("域:事件")`。
 
+给物品动作填写 `"inspection": "one_handed"` 或 `"inspection": "two_handed"`，即可接入检视键。检视使用完整物品注册名、可选的元数据、独立的触发名和一次性片段。按键依次查找精确元数据、同物品的通配检视和内置类型检视。换物、切换世界、切换视角、打开界面或开始使用物品时结束检视。双手检视还要求副手空闲。
+
+```json
+{
+  "item": "myaddon:keepsake",
+  "damage": 2,
+  "trigger": "myaddon:inspect_keepsake",
+  "inspection": "two_handed",
+  "clip": "myaddon:inspect_keepsake",
+  "rotationBlend": "shortest",
+  "sounds": {
+    "contact": {"id": "minecraft:dig.glass", "volume": 0.25, "pitch": 0.82}
+  }
+}
+```
+
+双手检视的 `transfer` 位移轨道控制物品在两掌之间的位置和左手抬起量，`carry` 位移轨道可在第一人称视图中平移托住的物品。用 `left_arm` 和 `right_arm` 继续微调各自的握姿。音效可绑定到片段已有的标记，音量范围为 0–1，音高范围为 0.5–2。音效随片段时钟播放，切换动作后只播放当前片段的标记。
+
+需要画裂隙、独立物体或镜头叠加时，在客户端用 `FirstPersonActionEffects.register(ResourceLocation, Effect)` 注册渲染器，再在检视绑定中加 `"effect": "域:名称"`。渲染钩子可在双手绘制前添加效果、替换持物绘制或在持物之后绘制屏幕叠加。使用场景的 `seconds()` 和 `markerTime(name, fallback)` 对齐特效与片段关键点。GTNL 玩偶的实际绑定见 [first_person.json](src/main/resources/assets/gtnrlib/animations/first_person.json)，持物曲线见 [gtnl_doll_inspect.json](src/main/resources/assets/gtnrlib/animations/gtnl_doll_inspect.json)。
+
 检视按键为方块触发 `gtnrlib:block_inspect`，为普通 GT 手动扳手触发 `gtnrlib:wrench_inspect`。方块的注册名和元数据绑定优先于通用 `"item": "#block"` 绑定。可选的 `transfer` 位移轨道控制双手抛接。X 从 0 到 1 表示物品从右掌到左掌，Y 是离开双手连线的高度，Z 控制左手抬起和收回。动作关键帧位于 [block_inspect.json](src/main/resources/assets/gtnrlib/animations/block_inspect.json) 和 [wrench_inspect.json](src/main/resources/assets/gtnrlib/animations/wrench_inspect.json)。
 
 普通 GT 手动剪线钳触发 `gtnrlib:wire_cutter_inspect`，关键帧位于 [wire_cutter_inspect.json](src/main/resources/assets/gtnrlib/animations/wire_cutter_inspect.json)。该动作的 `hinge` 轨道控制铰点位移和整把剪钳的角度，`jaw` 的 Z 旋转值表示每片钳刃相对握持张角收拢的度数。

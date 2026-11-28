@@ -45,13 +45,21 @@ gradle.projectsEvaluated {
     def offhand = gradle.startParameter.projectProperties.containsKey('animationQaOffhand')
     def backhand = gradle.startParameter.projectProperties.containsKey('animationQaBackhand')
     def angelica = gradle.startParameter.projectProperties.containsKey('animationQaAngelica')
-    def mode = (modsOnly ? 'library-mods' : host == lib ? 'library' : 'host') + (defaults ? '-defaults' : '') + (toolbox ? '-toolbox' : '') + (offhand ? (backhand ? '-backhand' : '-no-backhand') : '') + (angelica ? '-angelica' : '')
+    def doll = gradle.startParameter.projectProperties.containsKey('animationQaDoll')
+    def dollMods = gradle.startParameter.projectProperties['animationQaDollMods']
+    if (doll && !defaults) throw new GradleException('Doll QA requires -PanimationQaDefaults')
+    if (dollMods && (!doll || host == lib)) {
+        throw new GradleException('Doll mod JARs require -PanimationQaDoll and -PanimationQaStandaloneMods or -PanimationQaHost')
+    }
+    def mode = (modsOnly ? 'library-mods' : host == lib ? 'library' : 'host') + (defaults ? '-defaults' : '') + (toolbox ? '-toolbox' : '') + (offhand ? (backhand ? '-backhand' : '-no-backhand') : '') + (angelica ? '-angelica' : '') + (doll ? (dollMods ? '-doll-gtnl' : '-doll-no-gtnl') : '')
     def output = lib.file("build/animation-qa/" + mode)
     def classes = new File(output, 'classes')
     def fixture = host.tasks.register('compileAnimationQA', JavaCompile) {
         dependsOn lib.tasks.named('classes')
         source lib.file('scripts/qa/AnimationClientChecks.java')
         source lib.file('scripts/qa/AnimationBlockInspectChecks.java')
+        source lib.file('scripts/qa/AnimationDollInspectChecks.java')
+        source lib.file('scripts/qa/AnimationInspectionBindingChecks.java')
         source lib.file('scripts/qa/AnimationHandheldInspectChecks.java')
         source lib.file('scripts/qa/AnimationBlockUseChecks.java')
         source lib.file('scripts/qa/AnimationOffhandChecks.java')
@@ -83,6 +91,11 @@ gradle.projectsEvaluated {
             classpath = (classpath - host.sourceSets.main.output).filter { !it.name.startsWith('gtneverreset-') }
         }
         classpath += lib.files(classes)
+        if (dollMods) {
+            def jars = lib.fileTree(dollMods) { include '*.jar' }
+            if (jars.isEmpty()) throw new GradleException('No development JARs in animationQaDollMods: ' + dollMods)
+            classpath += jars
+        }
         workingDir lib.file("run/animation-qa/" + mode)
         systemProperty 'gtnrlib.animation.qa', 'true'
         systemProperty 'gtnrlib.animation.qa.toolbox', toolbox
@@ -99,6 +112,8 @@ gradle.projectsEvaluated {
         systemProperty 'gtnrlib.animation.qa.offhand', offhand
         systemProperty 'gtnrlib.animation.qa.backhand', backhand
         systemProperty 'gtnrlib.animation.qa.angelica', angelica
+        systemProperty 'gtnrlib.animation.qa.doll', doll
+        systemProperty 'gtnrlib.animation.qa.doll.expectGTNL', dollMods != null
         if (release) systemProperty 'gtnrlib.animation.qa.hmi', 'hmi-fixture.jar'
         doFirst {
             def saves = new File(workingDir, 'saves').toPath()

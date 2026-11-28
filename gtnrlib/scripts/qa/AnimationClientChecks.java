@@ -109,6 +109,11 @@ public final class AnimationClientChecks {
             || event.phase != TickEvent.Phase.END
             || ++frames < WORLD_WARMUP_FRAMES) return;
         try {
+            if (Boolean.getBoolean("gtnrlib.animation.qa.doll")) {
+                AnimationDollInspectChecks.verify(this, mc);
+                finish(mc, null);
+                return;
+            }
             if (Boolean.getBoolean("gtnrlib.animation.qa.offhand")) {
                 boolean backhand = cpw.mods.fml.common.Loader.isModLoaded("backhand");
                 require(

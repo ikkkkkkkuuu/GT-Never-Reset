@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.xyp.gtnrlib.animation.RotationCurves;
@@ -56,10 +57,20 @@ public final class AnimationPlayer {
     }
 
     private final List<Playback> layers = new ArrayList<>();
-    private final Consumer<Marker> listener;
+    private final BiConsumer<Playback, Marker> listener;
 
     public AnimationPlayer(Consumer<Marker> listener) {
+        Objects.requireNonNull(listener);
+        this.listener = (source, marker) -> listener.accept(marker);
+    }
+
+    private AnimationPlayer(BiConsumer<Playback, Marker> listener) {
         this.listener = Objects.requireNonNull(listener);
+    }
+
+    /** Report the playback that emitted each marker. It may already be inactive when the event is delivered. */
+    public static AnimationPlayer withSources(BiConsumer<Playback, Marker> listener) {
+        return new AnimationPlayer(listener);
     }
 
     public Playback play(AnimationClip clip, double fadeIn) {
@@ -150,10 +161,10 @@ public final class AnimationPlayer {
     /** Advance simulation once, then deliver events. Listener callbacks may start and stop clips. */
     public void advance(double seconds) {
         AnimationClip.validTime(seconds);
-        List<Marker> fired = new ArrayList<>();
+        List<FiredMarker> fired = new ArrayList<>();
         for (Playback layer : layers) layer.advance(seconds, fired, false);
         layers.removeIf(layer -> !layer.active);
-        fired.forEach(listener);
+        for (var event : fired) listener.accept(event.source, event.marker);
     }
 
     /** Read-only prediction relative to the last advance, for sub-tick rendering and previews. */
@@ -250,6 +261,7 @@ public final class AnimationPlayer {
 
         private double localTime(double ahead) {
             double t = clip.advanceTime(position, ahead * speed);
+            if (!Double.isFinite(t)) throw new IllegalArgumentException("playback overflow");
             return clip.end() == End.LOOP ? t % clip.duration() : Math.min(t, clip.duration());
         }
 
@@ -259,6 +271,13 @@ public final class AnimationPlayer {
 
         public double time() {
             return position;
+        }
+
+        /** Predict the clip-local time after wall seconds without advancing or emitting markers. */
+        public double timeAfter(double ahead) {
+            AnimationClip.validTime(ahead);
+            if (!active) return position;
+            return localTime(stopping ? Math.min(ahead, fadeLength - fadeAge) : ahead);
         }
 
         /** Seek without replaying skipped markers. A looping target wraps, other targets clamp. */
@@ -300,7 +319,7 @@ public final class AnimationPlayer {
             }
         }
 
-        private void advance(double dt, List<Marker> fired, boolean holdEndpoint) {
+        private void advance(double dt, List<FiredMarker> fired, boolean holdEndpoint) {
             if (!active) return;
             if (stopping) dt = Math.min(dt, fadeLength - fadeAge);
             if (previous != null) {
@@ -335,8 +354,12 @@ public final class AnimationPlayer {
                 stop(0);
         }
 
-        private void collect(double after, double through, List<Marker> fired) {
-            for (Marker m : clip.markers()) if (m.time() > after && m.time() <= through) fired.add(m);
+        private void collect(double after, double through, List<FiredMarker> fired) {
+            for (Marker marker : clip.markers()) {
+                if (marker.time() > after && marker.time() <= through) fired.add(new FiredMarker(this, marker));
+            }
         }
     }
+
+    private record FiredMarker(Playback source, Marker marker) {}
 }
