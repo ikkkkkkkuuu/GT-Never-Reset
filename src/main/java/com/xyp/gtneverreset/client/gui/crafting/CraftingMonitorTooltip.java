@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.client.gui.crafting;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -33,6 +34,7 @@ import appeng.api.util.NamedDimensionalCoord;
 import appeng.client.gui.implementations.GuiCraftingCPU;
 import appeng.client.render.highlighter.BlockPosHighlighter;
 import appeng.core.localization.PlayerMessages;
+import appeng.util.ReadableNumberConverter;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -57,7 +59,7 @@ public final class CraftingMonitorTooltip {
     private IAEStack<?> hovered;
     private IAEStack<?> observed;
     private List<Machine> machines = List.of();
-    private List<ProgressSample> progressSamples = List.of();
+    private OutputProgress progress;
     private Card card;
     private long nextRefresh;
     private long replyDeadline;
@@ -109,14 +111,14 @@ public final class CraftingMonitorTooltip {
         if (statusRequest != 0 && now >= replyDeadline) {
             statusRequest = 0;
             machines = List.of();
-            progressSamples = List.of();
+            progress = null;
         }
         if (statusRequest == 0 && now >= nextRefresh) {
             statusRequest = send(windowId, stack, Action.STATUS, 0);
             replyDeadline = now + REPLY_TIMEOUT_MS;
             nextRefresh = now + REFRESH_INTERVAL_MS;
         }
-        if (machines.isEmpty()) return nativeTooltip;
+        if (machines.isEmpty() && progress == null) return nativeTooltip;
         int titleEnd = nativeTooltip.indexOf('\n');
         String title = titleEnd < 0 ? nativeTooltip : nativeTooltip.substring(0, titleEnd);
         card = Card.create(
@@ -127,7 +129,7 @@ public final class CraftingMonitorTooltip {
             height,
             font,
             machines,
-            progressSamples);
+            progress);
         return card == null ? nativeTooltip : "";
     }
 
@@ -198,7 +200,10 @@ public final class CraftingMonitorTooltip {
     private void apply(CraftingMonitorSnapshotPacket packet, Minecraft minecraft) {
         if (packet.result() == Result.STATUS && packet.requestId() == statusRequest) {
             statusRequest = 0;
-            applyMachines(packet.machines(), Minecraft.getSystemTime());
+            machines = packet.machines();
+            progress = packet.total() > 0
+                ? OutputProgress.sample(progress, packet.completed(), packet.total(), Minecraft.getSystemTime())
+                : null;
             snapshotId = packet.requestId();
             return;
         }
@@ -219,40 +224,6 @@ public final class CraftingMonitorTooltip {
         }
     }
 
-    private void applyMachines(List<Machine> updates, long now) {
-        List<ProgressSample> samples = new ArrayList<>(updates.size());
-        for (Machine update : updates) {
-            double fraction = progressFraction(update);
-            double from = fraction;
-            if (update.active() && update.duration() > 0) {
-                for (int index = 0; index < machines.size(); index++) {
-                    Machine old = machines.get(index);
-                    if (old.active() && old.duration() == update.duration()
-                        && old.progress() <= update.progress()
-                        && old.machine() != null
-                        && old.machine()
-                            .equals(update.machine())
-                        && Objects.equals(old.provider(), update.provider())) {
-                        from = progressSamples.get(index)
-                            .valueAt(now);
-                        break;
-                    }
-                }
-            }
-            samples.add(new ProgressSample(from, fraction, now));
-        }
-        machines = updates;
-        progressSamples = samples;
-    }
-
-    private static double progressFraction(Machine machine) {
-        return machine.duration() > 0 ? (double) progressTicks(machine) / machine.duration() : 0;
-    }
-
-    private static int progressTicks(Machine machine) {
-        return Math.max(0, Math.min(machine.progress(), machine.duration()));
-    }
-
     private void select(Action action, boolean enabled, int windowId) {
         if (!enabled) return;
         actionRequest = menu.snapshotId;
@@ -269,7 +240,7 @@ public final class CraftingMonitorTooltip {
     private void resetObservation() {
         observed = null;
         machines = List.of();
-        progressSamples = List.of();
+        progress = null;
         statusRequest = 0;
         snapshotId = 0;
     }
@@ -300,11 +271,26 @@ public final class CraftingMonitorTooltip {
         return I18n.format("gtnr.gui.crafting_monitor.position", pos.dimension(), pos.x(), pos.y(), pos.z());
     }
 
-    record ProgressSample(double from, double to, long receivedAt) {
+    record OutputProgress(long completed, long total, double from, long receivedAt) {
+
+        static OutputProgress sample(OutputProgress previous, long completed, long total, long now) {
+            double from = previous != null && previous.total == total && previous.completed <= completed
+                ? previous.valueAt(now)
+                : fraction(completed, total);
+            return new OutputProgress(completed, total, from, now);
+        }
+
+        private double fraction() {
+            return fraction(completed, total);
+        }
+
+        private static double fraction(long completed, long total) {
+            return completed == total ? 1 : Math.min(Math.nextDown(1.0), (double) completed / total);
+        }
 
         double valueAt(long now) {
             double elapsed = Math.max(0, Math.min(1, (double) (now - receivedAt) / PROGRESS_ANIMATION_MS));
-            return from + (to - from) * elapsed;
+            return from + (fraction() - from) * elapsed;
         }
     }
 
@@ -317,9 +303,10 @@ public final class CraftingMonitorTooltip {
         private static final int LINE_HEIGHT = 13;
         private static final int COLUMN_GAP = 8;
         private static final int BAR_HEIGHT = 12;
+        private static final NumberFormat QUANTITIES = NumberFormat.getIntegerInstance();
 
         private static Card create(String title, List<String> amounts, List<String> details, int screenWidth,
-            int screenHeight, FontRenderer font, List<Machine> machines, List<ProgressSample> samples) {
+            int screenHeight, FontRenderer font, List<Machine> machines, OutputProgress progress) {
             int width = Math.min(MAX_WIDTH, screenWidth - 2 * EDGE);
             int contentWidth = width - 2 * PADDING;
             int maxRows = (screenHeight - 2 * (EDGE + PADDING)) / LINE_HEIGHT;
@@ -339,16 +326,16 @@ public final class CraftingMonitorTooltip {
                 // # zh_CN 关联机器：%s 台
                 lines.add(new Text(I18n.format("gtnr.gui.crafting_monitor.linked_machines", linked), LOOK.listMuted()));
             }
-            long now = Minecraft.getSystemTime();
+            if (progress != null) {
+                Machine running = machines.stream()
+                    .filter(machine -> machine.active() && machine.duration() > 0)
+                    .findFirst()
+                    .orElse(null);
+                appendProgress(lines, progress, running, contentWidth, font);
+            }
             for (int index = 0; index < Math.min(machines.size(), MAX_TOOLTIP_TARGETS); index++) {
                 lines.add(Divider.INSTANCE);
-                appendMachine(
-                    lines,
-                    machines.get(index),
-                    samples.get(index)
-                        .valueAt(now),
-                    contentWidth,
-                    font);
+                appendMachine(lines, machines.get(index), contentWidth, font);
             }
             if (machines.size() > MAX_TOOLTIP_TARGETS) {
                 // #tr gtnr.gui.crafting_monitor.additional
@@ -359,22 +346,25 @@ public final class CraftingMonitorTooltip {
                         I18n.format("gtnr.gui.crafting_monitor.additional", machines.size() - MAX_TOOLTIP_TARGETS),
                         LOOK.listMuted()));
             }
+            int bodyRows = machines.isEmpty() ? maxRows : maxRows - 1;
             for (String detail : details) {
                 for (String line : font.listFormattedStringToWidth(detail, contentWidth)) {
                     lines.add(new Text(line, LOOK.listMuted()));
-                    if (lines.size() >= maxRows) break;
+                    if (lines.size() > bodyRows) break;
                 }
-                if (lines.size() >= maxRows) break;
+                if (lines.size() > bodyRows) break;
             }
-            if (lines.size() >= maxRows) {
+            if (lines.size() > bodyRows) {
                 if (GuiScreen.isShiftKeyDown()) return null;
-                lines.subList(maxRows - 1, lines.size())
+                lines.subList(bodyRows, lines.size())
                     .clear();
             }
-            // #tr gtnr.gui.crafting_monitor.actions
-            // # Right-click for machine and pattern actions
-            // # zh_CN 右键查看机器与样板操作
-            lines.add(new Text(I18n.format("gtnr.gui.crafting_monitor.actions"), LOOK.listDetail()));
+            if (!machines.isEmpty()) {
+                // #tr gtnr.gui.crafting_monitor.actions
+                // # Right-click for machine and pattern actions
+                // # zh_CN 右键查看机器与样板操作
+                lines.add(new Text(I18n.format("gtnr.gui.crafting_monitor.actions"), LOOK.listDetail()));
+            }
             return new Card(title, width, 2 * PADDING + lines.size() * LINE_HEIGHT, lines);
         }
 
@@ -391,8 +381,45 @@ public final class CraftingMonitorTooltip {
             }
         }
 
-        private static void appendMachine(List<Line> lines, Machine machine, double fraction, int contentWidth,
+        private static void appendProgress(List<Line> lines, OutputProgress progress, Machine running, int width,
             FontRenderer font) {
+            int percent = progress.completed() == progress.total() ? 100
+                : Math.min(99, (int) (100 * progress.fraction()));
+            // #tr gtnr.gui.crafting_monitor.total_percent
+            // # Task progress: %s%%
+            // # zh_CN 任务总进度：%s%%
+            String heading = I18n.format("gtnr.gui.crafting_monitor.total_percent", percent);
+            int available = running == null ? width - 4 : width - font.getStringWidth(heading) - COLUMN_GAP;
+            String amount = QUANTITIES.format(progress.completed()) + " / " + QUANTITIES.format(progress.total());
+            if (font.getStringWidth(amount) > available) {
+                amount = ReadableNumberConverter.INSTANCE.toWideReadableForm(progress.completed()) + " / "
+                    + ReadableNumberConverter.INSTANCE.toWideReadableForm(progress.total());
+            }
+            double fill = progress.valueAt(Minecraft.getSystemTime());
+            if (running == null) {
+                lines.add(new Text(heading, LOOK.listText()));
+                lines.add(new Bar(amount, fill));
+            } else {
+                lines.add(new Text(heading, LOOK.listText(), amount, LOOK.listDetail()));
+                lines.add(new Bar(formatRoundTime(running), fill));
+            }
+        }
+
+        private static String formatRoundTime(Machine machine) {
+            int duration = machine.duration();
+            int progress = Math.max(0, Math.min(machine.progress(), duration));
+            String time = duration < 20 ? I18n.format("GT5U.waila.machine.progress_tick", progress, duration)
+                : I18n.format(
+                    "GT5U.waila.machine.progress_second",
+                    String.format(Locale.ROOT, "%.2f", progress / 20.0),
+                    String.format(Locale.ROOT, "%.2f", duration / 20.0));
+            // #tr gtnr.gui.crafting_monitor.round_time
+            // # Cycle %s
+            // # zh_CN 本轮 %s
+            return I18n.format("gtnr.gui.crafting_monitor.round_time", time);
+        }
+
+        private static void appendMachine(List<Line> lines, Machine machine, int contentWidth, FontRenderer font) {
             if (machine.machine() == null) {
                 lines.add(new Text(displayName(machine), LOOK.listText()));
                 if (machine.provider() != null) {
@@ -406,28 +433,12 @@ public final class CraftingMonitorTooltip {
                     SKIN.colors.fieldText(),
                     stateText(machine),
                     machine.active() ? LOOK.good() : LOOK.listMuted()));
-            String parallel = "";
             if (machine.active() && machine.parallel() > 0) {
                 // #tr gtnr.gui.crafting_monitor.parallel
                 // # Actual parallel: %s
                 // # zh_CN 实际并行：%s
-                parallel = I18n.format("gtnr.gui.crafting_monitor.parallel", machine.parallel());
-            }
-            if (machine.active() && machine.duration() > 0) {
-                int progress = progressTicks(machine);
-                int percent = (int) ((long) progress * 100 / machine.duration());
-                // #tr gtnr.gui.crafting_monitor.percent
-                // # This cycle: %s%%
-                // # zh_CN 本轮 %s%%
                 lines.add(
-                    new Text(
-                        parallel,
-                        LOOK.listText(),
-                        I18n.format("gtnr.gui.crafting_monitor.percent", percent),
-                        LOOK.listText()));
-                lines.add(new Bar(formatMachineTime(progress, machine.duration()), fraction));
-            } else if (!parallel.isEmpty()) {
-                lines.add(new Text(parallel, LOOK.listText()));
+                    new Text(I18n.format("gtnr.gui.crafting_monitor.parallel", machine.parallel()), LOOK.listText()));
             }
             if (!machine.active() && !machine.shutdown()
                 .isEmpty()) {
@@ -440,14 +451,6 @@ public final class CraftingMonitorTooltip {
                 }
             }
             lines.add(new Text(formatPosition(machine.machine()), LOOK.listMuted()));
-        }
-
-        private static String formatMachineTime(int progress, int duration) {
-            if (duration < 20) return I18n.format("GT5U.waila.machine.progress_tick", progress, duration);
-            return I18n.format(
-                "GT5U.waila.machine.progress_second",
-                String.format(Locale.ROOT, "%.2f", progress / 20.0),
-                String.format(Locale.ROOT, "%.2f", duration / 20.0));
         }
 
         private static String stateText(Machine machine) {

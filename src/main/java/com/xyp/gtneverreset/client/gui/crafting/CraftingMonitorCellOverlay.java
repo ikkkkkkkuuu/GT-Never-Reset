@@ -12,7 +12,7 @@ import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 
-import com.xyp.gtneverreset.client.gui.crafting.CraftingMonitorTooltip.ProgressSample;
+import com.xyp.gtneverreset.client.gui.crafting.CraftingMonitorTooltip.OutputProgress;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorCellProgressPacket;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorCellRequestPacket;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
@@ -48,9 +48,9 @@ final class CraftingMonitorCellOverlay {
         if (sample == null) return false;
         long now = Minecraft.getSystemTime();
         if (now >= sample.expiresAt()) return false;
-        int filled = (int) Math.round(
-            width * sample.fill()
-                .valueAt(now));
+        OutputProgress progress = sample.progress();
+        int filled = (int) Math.round(width * progress.valueAt(now));
+        if (progress.completed() < progress.total()) filled = Math.min(filled, width - 1);
         int rgb = stateColor & 0xFFFFFF;
         if (filled > 0) Gui.drawRect(x, y, x + filled, y + height, rgb | FILLED_ALPHA);
         if (filled < width) Gui.drawRect(x + filled, y, x + width, y + height, rgb | UNFILLED_ALPHA);
@@ -97,16 +97,9 @@ final class CraftingMonitorCellOverlay {
             IAEStack<?> stack = requested.get(cell.index());
             if (!visible.contains(stack)) continue;
             Sample previous = samples.get(stack);
-            double fraction = (double) cell.progress() / cell.duration();
-            double from = previous != null && previous.expiresAt() > now
-                && previous.duration() == cell.duration()
-                && previous.progress() <= cell.progress()
-                    ? previous.fill()
-                        .valueAt(now)
-                    : fraction;
-            samples.put(
-                stack,
-                new Sample(cell.progress(), cell.duration(), new ProgressSample(from, fraction, now), expiresAt));
+            OutputProgress last = previous != null && previous.expiresAt() > now ? previous.progress() : null;
+            OutputProgress progress = OutputProgress.sample(last, cell.completed(), cell.total(), now);
+            samples.put(stack, new Sample(progress, expiresAt));
             received.add(stack);
         }
         for (IAEStack<?> stack : requested) {
@@ -125,5 +118,5 @@ final class CraftingMonitorCellOverlay {
         nextCell = 0;
     }
 
-    private record Sample(int progress, int duration, ProgressSample fill, long expiresAt) {}
+    private record Sample(OutputProgress progress, long expiresAt) {}
 }
