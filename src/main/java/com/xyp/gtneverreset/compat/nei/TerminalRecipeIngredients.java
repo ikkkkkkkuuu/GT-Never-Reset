@@ -18,6 +18,7 @@ import codechicken.nei.PositionedStack;
 import codechicken.nei.recipe.IRecipeHandler;
 import codechicken.nei.recipe.StackInfo;
 import gregtech.api.enums.ItemList;
+import gregtech.api.util.GTRecipe;
 import gregtech.nei.GTNEIDefaultHandler;
 
 final class TerminalRecipeIngredients {
@@ -72,17 +73,61 @@ final class TerminalRecipeIngredients {
     }
 
     static ItemStack selectedInput(PositionedStack positioned) {
+        return resolveEnergyCrystalInput(positioned, displayedInput(positioned));
+    }
+
+    private static ItemStack displayedInput(PositionedStack positioned) {
         if (positioned == null) return null;
         // The handler can retain a rendered permutation that the current NEI filters hide.
         ItemStack displayed = positioned.item;
         ItemStack firstVisible = null;
         for (ItemStack alternative : inputAlternatives(positioned)) {
             ItemStack rendered = renderedInput(alternative);
-            if (displayed != null && rendered.isItemEqual(displayed)
-                && ItemStack.areItemStackTagsEqual(rendered, displayed)) return displayed;
+            if (displayed != null && rendered.isItemEqual(displayed) && sameInputTags(rendered, displayed)) {
+                return displayed;
+            }
             if (firstVisible == null) firstVisible = rendered;
         }
         return firstVisible == null ? displayed : firstVisible;
+    }
+
+    static ItemStack resolveEnergyCrystalInput(PositionedStack positioned, ItemStack stack) {
+        if (stack == null || !(positioned instanceof GTNEIDefaultHandler.FixedPositionedStack input)
+            || !input.isInput()
+            || input.recipe == null
+            || !isEnergyCrystal(stack)) return stack;
+
+        GTRecipe recipe = input.recipe.mRecipe;
+        if (recipe.isNBTSensitive || recipe instanceof GTRecipe.GTRecipe_WithAlt) return stack;
+
+        ItemStack crystal = ItemList.IC2_EnergyCrystal.get(stack.stackSize);
+        if (crystal == null || stack.isItemEqual(crystal) || !sameInputTags(stack, crystal)) {
+            return stack;
+        }
+
+        boolean wildcardCrystal = false;
+        for (ItemStack ingredient : recipe.mInputs) {
+            if (ingredient == null || ingredient.getItem() != stack.getItem()) continue;
+            if (wildcardCrystal || ingredient.getItemDamage() != OreDictionary.WILDCARD_VALUE) return stack;
+            wildcardCrystal = true;
+        }
+        // NEI expands the wildcard to an empty battery whose damage differs from the autoclave's output.
+        return wildcardCrystal ? crystal : stack;
+    }
+
+    private static boolean sameInputTags(ItemStack first, ItemStack second) {
+        // IC2 can attach an empty compound when the crystal's charge is read for the tooltip.
+        return ItemStack.areItemStackTagsEqual(first, second)
+            || isEnergyCrystal(first) && hasEmptyTag(first) && hasEmptyTag(second);
+    }
+
+    private static boolean isEnergyCrystal(ItemStack stack) {
+        return ItemList.IC2_EnergyCrystal.hasBeenSet() && stack.getItem() == ItemList.IC2_EnergyCrystal.getItem();
+    }
+
+    private static boolean hasEmptyTag(ItemStack stack) {
+        NBTTagCompound tag = stack.getTagCompound();
+        return tag == null || tag.hasNoTags();
     }
 
     private static ItemStack renderedInput(ItemStack alternative) {
