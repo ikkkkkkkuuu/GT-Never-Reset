@@ -29,6 +29,7 @@ final class ProjectorBuildSite {
     private final int perCopy;
     private final int controller;
     private final Block residualHeat = GameRegistry.findBlock("Railcraft", "residual.heat");
+    private final int[] worldOffset = new int[3], structureOffset = new int[3];
     private Placement[] placements;
     private int[] bounds;
     private boolean ready;
@@ -174,7 +175,7 @@ final class ProjectorBuildSite {
     }
 
     State state(World world, Cell cell) {
-        if (!loaded(world, cell)) return State.UNLOADED;
+        if (!loaded(world, cell.x, cell.y, cell.z)) return State.UNLOADED;
         Block actual = world.getBlock(cell.x, cell.y, cell.z);
         boolean air = actual == residualHeat || actual.isAir(world, cell.x, cell.y, cell.z);
         boolean replaceable = air || actual.isReplaceable(world, cell.x, cell.y, cell.z);
@@ -182,6 +183,51 @@ final class ProjectorBuildSite {
         if (cell.block == Blocks.air && (replaceable || shape.choiceAt(cell.local) == null)) return State.MATCHED;
         if (matches(world, cell, actual)) return needsTurn(world, cell) ? State.TURN : State.MATCHED;
         return replaceable ? State.OPEN : State.OBSTACLE;
+    }
+
+    ForgeDirection hatchFront(World world, Cell cell, IGregTechTileEntity tile) {
+        ForgeDirection preferred = cell.front;
+        boolean validPreferred = preferred != ForgeDirection.UNKNOWN && tile.isValidFacing(preferred);
+        if (validPreferred && facesAir(world, cell, preferred)) return preferred;
+        for (ForgeDirection direction : ProjectorOrientation.PREFERRED_FRONTS) {
+            if (direction != preferred && tile.isValidFacing(direction) && facesAir(world, cell, direction))
+                return direction;
+        }
+        return validPreferred ? preferred : ForgeDirection.UNKNOWN;
+    }
+
+    private boolean facesAir(World world, Cell cell, ForgeDirection direction) {
+        int x = cell.x + direction.offsetX, y = cell.y + direction.offsetY, z = cell.z + direction.offsetZ;
+        return loaded(world, x, y, z) && world.isAirBlock(x, y, z) && !plansBlock(x, y, z);
+    }
+
+    private boolean plansBlock(int x, int y, int z) {
+        if (x < bounds[0] || x > bounds[3] || y < bounds[1] || y > bounds[4] || z < bounds[2] || z > bounds[5])
+            return false;
+        int dx = x - plan.x, dy = y - plan.y, dz = z - plan.z;
+        ProjectorBatchHatches hatches = layout.hatches();
+        long key = 0;
+        if (hatches != null) {
+            worldOffset[0] = dx;
+            worldOffset[1] = dy;
+            worldOffset[2] = dz;
+            plan.facing.getOffsetABC(worldOffset, structureOffset);
+            key = ProjectorPlan.pack(structureOffset[0], structureOffset[1], structureOffset[2]);
+        }
+        // A neighbor can belong to another array copy and may not have been placed yet.
+        for (int copy = 0; copy < copies; copy++) {
+            Placement placement = placements[copy];
+            worldOffset[0] = dx - placement.x();
+            worldOffset[1] = dy - placement.y();
+            worldOffset[2] = dz - placement.z();
+            placement.facing()
+                .getOffsetABC(worldOffset, structureOffset);
+            int local = shape.indexOf(structureOffset[0], structureOffset[1], structureOffset[2]);
+            if (local >= 0 && layout.ownsCell(copy, local)) {
+                return hatches == null ? shape.blocks[local] != Blocks.air : !hatches.isAir(key, local, copy);
+            }
+        }
+        return false;
     }
 
     boolean needsTurn(World world, Cell cell) {
@@ -192,7 +238,7 @@ final class ProjectorBuildSite {
     }
 
     boolean holdsStructure(World world, Cell cell) {
-        if (cell.local >= shape.size || !loaded(world, cell)) return false;
+        if (cell.local >= shape.size || !loaded(world, cell.x, cell.y, cell.z)) return false;
         Block actual = world.getBlock(cell.x, cell.y, cell.z);
         if (actual.isAir(world, cell.x, cell.y, cell.z)) return false;
         if (cell.block == Blocks.air && (actual.isReplaceable(world, cell.x, cell.y, cell.z)
@@ -222,9 +268,9 @@ final class ProjectorBuildSite {
         return false;
     }
 
-    private static boolean loaded(World world, Cell cell) {
-        int chunkX = cell.x >> 4, chunkZ = cell.z >> 4;
-        if (cell.y < 0 || cell.y >= world.getHeight()
+    private static boolean loaded(World world, int x, int y, int z) {
+        int chunkX = x >> 4, chunkZ = z >> 4;
+        if (y < 0 || y >= world.getHeight()
             || !world.getChunkProvider()
                 .chunkExists(chunkX, chunkZ))
             return false;

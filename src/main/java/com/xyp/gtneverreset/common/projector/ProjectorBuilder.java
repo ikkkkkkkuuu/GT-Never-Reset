@@ -482,8 +482,13 @@ public final class ProjectorBuilder {
             if (cell.machine == 0) return true;
             TileEntity entity = world.getTileEntity(cell.x, cell.y, cell.z);
             if (!(entity instanceof IGregTechTileEntity tile) || tile.getMetaTileID() != cell.machine) return false;
-            if (cell.controller) face(tile);
-            else if (cell.front != ForgeDirection.UNKNOWN) tile.setFrontFacing(cell.front);
+            if (cell.controller) {
+                face(tile);
+            } else {
+                ForgeDirection front = ProjectorMachines.isHatch(cell.machine) ? site.hatchFront(world, cell, tile)
+                    : cell.front;
+                if (front != ForgeDirection.UNKNOWN) tile.setFrontFacing(front);
+            }
             return true;
         }
 
