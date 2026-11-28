@@ -212,7 +212,9 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
             if (alternatives.size() < 2) continue;
             IAEStack<?> firstType = null;
             for (ItemStack alternative : alternatives) {
-                IAEStack<?> candidate = toAlternativeStack(alternative, crafting);
+                IAEStack<?> candidate = toAlternativeStack(
+                    TerminalRecipeIngredients.resolveEnergyCrystalInput(positioned, alternative),
+                    crafting);
                 if (candidate == null) continue;
                 candidate.setStackSize(1);
                 if (firstType == null) {
@@ -262,7 +264,9 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
 
         int currentIndex = -1;
         for (int index = 0; index < alternatives.size(); index++) {
-            IAEStack<?> candidate = toAlternativeStack(alternatives.get(index), crafting);
+            IAEStack<?> candidate = toAlternativeStack(
+                TerminalRecipeIngredients.resolveEnergyCrystalInput(ingredient, alternatives.get(index)),
+                crafting);
             if (sameIngredientType(candidate, current)) {
                 currentIndex = index;
                 break;
@@ -272,7 +276,9 @@ public final class QuickTerminalRecipeTransferHandler implements IOverlayHandler
 
         for (int step = 1; step < alternatives.size(); step++) {
             int index = Math.floorMod(currentIndex + direction * step, alternatives.size());
-            IAEStack<?> candidate = toAlternativeStack(alternatives.get(index), crafting);
+            IAEStack<?> candidate = toAlternativeStack(
+                TerminalRecipeIngredients.resolveEnergyCrystalInput(ingredient, alternatives.get(index)),
+                crafting);
             if (candidate != null && !sameIngredientType(candidate, current)) return candidate;
         }
         return null;
