@@ -229,11 +229,15 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         }
         try {
             CheckRecipeResult result = patternScheduler
-                .checkNext(mDualInputHatches, logic, this instanceof CrossRecipeMultiblockBase<?>);
+                .checkNext(getRecipePatternInputs(), logic, this instanceof CrossRecipeMultiblockBase<?>);
             return result.wasSuccessful() ? result : checkNativeInputs();
         } finally {
             patternScheduler.endPass();
         }
+    }
+
+    protected List<IDualInputHatch> getRecipePatternInputs() {
+        return mDualInputHatches;
     }
 
     private CheckRecipeResult checkNativeInputs() {
@@ -426,7 +430,7 @@ public abstract class GTNRMultiBlockBase<T extends GTNRMultiBlockBase<T>> extend
         if (firstFreeThread() < 0) return false;
         long deadline = System.nanoTime() + THREAD_FILL_BUDGET_NANOS;
         try {
-            patternScheduler.beginPass(mDualInputHatches, this instanceof CrossRecipeMultiblockBase<?>);
+            patternScheduler.beginPass(getRecipePatternInputs(), this instanceof CrossRecipeMultiblockBase<?>);
             do {
                 boolean selected = patternScheduler.selectNext();
                 boolean started = checkRecipe();

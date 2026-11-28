@@ -8,6 +8,7 @@ import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternMirror;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.CrossRecipeMEPatternMirror;
+import com.xyp.gtneverreset.common.machine.hatch.FragmentDimensionHatch;
 import com.xyp.gtneverreset.common.machine.hatch.MEDataAccessHatch;
 import com.xyp.gtneverreset.common.machine.hatch.MEOutputAssembly;
 import com.xyp.gtneverreset.common.machine.hatch.MaxCapacityMEOutputBus;
@@ -35,6 +36,12 @@ public final class HatchLoader {
                     StatCollector.translateToLocal(ChaosCredentialHatch.NAME_KEY),
                     8));
         }
+        GTNRItemList.FragmentDimensionHatch.set(
+            new FragmentDimensionHatch(
+                GTNRMachineID.FragmentDimensionHatch.id,
+                "gtneverreset.fragment_dimension_hatch",
+                StatCollector.translateToLocal(FragmentDimensionHatch.NAME_KEY)));
+        AnimatedTooltipHandler.addItemTooltip(GTNRItemList.FragmentDimensionHatch.get(1), AnimatedText.GT_NEVER_RESET);
         GTNRItemList.MEDataAccessHatch.set(
             new MEDataAccessHatch(
                 GTNRMachineID.MEDataAccessHatch.id,

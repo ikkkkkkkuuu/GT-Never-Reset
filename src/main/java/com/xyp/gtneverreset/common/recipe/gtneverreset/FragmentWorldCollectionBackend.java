@@ -4,9 +4,16 @@ import static com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldColle
 import static com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes.DRILL_CONSUMPTION_SCALE;
 import static com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectorRecipes.DRILL_INPUT_INDEX;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntUnaryOperator;
 
+import net.minecraft.init.Blocks;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
@@ -17,8 +24,67 @@ import gregtech.api.util.GTUtility;
 
 public final class FragmentWorldCollectionBackend extends RecipeMapBackend {
 
+    private DimensionRecipeIndex dimensionRecipeIndex;
+
     public FragmentWorldCollectionBackend(RecipeMapBackendPropertiesBuilder properties) {
         super(properties);
+    }
+
+    @Override
+    public GTRecipe compileRecipe(GTRecipe recipe) {
+        dimensionRecipeIndex = null;
+        return super.compileRecipe(recipe);
+    }
+
+    @Override
+    public void removeRecipes(Collection<? extends GTRecipe> recipes) {
+        dimensionRecipeIndex = null;
+        super.removeRecipes(recipes);
+    }
+
+    @Override
+    public void clearRecipes() {
+        dimensionRecipeIndex = null;
+        super.clearRecipes();
+    }
+
+    @Override
+    public void reInit() {
+        dimensionRecipeIndex = null;
+        super.reInit();
+    }
+
+    public List<GTRecipe> getDimensionRecipes(ItemStack marker) {
+        if (marker == null) return List.of();
+        return getDimensionRecipeIndex().recipes()
+            .getOrDefault(GTUtility.ItemId.createNoCopy(marker), List.of());
+    }
+
+    public int getDrillWear(ItemStack stack) {
+        return getDimensionRecipeIndex().drillWear()
+            .getOrDefault(GTUtility.ItemId.createNoCopy(stack), 0);
+    }
+
+    public static boolean isFluidCollection(GTRecipe recipe) {
+        return recipe.getMetadataOrDefault(DRILL_CONSUMPTION_CHANCE, 0) > 0;
+    }
+
+    public static List<ItemStack> getDimensionRecipeInputs(GTRecipe recipe, ItemStack marker,
+        List<ItemStack> available) {
+        List<ItemStack> inputs = new ArrayList<>(recipe.mInputs.length);
+        inputs.add(marker);
+        for (int index = 1; index < recipe.mInputs.length; index++) {
+            ItemStack required = recipe.mInputs[index];
+            if (required == null) continue;
+            if (isAutomaticSelector(required)) {
+                inputs.add(GTUtility.copyAmount(1, required));
+            } else {
+                for (ItemStack supplied : available) {
+                    if (supplied.stackSize > 0 && GTUtility.areStacksEqual(supplied, required)) inputs.add(supplied);
+                }
+            }
+        }
+        return inputs;
     }
 
     public static void consumeDrillHeads(GTRecipe recipe, ItemStack[] inputs, int operations, IntUnaryOperator random) {
@@ -73,4 +139,41 @@ public final class FragmentWorldCollectionBackend extends RecipeMapBackend {
         }
         return true;
     }
+
+    private DimensionRecipeIndex getDimensionRecipeIndex() {
+        if (dimensionRecipeIndex != null) return dimensionRecipeIndex;
+        Map<GTUtility.ItemId, List<GTRecipe>> recipesByDimension = new HashMap<>();
+        Map<GTUtility.ItemId, Integer> drillWear = new HashMap<>();
+        for (GTRecipe recipe : getAllRecipes()) {
+            if (recipe.mFakeRecipe || recipe.mInputs.length < 2
+                || recipe.mInputs[0] == null
+                || recipe.mInputs[0].stackSize != 0) continue;
+            boolean hasCircuit = false;
+            for (ItemStack input : recipe.mInputs) {
+                if (input != null && input.stackSize == 0 && GTUtility.isAnyIntegratedCircuit(input)) {
+                    hasCircuit = true;
+                    break;
+                }
+            }
+            if (!hasCircuit) continue;
+            recipesByDimension.computeIfAbsent(GTUtility.ItemId.create(recipe.mInputs[0]), ignored -> new ArrayList<>())
+                .add(recipe);
+            if (isFluidCollection(recipe)) {
+                drillWear.put(
+                    GTUtility.ItemId.create(recipe.mInputs[DRILL_INPUT_INDEX]),
+                    recipe.getMetadataOrDefault(DRILL_CONSUMPTION_CHANCE, 0));
+            }
+        }
+        recipesByDimension.replaceAll((dimension, recipes) -> List.copyOf(recipes));
+        dimensionRecipeIndex = new DimensionRecipeIndex(recipesByDimension, drillWear);
+        return dimensionRecipeIndex;
+    }
+
+    private static boolean isAutomaticSelector(ItemStack stack) {
+        return stack.stackSize == 0 && (GTUtility.isAnyIntegratedCircuit(stack)
+            || stack.getItem() == Item.getItemFromBlock(Blocks.stained_glass));
+    }
+
+    private record DimensionRecipeIndex(Map<GTUtility.ItemId, List<GTRecipe>> recipes,
+        Map<GTUtility.ItemId, Integer> drillWear) {}
 }
