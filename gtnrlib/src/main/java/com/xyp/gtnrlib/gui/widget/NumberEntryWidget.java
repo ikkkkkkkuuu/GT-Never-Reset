@@ -85,7 +85,7 @@ public class NumberEntryWidget extends ParentWidget<NumberEntryWidget> {
     private final List<String> messages = new ObjectArrayList<>();
     private String text = "0";
     private long min, max = Long.MAX_VALUE, value, reset;
-    private boolean inputValid = true, wheel;
+    private boolean inputValid = true, wheel, compactArrows = true;
     private LongConsumer listener = ignored -> {};
     private final Availability availability = new Availability();
 
@@ -128,10 +128,9 @@ public class NumberEntryWidget extends ParentWidget<NumberEntryWidget> {
             .tooltipAutoUpdate(true)
             .tooltipBuilder(tooltip -> messages.forEach(tooltip::addLine));
         child(
-            field.left(() -> compact() ? ARROW_WIDTH + ARROW_GAP : scaled(FIELD_X), Measure.PIXEL)
+            field.left(() -> compact() ? compactPadding() : scaled(FIELD_X), Measure.PIXEL)
                 .width(
-                    () -> compact() ? getArea().width - 2 * (ARROW_WIDTH + ARROW_GAP)
-                        : scaledWidth(FIELD_X, FIELD_WIDTH),
+                    () -> compact() ? getArea().width - 2 * compactPadding() : scaledWidth(FIELD_X, FIELD_WIDTH),
                     Measure.PIXEL)
                 .top(() -> compact() ? 0 : FIELD_Y + centerShift(), Measure.PIXEL)
                 .height(() -> compact() ? getArea().height : AE2Theme.TEXT_FIELD_HEIGHT, Measure.PIXEL));
@@ -186,6 +185,10 @@ public class NumberEntryWidget extends ParentWidget<NumberEntryWidget> {
 
     private boolean compact() {
         return getArea().height < HEIGHT;
+    }
+
+    private int compactPadding() {
+        return compactArrows ? ARROW_WIDTH + ARROW_GAP : 0;
     }
 
     private int scaled(int x) {
@@ -287,6 +290,15 @@ public class NumberEntryWidget extends ParentWidget<NumberEntryWidget> {
     }
 
     /**
+     * Shows or hides the step arrows in the single-row layout. When hidden, the text field fills the entry.
+     */
+    public NumberEntryWidget compactArrows(boolean shown) {
+        this.compactArrows = shown;
+        if (isValid()) scheduleResize();
+        return this;
+    }
+
+    /**
      * Sets whether the mouse wheel over the text field steps the value by 1, or by 10 while Shift is held. Off by
      * default, so the wheel goes to the widgets around the entry, such as a scrolling list.
      *
@@ -324,7 +336,7 @@ public class NumberEntryWidget extends ParentWidget<NumberEntryWidget> {
 
     private AE2Button arrow(int sign) {
         return new AE2Button(() -> sign > 0 ? ">" : "<", () -> add(sign * fineStep())).available(this::isAvailable)
-            .setEnabledIf(widget -> compact());
+            .setEnabledIf(widget -> compact() && compactArrows);
     }
 
     private static long[] steps() {

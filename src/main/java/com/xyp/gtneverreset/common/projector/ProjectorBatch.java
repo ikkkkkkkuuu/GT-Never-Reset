@@ -12,6 +12,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.oredict.OreDictionary;
 
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
+import com.xyp.gtneverreset.common.projector.ProjectorBatchHatches.Sample;
 
 import goodgenerator.blocks.regularBlock.BlockCasing;
 import gregtech.api.metatileentity.implementations.MTEFrame;
@@ -25,9 +26,12 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 public final class ProjectorBatch {
 
     public static final int MAX_ADDITIONAL = 64;
+    public static final int MAX_GAP = 64;
+    private static final ForgeDirection[] POSITIVE = { ForgeDirection.EAST, ForgeDirection.UP, ForgeDirection.SOUTH };
     private final int[] additional = new int[ForgeDirection.VALID_DIRECTIONS.length];
+    private final int[] gaps = new int[POSITIVE.length];
     private int shared;
-    public boolean alternateVertical, faceOutward = true;
+    public boolean alternateVertical, faceOutward = true, copyHatches = true;
 
     public int additional(ForgeDirection direction) {
         return additional[direction.ordinal()];
@@ -35,6 +39,14 @@ public final class ProjectorBatch {
 
     public void setAdditional(ForgeDirection direction, int count) {
         additional[direction.ordinal()] = Math.max(0, Math.min(MAX_ADDITIONAL, count));
+    }
+
+    public int gap(ForgeDirection direction) {
+        return gaps[axisOf(direction)];
+    }
+
+    public void setGap(ForgeDirection direction, int gap) {
+        gaps[axisOf(direction)] = Math.max(0, Math.min(MAX_GAP, gap));
     }
 
     public boolean shares(ForgeDirection direction) {
@@ -46,6 +58,19 @@ public final class ProjectorBatch {
         shared = enabled ? shared | bit : shared & ~bit;
     }
 
+    private boolean sharesFace(ForgeDirection direction) {
+        return gap(direction) == 0 && shares(direction);
+    }
+
+    private static int axisOf(ForgeDirection direction) {
+        return switch (direction) {
+            case EAST, WEST -> 0;
+            case UP, DOWN -> 1;
+            case SOUTH, NORTH -> 2;
+            default -> throw new IllegalArgumentException("Unsupported axis: " + direction);
+        };
+    }
+
     private int length(ForgeDirection positive) {
         return 1 + additional(positive) + additional(positive.getOpposite());
     }
@@ -55,18 +80,23 @@ public final class ProjectorBatch {
     }
 
     public long arrangementKey() {
+        // Mixed radix keeps the flags, six counts, and three gaps in one collision-free key.
         long key = shared | (alternateVertical ? 64 : 0) | (faceOutward ? 128 : 0);
-        for (int count : additional) key = key << 7 | count;
-        return key;
+        for (int count : additional) key = key * (MAX_ADDITIONAL + 1) + count;
+        for (int gap : gaps) key = key * (MAX_GAP + 1) + gap;
+        return copyHatches ? key : ~key;
     }
 
     void write(NBTTagCompound plan) {
-        if (machines() == 1 && shared == 0 && !alternateVertical && faceOutward) return;
+        boolean hasGap = gaps[0] != 0 || gaps[1] != 0 || gaps[2] != 0;
+        if (machines() == 1 && !hasGap && shared == 0 && !alternateVertical && faceOutward && copyHatches) return;
         NBTTagCompound tag = new NBTTagCompound();
         tag.setIntArray("Additional", additional.clone());
+        if (hasGap) tag.setIntArray("Gaps", gaps.clone());
         tag.setInteger("Shared", shared);
         tag.setBoolean("AlternateVertical", alternateVertical);
         tag.setBoolean("FaceOutward", faceOutward);
+        if (!copyHatches) tag.setBoolean("CopyHatches", false);
         plan.setTag("Batch", tag);
     }
 
@@ -77,18 +107,24 @@ public final class ProjectorBatch {
         for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
             if (dir.ordinal() < counts.length) setAdditional(dir, counts[dir.ordinal()]);
         }
+        int[] storedGaps = tag.getIntArray("Gaps");
+        Arrays.fill(gaps, 0);
+        for (int axis = 0; axis < Math.min(gaps.length, storedGaps.length); axis++) {
+            setGap(POSITIVE[axis], storedGaps[axis]);
+        }
         shared = tag.getInteger("Shared") & 63;
         alternateVertical = tag.getBoolean("AlternateVertical");
         faceOutward = !tag.hasKey("FaceOutward") || tag.getBoolean("FaceOutward");
+        copyHatches = !tag.hasKey("CopyHatches") || tag.getBoolean("CopyHatches");
     }
 
     public static final class Layout {
 
-        private static final ForgeDirection[] POSITIVE = { ForgeDirection.EAST, ForgeDirection.UP,
-            ForgeDirection.SOUTH };
         private final ProjectorBatch batch;
         private final ProjectorStructure shape;
         private final ExtendedFacing facing;
+        private final ProjectorBatchHatches hatches;
+        private final int origin;
         private final int[] bounds, size = new int[3];
         private final LongOpenHashSet empty;
         private static final int INVERTED = 4, MIRRORED = 8, POSE_COUNT = 16;
@@ -110,6 +146,14 @@ public final class ProjectorBatch {
         public record Placement(int x, int y, int z, ExtendedFacing facing) {}
 
         public Layout(ProjectorBatch batch, ProjectorStructure shape, ExtendedFacing facing) {
+            this(batch, shape, facing, null);
+        }
+
+        public Layout(ProjectorPlan plan, ProjectorStructure shape, ExtendedFacing facing) {
+            this(plan.batch, shape, facing, plan);
+        }
+
+        private Layout(ProjectorBatch batch, ProjectorStructure shape, ExtendedFacing facing, ProjectorPlan plan) {
             this.batch = batch;
             this.shape = shape;
             this.facing = facing;
@@ -129,6 +173,12 @@ public final class ProjectorBatch {
                 size[axis] = bounds[axis + 3] - bounds[axis] + 1;
                 gridLength[axis] = batch.length(POSITIVE[axis]);
             }
+            origin = batch.additional(ForgeDirection.WEST) + gridLength[0]
+                * (batch.additional(ForgeDirection.DOWN) + gridLength[1] * batch.additional(ForgeDirection.NORTH));
+            hatches = plan != null
+                && (!plan.batchOverrides.isEmpty() || !batch.copyHatches && !plan.overrides.isEmpty())
+                    ? new ProjectorBatchHatches(shape, plan, origin)
+                    : null;
             var valid = ProjectorMachines.validFacings(shape.settings.machine());
             for (int code = 0; code < POSE_COUNT; code++) {
                 ExtendedFacing target = ProjectorOrientation.rotateY(facing, code % 4, candidate -> true);
@@ -147,10 +197,13 @@ public final class ProjectorBatch {
             }
         }
 
+        ProjectorBatchHatches hatches() {
+            return hatches;
+        }
+
         boolean hasDistinctOrigins() {
             for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
-                int axis = dir.offsetX != 0 ? 0 : dir.offsetY != 0 ? 1 : 2;
-                if (size[axis] == 1 && batch.shares(dir) && batch.additional(dir) > 0) return false;
+                if (size[axisOf(dir)] == 1 && batch.sharesFace(dir) && batch.additional(dir) > 0) return false;
             }
             return true;
         }
@@ -172,11 +225,20 @@ public final class ProjectorBatch {
 
         private int offset(int step, int axis) {
             ForgeDirection side = step < 0 ? POSITIVE[axis].getOpposite() : POSITIVE[axis];
-            return step * (size[axis] - (batch.shares(side) ? 1 : 0));
+            int gap = batch.gaps[axis];
+            return step * (size[axis] + gap - (gap == 0 && batch.shares(side) ? 1 : 0));
         }
 
         public void copyOffset(int index, int[] out) {
             for (int k = 0; k < 3; k++) out[k] = offset(grid(index, k), k);
+        }
+
+        public void copyWorldBounds(int index, int[] out) {
+            copyOffset(index, out);
+            for (int axis = 0; axis < 3; axis++) {
+                out[axis + 3] = out[axis] + bounds[axis + 3];
+                out[axis] += bounds[axis];
+            }
         }
 
         public Placement placement(int index) {
@@ -297,18 +359,19 @@ public final class ProjectorBatch {
         }
 
         private boolean hasVerticalSeam() {
-            return batch.shares(ForgeDirection.UP) && batch.additional(ForgeDirection.UP) > 0
-                || batch.shares(ForgeDirection.DOWN) && batch.additional(ForgeDirection.DOWN) > 0;
+            return batch.sharesFace(ForgeDirection.UP) && batch.additional(ForgeDirection.UP) > 0
+                || batch.sharesFace(ForgeDirection.DOWN) && batch.additional(ForgeDirection.DOWN) > 0;
         }
 
         private boolean overlaps(int g, int axis, int direction) {
             if (direction == 0) return true;
             ForgeDirection pos = POSITIVE[axis], neg = pos.getOpposite();
-            if (direction < 0) return g > -batch.additional(neg) && batch.shares(g <= 0 ? neg : pos);
-            return g < batch.additional(pos) && batch.shares(g < 0 ? neg : pos);
+            if (direction < 0) return g > -batch.additional(neg) && batch.sharesFace(g <= 0 ? neg : pos);
+            return g < batch.additional(pos) && batch.sharesFace(g < 0 ? neg : pos);
         }
 
         private boolean matchesEarlier(int index, int gx, int gy, int gz, int code) {
+            boolean checkOrigin = hatches != null && !batch.copyHatches;
             for (int dz = -1; dz <= 0; dz++) {
                 if (!overlaps(gz, 2, dz)) continue;
                 for (int dy = -1; dy <= (dz < 0 ? 1 : 0); dy++) {
@@ -316,23 +379,24 @@ public final class ProjectorBatch {
                     for (int dx = -1; dx <= ((dz < 0 || dy < 0) ? 1 : -1); dx++) {
                         if (!overlaps(gx, 0, dx)) continue;
                         int prev = index + dx + gridLength[0] * (dy + gridLength[1] * dz);
-                        if (!join(code, chosen[prev], dx, dy, dz)) return false;
+                        int originMask = !checkOrigin ? 0 : (index == origin ? 1 : 0) | (prev == origin ? 2 : 0);
+                        if (!join(code, chosen[prev], dx, dy, dz, originMask)) return false;
                     }
                 }
             }
             return true;
         }
 
-        private boolean join(int code, int neighbor, int dx, int dy, int dz) {
-            int key = ((code * POSE_COUNT + neighbor) * 27) + 13 + dx + dy * 3 + dz * 9;
+        private boolean join(int code, int neighbor, int dx, int dy, int dz, int originMask) {
+            int key = (((code * POSE_COUNT + neighbor) * 27) + 13 + dx + dy * 3 + dz * 9) * 4 + originMask;
             Boolean known = joins.get(key);
             if (known != null) return known;
-            boolean result = checkJoin(code, neighbor, dx, dy, dz);
+            boolean result = checkJoin(code, neighbor, dx, dy, dz, originMask);
             joins.put(key, result);
             return result;
         }
 
-        private boolean checkJoin(int code, int neighbor, int dx, int dy, int dz) {
+        private boolean checkJoin(int code, int neighbor, int dx, int dy, int dz, int originMask) {
             int[] delta = { dx, dy, dz };
             int axis = dx != 0 ? 0 : dy != 0 ? 1 : 2;
             int face = axis * 2 + (delta[axis] > 0 ? 1 : 0);
@@ -353,11 +417,14 @@ public final class ProjectorBatch {
                 if (!inside) continue;
                 pose(neighbor).getOffsetABC(other, abc);
                 int n = shape.indexOf(abc[0], abc[1], abc[2]);
+                Sample first = (originMask & 1) != 0 ? hatches.originEdit(cell) : null;
+                boolean air = blockAt(cell, first) == Blocks.air;
                 if (n < 0) {
-                    if (!air(cell) && empty.contains(ProjectorPlan.pack(abc[0], abc[1], abc[2]))) return false;
+                    if (!air && empty.contains(ProjectorPlan.pack(abc[0], abc[1], abc[2]))) return false;
                 } else {
-                    if (!shareable(cell, n)) return false;
-                    touch |= !air(cell);
+                    Sample second = (originMask & 2) != 0 ? hatches.originEdit(n) : null;
+                    if (!shareable(cell, n, first, second)) return false;
+                    touch |= !air;
                 }
             }
             return touch || Math.abs(dx) + Math.abs(dy) + Math.abs(dz) > 1;
@@ -390,23 +457,23 @@ public final class ProjectorBatch {
             }
         }
 
-        private boolean air(int index) {
-            return index >= shape.size || shape.blocks[index] == Blocks.air;
+        private Block blockAt(int index, Sample edit) {
+            if (edit != null) return edit.block();
+            return index >= shape.size ? Blocks.air : shape.blocks[index];
         }
 
-        private boolean shareable(int cell, int neighbor) {
-            if (air(cell) || air(neighbor)) return air(cell) && air(neighbor);
-            Block block = shape.blocks[cell];
-            if (block != shape.blocks[neighbor]) return false;
-            if (shape.machines[cell] != 0 || shape.machines[neighbor] != 0)
-                return shape.machines[cell] == shape.machines[neighbor]
-                    && (ProjectorMachines.isHatch(shape.machines[cell])
-                        || ProjectorMachines.prototype(shape.machines[cell]) instanceof MTEFrame);
-            int[][] pos = shape.simulationPositions();
-            int meta = shape.world.getBlockMetadata(pos[0][cell], pos[1][cell], pos[2][cell]);
-            if (meta != shape.world.getBlockMetadata(pos[0][neighbor], pos[1][neighbor], pos[2][neighbor]))
-                return false;
-            ItemStack first = shape.items[cell], second = shape.items[neighbor];
+        private boolean shareable(int cell, int neighbor, Sample edit, Sample neighborEdit) {
+            Block block = blockAt(cell, edit);
+            if (block != blockAt(neighbor, neighborEdit)) return false;
+            if (block == Blocks.air) return true;
+            int machine = edit == null ? shape.machines[cell] : edit.machine();
+            int neighborMachine = neighborEdit == null ? shape.machines[neighbor] : neighborEdit.machine();
+            if (machine != 0 || neighborMachine != 0) return machine == neighborMachine
+                && (ProjectorMachines.isHatch(machine) || ProjectorMachines.prototype(machine) instanceof MTEFrame);
+            int meta = metadata(cell, edit);
+            if (meta != metadata(neighbor, neighborEdit)) return false;
+            ItemStack first = edit == null ? shape.items[cell] : edit.item();
+            ItemStack second = neighborEdit == null ? shape.items[neighbor] : neighborEdit.item();
             if (first != null && second != null
                 && first.isItemEqual(second)
                 && ItemStack.areItemStackTagsEqual(first, second)
@@ -414,8 +481,14 @@ public final class ProjectorBatch {
             if (block.hasTileEntity(meta)) return false;
             return block instanceof BlockCasingsAbstract || block instanceof BlockCasing
                 || GlassTier.getGlassBlockTier(block, meta) != null
-                || casingAt(cell)
-                || casingAt(neighbor);
+                || casingAt(cell, first)
+                || casingAt(neighbor, second);
+        }
+
+        private int metadata(int cell, Sample edit) {
+            if (edit != null) return edit.meta();
+            int[][] pos = shape.simulationPositions();
+            return shape.world.getBlockMetadata(pos[0][cell], pos[1][cell], pos[2][cell]);
         }
 
         private static boolean isFrame(ItemStack stack) {
@@ -424,12 +497,12 @@ public final class ProjectorBatch {
             return false;
         }
 
-        private boolean casingAt(int cell) {
+        private boolean casingAt(int cell, ItemStack item) {
             var slot = shape.slotAt(cell);
             return slot != null && slot.casing() != null
-                && shape.items[cell] != null
+                && item != null
                 && slot.casing()
-                    .isItemEqual(shape.items[cell]);
+                    .isItemEqual(item);
         }
     }
 }

@@ -224,7 +224,7 @@ public final class ProjectorDeploymentRenderer {
         private void prepare() {
             if (model != null || unavailable) return;
             if (template == null) {
-                template = ProjectorStructures.get(plan.settings());
+                template = ProjectorStructures.get(batch ? plan.batchSettings() : plan.settings());
                 if (template == null) return;
                 if (template.isEmpty() || !template.failure.isEmpty() || !template.limit.isEmpty()) {
                     unavailable = true;
@@ -234,7 +234,7 @@ public final class ProjectorDeploymentRenderer {
             if (!batch) {
                 model = template;
             } else {
-                if (layout == null) layout = new ProjectorBatch.Layout(plan.batch, template, plan.facing);
+                if (layout == null) layout = new ProjectorBatch.Layout(plan, template, plan.facing);
                 if (!layout.advanceSearch(System.nanoTime() + LAYOUT_NANOS)) return;
                 if (!layout.solve()) {
                     unavailable = true;
