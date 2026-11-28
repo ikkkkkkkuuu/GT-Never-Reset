@@ -76,7 +76,8 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     private static final String RARE_EARTH_RING = "rare_earth";
     private static final String MONAZITE_RING = "monazite";
     private static final String NETHERITE_RING = "netherite";
-    private static final String[] RING_PIECES = { MAIN_RING, RARE_EARTH_RING, MONAZITE_RING, NETHERITE_RING };
+    private static final String UHV_RING = "uhv";
+    private static final String[] RING_PIECES = { MAIN_RING, RARE_EARTH_RING, MONAZITE_RING, NETHERITE_RING, UHV_RING };
     private static final int HORIZONTAL_OFFSET = 12, VERTICAL_OFFSET = 21, DEPTH_OFFSET = 1;
     private static final int RING_SPACING = 7;
     private static final int RECIPE_THREADS = 10;
@@ -88,7 +89,9 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     private static final Casings RARE_EARTH_HULL = Casings.VacuumCasing;
     private static final Casings MONAZITE_HULL = Casings.BasicPhotolithographicFrameworkCasing;
     private static final Casings NETHERITE_HULL = Casings.RadiantNaquadahAlloyCasing;
-    private static final Casings[] REAR_HULLS = { RARE_EARTH_HULL, MONAZITE_HULL, NETHERITE_HULL };
+    private static final Casings UHV_RIM = Casings.ReinforcedPhotolithographicFrameworkCasing;
+    private static final Casings[] REAR_RING_ANCHORS = { RARE_EARTH_HULL, MONAZITE_HULL, NETHERITE_HULL,
+        NETHERITE_HULL };
 
     private int ringCount = 1;
     private int refineryCoilTier = -1;
@@ -109,6 +112,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
             .addShape(RARE_EARTH_RING, transpose(MultiblockStructureLoader.load("platinum_gate_rare_earth_ring")))
             .addShape(MONAZITE_RING, transpose(MultiblockStructureLoader.load("platinum_gate_monazite_ring")))
             .addShape(NETHERITE_RING, transpose(MultiblockStructureLoader.load("platinum_gate_netherite_ring")))
+            .addShape(UHV_RING, transpose(MultiblockStructureLoader.load("platinum_gate_uhv_ring")))
             .addElement(
                 'A',
                 buildHatchAdder(PlatinumProcessingPlantController.class)
@@ -139,8 +143,9 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
                             -1,
                             (machine, tier) -> machine.refineryCoilTier = tier,
                             machine -> machine.refineryCoilTier)),
-                    STEEL.asElement()))
+                    NETHERITE_HULL.asElement()))
             .addElement('S', STAINLESS.asElement())
+            .addElement('U', UHV_RIM.asElement())
             .addElement('#', isAir())
             .build();
     }
@@ -232,7 +237,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     }
 
     private boolean hasRingAnchor(IGregTechTileEntity tile, int ring) {
-        Casings casing = REAR_HULLS[ring - 1];
+        Casings casing = REAR_RING_ANCHORS[ring - 1];
         ForgeDirection back = getExtendedFacing().getRelativeBackInWorld();
         int distance = ring * RING_SPACING;
         int x = tile.getXCoord() + distance * back.offsetX;
