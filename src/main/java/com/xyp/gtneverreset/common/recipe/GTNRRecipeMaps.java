@@ -14,6 +14,7 @@ import com.xyp.gtneverreset.common.gui.recipe.BottledChaosCredentialFrontend;
 import com.xyp.gtneverreset.common.gui.recipe.BottledChaosExpandedFrontend;
 import com.xyp.gtneverreset.common.gui.recipe.BottledChaosStructureFrontend;
 import com.xyp.gtneverreset.common.gui.recipe.FragmentWorldCollectionFrontend;
+import com.xyp.gtneverreset.common.gui.recipe.PlatinumGateRecipeFrontend;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.ChaosRecipeBackend;
 import com.xyp.gtneverreset.common.recipe.gtneverreset.FragmentWorldCollectionBackend;
 import com.xyp.gtneverreset.config.ChaosConfig;
@@ -69,6 +70,22 @@ public final class GTNRRecipeMaps {
         .progressBarMUI2(GTGuiTextures.PROGRESSBAR_ARROW_MULTIPLE)
         .frontend(LargeNEIFrontend::new)
         .neiHandlerInfo(builder -> builder.setDisplayStack(GTNRItemList.CatalyticReformer.get(1)))
+        .build();
+
+    public static final RecipeMap<RecipeMapBackend> PLATINUM_PROCESSING = RecipeMapBuilder
+        // #tr gtnr.recipe.platinum_processing
+        // # Platinum Gate Processing
+        // # zh_CN 铂德之门整线处理
+        .of("gtnr.recipe.platinum_processing")
+        .maxIO(16, 27, 16, 0)
+        .progressBar(GTUITextures.PROGRESSBAR_ARROW_MULTIPLE)
+        .progressBarMUI2(GTGuiTextures.PROGRESSBAR_ARROW_MULTIPLE)
+        .frontend(PlatinumGateRecipeFrontend::new)
+        .neiSpecialInfoFormatter(PlatinumGateRecipeFrontend::formatRequirements)
+        .neiHandlerInfo(
+            builder -> builder.setDisplayStack(GTNRItemList.PlatinumProcessingPlant.get(1))
+                .setHeight(216)
+                .setMaxRecipesPerPage(1))
         .build();
 
     public static final RecipeMap<RecipeMapBackend> PETROCHEMICAL_PLANT = RecipeMapBuilder

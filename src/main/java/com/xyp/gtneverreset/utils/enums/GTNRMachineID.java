@@ -37,7 +37,8 @@ public enum GTNRMachineID {
     LargeSteelKiln(29430),
     LargeFragmentWorldCollector(29431),
     PetrochemicalPlant(29432),
-    // 预留：29433–29499（67 个）。
+    PlatinumProcessingPlant(29433),
+    // 预留：29434–29499（66 个）。
     // endregion
 
     // region 舱室

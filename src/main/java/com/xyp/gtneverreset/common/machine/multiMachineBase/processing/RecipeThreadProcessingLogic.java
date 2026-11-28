@@ -78,11 +78,16 @@ public class RecipeThreadProcessingLogic extends ProcessingLogic {
             Math.max(1, getDuration()),
             Math.max(1, getCurrentParallels()),
             new RecipeThreadOutputs(getOutputItems(), getOutputFluids()),
-            getThreadOverclockSettings());
+            getThreadOverclockSettings(),
+            getThreadStation());
     }
 
     protected RecipeThreadTask.OverclockSettings getThreadOverclockSettings() {
         return null;
+    }
+
+    protected int getThreadStation() {
+        return -1;
     }
 
     @Override

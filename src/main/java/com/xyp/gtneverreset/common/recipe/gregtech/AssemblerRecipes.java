@@ -85,6 +85,7 @@ public final class AssemblerRecipes {
         registerUniversalJointFactoryRecipe();
         registerHadronCatalyticRefineryRecipe();
         registerPetrochemicalPlantRecipe();
+        registerPlatinumProcessingPlantRecipe();
         if (ModList.Forestry.isModLoaded()) registerLargeBeeBreederRecipes();
         if (ModList.CropsNH.isModLoaded()) registerLargeCropBreederRecipes();
         registerFluxConnectorRecipes();
@@ -527,6 +528,25 @@ public final class AssemblerRecipes {
             .itemOutputs(GTNRItemList.PetrochemicalPlant.get(1))
             .duration(30 * SECONDS)
             .eut(TierEU.RECIPE_EV)
+            .addTo(assemblerRecipes);
+    }
+
+    private static void registerPlatinumProcessingPlantRecipe() {
+        GTRecipeBuilder.builder()
+            .itemInputs(
+                ItemList.Machine_Multi_LargeChemicalReactor.get(23),
+                ItemList.Machine_Multi_BlastFurnace.get(6),
+                ItemList.Distillation_Tower.get(2),
+                ItemList.Machine_IV_Sifter.get(3),
+                ItemList.Machine_IV_Mixer.get(2),
+                ItemList.Machine_IV_FluidHeater.get(1),
+                ItemList.Machine_IV_FluidSolidifier.get(1),
+                ItemList.Machine_IV_Boxinator.get(6),
+                ItemList.Casing_IV.get(1))
+            .fluidInputs(Materials.SolderingAlloy.getMolten(1_152))
+            .itemOutputs(GTNRItemList.PlatinumProcessingPlant.get(1))
+            .duration(60 * SECONDS)
+            .eut(TierEU.RECIPE_IV)
             .addTo(assemblerRecipes);
     }
 
