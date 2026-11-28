@@ -27,12 +27,15 @@ import it.unimi.dsi.fastutil.longs.Long2IntMaps;
 @SideOnly(Side.CLIENT)
 final class ProjectorBatchPreview extends ProjectorStructure {
 
+    private static final int MAX_COPY_OUTLINE_BOXES = 64, MAX_COPY_OUTLINE_EDGE_BLOCKS = 8192;
+    private static final int[][] NO_COPY_BOUNDS = new int[0][];
     final ProjectorStructure template;
     private final ProjectorBatchHatches edits;
     final boolean outlineOnly;
     final int[] originals;
     final ExtendedFacing[] copyPoses;
     final ExtendedFacing baseFacing;
+    final int[][] copyBounds;
     final boolean compatible;
     final boolean limited;
     final int blockedControllers;
@@ -85,7 +88,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
     }
 
     private ProjectorBatchPreview(ProjectorStructure template, ProjectorBatchCells batch, int[] bounds,
-        ExtendedFacing baseFacing, Formation formation) {
+        ExtendedFacing baseFacing, Formation formation, ProjectorBatch.Layout layout) {
         super(
             template,
             batch.cells()
@@ -103,6 +106,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
         ((PreviewWorld) world).array = this;
         outlineOnly = batch.cells()
             .isEmpty();
+        copyBounds = outlineOnly ? NO_COPY_BOUNDS : outlineBounds(layout, formation.total);
         originals = new int[size];
         int i = 0;
         for (var it = Long2IntMaps.fastIterator(batch.cells()); it.hasNext(); i++) {
@@ -137,6 +141,21 @@ final class ProjectorBatchPreview extends ProjectorStructure {
         }
         blockedControllers = hidden;
         materials = batch.materials(template);
+    }
+
+    private static int[][] outlineBounds(ProjectorBatch.Layout layout, int copies) {
+        if (copies > MAX_COPY_OUTLINE_BOXES) return NO_COPY_BOUNDS;
+        int[] first = new int[6];
+        layout.copyWorldBounds(0, first);
+        long outlineLength = 4L * copies * (first[3] - first[0] + first[4] - first[1] + first[5] - first[2] + 3);
+        if (outlineLength > MAX_COPY_OUTLINE_EDGE_BLOCKS) return NO_COPY_BOUNDS;
+        int[][] result = new int[copies][];
+        result[0] = first;
+        for (int copy = 1; copy < copies; copy++) {
+            result[copy] = new int[6];
+            layout.copyWorldBounds(copy, result[copy]);
+        }
+        return result;
     }
 
     Sample editAt(int i) {
@@ -223,6 +242,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
     static final class Cache {
 
         private ProjectorStructure template;
+        private ProjectorPlan.Settings originSettings;
         private ExtendedFacing facing;
         private long arrangement;
         private final Map<Long, Integer> overrides = new TreeMap<>();
@@ -230,6 +250,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
 
         void clear() {
             template = null;
+            originSettings = null;
             result = null;
         }
 
@@ -238,14 +259,25 @@ final class ProjectorBatchPreview extends ProjectorStructure {
                 clear();
                 return shape;
             }
+            ProjectorPlan.Settings batchSettings = plan.batchSettings();
+            if (!shape.settings.equals(batchSettings)) {
+                shape = ProjectorStructures.get(batchSettings);
+                if (shape == null || shape.isEmpty()) {
+                    clear();
+                    return shape;
+                }
+            }
+            ProjectorPlan.Settings nextOrigin = plan.settings();
             long nextKey = plan.batch.arrangementKey();
             if (shape != template || nextFacing != facing
                 || nextKey != arrangement
+                || !nextOrigin.equals(originSettings)
                 || !overrides.equals(plan.batchOverrides)) {
                 overrides.clear();
                 overrides.putAll(plan.batchOverrides);
                 result = expand(shape, plan, nextFacing);
                 template = shape;
+                originSettings = nextOrigin;
                 facing = nextFacing;
                 arrangement = nextKey;
             }
@@ -254,7 +286,7 @@ final class ProjectorBatchPreview extends ProjectorStructure {
     }
 
     private static ProjectorBatchPreview expand(ProjectorStructure shape, ProjectorPlan plan, ExtendedFacing facing) {
-        return expand(shape, plan, facing, new ProjectorBatch.Layout(plan.batch, shape, facing));
+        return expand(shape, plan, facing, new ProjectorBatch.Layout(plan, shape, facing));
     }
 
     static ProjectorBatchPreview expand(ProjectorStructure shape, ProjectorPlan plan, ExtendedFacing facing,
@@ -273,6 +305,6 @@ final class ProjectorBatchPreview extends ProjectorStructure {
         var formation = new Formation(copies);
         var batch = ProjectorBatchCells
             .collect(shape, plan, facing, layout, overrides -> formation.pending.merge(overrides, 1, Integer::sum));
-        return new ProjectorBatchPreview(shape, batch, bounds, facing, formation);
+        return new ProjectorBatchPreview(shape, batch, bounds, facing, formation, layout);
     }
 }

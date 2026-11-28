@@ -195,7 +195,9 @@ public final class ProjectorBuilder {
             this.plan = plan;
             materials = player.capabilities.isCreativeMode ? null : new ProjectorBuildMaterials(player);
             copies = batch ? plan.batch.machines() : 1;
-            this.simulation = new ProjectorSimulation(plan.settings(), SIMULATION_ROUND_CELLS);
+            this.simulation = new ProjectorSimulation(
+                copies > 1 ? plan.batchSettings() : plan.settings(),
+                SIMULATION_ROUND_CELLS);
             x = plan.x;
             y = plan.y;
             z = plan.z;
@@ -233,7 +235,7 @@ public final class ProjectorBuilder {
                             new ChatComponentTranslation("gtneverreset.projector.build.batch_limit", MAX_BATCH_CELLS));
                         return true;
                     }
-                    layout = new ProjectorBatch.Layout(plan.batch, shape, plan.facing);
+                    layout = new ProjectorBatch.Layout(plan, shape, plan.facing);
                     if (!layout.hasDistinctOrigins()) return incompatible();
                     if (!layout.flipSupported()) {
                         // #tr gtneverreset.projector.build.flip_unsupported
@@ -264,7 +266,7 @@ public final class ProjectorBuilder {
                     return incompatible();
                 }
                 placement = layout.placement(0);
-                if (!plan.batchOverrides.isEmpty()) batchHatches = new ProjectorBatchHatches(shape, plan);
+                batchHatches = layout.hatches();
                 return false;
             }
             while (System.nanoTime() < deadline) {
@@ -365,7 +367,7 @@ public final class ProjectorBuilder {
                 offset[2] = z - plan.z;
                 plan.facing.getOffsetABC(offset, batchPosition);
                 edit = batchHatches
-                    .sample(ProjectorPlan.pack(batchPosition[0], batchPosition[1], batchPosition[2]), cell);
+                    .sample(ProjectorPlan.pack(batchPosition[0], batchPosition[1], batchPosition[2]), cell, copy);
                 if (batchHatches.incompatible) return false;
             }
             return visit();

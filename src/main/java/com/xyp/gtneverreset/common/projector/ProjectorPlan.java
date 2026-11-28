@@ -60,6 +60,9 @@ public class ProjectorPlan {
     public Display display = Display.DIFFERENCE;
     public StructureDeploymentStyle buildStyle = StructureDeploymentStyle.SUMMON;
     private Settings settings;
+    private Settings batchSettings, batchBaseSettings;
+    private boolean batchSettingsCopyHatches;
+    private Map<Long, Integer> batchSettingsOverrides = Collections.emptyMap();
 
     public boolean hasMachine() {
         return machine > 0;
@@ -89,6 +92,36 @@ public class ProjectorPlan {
             Collections.unmodifiableMap(new TreeMap<>(overrides)),
             Collections.unmodifiableMap(new TreeMap<>(choices)),
             Collections.unmodifiableMap(new TreeMap<>(cellChoices)));
+    }
+
+    public Settings batchSettings() {
+        Settings base = settings();
+        boolean copyHatches = batch.copyHatches;
+        if (batch.machines() == 1 || (copyHatches ? batchOverrides.isEmpty()
+            : base.overrides()
+                .isEmpty()))
+            return base;
+        if (batchBaseSettings == base && batchSettingsCopyHatches == copyHatches
+            && (!copyHatches || batchSettingsOverrides.equals(batchOverrides))) return batchSettings;
+        Map<Long, Integer> templateOverrides = Collections.emptyMap();
+        if (copyHatches) {
+            batchSettingsOverrides = new TreeMap<>(batchOverrides);
+            Map<Long, Integer> merged = new TreeMap<>(base.overrides());
+            // The layout keeps the origin at local coordinates, and simulation only applies valid hatch slots.
+            merged.putAll(batchSettingsOverrides);
+            templateOverrides = Collections.unmodifiableMap(merged);
+        } else {
+            batchSettingsOverrides = Collections.emptyMap();
+        }
+        batchBaseSettings = base;
+        batchSettingsCopyHatches = copyHatches;
+        return batchSettings = new Settings(
+            base.machine(),
+            base.master(),
+            base.channels(),
+            templateOverrides,
+            base.choices(),
+            base.cellChoices());
     }
 
     public void selectMachine(int id) {

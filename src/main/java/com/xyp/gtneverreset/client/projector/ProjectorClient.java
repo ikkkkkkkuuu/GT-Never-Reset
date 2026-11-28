@@ -3,6 +3,7 @@ package com.xyp.gtneverreset.client.projector;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import net.minecraft.client.Minecraft;
@@ -26,6 +27,8 @@ import com.gtnewhorizon.gtnhlib.util.AboveHotbarHUD;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.gtnewhorizon.structurelib.event.BlockChangeNotifier;
 import com.xyp.gtneverreset.common.item.items.MultiblockProjector;
+import com.xyp.gtneverreset.common.packet.GenerateProjectorBatchPacket;
+import com.xyp.gtneverreset.common.packet.GenerateProjectorPacket;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.packet.OpenProjectorPacket;
 import com.xyp.gtneverreset.common.packet.ProjectorPlanPacket;
@@ -36,6 +39,8 @@ import com.xyp.gtneverreset.common.projector.ProjectorServer;
 import com.xyp.gtneverreset.common.projector.ProjectorSimulation;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure.Choice;
+import com.xyp.gtneverreset.config.ProjectorConfig;
+import com.xyp.gtnrlib.animation.StructureDeploymentStyle;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -74,6 +79,7 @@ public class ProjectorClient {
     private static long lastClick, ticks, spotTick;
     private static int[] spot;
     private static int spotMachine;
+    private static int pinnedSlot = Integer.MIN_VALUE, pinnedHotbar;
 
     ProjectorClient() {}
 
@@ -150,6 +156,7 @@ public class ProjectorClient {
     }
 
     private static void reset() {
+        unpinControls();
         location = Integer.MIN_VALUE;
         plan = null;
         planTag = null;
@@ -231,6 +238,119 @@ public class ProjectorClient {
             if (inFlight.size() > MAX_IN_FLIGHT) inFlight.removeFirst();
         }
         NetWorkHandler.sendToServer(new ProjectorPlanPacket(slot, next.writeToNBT()));
+    }
+
+    static boolean canPinControls(int slot) {
+        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        return player != null && slot <= 0
+            && slot != Integer.MIN_VALUE
+            && (slot == 0 || location == Integer.MIN_VALUE || location == slot)
+            && ProjectorServer.projectorAt(player, slot) != null;
+    }
+
+    static void pinControls(int slot) {
+        pinnedSlot = slot;
+        pinnedHotbar = Minecraft.getMinecraft().thePlayer.inventory.currentItem;
+    }
+
+    static void unpinControls() {
+        pinnedSlot = Integer.MIN_VALUE;
+    }
+
+    static boolean controlsPinned(int slot) {
+        EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+        return player != null && pinnedSlot != Integer.MIN_VALUE
+            && pinnedSlot == slot
+            && (slot != 0 || player.inventory.currentItem == pinnedHotbar);
+    }
+
+    static ProjectorPlan pinnedPlan() {
+        if (!controlsPinned(location) || plan == null
+            || !plan.hasMachine()
+            || plan.state == ProjectorPlan.State.IDLE
+            || plan.isPlaced() && plan.dimension != Minecraft.getMinecraft().thePlayer.dimension) return null;
+        return plan;
+    }
+
+    static void editPinned(Consumer<ProjectorPlan> edit) {
+        ProjectorPlan current = pinnedPlan();
+        if (current == null) return;
+        ProjectorPlan next = current.copy();
+        edit.accept(next);
+        if (next.batch.arrangementKey() == current.batch.arrangementKey()) return;
+        next.batchProjection = true;
+        send(next);
+    }
+
+    static void openPinnedGui() {
+        if (pinnedPlan() != null) open();
+    }
+
+    static int pinnedCoordinate(ForgeDirection axis) {
+        ProjectorPlan current = pinnedPlan();
+        boolean locked = current != null && current.isPlaced();
+        return switch (axis) {
+            case EAST -> locked ? current.x : x;
+            case UP -> locked ? current.y : y;
+            case SOUTH -> locked ? current.z : z;
+            default -> throw new IllegalArgumentException(axis.name());
+        };
+    }
+
+    static boolean canMovePinned() {
+        ProjectorPlan current = pinnedPlan();
+        return current != null && current.state == ProjectorPlan.State.LOCKED;
+    }
+
+    static void setPinnedCoordinate(ForgeDirection axis, int coordinate) {
+        if (!canMovePinned() || pinnedCoordinate(axis) == coordinate) return;
+        ProjectorInput.edit(next -> {
+            switch (axis) {
+                case EAST -> next.x = coordinate;
+                case UP -> next.y = Math.max(0, Math.min(255, coordinate));
+                case SOUTH -> next.z = coordinate;
+                default -> throw new IllegalArgumentException(axis.name());
+            }
+        });
+    }
+
+    static void togglePinnedLock() {
+        ProjectorPlan current = pinnedPlan();
+        if (current != null && current.state != ProjectorPlan.State.ANCHORED)
+            act(Minecraft.getMinecraft().thePlayer, current.state == ProjectorPlan.State.LOCKED);
+    }
+
+    static void cyclePinnedBuildStyle() {
+        if (pinnedPlan() != null) ProjectorInput.edit(next -> next.buildStyle = nextBuildStyle(next.buildStyle));
+    }
+
+    static StructureDeploymentStyle nextBuildStyle(StructureDeploymentStyle current) {
+        var styles = StructureDeploymentStyle.values();
+        return styles[(current.ordinal() + 1) % styles.length];
+    }
+
+    static boolean canBuildPinned() {
+        ProjectorPlan current = pinnedPlan();
+        if (current == null || !ProjectorConfig.buildEnabled
+            || !Minecraft.getMinecraft().thePlayer.capabilities.allowEdit) return false;
+        ProjectorStructure template = ProjectorStructures.get(current.batchSettings());
+        return template != null && template.failure.isEmpty() && template.limit.isEmpty() && !template.isEmpty();
+    }
+
+    static void buildPinned() {
+        if (!canBuildPinned()) return;
+        ProjectorPlan next = plan.copy();
+        next.batchProjection = true;
+        if (!locateBuild(next, ProjectorStructures.get(next.batchSettings()), true)) {
+            AboveHotbarHUD.renderTextAboveHotbar(
+                StatCollector.translateToLocal(ProjectorGui.LANG + "generate_target"),
+                40,
+                true,
+                true);
+            return;
+        }
+        requestBuild(location, next, next.batch.machines() > 1);
+        ProjectorPinnedHud.closeEditor();
     }
 
     public static String frontLabel(ForgeDirection front) {
@@ -408,6 +528,11 @@ public class ProjectorClient {
         return true;
     }
 
+    static void requestBuild(int slot, ProjectorPlan target, boolean batch) {
+        send(slot, target);
+        NetWorkHandler.sendToServer(batch ? new GenerateProjectorBatchPacket(slot) : new GenerateProjectorPacket(slot));
+    }
+
     private static Target targetAtCrosshair(Minecraft mc, ProjectorPlan plan, ProjectorStructure structure,
         ExtendedFacing facing) {
         MovingObjectPosition hit = trace(mc.theWorld, mc.thePlayer);
@@ -497,8 +622,10 @@ public class ProjectorClient {
 
     private static void showStatus() {
         String text;
-        if (structure == null) {
-            ProjectorSimulation running = ProjectorStructures.running(plan.settings());
+        if (structure == null || projection == null) {
+            ProjectorSimulation running = ProjectorStructures
+                .running(plan.batchProjection ? plan.batchSettings() : plan.settings());
+            if (running == null) running = ProjectorStructures.running(plan.settings());
             // #tr gtneverreset.projector.simulating
             // # Working out the structure: round %s
             // # zh_CN 正在推算结构：第 %s 轮

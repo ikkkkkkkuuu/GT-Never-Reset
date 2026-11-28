@@ -11,6 +11,7 @@ import static com.xyp.gtneverreset.client.projector.ProjectorWidgets.text;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 
 import net.minecraft.client.Minecraft;
@@ -43,9 +44,6 @@ import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.gui.ProjectorMaterialSync;
 import com.xyp.gtneverreset.common.item.items.MultiblockProjector;
-import com.xyp.gtneverreset.common.packet.GenerateProjectorBatchPacket;
-import com.xyp.gtneverreset.common.packet.GenerateProjectorPacket;
-import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.projector.ProjectorBatch;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorOrientation;
@@ -133,6 +131,7 @@ public class ProjectorGui extends ModularPanel {
     private final ProjectorPreviewWidget preview;
     private final ProjectorMachineTab machines;
     private final ProjectorMaterialSync materialStock;
+    private final List<NumberEntryWidget> batchInputs = new ArrayList<>();
     private ProjectorStructure shown;
     private int page, ticks;
     private final FadingNotice notice = new FadingNotice().duration(NOTICE_MILLIS);
@@ -167,7 +166,8 @@ public class ProjectorGui extends ModularPanel {
             selectedPositions.add(ProjectorPlan.pack(spot[0], spot[1], spot[2]));
             page = HATCHES;
         }
-        if (page == BATCH || page == GENERATION) working.batchProjection = page == BATCH;
+        if (page == BATCH || page == GENERATION && !ProjectorClient.controlsPinned(location))
+            working.batchProjection = page == BATCH;
         preview = new ProjectorPreviewWidget(this::previewStructure)
             .selection(this::selectedCells, cell -> select(cell, GuiScreen.isCtrlKeyDown()))
             .markers(() -> ClientConfig.projectorHatchOutlines, working)
@@ -369,7 +369,7 @@ public class ProjectorGui extends ModularPanel {
                     .name("generate_structure")
                     .widthRel(1f)
                     .height(BUTTON)
-                    .available(this::canGenerate)
+                    .available(() -> canGenerate(false))
                     .tooltipBuilder(this::buildHint));
     }
 
@@ -378,17 +378,15 @@ public class ProjectorGui extends ModularPanel {
         // # Animation: %s
         // # zh_CN 搭建动画：%s
         return new AE2Button(
-            () -> StatCollector.translateToLocalFormatted(LANG + "build_style", deploymentStyleName()),
-            () -> {
-                var styles = StructureDeploymentStyle.values();
-                working.buildStyle = styles[(working.buildStyle.ordinal() + 1) % styles.length];
-            }).name("deployment_style")
+            () -> StatCollector
+                .translateToLocalFormatted(LANG + "build_style", deploymentStyleName(working.buildStyle)),
+            () -> working.buildStyle = ProjectorClient.nextBuildStyle(working.buildStyle)).name("deployment_style")
                 .widthRel(1f)
                 .height(BUTTON);
     }
 
-    private String deploymentStyleName() {
-        return StatCollector.translateToLocal(switch (working.buildStyle) {
+    static String deploymentStyleName(StructureDeploymentStyle style) {
+        return StatCollector.translateToLocal(switch (style) {
             // #tr gtneverreset.projector.gui.build_style_summon
             // # Summoning Circle
             // # zh_CN 法阵降临
@@ -420,50 +418,82 @@ public class ProjectorGui extends ModularPanel {
     }
 
     private Widget<?> batchPage() {
+        int shareWidth = 42, gapWidth = 48;
         Flow controls = column().sizeRel(1f)
             .childPadding(4);
-        // #tr gtneverreset.projector.gui.batch_count
-        // # Additional machines per direction
-        // # zh_CN 各方向追加台数
-        controls.child(text(StatCollector.translateToLocal(LANG + "batch_count")));
-        List<NumberEntryWidget> inputs = new ArrayList<>();
-        for (ForgeDirection direction : new ForgeDirection[] { ForgeDirection.EAST, ForgeDirection.WEST,
-            ForgeDirection.SOUTH, ForgeDirection.NORTH, ForgeDirection.UP, ForgeDirection.DOWN }) {
-            String label = batchDirection(direction);
-            NumberEntryWidget count = new NumberEntryWidget().bounds(0, ProjectorBatch.MAX_ADDITIONAL)
-                .value(working.batch.additional(direction))
-                .resetValue(0)
-                .wheel(true)
-                .textAlignment(Alignment.Center)
-                .onChange(n -> working.batch.setAdditional(direction, (int) n))
-                .size(68, SMALL)
-                .name("batch_count_" + direction.ordinal());
-            inputs.add(count);
-            controls.child(
-                Flow.row()
-                    .widthRel(1f)
-                    .height(SMALL)
-                    .childPadding(4)
-                    .child(
-                        text(label).width(30)
-                            .height(SMALL))
-                    .child(count)
-                    // #tr gtneverreset.projector.gui.batch_share
-                    // # Share
-                    // # zh_CN 共用外壳
-                    .child(
-                        new AECheckbox(
-                            () -> StatCollector.translateToLocal(LANG + "batch_share"),
-                            new BoolValue.Dynamic(
-                                () -> working.batch.shares(direction),
-                                on -> working.batch.setShared(direction, on)))
-                                    .name("batch_share_" + direction.ordinal())
-                                    // #tr gtneverreset.projector.gui.batch_share_hint
-                                    // # Share matching casings, glass, frames, sheet metal or hatch models.
-                                    // # zh_CN 相同的外壳、结构玻璃、框架、金属板或同型号仓室可共用。控制器各占一格。
-                                    .tooltipBuilder(
-                                        tooltip -> tooltip
-                                            .addLine(StatCollector.translateToLocal(LANG + "batch_share_hint")))));
+        controls.child(
+            Flow.row()
+                .widthRel(1f)
+                .height(LINE)
+                .childPadding(4)
+                // #tr gtneverreset.projector.gui.batch_count
+                // # Additional copies
+                // # zh_CN 追加台数
+                .child(text(StatCollector.translateToLocal(LANG + "batch_count")).expanded())
+                // #tr gtneverreset.projector.gui.batch_share
+                // # Share
+                // # zh_CN 共用外壳
+                .child(
+                    IKey.lang(LANG + "batch_share")
+                        .asWidget()
+                        .alignment(Alignment.Center)
+                        .size(shareWidth, LINE))
+                // #tr gtneverreset.projector.gui.batch_gap
+                // # Gap
+                // # zh_CN 间隔
+                .child(
+                    IKey.lang(LANG + "batch_gap")
+                        .asWidget()
+                        .alignment(Alignment.Center)
+                        .size(gapWidth, LINE)
+                        // #tr gtneverreset.projector.gui.batch_gap_hint
+                        // # Empty blocks between copies on both sides of the axis. A gap disables shared faces.
+                        // # zh_CN 轴两侧相邻投影之间留空的方块数。间隔大于零时暂停共用外壳。
+                        .tooltipBuilder(t -> t.addLine(StatCollector.translateToLocal(LANG + "batch_gap_hint")))));
+        for (ForgeDirection direction : new ForgeDirection[] { ForgeDirection.WEST, ForgeDirection.EAST,
+            ForgeDirection.DOWN, ForgeDirection.UP, ForgeDirection.NORTH, ForgeDirection.SOUTH }) {
+            NumberEntryWidget count = batchNumber(
+                ProjectorBatch.MAX_ADDITIONAL,
+                working.batch.additional(direction),
+                n -> working.batch.setAdditional(direction, (int) n),
+                "batch_count_" + direction.ordinal(),
+                44);
+            batchInputs.add(count);
+            Flow row = Flow.row()
+                .widthRel(1f)
+                .height(SMALL)
+                .childPadding(4)
+                .child(text(batchDirection(direction)).size(30, SMALL))
+                .child(count)
+                .child(
+                    new ParentWidget<>().size(shareWidth, SMALL)
+                        .child(
+                            new AECheckbox(
+                                () -> "",
+                                new BoolValue.Dynamic(
+                                    () -> working.batch.shares(direction),
+                                    on -> working.batch.setShared(direction, on))).width(AE2Theme.CHECKBOX_WIDTH)
+                                        .center()
+                                        .available(() -> working.batch.gap(direction) == 0)
+                                        .name("batch_share_" + direction.ordinal())
+                                        // #tr gtneverreset.projector.gui.batch_share_hint
+                                        // # Share matching casings, glass, frames, sheet metal or hatch models.
+                                        // # zh_CN 相同的外壳、结构玻璃、框架、金属板或同型号仓室可共用。控制器各占一格。
+                                        .tooltipBuilder(
+                                            t -> t
+                                                .addLine(StatCollector.translateToLocal(LANG + "batch_share_hint")))));
+            if (direction == ForgeDirection.EAST || direction == ForgeDirection.UP
+                || direction == ForgeDirection.SOUTH) {
+                NumberEntryWidget gap = batchNumber(
+                    ProjectorBatch.MAX_GAP,
+                    working.batch.gap(direction),
+                    n -> working.batch.setGap(direction, (int) n),
+                    "batch_gap_" + direction.ordinal(),
+                    gapWidth);
+                batchInputs.add(gap);
+                row.child(gap);
+            }
+            controls.child(row);
         }
         controls.child(
             Flow.row()
@@ -511,10 +541,7 @@ public class ProjectorGui extends ModularPanel {
                 .name("generate_batch")
                 .widthRel(1f)
                 .height(BUTTON)
-                .available(
-                    () -> canGenerate() && working.batch.machines() > 1
-                        && inputs.stream()
-                            .allMatch(NumberEntryWidget::isInputValid))
+                .available(() -> working.batch.machines() > 1 && validBatchInputs() && canGenerate(true))
                 .tooltipBuilder(this::buildHint));
         controls.child(
             IKey.dynamic(this::batchWarning)
@@ -525,6 +552,22 @@ public class ProjectorGui extends ModularPanel {
                 .color(badColor)
                 .tooltipBuilder(t -> t.addLine(batchWarning())));
         return controls;
+    }
+
+    private static NumberEntryWidget batchNumber(int max, int value, LongConsumer change, String name, int width) {
+        return new NumberEntryWidget().bounds(0, max)
+            .value(value)
+            .resetValue(0)
+            .wheel(true)
+            .textAlignment(Alignment.Center)
+            .onChange(change)
+            .size(width, SMALL)
+            .name(name);
+    }
+
+    private boolean validBatchInputs() {
+        return batchInputs.stream()
+            .allMatch(NumberEntryWidget::isInputValid);
     }
 
     private String batchWarning() {
@@ -579,19 +622,15 @@ public class ProjectorGui extends ModularPanel {
         return StatCollector.translateToLocal(LANG + key);
     }
 
-    private boolean canGenerate() {
+    private boolean canGenerate(boolean batch) {
         return ProjectorConfig.buildEnabled && Minecraft.getMinecraft().thePlayer.capabilities.allowEdit
             && working.hasMachine()
-            && !simulating()
-            && structure() != null;
+            && ProjectorStructures.get(simulationSettings(batch)) != null;
     }
 
     private void generate(boolean batch) {
-        ProjectorStructure shape = structure();
-        if (shape == null || !shape.settings.equals(working.settings())
-            || !shape.failure.isEmpty()
-            || !shape.limit.isEmpty()
-            || shape.isEmpty()) {
+        ProjectorStructure shape = ProjectorStructures.get(simulationSettings(batch));
+        if (shape == null || !shape.failure.isEmpty() || !shape.limit.isEmpty() || shape.isEmpty()) {
             // #tr gtneverreset.projector.gui.cannot_generate
             // # A complete structure preview is required.
             // # zh_CN 请先取得完整的结构预览。
@@ -608,15 +647,19 @@ public class ProjectorGui extends ModularPanel {
             return;
         }
         working.readFromNBT(target.writeToNBT());
-        ProjectorClient.send(location, working);
+        ProjectorClient.requestBuild(location, working, batch);
         stored.readFromNBT(working.writeToNBT());
-        NetWorkHandler
-            .sendToServer(batch ? new GenerateProjectorBatchPacket(location) : new GenerateProjectorPacket(location));
         getScreen().close();
     }
 
     private IWidget toolbar() {
         return new VerticalButtonBar()
+            .add(
+                new IconButton(() -> Icon.DOWNLOAD, this::togglePinControls).name("pin_controls")
+                    .selected(() -> ProjectorClient.controlsPinned(location))
+                    .available(() -> ProjectorClient.controlsPinned(location) || canPinControls())
+                    .tooltipAutoUpdate(true)
+                    .tooltipBuilder(this::pinControlsTooltip))
             .button(
                 () -> ClientConfig.projectorOutlinesThroughBlocks ? Icon.VISIBLE : Icon.INVISIBLE,
                 // #tr gtneverreset.projector.gui.outline_through_blocks
@@ -640,7 +683,7 @@ public class ProjectorGui extends ModularPanel {
             // # zh_CN 降低一格
             .button(() -> Icon.ARROW_DOWN, () -> StatCollector.translateToLocal(LANG + "lower_one"), () -> raise(-1))
             .toggle(
-                () -> Icon.DOWNLOAD,
+                () -> AE2SettingIcon.PLACEMENT_BLOCK,
                 // #tr gtneverreset.projector.gui.ground_snap
                 // # Sit on the ground
                 // # zh_CN 贴地放置
@@ -760,7 +803,11 @@ public class ProjectorGui extends ModularPanel {
     }
 
     private boolean simulating() {
-        return working.hasMachine() && ProjectorStructures.get(working.settings()) == null;
+        return working.hasMachine() && ProjectorStructures.get(simulationSettings(working.batchProjection)) == null;
+    }
+
+    private ProjectorPlan.Settings simulationSettings(boolean batch) {
+        return batch ? working.batchSettings() : working.settings();
     }
 
     public void selectMachine(int id) {
@@ -776,12 +823,48 @@ public class ProjectorGui extends ModularPanel {
     }
 
     private void project() {
+        if (applyProjection()) getScreen().close();
+    }
+
+    private boolean canPinControls() {
+        return working.hasMachine() && ProjectorClient.canPinControls(location)
+            && (page != BATCH || validBatchInputs());
+    }
+
+    private void pinControlsTooltip(RichTooltip tooltip) {
+        if (ProjectorClient.controlsPinned(location)) {
+            tooltip.addLine(StatCollector.translateToLocal(ProjectorClient.LANG + "pinned.unpin"));
+            return;
+        }
+        // #tr gtneverreset.projector.gui.pin_controls
+        // # Pin to HUD
+        // # zh_CN 固定到主界面
+        tooltip.addLine(StatCollector.translateToLocal(LANG + "pin_controls"));
+        // #tr gtneverreset.projector.gui.pin_controls_hint
+        // # Hold Left Alt in-game to adjust the projection.
+        // # zh_CN 在游戏主界面按住左 Alt 调整投影。
+        tooltip.addLine(StatCollector.translateToLocal(LANG + "pin_controls_hint"));
+    }
+
+    private void togglePinControls() {
+        if (ProjectorClient.controlsPinned(location)) {
+            ProjectorClient.unpinControls();
+            return;
+        }
+        if (!canPinControls()) return;
+        working.batchProjection = true;
+        if (!applyProjection()) return;
+        ProjectorClient.pinControls(location);
+        getScreen().close();
+    }
+
+    private boolean applyProjection() {
         if (!working.hasMachine()) {
             // #tr gtneverreset.projector.gui.no_machine
             // # Pick a machine first
             // # zh_CN 请先选择机器
             notice("no_machine");
-            return;
+            return false;
         }
         if (!working.isPlaced() || working.machine != stored.machine) {
             if (working.state == ProjectorPlan.State.IDLE || working.machine != stored.machine) {
@@ -795,7 +878,7 @@ public class ProjectorGui extends ModularPanel {
         }
         ProjectorClient.send(location, working);
         stored.readFromNBT(working.writeToNBT());
-        getScreen().close();
+        return true;
     }
 
     private void cycleDisplay() {
@@ -867,7 +950,7 @@ public class ProjectorGui extends ModularPanel {
 
     private boolean canCraftMaterials(ProjectorStructure shape) {
         if (shape == null || shape.isEmpty()
-            || !shape.settings.equals(working.settings())
+            || !shape.settings.equals(simulationSettings(working.batchProjection))
             || !shape.failure.isEmpty()
             || !shape.limit.isEmpty()) return false;
         if (shape instanceof ProjectorBatchPreview array && (array.outlineOnly || !array.compatible || array.limited))
@@ -979,7 +1062,8 @@ public class ProjectorGui extends ModularPanel {
         ProjectorStructure displayed = previewStructure();
         String state;
         if (displayed == null || simulating()) {
-            ProjectorSimulation running = ProjectorStructures.running(working.settings());
+            ProjectorSimulation running = ProjectorStructures.running(simulationSettings(working.batchProjection));
+            if (running == null) running = ProjectorStructures.running(working.settings());
             // #tr gtneverreset.projector.gui.simulating
             // # Working out the structure: round %s
             // # zh_CN 正在推算结构：第 %s 轮

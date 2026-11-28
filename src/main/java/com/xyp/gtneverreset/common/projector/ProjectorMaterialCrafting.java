@@ -217,7 +217,9 @@ public final class ProjectorMaterialCrafting {
         Batch(EntityPlayerMP player, ProjectorPlan plan) {
             this.player = player;
             this.plan = plan;
-            this.simulation = new ProjectorSimulation(plan.settings(), SIMULATION_ROUND_CELLS);
+            this.simulation = new ProjectorSimulation(
+                plan.batchProjection ? plan.batchSettings() : plan.settings(),
+                SIMULATION_ROUND_CELLS);
         }
 
         boolean advance(long now) {

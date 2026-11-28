@@ -33,6 +33,7 @@ import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.InputEvent;
+import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -97,6 +98,7 @@ public class ProjectorInput {
         Keyboard.KEY_NONE,
         CATEGORY);
     private static final int[][] HORIZONTAL = { { 0, 1 }, { -1, 0 }, { 0, -1 }, { 1, 0 } };
+    private boolean editingPinnedWithAlt;
 
     ProjectorInput() {}
 
@@ -111,6 +113,7 @@ public class ProjectorInput {
         forge.register(client);
         fml.register(client);
         forge.register(new ProjectorRenderer());
+        forge.register(new ProjectorPinnedHud());
         ClientRegistry.registerKeyBinding(ROTATE);
         ClientRegistry.registerKeyBinding(DISPLAY);
         ClientRegistry.registerKeyBinding(FORWARD);
@@ -129,6 +132,12 @@ public class ProjectorInput {
             lock = LOCK.isPressed();
         int forward = presses(FORWARD) - presses(BACK), right = presses(RIGHT) - presses(LEFT);
         if (mc.currentScreen != null || mc.thePlayer == null) return;
+        if (Keyboard.getEventKey() == Keyboard.KEY_LMENU && Keyboard.getEventKeyState()
+            && ProjectorClient.pinnedPlan() != null) {
+            editingPinnedWithAlt = true;
+            ProjectorPinnedHud.openEditor();
+            return;
+        }
         KeyBinding pickBlock = mc.gameSettings.keyBindPickBlock;
         if (pickBlock.getKeyCode() > 0 && Keyboard.getEventKeyState()
             && Keyboard.getEventKey() == pickBlock.getKeyCode()
@@ -144,6 +153,14 @@ public class ProjectorInput {
         }
         if (display) cycleDisplay(plan);
         if (forward != 0 || right != 0) nudge(mc.thePlayer, plan, forward, right);
+    }
+
+    @SubscribeEvent
+    public void releasePinnedControls(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || !editingPinnedWithAlt) return;
+        if (Keyboard.isKeyDown(Keyboard.KEY_LMENU) && ProjectorClient.pinnedPlan() != null) return;
+        editingPinnedWithAlt = false;
+        ProjectorPinnedHud.closeEditor();
     }
 
     @SubscribeEvent
@@ -296,7 +313,7 @@ public class ProjectorInput {
         ProjectorClient.send(next);
     }
 
-    private static void cycleDisplay(ProjectorPlan plan) {
+    static void cycleDisplay(ProjectorPlan plan) {
         ProjectorPlan.Display[] values = ProjectorPlan.Display.values();
         ProjectorPlan.Display next = values[(plan.display.ordinal() + 1) % values.length];
         edit(copy -> copy.display = next);

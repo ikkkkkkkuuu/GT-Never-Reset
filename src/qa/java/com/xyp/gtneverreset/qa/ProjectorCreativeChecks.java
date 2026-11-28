@@ -30,6 +30,7 @@ import com.xyp.gtneverreset.client.projector.ProjectorClient;
 import com.xyp.gtneverreset.client.projector.ProjectorGui;
 import com.xyp.gtneverreset.common.packet.GenerateProjectorBatchPacket;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
+import com.xyp.gtneverreset.common.projector.ProjectorBatch;
 import com.xyp.gtneverreset.common.projector.ProjectorEnergyHatches;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
@@ -56,10 +57,14 @@ import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
     dependencies = "after:gtneverreset")
 public class ProjectorCreativeChecks {
 
+    private static final int SEPARATE_GAP = 4;
+    private static final int BUILD_REQUEST_INTERVAL = 41;
     private boolean launched, opening, readyToClick, armed, worldPreviewChecked;
     private int worldPreviewFrames, captureFrames, smartWorldFrames;
     private boolean smartProjectionChecked;
     private volatile boolean done, shortage;
+    private volatile long serverTicks;
+    private long nextBuildRequest;
 
     private enum Stage {
         SETUP,
@@ -108,6 +113,7 @@ public class ProjectorCreativeChecks {
     @SubscribeEvent
     public void server(TickEvent.ServerTickEvent e) {
         if (done || e.phase != TickEvent.Phase.END) return;
+        serverTicks++;
         var server = FMLCommonHandler.instance()
             .getMinecraftServerInstance();
         if (server == null || server.getConfigurationManager().playerEntityList.isEmpty()) return;
@@ -184,7 +190,8 @@ public class ProjectorCreativeChecks {
                 for (int ix = separate ? 0 : -1; ix <= 2; ix++)
                     for (int iy = separate ? 0 : -1; iy <= (separate ? 0 : 1); iy++)
                         for (int iz = separate ? 0 : -1; iz <= (separate ? 0 : 1); iz++) {
-                            int ox = x + ix * (separate || ix < 0 ? 3 : 2), oy = y + iy * 4, oz = z + iz * 3;
+                            int xStep = separate ? 3 + SEPARATE_GAP : ix < 0 ? 3 : 2;
+                            int ox = x + ix * xStep, oy = y + iy * 4, oz = z + iz * 3;
                             for (int i = 0; i < expected.size; i++) {
                                 int[] offset = new int[3];
                                 facing
@@ -207,9 +214,14 @@ public class ProjectorCreativeChecks {
                 require(batchPlaced == coordinates.size(), "shared cells placed twice");
                 if (separate) {
                     require(batchPlaced == 102, "three independent 34-block structures");
+                    int eastEdge = x + expected.worldBounds(facing)[3];
+                    for (int gap = 1; gap <= SEPARATE_GAP; gap++) {
+                        require(player.worldObj.isAirBlock(eastEdge + gap, y, z), "gap filled during construction");
+                    }
+                    verifyGapLayout(expected, facing);
                     Files.writeString(
                         Path.of("separate-report.txt"),
-                        "All sharing disabled: 3 controllers, 102 unique blocks.");
+                        "Four-block gap overrides east sharing: 3 controllers, 102 unique blocks.");
                     var layoutPlan = new ProjectorPlan();
                     layoutPlan.selectMachine(ProjectorMachines.idOf(ItemList.Machine_Multi_BlastFurnace.get(1)));
                     layoutPlan.state = ProjectorPlan.State.LOCKED;
@@ -240,8 +252,9 @@ public class ProjectorCreativeChecks {
                 var separatePlan = ProjectorPlan.read(player.getHeldItem());
                 for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
                     separatePlan.batch.setAdditional(dir, dir == ForgeDirection.EAST ? 2 : 0);
-                    separatePlan.batch.setShared(dir, false);
+                    separatePlan.batch.setShared(dir, dir == ForgeDirection.EAST);
                 }
+                separatePlan.batch.setGap(ForgeDirection.EAST, SEPARATE_GAP);
                 separatePlan.y = y += 20;
                 separatePlan.state = ProjectorPlan.State.LOCKED;
                 separatePlan.write(player.getHeldItem());
@@ -312,6 +325,11 @@ public class ProjectorCreativeChecks {
                         .enableCommands());
             }
             if (stage == Stage.SEPARATE_BATCH && ProjectorClient.plan != null && ProjectorClient.plan.y == y) {
+                if (serverTicks < nextBuildRequest) return;
+                require(
+                    ProjectorClient.plan.batch.gap(ForgeDirection.WEST) == SEPARATE_GAP
+                        && ProjectorClient.plan.batch.shares(ForgeDirection.EAST),
+                    "spacing and sharing did not synchronize");
                 stage = Stage.WAIT_SEPARATE;
                 NetWorkHandler.sendToServer(new GenerateProjectorBatchPacket(0));
                 return;
@@ -566,7 +584,7 @@ public class ProjectorCreativeChecks {
                 opening = false;
                 return;
             }
-            if (navigationFrames < 18) return;
+            if (navigationFrames < 18 || serverTicks < nextBuildRequest) return;
             require(button.areAncestorsEnabled(), "generation page did not expose the action");
             navigationFrames = 0;
             var mc = Minecraft.getMinecraft();
@@ -617,8 +635,15 @@ public class ProjectorCreativeChecks {
         if (stage == Stage.CHECK_DENIAL && message.getKey()
             .equals("gtneverreset.projector.build.missing")) shortage = true;
         if (message.getKey()
-            .equals("gtneverreset.projector.build.started") && navigationFrames > 0) {
-            finish(new AssertionError("switching pages started a build"));
+            .equals("gtneverreset.projector.build.started")) {
+            if (navigationFrames > 0) finish(new AssertionError("switching pages started a build"));
+            // Leave a tick for the ordering of the fixture and builder callbacks.
+            nextBuildRequest = serverTicks + BUILD_REQUEST_INTERVAL;
+            return;
+        }
+        if (message.getKey()
+            .equals("gtneverreset.projector.build.busy")) {
+            finish(new AssertionError("server rejected the build request during " + stage));
             return;
         }
         if (stage == Stage.WAIT_SEAM && message.getKey()
@@ -636,9 +661,7 @@ public class ProjectorCreativeChecks {
         if ((stage == Stage.WAIT_BATCH || stage == Stage.WAIT_SEPARATE
             || stage == Stage.WAIT_SMART
             || stage == Stage.WAIT_SEAM) && message.getKey()
-                .startsWith("gtneverreset.projector.build.")
-            && !message.getKey()
-                .endsWith(".started")) {
+                .startsWith("gtneverreset.projector.build.")) {
             finish(new AssertionError(message.getUnformattedText()));
             return;
         }
@@ -656,6 +679,42 @@ public class ProjectorCreativeChecks {
             || message.getKey()
                 .equals("gtneverreset.projector.build.incomplete")))
             finish(new AssertionError(message.getUnformattedText()));
+    }
+
+    private static void verifyGapLayout(ProjectorStructure shape, ExtendedFacing facing) {
+        var plan = new ProjectorPlan();
+        var sides = new ForgeDirection[] { ForgeDirection.EAST, ForgeDirection.UP, ForgeDirection.SOUTH };
+        for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
+            plan.batch.setAdditional(side, 1);
+            plan.batch.setShared(side, true);
+        }
+        long legacyKey = plan.batch.arrangementKey();
+        var legacy = plan.writeToNBT();
+        var shared = new ProjectorBatch.Layout(plan.batch, shape, facing);
+        int[] sharedFar = new int[3];
+        shared.copyOffset(plan.batch.machines() - 1, sharedFar);
+
+        int[] gaps = { 3, 5, ProjectorBatch.MAX_GAP };
+        for (int axis = 0; axis < sides.length; axis++) {
+            long before = plan.batch.arrangementKey();
+            plan.batch.setGap(sides[axis], gaps[axis]);
+            require(plan.batch.arrangementKey() != before, "gap omitted from preview cache key");
+        }
+        ProjectorPlan restored = plan.copy();
+        require(restored.batch.arrangementKey() == plan.batch.arrangementKey(), "gap plan did not round trip");
+        var spaced = new ProjectorBatch.Layout(restored.batch, shape, facing);
+        int[] first = new int[3], last = new int[3];
+        spaced.copyOffset(0, first);
+        spaced.copyOffset(restored.batch.machines() - 1, last);
+        for (int axis = 0; axis < sides.length; axis++) {
+            ForgeDirection opposite = sides[axis].getOpposite();
+            require(restored.batch.gap(opposite) == gaps[axis], "gap not shared across the axis");
+            require(
+                last[axis] == sharedFar[axis] + gaps[axis] + 1 && first[axis] == -last[axis],
+                "incorrect batch spacing for " + sides[axis]);
+        }
+        restored.readFromNBT(legacy);
+        require(restored.batch.arrangementKey() == legacyKey, "legacy plan did not reset gaps to zero");
     }
 
     private static void verifyWorldPreview(int size, int width) {

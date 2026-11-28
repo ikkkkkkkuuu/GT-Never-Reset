@@ -38,7 +38,7 @@ public record ProjectorBatchCells(Long2IntLinkedOpenHashMap cells, long[] emptyC
         var empty = new LongOpenHashSet();
         int[] abc = new int[3], world = new int[3];
         boolean compatible = layout.solve();
-        var hatches = plan.batchOverrides.isEmpty() ? null : new ProjectorBatchHatches(shape, plan);
+        var hatches = layout.hatches();
         int[] source = new int[3];
         int copies = plan.batch.machines();
         int cellCount = shape.size + shape.emptyCells.length;
@@ -64,7 +64,7 @@ public record ProjectorBatchCells(Long2IntLinkedOpenHashMap cells, long[] emptyC
                 facing.getOffsetABC(world, abc);
                 long key = ProjectorPlan.pack(abc[0], abc[1], abc[2]);
                 if (hatches != null) {
-                    var hatch = hatches.sample(key, i);
+                    var hatch = hatches.sample(key, i, copy);
                     if (copyOverrides != null && hatch != null && i < shape.size) {
                         if (localOverrides == null) localOverrides = new TreeMap<>();
                         localOverrides.put(ProjectorPlan.pack(source[0], source[1], source[2]), hatch.machine());

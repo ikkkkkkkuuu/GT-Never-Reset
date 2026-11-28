@@ -44,7 +44,9 @@ import gregtech.common.misc.WirelessNetworkManager;
 public class ProjectorBatchHatchChecks {
 
     private static final long POWER_BUDGET = 4_000_000L;
+    private static final int BUILD_REQUEST_INTERVAL = 41;
     private int chargeTicks;
+    private int serverTicks, firstRequestTick;
     private int[] singleHatch;
     private volatile boolean done;
     private volatile ProjectorStructure confirmed;
@@ -63,6 +65,7 @@ public class ProjectorBatchHatchChecks {
     @SubscribeEvent
     public void server(TickEvent.ServerTickEvent event) {
         if (done || event.phase != TickEvent.Phase.END) return;
+        serverTicks++;
         var server = FMLCommonHandler.instance()
             .getMinecraftServerInstance();
         if (server == null || server.getConfigurationManager().playerEntityList.isEmpty()) return;
@@ -77,10 +80,12 @@ public class ProjectorBatchHatchChecks {
                 plan.z = (int) p.posZ + 3;
                 plan.facing = ExtendedFacing.of(ForgeDirection.NORTH);
                 plan.batchProjection = true;
+                plan.batch.copyHatches = false;
                 for (var side : new ForgeDirection[] { ForgeDirection.EAST, ForgeDirection.SOUTH }) {
                     plan.batch.setAdditional(side, 1);
                     plan.batch.setShared(side, true);
                 }
+                verifyHatchMapping(plan);
                 projector = new ItemStack(GameRegistry.findItem("gtneverreset", "multiblock_projector"));
                 plan.write(projector);
                 p.inventory.setInventorySlotContents(0, projector);
@@ -115,6 +120,7 @@ public class ProjectorBatchHatchChecks {
                     require(p.inventory.addItemStackToInventory(stack) && stack.stackSize == 0, "seed survival bill");
                 }
                 ProjectorBuilder.request(p, 0, true);
+                firstRequestTick = serverTicks;
                 requested = true;
                 return;
             }
@@ -148,6 +154,7 @@ public class ProjectorBatchHatchChecks {
                 "wireless network supplied EU");
             for (int i = 1; i < p.inventory.mainInventory.length; i++)
                 require(i == 8 || p.inventory.mainInventory[i] == null, "leftover materials");
+            if (serverTicks - firstRequestTick < BUILD_REQUEST_INTERVAL) return;
             // Exercise the single-build packet's server path with a second remote controller.
             p.theItemInWorldManager.setGameType(WorldSettings.GameType.CREATIVE);
             plan.batchProjection = false;
@@ -292,6 +299,91 @@ public class ProjectorBatchHatchChecks {
 
     private static int energyHatch() {
         return ProjectorMachines.idOf(ItemList.Hatch_Energy_MV.get(1));
+    }
+
+    private static void verifyHatchMapping(ProjectorPlan seed) {
+        require(new ProjectorPlan().copy().batch.copyHatches, "legacy plan copies template hatches by default");
+        var plan = seed.copy();
+        require(!plan.batch.copyHatches, "disabled hatch mapping did not round trip");
+        for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
+            plan.batch.setAdditional(side, side == ForgeDirection.WEST || side == ForgeDirection.UP ? 1 : 0);
+            plan.batch.setShared(side, false);
+        }
+        plan.batch.faceOutward = false;
+        plan.batch.alternateVertical = true;
+        var base = ProjectorSimulation.run(plan.settings());
+        int target = -1;
+        int energy = energyHatch();
+        for (int cell = 0; cell < base.size; cell++) {
+            var slot = base.slotAt(cell);
+            if (slot == null || slot.casing() == null || base.machines[cell] != 0) continue;
+            if (java.util.Arrays.stream(slot.candidates())
+                .anyMatch(id -> id == energy)) {
+                target = cell;
+                break;
+            }
+        }
+        require(target >= 0, "origin hatch mapping source slot");
+        long origin = key(base, target);
+        plan.overrides.put(origin, energy);
+        plan.batch.copyHatches = true;
+        var copied = ProjectorSimulation.run(plan.batchSettings());
+        require(mappedHatchCount(plan, copied, energy) == 4, "ordinary hatch edit must map to each oriented copy");
+
+        plan.overrides.clear();
+        plan.batchOverrides.put(origin, energy);
+        require(
+            plan.batchSettings()
+                .equals(copied.settings),
+            "batch origin edit did not become a copy template");
+        require(mappedHatchCount(plan, copied, energy) == 4, "batch origin edit must map to each oriented copy");
+
+        var layout = new ProjectorBatch.Layout(plan, copied, plan.facing);
+        require(
+            layout.solve() && layout.placement(3)
+                .facing() != plan.facing,
+            "upper test copies must be inverted");
+        var copy = layout.placement(2);
+        int[] world = new int[3], abc = new int[3];
+        copy.facing()
+            .getWorldOffset(new int[] { base.a[target], base.b[target], base.c[target] }, world);
+        world[0] += copy.x();
+        world[1] += copy.y();
+        world[2] += copy.z();
+        plan.facing.getOffsetABC(world, abc);
+        long explicitCopy = ProjectorPlan.pack(abc[0], abc[1], abc[2]);
+        plan.batchOverrides.put(explicitCopy, ProjectorPlan.CASING);
+        var overridden = ProjectorSimulation.run(plan.batchSettings());
+        require(mappedHatchCount(plan, overridden, energy) == 3, "per-copy casing must override mapped hatch");
+
+        plan.batch.copyHatches = false;
+        plan.batchOverrides.remove(explicitCopy);
+        require(
+            plan.batchSettings()
+                .equals(base.settings),
+            "disabled mapping must use the default hatch scheme");
+        require(mappedHatchCount(plan, base, energy) == 1, "batch origin hatch stays local when mapping is disabled");
+        plan.batchOverrides.clear();
+        plan.overrides.put(origin, energy);
+        require(
+            mappedHatchCount(plan, base, energy) == 1,
+            "ordinary origin hatch stays local when mapping is disabled");
+        plan.batchOverrides.put(explicitCopy, energy);
+        require(mappedHatchCount(plan, base, energy) == 2, "disabled mapping keeps explicit copy edits");
+    }
+
+    private static int mappedHatchCount(ProjectorPlan plan, ProjectorStructure shape, int energy) {
+        var layout = new ProjectorBatch.Layout(plan, shape, plan.facing);
+        var batch = ProjectorBatchCells.collect(shape, plan, plan.facing, layout, null);
+        require(batch.compatible(), "hatch mapping generated an incompatible array");
+        ItemStack hatch = ProjectorMachines.stackOf(energy);
+        return batch.materials(shape)
+            .stream()
+            .filter(
+                material -> material.stack()
+                    .isItemEqual(hatch))
+            .mapToInt(ProjectorStructure.Material::count)
+            .sum();
     }
 
     private void checkLocations(ProjectorStructure shape) {

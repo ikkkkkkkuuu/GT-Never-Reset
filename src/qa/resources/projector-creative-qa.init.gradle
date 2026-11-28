@@ -3,6 +3,8 @@ gradle.projectsEvaluated {
     def root = gradle.rootProject
     root.project(':gtnrlib').tasks.named('runClient17').configure { enabled = false }
     def fixture = root.hasProperty('projectorFormationChecks') ? 'ProjectorFormationChecks' : root.hasProperty('projectorBatchHatchChecks') ? 'ProjectorBatchHatchChecks' : root.hasProperty('projectorSurvivalChecks') ? 'ProjectorSurvivalChecks' : root.hasProperty('projectorMirrorChecks') ? 'ProjectorMirrorChecks' : 'ProjectorCreativeChecks'
+    def pinnedGrid = root.hasProperty('projectorPinnedGridChecks')
+    if (pinnedGrid) fixture = 'ProjectorPinnedGridChecks'
     def tallSingularity = root.hasProperty('projectorSingularityTallChecks')
     def coldShaders = root.hasProperty('projectorColdShaders')
     if (root.hasProperty('projectorDeploymentChecks') || tallSingularity || coldShaders) fixture = 'ProjectorDeploymentChecks'
@@ -13,7 +15,8 @@ gradle.projectsEvaluated {
     def baseline = crossDimension && Boolean.getBoolean('gtnr.projector.crossDimensionBaseline')
     def directoryName = tallSingularity ? 'projector-singularity-tall-qa' : materialCrafting ? 'projector-material-crafting-qa' : crossDimension ? (baseline ? 'projector-cross-dimension-baseline' : 'projector-cross-dimension-qa') : 'projector-creative-qa'
     if (coldShaders) directoryName = 'projector-cold-shader-qa'
-    def marker = 'gtnr.projector.creative.qa'
+    if (pinnedGrid) directoryName = 'projector-pinned-grid-qa'
+    def marker = pinnedGrid ? 'gtnr.projector.pinnedGrid.qa' : 'gtnr.projector.creative.qa'
     def qaDirectory = root.layout.buildDirectory.dir(directoryName)
 
     root.tasks.named('compileTestJava').configure {
@@ -42,7 +45,7 @@ gradle.projectsEvaluated {
         systemProperty 'java.security.manager', 'allow'
         systemProperty 'sun.net.client.defaultConnectTimeout', '15000'
         systemProperty 'sun.net.client.defaultReadTimeout', '15000'
-        args '--width', '1100', '--height', '740'
+        args '--width', pinnedGrid ? '1280' : '1100', '--height', pinnedGrid ? '800' : '740'
         notCompatibleWithConfigurationCache('isolated live-client verification')
         doFirst {
             def output = root.file("build/${directoryName}")
@@ -56,6 +59,11 @@ gradle.projectsEvaluated {
             new File(workingDir, 'config/splash.properties').text = 'enabled=false\n'
             new File(workingDir, 'config/DreamCoreMod.properties').text = 'showConfirmExitWindow=false\n'
             java.nio.file.Files.deleteIfExists(new File(workingDir, 'result.txt').toPath())
+            if (pinnedGrid) {
+                ['projector-pinned-hud.png', 'projector-pinned-editor.png', 'projector-full-batch.png'].each { name ->
+                    java.nio.file.Files.deleteIfExists(new File(workingDir, 'screenshots/' + name).toPath())
+                }
+            }
             if (crossDimension) {
                 java.nio.file.Files.deleteIfExists(new File(workingDir, 'projector-cross-dimension-report.txt').toPath())
             }

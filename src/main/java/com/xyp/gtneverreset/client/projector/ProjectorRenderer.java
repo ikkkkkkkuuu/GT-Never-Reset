@@ -66,7 +66,10 @@ public class ProjectorRenderer {
         ProjectorStructure structure = ProjectorClient.projection;
         ProjectorCheck check = ProjectorClient.CHECK;
         int x = ProjectorClient.x, y = ProjectorClient.y, z = ProjectorClient.z;
-        int[] bounds = structure == null ? new int[6] : structure.worldBounds(ProjectorClient.facing);
+        int[][] boxes = structure instanceof ProjectorBatchPreview array && array.copyBounds.length > 0
+            && array.baseFacing == ProjectorClient.facing
+            && ProjectorClient.pinnedPlan() == plan ? array.copyBounds
+                : new int[][] { structure == null ? new int[6] : structure.worldBounds(ProjectorClient.facing) };
         GL11.glPushMatrix();
         GL11.glPushAttrib(
             GL11.GL_ENABLE_BIT | GL11.GL_LINE_BIT
@@ -95,15 +98,7 @@ public class ProjectorRenderer {
                 GL11.glDepthMask(false);
                 GL11.glLineWidth(hidden ? 2f : 3f);
                 int alpha = hidden ? 90 : 255;
-                drawHazardBox(
-                    bounds[0] - INSET,
-                    bounds[1] - INSET,
-                    bounds[2] - INSET,
-                    bounds[3] + 1 + INSET,
-                    bounds[4] + 1 + INSET,
-                    bounds[5] + 1 + INSET,
-                    accent,
-                    alpha);
+                drawHazardBoxes(boxes, accent, alpha);
                 drawBox(0.1, 0.1, 0.1, 0.9, 0.9, 0.9, CYAN, alpha);
                 drawArrow(ProjectorClient.facing.getDirection(), CYAN, alpha);
             }
@@ -204,17 +199,20 @@ public class ProjectorRenderer {
         buffer.flip();
     }
 
-    private static void drawHazardBox(double minX, double minY, double minZ, double maxX, double maxY, double maxZ,
-        int accent, int alpha) {
+    private static void drawHazardBoxes(int[][] boxes, int accent, int alpha) {
         Tessellator tessellator = Tessellator.instance;
         tessellator.startDrawing(GL11.GL_LINES);
-        double[] xs = { minX, maxX }, ys = { minY, maxY }, zs = { minZ, maxZ };
-        for (double py : ys) {
-            for (double pz : zs) stripe(tessellator, minX, py, pz, maxX, py, pz, accent, alpha);
-            for (double px : xs) stripe(tessellator, px, py, minZ, px, py, maxZ, accent, alpha);
-        }
-        for (double px : xs) {
-            for (double pz : zs) stripe(tessellator, px, minY, pz, px, maxY, pz, accent, alpha);
+        for (int[] bounds : boxes) {
+            double minX = bounds[0] - INSET, minY = bounds[1] - INSET, minZ = bounds[2] - INSET;
+            double maxX = bounds[3] + 1 + INSET, maxY = bounds[4] + 1 + INSET, maxZ = bounds[5] + 1 + INSET;
+            for (int edge = 0; edge < 4; edge++) {
+                boolean low = (edge & 1) == 0, near = (edge & 2) == 0;
+                double x = low ? minX : maxX, y = low ? minY : maxY, z = near ? minZ : maxZ;
+                double crossY = near ? minY : maxY;
+                stripe(tessellator, minX, y, z, maxX, y, z, accent, alpha);
+                stripe(tessellator, x, minY, z, x, maxY, z, accent, alpha);
+                stripe(tessellator, x, crossY, minZ, x, crossY, maxZ, accent, alpha);
+            }
         }
         tessellator.draw();
     }
