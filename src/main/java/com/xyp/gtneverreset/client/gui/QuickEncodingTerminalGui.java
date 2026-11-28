@@ -587,7 +587,7 @@ public final class QuickEncodingTerminalGui extends GuiPatternTerm
         try {
             if (!ITEM_VIEW_UPDATE_PENDING.getBoolean(this)) return;
             ITEM_VIEW_UPDATE_PENDING.setBoolean(this, false);
-            itemRepo.updateView();
+            itemRepo.updateViewIfChanged();
         } catch (IllegalAccessException ignored) {}
     }
 
