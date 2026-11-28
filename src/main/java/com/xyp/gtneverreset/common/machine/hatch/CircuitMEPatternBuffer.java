@@ -112,6 +112,12 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME impleme
         return sharedSupplies;
     }
 
+    public long getSupplyDisplayAmount(int slot) {
+        return getBaseMetaTileEntity().isServerSide()
+            ? sharedSupplies.displayAmount(slot, getProxy(), getMEOutputActionSource())
+            : -1;
+    }
+
     @Override
     public ModularPanel buildUI(PosGuiData data, PanelSyncManager syncManager, UISettings uiSettings) {
         return new CircuitMEPatternBufferGui(this).build(data, syncManager, uiSettings);
@@ -155,7 +161,7 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME impleme
     @Override
     public void onPostTick(IGregTechTileEntity tile, long timer) {
         super.onPostTick(tile, timer);
-        if (tile.isServerSide() && sharedSupplies.tick()) pullSharedSupplies();
+        if (tile.isServerSide()) sharedSupplies.settleStock();
         if (tile.isServerSide() && inputsChanged) {
             notifyWatchers();
             for (SuperMTEHatchCraftingInputSlave mirror : getProxyHatches()) mirror.onParentInvChange();
@@ -185,28 +191,8 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME impleme
         }
     }
 
-    private void pullSharedSupplies() {
-        var tile = getBaseMetaTileEntity();
-        if (!tile.isServerSide() || !tile.isAllowedToWork() || !isActive()) return;
-        try {
-            if (sharedSupplies.pull(
-                getProxy(),
-                getMEOutputActionSource(),
-                tile.getWorld()
-                    .getTotalWorldTime())) {
-                patternInputsChanged();
-                inputsChanged = true;
-            }
-        } catch (GridAccessException ignored) {}
-    }
-
     private boolean canUseNetworkInputs() {
         return sharedSupplies.isCheckingNetwork() && getBaseMetaTileEntity().isAllowedToWork() && isActive();
-    }
-
-    private CircuitSharedSupplies suppliesForRecipe() {
-        if (sharedSupplies.onRecipeCheck() && sharedSupplies.hasWork()) pullSharedSupplies();
-        return sharedSupplies;
     }
 
     @Override
@@ -510,7 +496,7 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME impleme
             if (items.isEmpty() && buffer.fluidViews()
                 .isEmpty()) return GTValues.emptyItemStackArray;
             var hatch = (CircuitMEPatternBuffer) parentMTE;
-            var supplies = hatch.suppliesForRecipe();
+            var supplies = hatch.sharedSupplies;
             var shared = supplies.itemInputs();
             var network = hatch.canUseNetworkInputs()
                 ? supplies.networkItemInputs(hatch.getProxy(), hatch.getMEOutputActionSource())
@@ -533,7 +519,7 @@ public class CircuitMEPatternBuffer extends SuperMTEHatchCraftingInputME impleme
             if (fluids.isEmpty() && buffer.itemViews()
                 .isEmpty()) return GTValues.emptyFluidStackArray;
             var hatch = (CircuitMEPatternBuffer) parentMTE;
-            var supplies = hatch.suppliesForRecipe();
+            var supplies = hatch.sharedSupplies;
             var shared = supplies.fluidInputs();
             var network = hatch.canUseNetworkInputs()
                 ? supplies.networkFluidInputs(hatch.getProxy(), hatch.getMEOutputActionSource())
