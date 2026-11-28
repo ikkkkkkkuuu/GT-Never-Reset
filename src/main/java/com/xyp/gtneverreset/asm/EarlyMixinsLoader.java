@@ -26,6 +26,8 @@ public final class EarlyMixinsLoader implements IFMLLoadingPlugin, IEarlyMixinLo
                 "gtnhlib.ServerThreadUtilMixin",
                 "minecraft.VanillaFurnaceMixin"));
         mixins.add("minecraft.ItemInWorldManagerMiningMixin");
+        mixins.add("minecraft.ProjectorChunkUpdateMixin");
+        mixins.add("minecraft.ProjectorPlayerManagerMixin");
         mixins.add("minecraft.UniversalWandBlockInteractionMixin");
         mixins.add("minecraft.UniversalWandCombatMixin");
         mixins.add("minecraft.UniversalWandEntityInteractionMixin");

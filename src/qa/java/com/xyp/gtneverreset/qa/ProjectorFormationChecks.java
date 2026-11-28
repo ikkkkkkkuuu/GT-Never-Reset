@@ -66,7 +66,7 @@ public class ProjectorFormationChecks {
         plan.batchProjection = true;
         for (var side : new ForgeDirection[] { ForgeDirection.EAST, ForgeDirection.SOUTH }) {
             plan.batch.setAdditional(side, 1);
-            plan.batch.setShared(side, true);
+            plan.batch.setGap(side, -1);
         }
         var item = new ItemStack(GameRegistry.findItem("gtneverreset", "multiblock_projector"));
         plan.write(item);

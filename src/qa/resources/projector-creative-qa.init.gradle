@@ -60,7 +60,7 @@ gradle.projectsEvaluated {
             new File(workingDir, 'config/DreamCoreMod.properties').text = 'showConfirmExitWindow=false\n'
             java.nio.file.Files.deleteIfExists(new File(workingDir, 'result.txt').toPath())
             if (pinnedGrid) {
-                ['projector-pinned-hud.png', 'projector-pinned-editor.png', 'projector-full-batch.png'].each { name ->
+                ['projector-pinned-hud.png', 'projector-pinned-editor.png', 'projector-full-batch.png', 'projector-dismantle-confirmation.png'].each { name ->
                     java.nio.file.Files.deleteIfExists(new File(workingDir, 'screenshots/' + name).toPath())
                 }
             }

@@ -83,7 +83,7 @@ public class ProjectorBatchHatchChecks {
                 plan.batch.copyHatches = false;
                 for (var side : new ForgeDirection[] { ForgeDirection.EAST, ForgeDirection.SOUTH }) {
                     plan.batch.setAdditional(side, 1);
-                    plan.batch.setShared(side, true);
+                    plan.batch.setGap(side, -1);
                 }
                 verifyHatchMapping(plan);
                 projector = new ItemStack(GameRegistry.findItem("gtneverreset", "multiblock_projector"));
@@ -307,10 +307,8 @@ public class ProjectorBatchHatchChecks {
         require(!plan.batch.copyHatches, "disabled hatch mapping did not round trip");
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
             plan.batch.setAdditional(side, side == ForgeDirection.WEST || side == ForgeDirection.UP ? 1 : 0);
-            plan.batch.setShared(side, false);
+            plan.batch.setGap(side, 0);
         }
-        plan.batch.faceOutward = false;
-        plan.batch.alternateVertical = true;
         var base = ProjectorSimulation.run(plan.settings());
         int target = -1;
         int energy = energyHatch();
@@ -328,7 +326,7 @@ public class ProjectorBatchHatchChecks {
         plan.overrides.put(origin, energy);
         plan.batch.copyHatches = true;
         var copied = ProjectorSimulation.run(plan.batchSettings());
-        require(mappedHatchCount(plan, copied, energy) == 4, "ordinary hatch edit must map to each oriented copy");
+        require(mappedHatchCount(plan, copied, energy) == 4, "ordinary hatch edit must map to each translated copy");
 
         plan.overrides.clear();
         plan.batchOverrides.put(origin, energy);
@@ -336,7 +334,7 @@ public class ProjectorBatchHatchChecks {
             plan.batchSettings()
                 .equals(copied.settings),
             "batch origin edit did not become a copy template");
-        require(mappedHatchCount(plan, copied, energy) == 4, "batch origin edit must map to each oriented copy");
+        require(mappedHatchCount(plan, copied, energy) == 4, "batch origin edit must map to each translated copy");
 
         var layout = new ProjectorBatch.Layout(plan, copied, plan.facing);
         require(

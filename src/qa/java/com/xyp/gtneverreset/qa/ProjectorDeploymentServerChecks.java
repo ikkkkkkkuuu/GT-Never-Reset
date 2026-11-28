@@ -15,10 +15,13 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
+import com.xyp.gtneverreset.common.packet.ProjectorBuildActionPacket.Action;
 import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket;
 import com.xyp.gtneverreset.common.packet.ProjectorDeploymentPacket.Phase;
+import com.xyp.gtneverreset.common.projector.ProjectorBuildActions;
 import com.xyp.gtneverreset.common.projector.ProjectorBuilder;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
+import com.xyp.gtneverreset.common.projector.ProjectorPlacementUpdates;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtnrlib.animation.StructureDeployment;
 import com.xyp.gtnrlib.animation.StructureDeployment.Launch;
@@ -53,6 +56,7 @@ public final class ProjectorDeploymentServerChecks {
     private int build;
     private boolean cancelTest;
     private long cancelDeadline = -1;
+    private Position earlyBlock;
 
     @Mod.EventHandler
     public void ready(FMLServerStartedEvent event) throws Exception {
@@ -101,6 +105,18 @@ public final class ProjectorDeploymentServerChecks {
                 checkCancelledWarp();
                 return;
             }
+            if (earlyBlock == null) {
+                earlyBlock = findHeldBlock();
+                if (earlyBlock != null) {
+                    require(plan.buildStyle != StructureDeploymentStyle.NONE, "unanimated placement delayed updates");
+                    var animation = (StructureDeployment) jobField(activeBuild(), "deployment");
+                    require(
+                        world.getTotalWorldTime() < animation.startTick() + plan.buildStyle.bandReadyTick(0),
+                        "ordinary blocks were not placed before the animation reveal");
+                    require(!isAir(earlyBlock), "the held ordinary block was not placed in the server world");
+                    require(world.isAirBlock(plan.x, Y, plan.z), "controller was placed before the animation reveal");
+                }
+            }
             if (!(world.getTileEntity(plan.x, Y, plan.z) instanceof IGregTechTileEntity tile)) return;
             require(tile.getMetaTileID() == plan.machine, "projector placed the wrong controller");
             int delay = switch (plan.buildStyle) {
@@ -111,7 +127,12 @@ public final class ProjectorDeploymentServerChecks {
                 case NONE -> 0;
             };
             require(elapsed >= delay, "projector skipped the animation wait for " + plan.buildStyle);
-            if (elapsed < 42) return;
+            if (activeBuild() != null || elapsed < 42) return;
+            if (plan.buildStyle != StructureDeploymentStyle.NONE) {
+                require(earlyBlock != null, "no early world placement with delayed sync for " + plan.buildStyle);
+                require(!isAir(earlyBlock), "ordinary placement disappeared after the reveal");
+            }
+            require(findHeldBlock() == null, "a completed build kept block updates on hold");
             var bounds = new StructureDeployment(start, plan.x - 1, Y, plan.z, plan.x + 2, plan.z + 3, Y + 19);
             checkPacket(new ProjectorDeploymentPacket(1, 0, bounds, plan, false));
             checkPacket(new ProjectorDeploymentPacket(1, 0, Phase.IMPACT));
@@ -148,29 +169,55 @@ public final class ProjectorDeploymentServerChecks {
     }
 
     private void checkCancelledWarp() throws Exception {
+        Object job = activeBuild();
+        if (cancelDeadline < 0) {
+            require(job != null, "cancel test did not start a build");
+            earlyBlock = findHeldBlock();
+            if (earlyBlock == null) return;
+            var animation = (StructureDeployment) jobField(job, "deployment");
+            long revealTick = animation.startTick() + plan.buildStyle.bandReadyTick(0);
+            require(world.getTotalWorldTime() < revealTick, "cancel test missed the hidden placement window");
+            require(!isAir(earlyBlock), "cancel test did not place an ordinary block");
+            checkHandOrigins(readLaunch((ProjectorDeploymentPacket) jobField(job, "deploymentStart")));
+            ProjectorBuildActions.request(player, 0, Action.CANCEL, false);
+            require(activeBuild() == null, "cancel did not end the build");
+            require(findHeldBlock() == null, "cancel did not release delayed block updates immediately");
+            cancelDeadline = revealTick + 10;
+        } else if (world.getTotalWorldTime() >= cancelDeadline) {
+            require(job == null, "cancelled warp remained active");
+            require(!isAir(earlyBlock), "cancelled warp removed an already placed ordinary block");
+            require(world.isAirBlock(plan.x, Y, plan.z), "cancelled warp placed its controller");
+            finish(null);
+        }
+    }
+
+    private Object activeBuild() throws Exception {
         var jobsField = ProjectorBuilder.class.getDeclaredField("jobs");
         jobsField.setAccessible(true);
         var jobs = (Map<?, ?>) jobsField.get(ProjectorBuilder.INSTANCE);
-        Object job = jobs.get(player.getUniqueID());
-        if (cancelDeadline < 0) {
-            require(job != null, "cancel test did not start a build");
-            var animationField = job.getClass()
-                .getDeclaredField("deployment");
-            animationField.setAccessible(true);
-            var animation = (StructureDeployment) animationField.get(job);
-            if (animation == null || world.getTotalWorldTime() < animation.startTick() - 4) return;
-            var packetField = job.getClass()
-                .getDeclaredField("deploymentStart");
-            packetField.setAccessible(true);
-            checkHandOrigins(readLaunch((ProjectorDeploymentPacket) packetField.get(job)));
-            player.inventory.setInventorySlotContents(player.inventory.currentItem, null);
-            cancelDeadline = animation.startTick() + plan.buildStyle.bandReadyTick(0) + 10;
-        } else if (world.getTotalWorldTime() >= cancelDeadline) {
-            require(job == null, "cancelled warp remained active");
-            for (int x = plan.x - 3; x <= plan.x + 3; x++) for (int z = plan.z - 3; z <= plan.z + 3; z++)
-                for (int y = Y - 3; y < Y + 4; y++) require(world.isAirBlock(x, y, z), "cancelled warp placed a block");
-            finish(null);
+        return jobs.get(player.getUniqueID());
+    }
+
+    private static Object jobField(Object job, String name) throws Exception {
+        var field = job.getClass()
+            .getDeclaredField(name);
+        field.setAccessible(true);
+        return field.get(job);
+    }
+
+    private Position findHeldBlock() {
+        for (int x = plan.x - 4; x <= plan.x + 4; x++) {
+            for (int z = plan.z - 4; z <= plan.z + 4; z++) {
+                for (int y = Y - 4; y <= Y + 4; y++) {
+                    if (ProjectorPlacementUpdates.isHeld(world, x, y, z)) return new Position(x, y, z);
+                }
+            }
         }
+        return null;
+    }
+
+    private boolean isAir(Position position) {
+        return world.isAirBlock(position.x(), position.y(), position.z());
     }
 
     private void request(StructureDeploymentStyle style) {
@@ -181,6 +228,7 @@ public final class ProjectorDeploymentServerChecks {
         player.setPosition(plan.x + 0.5, Y, plan.z - 4);
         player.inventory.setInventorySlotContents(player.inventory.currentItem, item);
         start = world.getTotalWorldTime();
+        earlyBlock = null;
         ProjectorBuilder.request(player, 0, false);
         ProjectorBuilder.request(player, 0, false);
     }
@@ -273,4 +321,6 @@ public final class ProjectorDeploymentServerChecks {
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
     }
+
+    private record Position(int x, int y, int z) {}
 }

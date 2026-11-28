@@ -37,6 +37,7 @@ import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.client.projector.ProjectorClient;
 import com.xyp.gtneverreset.client.projector.ProjectorGui;
 import com.xyp.gtneverreset.common.gui.WirelessTerminalGuiHandler;
+import com.xyp.gtneverreset.common.packet.ProjectorBuildActionPacket.Action;
 import com.xyp.gtneverreset.common.projector.*;
 import com.xyp.gtneverreset.utils.enums.WirelessTerminalGuiType;
 import com.xyp.gtnrlib.gui.widget.AE2Button;
@@ -66,6 +67,7 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import cpw.mods.fml.common.registry.GameRegistry;
 import gregtech.api.enums.ItemList;
+import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 @Mod(
     modid = "gtnrprojectorsurvivalqa",
@@ -91,13 +93,14 @@ public class ProjectorSurvivalChecks {
         CHEST,
         SINGLE,
         PREBUILT,
-        DRIVE,
         BATCH_SHORT,
         CANCEL,
         REFUND,
+        DRIVE,
         BATCH,
         RETRY,
-        LOOK
+        LOOK,
+        DISMANTLE
     }
 
     private volatile Stage stage = Stage.SETUP;
@@ -170,7 +173,7 @@ public class ProjectorSurvivalChecks {
                     "four furnaces changed facing with the camera");
                 if (originalPreview == null) originalPreview = preview;
                 require(originalPreview == preview, "four furnaces were rearranged when turning");
-                if (viewTicks == 25) finish(null);
+                if (viewTicks == 25) stage = Stage.DISMANTLE;
             } catch (Throwable failure) {
                 finish(failure);
             }
@@ -243,6 +246,10 @@ public class ProjectorSurvivalChecks {
             built = Integer.parseInt(String.valueOf(msg.getFormatArgs()[0]));
             feedback = "done";
         }
+        if (key.equals("gtneverreset.projector.removal.done")) {
+            built = Integer.parseInt(String.valueOf(msg.getFormatArgs()[0]));
+            feedback = "removed";
+        }
         if (key.equals("gtneverreset.projector.build.stopped")) feedback = "stopped";
     }
 
@@ -279,6 +286,8 @@ public class ProjectorSurvivalChecks {
             switch (stage) {
                 case SETUP -> {
                     require(Loader.isModLoaded("structurecompat"), "StructureCompat missing");
+                    p.worldObj.getGameRules()
+                        .setOrCreateGameRule("doMobSpawning", "false");
                     x = (int) p.posX + 12;
                     y = 14;
                     z = (int) p.posZ + 7;
@@ -436,6 +445,7 @@ public class ProjectorSurvivalChecks {
                     request(p, false);
                 }
                 case CHEST -> {
+                    ((IAEItemPowerStorage) terminal.getItem()).injectAEPower(terminal, 100000);
                     p.worldObj.setBlock(x, y, z, Blocks.chest);
                     var chest = (net.minecraft.tileentity.TileEntityChest) p.worldObj.getTileEntity(x, y, z);
                     chest.setInventorySlotContents(0, new ItemStack(net.minecraft.init.Items.diamond));
@@ -444,7 +454,6 @@ public class ProjectorSurvivalChecks {
                 }
                 case SINGLE -> {
                     putHeat(p, x, y, z);
-                    ((IAEItemPowerStorage) terminal.getItem()).injectAEPower(terminal, 100000);
                     request(p, false);
                 }
                 case PREBUILT -> {
@@ -461,20 +470,7 @@ public class ProjectorSurvivalChecks {
                     p.worldObj.setBlock(x + off[0], y + off[1], z + off[2], shape.blocks[cell], shape.metas[cell], 3);
                     decrement(casing);
                     seed(p, true);
-                    p.worldObj.setBlock(
-                        x + 2,
-                        y,
-                        z,
-                        AEApi.instance()
-                            .definitions()
-                            .blocks()
-                            .drive()
-                            .maybeBlock()
-                            .get());
-                    obstruction = p.worldObj.getTileEntity(x + 2, y, z);
-                    require(obstruction instanceof TileDrive, "batch obstacle is a real ME drive");
-                    stage = Stage.DRIVE;
-                    request(p, true);
+                    stage = Stage.BATCH_SHORT;
                 }
                 case BATCH_SHORT -> {
                     putHeat(p, x + 2, y, z);
@@ -488,11 +484,44 @@ public class ProjectorSurvivalChecks {
                     if (hasRefund(p)) return;
                     balances(p, false, false);
                     moveRefundsToGrid(p);
-                    stage = Stage.BATCH;
+                    stage = Stage.DRIVE;
+                }
+                case DRIVE -> {
+                    p.worldObj.setBlock(
+                        x + 2,
+                        y,
+                        z,
+                        AEApi.instance()
+                            .definitions()
+                            .blocks()
+                            .drive()
+                            .maybeBlock()
+                            .get());
+                    obstruction = p.worldObj.getTileEntity(x + 2, y, z);
+                    require(obstruction instanceof TileDrive, "batch obstacle is a real ME drive");
                     request(p, true);
                 }
-                case RETRY -> request(p, true);
+                case BATCH -> {
+                    putHeat(p, x + 2, y, z);
+                    request(p, true);
+                }
+                case RETRY -> {
+                    var draft = checkedBatch(p);
+                    require(
+                        draft.state == ProjectorPlan.State.LOCKED && draft.batch.machines() == 2,
+                        "the completed two-copy projection must stay locked for the retry");
+                    request(p, true);
+                }
                 case LOOK -> {}
+                case DISMANTLE -> {
+                    var draft = checkedBatch(p);
+                    draft.batch.setAdditional(ForgeDirection.SOUTH, 0);
+                    require(draft.batch.machines() == 2, "fixture lost the two-copy batch");
+                    draft.state = ProjectorPlan.State.LOCKED;
+                    draft.write(projector);
+                    startRequest(p);
+                    ProjectorBuildActions.request(p, 0, Action.DISMANTLE, true);
+                }
                 default -> throw new AssertionError(stage);
             }
         } catch (Throwable error) {
@@ -511,7 +540,7 @@ public class ProjectorSurvivalChecks {
         plan.facing = ExtendedFacing.of(ForgeDirection.NORTH);
         if (batch) {
             plan.batch.setAdditional(ForgeDirection.EAST, 1);
-            plan.batch.setShared(ForgeDirection.EAST, true);
+            plan.batch.setGap(ForgeDirection.EAST, -1);
         }
         plan.write(projector);
         shape = ProjectorSimulation.run(plan.settings());
@@ -678,14 +707,41 @@ public class ProjectorSurvivalChecks {
         }
     }
 
+    private void balancesAfterSkippingController(EntityPlayerMP p) {
+        var controller = ItemList.Machine_Multi_BlastFurnace.get(1);
+        for (var stack : need.keySet()) {
+            int expected = controller.isItemEqual(stack) ? 1 : 0;
+            require(total(p, stack) == expected, "skipped controller balance " + stack + " expected " + expected);
+        }
+        require(
+            ((IAEItemPowerStorage) terminal.getItem()).getAECurrentPower(terminal) < chargeBefore,
+            "placing around an obstacle used wireless terminal power");
+    }
+
     private void request(EntityPlayerMP p, boolean batch) {
+        startRequest(p);
+        ProjectorBuilder.request(p, 0, batch);
+    }
+
+    private ProjectorPlan checkedBatch(EntityPlayerMP player) {
+        require(player.getCurrentEquippedItem() == projector, "fixture lost the selected projector");
+        var draft = ProjectorPlan.read(projector);
+        require(
+            draft.machine == blastFurnaceId() && draft.dimension == player.dimension
+                && draft.x == x
+                && draft.y == y
+                && draft.z == z,
+            "fixture lost the saved batch site");
+        return draft;
+    }
+
+    private void startRequest(EntityPlayerMP p) {
         nextRequestTick = p.worldObj.getTotalWorldTime() + 41;
         feedback = "";
         shortCount = -1;
         placedEvents = 0;
         waiting = true;
         chargeBefore = ((IAEItemPowerStorage) terminal.getItem()).getAECurrentPower(terminal);
-        ProjectorBuilder.request(p, 0, batch);
     }
 
     private boolean hasRefund(EntityPlayerMP p) {
@@ -708,12 +764,8 @@ public class ProjectorSurvivalChecks {
                         feedback.equals("done") && built == 34 && placedEvents == 34,
                         "cross-dimension generation places all 34 blocks");
                     require(
-                        p.worldObj.getTileEntity(
-                            x,
-                            y,
-                            z) instanceof gregtech.api.interfaces.tileentity.IGregTechTileEntity tile
-                            && tile.getMetaTileID()
-                                == ProjectorMachines.idOf(ItemList.Machine_Multi_BlastFurnace.get(1)),
+                        p.worldObj.getTileEntity(x, y, z) instanceof IGregTechTileEntity tile
+                            && tile.getMetaTileID() == blastFurnaceId(),
                         "Nether furnace controller is really placed");
                     require(charge < chargeBefore, "cross-dimension extraction spends actual terminal energy");
                 }
@@ -748,26 +800,31 @@ public class ProjectorSurvivalChecks {
             }
             case CHEST -> {
                 require(
-                    feedback.equals("stopped") && placedEvents == 0
-                        && p.worldObj.getTileEntity(x, y, z) == obstruction
+                    feedback.equals("done") && built == 33 && placedEvents == 33,
+                    "occupied chest did not allow the surrounding 33 blocks to be placed");
+                require(
+                    p.worldObj.getTileEntity(x, y, z) == obstruction
                         && ((net.minecraft.tileentity.TileEntityChest) obstruction).getStackInSlot(0)
                             .getItem() == net.minecraft.init.Items.diamond,
                     "occupied chest was not preserved");
+                balancesAfterSkippingController(p);
                 p.worldObj.setBlockToAir(x, y, z);
                 stage = Stage.SINGLE;
             }
             case DRIVE -> {
                 require(
-                    feedback.equals("stopped") && placedEvents == 0
-                        && p.worldObj.getTileEntity(x + 2, y, z) == obstruction,
-                    "batch did not preserve ME drive");
+                    feedback.equals("done") && built == 54 && placedEvents == 54,
+                    "occupied ME drive did not allow the other 54 missing batch blocks to be placed");
+                require(p.worldObj.getTileEntity(x + 2, y, z) == obstruction, "batch did not preserve ME drive");
+                balancesAfterSkippingController(p);
                 p.worldObj.setBlockToAir(x + 2, y, z);
-                stage = Stage.BATCH_SHORT;
+                stage = Stage.BATCH;
             }
             case CANCEL -> {
                 require(
-                    feedback.equals("stopped") && placedEvents == 1 && p.worldObj.isAirBlock(x, y, z),
-                    "protection rollback");
+                    feedback.equals("done") && built == 0 && placedEvents == 55,
+                    "protection should roll back each denied placement and continue to the next");
+                require(p.worldObj.isAirBlock(x, y, z), "protection rollback left a controller in the world");
                 require(hasRefund(p), "full inventory retains unused reserved items");
                 for (int slot = 0; slot < p.inventory.mainInventory.length; slot++) {
                     ItemStack item = p.inventory.getStackInSlot(slot);
@@ -777,19 +834,19 @@ public class ProjectorSurvivalChecks {
                 stage = Stage.REFUND;
             }
             case SINGLE, BATCH, RETRY -> {
-                int expected = stage == Stage.SINGLE ? 34 : stage == Stage.BATCH ? 55 : 0;
+                int expected = stage == Stage.RETRY ? 0 : 1;
                 require(
                     feedback.equals("done") && built == expected && placedEvents == expected,
                     "built " + built + " events " + placedEvents + " expected " + expected);
                 require(
-                    p.worldObj
-                        .getTileEntity(x, y, z) instanceof gregtech.api.interfaces.tileentity.IGregTechTileEntity tile
-                        && tile.getMetaTileID() == ProjectorMachines.idOf(ItemList.Machine_Multi_BlastFurnace.get(1)),
+                    p.worldObj.getTileEntity(x, y, z) instanceof IGregTechTileEntity tile
+                        && tile.getMetaTileID() == blastFurnaceId(),
                     "controller missing");
                 balances(p, false, true);
-                if (stage != Stage.RETRY) require(
-                    ((IAEItemPowerStorage) terminal.getItem()).getAECurrentPower(terminal) < chargeBefore,
-                    "wireless extraction used terminal power");
+                if (stage == Stage.BATCH) require(
+                    p.worldObj.getTileEntity(x + 2, y, z) instanceof IGregTechTileEntity second
+                        && second.getMetaTileID() == blastFurnaceId(),
+                    "second batch controller missing");
 
                 if (stage == Stage.RETRY) {
                     var draft = ProjectorPlan.read(projector);
@@ -804,8 +861,26 @@ public class ProjectorSurvivalChecks {
                 }
                 stage = stage == Stage.SINGLE ? Stage.PREBUILT : Stage.RETRY;
             }
+            case DISMANTLE -> {
+                require(feedback.equals("removed") && built == 56, "dismantled " + built + " of 56 array blocks");
+                require(
+                    p.worldObj.isAirBlock(x, y, z) && p.worldObj.isAirBlock(x + 2, y, z),
+                    "dismantling left a controller in the world");
+                int recoveredCasings = need.get(casing) + 1;
+                require(
+                    gridCount(p, casing) == recoveredCasings && total(p, casing) == recoveredCasings,
+                    "recovered casings did not go straight to ME storage");
+                require(
+                    ((IAEItemPowerStorage) terminal.getItem()).getAECurrentPower(terminal) < chargeBefore,
+                    "dismantling did not use the wireless terminal");
+                finish(null);
+            }
             default -> throw new AssertionError(stage);
         }
+    }
+
+    private static int blastFurnaceId() {
+        return ProjectorMachines.idOf(ItemList.Machine_Multi_BlastFurnace.get(1));
     }
 
     private void putHeat(EntityPlayerMP player, int wx, int wy, int wz) {

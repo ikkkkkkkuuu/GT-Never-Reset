@@ -173,6 +173,7 @@ public final class NetWorkHandler {
             CraftingMonitorCellProgressPacket.class,
             nextPacketId++,
             Side.CLIENT);
+        registerServerbound(ProjectorBuildActionPacket.class);
         FMLCommonHandler.instance()
             .bus()
             .register(INSTANCE);

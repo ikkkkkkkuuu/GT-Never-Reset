@@ -5,14 +5,20 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.ScreenShotHelper;
 import net.minecraft.world.WorldSettings;
 import net.minecraft.world.WorldType;
+import net.minecraftforge.client.event.ClientChatReceivedEvent;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import org.lwjgl.input.Keyboard;
@@ -24,6 +30,8 @@ import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.client.projector.ProjectorClient;
 import com.xyp.gtneverreset.client.projector.ProjectorGui;
+import com.xyp.gtneverreset.common.projector.ProjectorBatch;
+import com.xyp.gtneverreset.common.projector.ProjectorBatchCells;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
@@ -66,13 +74,20 @@ public class ProjectorPinnedGridChecks {
         VERIFY_FULL_GUI,
         VERIFY_UNPIN_GUI,
         TRY_ALT_AFTER_UNPIN,
-        VERIFY_UNPIN
+        VERIFY_UNPIN,
+        OPEN_ACTIONS,
+        STOP,
+        UNDO,
+        CONFIRM_DISMANTLE,
+        SUBMIT_DISMANTLE,
+        VERIFY_DISMANTLE
     }
 
     private static final String PINNED = "projector_pinned_";
     private static final String HUD_SCREENSHOT = "projector-pinned-hud.png";
     private static final String EDITOR_SCREENSHOT = "projector-pinned-editor.png";
     private static final String FULL_SCREENSHOT = "projector-full-batch.png";
+    private static final String ACTION_SCREENSHOT = "projector-dismantle-confirmation.png";
     private static final int[] OTHER_PAGES = { ProjectorGui.MACHINES, ProjectorGui.PARAMETERS, ProjectorGui.HATCHES,
         ProjectorGui.GENERATION, ProjectorGui.MATERIALS };
     private static final ForgeDirection[] AXES = { ForgeDirection.EAST, ForgeDirection.UP, ForgeDirection.SOUTH };
@@ -80,13 +95,15 @@ public class ProjectorPinnedGridChecks {
     private volatile Stage stage = Stage.SETUP;
     private volatile boolean serverSynced;
     private boolean launched, done, holdingEditorKey, hudCaptured, editorCaptured, fullCaptured;
-    private int ticks, captureAfterTick, toolbarPage, verifyUnpinAfterTick, machine, x, z;
+    private boolean stopReceived, undoReceived, dismantleReceived, confirmationCaptured;
+    private int ticks, captureAfterTick, toolbarPage, verifyUnpinAfterTick, undoTick, machine, x, z;
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         FMLCommonHandler.instance()
             .bus()
             .register(this);
+        MinecraftForge.EVENT_BUS.register(this);
     }
 
     @SubscribeEvent
@@ -114,7 +131,6 @@ public class ProjectorPinnedGridChecks {
         plan.y = 12;
         plan.z = z = (int) player.posZ;
         plan.facing = ExtendedFacing.of(ForgeDirection.NORTH);
-        plan.batch.faceOutward = false;
         plan.display = ProjectorPlan.Display.BLOCKS;
         plan.buildStyle = StructureDeploymentStyle.SINGULARITY;
         var item = new ItemStack(GameRegistry.findItem("gtneverreset", "multiblock_projector"));
@@ -178,11 +194,15 @@ public class ProjectorPinnedGridChecks {
                         return;
                     pinButton(gui);
                     for (var axis : AXES) {
-                        setNumber(gui, "batch_count_" + axis.ordinal(), axis == ForgeDirection.EAST ? 0 : 1);
+                        setNumber(gui, "batch_count_" + axis.ordinal(), axis == ForgeDirection.EAST ? 1 : 2);
                         setNumber(gui, "batch_gap_" + axis.ordinal(), 2);
                         require(gui.working.batch.gap(axis) == 2, "Full GUI gap edit did not apply for " + axis);
                     }
                     require(gui.working.batch.machines() == 4, "Full GUI directional edits did not apply");
+                    verifyOverlap(gui.working, gui.structure());
+                    requireAction(gui, "cancel_batch_build");
+                    requireAction(gui, "undo_batch_build");
+                    requireAction(gui, "dismantle_batch");
                     stage = Stage.CHECK_TOOLBAR;
                 }
                 case CHECK_TOOLBAR -> {
@@ -212,7 +232,7 @@ public class ProjectorPinnedGridChecks {
                     setNumber(editor, PINNED + "position_x", x + 1);
                     setNumber(editor, PINNED + "copies_x", 3);
                     setNumber(editor, PINNED + "copies_z", -2);
-                    setNumber(editor, PINNED + "gap_x", 3);
+                    setNumber(editor, PINNED + "gap_x", -1);
                     setNumber(editor, PINNED + "gap_y", 4);
                     require(
                         ProjectorClient.plan.batch.copyHatches,
@@ -287,6 +307,50 @@ public class ProjectorPinnedGridChecks {
                     require(mc.currentScreen == null, "Unpin left the HUD editor active");
                     if (ticks < verifyUnpinAfterTick) return;
                     holdEditorKey(false);
+                    ProjectorClient.open(0);
+                    stage = Stage.STOP;
+                }
+                case OPEN_ACTIONS -> {
+                    if (mc.currentScreen != null || !stopReceived || undoTick != 0 && !undoReceived) return;
+                    ProjectorClient.open(0);
+                    stage = undoReceived ? Stage.CONFIRM_DISMANTLE : Stage.UNDO;
+                }
+                case STOP -> {
+                    var gui = fullGui();
+                    if (gui == null) return;
+                    var button = generationAction(gui, "cancel_build");
+                    if (button == null) return;
+                    button.onMousePressed(0);
+                    stage = Stage.OPEN_ACTIONS;
+                }
+                case UNDO -> {
+                    var gui = fullGui();
+                    if (gui == null) return;
+                    var button = generationAction(gui, "undo_build");
+                    if (button == null) return;
+                    undoTick = ticks;
+                    button.onMousePressed(0);
+                    stage = Stage.OPEN_ACTIONS;
+                }
+                case CONFIRM_DISMANTLE -> {
+                    var gui = fullGui();
+                    if (gui == null || ticks - undoTick < 45) return;
+                    var button = generationAction(gui, "dismantle");
+                    if (button == null) return;
+                    button.onMousePressed(0);
+                    require(fullGui() == gui, "Dismantle submitted before confirmation");
+                    require(!dismantleReceived, "Dismantle request reached the server after one click");
+                    stage = Stage.SUBMIT_DISMANTLE;
+                }
+                case SUBMIT_DISMANTLE -> {
+                    if (!confirmationCaptured) return;
+                    var gui = fullGui();
+                    require(gui != null, "Dismantle confirmation closed the GUI");
+                    requireAction(gui, "dismantle").onMousePressed(0);
+                    stage = Stage.VERIFY_DISMANTLE;
+                }
+                case VERIFY_DISMANTLE -> {
+                    if (!dismantleReceived) return;
                     finish(null);
                 }
                 default -> {}
@@ -313,10 +377,121 @@ public class ProjectorPinnedGridChecks {
                 require(batch != null && batch.areAncestorsEnabled(), "Batch page did not become visible");
                 screenshot(mc, FULL_SCREENSHOT);
                 fullCaptured = true;
+            } else if (stage == Stage.SUBMIT_DISMANTLE && !confirmationCaptured) {
+                screenshot(mc, ACTION_SCREENSHOT);
+                confirmationCaptured = true;
             }
         } catch (Throwable failure) {
             finish(failure);
         }
+    }
+
+    @SubscribeEvent
+    public void received(ClientChatReceivedEvent event) {
+        if (!(event.message instanceof ChatComponentTranslation message)) return;
+        switch (message.getKey()) {
+            case "gtneverreset.projector.removal.no_task" -> stopReceived = true;
+            case "gtneverreset.projector.removal.no_undo" -> undoReceived = true;
+            case "gtneverreset.projector.removal.done" -> dismantleReceived = true;
+            default -> {}
+        }
+    }
+
+    private static AE2Button generationAction(ProjectorGui gui, String name) {
+        var button = WidgetTree.findFirstWithName(gui, name, AE2Button.class);
+        require(button != null, "Missing " + name + " on the generation page");
+        if (button.areAncestorsEnabled()) return button;
+        selectPage(gui, ProjectorGui.GENERATION);
+        return null;
+    }
+
+    private static AE2Button requireAction(ProjectorGui gui, String name) {
+        var button = WidgetTree.findFirstWithName(gui, name, AE2Button.class);
+        require(button != null && button.areAncestorsEnabled(), "Missing construction action " + name);
+        return button;
+    }
+
+    private static void verifyOverlap(ProjectorPlan original, ProjectorStructure shape) {
+        var plan = original.copy();
+        plan.batch.setSignedCopies(ForgeDirection.EAST, 2);
+        plan.batch.setSignedCopies(ForgeDirection.UP, 1);
+        plan.batch.setSignedCopies(ForgeDirection.SOUTH, 1);
+        plan.batch.setGap(ForgeDirection.EAST, -ProjectorBatch.MAX_GAP);
+        var layout = new ProjectorBatch.Layout(plan, shape, plan.facing);
+        require(layout.solve(), "Signed overlap layout was rejected");
+        require(
+            layout.placement(0)
+                .x() == 0
+                && layout.placement(1)
+                    .x() == 1,
+            "Negative gap clamped to one-block stride");
+        require(
+            layout.placement(1)
+                .facing() == plan.facing,
+            "Array rotated the second copy");
+        var cells = ProjectorBatchCells.collect(shape, plan, plan.facing, layout, null);
+        require(cells.compatible(), "Overlapping structure was rejected");
+        Map<Long, Integer> expected = new LinkedHashMap<>();
+        int[] local = new int[3], world = new int[3], abc = new int[3];
+        int total = shape.size + shape.emptyCells.length;
+        for (int copy = 0; copy < 2; copy++) {
+            for (int cell = 0; cell < total; cell++) {
+                if (cell < shape.size) {
+                    local[0] = shape.a[cell];
+                    local[1] = shape.b[cell];
+                    local[2] = shape.c[cell];
+                } else {
+                    long empty = shape.emptyCells[cell - shape.size];
+                    local[0] = ProjectorPlan.unpackA(empty);
+                    local[1] = ProjectorPlan.unpackB(empty);
+                    local[2] = ProjectorPlan.unpackC(empty);
+                }
+                plan.facing.getWorldOffset(local, world);
+                world[0] += copy;
+                plan.facing.getOffsetABC(world, abc);
+                long pos = ProjectorPlan.pack(abc[0], abc[1], abc[2]);
+                int candidate = copy * total + cell;
+                Integer before = expected.get(pos);
+                if (before == null || emptyAt(shape, before % total) && !emptyAt(shape, cell))
+                    expected.put(pos, candidate);
+            }
+        }
+        int owners = 0, solid = 0;
+        for (int copy = 0; copy < 2; copy++)
+            for (int cell = 0; cell < total; cell++) if (layout.ownsCell(copy, cell)) owners++;
+        for (var expectedCell : expected.entrySet()) {
+            int owner = expectedCell.getValue();
+            int cell = owner % total;
+            require(layout.ownsCell(owner / total, cell), "Wrong winner at an overlapping position");
+            if (emptyAt(shape, cell)) continue;
+            require(
+                cells.cells()
+                    .get(
+                        expectedCell.getKey()
+                            .longValue())
+                    % shape.size == cell,
+                "Preview and owner differ");
+            solid++;
+        }
+        require(owners == expected.size() && owners < 2 * total, "Overlapping cells were assigned too many owners");
+        require(
+            cells.materials(shape)
+                .stream()
+                .mapToInt(ProjectorStructure.Material::count)
+                .sum() == solid,
+            "Material list did not count each translated solid once");
+        plan.batch.setSignedCopies(ForgeDirection.SOUTH, -2);
+        layout = new ProjectorBatch.Layout(plan, shape, plan.facing);
+        require(
+            layout.placement(2)
+                .z() < 0,
+            "Negative signed copy count did not extend north");
+        plan.batch.setSignedCopies(ForgeDirection.UP, ProjectorBatch.MAX_COPIES);
+        require(!plan.batch.withinLimit(), "More than 64 copies accepted");
+    }
+
+    private static boolean emptyAt(ProjectorStructure shape, int cell) {
+        return cell >= shape.size || shape.blocks[cell] == Blocks.air;
     }
 
     private static void setNumber(ModularPanel gui, String name, int value) {
@@ -411,7 +586,7 @@ public class ProjectorPinnedGridChecks {
             && plan.batch.additional(ForgeDirection.WEST) == 0
             && plan.batch.additional(ForgeDirection.SOUTH) == 0
             && plan.batch.additional(ForgeDirection.NORTH) == 1
-            && plan.batch.gap(ForgeDirection.EAST) == 3
+            && plan.batch.gap(ForgeDirection.EAST) == -1
             && plan.batch.gap(ForgeDirection.UP) == 4
             && plan.batch.gap(ForgeDirection.SOUTH) == 2;
     }
@@ -432,7 +607,7 @@ public class ProjectorPinnedGridChecks {
         for (int i = 0; i < AXES.length; i++) {
             var axis = AXES[i];
             int span = one[i + 3] - one[i] + 1;
-            int step = span + plan.batch.gap(axis);
+            int step = Math.max(1, span + plan.batch.gap(axis));
             if (all[i] != one[i] - plan.batch.additional(axis.getOpposite()) * step
                 || all[i + 3] != one[i + 3] + plan.batch.additional(axis) * step) return false;
         }

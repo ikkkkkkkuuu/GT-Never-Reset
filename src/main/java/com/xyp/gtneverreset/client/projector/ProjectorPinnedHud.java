@@ -59,7 +59,7 @@ public final class ProjectorPinnedHud {
     private static final int WIDTH = GAP_X + GAP_WIDTH + PAD, HEIGHT = 7 * VerticalButtonBar.PITCH + 6;
     private static final int BODY_WIDTH = WIDTH - BODY_X - PAD, BUTTON_WIDTH = (BODY_WIDTH - COLUMN_GAP) / 2;
     private static final int LABEL_HEIGHT = 10, FIELD_HEIGHT = 14, ROW_Y = 34, ROW_PITCH = 16;
-    private static final int MAX_COPIES = ProjectorBatch.MAX_ADDITIONAL + 1, WORLD_BORDER = 30_000_000;
+    private static final int WORLD_BORDER = 30_000_000;
 
     private static PinnedScreen pendingEditor;
     private PinnedScreen passive;
@@ -111,26 +111,16 @@ public final class ProjectorPinnedHud {
 
     private static int signedCopies(Axis axis) {
         ProjectorPlan plan = ProjectorClient.pinnedPlan();
-        if (plan == null) return 1;
-        int negative = plan.batch.additional(axis.positive.getOpposite());
-        return negative > 0 ? -negative - 1 : plan.batch.additional(axis.positive) + 1;
+        return plan == null ? 1 : plan.batch.signedCopies(axis.positive);
     }
 
     private static void setCopies(Axis axis, int count) {
-        ProjectorClient.editPinned(next -> {
-            if (mixedCopies(next.batch, axis)) return;
-            next.batch.setAdditional(axis.positive.getOpposite(), Math.max(0, -count - 1));
-            next.batch.setAdditional(axis.positive, Math.max(0, count - 1));
-        });
-    }
-
-    private static boolean mixedCopies(ProjectorBatch batch, Axis axis) {
-        return batch.additional(axis.positive) > 0 && batch.additional(axis.positive.getOpposite()) > 0;
+        ProjectorClient.editPinned(next -> next.batch.setSignedCopies(axis.positive, count));
     }
 
     private static boolean hasMixedCopies(Axis axis) {
         ProjectorPlan plan = ProjectorClient.pinnedPlan();
-        return plan != null && mixedCopies(plan.batch, axis);
+        return plan != null && plan.batch.hasBothDirections(axis.positive);
     }
 
     private static int gap(Axis axis) {
@@ -315,11 +305,16 @@ public final class ProjectorPinnedHud {
                     .follow(() -> ProjectorClient.pinnedCoordinate(axis.positive))
                     .onChange(value -> ProjectorClient.setPinnedCoordinate(axis.positive, (int) value))
                     .available(ProjectorClient::canMovePinned));
-            NumberEntryWidget copies = number(-MAX_COPIES, MAX_COPIES, COPIES_WIDTH, COPIES_X, y, "copies_" + axis.id)
-                .compactArrows(false)
-                .resetValue(1)
-                .value(signedCopies(axis))
-                .onChange(value -> setCopies(axis, (int) value));
+            NumberEntryWidget copies = number(
+                -ProjectorBatch.MAX_COPIES,
+                ProjectorBatch.MAX_COPIES,
+                COPIES_WIDTH,
+                COPIES_X,
+                y,
+                "copies_" + axis.id).compactArrows(false)
+                    .resetValue(1)
+                    .value(signedCopies(axis))
+                    .onChange(value -> setCopies(axis, (int) value));
             if (!editable) copies.follow(() -> signedCopies(axis));
             child(copies.setEnabledIf(widget -> !hasMixedCopies(axis)));
             Widget<?> mixed = IKey.dynamic(() -> mixedLabel(axis))
@@ -341,7 +336,8 @@ public final class ProjectorPinnedHud {
                         .addLine(tr("copies_both")));
             child(mixed);
             child(
-                number(0, ProjectorBatch.MAX_GAP, GAP_WIDTH, GAP_X, y, "gap_" + axis.id).compactArrows(false)
+                number(-ProjectorBatch.MAX_GAP, ProjectorBatch.MAX_GAP, GAP_WIDTH, GAP_X, y, "gap_" + axis.id)
+                    .compactArrows(false)
                     .follow(() -> gap(axis))
                     .onChange(
                         value -> ProjectorClient.editPinned(next -> next.batch.setGap(axis.positive, (int) value))));
@@ -456,6 +452,8 @@ public final class ProjectorPinnedHud {
             // #tr gtneverreset.projector.pinned.summary
             // # %s total Each %s
             // # zh_CN 共 %s 份 单份 %s
+            if (!plan.batch.withinLimit()) return StatCollector
+                .translateToLocalFormatted(ProjectorGui.LANG + "batch_count_limit", ProjectorBatch.MAX_COPIES);
             return StatCollector.translateToLocalFormatted(LANG + "summary", plan.batch.machines(), dimensions);
         }
 

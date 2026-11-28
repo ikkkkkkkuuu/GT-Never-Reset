@@ -48,6 +48,13 @@ public final class ProjectorBatchHatches {
         originOverrides.defaultReturnValue(-1);
     }
 
+    boolean isAir(long key, int cell, int copy) {
+        int wanted = requested.get(key);
+        if (wanted >= 0 && accepts(shape.slotAt(cell), wanted)) return false;
+        Sample edit = copy == origin ? originEdit(cell) : null;
+        return (edit == null ? shape.blocks[cell] : edit.block()) == Blocks.air;
+    }
+
     Sample sample(long key, int cell, int copy) {
         int wanted = requested.get(key);
         if (wanted < 0) {

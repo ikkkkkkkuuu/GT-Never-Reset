@@ -331,7 +331,8 @@ public class ProjectorClient {
 
     static boolean canBuildPinned() {
         ProjectorPlan current = pinnedPlan();
-        if (current == null || !ProjectorConfig.buildEnabled
+        if (current == null || !current.batch.withinLimit()
+            || !ProjectorConfig.buildEnabled
             || !Minecraft.getMinecraft().thePlayer.capabilities.allowEdit) return false;
         ProjectorStructure template = ProjectorStructures.get(current.batchSettings());
         return template != null && template.failure.isEmpty() && template.limit.isEmpty() && !template.isEmpty();
@@ -605,19 +606,16 @@ public class ProjectorClient {
             completeTicks = 0;
             return;
         }
-        if (++completeTicks < COMPLETE_TICKS) return;
-        completeTicks = 0;
-        ProjectorPlan next = plan.copy();
-        next.state = ProjectorPlan.State.IDLE;
+        if (completeTicks >= COMPLETE_TICKS || ++completeTicks < COMPLETE_TICKS) return;
+        // Undo and dismantle use the locked projection's site after construction.
         AboveHotbarHUD.renderTextAboveHotbar(
             // #tr gtneverreset.projector.complete
-            // # Every block is in place, projection closed
-            // # zh_CN 方块已全部搭齐，投影已收起
+            // # Every block is in place.
+            // # zh_CN 方块已全部搭齐。
             EnumChatFormatting.GREEN + StatCollector.translateToLocal(LANG + "complete"),
             60,
             true,
             true);
-        send(next);
     }
 
     private static void showStatus() {

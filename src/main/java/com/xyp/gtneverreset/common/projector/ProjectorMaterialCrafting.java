@@ -15,21 +15,14 @@ import net.minecraft.util.ChatComponentTranslation;
 import com.github.bsideup.jabel.Desugar;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure.Material;
-import com.xyp.gtneverreset.common.wireless.WirelessCardInventory;
 
-import appeng.api.AEApi;
 import appeng.api.config.CraftingAllow;
 import appeng.api.config.SecurityPermissions;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.crafting.ICraftingGrid;
 import appeng.api.networking.crafting.ICraftingJob;
-import appeng.api.networking.security.IActionHost;
-import appeng.api.networking.security.ISecurityGrid;
 import appeng.api.networking.security.PlayerSource;
 import appeng.api.storage.data.IAEItemStack;
-import appeng.helpers.WirelessTerminalGuiObject;
-import appeng.tile.networking.TileWireless;
-import appeng.util.Platform;
 import appeng.util.item.AEItemStack;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
@@ -42,7 +35,6 @@ public final class ProjectorMaterialCrafting {
     private static final long SIMULATION_BUDGET_NANOS = 2_000_000L;
     private static final int CPU_RETRY_TICKS = 10;
     private static final int MAX_SUBMISSION_ATTEMPTS = 2;
-    private static final double TERMINAL_START_POWER = 0.5;
     private final Deque<Batch> batches = new ArrayDeque<>();
     private long tick;
 
@@ -120,42 +112,13 @@ public final class ProjectorMaterialCrafting {
     }
 
     private static Map<IGrid, Connection> connections(EntityPlayerMP player) {
-        var wireless = AEApi.instance()
-            .registries()
-            .wireless();
         Map<IGrid, Connection> connections = new LinkedHashMap<>();
-        for (ItemStack terminal : WirelessCardInventory.carried(player)) {
-            var handler = wireless.getWirelessTerminalHandler(terminal);
-            if (handler == null
-                || !handler.hasInfinityPower(terminal) && !handler.hasPower(player, TERMINAL_START_POWER, terminal))
-                continue;
-            int location = WirelessCardInventory.location(player, terminal);
-            int slot = location == 0 ? player.inventory.currentItem
-                : location > 0 ? location - 1 : Platform.baublesSlotsOffset - location - 1;
-            var host = new WirelessTerminalGuiObject(handler, terminal, player, player.worldObj, slot, 0, 0);
-            IGrid grid = host.getGrid();
-            if (grid == null || connections.containsKey(grid)) continue;
-            ISecurityGrid security = grid.getCache(ISecurityGrid.class);
-            ICraftingGrid crafting = grid.getCache(ICraftingGrid.class);
-            if (crafting != null && security != null && security.hasPermission(player, SecurityPermissions.CRAFT)) {
-                IActionHost access = activeAccess(host, grid, handler.hasInfinityRange(terminal));
-                if (access != null) connections.put(grid, new Connection(crafting, new PlayerSource(player, access)));
-            }
-        }
+        ProjectorWirelessAccess.find(player, SecurityPermissions.CRAFT)
+            .forEach((grid, access) -> {
+                ICraftingGrid crafting = grid.getCache(ICraftingGrid.class);
+                if (crafting != null) connections.put(grid, new Connection(crafting, access.source()));
+            });
         return connections;
-    }
-
-    private static IActionHost activeAccess(WirelessTerminalGuiObject host, IGrid grid, boolean unlimited) {
-        var node = host.getActionableNode();
-        if (node != null && node.isActive() && node.getGrid() == grid) return host;
-        if (unlimited) {
-            // AE's unlimited-range GUI host can select an inactive access point first.
-            for (var candidate : grid.getMachines(TileWireless.class)) {
-                if (candidate.isActive() && candidate.getMachine() instanceof TileWireless access && access.isActive())
-                    return access;
-            }
-        }
-        return null;
     }
 
     private static boolean hasPattern(EntityPlayerMP player, Connection connection, IAEItemStack item) {

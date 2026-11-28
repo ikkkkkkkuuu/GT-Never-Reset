@@ -5,11 +5,11 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentTranslation;
 import net.minecraft.util.ScreenShotHelper;
@@ -24,6 +24,8 @@ import com.gtnewhorizon.structurelib.alignment.IAlignment;
 import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.client.projector.ProjectorClient;
 import com.xyp.gtneverreset.client.projector.ProjectorGui;
+import com.xyp.gtneverreset.common.projector.ProjectorBatch;
+import com.xyp.gtneverreset.common.projector.ProjectorBatchCells;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
 import com.xyp.gtnrlib.gui.widget.AE2Button;
@@ -40,7 +42,7 @@ import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
 
 @Mod(
     modid = "projectormirrorqa",
-    name = "Industrial cutter mirror checks",
+    name = "Industrial cutter translation checks",
     version = "1",
     dependencies = "after:gtneverreset")
 public class ProjectorMirrorChecks {
@@ -89,14 +91,13 @@ public class ProjectorMirrorChecks {
                     for (ForgeDirection direction : new ForgeDirection[] { ForgeDirection.WEST, ForgeDirection.SOUTH,
                         ForgeDirection.UP }) {
                         plan.batch.setAdditional(direction, 1);
-                        plan.batch.setShared(direction, true);
+                        plan.batch.setGap(direction, -1);
                     }
-                    plan.batch.setShared(ForgeDirection.NORTH, true);
                 } else {
                     var dir = scenario == 0 ? ForgeDirection.UP
                         : scenario == 3 ? ForgeDirection.WEST : ForgeDirection.EAST;
                     plan.batch.setAdditional(dir, 1);
-                    plan.batch.setShared(dir, scenario == 0 || scenario == 2);
+                    plan.batch.setGap(dir, scenario == 0 || scenario == 2 ? -1 : 0);
                 }
                 plan.batchProjection = true;
                 var stack = new ItemStack(GameRegistry.findItem("gtneverreset", "multiblock_projector"));
@@ -105,57 +106,11 @@ public class ProjectorMirrorChecks {
                 p.inventoryContainer.detectAndSendChanges();
                 stage = Stage.OPEN;
             } else if (stage == Stage.VERIFY) {
+                verifyArray(p);
                 if (scenario == 4) {
-                    verifyArray(p);
                     finish(null);
                     return;
                 }
-                var bounds = shape.worldBounds(base);
-                int[] offset = new int[3], local = new int[3], transformed = new int[3];
-                var cells = new HashSet<Long>();
-                for (int copy = 0; copy < 2; copy++) {
-                    boolean upper = copy == 1 && scenario == 0, lateral = copy == 1 && !upper;
-                    int stride = bounds[3] - bounds[0] + (scenario == 2 ? 0 : 1);
-                    int ox = x + (lateral ? (scenario == 3 ? -stride : stride) + bounds[0] + bounds[3] : 0);
-                    int oy = y + (upper ? bounds[4] - bounds[1] + bounds[1] + bounds[4] : 0);
-                    var controller = (IGregTechTileEntity) p.worldObj.getTileEntity(ox, oy, z);
-                    require(
-                        controller != null && controller.getMetaTileID() == id,
-                        "controller position at " + ox + "," + oy + "," + z);
-                    var pose = ((IAlignment) controller.getMetaTileEntity()).getExtendedFacing();
-                    require(pose.getDirection() == base.getDirection(), "both controllers must face the front");
-                    for (int axis = 0; axis < 3; axis++) {
-                        int[] unit = new int[3];
-                        unit[axis] = 1;
-                        base.getOffsetABC(unit, local);
-                        pose.getWorldOffset(local, transformed);
-                        int sign = (axis == 0 && lateral || axis == 1 && upper) ? -1 : 1;
-                        require(transformed[axis] == sign, "unexpected transform axis " + axis + " at " + pose);
-                    }
-                    for (int i = 0; i < shape.size; i++) {
-                        base.getWorldOffset(new int[] { shape.a[i], shape.b[i], shape.c[i] }, offset);
-                        int wx = ox + (lateral ? -offset[0] : offset[0]), wy = oy + (upper ? -offset[1] : offset[1]),
-                            wz = z + offset[2];
-                        require(
-                            p.worldObj.getBlock(wx, wy, wz) == shape.blocks[i],
-                            "block mismatch at " + wx + "," + wy + "," + wz);
-                        if (shape.machines[i] > 0) {
-                            var tile = (IGregTechTileEntity) p.worldObj.getTileEntity(wx, wy, wz);
-                            require(tile.getMetaTileID() == shape.machines[i], "machine variant");
-                        } else {
-                            int[][] pos = shape.simulationPositions();
-                            require(
-                                p.worldObj.getBlockMetadata(wx, wy, wz)
-                                    == shape.world.getBlockMetadata(pos[0][i], pos[1][i], pos[2][i]),
-                                "material metadata");
-                        }
-                        if (shape.blocks[i] != net.minecraft.init.Blocks.air) cells.add(ProjectorPlan.pack(wx, wy, wz));
-                    }
-                }
-                require(placed == cells.size(), "unique placed blocks");
-                Files.writeString(
-                    Path.of("cutter-" + scenario + ".txt"),
-                    "Verified 2 mirrored cutters and " + placed + " unique blocks.");
                 scenario++;
                 stage = Stage.PREPARE;
             }
@@ -165,61 +120,43 @@ public class ProjectorMirrorChecks {
     }
 
     private void verifyArray(EntityPlayerMP player) throws Exception {
-        int[] bounds = shape.worldBounds(base);
-        int width = bounds[3] - bounds[0] + 1, height = bounds[4] - bounds[1] + 1, depth = bounds[5] - bounds[2] + 1;
-        int minX = x + bounds[0] - (width - 1), minY = y + bounds[1], minZ = z + bounds[2];
-        var world = player.worldObj;
-        var cells = new HashSet<Long>();
-        var copies = new HashSet<Integer>();
-        int[] template = { 0, 0, 0 }, offset = new int[3];
-        for (int cx = minX; cx < minX + width * 2 - 1; cx++)
-            for (int cy = minY; cy < minY + height * 2 - 1; cy++) for (int cz = minZ; cz < minZ + depth * 2 - 1; cz++) {
-                if (!(world.getTileEntity(cx, cy, cz) instanceof IGregTechTileEntity controller)
-                    || controller.getMetaTileID() != id) continue;
-                var pose = ((IAlignment) controller.getMetaTileEntity()).getExtendedFacing();
-                int lowX = Integer.MAX_VALUE, lowY = Integer.MAX_VALUE, lowZ = Integer.MAX_VALUE;
-                for (int i = 0; i < shape.size; i++) {
-                    template[0] = shape.a[i];
-                    template[1] = shape.b[i];
-                    template[2] = shape.c[i];
-                    pose.getWorldOffset(template, offset);
-                    int wx = cx + offset[0], wy = cy + offset[1], wz = cz + offset[2];
-                    lowX = Math.min(lowX, wx);
-                    lowY = Math.min(lowY, wy);
-                    lowZ = Math.min(lowZ, wz);
+        var plan = ProjectorPlan.read(player.getHeldItem());
+        var layout = new ProjectorBatch.Layout(plan, shape, base);
+        var translated = ProjectorBatchCells.collect(shape, plan, base, layout, null);
+        require(translated.compatible(), "Cutter array rejected");
+        int[] offset = new int[3];
+        int[][] source = shape.simulationPositions();
+        int count = 0;
+        for (var entry : translated.cells()
+            .long2IntEntrySet()) {
+            int cell = entry.getIntValue() % shape.size;
+            if (shape.blocks[cell] == Blocks.air) continue;
+            long pos = entry.getLongKey();
+            base.getWorldOffset(
+                new int[] { ProjectorPlan.unpackA(pos), ProjectorPlan.unpackB(pos), ProjectorPlan.unpackC(pos) },
+                offset);
+            int wx = x + offset[0], wy = y + offset[1], wz = z + offset[2];
+            require(player.worldObj.getBlock(wx, wy, wz) == shape.blocks[cell], "Wrong cutter array block");
+            require(
+                player.worldObj.getBlockMetadata(wx, wy, wz)
+                    == shape.world.getBlockMetadata(source[0][cell], source[1][cell], source[2][cell]),
+                "Wrong cutter array metadata");
+            if (shape.machines[cell] > 0) {
+                require(
+                    player.worldObj.getTileEntity(wx, wy, wz) instanceof IGregTechTileEntity gt
+                        && gt.getMetaTileID() == shape.machines[cell],
+                    "Wrong cutter machine");
+                if (shape.a[cell] == 0 && shape.b[cell] == 0 && shape.c[cell] == 0) {
+                    var tile = (IGregTechTileEntity) player.worldObj.getTileEntity(wx, wy, wz);
                     require(
-                        world.getBlock(wx, wy, wz) == shape.blocks[i],
-                        "array block at " + wx + "," + wy + "," + wz);
-                    if (shape.machines[i] > 0) {
-                        require(
-                            world.getTileEntity(wx, wy, wz) instanceof IGregTechTileEntity gt
-                                && gt.getMetaTileID() == shape.machines[i],
-                            "array machine variant");
-                    } else {
-                        int[][] pos = shape.simulationPositions();
-                        require(
-                            world.getBlockMetadata(wx, wy, wz)
-                                == shape.world.getBlockMetadata(pos[0][i], pos[1][i], pos[2][i]),
-                            "array material metadata");
-                    }
-                    if (shape.blocks[i] != net.minecraft.init.Blocks.air) cells.add(ProjectorPlan.pack(wx, wy, wz));
+                        ((IAlignment) tile.getMetaTileEntity()).getExtendedFacing() == base,
+                        "Cutter controller changed facing");
                 }
-                int ix = lowX - minX, iy = lowY - minY, iz = lowZ - minZ;
-                require(
-                    (ix == 0 || ix == width - 1) && (iy == 0 || iy == height - 1) && (iz == 0 || iz == depth - 1),
-                    "array stride");
-                require(copies.add((ix == 0 ? 0 : 1) + (iy == 0 ? 0 : 2) + (iz == 0 ? 0 : 4)), "duplicate array slot");
-                var front = pose.getDirection();
-                require(
-                    world.isAirBlock(cx + front.offsetX, cy + front.offsetY, cz + front.offsetZ),
-                    "controller front obstructed");
             }
-        require(
-            copies.size() == 8 && cells.size() == placed && placed == 458,
-            "eight controllers and unique placement count");
-        Files.writeString(
-            Path.of("cutter-4.txt"),
-            "Verified west/south/up array 17x7x5 with 8 cutters and " + placed + " unique blocks.");
+            count++;
+        }
+        require(placed == count, "Unique placed array blocks");
+        Files.writeString(Path.of("cutter-" + scenario + ".txt"), "Verified " + placed + " translated cutter blocks.");
     }
 
     @SubscribeEvent
@@ -275,13 +212,16 @@ public class ProjectorMirrorChecks {
             if (shape == null || !shape.settings.equals(gui.working.settings()) || ++frames < 32) return;
             if (scenario == 4) {
                 var projected = ProjectorClient.CHECK.structure;
+                var plan = gui.working;
+                var layout = new ProjectorBatch.Layout(plan, shape, base);
+                var translated = ProjectorBatchCells.collect(shape, plan, base, layout, null);
                 require(
-                    projected != null && projected.size == 458,
-                    "three-axis preview must contain 458 unique blocks");
-                int[] bounds = projected.worldBounds(base);
+                    projected != null && projected.size == translated.cells()
+                        .size(),
+                    "Three-axis translated preview size");
                 require(
-                    bounds[3] - bounds[0] + 1 == 17 && bounds[4] - bounds[1] + 1 == 7 && bounds[5] - bounds[2] + 1 == 5,
-                    "three-axis preview dimensions");
+                    java.util.Arrays.equals(projected.worldBounds(base), layout.worldBounds()),
+                    "Three-axis preview dimensions");
             }
             var mc = Minecraft.getMinecraft();
             ScreenShotHelper.saveScreenshot(
