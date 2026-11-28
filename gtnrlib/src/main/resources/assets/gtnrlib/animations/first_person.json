@@ -1,5 +1,17 @@
 {
   "bindings": [
+    {
+      "item": "sciencenotleisure:player_doll",
+      "trigger": "gtnrlib:gtnl_doll_inspect",
+      "inspection": "two_handed",
+      "clip": "gtnrlib:gtnl_doll_inspect",
+      "rotationBlend": "shortest",
+      "effect": "gtnrlib:gtnl_doll",
+      "sounds": {
+        "doll_rift_open": {"id": "minecraft:dig.glass", "pitch": 0.82},
+        "doll_lens_hit": {"id": "minecraft:random.anvil_land", "pitch": 0.64}
+      }
+    },
     {"item": "#block", "trigger": "gtnrlib:block_inspect", "clip": "gtnrlib:block_inspect", "rotationBlend": "shortest"},
     {"item": "#sword", "trigger": "gtnrlib:sword_inspect", "clip": "gtnrlib:sword_inspect", "rotationBlend": "shortest"},
     {"item": "#pickaxe", "trigger": "gtnrlib:pickaxe_inspect", "clip": "gtnrlib:pickaxe_inspect", "rotationBlend": "shortest"},

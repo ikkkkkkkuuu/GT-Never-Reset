@@ -3,6 +3,14 @@
     {"item":"minecraft:brick_block","trigger":"place","clip":"animationclientqa:twist"},
     {"item":"minecraft:brick_block","trigger":"interact","clip":"animationclientqa:twist"},
     {"item":"minecraft:dye","damage":13,"rotationBlend":"shortest","transition":"match_velocity","trigger":"attack","clip":"animationclientqa:twist"},
-    {"item":"minecraft:golden_apple","damage":1,"trigger":"use","clip":"animationclientqa:hold"}
+    {"item":"minecraft:golden_apple","damage":1,"trigger":"use","clip":"animationclientqa:hold"},
+    {"item":"minecraft:wool","trigger":"animationclientqa:inspect_any","inspection":"one_handed",
+      "clip":"animationclientqa:twist","effect":"animationclientqa:inspection_probe"},
+    {"item":"minecraft:wool","damage":3,"trigger":"animationclientqa:inspect_exact","inspection":"two_handed",
+      "clip":"animationclientqa:inspection_probe","effect":"animationclientqa:inspection_probe",
+      "sounds":{"cue_early":{"id":"minecraft:dig.glass","pitch":0.8,"volume":0.25},
+        "cue_terminal":{"id":"minecraft:random.anvil_land","pitch":1.1,"volume":0.25}}},
+    {"item":"minecraft:wool","damage":7,"trigger":"animationclientqa:inspect_invalid","inspection":"invalid_mode",
+      "clip":"animationclientqa:inspection_probe","effect":"animationclientqa:inspection_probe"}
   ]
 }

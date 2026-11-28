@@ -67,7 +67,7 @@ public final class HmiPoseRenderer {
     private static final Matrix4f ARM_MOUNT = new Matrix4f();
     private static final Vector3f SHOULDER = new Vector3f(), HAND = new Vector3f(), TARGET = new Vector3f();
     private static final Vector3f RIGHT_PALM = new Vector3f(), BLOCK_OFFSET = new Vector3f();
-    private static final Quaternionf REACH_ROTATION = new Quaternionf();
+    private static final Quaternionf REACH_ROTATION = new Quaternionf(), FOREARM_AXIS = new Quaternionf();
     private static final Quaternionf NO_REACH_ROTATION = new Quaternionf();
     private static final Matrix4f RIG_VIEW = new Matrix4f(), GRIP_VIEW = new Matrix4f();
     private static final Vector3f LEFT_RIG_SHOULDER = new Vector3f(), RIGHT_RIG_SHOULDER = new Vector3f();
@@ -102,7 +102,8 @@ public final class HmiPoseRenderer {
     }
 
     public static boolean render(ItemRenderer renderer, ItemStack stack, float partial, float dip) {
-        return !FirstPersonAnimations.INSTANCE.applies(stack) && MAIN.renderHand(renderer, stack, partial, dip);
+        return (FirstPersonItemActions.INSTANCE.customInspection(stack, partial)
+            || !FirstPersonAnimations.INSTANCE.applies(stack)) && MAIN.renderHand(renderer, stack, partial, dip);
     }
 
     public static boolean renderOffhand(ItemRenderer renderer, ItemStack stack, float partial, float dip) {
@@ -111,6 +112,10 @@ public final class HmiPoseRenderer {
 
     private boolean renderHand(ItemRenderer renderer, ItemStack stack, float partial, float dip) {
         if (!pose.enabled() || !pose.sample(stack, partial, dip)) return false;
+        var actions = FirstPersonItemActions.INSTANCE;
+        boolean customInspection = !offhand && actions.customInspection(stack, partial);
+        var scene = customInspection ? actions.scene(stack, partial) : null;
+        var effect = scene == null ? null : FirstPersonActionEffects.get(scene.effect());
         GL11.glPushAttrib(
             GL11.GL_ENABLE_BIT | GL11.GL_CURRENT_BIT
                 | GL11.GL_TEXTURE_BIT
@@ -124,8 +129,9 @@ public final class HmiPoseRenderer {
                 // Preserve the reference's wide-screen grip framing on narrower legacy windows.
                 float aspect = (float) mc.displayWidth / mc.displayHeight;
                 GL11.glTranslated(-.40 * Math.max(0, 16f / 9 - aspect), 0, -.10);
-                if (pose.handheldTool() instanceof HmiItemBindings.TwoHandedModel rig) {
-                    var inspection = FirstPersonItemActions.INSTANCE.sampleRigInspection(stack, partial);
+                if (effect != null) FirstPersonActionEffects.beforeHands(effect, scene, stack, pose.item);
+                if (!customInspection && pose.handheldTool() instanceof HmiItemBindings.TwoHandedModel rig) {
+                    var inspection = actions.sampleRigInspection(stack, partial);
                     float aim = inspection == null ? 0
                         : Math.max(
                             0,
@@ -151,16 +157,21 @@ public final class HmiPoseRenderer {
                 } else {
                     arm(false, stack != null);
                     if (!offhand && !FirstPersonAnimations.offhandOwnsLeftArm(partial))
-                        arm(true, FirstPersonItemActions.INSTANCE.inspectionUsesLeftArm());
+                        arm(true, actions.inspectionUsesLeftArm());
                     if (stack != null) {
                         apply(pose.item);
-                        if (stack.getItem() instanceof ItemMap map) map(mc, stack, map);
-                        else {
-                            GL11.glPushMatrix();
-                            try {
-                                draw(renderer, mc, stack);
-                            } finally {
-                                GL11.glPopMatrix();
+                        boolean rendered = effect != null && FirstPersonActionEffects
+                            .renderItem(effect, scene, renderer, stack, pose.forgeRenderer());
+                        if (stack.getItem() instanceof ItemMap map) {
+                            if (!rendered) map(mc, stack, map);
+                        } else {
+                            if (!rendered) {
+                                GL11.glPushMatrix();
+                                try {
+                                    draw(renderer, mc, stack);
+                                } finally {
+                                    GL11.glPopMatrix();
+                                }
                             }
                             glow(stack);
                         }
@@ -170,6 +181,7 @@ public final class HmiPoseRenderer {
                 GL11.glPopMatrix();
             }
             drawScreenParticles();
+            if (effect != null) FirstPersonActionEffects.overlay(effect, scene, mc.displayWidth, mc.displayHeight);
         } finally {
             GL11.glPopAttrib();
             if (stack != null && stack.getItem() instanceof ItemCloth) GL11.glDisable(GL11.GL_BLEND);
@@ -263,6 +275,24 @@ public final class HmiPoseRenderer {
         item.translateLocal(BLOCK_OFFSET);
     }
 
+    /** Shift the item in view space and support it from both sides. */
+    public static void poseHeldInspection(Matrix4f main, Matrix4f support, Matrix4f item, Matrix4f wristMotion,
+        Vec transfer, Vec carry) {
+        poseInspection(main, support, item, wristMotion, transfer, true);
+        item.translateLocal((float) carry.x(), (float) carry.y(), (float) carry.z());
+        float hold = (float) Math.max(0, Math.min(1, transfer.z()));
+        if (hold == 0) return;
+        supportHeldItem(main, item, wristMotion, false, hold);
+        supportHeldItem(support, item, wristMotion, true, hold);
+    }
+
+    private static void supportHeldItem(Matrix4f arm, Matrix4f item, Matrix4f motion, boolean left, float hold) {
+        inspectionArmEndpoints(arm, left);
+        item.transformPosition(left ? -.18f : .18f, -.16f, .07f, TARGET)
+            .lerp(HAND, 1 - hold);
+        reachFromShoulder(arm, motion, true);
+    }
+
     private static void inspectionArmEndpoints(Matrix4f arm, boolean left) {
         FirstPersonArmRenderer.armEndpoints(
             ARM_MOUNT.set(arm)
@@ -274,13 +304,26 @@ public final class HmiPoseRenderer {
     }
 
     private static void reachFromShoulder(Matrix4f arm, Matrix4f motion) {
+        reachFromShoulder(arm, motion, false);
+    }
+
+    private static void reachFromShoulder(Matrix4f arm, Matrix4f motion, boolean matchDistance) {
         TARGET.sub(SHOULDER);
         HAND.sub(SHOULDER);
-        if (HAND.lengthSquared() > 1e-8f && TARGET.lengthSquared() > 1e-8f) REACH_ROTATION.rotationTo(HAND, TARGET);
+        boolean hasDirection = HAND.lengthSquared() > 1e-8f && TARGET.lengthSquared() > 1e-8f;
+        if (hasDirection) REACH_ROTATION.rotationTo(HAND, TARGET);
         else REACH_ROTATION.identity();
         motion.translation(SHOULDER)
-            .rotate(REACH_ROTATION)
-            .translate(-SHOULDER.x, -SHOULDER.y, -SHOULDER.z);
+            .rotate(REACH_ROTATION);
+        if (matchDistance && hasDirection) {
+            float stretch = Math.max(.72f, Math.min(1.48f, TARGET.length() / HAND.length()));
+            FOREARM_AXIS.rotationTo(0, 1, 0, HAND.x, HAND.y, HAND.z);
+            motion.rotate(FOREARM_AXIS)
+                .scale(1, stretch, 1)
+                .rotate(FOREARM_AXIS.conjugate());
+            HAND.mul(stretch);
+        }
+        motion.translate(-SHOULDER.x, -SHOULDER.y, -SHOULDER.z);
         arm.mulLocal(motion);
         HAND.rotate(REACH_ROTATION)
             .add(SHOULDER);
@@ -405,11 +448,7 @@ public final class HmiPoseRenderer {
             GL11.glTranslated(-.5, -.5, .03125);
             if (tool != null && tool.spriteMount() != null) apply(tool.spriteMount());
             else if (!pose.blockPose()) centerHandle(pose.displayGrip());
-            GL11.glTranslated(.9375, .0625, 0);
-            GL11.glRotatef(25, 0, 0, 1);
-            GL11.glRotatef(-50, 0, 1, 0);
-            GL11.glScalef(2f / 3, 2f / 3, 2f / 3);
-            GL11.glTranslated(0, .3, 0);
+            undoForgeItemMount();
         }
         if (custom != null) {
             // Forge invokes the owner's renderer once; it draws all material layers itself.
@@ -432,6 +471,14 @@ public final class HmiPoseRenderer {
                 bowIcon = null;
             }
         }
+    }
+
+    static void undoForgeItemMount() {
+        GL11.glTranslated(.9375, .0625, 0);
+        GL11.glRotatef(25, 0, 0, 1);
+        GL11.glRotatef(-50, 0, 1, 0);
+        GL11.glScalef(2f / 3, 2f / 3, 2f / 3);
+        GL11.glTranslated(0, .3, 0);
     }
 
     private static void centerHandle(ToolGrip grip) {

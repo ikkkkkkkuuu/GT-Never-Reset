@@ -20,6 +20,7 @@ final class AnimationContracts {
 
     static void verify() {
         verifyCrossFade();
+        verifyMarkerSources();
         verifyVelocityTransition();
         Channel arm = new Channel("arm", Property.ROTATION);
         AnimationClip clip = new AnimationClip(
@@ -256,6 +257,37 @@ final class AnimationContracts {
             player.sample(wrist, .75)
                 .z(),
             270);
+    }
+
+    private static void verifyMarkerSources() {
+        var oldMarker = new Marker(.125, "impact");
+        var newMarker = new Marker(.25, "impact");
+        var before = new AnimationClip(.5, End.ONCE, Map.of(), List.of(oldMarker));
+        var after = new AnimationClip(.25, End.ONCE, Map.of(), List.of(newMarker));
+        var sources = new ArrayList<AnimationPlayer.Playback>();
+        var markers = new ArrayList<Marker>();
+        var player = AnimationPlayer.withSources((source, marker) -> {
+            sources.add(source);
+            markers.add(marker);
+            check(!source.active());
+        });
+        var old = player.play(before, 0);
+        var next = player.crossFade(old, after, .125, AnimationPlayer.RotationBlend.EULER);
+        player.advance(.25);
+        player.advance(.25);
+        check(sources.equals(List.of(old, next)) && markers.equals(List.of(oldMarker, newMarker)));
+        near(next.timeAfter(1), next.time());
+
+        var fading = player.play(new AnimationClip(2, End.HOLD, Map.of(), List.of()), 0);
+        fading.speed(2);
+        player.advance(.1);
+        near(fading.timeAfter(.1), .4);
+        near(fading.time(), .2);
+        fading.stop(.1);
+        double limit = fading.timeAfter(1);
+        player.advance(1);
+        near(limit, .4);
+        near(fading.timeAfter(1), limit);
     }
 
     private static void verifyVelocityTransition() {
