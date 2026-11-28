@@ -168,6 +168,7 @@ public final class PlatinumProcessingRecipes {
         registerFamily(2, PlatinumProcessingRecipes::rareEarth);
         registerFamily(2, PlatinumProcessingRecipes::indium);
         registerFamily(3, PlatinumProcessingRecipes::monazite);
+        registerFamily(3, PlatinumProcessingRecipes::polybenzimidazole);
         if (Mods.EtFuturumRequiem.isModLoaded()) registerFamily(4, PlatinumProcessingRecipes::netherite);
     }
 
@@ -504,6 +505,56 @@ public final class PlatinumProcessingRecipes {
             carbon);
         route.replenish(multiblockChemicalReactorRecipes, 8, chlorine, hydrochloricAcid);
         route.replenish(electrolyzerNonCellRecipes, 1, Materials.Water.getFluid(1), hydrogen);
+    }
+
+    private static GTRecipeBuilder polybenzimidazole() {
+        Route route = new Route();
+        FluidStack benzene = Materials.Benzene.getFluid(1);
+        FluidStack xylene = Materials.Dimethylbenzene.getFluid(1);
+        FluidStack phthalicAcid = Materials.PhthalicAcid.getFluid(1);
+        FluidStack ester = Materials.Diphenylisophthalate.getFluid(1);
+        FluidStack diamine = Materials.Diaminobenzidin.getFluid(1);
+        FluidStack pbi = Materials.Polybenzimidazole.getMolten(1);
+        route.add(multiblockChemicalReactorRecipes, -1, ester, pbi, 9);
+        route.replenish(multiblockChemicalReactorRecipes, -1, phthalicAcid, ester);
+        GTRecipe oxidation = route.find(
+            multiblockChemicalReactorRecipes,
+            -1,
+            xylene,
+            recipe -> outputs(recipe, phthalicAcid)
+                && contains(recipe.mInputs, recipe.mFluidInputs, Materials.Potassiumdichromate.getDust(1)));
+        route.batch.replenish(oxidation, phthalicAcid);
+        route.replenish(multiblockChemicalReactorRecipes, 1, benzene, xylene);
+
+        FluidStack dichlorobenzidine = Materials.Dichlorobenzidine.getFluid(1);
+        FluidStack nitrochlorobenzene = Materials.Nitrochlorobenzene.getFluid(1);
+        FluidStack chlorobenzene = Materials.Chlorobenzene.getFluid(1);
+        route.replenish(multiblockChemicalReactorRecipes, -1, dichlorobenzidine, diamine);
+        route.replenish(multiblockChemicalReactorRecipes, 9, nitrochlorobenzene, dichlorobenzidine);
+        route.replenish(multiblockChemicalReactorRecipes, 1, chlorobenzene, nitrochlorobenzene);
+        route.replenish(multiblockChemicalReactorRecipes, 1, benzene, chlorobenzene);
+        preparePolybenzimidazoleReagents(route);
+        return route
+            .build(new FluidStack[] { Materials.HydrochloricAcid.getFluid(1), Materials.Water.getFluid(1), pbi });
+    }
+
+    private static void preparePolybenzimidazoleReagents(Route route) {
+        route.replenish(multiblockChemicalReactorRecipes, 1, Materials.Carbon.getDust(1), Materials.Methane.getGas(1));
+        route.replenish(multiblockChemicalReactorRecipes, 1, Materials.Nitrogen.getGas(1), Materials.Ammonia.getGas(1));
+        route.replenish(
+            mixerNonCellRecipes,
+            1,
+            Materials.NitricAcid.getFluid(1),
+            Materials.NitrationMixture.getFluid(1));
+
+        FluidStack sulfuricAcid = Materials.SulfuricAcid.getFluid(1);
+        GTRecipe regeneration = route.find(
+            multiblockChemicalReactorRecipes,
+            23,
+            Materials.Sulfur.getDust(1),
+            recipe -> outputs(recipe, sulfuricAcid)
+                && contains(recipe.mInputs, recipe.mFluidInputs, Materials.DilutedSulfuricAcid.getFluid(1)));
+        route.batch.replenish(regeneration, sulfuricAcid);
     }
 
     private static GTRecipeBuilder netherite() {
