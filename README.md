@@ -21,7 +21,11 @@
 
 在 GTNH 实例中安装 GTNRLib 0.1.38，进入游戏并切到第一人称即可体验类似《Hold My Items》的持物动画。走动和转头时手臂会跟随摆动，起跳和落地时有惯性。拿起镐挖矿、拉弓，或使用 GT 手动扳手和剪线钳，都有对应的动作。默认动画随库启用，无需加载资源包。多人游戏中，服务端也需安装 GTNRLib 才能在工具操作成功时同步动作。
 
-想换用 Punchy 动画或体验 HMI 原包时，将 Punchy ZIP 或 [Hold My Items 5.1.1 原版 JAR](https://modrinth.com/mod/hold-my-items/version/KZm1qTcU) 放入当前实例的 `resourcepacks` 文件夹，在 GTNRLib 客户端配置的“仅导入动画的资源包”中填写完整文件名，保存后按一次 `F3 + T`。此后重启会自动加载。更多用法见[动画使用说明](gtnrlib/ANIMATION.md)。
+可以在配置里关掉如果你看着不舒服
+
+默认按I检视手里物品        如果有任何奇妙检视想法可以跟我说
+
+
 
 ## 🧩 功能介绍
 
