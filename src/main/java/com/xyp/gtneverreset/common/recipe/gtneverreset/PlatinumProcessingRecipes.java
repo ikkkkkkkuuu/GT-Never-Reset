@@ -170,10 +170,6 @@ public final class PlatinumProcessingRecipes {
         if (Mods.EtFuturumRequiem.isModLoaded()) registerFamily(4, PlatinumProcessingRecipes::netherite);
     }
 
-    public static int getStationLimit(int ringCount) {
-        return Math.max(0, Math.min(ringCount, STATION_COUNT));
-    }
-
     private static void registerFamily(int ring, Supplier<GTRecipeBuilder> recipe) {
         try {
             recipe.get()

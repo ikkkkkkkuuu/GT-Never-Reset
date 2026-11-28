@@ -62,6 +62,7 @@ import gregtech.api.structure.error.StructureError;
 import gregtech.api.structure.error.StructureErrors;
 import gregtech.api.util.GTRecipe;
 import gregtech.api.util.GTUtility;
+import gregtech.api.util.OverclockCalculator;
 import gregtech.api.util.ParallelHelper;
 import gregtech.common.misc.GTStructureChannels;
 
@@ -76,6 +77,8 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     private static final String[] RING_PIECES = { MAIN_RING, RARE_EARTH_RING, MONAZITE_RING, NETHERITE_RING };
     private static final int HORIZONTAL_OFFSET = 12, VERTICAL_OFFSET = 21, DEPTH_OFFSET = 1;
     private static final int RING_SPACING = 7;
+    private static final int RECIPE_THREADS = 10;
+    private static final int PARALLELS_PER_THREAD = 2_048;
     private static final Casings HULL = Casings.ChemicallyInertMachineCasing;
     private static final Casings STEEL = Casings.SolidSteelMachineCasing;
     private static final Casings STAINLESS = Casings.CleanStainlessSteelMachineCasing;
@@ -247,13 +250,9 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     protected void setupProcessingLogic(ProcessingLogic logic) {
         super.setupProcessingLogic(logic);
         setProcessingLogicPower(logic);
+        ((PlatinumProcessingLogic) logic).limitPowerToThread();
         logic.setBatchSize(1);
         logic.setRecipeLocking(this, false);
-    }
-
-    @Override
-    protected boolean usesInstantThreadFill() {
-        return true;
     }
 
     @Override
@@ -330,7 +329,12 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
 
     @Override
     public int getMaxRecipeThreads() {
-        return PlatinumProcessingRecipes.getStationLimit(getRingCount());
+        return RECIPE_THREADS;
+    }
+
+    @Override
+    protected int getBaseParallelRecipes() {
+        return PARALLELS_PER_THREAD;
     }
 
     @Override
@@ -395,10 +399,6 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
                 case 3 -> NEEDS_MONAZITE_RING;
                 default -> NEEDS_NETHERITE_RING;
             };
-            if (getRecipeThreadTasks().stream()
-                .anyMatch(task -> task.getStation() == station)) {
-                return CheckRecipeResultRegistry.NO_RECIPE;
-            }
             int furnaceHeat = recipe.getMetadataOrDefault(COIL_HEAT, 0);
             if (furnaceHeat > getFurnaceHeat()) return CheckRecipeResultRegistry.insufficientHeat(furnaceHeat);
             int digesterHeat = recipe.getMetadataOrDefault(PlatinumProcessingRecipes.DIGESTER_HEAT, 0);
@@ -417,10 +417,25 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
             return selectedStation;
         }
 
+        private void limitPowerToThread() {
+            long power = availableThreadPower();
+            long voltage = Math.min(availableVoltage, power);
+            setAvailableVoltage(voltage);
+            setAvailableAmperage(voltage == 0 ? 0 : Math.min(availableAmperage, power / voltage));
+        }
+
         @Override
         @Nonnull
         protected ParallelHelper createParallelHelper(@Nonnull GTRecipe recipe) {
             return super.createParallelHelper(recipe).setAvailableEUt(availableVoltage * availableAmperage);
+        }
+
+        @Override
+        @Nonnull
+        protected OverclockCalculator createOverclockCalculator(@Nonnull GTRecipe recipe) {
+            // Keep the native base duration and prevent sub-tick overclocks from expanding the parallel limit.
+            return super.createOverclockCalculator(recipe)
+                .setDurationUnderOneTickSupplier(() -> recipe.mDuration * speedBoost);
         }
 
         private boolean hasClearDigesterExhaust() {
