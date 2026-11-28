@@ -2,6 +2,8 @@ package com.xyp.gtneverreset.common.machine.multiblock;
 
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.isAir;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofBlocksFlat;
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofBlocksTiered;
+import static com.gtnewhorizon.structurelib.structure.StructureUtility.ofChain;
 import static com.gtnewhorizon.structurelib.structure.StructureUtility.transpose;
 import static gregtech.api.enums.HatchElement.Energy;
 import static gregtech.api.enums.HatchElement.InputBus;
@@ -13,6 +15,7 @@ import static gregtech.api.enums.HatchElement.OutputHatch;
 import static gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_LARGE_CHEMICAL_REACTOR;
 import static gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_LARGE_CHEMICAL_REACTOR_ACTIVE;
 import static gregtech.api.util.GTRecipeConstants.COIL_HEAT;
+import static gregtech.api.util.GTRecipeConstants.NFR_COIL_TIER;
 import static gregtech.api.util.GTStructureUtility.activeCoils;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofCoil;
@@ -24,14 +27,13 @@ import java.util.Map;
 
 import javax.annotation.Nonnull;
 
-import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.StatCollector;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.gtnewhorizon.structurelib.alignment.IAlignmentLimits;
-import com.gtnewhorizon.structurelib.alignment.constructable.ChannelDataAccessor;
 import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable;
 import com.gtnewhorizon.structurelib.alignment.enumerable.Flip;
 import com.gtnewhorizon.structurelib.alignment.enumerable.Rotation;
@@ -47,7 +49,6 @@ import com.xyp.gtneverreset.utils.enums.MachineModuleType;
 import com.xyp.gtneverreset.utils.structure.MultiblockStructureLoader;
 
 import gregtech.api.casing.Casings;
-import gregtech.api.enums.Mods;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
 import gregtech.api.interfaces.tileentity.ICasingTextureProvider;
@@ -65,6 +66,7 @@ import gregtech.api.util.GTUtility;
 import gregtech.api.util.OverclockCalculator;
 import gregtech.api.util.ParallelHelper;
 import gregtech.common.misc.GTStructureChannels;
+import gregtech.common.tileentities.machines.multi.MTENaquadahFuelRefinery;
 
 @IMetaTileEntity.SkipGenerateDescription
 public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<PlatinumProcessingPlantController>
@@ -79,32 +81,29 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     private static final int RING_SPACING = 7;
     private static final int RECIPE_THREADS = 10;
     private static final int PARALLELS_PER_THREAD = 2_048;
-    private static final Casings HULL = Casings.ChemicallyInertMachineCasing;
+    private static final Casings MAIN_HULL = Casings.RobustTungstenSteelMachineCasing;
+    private static final Casings CHEMICAL_TRIM = Casings.ChemicallyInertMachineCasing;
     private static final Casings STEEL = Casings.SolidSteelMachineCasing;
     private static final Casings STAINLESS = Casings.CleanStainlessSteelMachineCasing;
-    private static final Casings RARE_EARTH_HULL = Casings.RobustTungstenSteelMachineCasing;
-    private static final Casings MONAZITE_HULL = Casings.VacuumCasing;
+    private static final Casings RARE_EARTH_HULL = Casings.VacuumCasing;
+    private static final Casings MONAZITE_HULL = Casings.BasicPhotolithographicFrameworkCasing;
     private static final Casings NETHERITE_HULL = Casings.RadiantNaquadahAlloyCasing;
     private static final Casings[] REAR_HULLS = { RARE_EARTH_HULL, MONAZITE_HULL, NETHERITE_HULL };
 
     private int ringCount = 1;
+    private int refineryCoilTier = -1;
 
     private static IStructureDefinition<PlatinumProcessingPlantController> createStructure() {
-        IStructureElement<PlatinumProcessingPlantController> hull = ofBlocksFlat(
+        IStructureElement<PlatinumProcessingPlantController> trim = ofBlocksFlat(
             Map.of(
-                HULL.getBlock(),
-                HULL.getBlockMeta(),
+                CHEMICAL_TRIM.getBlock(),
+                CHEMICAL_TRIM.getBlockMeta(),
                 STEEL.getBlock(),
                 STEEL.getBlockMeta(),
                 STAINLESS.getBlock(),
                 STAINLESS.getBlockMeta()),
-            HULL.getBlock(),
-            HULL.getBlockMeta());
-        var hatchBuilder = buildHatchAdder(PlatinumProcessingPlantController.class)
-            .atLeast(InputBus, InputHatch, OutputBus, OutputHatch, Energy, Maintenance)
-            .casingIndex(HULL.getTextureId())
-            .hint(1);
-        var hatchAdder = hatchBuilder.getAdder();
+            CHEMICAL_TRIM.getBlock(),
+            CHEMICAL_TRIM.getBlockMeta());
         return StructureDefinition.<PlatinumProcessingPlantController>builder()
             .addShape(MAIN_RING, transpose(MultiblockStructureLoader.load("platinum_processing_plant")))
             .addShape(RARE_EARTH_RING, transpose(MultiblockStructureLoader.load("platinum_gate_rare_earth_ring")))
@@ -112,16 +111,17 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
             .addShape(NETHERITE_RING, transpose(MultiblockStructureLoader.load("platinum_gate_netherite_ring")))
             .addElement(
                 'A',
-                hatchBuilder
-                    .adder(
-                        (machine, hatch, texture) -> hatchAdder
-                            .apply(machine, hatch, (short) casingBelow(machine.getBaseMetaTileEntity()).getTextureId()))
-                    .buildAndChain(hull))
+                buildHatchAdder(PlatinumProcessingPlantController.class)
+                    .atLeast(InputBus, InputHatch, OutputBus, OutputHatch, Energy, Maintenance)
+                    .casingIndex(MAIN_HULL.getTextureId())
+                    .hint(1)
+                    .buildAndChain(MAIN_HULL.asElement()))
             .addElement('B', Casings.Firebricks.asElement())
-            .addElement('C', hull)
+            .addElement('C', trim)
             .addElement('D', STEEL.asElement())
             .addElement('F', MONAZITE_HULL.asElement())
             .addElement('H', RARE_EARTH_HULL.asElement())
+            .addElement('I', MAIN_HULL.asElement())
             .addElement(
                 'K',
                 GTStructureChannels.HEATING_COIL.use(
@@ -129,6 +129,17 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
                         ofCoil((machine, level) -> { machine.mCoilLevel = level; }, machine -> machine.mCoilLevel))))
             .addElement('M', Muffler.newAny(MONAZITE_HULL.getTextureId(), 2))
             .addElement('N', NETHERITE_HULL.asElement())
+            .addElement(
+                'Q',
+                ofChain(
+                    GTStructureChannels.FIELD_RESTRICTION_COIL.use(
+                        ofBlocksTiered(
+                            MTENaquadahFuelRefinery.fieldCoilTierConverter(),
+                            MTENaquadahFuelRefinery.getAllFieldCoilTiers(),
+                            -1,
+                            (machine, tier) -> machine.refineryCoilTier = tier,
+                            machine -> machine.refineryCoilTier)),
+                    STEEL.asElement()))
             .addElement('S', STAINLESS.asElement())
             .addElement('#', isAir())
             .build();
@@ -188,8 +199,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     }
 
     private static ItemStack ringBuildTrigger(ItemStack stack) {
-        if (stack.stackSize == 1 || ChannelDataAccessor.hasSubChannel(stack, GTStructureChannels.HEATING_COIL.get()))
-            return stack;
+        if (stack.stackSize == 1) return stack;
         ItemStack trigger = stack.copy();
         trigger.stackSize = 1;
         return trigger;
@@ -198,6 +208,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     @Override
     protected void checkMachineStructure(IGregTechTileEntity tile, ItemStack stack, List<StructureError> errors) {
         ringCount = 1;
+        refineryCoilTier = -1;
         if (!checkPiece(MAIN_RING, HORIZONTAL_OFFSET, VERTICAL_OFFSET, DEPTH_OFFSET, errors)) return;
 
         int lastRing = getMaxRingCount() - 1;
@@ -251,8 +262,6 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
         super.setupProcessingLogic(logic);
         setProcessingLogicPower(logic);
         ((PlatinumProcessingLogic) logic).limitPowerToThread();
-        logic.setBatchSize(1);
-        logic.setRecipeLocking(this, false);
     }
 
     @Override
@@ -268,18 +277,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
 
     @Override
     public ITexture getCasingTexture() {
-        return casingBelow(getBaseMetaTileEntity()).getCasingTexture();
-    }
-
-    private static Casings casingBelow(IGregTechTileEntity tile) {
-        if (tile == null || tile.getWorld() == null || tile.getYCoord() <= 0) return HULL;
-        World world = tile.getWorld();
-        int x = tile.getXCoord(), y = tile.getYCoord() - 1, z = tile.getZCoord();
-        Block block = world.getBlock(x, y, z);
-        int meta = world.getBlockMetadata(x, y, z);
-        if (block == STEEL.getBlock() && meta == STEEL.getBlockMeta()) return STEEL;
-        if (block == STAINLESS.getBlock() && meta == STAINLESS.getBlockMeta()) return STAINLESS;
-        return HULL;
+        return MAIN_HULL.getCasingTexture();
     }
 
     @Override
@@ -298,6 +296,13 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     }
 
     @Override
+    public void loadNBTData(NBTTagCompound tag) {
+        super.loadNBTData(tag);
+        // Older Gates saved batch mode as false and did not write a recipe-lock flag.
+        if (!tag.hasKey("mLockedToSingleRecipe")) batchMode = getDefaultBatchMode();
+    }
+
+    @Override
     public byte getUpdateData() {
         return (byte) ringCount;
     }
@@ -312,7 +317,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     }
 
     public int getMaxRingCount() {
-        return Mods.EtFuturumRequiem.isModLoaded() ? RING_PIECES.length : RING_PIECES.length - 1;
+        return RING_PIECES.length;
     }
 
     @Override
@@ -338,17 +343,7 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
     }
 
     @Override
-    public boolean supportsBatchMode() {
-        return false;
-    }
-
-    @Override
     public boolean getDefaultInputSeparationMode() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsSingleRecipeLocking() {
         return false;
     }
 
@@ -401,6 +396,10 @@ public final class PlatinumProcessingPlantController extends GTNRMultiBlockBase<
             };
             int furnaceHeat = recipe.getMetadataOrDefault(COIL_HEAT, 0);
             if (furnaceHeat > getFurnaceHeat()) return CheckRecipeResultRegistry.insufficientHeat(furnaceHeat);
+            int refiningCoil = recipe.getMetadataOrDefault(NFR_COIL_TIER, 0);
+            if (refiningCoil > 0 && refiningCoil > refineryCoilTier) {
+                return CheckRecipeResultRegistry.insufficientMachineTier(refiningCoil);
+            }
             int digesterHeat = recipe.getMetadataOrDefault(PlatinumProcessingRecipes.DIGESTER_HEAT, 0);
             if (digesterHeat > mCoilLevel.getHeat()) {
                 return CheckRecipeResultRegistry.insufficientHeat(digesterHeat);

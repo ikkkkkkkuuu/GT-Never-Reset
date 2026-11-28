@@ -42,11 +42,11 @@ import static bartworks.system.material.WerkstoffLoader.ZincSulfate;
 import static bartworks.system.material.WerkstoffLoader.Zirconium;
 import static gregtech.api.enums.OrePrefixes.block;
 import static gregtech.api.enums.OrePrefixes.crushed;
+import static gregtech.api.enums.OrePrefixes.crushedPurified;
 import static gregtech.api.enums.OrePrefixes.dust;
 import static gregtech.api.enums.OrePrefixes.ingot;
 import static gregtech.api.enums.OrePrefixes.ingotHot;
 import static gregtech.api.enums.OrePrefixes.milled;
-import static gregtech.api.recipe.RecipeMaps.arcFurnaceRecipes;
 import static gregtech.api.recipe.RecipeMaps.blastFurnaceRecipes;
 import static gregtech.api.recipe.RecipeMaps.centrifugeRecipes;
 import static gregtech.api.recipe.RecipeMaps.chemicalBathRecipes;
@@ -72,6 +72,7 @@ import static gregtech.api.recipe.RecipeMaps.vacuumFreezerRecipes;
 import static gregtech.api.recipe.RecipeMaps.vacuumFurnaceRecipes;
 import static gregtech.api.util.GTModHandler.getModItem;
 import static gregtech.api.util.GTRecipeConstants.COIL_HEAT;
+import static gregtech.api.util.GTRecipeConstants.NFR_COIL_TIER;
 import static gtPlusPlus.core.material.MaterialMisc.RARE_EARTH_HIGH;
 import static gtPlusPlus.core.material.MaterialMisc.RARE_EARTH_LOW;
 import static gtPlusPlus.core.material.MaterialMisc.RARE_EARTH_MID;
@@ -129,6 +130,8 @@ import net.minecraftforge.fluids.FluidStack;
 
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.recipe.GTNRRecipeMaps;
+import com.xyp.gtneverreset.utils.recipes.FuelRefiningRecipeSource;
+import com.xyp.gtneverreset.utils.recipes.FuelRefiningRecipeSource.RefiningRecipe;
 
 import bartworks.system.material.Werkstoff;
 import gregtech.api.enums.GTValues;
@@ -165,9 +168,34 @@ public final class PlatinumProcessingRecipes {
 
     public static void register() {
         registerFamily(1, PlatinumProcessingRecipes::platinum);
+        for (RefiningRecipe recipe : FuelRefiningRecipeSource.rocketFuels()) {
+            registerFamily(1, () -> fuelRefining(recipe));
+        }
         registerFamily(2, PlatinumProcessingRecipes::rareEarth);
+        registerFamily(2, PlatinumProcessingRecipes::indium);
         registerFamily(3, PlatinumProcessingRecipes::monazite);
+        registerFamily(3, PlatinumProcessingRecipes::polybenzimidazole);
         if (Mods.EtFuturumRequiem.isModLoaded()) registerFamily(4, PlatinumProcessingRecipes::netherite);
+        for (RefiningRecipe recipe : FuelRefiningRecipeSource.naquadahFuels()) {
+            registerFamily(4, () -> fuelRefining(recipe));
+        }
+    }
+
+    private static GTRecipeBuilder fuelRefining(RefiningRecipe formula) {
+        GTRecipe recipe = formula.recipe();
+        int heat = recipe.getMetadataOrDefault(COIL_HEAT, 0);
+        int coilTier = recipe.getMetadataOrDefault(NFR_COIL_TIER, 0);
+        GTRecipeBuilder builder = GTValues.RA.stdBuilder()
+            .itemInputsUnified(recipe.mInputs)
+            .fluidInputs(recipe.mFluidInputs)
+            .fluidOutputs(recipe.mFluidOutputs)
+            .duration(recipe.mDuration)
+            .eut(recipe.mEUt)
+            .specialValue(Math.max(heat, coilTier));
+        if (formula.circuit() > 0) builder.circuit(formula.circuit());
+        if (heat > 0) builder.metadata(COIL_HEAT, heat);
+        if (coilTier > 0) builder.metadata(NFR_COIL_TIER, coilTier);
+        return builder;
     }
 
     private static void registerFamily(int ring, Supplier<GTRecipeBuilder> recipe) {
@@ -333,6 +361,28 @@ public final class PlatinumProcessingRecipes {
         }
     }
 
+    private static GTRecipeBuilder indium() {
+        Route route = new Route();
+        ItemStack purifiedGalena = GTOreDictUnificator.get(crushedPurified, Materials.Galena, 1);
+        ItemStack purifiedSphalerite = GTOreDictUnificator.get(crushedPurified, Materials.Sphalerite, 1);
+        FluidStack concentrate = new FluidStack(ItemList.sIndiumConcentrate, 1);
+        FluidStack leadZincSolution = new FluidStack(ItemList.sLeadZincSolution, 1);
+        ItemStack indium = Materials.Indium.getDust(1);
+        ItemStack lead = Materials.Lead.getDust(1);
+        route.add(multiblockChemicalReactorRecipes, 8, purifiedGalena, concentrate, 1);
+        route.batch.replaceItemInput(purifiedGalena, Materials.Galena.getDust(1));
+        route.batch.replaceItemInput(purifiedSphalerite, Materials.Sphalerite.getDust(1));
+        route.consume(multiblockChemicalReactorRecipes, 9, concentrate, indium);
+        route.consume(electrolyzerNonCellRecipes, -1, leadZincSolution, lead);
+        return route.build(
+            new FluidStack[] { Materials.Water.getFluid(1) },
+            indium,
+            lead,
+            Materials.Silver.getDust(1),
+            Materials.Zinc.getDust(1),
+            Materials.Sulfur.getDust(1));
+    }
+
     private static GTRecipeBuilder monazite() {
         Route route = new Route();
         ItemStack crushedMonazite = GTOreDictUnificator.get(crushed, Materials.Monazite, 1);
@@ -483,6 +533,56 @@ public final class PlatinumProcessingRecipes {
         route.replenish(electrolyzerNonCellRecipes, 1, Materials.Water.getFluid(1), hydrogen);
     }
 
+    private static GTRecipeBuilder polybenzimidazole() {
+        Route route = new Route();
+        FluidStack benzene = Materials.Benzene.getFluid(1);
+        FluidStack xylene = Materials.Dimethylbenzene.getFluid(1);
+        FluidStack phthalicAcid = Materials.PhthalicAcid.getFluid(1);
+        FluidStack ester = Materials.Diphenylisophthalate.getFluid(1);
+        FluidStack diamine = Materials.Diaminobenzidin.getFluid(1);
+        FluidStack pbi = Materials.Polybenzimidazole.getMolten(1);
+        route.add(multiblockChemicalReactorRecipes, -1, ester, pbi, 9);
+        route.replenish(multiblockChemicalReactorRecipes, -1, phthalicAcid, ester);
+        GTRecipe oxidation = route.find(
+            multiblockChemicalReactorRecipes,
+            -1,
+            xylene,
+            recipe -> outputs(recipe, phthalicAcid)
+                && contains(recipe.mInputs, recipe.mFluidInputs, Materials.Potassiumdichromate.getDust(1)));
+        route.batch.replenish(oxidation, phthalicAcid);
+        route.replenish(multiblockChemicalReactorRecipes, 1, benzene, xylene);
+
+        FluidStack dichlorobenzidine = Materials.Dichlorobenzidine.getFluid(1);
+        FluidStack nitrochlorobenzene = Materials.Nitrochlorobenzene.getFluid(1);
+        FluidStack chlorobenzene = Materials.Chlorobenzene.getFluid(1);
+        route.replenish(multiblockChemicalReactorRecipes, -1, dichlorobenzidine, diamine);
+        route.replenish(multiblockChemicalReactorRecipes, 9, nitrochlorobenzene, dichlorobenzidine);
+        route.replenish(multiblockChemicalReactorRecipes, 1, chlorobenzene, nitrochlorobenzene);
+        route.replenish(multiblockChemicalReactorRecipes, 1, benzene, chlorobenzene);
+        preparePolybenzimidazoleReagents(route);
+        return route
+            .build(new FluidStack[] { Materials.HydrochloricAcid.getFluid(1), Materials.Water.getFluid(1), pbi });
+    }
+
+    private static void preparePolybenzimidazoleReagents(Route route) {
+        route.replenish(multiblockChemicalReactorRecipes, 1, Materials.Carbon.getDust(1), Materials.Methane.getGas(1));
+        route.replenish(multiblockChemicalReactorRecipes, 1, Materials.Nitrogen.getGas(1), Materials.Ammonia.getGas(1));
+        route.replenish(
+            mixerNonCellRecipes,
+            1,
+            Materials.NitricAcid.getFluid(1),
+            Materials.NitrationMixture.getFluid(1));
+
+        FluidStack sulfuricAcid = Materials.SulfuricAcid.getFluid(1);
+        GTRecipe regeneration = route.find(
+            multiblockChemicalReactorRecipes,
+            23,
+            Materials.Sulfur.getDust(1),
+            recipe -> outputs(recipe, sulfuricAcid)
+                && contains(recipe.mInputs, recipe.mFluidInputs, Materials.DilutedSulfuricAcid.getFluid(1)));
+        route.batch.replenish(regeneration, sulfuricAcid);
+    }
+
     private static GTRecipeBuilder netherite() {
         Route route = new Route();
         ItemStack scrap = getModItem(Mods.EtFuturumRequiem.ID, "netherite_scrap", 1);
@@ -491,12 +591,10 @@ public final class PlatinumProcessingRecipes {
         ItemStack brittleScrap = ItemList.Brittle_Netherite_Scrap.get(1);
         ItemStack nanoparticles = ItemList.Netherite_Nanoparticles.get(1);
         ItemStack bondedNanoparticles = ItemList.Intensely_Bonded_Netherite_Nanoparticles.get(1);
-        ItemStack netheriteIngot = Materials.Netherite.getIngots(1);
         route.add(chemicalBathRecipes, -1, hotScrap, brittleScrap, NETHERITE_BATH_BATCHES);
         route.consume(chemicalBathRecipes, -1, scrap, hotScrap);
         route.consume(maceratorRecipes, -1, brittleScrap, nanoparticles);
         route.consume(blastFurnaceRecipes, 1, nanoparticles, bondedNanoparticles);
-        route.consume(arcFurnaceRecipes, -1, bondedNanoparticles, netheriteIngot);
         prepareNetheriteBathReagents(route);
 
         // The native rhodium electrolysis stage is supplied by the core mod's Thaumic Tinkerer integration.
@@ -510,7 +608,7 @@ public final class PlatinumProcessingRecipes {
                 route.batch.replenish(synthesis, hellishMetalBlock);
             }
         }
-        return route.build(netheriteIngot);
+        return route.build(bondedNanoparticles);
     }
 
     private static void prepareNetheriteBathReagents(Route route) {
@@ -620,11 +718,15 @@ public final class PlatinumProcessingRecipes {
         }
 
         private GTRecipeBuilder build(ItemStack... products) {
+            return build(GTValues.emptyFluidStackArray, products);
+        }
+
+        private GTRecipeBuilder build(FluidStack[] fluidProducts, ItemStack... products) {
             int eut = batch.maxEut();
             int duration = batch.energy()
                 .divide(BigDecimal.valueOf(eut), 0, RoundingMode.CEILING)
                 .intValueExact();
-            GTRecipeBuilder builder = batch.build(products, GTValues.emptyFluidStackArray)
+            GTRecipeBuilder builder = batch.build(products, fluidProducts)
                 .duration(duration)
                 .eut(eut)
                 .specialValue(furnaceHeat);

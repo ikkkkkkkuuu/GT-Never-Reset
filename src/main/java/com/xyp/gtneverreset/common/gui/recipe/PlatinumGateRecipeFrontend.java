@@ -1,6 +1,7 @@
 package com.xyp.gtneverreset.common.gui.recipe;
 
 import static gregtech.api.util.GTRecipeConstants.COIL_HEAT;
+import static gregtech.api.util.GTRecipeConstants.NFR_COIL_TIER;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,12 +18,15 @@ import gregtech.api.recipe.RecipeMapFrontend;
 import gregtech.common.gui.modularui.UIHelper;
 import gregtech.nei.RecipeDisplayInfo;
 import gregtech.nei.formatter.HeatingCoilSpecialValueFormatter;
+import gregtech.nei.formatter.SimpleSpecialValueFormatter;
 
 public final class PlatinumGateRecipeFrontend extends RecipeMapFrontend {
 
     private static final int COLUMNS = 4;
     private static final int SLOT_SIZE = 18;
     private static final int TOP = 8;
+    private static final SimpleSpecialValueFormatter REFINERY_COIL = new SimpleSpecialValueFormatter(
+        "value.naquadah_fuel_refine_factory");
 
     public PlatinumGateRecipeFrontend(BasicUIPropertiesBuilder uiProperties, NEIRecipePropertiesBuilder neiProperties) {
         super(uiProperties.logoPos(new Pos2d(80, 7)), neiProperties);
@@ -65,6 +69,9 @@ public final class PlatinumGateRecipeFrontend extends RecipeMapFrontend {
         List<String> lines = new ArrayList<>();
         if (recipe.getMetadataOrDefault(COIL_HEAT, 0) > 0) {
             lines.addAll(HeatingCoilSpecialValueFormatter.INSTANCE.format(info));
+        }
+        if (recipe.getMetadataOrDefault(NFR_COIL_TIER, 0) > 0) {
+            lines.addAll(REFINERY_COIL.format(info));
         }
         // #tr gtnr.recipe.platinum_gate.nei.ring
         // # Requires ring %s
