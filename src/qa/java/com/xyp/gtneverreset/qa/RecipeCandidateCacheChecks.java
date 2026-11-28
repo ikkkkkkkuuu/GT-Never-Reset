@@ -20,6 +20,7 @@ import net.minecraftforge.fluids.FluidStack;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.CrossRecipeProcessingLogic;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeCandidateCache;
+import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadInputPreflight;
 import com.xyp.gtneverreset.common.machine.multiMachineBase.processing.RecipeThreadOutputs;
 import com.xyp.gtneverreset.common.machine.multiblock.LargeOreProcessor;
 import com.xyp.gtneverreset.common.machine.multiblock.OreRecipeThreadProcessingLogic;
@@ -32,6 +33,7 @@ import com.xyp.gtneverreset.utils.enums.GTNRMachineID;
 
 import appeng.api.AEApi;
 import appeng.container.ContainerNull;
+import appeng.me.helpers.AENetworkProxy;
 import appeng.util.inv.MEInventoryCrafting;
 import appeng.util.item.AEItemStack;
 import cpw.mods.fml.common.Mod;
@@ -50,6 +52,7 @@ import gregtech.api.recipe.lookup.GTOreDictLookupIngredient;
 import gregtech.api.recipe.lookup.GTRecipeLookup;
 import gregtech.api.recipe.lookup.GTRecipeLookupIngredient;
 import gregtech.api.util.GTRecipe;
+import gregtech.common.tileentities.machines.MTEHatchInputBusME;
 
 @Mod(
     modid = "recipecacheqa",
@@ -65,6 +68,7 @@ public final class RecipeCandidateCacheChecks {
             checkLookup();
             checkLiveInputs();
             checkOrePowerRetry();
+            checkForeignStockingBusPreflight();
             checkThreadOutputs();
             checkAssemblies();
             benchmark(result.resolveSibling("trie-timing.txt"));
@@ -176,6 +180,26 @@ public final class RecipeCandidateCacheChecks {
         if (result.wasSuccessful() || logic.shouldRetryWithMorePower(result) || input.stackSize != 3)
             throw new AssertionError("insufficient ore input cannot benefit from more power");
         logic.finishRecipe();
+    }
+
+    private static void checkForeignStockingBusPreflight() {
+        World world = MinecraftServer.getServer()
+            .worldServerForDimension(0);
+        var machine = (LargeOreProcessor) place(world, 9, GTNRMachineID.LargeOreProcessor).getMetaTileEntity();
+        var tile = new BaseMetaTileEntity();
+        tile.setWorldObj(world);
+        var bus = new MTEHatchInputBusME("qa.foreign.stocking.bus", true, 8, new String[0], null) {
+
+            @Override
+            public AENetworkProxy getProxy() {
+                throw new AssertionError("preflight accessed a foreign ME stocking bus");
+            }
+        };
+        bus.setBaseMetaTileEntity(tile);
+        machine.mInputBusses.add(bus);
+        if (!bus.isValid() || !RecipeThreadInputPreflight.check(machine, new OreRecipeThreadProcessingLogic())
+            .wasSuccessful())
+            throw new AssertionError("foreign ME stocking bus must retain its own recipe transaction");
     }
 
     private static void checkThreadOutputs() {

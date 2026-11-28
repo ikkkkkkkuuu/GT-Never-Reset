@@ -52,13 +52,16 @@ public final class RecipeThreadInputPreflight {
         Set<FluidStack> seenFluids = Collections.newSetFromMap(new IdentityHashMap<>());
         try {
             for (var input : validMTEList(machine.mInputBusses)) if (input instanceof MTEHatchInputBusME stocking) {
+                Class<?> busType = stocking.getClass();
+                // Some subclasses replace the recipe snapshot on read. Let their own processing hook debit it.
+                if (busType != MTEHatchInputBusME.class && busType != SuperAdvancedMEInputBus.class) continue;
+                int slots = busType == SuperAdvancedMEInputBus.class ? SuperAdvancedMEInputBus.SLOT_COUNT
+                    : MTEHatchInputBusME.SLOT_COUNT;
                 AENetworkProxy proxy = stocking.getProxy();
                 if (!proxy.isReady()) proxy.onReady();
                 IMEMonitor<IAEItemStack> inventory = proxy.getStorage()
                     .getItemInventory();
                 IEnergyGrid grid = proxy.getEnergy();
-                int slots = stocking instanceof SuperAdvancedMEInputBus ? SuperAdvancedMEInputBus.SLOT_COUNT
-                    : MTEHatchInputBusME.SLOT_COUNT;
                 for (int slot = 0; slot < slots; slot++) {
                     ItemStack stack = stocking.getStackInSlot(slot);
                     if (stack == null || !seenItems.add(stack)) continue;
