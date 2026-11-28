@@ -43,6 +43,7 @@ import gregtech.api.GregTechAPI;
 import gregtech.api.enums.ItemList;
 import gregtech.api.enums.Materials;
 import gregtech.api.enums.OrePrefixes;
+import gregtech.api.enums.VoidingMode;
 import gregtech.api.metatileentity.BaseMetaTileEntity;
 import gregtech.api.metatileentity.implementations.MTEHatchEnergy;
 import gregtech.api.metatileentity.implementations.MTEHatchInputBus;
@@ -60,6 +61,7 @@ public final class FragmentDimensionHatchChecks {
     private static final int Y = 82;
     private static final int STARTUP_TICKS = 140;
     private static final int TRIAL_TICKS = 30;
+    private static final int CLEAR_TRIAL_TICKS = 120;
     private static final String SCREENSHOT = "fragment-dimension-hatch.png";
 
     private final StringBuilder report = new StringBuilder();
@@ -68,6 +70,8 @@ public final class FragmentDimensionHatchChecks {
     private BaseMetaTileEntity input;
     private BaseMetaTileEntity output;
     private FragmentDimensionHatch hatch;
+    private FragmentDimensionHatch secondHatch;
+    private List<RecipeThreadTask> tasksBeforeClear;
     private int[] dedicatedInputPosition;
     private int[] optionalPortPosition;
     private LargeFragmentWorldCollector collector;
@@ -111,7 +115,12 @@ public final class FragmentDimensionHatchChecks {
                 return;
             }
             energy.setStoredEU(((MTEHatchEnergy) energy.getMetaTileEntity()).maxEUStore());
-            if (++trialTime < (stage == 0 ? STARTUP_TICKS : TRIAL_TICKS)) return;
+            int observationTicks = switch (stage) {
+                case 0 -> STARTUP_TICKS;
+                case 8 -> CLEAR_TRIAL_TICKS;
+                default -> TRIAL_TICKS;
+            };
+            if (++trialTime < observationTicks) return;
 
             var tasks = collector.getRecipeThreadTasks();
             report.append("Trial ")
@@ -207,16 +216,53 @@ public final class FragmentDimensionHatchChecks {
                     setTrial(null, null);
                 }
                 case 6 -> {
-                    require(tasks.isEmpty(), "clearing the slot stops new recipes");
-                    prepareManualTrial(player.worldObj);
+                    require(tasks.isEmpty(), "emptying both dimension hatches stops new recipes");
+                    setTrial(overworld, moon, null);
                 }
                 case 7 -> {
+                    var overworldRecipes = normalRecipes(overworld);
+                    var moonRecipes = normalRecipes(moon);
+                    var overworldCircuits = matchingCircuits(tasks, overworldRecipes, moonRecipes);
+                    var moonCircuits = matchingCircuits(tasks, moonRecipes, overworldRecipes);
                     require(
-                        !tasks.isEmpty(),
-                        "a collector without the dimension hatch still runs an ordinary bus recipe");
-                    prepareHatchAtCasing(player);
+                        overworldCircuits.size() >= 2 && moonCircuits.size() >= 2,
+                        "concurrent ore tasks use distinct circuits for both dimensions: Overworld " + overworldCircuits
+                            + ", Moon "
+                            + moonCircuits);
+                    tasksBeforeClear = tasks;
+                    setMarker(secondHatch, null);
+                    require(
+                        collector.getRecipeThreadTasks()
+                            .containsAll(tasksBeforeClear),
+                        "clearing one live hatch leaves its running tasks in progress");
+                    stage++;
+                    trialTime = 0;
                 }
                 case 8 -> {
+                    var startedAfterClear = tasks.stream()
+                        .filter(task -> !tasksBeforeClear.contains(task))
+                        .toList();
+                    var overworldRecipes = normalRecipes(overworld);
+                    var moonRecipes = normalRecipes(moon);
+                    require(
+                        !matchingCircuits(startedAfterClear, overworldRecipes, moonRecipes).isEmpty(),
+                        "the occupied Overworld hatch starts new tasks after the Moon hatch is cleared");
+                    require(
+                        matchingCircuits(startedAfterClear, moonRecipes, overworldRecipes).isEmpty(),
+                        "the cleared Moon hatch starts no new tasks");
+                    setTrial(overworld, moon, drill);
+                }
+                case 9 -> {
+                    verifyBothFluidDimensions(tasks);
+                    prepareManualTrial(player.worldObj);
+                }
+                case 10 -> {
+                    require(
+                        !tasks.isEmpty(),
+                        "a collector without dimension hatches still runs an ordinary bus recipe");
+                    prepareHatchAtCasing(player);
+                }
+                case 11 -> {
                     var hatchTile = hatch.getBaseMetaTileEntity();
                     require(hatch.onRightclick(hatchTile, player), "the real dimension hatch opens its GUI");
                     ready = true;
@@ -312,19 +358,21 @@ public final class FragmentDimensionHatchChecks {
             ports('O').get(0),
             ItemList.Hatch_Output_Bus_HV.get(1)
                 .getItemDamage());
-        place(world, optionalPortPosition, GTNRMachineID.FragmentDimensionHatch.id);
-        require(!collector.checkStructure(true, controller), "two dimension hatches fail formation");
+        var secondDimensionTile = place(world, optionalPortPosition, GTNRMachineID.FragmentDimensionHatch.id);
+        secondHatch = (FragmentDimensionHatch) secondDimensionTile.getMetaTileEntity();
         input = place(
             world,
-            casings.get(2),
+            casings.get(3),
             ItemList.Hatch_Input_Bus_LV.get(1)
                 .getItemDamage());
         require(
             collector.checkStructure(true, controller),
-            "one dimension hatch forms at the dedicated input position");
+            "dimension hatches at both the dedicated input and casing ports form together");
         require(
-            dimensionTile.getSizeInventory() == 1 && hatch.getDimensionMarker() == null,
-            "the dimension hatch has one empty slot");
+            dimensionTile.getSizeInventory() == 1 && hatch.getDimensionMarker() == null
+                && secondDimensionTile.getSizeInventory() == 1
+                && secondHatch.getDimensionMarker() == null,
+            "each dimension hatch has one empty slot");
         require(
             dimensionTile.getInventoryStackLimit() == 1 && !hatch.isItemValidForSlot(0, new ItemStack(Items.apple)),
             "the dimension slot holds one marker and rejects unrelated items");
@@ -368,6 +416,11 @@ public final class FragmentDimensionHatchChecks {
             dedicatedInputPosition,
             ItemList.Hatch_Input_Bus_LV.get(1)
                 .getItemDamage());
+        place(
+            world,
+            optionalPortPosition,
+            ItemList.Hatch_Input_Bus_LV.get(1)
+                .getItemDamage());
         require(collector.checkStructure(true, controller), "the original input bus layout still forms");
         GTRecipe recipe = normalRecipes(overworld).stream()
             .filter(candidate -> candidate.mInputs.length == 2 && candidate.mDuration >= 100)
@@ -386,23 +439,64 @@ public final class FragmentDimensionHatchChecks {
     }
 
     private void setTrial(ItemStack marker, ItemStack head) {
+        setTrial(marker, null, head);
+    }
+
+    private void setTrial(ItemStack marker, ItemStack secondMarker, ItemStack head) {
         controller.disableWorking();
         // Discard jobs from the previous trial so only new recipe starts are observed.
         collector.loadNBTData((NBTTagCompound) idleCollector.copy());
-        hatch.inventoryHandler.extractItem(0, 1, false);
+        setMarker(hatch, marker);
+        setMarker(secondHatch, secondMarker);
+        if (secondMarker != null) collector.setVoidingMode(VoidingMode.VOID_ALL);
+        input.setInventorySlotContents(0, head == null ? null : head.copy());
+        controller.enableWorking();
+        stage++;
+        trialTime = 0;
+    }
+
+    private void setMarker(FragmentDimensionHatch target, ItemStack marker) {
+        target.inventoryHandler.extractItem(0, 1, false);
         if (marker != null) require(
-            hatch.inventoryHandler.insertItem(0, marker.copy(), false) == null,
+            target.inventoryHandler.insertItem(0, marker.copy(), false) == null,
             "the GUI inventory accepted the new marker",
             false);
-        input.setInventorySlotContents(0, head == null ? null : head.copy());
-        var actual = hatch.getDimensionMarker();
+        var actual = target.getDimensionMarker();
         require(
             marker == null ? actual == null : actual != null && actual.isItemEqual(marker),
             "the dimension slot change is reflected on the server",
             false);
-        controller.enableWorking();
-        stage++;
-        trialTime = 0;
+    }
+
+    private void verifyBothFluidDimensions(List<RecipeThreadTask> tasks) {
+        var overworldFluids = fluidOutputs(overworld);
+        var moonFluids = fluidOutputs(moon);
+        boolean sawOverworld = false;
+        boolean sawMoon = false;
+        for (var task : tasks) {
+            var outputs = new ArrayList<FluidStack>();
+            task.getOutputs()
+                .appendDisplayFluids(outputs);
+            require(!outputs.isEmpty(), "the shared steel drill keeps both dimensions in fluid mode", false);
+            for (var fluid : outputs) {
+                boolean matchesOverworld = overworldFluids.stream()
+                    .anyMatch(fluid::isFluidEqual);
+                boolean matchesMoon = moonFluids.stream()
+                    .anyMatch(fluid::isFluidEqual);
+                require(matchesOverworld || matchesMoon, "the fluid output belongs to an active dimension", false);
+                sawOverworld |= matchesOverworld && !matchesMoon;
+                sawMoon |= matchesMoon && !matchesOverworld;
+            }
+        }
+        require(sawOverworld && sawMoon, "one steel drill supply starts concurrent Overworld and Moon fluid recipes");
+    }
+
+    private List<FluidStack> fluidOutputs(ItemStack marker) {
+        return recipes(marker).stream()
+            .filter(recipe -> recipe.getMetadataOrDefault(DRILL_CONSUMPTION_CHANCE, 0) > 0)
+            .filter(recipe -> recipe.mInputs[DRILL_INPUT_INDEX].isItemEqual(drill))
+            .flatMap(recipe -> Arrays.stream(recipe.mFluidOutputs))
+            .toList();
     }
 
     private void setWearChance(int chance) {
@@ -455,23 +549,20 @@ public final class FragmentDimensionHatchChecks {
     }
 
     private static List<Integer> matchingCircuits(List<RecipeThreadTask> tasks, List<GTRecipe> candidates) {
+        return matchingCircuits(tasks, candidates, List.of());
+    }
+
+    private static List<Integer> matchingCircuits(List<RecipeThreadTask> tasks, List<GTRecipe> candidates,
+        List<GTRecipe> otherDimension) {
         var circuits = new ArrayList<Integer>();
         for (var task : tasks) {
             var outputs = new ArrayList<ItemStack>();
             task.getOutputs()
                 .appendDisplayItems(outputs);
+            if (otherDimension.stream()
+                .anyMatch(recipe -> matchesOutputs(recipe, outputs))) continue;
             var matching = candidates.stream()
-                .filter(
-                    recipe -> outputs.stream()
-                        .allMatch(output -> contains(recipe.mOutputs, output)))
-                .filter(recipe -> {
-                    for (int index = 0; index < recipe.mOutputs.length; index++) {
-                        ItemStack item = recipe.mOutputs[index];
-                        if (item != null && recipe.getOutputChance(index) >= 10000 && !contains(outputs, item))
-                            return false;
-                    }
-                    return true;
-                })
+                .filter(recipe -> matchesOutputs(recipe, outputs))
                 .flatMap(recipe -> Arrays.stream(recipe.mInputs))
                 .filter(stack -> stack != null && GTUtility.isAnyIntegratedCircuit(stack))
                 .map(ItemStack::getItemDamage)
@@ -480,6 +571,16 @@ public final class FragmentDimensionHatchChecks {
             if (matching.size() == 1 && !circuits.contains(matching.get(0))) circuits.add(matching.get(0));
         }
         return circuits;
+    }
+
+    private static boolean matchesOutputs(GTRecipe recipe, List<ItemStack> outputs) {
+        if (!outputs.stream()
+            .allMatch(output -> contains(recipe.mOutputs, output))) return false;
+        for (int index = 0; index < recipe.mOutputs.length; index++) {
+            ItemStack item = recipe.mOutputs[index];
+            if (item != null && recipe.getOutputChance(index) >= 10000 && !contains(outputs, item)) return false;
+        }
+        return true;
     }
 
     private static boolean contains(ItemStack[] stacks, ItemStack wanted) {

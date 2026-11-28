@@ -11,7 +11,9 @@ import static gregtech.api.enums.HatchElement.OutputHatch;
 import static gregtech.api.util.GTStructureUtility.buildHatchAdder;
 import static gregtech.api.util.GTStructureUtility.ofHatchAdder;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -130,9 +132,9 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
             .build();
     }
 
-    private FragmentDimensionHatch dimensionHatch;
-    private List<GTRecipe> lastDimensionRecipes = List.of();
-    private int nextDimensionRecipe;
+    private final List<FragmentDimensionHatch> dimensionHatches = new ArrayList<>();
+    private final Map<FragmentDimensionHatch, DimensionRecipeCycle> dimensionRecipeCycles = new IdentityHashMap<>();
+    private int nextDimensionHatch;
 
     public LargeFragmentWorldCollector(int id, String name, String regionalName) {
         super(id, name, regionalName);
@@ -176,14 +178,23 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
     @Override
     public void clearHatches() {
         super.clearHatches();
-        dimensionHatch = null;
+        dimensionHatches.clear();
+    }
+
+    @Override
+    protected void onStructureCheckFinished(IGregTechTileEntity tile) {
+        super.onStructureCheckFinished(tile);
+        dimensionRecipeCycles.keySet()
+            .retainAll(dimensionHatches);
     }
 
     private boolean addDimensionHatch(IGregTechTileEntity tile, int texture) {
-        if (dimensionHatch != null || !(tile.getMetaTileEntity() instanceof FragmentDimensionHatch hatch)) return false;
+        if (!(tile.getMetaTileEntity() instanceof FragmentDimensionHatch hatch)) return false;
         hatch.updateTexture(texture);
-        addIfSmartInput(hatch);
-        dimensionHatch = hatch;
+        if (!dimensionHatches.contains(hatch)) {
+            addIfSmartInput(hatch);
+            dimensionHatches.add(hatch);
+        }
         return true;
     }
 
@@ -199,7 +210,7 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
 
     @Override
     protected CheckRecipeResult doCheckRecipe() {
-        if (dimensionHatch != null) return checkDimensionRecipes((CollectionProcessingLogic) processingLogic);
+        if (!dimensionHatches.isEmpty()) return checkDimensionRecipes((CollectionProcessingLogic) processingLogic);
         CheckRecipeResult result = super.doCheckRecipe();
         // Reusable selectors leave buses stocked after a start. Rotate them to give each bus a turn.
         if (result.wasSuccessful() && mInputBusses.size() > 1) Collections.rotate(mInputBusses, -1);
@@ -208,21 +219,41 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
 
     @Override
     protected List<IDualInputHatch> getRecipePatternInputs() {
-        return dimensionHatch == null ? super.getRecipePatternInputs() : List.of();
+        return dimensionHatches.isEmpty() ? super.getRecipePatternInputs() : List.of();
     }
 
     private CheckRecipeResult checkDimensionRecipes(CollectionProcessingLogic logic) {
-        if (!dimensionHatch.isValid()) return CheckRecipeResultRegistry.NO_RECIPE;
-        ItemStack marker = dimensionHatch.getDimensionMarker();
         FragmentWorldCollectionBackend backend = GTNRRecipeMaps.FRAGMENT_WORLD_COLLECTION_RECIPES.getBackend();
-        List<GTRecipe> recipes = backend.getDimensionRecipes(marker);
-        if (recipes != lastDimensionRecipes) {
-            lastDimensionRecipes = recipes;
-            nextDimensionRecipe = 0;
+        List<ItemStack> available = null;
+        ItemStack drill = null;
+        CheckRecipeResult result = CheckRecipeResultRegistry.NO_RECIPE;
+        int hatchCount = dimensionHatches.size();
+        nextDimensionHatch %= hatchCount;
+        for (int attempt = 0; attempt < hatchCount; attempt++) {
+            FragmentDimensionHatch hatch = dimensionHatches.get(nextDimensionHatch);
+            nextDimensionHatch = (nextDimensionHatch + 1) % hatchCount;
+            if (!hatch.isValid()) continue;
+            ItemStack marker = hatch.getDimensionMarker();
+            List<GTRecipe> recipes = backend.getDimensionRecipes(marker);
+            if (recipes.isEmpty()) {
+                dimensionRecipeCycles.remove(hatch);
+                continue;
+            }
+            if (available == null) {
+                available = mInputBusses.isEmpty() ? List.of() : getStoredInputs();
+                drill = selectDrill(backend, available);
+            }
+            DimensionRecipeCycle cycle = dimensionRecipeCycles
+                .computeIfAbsent(hatch, ignored -> new DimensionRecipeCycle());
+            CheckRecipeResult attemptResult = checkDimensionRecipes(logic, marker, recipes, cycle, available, drill);
+            if (attemptResult.wasSuccessful()) return attemptResult;
+            if (attemptResult != CheckRecipeResultRegistry.NO_RECIPE) result = attemptResult;
         }
-        if (recipes.isEmpty()) return CheckRecipeResultRegistry.NO_RECIPE;
+        return result;
+    }
 
-        List<ItemStack> available = mInputBusses.isEmpty() ? List.of() : getStoredInputs();
+    @Nullable
+    private static ItemStack selectDrill(FragmentWorldCollectionBackend backend, List<ItemStack> available) {
         ItemStack drill = null;
         int wear = Integer.MAX_VALUE;
         for (ItemStack input : available) {
@@ -233,11 +264,19 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
                 wear = candidateWear;
             }
         }
+        return drill;
+    }
 
+    private CheckRecipeResult checkDimensionRecipes(CollectionProcessingLogic logic, ItemStack marker,
+        List<GTRecipe> recipes, DimensionRecipeCycle cycle, List<ItemStack> available, @Nullable ItemStack drill) {
+        if (recipes != cycle.recipes) {
+            cycle.recipes = recipes;
+            cycle.nextRecipe = 0;
+        }
         CheckRecipeResult result = CheckRecipeResultRegistry.NO_RECIPE;
         for (int attempt = 0; attempt < recipes.size(); attempt++) {
-            GTRecipe recipe = recipes.get(nextDimensionRecipe);
-            nextDimensionRecipe = (nextDimensionRecipe + 1) % recipes.size();
+            GTRecipe recipe = recipes.get(cycle.nextRecipe);
+            cycle.nextRecipe = (cycle.nextRecipe + 1) % recipes.size();
             boolean fluidCollection = FragmentWorldCollectionBackend.isFluidCollection(recipe);
             if (fluidCollection != (drill != null)) continue;
             if (fluidCollection
@@ -343,6 +382,12 @@ public final class LargeFragmentWorldCollector extends CrossRecipeMultiblockBase
     private static final class StructureHolder {
 
         private static final IStructureDefinition<LargeFragmentWorldCollector> DEFINITION = createStructure();
+    }
+
+    private static final class DimensionRecipeCycle {
+
+        private List<GTRecipe> recipes = List.of();
+        private int nextRecipe;
     }
 
     private final class CollectionProcessingLogic extends CrossRecipeProcessingLogic {

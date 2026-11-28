@@ -111,8 +111,8 @@ public final class FragmentDimensionHatch extends MTEHatch implements ISmartInpu
         // # zh_CN 放入一个维度标记，选择该维度的采集配方。
         String marker = StatCollector.translateToLocal("gtnr.hatch.fragment_dimension.marker");
         // #tr gtnr.hatch.fragment_dimension.drill
-        // # A compatible drill head in an ordinary input bus selects fluid collection.
-        // # zh_CN 普通输入总线内有适用的钻头时，采集该维度的流体。
+        // # A compatible drill head in a collector input bus selects fluid collection for every dimension hatch.
+        // # zh_CN 采集器的输入总线有适用钻头时，所有维度仓切换至流体采集。
         String drill = StatCollector.translateToLocal("gtnr.hatch.fragment_dimension.drill");
         return new String[] { marker, drill };
     }
