@@ -47,8 +47,8 @@ public final class CraftingMonitorCellProgressPacket extends ClientboundPacket {
         buffer.writeByte(cells.size());
         for (Cell cell : cells) {
             buffer.writeByte(cell.index());
-            buffer.writeInt(cell.progress());
-            buffer.writeInt(cell.duration());
+            buffer.writeLong(cell.completed());
+            buffer.writeLong(cell.total());
         }
     }
 
@@ -64,15 +64,14 @@ public final class CraftingMonitorCellProgressPacket extends ClientboundPacket {
         long seen = 0;
         for (int i = 0; i < count; i++) {
             int index = buffer.readUnsignedByte();
-            int progress = buffer.readInt();
-            int duration = buffer.readInt();
-            if (index >= CraftingMonitorCellRequestPacket.MAX_CELLS || progress < 0
-                || duration <= 0
-                || progress > duration) throw new IllegalArgumentException("Invalid crafting cell sample");
+            long completed = buffer.readLong();
+            long total = buffer.readLong();
+            if (index >= CraftingMonitorCellRequestPacket.MAX_CELLS || completed < 0 || total <= 0 || completed > total)
+                throw new IllegalArgumentException("Invalid crafting cell sample");
             long bit = 1L << index;
             if ((seen & bit) != 0) throw new IllegalArgumentException("Duplicate crafting cell sample");
             seen |= bit;
-            rows.add(new Cell(index, progress, duration));
+            rows.add(new Cell(index, completed, total));
         }
         if (buffer.isReadable()) throw new IllegalArgumentException("Trailing crafting cell sample data");
         cells = List.copyOf(rows);
@@ -84,5 +83,5 @@ public final class CraftingMonitorCellProgressPacket extends ClientboundPacket {
         CraftingMonitorTooltip.acceptCells(this);
     }
 
-    public record Cell(int index, int progress, int duration) {}
+    public record Cell(int index, long completed, long total) {}
 }

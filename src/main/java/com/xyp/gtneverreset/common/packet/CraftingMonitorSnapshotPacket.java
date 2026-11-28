@@ -22,16 +22,27 @@ public final class CraftingMonitorSnapshotPacket extends ClientboundPacket {
     private List<Machine> machines;
     private Result result;
     private Position position;
+    private long completed;
+    private long total;
 
     public CraftingMonitorSnapshotPacket() {}
 
     public CraftingMonitorSnapshotPacket(int windowId, int requestId, List<Machine> machines, Result result,
         Position position) {
+        this(windowId, requestId, machines, result, position, 0, 0);
+    }
+
+    public CraftingMonitorSnapshotPacket(int windowId, int requestId, List<Machine> machines, Result result,
+        Position position, long completed, long total) {
+        if (completed < 0 || completed > total || total > 0 && result != Result.STATUS)
+            throw new IllegalArgumentException("Invalid cumulative crafting progress");
         this.windowId = windowId;
         this.requestId = requestId;
         this.machines = List.copyOf(machines);
         this.result = result;
         this.position = position;
+        this.completed = completed;
+        this.total = total;
     }
 
     public int windowId() {
@@ -54,6 +65,14 @@ public final class CraftingMonitorSnapshotPacket extends ClientboundPacket {
         return position;
     }
 
+    public long completed() {
+        return completed;
+    }
+
+    public long total() {
+        return total;
+    }
+
     @Override
     protected void write(ByteBuf buffer) {
         buffer.writeInt(windowId);
@@ -72,6 +91,10 @@ public final class CraftingMonitorSnapshotPacket extends ClientboundPacket {
             buffer.writeBoolean(machine.active());
             buffer.writeBoolean(machine.canOpenMachine());
             buffer.writeBoolean(machine.canOpenProvider());
+        }
+        if (total > 0) {
+            buffer.writeLong(completed);
+            buffer.writeLong(total);
         }
     }
 
@@ -101,6 +124,14 @@ public final class CraftingMonitorSnapshotPacket extends ClientboundPacket {
                     buffer.readBoolean()));
         }
         machines = List.copyOf(rows);
+        completed = 0;
+        total = 0;
+        if (result == Result.STATUS && buffer.readableBytes() == Long.BYTES * 2) {
+            completed = buffer.readLong();
+            total = buffer.readLong();
+            if (completed < 0 || total <= 0 || completed > total)
+                throw new IllegalArgumentException("Invalid cumulative crafting progress");
+        }
         if (buffer.isReadable()) throw new IllegalArgumentException("Trailing crafting monitor data");
     }
 

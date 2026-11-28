@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.minecraft.inventory.InventoryCrafting;
+import net.minecraft.nbt.NBTTagCompound;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -36,16 +37,19 @@ import com.xyp.gtneverreset.common.crafting.quantum.ae2.QuantumCraftingCpuCluste
 import com.xyp.gtneverreset.common.machine.hatch.CircuitMEPatternBuffer;
 import com.xyp.gtneverreset.common.machine.hatch.SuperMTEHatchCraftingInputME;
 import com.xyp.gtneverreset.common.machine.multiblock.AssemblerMatrix;
+import com.xyp.gtneverreset.common.me.CraftingJobProgress;
 import com.xyp.gtneverreset.common.me.CraftingMachineMonitor;
 import com.xyp.gtneverreset.common.me.CraftingMachineMonitor.Dispatch;
 import com.xyp.gtneverreset.common.me.DireCraftingPatternDetails;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
+import appeng.api.networking.crafting.CraftingItemList;
 import appeng.api.networking.crafting.ICraftingMedium;
 import appeng.api.networking.crafting.ICraftingPatternDetails;
 import appeng.api.networking.energy.IEnergyGrid;
 import appeng.api.storage.data.IAEStack;
+import appeng.api.storage.data.IItemList;
 import appeng.crafting.MECraftingInventory;
 import appeng.me.cache.CraftingGridCache;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
@@ -351,20 +355,82 @@ public abstract class MixinCraftingCPUCluster {
         }
     }
 
+    @Inject(method = "prepareElapsedTime", at = @At("RETURN"), require = 1)
+    private void gtnr$beginOutputProgress(CallbackInfo ci) {
+        CraftingJobProgress.begin((CraftingCPUCluster) (Object) this);
+    }
+
+    @WrapOperation(
+        method = "prepareStepCount",
+        at = @At(
+            value = "INVOKE",
+            target = "Lappeng/me/cluster/implementations/CraftingCPUCluster;getModernListOfItem(Lappeng/api/storage/data/IItemList;Lappeng/api/networking/crafting/CraftingItemList;)V",
+            ordinal = 1),
+        require = 1)
+    private void gtnr$recordPlannedOutputs(CraftingCPUCluster cpu, IItemList<IAEStack<?>> outstanding,
+        CraftingItemList kind, Operation<Void> original) {
+        original.call(cpu, outstanding, kind);
+        CraftingJobProgress.updatePlan(cpu, outstanding);
+    }
+
+    @WrapOperation(
+        method = "executeCrafting",
+        at = @At(
+            value = "INVOKE",
+            target = "Lappeng/api/storage/data/IItemList;add(Lappeng/api/storage/data/IAEStack;)V",
+            ordinal = 1),
+        require = 1)
+    private void gtnr$recordCraftingRemainder(IItemList<?> waitingFor, IAEStack<?> stack, Operation<Void> original) {
+        original.call(waitingFor, stack);
+        CraftingJobProgress.expectRemainder((CraftingCPUCluster) (Object) this, stack);
+    }
+
+    @WrapOperation(
+        method = "executeCrafting",
+        at = @At(
+            value = "INVOKE",
+            target = "Lappeng/me/cluster/implementations/CraftingCPUCluster$finalOutput;performFakeCrafting(Lappeng/api/networking/crafting/ICraftingPatternDetails;)V"),
+        require = 2)
+    private void gtnr$recordFakeCraftingOutput(CraftingCPUCluster.finalOutput output, ICraftingPatternDetails details,
+        Operation<Void> original) {
+        original.call(output, details);
+        CraftingCPUCluster cpu = (CraftingCPUCluster) (Object) this;
+        for (IAEStack<?> stack : details.getCondensedAEOutputs()) {
+            CraftingJobProgress.receive(cpu, stack);
+        }
+    }
+
     @Inject(method = "recordReturnedOutputs", at = @At("RETURN"), require = 1)
-    private void gtnr$forgetReturnedOutput(IAEStack<?> stack, CallbackInfo ci) {
-        CraftingMachineMonitor.returned((CraftingCPUCluster) (Object) this, stack);
+    private void gtnr$recordReturnedOutput(IAEStack<?> stack, CallbackInfo ci) {
+        CraftingCPUCluster cpu = (CraftingCPUCluster) (Object) this;
+        CraftingMachineMonitor.returned(cpu, stack);
+        CraftingJobProgress.receive(cpu, stack);
     }
 
     @Inject(method = { "cancel", "destroy" }, at = @At("RETURN"), require = 1)
-    private void gtnr$forgetCraftingMachines(CallbackInfo ci) {
-        CraftingMachineMonitor.clear((CraftingCPUCluster) (Object) this);
+    private void gtnr$clearOutputProgress(CallbackInfo ci) {
+        CraftingCPUCluster cpu = (CraftingCPUCluster) (Object) this;
+        CraftingMachineMonitor.clear(cpu);
+        CraftingJobProgress.clear(cpu);
     }
 
     @Inject(method = "completeJob", at = @At("RETURN"), require = 1)
-    private void gtnr$forgetCompletedCraftingMachines(CallbackInfo ci) {
+    private void gtnr$clearCompletedOutputProgress(CallbackInfo ci) {
         CraftingCPUCluster cpu = (CraftingCPUCluster) (Object) this;
-        if (cpu.getLastCraftingLink() == null) CraftingMachineMonitor.clear(cpu);
+        if (cpu.getLastCraftingLink() == null) {
+            CraftingMachineMonitor.clear(cpu);
+            CraftingJobProgress.clear(cpu);
+        }
+    }
+
+    @Inject(method = "writeToNBT", at = @At("RETURN"), require = 1)
+    private void gtnr$saveOutputProgress(NBTTagCompound data, CallbackInfo ci) {
+        CraftingJobProgress.write((CraftingCPUCluster) (Object) this, data);
+    }
+
+    @Inject(method = "readFromNBT", at = @At("RETURN"), require = 1)
+    private void gtnr$loadOutputProgress(NBTTagCompound data, CallbackInfo ci) {
+        CraftingJobProgress.read((CraftingCPUCluster) (Object) this, data);
     }
 
     @Unique

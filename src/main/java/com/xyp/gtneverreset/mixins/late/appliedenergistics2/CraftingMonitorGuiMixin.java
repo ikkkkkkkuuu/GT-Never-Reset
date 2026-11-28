@@ -58,7 +58,8 @@ public abstract class CraftingMonitorGuiMixin extends AEBaseGui implements Craft
         at = @At(value = "FIELD", target = "Lappeng/core/AEConfig;useColoredCraftingStatus:Z"))
     private boolean gtnr$drawCellProgress(boolean colored, @Local(argsOnly = true) CraftingCpuEntry entry,
         @Local(argsOnly = true, ordinal = 1) int column, @Local(argsOnly = true, ordinal = 2) int row) {
-        if (!colored || !entry.hasActiveAmount()) return colored;
+        boolean active = entry.hasActiveAmount();
+        if (!colored || !active && !entry.hasPendingAmount()) return colored;
         // AE draws this part of the cell with a half-scale matrix.
         int x = 2 * (column * (1 + SECTION_LENGTH) + ITEMSTACK_LEFT_OFFSET);
         int y = 2 * (row * SECTION_HEIGHT + ITEMSTACK_TOP_OFFSET - 3);
@@ -68,7 +69,7 @@ public abstract class CraftingMonitorGuiMixin extends AEBaseGui implements Craft
             y,
             2 * SECTION_LENGTH,
             2 * SECTION_HEIGHT - 2,
-            getCraftingStateColor(entry.getScheduledReason(), true));
+            getCraftingStateColor(entry.getScheduledReason(), active));
     }
 
     @WrapOperation(

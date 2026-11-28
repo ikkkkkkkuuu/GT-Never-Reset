@@ -16,6 +16,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.xyp.gtneverreset.common.me.CraftingJobProgress.Progress;
 import com.xyp.gtneverreset.common.me.CraftingMachineMonitor.Provider;
 import com.xyp.gtneverreset.common.me.CraftingMachineMonitor.Target;
 import com.xyp.gtneverreset.common.packet.CraftingMonitorCellProgressPacket;
@@ -82,34 +83,33 @@ public final class CraftingMonitorService {
         }
 
         if (action == Action.STATUS) {
-            if (!cpu.isMaking(stack)) {
-                reply(player, windowId, requestId, List.of(), Result.STATUS, null);
-                return;
+            List<Row> rows = cpu.isMaking(stack)
+                ? collectRows(player, cpu, grid, stack, security.hasPermission(player, SecurityPermissions.BUILD))
+                : List.of();
+            if (!rows.isEmpty()) {
+                session.views.addFirst(
+                    new View(
+                        requestId,
+                        now,
+                        new WeakReference<>(cpu),
+                        new WeakReference<>(cpu.getLastCraftingLink()),
+                        stack,
+                        rows));
+                if (session.views.size() > MAX_RECENT_VIEWS) session.views.removeLast();
             }
-            List<Row> rows = collectRows(
-                player,
-                cpu,
-                grid,
-                stack,
-                security.hasPermission(player, SecurityPermissions.BUILD));
-            session.views.addFirst(
-                new View(
+            Progress progress = CraftingJobProgress.get(cpu, stack);
+            NetWorkHandler.sendTo(
+                new CraftingMonitorSnapshotPacket(
+                    windowId,
                     requestId,
-                    now,
-                    new WeakReference<>(cpu),
-                    new WeakReference<>(cpu.getLastCraftingLink()),
-                    stack,
-                    rows));
-            if (session.views.size() > MAX_RECENT_VIEWS) session.views.removeLast();
-            reply(
-                player,
-                windowId,
-                requestId,
-                rows.stream()
-                    .map(Row::display)
-                    .toList(),
-                Result.STATUS,
-                null);
+                    rows.stream()
+                        .map(Row::display)
+                        .toList(),
+                    Result.STATUS,
+                    null,
+                    progress == null ? 0 : progress.completed(),
+                    progress == null ? 0 : progress.total()),
+                player);
             return;
         }
 
@@ -166,15 +166,8 @@ public final class CraftingMonitorService {
             for (int index = 0; index < visible.size(); index++) {
                 IAEStack<?> stack = visible.get(index);
                 if (stack == null) continue;
-                Target closest = null;
-                for (Target target : CraftingMachineMonitor.find(cpu, stack)) {
-                    if (!target.active() || target.duration() <= 0
-                        || closest != null
-                            && target.duration() - target.progress() >= closest.duration() - closest.progress()
-                        || !providerOnGrid(grid, target.provider(), target.providerSide())) continue;
-                    closest = target;
-                }
-                if (closest != null) cells.add(new Cell(index, closest.progress(), closest.duration()));
+                Progress progress = CraftingJobProgress.get(cpu, stack);
+                if (progress != null) cells.add(new Cell(index, progress.completed(), progress.total()));
             }
         }
         NetWorkHandler.sendTo(new CraftingMonitorCellProgressPacket(windowId, requestId, cells), player);
