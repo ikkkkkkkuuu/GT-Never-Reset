@@ -5,7 +5,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
@@ -31,12 +30,12 @@ import com.xyp.gtneverreset.client.projector.ProjectorGui;
 import com.xyp.gtneverreset.common.packet.GenerateProjectorBatchPacket;
 import com.xyp.gtneverreset.common.packet.NetWorkHandler;
 import com.xyp.gtneverreset.common.projector.ProjectorBatch;
+import com.xyp.gtneverreset.common.projector.ProjectorBatchCells;
 import com.xyp.gtneverreset.common.projector.ProjectorEnergyHatches;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorPlan;
 import com.xyp.gtneverreset.common.projector.ProjectorStructure;
 import com.xyp.gtnrlib.gui.widget.AE2Button;
-import com.xyp.gtnrlib.gui.widget.AECheckbox;
 import com.xyp.gtnrlib.gui.widget.NumberEntryWidget;
 import com.xyp.gtnrlib.gui.widget.PageTabs;
 import com.xyp.gtnrlib.gui.widget.ThemedButton;
@@ -80,7 +79,6 @@ public class ProjectorCreativeChecks {
         WAIT_GENERATION,
         VERIFY_WORLD,
         INVALID_BATCH,
-        WAIT_SEAM,
         BATCH,
         WAIT_BATCH,
         VERIFY_BATCH,
@@ -139,16 +137,19 @@ public class ProjectorCreativeChecks {
                 require(player.worldObj.isAirBlock(x, y, z), "survival wrote to the world");
                 require(!player.capabilities.isCreativeMode, "survival privilege check");
                 player.setGameType(WorldSettings.GameType.CREATIVE);
-                player.worldObj.setBlock(x, y, z, Blocks.obsidian);
+                player.worldObj.setBlock(x, y, z, Blocks.bedrock);
                 stage = Stage.OBSTRUCTED;
             } else if (stage == Stage.REMOVE_OBSTRUCTION) {
-                require(player.worldObj.getBlock(x, y, z) == Blocks.obsidian, "obstruction was overwritten");
-                player.worldObj.setBlockToAir(x, y, z);
+                require(player.worldObj.getBlock(x, y, z) == Blocks.bedrock, "unbreakable obstruction was cleared");
+                require(batchPlaced > 0, "an unbreakable obstruction stopped unaffected placements");
+                clearStructure(player);
                 stage = Stage.PROTECTED;
             } else if (stage == Stage.VERIFY_ROLLBACK) {
                 require(
                     deniedPlacement && player.worldObj.isAirBlock(deniedX, deniedY, deniedZ),
                     "protected placement did not roll back");
+                require(batchPlaced > 0, "a denied placement stopped unaffected placements");
+                clearStructure(player);
                 stage = Stage.CREATIVE;
             } else if (stage == Stage.VERIFY_WORLD) {
                 int[] offset = new int[3];
@@ -186,32 +187,7 @@ public class ProjectorCreativeChecks {
                 stage = Stage.INVALID_BATCH;
             } else if (stage == Stage.VERIFY_BATCH || stage == Stage.VERIFY_SEPARATE) {
                 boolean separate = stage == Stage.VERIFY_SEPARATE;
-                var coordinates = new HashSet<Long>();
-                for (int ix = separate ? 0 : -1; ix <= 2; ix++)
-                    for (int iy = separate ? 0 : -1; iy <= (separate ? 0 : 1); iy++)
-                        for (int iz = separate ? 0 : -1; iz <= (separate ? 0 : 1); iz++) {
-                            int xStep = separate ? 3 + SEPARATE_GAP : ix < 0 ? 3 : 2;
-                            int ox = x + ix * xStep, oy = y + iy * 4, oz = z + iz * 3;
-                            for (int i = 0; i < expected.size; i++) {
-                                int[] offset = new int[3];
-                                facing
-                                    .getWorldOffset(new int[] { expected.a[i], expected.b[i], expected.c[i] }, offset);
-                                int wx = ox + offset[0], wy = oy + offset[1], wz = oz + offset[2];
-                                require(
-                                    player.worldObj.getBlock(wx, wy, wz) == expected.blocks[i],
-                                    "batch block " + wx + "," + wy + "," + wz);
-                                if (expected.machines[i] > 0) {
-                                    var te = (IGregTechTileEntity) player.worldObj.getTileEntity(wx, wy, wz);
-                                    require(te.getMetaTileID() == expected.machines[i], "batch GT id");
-                                } else if (expected.metas[i] != ProjectorStructure.ANY_META) {
-                                    require(
-                                        player.worldObj.getBlockMetadata(wx, wy, wz) == expected.metas[i],
-                                        "batch metadata");
-                                }
-                                if (expected.blocks[i] != Blocks.air) coordinates.add(ProjectorPlan.pack(wx, wy, wz));
-                            }
-                        }
-                require(batchPlaced == coordinates.size(), "shared cells placed twice");
+                verifyTranslatedWorld(player);
                 if (separate) {
                     require(batchPlaced == 102, "three independent 34-block structures");
                     int eastEdge = x + expected.worldBounds(facing)[3];
@@ -221,7 +197,7 @@ public class ProjectorCreativeChecks {
                     verifyGapLayout(expected, facing);
                     Files.writeString(
                         Path.of("separate-report.txt"),
-                        "Four-block gap overrides east sharing: 3 controllers, 102 unique blocks.");
+                        "Four-block gap between copies: 3 controllers, 102 unique blocks.");
                     var layoutPlan = new ProjectorPlan();
                     layoutPlan.selectMachine(ProjectorMachines.idOf(ItemList.Machine_Multi_BlastFurnace.get(1)));
                     layoutPlan.state = ProjectorPlan.State.LOCKED;
@@ -232,7 +208,7 @@ public class ProjectorCreativeChecks {
                     layoutPlan.facing = facing = ExtendedFacing.of(ForgeDirection.NORTH);
                     for (ForgeDirection side : new ForgeDirection[] { ForgeDirection.WEST, ForgeDirection.SOUTH,
                         ForgeDirection.UP }) {
-                        layoutPlan.batch.setShared(side, true);
+                        layoutPlan.batch.setGap(side, side == ForgeDirection.WEST ? -1 : 1);
                         layoutPlan.batch.setAdditional(side, 1);
                     }
                     layoutPlan.batchProjection = true;
@@ -246,13 +222,11 @@ public class ProjectorCreativeChecks {
                 }
                 Files.writeString(
                     Path.of("batch-report.txt"),
-                    "36 machines in 4 × 3 × 3; six direction counts; east shared, west separate; verified "
-                        + batchPlaced
-                        + " unique placed blocks.");
+                    "36 machines in 4 × 3 × 3, with X overlaps; verified " + batchPlaced + " unique placed blocks.");
                 var separatePlan = ProjectorPlan.read(player.getHeldItem());
                 for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
                     separatePlan.batch.setAdditional(dir, dir == ForgeDirection.EAST ? 2 : 0);
-                    separatePlan.batch.setShared(dir, dir == ForgeDirection.EAST);
+                    separatePlan.batch.setGap(dir, 0);
                 }
                 separatePlan.batch.setGap(ForgeDirection.EAST, SEPARATE_GAP);
                 separatePlan.y = y += 20;
@@ -261,35 +235,10 @@ public class ProjectorCreativeChecks {
                 player.inventoryContainer.detectAndSendChanges();
                 stage = Stage.SEPARATE_BATCH;
             } else if (stage == Stage.VERIFY_SMART) {
-                int controllers = 0;
-                for (int dx = -2; dx <= 0; dx += 2)
-                    for (int dz = 0; dz <= 4; dz += 4) for (int dy = 0; dy <= 6; dy += 6) {
-                        var block = player.worldObj.getTileEntity(x + dx, y + dy, z + dz);
-                        require(
-                            block instanceof IGregTechTileEntity,
-                            "expected controller at " + dx + "," + dy + "," + dz);
-                        var gt = (IGregTechTileEntity) block;
-                        require(
-                            gt.getMetaTileID() == ProjectorMachines.idOf(ItemList.Machine_Multi_BlastFurnace.get(1)),
-                            "expected industrial blast furnace");
-                        var pose = ((IAlignment) gt.getMetaTileEntity()).getExtendedFacing();
-                        require(
-                            pose.getDirection() == (dz == 0 ? ForgeDirection.NORTH : ForgeDirection.SOUTH),
-                            "back row must face outward");
-                        int[] local = new int[3], dir = new int[3];
-                        facing.getOffsetABC(new int[] { 0, 1, 0 }, local);
-                        pose.getWorldOffset(local, dir);
-                        require(dir[1] == (dy == 0 ? 1 : -1), "vertical layer orientation");
-                        require(
-                            player.worldObj.isAirBlock(x + dx, y + dy, z + dz + pose.getDirection().offsetZ),
-                            "controller front obstructed");
-                        controllers++;
-                    }
+                verifyTranslatedWorld(player);
                 Files.writeString(
-                    Path.of("smart-report.txt"),
-                    controllers + " GT controllers verified, opposite rear row, inverted upper layer, all fronts open; "
-                        + batchPlaced
-                        + " unique blocks");
+                    Path.of("translated-report.txt"),
+                    batchPlaced + " unique blocks built with one facing.");
                 player.inventory.currentItem = 1;
                 player.playerNetServerHandler
                     .sendPacket(new net.minecraft.network.play.server.S09PacketHeldItemChange(1));
@@ -326,10 +275,7 @@ public class ProjectorCreativeChecks {
             }
             if (stage == Stage.SEPARATE_BATCH && ProjectorClient.plan != null && ProjectorClient.plan.y == y) {
                 if (serverTicks < nextBuildRequest) return;
-                require(
-                    ProjectorClient.plan.batch.gap(ForgeDirection.WEST) == SEPARATE_GAP
-                        && ProjectorClient.plan.batch.shares(ForgeDirection.EAST),
-                    "spacing and sharing did not synchronize");
+                require(ProjectorClient.plan.batch.gap(ForgeDirection.WEST) == SEPARATE_GAP, "Gap did not synchronize");
                 stage = Stage.WAIT_SEPARATE;
                 NetWorkHandler.sendToServer(new GenerateProjectorBatchPacket(0));
                 return;
@@ -392,7 +338,10 @@ public class ProjectorCreativeChecks {
                 mc.thePlayer.rotationYaw = 0;
                 mc.thePlayer.rotationPitch = -5;
                 if (++smartWorldFrames < 40) return;
-                require(ProjectorClient.CHECK.structure.size == 159, "world projection for eight machines");
+                require(
+                    ProjectorClient.CHECK.structure.size > expected.size
+                        && ProjectorClient.CHECK.structure.size < 8 * expected.size,
+                    "world projection for eight overlapping machines");
                 screenshot("smart-world-projection.png");
                 smartWorldFrames = 0;
                 smartProjectionChecked = true;
@@ -407,12 +356,6 @@ public class ProjectorCreativeChecks {
                 mc.thePlayer.rotationYaw = 0;
                 mc.thePlayer.rotationPitch = -5;
                 if (++captureFrames < 40) return;
-                var tile = (IGregTechTileEntity) mc.theWorld.getTileEntity(x, y + 6, z);
-                var pose = ((IAlignment) tile.getMetaTileEntity()).getExtendedFacing();
-                int[] local = new int[3], axis = new int[3];
-                facing.getOffsetABC(new int[] { 1, 0, 0 }, local);
-                pose.getWorldOffset(local, axis);
-                require(axis[0] == -1, "client controller is not rotated through 180 degrees: " + pose);
                 screenshot("smart-generated-world.png");
                 finish(null);
             } catch (Throwable failure) {
@@ -473,19 +416,7 @@ public class ProjectorCreativeChecks {
             }
             if (stage == Stage.INVALID_BATCH && !worldPreviewChecked && navigationFrames >= 10) {
                 if (navigationFrames == 10) {
-                    var count = WidgetTree.findFirstWithName(
-                        gui,
-                        "batch_count_" + ForgeDirection.EAST.ordinal(),
-                        NumberEntryWidget.class);
-                    var field = (TextFieldWidget) count.getChildren()
-                        .stream()
-                        .filter(TextFieldWidget.class::isInstance)
-                        .findFirst()
-                        .orElseThrow();
-                    field.setText("1");
-                    field.onRemoveFocus(
-                        ModularScreen.getCurrent()
-                            .getContext());
+                    setBatchNumber(gui, "batch_count_", ForgeDirection.EAST, 2);
                 } else if (navigationFrames == 26 || navigationFrames == 44) {
                     boolean shared = navigationFrames == 44;
                     int size = shared ? 56 : 68, width = shared ? 5 : 6;
@@ -509,9 +440,7 @@ public class ProjectorCreativeChecks {
                     verifyWorldPreview(size, width);
                     screenshot(shared ? "shared-east-gui.png" : "separate-east-gui.png");
                     if (!shared) {
-                        WidgetTree
-                            .findFirstWithName(gui, "batch_share_" + ForgeDirection.EAST.ordinal(), AECheckbox.class)
-                            .onMousePressed(0);
+                        setBatchNumber(gui, "batch_gap_", ForgeDirection.EAST, -1);
                     } else {
                         var player = Minecraft.getMinecraft().thePlayer;
                         double dx = x - player.posX, dz = z - player.posZ;
@@ -527,54 +456,17 @@ public class ProjectorCreativeChecks {
                 }
                 return;
             }
-            if (stage == Stage.SMART && navigationFrames == 12 && !smartProjectionChecked) {
-                require(gui.working.y == y, "smart plan synchronized");
-                require(
-                    gui.working.batch.faceOutward && !gui.working.batch.alternateVertical,
-                    "automatic orientation enabled");
-                var query = ProjectorGui.class.getDeclaredMethod("batchWarning");
-                query.setAccessible(true);
-                require(
-                    query.invoke(gui)
-                        .equals(""),
-                    "solver rejected auto stack: " + query.invoke(gui));
-                screenshot("smart-automatic.png");
-                WidgetTree.findFirstWithName(gui, "batch_flip", AECheckbox.class)
-                    .onMousePressed(0);
-                require(
-                    gui.working.batch.alternateVertical && query.invoke(gui)
-                        .equals(""),
-                    "manual alternating layer");
-            }
-            if (batch && stage != Stage.SMART && navigationFrames == 12) {
-                if (stage == Stage.INVALID_BATCH) {
-                    if (gui.working.batch.faceOutward)
-                        WidgetTree.findFirstWithName(gui, "batch_smart", AECheckbox.class)
-                            .onMousePressed(0);
-                    for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
-                        var input = WidgetTree
-                            .findFirstWithName(gui, "batch_count_" + dir.ordinal(), NumberEntryWidget.class);
-                        var field = (TextFieldWidget) input.getChildren()
-                            .stream()
-                            .filter(TextFieldWidget.class::isInstance)
-                            .findFirst()
-                            .orElseThrow();
-                        field.setText(dir == ForgeDirection.EAST ? "2" : "1");
-                        field.onRemoveFocus(
-                            ModularScreen.getCurrent()
-                                .getContext());
-                    }
-                    if (!gui.working.batch.shares(ForgeDirection.EAST)) WidgetTree
-                        .findFirstWithName(gui, "batch_share_" + ForgeDirection.EAST.ordinal(), AECheckbox.class)
-                        .onMousePressed(0);
-                } else {
-                    require(gui.working.batch.shares(ForgeDirection.UP), "shared settings lost on reopen");
-                }
-                WidgetTree.findFirstWithName(gui, "batch_share_" + ForgeDirection.UP.ordinal(), AECheckbox.class)
-                    .onMousePressed(0);
-                require(
-                    gui.working.batch.machines() == 36 && gui.working.batch.shares(ForgeDirection.EAST),
-                    "batch controls");
+            if (stage == Stage.INVALID_BATCH && navigationFrames == 12) {
+                setBatchNumber(gui, "batch_count_", ForgeDirection.EAST, ProjectorBatch.MAX_COPIES);
+                setBatchNumber(gui, "batch_count_", ForgeDirection.UP, -2);
+                require(!gui.working.batch.withinLimit(), "Fixture did not exceed the copy limit");
+                button.onMousePressed(0);
+                require(ModularScreen.getCurrent() == gui.getScreen(), "Oversized batch was allowed to generate");
+                for (var direction : ForgeDirection.VALID_DIRECTIONS) gui.working.batch.setAdditional(direction, 1);
+                gui.working.batch.setAdditional(ForgeDirection.EAST, 2);
+                require(gui.working.batch.machines() == 36, "Mixed signs were not retained");
+                stage = Stage.BATCH;
+                return;
             }
             if (stage == Stage.SMART && navigationFrames == 17 && !smartProjectionChecked) {
                 gui.getScreen()
@@ -600,7 +492,6 @@ public class ProjectorCreativeChecks {
                 case PROTECTED -> Stage.WAIT_PROTECTION;
                 case OBSTRUCTED -> Stage.WAIT_OBSTRUCTION;
                 case CREATIVE -> Stage.WAIT_GENERATION;
-                case INVALID_BATCH -> Stage.WAIT_SEAM;
                 case BATCH -> Stage.WAIT_BATCH;
                 case SMART -> Stage.WAIT_SMART;
                 default -> throw new IllegalStateException("unexpected generator click at " + before);
@@ -616,11 +507,7 @@ public class ProjectorCreativeChecks {
     public void place(BlockEvent.PlaceEvent event) {
         if (!(event.world instanceof net.minecraft.world.WorldServer) || !(event.player instanceof EntityPlayerMP))
             return;
-        if (stage == Stage.WAIT_SEAM && !event.world.isRemote) {
-            finish(new AssertionError("batch modified the world before validating all shared faces"));
-            return;
-        }
-        if (stage == Stage.WAIT_PROTECTION && !event.world.isRemote) {
+        if (stage == Stage.WAIT_PROTECTION && !event.world.isRemote && !deniedPlacement) {
             deniedX = event.x;
             deniedY = event.y;
             deniedZ = event.z;
@@ -646,11 +533,6 @@ public class ProjectorCreativeChecks {
             finish(new AssertionError("server rejected the build request during " + stage));
             return;
         }
-        if (stage == Stage.WAIT_SEAM && message.getKey()
-            .equals("gtneverreset.projector.build.batch_conflict")) {
-            stage = Stage.BATCH;
-            return;
-        }
         if ((stage == Stage.WAIT_BATCH || stage == Stage.WAIT_SEPARATE || stage == Stage.WAIT_SMART) && message.getKey()
             .equals("gtneverreset.projector.build.done")) {
             batchPlaced = Integer.parseInt(String.valueOf(message.getFormatArgs()[0]));
@@ -658,19 +540,14 @@ public class ProjectorCreativeChecks {
                 : stage == Stage.WAIT_SEPARATE ? Stage.VERIFY_SEPARATE : Stage.VERIFY_BATCH;
             return;
         }
-        if ((stage == Stage.WAIT_BATCH || stage == Stage.WAIT_SEPARATE
-            || stage == Stage.WAIT_SMART
-            || stage == Stage.WAIT_SEAM) && message.getKey()
-                .startsWith("gtneverreset.projector.build.")) {
+        if ((stage == Stage.WAIT_BATCH || stage == Stage.WAIT_SEPARATE || stage == Stage.WAIT_SMART) && message.getKey()
+            .startsWith("gtneverreset.projector.build.")) {
             finish(new AssertionError(message.getUnformattedText()));
             return;
         }
         if ((stage == Stage.WAIT_OBSTRUCTION || stage == Stage.WAIT_PROTECTION) && message.getKey()
-            .equals("gtneverreset.projector.build.stopped")) {
-            if (!"0".equals(String.valueOf(message.getFormatArgs()[3]))) {
-                finish(new AssertionError("partial build before obstruction"));
-                return;
-            }
+            .equals("gtneverreset.projector.build.done")) {
+            batchPlaced = Integer.parseInt(String.valueOf(message.getFormatArgs()[0]));
             stage = stage == Stage.WAIT_PROTECTION ? Stage.VERIFY_ROLLBACK : Stage.REMOVE_OBSTRUCTION;
         } else if (stage == Stage.WAIT_GENERATION && message.getKey()
             .equals("gtneverreset.projector.build.done")) stage = Stage.VERIFY_WORLD;
@@ -681,15 +558,80 @@ public class ProjectorCreativeChecks {
             finish(new AssertionError(message.getUnformattedText()));
     }
 
+    private void clearStructure(EntityPlayerMP player) {
+        int[] offset = new int[3];
+        boolean updates = gregtech.api.threads.RunnableMachineUpdate.isCurrentThreadEnabled();
+        gregtech.api.threads.RunnableMachineUpdate.setCurrentThreadEnabled(false);
+        try {
+            for (int i = 0; i < expected.size; i++) {
+                facing.getWorldOffset(new int[] { expected.a[i], expected.b[i], expected.c[i] }, offset);
+                player.worldObj.setBlockToAir(x + offset[0], y + offset[1], z + offset[2]);
+            }
+        } finally {
+            gregtech.api.threads.RunnableMachineUpdate.setCurrentThreadEnabled(updates);
+        }
+    }
+
+    private void verifyTranslatedWorld(EntityPlayerMP player) {
+        var plan = ProjectorPlan.read(player.getHeldItem());
+        var template = expected;
+        var layout = new ProjectorBatch.Layout(plan, template, facing);
+        var translated = ProjectorBatchCells.collect(template, plan, facing, layout, null);
+        require(translated.compatible(), "Translated array layout rejected");
+        int[] pos = new int[3];
+        int[][] source = template.simulationPositions();
+        int unique = 0;
+        for (var entry : translated.cells()
+            .long2IntEntrySet()) {
+            int cell = entry.getIntValue() % template.size;
+            if (template.blocks[cell] == Blocks.air) continue;
+            long p = entry.getLongKey();
+            facing.getWorldOffset(
+                new int[] { ProjectorPlan.unpackA(p), ProjectorPlan.unpackB(p), ProjectorPlan.unpackC(p) },
+                pos);
+            int wx = x + pos[0], wy = y + pos[1], wz = z + pos[2];
+            require(player.worldObj.getBlock(wx, wy, wz) == template.blocks[cell], "Wrong batch block");
+            require(
+                player.worldObj.getBlockMetadata(wx, wy, wz)
+                    == template.world.getBlockMetadata(source[0][cell], source[1][cell], source[2][cell]),
+                "Wrong batch metadata");
+            if (template.machines[cell] != 0) {
+                var tile = (IGregTechTileEntity) player.worldObj.getTileEntity(wx, wy, wz);
+                require(tile.getMetaTileID() == template.machines[cell], "Wrong batch machine");
+                if (template.a[cell] == 0 && template.b[cell] == 0 && template.c[cell] == 0) require(
+                    ((IAlignment) tile.getMetaTileEntity()).getExtendedFacing() == facing,
+                    "Batch copy changed facing");
+            }
+            unique++;
+        }
+        require(batchPlaced == unique, "Each translated solid must be placed once");
+    }
+
+    private static void setBatchNumber(ProjectorGui gui, String prefix, ForgeDirection axis, int value) {
+        var input = WidgetTree.findFirstWithName(gui, prefix + axis.ordinal(), NumberEntryWidget.class);
+        var field = (TextFieldWidget) input.getChildren()
+            .stream()
+            .filter(TextFieldWidget.class::isInstance)
+            .findFirst()
+            .orElseThrow();
+        field.setText(Integer.toString(value));
+        field.onRemoveFocus(
+            gui.getScreen()
+                .getContext());
+    }
+
     private static void verifyGapLayout(ProjectorStructure shape, ExtendedFacing facing) {
         var plan = new ProjectorPlan();
         var sides = new ForgeDirection[] { ForgeDirection.EAST, ForgeDirection.UP, ForgeDirection.SOUTH };
         for (ForgeDirection side : ForgeDirection.VALID_DIRECTIONS) {
             plan.batch.setAdditional(side, 1);
-            plan.batch.setShared(side, true);
+            plan.batch.setGap(side, -1);
         }
         long legacyKey = plan.batch.arrangementKey();
         var legacy = plan.writeToNBT();
+        var legacyBatch = legacy.getCompoundTag("Batch");
+        legacyBatch.removeTag("Gaps");
+        legacyBatch.setInteger("Shared", 63);
         var shared = new ProjectorBatch.Layout(plan.batch, shape, facing);
         int[] sharedFar = new int[3];
         shared.copyOffset(plan.batch.machines() - 1, sharedFar);
@@ -710,11 +652,11 @@ public class ProjectorCreativeChecks {
             ForgeDirection opposite = sides[axis].getOpposite();
             require(restored.batch.gap(opposite) == gaps[axis], "gap not shared across the axis");
             require(
-                last[axis] == sharedFar[axis] + gaps[axis] + 1 && first[axis] == -last[axis],
+                last[axis] == sharedFar[axis] - gaps[axis] - 1 && first[axis] == 0,
                 "incorrect batch spacing for " + sides[axis]);
         }
         restored.readFromNBT(legacy);
-        require(restored.batch.arrangementKey() == legacyKey, "legacy plan did not reset gaps to zero");
+        require(restored.batch.arrangementKey() == legacyKey, "Legacy shares were not converted to one-block overlaps");
     }
 
     private static void verifyWorldPreview(int size, int width) {

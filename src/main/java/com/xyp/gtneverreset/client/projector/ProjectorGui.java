@@ -18,6 +18,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.StatCollector;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -35,7 +36,6 @@ import com.cleanroommc.modularui.screen.RichTooltip;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
 import com.cleanroommc.modularui.theme.WidgetThemeEntry;
 import com.cleanroommc.modularui.utils.Alignment;
-import com.cleanroommc.modularui.value.BoolValue;
 import com.cleanroommc.modularui.widget.ParentWidget;
 import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
@@ -44,6 +44,9 @@ import com.gtnewhorizon.structurelib.alignment.enumerable.ExtendedFacing;
 import com.xyp.gtneverreset.GTNeverReset;
 import com.xyp.gtneverreset.common.gui.ProjectorMaterialSync;
 import com.xyp.gtneverreset.common.item.items.MultiblockProjector;
+import com.xyp.gtneverreset.common.packet.NetWorkHandler;
+import com.xyp.gtneverreset.common.packet.ProjectorBuildActionPacket;
+import com.xyp.gtneverreset.common.packet.ProjectorBuildActionPacket.Action;
 import com.xyp.gtneverreset.common.projector.ProjectorBatch;
 import com.xyp.gtneverreset.common.projector.ProjectorMachines;
 import com.xyp.gtneverreset.common.projector.ProjectorOrientation;
@@ -65,7 +68,6 @@ import com.xyp.gtnrlib.gui.theme.ae2.AE2Panels;
 import com.xyp.gtnrlib.gui.theme.ae2.AE2SettingIcon;
 import com.xyp.gtnrlib.gui.theme.ae2.IconSource;
 import com.xyp.gtnrlib.gui.widget.AE2Button;
-import com.xyp.gtnrlib.gui.widget.AECheckbox;
 import com.xyp.gtnrlib.gui.widget.FadingNotice;
 import com.xyp.gtnrlib.gui.widget.IconButton;
 import com.xyp.gtnrlib.gui.widget.IconRowList;
@@ -133,6 +135,7 @@ public class ProjectorGui extends ModularPanel {
     private final ProjectorMaterialSync materialStock;
     private final List<NumberEntryWidget> batchInputs = new ArrayList<>();
     private ProjectorStructure shown;
+    private NBTTagCompound dismantleConfirmation;
     private int page, ticks;
     private final FadingNotice notice = new FadingNotice().duration(NOTICE_MILLIS);
     private boolean displayChosen;
@@ -370,7 +373,8 @@ public class ProjectorGui extends ModularPanel {
                     .widthRel(1f)
                     .height(BUTTON)
                     .available(() -> canGenerate(false))
-                    .tooltipBuilder(this::buildHint));
+                    .tooltipBuilder(this::buildHint))
+            .child(constructionActions(false));
     }
 
     private Widget<?> deploymentStyleButton() {
@@ -418,7 +422,7 @@ public class ProjectorGui extends ModularPanel {
     }
 
     private Widget<?> batchPage() {
-        int shareWidth = 42, gapWidth = 48;
+        int countWidth = 54, gapWidth = 54;
         Flow controls = column().sizeRel(1f)
             .childPadding(4);
         controls.child(
@@ -426,18 +430,22 @@ public class ProjectorGui extends ModularPanel {
                 .widthRel(1f)
                 .height(LINE)
                 .childPadding(4)
+                // #tr gtneverreset.projector.gui.batch_axis
+                // # Axis
+                // # zh_CN 轴
+                .child(text(StatCollector.translateToLocal(LANG + "batch_axis")).expanded())
                 // #tr gtneverreset.projector.gui.batch_count
-                // # Additional copies
-                // # zh_CN 追加台数
-                .child(text(StatCollector.translateToLocal(LANG + "batch_count")).expanded())
-                // #tr gtneverreset.projector.gui.batch_share
-                // # Share
-                // # zh_CN 共用外壳
+                // # Copies
+                // # zh_CN 台数
                 .child(
-                    IKey.lang(LANG + "batch_share")
+                    IKey.lang(LANG + "batch_count")
                         .asWidget()
                         .alignment(Alignment.Center)
-                        .size(shareWidth, LINE))
+                        .size(countWidth, LINE)
+                        // #tr gtneverreset.projector.gui.batch_count_hint
+                        // # Counts include the origin. Use a negative count for west, down or north.
+                        // # zh_CN 台数含原点。输入负数向西、下或北排列。
+                        .tooltipBuilder(t -> t.addLine(StatCollector.translateToLocal(LANG + "batch_count_hint"))))
                 // #tr gtneverreset.projector.gui.batch_gap
                 // # Gap
                 // # zh_CN 间隔
@@ -447,90 +455,57 @@ public class ProjectorGui extends ModularPanel {
                         .alignment(Alignment.Center)
                         .size(gapWidth, LINE)
                         // #tr gtneverreset.projector.gui.batch_gap_hint
-                        // # Empty blocks between copies on both sides of the axis. A gap disables shared faces.
-                        // # zh_CN 轴两侧相邻投影之间留空的方块数。间隔大于零时暂停共用外壳。
+                        // # Positive gaps leave space. Negative gaps overlap copies of the same orientation.
+                        // # zh_CN 正间隔留空，负间隔让同朝向的结构重叠。
                         .tooltipBuilder(t -> t.addLine(StatCollector.translateToLocal(LANG + "batch_gap_hint")))));
-        for (ForgeDirection direction : new ForgeDirection[] { ForgeDirection.WEST, ForgeDirection.EAST,
-            ForgeDirection.DOWN, ForgeDirection.UP, ForgeDirection.NORTH, ForgeDirection.SOUTH }) {
+        ForgeDirection[] directions = { ForgeDirection.EAST, ForgeDirection.UP, ForgeDirection.SOUTH };
+        String[] axes = { "X", "Y", "Z" };
+        for (int axis = 0; axis < directions.length; axis++) {
+            ForgeDirection direction = directions[axis];
+            String name = axes[axis];
             NumberEntryWidget count = batchNumber(
-                ProjectorBatch.MAX_ADDITIONAL,
-                working.batch.additional(direction),
-                n -> working.batch.setAdditional(direction, (int) n),
+                ProjectorBatch.MAX_COPIES,
+                1,
+                n -> working.batch.setSignedCopies(direction, (int) n),
                 "batch_count_" + direction.ordinal(),
-                44);
+                countWidth).follow(() -> working.batch.signedCopies(direction));
+            NumberEntryWidget gap = batchNumber(
+                ProjectorBatch.MAX_GAP,
+                0,
+                n -> working.batch.setGap(direction, (int) n),
+                "batch_gap_" + direction.ordinal(),
+                gapWidth).follow(() -> working.batch.gap(direction));
             batchInputs.add(count);
-            Flow row = Flow.row()
-                .widthRel(1f)
-                .height(SMALL)
-                .childPadding(4)
-                .child(text(batchDirection(direction)).size(30, SMALL))
-                .child(count)
-                .child(
-                    new ParentWidget<>().size(shareWidth, SMALL)
-                        .child(
-                            new AECheckbox(
-                                () -> "",
-                                new BoolValue.Dynamic(
-                                    () -> working.batch.shares(direction),
-                                    on -> working.batch.setShared(direction, on))).width(AE2Theme.CHECKBOX_WIDTH)
-                                        .center()
-                                        .available(() -> working.batch.gap(direction) == 0)
-                                        .name("batch_share_" + direction.ordinal())
-                                        // #tr gtneverreset.projector.gui.batch_share_hint
-                                        // # Share matching casings, glass, frames, sheet metal or hatch models.
-                                        // # zh_CN 相同的外壳、结构玻璃、框架、金属板或同型号仓室可共用。控制器各占一格。
-                                        .tooltipBuilder(
-                                            t -> t
-                                                .addLine(StatCollector.translateToLocal(LANG + "batch_share_hint")))));
-            if (direction == ForgeDirection.EAST || direction == ForgeDirection.UP
-                || direction == ForgeDirection.SOUTH) {
-                NumberEntryWidget gap = batchNumber(
-                    ProjectorBatch.MAX_GAP,
-                    working.batch.gap(direction),
-                    n -> working.batch.setGap(direction, (int) n),
-                    "batch_gap_" + direction.ordinal(),
-                    gapWidth);
-                batchInputs.add(gap);
-                row.child(gap);
-            }
-            controls.child(row);
+            batchInputs.add(gap);
+            controls.child(
+                Flow.row()
+                    .widthRel(1f)
+                    .height(SMALL)
+                    .childPadding(4)
+                    .child(
+                        IKey.dynamic(() -> batchAxisLabel(name, direction))
+                            .asWidget()
+                            .expanded()
+                            .tooltipBuilder(t -> {
+                                if (working.batch.hasBothDirections(direction)) {
+                                    // #tr gtneverreset.projector.gui.batch_legacy_both
+                                    // # Editing this legacy count selects one direction.
+                                    // # zh_CN 此轴原有双向排列，修改台数后会改为单向排列。
+                                    t.addLine(StatCollector.translateToLocal(LANG + "batch_legacy_both"));
+                                }
+                            }))
+                    .child(count)
+                    .child(gap));
         }
-        controls.child(
-            Flow.row()
-                .widthRel(1f)
-                .height(SMALL)
-                .childPadding(6)
-                // #tr gtneverreset.projector.gui.batch_smart
-                // # Auto-layout
-                // # zh_CN 智能排布
-                .child(
-                    new AECheckbox(
-                        () -> StatCollector.translateToLocal(LANG + "batch_smart"),
-                        new BoolValue.Dynamic(() -> working.batch.faceOutward, on -> working.batch.faceOutward = on))
-                            .name("batch_smart")
-                            // #tr gtneverreset.projector.gui.batch_smart_hint
-                            // # Try rotations and left-right mirrors to match shared faces and expose controllers.
-                            // # zh_CN 尝试旋转和左右镜像，匹配共用面并优先让控制器朝外。
-                            .tooltipBuilder(t -> t.addLine(StatCollector.translateToLocal(LANG + "batch_smart_hint"))))
-                // #tr gtneverreset.projector.gui.batch_flip
-                // # Alternate vertically
-                // # zh_CN 上下交替翻转
-                .child(
-                    new AECheckbox(
-                        () -> StatCollector.translateToLocal(LANG + "batch_flip"),
-                        new BoolValue.Dynamic(
-                            () -> working.batch.alternateVertical,
-                            on -> working.batch.alternateVertical = on)).name("batch_flip")
-                                // #tr gtneverreset.projector.gui.batch_flip_hint
-                                // # Keep the origin level upright and turn every other vertical level upside down.
-                                // # zh_CN 保留原点层的姿态，向上或向下每隔一层倒置。
-                                .tooltipBuilder(
-                                    t -> t.addLine(StatCollector.translateToLocal(LANG + "batch_flip_hint")))));
         // #tr gtneverreset.projector.gui.batch_total
-        // # Total: %s machines (including the origin)
-        // # zh_CN 共 %s 台（含原点）
+        // # Total: %s / %s (including the origin)
+        // # zh_CN 共 %s / %s 台（含原点）
         controls.child(
-            IKey.dynamic(() -> StatCollector.translateToLocalFormatted(LANG + "batch_total", working.batch.machines()))
+            IKey.dynamic(
+                () -> StatCollector.translateToLocalFormatted(
+                    LANG + "batch_total",
+                    working.batch.machines(),
+                    ProjectorBatch.MAX_COPIES))
                 .asWidget()
                 .alignment(Alignment.CenterLeft)
                 .widthRel(1f)
@@ -543,6 +518,7 @@ public class ProjectorGui extends ModularPanel {
                 .height(BUTTON)
                 .available(() -> working.batch.machines() > 1 && validBatchInputs() && canGenerate(true))
                 .tooltipBuilder(this::buildHint));
+        controls.child(constructionActions(true));
         controls.child(
             IKey.dynamic(this::batchWarning)
                 .asWidget()
@@ -554,10 +530,17 @@ public class ProjectorGui extends ModularPanel {
         return controls;
     }
 
-    private static NumberEntryWidget batchNumber(int max, int value, LongConsumer change, String name, int width) {
-        return new NumberEntryWidget().bounds(0, max)
-            .value(value)
-            .resetValue(0)
+    private String batchAxisLabel(String name, ForgeDirection positive) {
+        if (!working.batch.hasBothDirections(positive)) return name;
+        return name + " +"
+            + working.batch.additional(positive)
+            + " / -"
+            + working.batch.additional(positive.getOpposite());
+    }
+
+    private static NumberEntryWidget batchNumber(int max, int reset, LongConsumer change, String name, int width) {
+        return new NumberEntryWidget().bounds(-max, max)
+            .resetValue(reset)
             .wheel(true)
             .textAlignment(Alignment.Center)
             .onChange(change)
@@ -566,22 +549,23 @@ public class ProjectorGui extends ModularPanel {
     }
 
     private boolean validBatchInputs() {
-        return batchInputs.stream()
+        return working.batch.withinLimit() && batchInputs.stream()
             .allMatch(NumberEntryWidget::isInputValid);
     }
 
     private String batchWarning() {
-        if (page != BATCH || !(previewStructure() instanceof ProjectorBatchPreview array)) return "";
-        if (array.limited) {
-            // #tr gtneverreset.projector.gui.batch_search_limit
-            // # Layout search limit reached
-            // # zh_CN 排布搜索达到上限
-            return StatCollector.translateToLocal(LANG + "batch_search_limit");
+        if (page != BATCH) return "";
+        if (!working.batch.withinLimit()) {
+            // #tr gtneverreset.projector.gui.batch_count_limit
+            // # Reduce the array to %s copies or fewer.
+            // # zh_CN 请将阵列减少至最多 %s 台。
+            return StatCollector.translateToLocalFormatted(LANG + "batch_count_limit", ProjectorBatch.MAX_COPIES);
         }
+        if (!(previewStructure() instanceof ProjectorBatchPreview array)) return "";
         if (!array.compatible) {
             // #tr gtneverreset.projector.gui.batch_no_fit
-            // # Incompatible shared faces or orientation
-            // # zh_CN 共用面或朝向不兼容
+            // # A hatch choice is incompatible with the array.
+            // # zh_CN 仓室选项与阵列不兼容。
             return StatCollector.translateToLocal(LANG + "batch_no_fit");
         }
         // #tr gtneverreset.projector.gui.batch_blocked_controllers
@@ -591,35 +575,84 @@ public class ProjectorGui extends ModularPanel {
             : StatCollector.translateToLocalFormatted(LANG + "batch_blocked_controllers", array.blockedControllers);
     }
 
-    private static String batchDirection(ForgeDirection direction) {
-        String key = switch (direction) {
-            // #tr gtneverreset.projector.gui.batch_east
-            // # East
-            // # zh_CN 东
-            case EAST -> "batch_east";
-            // #tr gtneverreset.projector.gui.batch_west
-            // # West
-            // # zh_CN 西
-            case WEST -> "batch_west";
-            // #tr gtneverreset.projector.gui.batch_south
-            // # South
-            // # zh_CN 南
-            case SOUTH -> "batch_south";
-            // #tr gtneverreset.projector.gui.batch_north
-            // # North
-            // # zh_CN 北
-            case NORTH -> "batch_north";
-            // #tr gtneverreset.projector.gui.batch_up
-            // # Up
-            // # zh_CN 上
-            case UP -> "batch_up";
-            // #tr gtneverreset.projector.gui.batch_down
-            // # Down
-            // # zh_CN 下
-            case DOWN -> "batch_down";
-            default -> throw new IllegalArgumentException(direction.name());
-        };
-        return StatCollector.translateToLocal(LANG + key);
+    private Widget<?> constructionActions(boolean batch) {
+        return Flow.row()
+            .widthRel(1f)
+            .height(BUTTON)
+            .childPadding(3)
+            // #tr gtneverreset.projector.gui.cancel_build
+            // # Stop
+            // # zh_CN 停止
+            .child(
+                actionButton("cancel_build", Action.CANCEL, batch).name(batch ? "cancel_batch_build" : "cancel_build"))
+            // #tr gtneverreset.projector.gui.undo_build
+            // # Undo
+            // # zh_CN 撤销
+            .child(actionButton("undo_build", Action.UNDO, batch).name(batch ? "undo_batch_build" : "undo_build"))
+            .child(
+                new AE2Button(() -> dismantleLabel(batch), () -> buildAction(Action.DISMANTLE, batch))
+                    .name(batch ? "dismantle_batch" : "dismantle")
+                    .height(BUTTON)
+                    .expanded()
+                    .available(() -> canDismantle(batch))
+                    // #tr gtneverreset.projector.gui.dismantle_hint
+                    // # Lock the projection first. Click twice to dismantle matching structure blocks at that site.
+                    // # zh_CN 请先锁定投影。点击两次以拆除该位置符合方案的结构方块。
+                    .tooltipBuilder(t -> t.addLine(StatCollector.translateToLocal(LANG + "dismantle_hint"))));
+    }
+
+    private AE2Button actionButton(String key, Action action, boolean batch) {
+        return new AE2Button(() -> StatCollector.translateToLocal(LANG + key), () -> buildAction(action, batch))
+            .height(BUTTON)
+            .expanded()
+            .available(() -> action == Action.CANCEL ? canManageConstruction() : canDismantle(false));
+    }
+
+    private boolean canManageConstruction() {
+        return Minecraft.getMinecraft().thePlayer.capabilities.allowEdit;
+    }
+
+    private boolean canDismantle(boolean batch) {
+        return ProjectorConfig.buildEnabled && canManageConstruction()
+            && working.isPlaced()
+            && working.machine == stored.machine
+            && working.dimension == Minecraft.getMinecraft().thePlayer.dimension
+            && (!batch || working.batch.machines() > 1 && validBatchInputs());
+    }
+
+    private String dismantleLabel(boolean batch) {
+        // #tr gtneverreset.projector.gui.confirm_dismantle
+        // # Confirm
+        // # zh_CN 确认拆除
+        // #tr gtneverreset.projector.gui.dismantle
+        // # Dismantle
+        // # zh_CN 拆除
+        return StatCollector.translateToLocal(LANG + (confirmsDismantle(batch) ? "confirm_dismantle" : "dismantle"));
+    }
+
+    private boolean confirmsDismantle(boolean batch) {
+        if (dismantleConfirmation == null || dismantleConfirmation.getBoolean("BatchProjection") != batch) return false;
+        ProjectorPlan target = working.copy();
+        target.batchProjection = batch;
+        return dismantleConfirmation.equals(target.writeToNBT());
+    }
+
+    private void buildAction(Action action, boolean batch) {
+        if (action == Action.DISMANTLE) {
+            if (!canDismantle(batch)) return;
+            ProjectorPlan target = working.copy();
+            target.batchProjection = batch;
+            NBTTagCompound tag = target.writeToNBT();
+            if (!tag.equals(dismantleConfirmation)) {
+                dismantleConfirmation = tag;
+                return;
+            }
+            working.readFromNBT(tag);
+            ProjectorClient.send(location, target);
+            stored.readFromNBT(tag);
+        }
+        NetWorkHandler.sendToServer(new ProjectorBuildActionPacket(location, action, batch));
+        getScreen().close();
     }
 
     private boolean canGenerate(boolean batch) {
@@ -953,8 +986,7 @@ public class ProjectorGui extends ModularPanel {
             || !shape.settings.equals(simulationSettings(working.batchProjection))
             || !shape.failure.isEmpty()
             || !shape.limit.isEmpty()) return false;
-        if (shape instanceof ProjectorBatchPreview array && (array.outlineOnly || !array.compatible || array.limited))
-            return false;
+        if (shape instanceof ProjectorBatchPreview array && (array.outlineOnly || !array.compatible)) return false;
         List<Material> materials = shape.materials;
         for (int i = 0; i < materials.size(); i++) {
             if (!materialStock.isCraftable(materials, i)) continue;
@@ -1164,9 +1196,7 @@ public class ProjectorGui extends ModularPanel {
             return;
         }
         if (!array.compatible) {
-            tooltip.addLine(
-                EnumChatFormatting.RED
-                    + StatCollector.translateToLocal(LANG + (array.limited ? "batch_search_limit" : "batch_no_fit")));
+            tooltip.addLine(EnumChatFormatting.RED + StatCollector.translateToLocal(LANG + "batch_no_fit"));
             return;
         }
         var status = array.formation;

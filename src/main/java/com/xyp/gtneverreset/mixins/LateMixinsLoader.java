@@ -58,6 +58,7 @@ public final class LateMixinsLoader implements ILateMixinLoader {
                 mixins.add("blockrenderer.StarCorePreviewSceneMixin");
             }
             PatternRecipeCallTransformer.register();
+            mixins.add("gregtech.ProjectorItemMachinesMixin");
             mixins.add("gregtech.UniversalWandAssemblyAccelerationMixin");
             mixins.add("gregtech.UniversalWandBasicAccelerationEnergyMixin");
             mixins.add("gregtech.UniversalWandMultiAccelerationEnergyMixin");

@@ -1,10 +1,13 @@
 // Run with: gradlew.bat -I src/qa/resources/projector-dedicated-server-qa.init.gradle :runServer25 --no-configuration-cache
 gradle.projectsEvaluated {
     def root = gradle.rootProject
-    def output = root.layout.buildDirectory.dir('projector-dedicated-server-qa').get().asFile
+    def constructionActions = root.providers.gradleProperty('projectorConstructionActionChecks').isPresent()
+    def fixtureClass = constructionActions ? 'ProjectorConstructionActionChecks' : 'ProjectorDeploymentServerChecks'
+    def output = root.layout.buildDirectory
+        .dir(constructionActions ? 'projector-construction-action-qa' : 'projector-dedicated-server-qa').get().asFile
     def fixture = root.tasks.register('compileProjectorDedicatedServerQA', JavaCompile) {
         dependsOn root.tasks.named('classes')
-        source root.file('src/qa/java/com/xyp/gtneverreset/qa/ProjectorDeploymentServerChecks.java')
+        source root.file("src/qa/java/com/xyp/gtneverreset/qa/${fixtureClass}.java")
         classpath = root.sourceSets.test.compileClasspath
         destinationDirectory.set(new File(output, 'classes'))
         javaCompiler.set(root.javaToolchains.compilerFor(root.java.toolchain))

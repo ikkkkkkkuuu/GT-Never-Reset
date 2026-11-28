@@ -1,5 +1,6 @@
 package com.xyp.gtneverreset.common.projector;
 
+import java.util.List;
 import java.util.Map;
 
 import net.minecraft.entity.player.EntityPlayer;
@@ -163,7 +164,7 @@ public final class ProjectorBuildMaterials {
         return entries.tagCount() > 0;
     }
 
-    private static int returnToInventory(EntityPlayerMP player, ItemStack item, int amount) {
+    static int returnToInventory(EntityPlayerMP player, ItemStack item, int amount) {
         ItemStack[] inventory = player.inventory.mainInventory;
         for (int pass = 0; pass < 2; pass++) for (int i = 0; i < inventory.length && amount > 0; i++) {
             ItemStack slot = inventory[i];
@@ -201,6 +202,8 @@ public final class ProjectorBuildMaterials {
             if (player.getEntityData()
                 .getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG)
                 .hasKey(ESCROW) && !ProjectorBuilder.INSTANCE.building(player)) refund(player);
+            if (!ProjectorBuildActions.INSTANCE.busy(player) && ProjectorRemovedItems.pending(player))
+                ProjectorRemovedItems.deliver(player, List.of());
         }
     }
 }

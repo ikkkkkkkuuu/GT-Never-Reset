@@ -37,7 +37,6 @@ final class ProjectorBatchPreview extends ProjectorStructure {
     final ExtendedFacing baseFacing;
     final int[][] copyBounds;
     final boolean compatible;
-    final boolean limited;
     final int blockedControllers;
     final Formation formation;
 
@@ -101,7 +100,6 @@ final class ProjectorBatchPreview extends ProjectorStructure {
         this.formation = formation;
         this.baseFacing = baseFacing;
         compatible = batch.compatible();
-        limited = batch.limited();
         copyPoses = new ExtendedFacing[size];
         ((PreviewWorld) world).array = this;
         outlineOnly = batch.cells()
@@ -292,15 +290,13 @@ final class ProjectorBatchPreview extends ProjectorStructure {
     static ProjectorBatchPreview expand(ProjectorStructure shape, ProjectorPlan plan, ExtendedFacing facing,
         ProjectorBatch.Layout layout) {
         int copies = plan.batch.machines();
-        int[] world = new int[3], first = new int[3], last = new int[3];
-        layout.copyOffset(0, world);
-        facing.getOffsetABC(world, first);
-        layout.copyOffset(copies - 1, world);
-        facing.getOffsetABC(world, last);
-        int[] bounds = { shape.minA, shape.minB, shape.minC, shape.maxA, shape.maxB, shape.maxC };
+        int[] world = layout.worldBounds();
+        int[] first = new int[3], last = new int[3], bounds = new int[6];
+        facing.getOffsetABC(new int[] { world[0], world[1], world[2] }, first);
+        facing.getOffsetABC(new int[] { world[3], world[4], world[5] }, last);
         for (int axis = 0; axis < 3; axis++) {
-            bounds[axis] += Math.min(first[axis], last[axis]);
-            bounds[axis + 3] += Math.max(first[axis], last[axis]);
+            bounds[axis] = Math.min(first[axis], last[axis]);
+            bounds[axis + 3] = Math.max(first[axis], last[axis]);
         }
         var formation = new Formation(copies);
         var batch = ProjectorBatchCells
