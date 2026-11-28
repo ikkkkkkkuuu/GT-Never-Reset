@@ -278,14 +278,6 @@ public final class WildcardCableOrderChecks {
                 }
                 hatch.getSharedSupplies()
                     .setTarget(CircuitSharedSupplies.SLOTS_PER_CHANNEL, rubberStack);
-                hatch.getSharedSupplies()
-                    .setInterval(1);
-                require(
-                    hatch.getSharedSupplies()
-                        .directFluids(),
-                    "default mode draws fluid from ME");
-                hatch.getSharedSupplies()
-                    .setOnRecipeCheck(true);
                 seededAt = ticks;
                 seeded = true;
                 return;
@@ -380,7 +372,7 @@ public final class WildcardCableOrderChecks {
                         .itemInputs()
                         .isEmpty(),
                     "exactly one dust debited from ME");
-                line += "; ME PVC dust 5 -> 4; local dust=0";
+                line += "; marked ME PVC dust 5 -> 4; local dust=0";
             }
             report.append(line)
                 .append(System.lineSeparator());
@@ -398,8 +390,8 @@ public final class WildcardCableOrderChecks {
                 require(
                     fluidInv.injectItems(silicone.copy(), Actionable.MODULATE, src) == null,
                     "seed silicone rubber");
-                hatch.getSharedSupplies()
-                    .setTarget(CircuitSharedSupplies.SLOTS_PER_CHANNEL, silicone);
+                var supplies = hatch.getSharedSupplies();
+                supplies.setTarget(CircuitSharedSupplies.SLOTS_PER_CHANNEL, silicone.setStackSize(1));
                 installPattern(4, "^Zinc$", false);
                 insufficientTicks = 0;
             }

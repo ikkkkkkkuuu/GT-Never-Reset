@@ -1034,16 +1034,7 @@ gtnr.chaos.patterns.help=Remove all patterns to use presets
 gtnr.gui.circuit_supplies.title=Shared consumable supplies
 gtnr.gui.circuit_supplies.items=Items
 gtnr.gui.circuit_supplies.fluids=Fluids (mB)
-gtnr.gui.circuit_supplies.interval=Interval (s, 0 = off)
-gtnr.gui.circuit_supplies.on_check=Pull on recipe check
-gtnr.gui.circuit_supplies.direct_items=Draw items from ME on use
-gtnr.gui.circuit_supplies.direct_items_hint=On: use network items when a recipe starts. Off: refill the hatch on the configured schedule.
-gtnr.gui.circuit_supplies.direct_fluids=Draw fluid from ME on use
-gtnr.gui.circuit_supplies.direct_fluids_hint=On: use network fluid when a recipe starts. Off: refill the hatch on the configured schedule.
-gtnr.gui.circuit_supplies.next=Next pull in %s s
-gtnr.gui.circuit_supplies.sample=Drag from NEI or click with a sample. Empty-hand left-click clears. Right-click sets the limit.
-gtnr.gui.circuit_supplies.item_limit=Item limit
-gtnr.gui.circuit_supplies.fluid_limit=Fluid limit (mB)
+gtnr.gui.circuit_supplies.sample=Drag a sample from NEI or left-click with one. Left-click empty-handed to clear.
 gtnr.gui.gtneverreset.cross_recipe_buffer.auto_names=Automatically assign names
 gtnr.gui.gtneverreset.cross_recipe_buffer.auto_names.description=Cycle recipe names across connected buffers; mirrors share a name. Only terminal names change.
 gtnr.gui.gtneverreset.cross_recipe_buffer.terminal_name=Select the recipe type name shown in the Interface Terminal; processing modes are selected by patterns

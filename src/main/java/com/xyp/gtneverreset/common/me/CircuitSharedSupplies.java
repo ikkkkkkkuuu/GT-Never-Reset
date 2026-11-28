@@ -27,12 +27,10 @@ import appeng.me.GridAccessException;
 import appeng.me.helpers.AENetworkProxy;
 import appeng.util.Platform;
 
-/** Shared filters, physical reserves and the transient ME offers for one controller recipe check. */
+/** Shared filters and ME offers for a controller recipe check, with a reserve for legacy stock and failed returns. */
 public final class CircuitSharedSupplies {
 
     public static final int SLOTS_PER_CHANNEL = 16;
-    public static final int MAX_INTERVAL = 86400;
-    private static final int DEFAULT_INTERVAL = 5;
     private static final String KEY = "circuitSharedSupplies";
     private final Runnable changed;
     private final Runnable configurationChanged;
@@ -45,17 +43,11 @@ public final class CircuitSharedSupplies {
             : fluid.getFluidStack(),
         MERecipeFluidStack::getAmount);
     private IGrid offeredGrid;
-    private boolean bufferedItems;
-    private boolean bufferedFluids;
     private boolean checkingNetwork, queriedNetwork;
     private final IAEStack<?>[] targets = new IAEStack<?>[2 * SLOTS_PER_CHANNEL];
     private final List<ItemStack> items = new ArrayList<>();
     private final List<FluidStack> fluids = new ArrayList<>();
     private LongCircuitBuffer stock;
-    private int interval = DEFAULT_INTERVAL;
-    private int remainingTicks = interval * 20;
-    private boolean onRecipeCheck;
-    private long lastPullTick = Long.MIN_VALUE;
     private boolean exposed;
 
     public CircuitSharedSupplies(Runnable changed, Runnable configurationChanged) {
@@ -75,15 +67,37 @@ public final class CircuitSharedSupplies {
         changed.run();
     }
 
+    public long displayAmount(int slot, AENetworkProxy proxy, BaseActionSource source) {
+        var target = targets[slot];
+        if (target == null) return -1;
+        if (!proxy.isActive()) return 0;
+        try {
+            var storage = proxy.getStorage();
+            if (target instanceof IAEItemStack item) return availableAmount(storage.getItemInventory(), item, source);
+            if (target instanceof IAEFluidStack fluid)
+                return availableAmount(storage.getFluidInventory(), fluid, source);
+        } catch (GridAccessException ignored) {}
+        return 0;
+    }
+
+    private static <T extends IAEStack<T>> long availableAmount(IMEMonitor<T> monitor, T target,
+        BaseActionSource source) {
+        T available = monitor.extractItems(
+            target.copy()
+                .setStackSize(Long.MAX_VALUE),
+            Actionable.SIMULATE,
+            source);
+        return available == null ? 0 : available.getStackSize();
+    }
+
     private boolean replaceTarget(int slot, IAEStack<?> target) {
         if (target != null) {
             if (target.isItem() != (slot < SLOTS_PER_CHANNEL)) return false;
             for (int i = 0; i < targets.length; i++) {
                 if (i != slot && targets[i] != null && targets[i].isSameType(target)) return false;
             }
-            long limit = target.isItem() ? Integer.MAX_VALUE : LongCircuitBuffer.maxPoweredAmount(target);
             target = target.copy()
-                .setStackSize(Math.max(1, Math.min(limit, target.getStackSize())));
+                .setStackSize(1);
         }
         targets[slot] = target;
         return true;
@@ -98,81 +112,18 @@ public final class CircuitSharedSupplies {
         }
     }
 
-    public boolean directItems() {
-        return !bufferedItems;
-    }
-
-    public void setDirectItems(boolean direct) {
-        bufferedItems = !direct;
-        configurationChanged.run();
-        changed.run();
-    }
-
-    public boolean directFluids() {
-        return !bufferedFluids;
-    }
-
-    public void setDirectFluids(boolean direct) {
-        bufferedFluids = !direct;
-        configurationChanged.run();
-        changed.run();
-    }
-
     public void watchNetworkInputs(IStackWatcher watcher) {
         watcher.clear();
-        if (directItems()) for (var item : networkItems.targets) watcher.add(item);
-        if (directFluids()) for (var fluid : networkFluids.targets) watcher.add(fluid);
+        for (var item : networkItems.targets) watcher.add(item);
+        for (var fluid : networkFluids.targets) watcher.add(fluid);
     }
 
-    public int interval() {
-        return interval;
-    }
-
-    public void setInterval(int seconds) {
-        interval = Math.max(0, Math.min(MAX_INTERVAL, seconds));
-        remainingTicks = interval * 20;
-        changed.run();
-    }
-
-    public int remainingSeconds() {
-        return hasWork() ? (remainingTicks + 19) / 20 : 0;
-    }
-
-    public boolean onRecipeCheck() {
-        return onRecipeCheck;
-    }
-
-    public void setOnRecipeCheck(boolean enabled) {
-        onRecipeCheck = enabled;
-        changed.run();
-    }
-
-    public boolean tick() {
+    public void settleStock() {
         if (exposed) {
             stock.itemViews();
             stock.fluidViews();
             exposed = false;
         }
-        if (!hasWork() || interval == 0 || --remainingTicks > 0) return false;
-        remainingTicks = interval * 20;
-        return true;
-    }
-
-    public boolean hasWork() {
-        return (bufferedItems && !networkItems.targets.isEmpty())
-            || (bufferedFluids && !networkFluids.targets.isEmpty())
-            || !items.isEmpty()
-            || !fluids.isEmpty();
-    }
-
-    public boolean pull(AENetworkProxy proxy, BaseActionSource source, long tick) throws GridAccessException {
-        if (lastPullTick == tick) return false;
-        lastPullTick = tick;
-        return stock.restock(
-            proxy,
-            source,
-            bufferedItems ? networkItems.targets : Collections.emptyList(),
-            bufferedFluids ? networkFluids.targets : Collections.emptyList());
     }
 
     public List<ItemStack> itemInputs() {
@@ -196,8 +147,7 @@ public final class CircuitSharedSupplies {
     }
 
     public boolean beginNetworkCheck() {
-        if (checkingNetwork || ((bufferedItems || networkItems.targets.isEmpty())
-            && (bufferedFluids || networkFluids.targets.isEmpty()))) return false;
+        if (checkingNetwork || (networkItems.targets.isEmpty() && networkFluids.targets.isEmpty())) return false;
         checkingNetwork = true;
         return true;
     }
@@ -219,11 +169,11 @@ public final class CircuitSharedSupplies {
         try {
             offeredGrid = proxy.getGrid();
             var storage = proxy.getStorage();
-            if (directItems() && !networkItems.targets.isEmpty()) networkItems.offer(
+            if (!networkItems.targets.isEmpty()) networkItems.offer(
                 storage.getItemInventory(),
                 items.isEmpty() ? Collections.emptyList() : stock.storedItems(),
                 source);
-            if (directFluids() && !networkFluids.targets.isEmpty()) networkFluids.offer(
+            if (!networkFluids.targets.isEmpty()) networkFluids.offer(
                 storage.getFluidInventory(),
                 fluids.isEmpty() ? Collections.emptyList() : stock.storedFluids(),
                 source);
@@ -297,12 +247,7 @@ public final class CircuitSharedSupplies {
     }
 
     public void write(NBTTagCompound tag) {
-        if (networkItems.targets.isEmpty() && !bufferedItems
-            && networkFluids.targets.isEmpty()
-            && !bufferedFluids
-            && !hasWork()
-            && interval == DEFAULT_INTERVAL
-            && !onRecipeCheck) {
+        if (networkItems.targets.isEmpty() && networkFluids.targets.isEmpty() && items.isEmpty() && fluids.isEmpty()) {
             tag.removeTag(KEY);
             return;
         }
@@ -316,10 +261,6 @@ public final class CircuitSharedSupplies {
             filters.appendTag(entry);
         }
         saved.setTag("targets", filters);
-        saved.setBoolean("bufferedItems", bufferedItems);
-        saved.setBoolean("bufferedFluids", bufferedFluids);
-        saved.setInteger("interval", interval);
-        saved.setBoolean("onRecipeCheck", onRecipeCheck);
         stock.write(saved);
         tag.setTag(KEY, saved);
     }
@@ -327,20 +268,15 @@ public final class CircuitSharedSupplies {
     public void read(NBTTagCompound tag) {
         NBTTagCompound saved = tag.getCompoundTag(KEY);
         Arrays.fill(targets, null);
-        bufferedItems = saved.getBoolean("bufferedItems");
-        bufferedFluids = saved.getBoolean("bufferedFluids");
         NBTTagList filters = saved.getTagList("targets", Constants.NBT.TAG_COMPOUND);
         for (int i = 0; i < filters.tagCount(); i++) {
             NBTTagCompound entry = filters.getCompoundTagAt(i);
             int slot = entry.getInteger("slot");
-            if (slot >= 0 && slot < targets.length) replaceTarget(slot, Platform.readStackNBT(entry, true));
+            if (slot < 0 || slot >= targets.length) continue;
+            var target = Platform.readStackNBT(entry, true);
+            replaceTarget(slot, target);
         }
         rebuildTargets();
-        interval = saved.hasKey("interval") ? Math.max(0, Math.min(MAX_INTERVAL, saved.getInteger("interval")))
-            : DEFAULT_INTERVAL;
-        remainingTicks = interval * 20;
-        onRecipeCheck = saved.getBoolean("onRecipeCheck");
-        lastPullTick = Long.MIN_VALUE;
         exposed = false;
         stock.clear();
         stock = new LongCircuitBuffer(saved, changed, items, fluids, true);
@@ -362,7 +298,8 @@ public final class CircuitSharedSupplies {
 
         void offer(IMEMonitor<T> monitor, List<T> localStock, BaseActionSource source) {
             for (T target : targets) {
-                long limit = target.getStackSize();
+                // Cap the offer only at the largest amount GT and AE can settle for this channel.
+                long limit = target.isItem() ? Integer.MAX_VALUE : LongCircuitBuffer.maxPoweredAmount(target);
                 for (T local : localStock) {
                     if (target.isSameType(local)) limit -= local.getStackSize();
                 }

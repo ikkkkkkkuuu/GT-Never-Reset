@@ -12,7 +12,6 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fluids.FluidStack;
 
-import appeng.api.networking.energy.IEnergySource;
 import appeng.api.networking.security.BaseActionSource;
 import appeng.api.storage.IMEMonitor;
 import appeng.api.storage.data.IAEFluidStack;
@@ -137,15 +136,6 @@ public final class LongCircuitBuffer {
         }
     }
 
-    /** Return excess stock first, then withdraw only each target's remaining deficit. */
-    public boolean restock(AENetworkProxy proxy, BaseActionSource source, List<IAEItemStack> itemTargets,
-        List<IAEFluidStack> fluidTargets) throws GridAccessException {
-        var storage = proxy.getStorage();
-        var energy = proxy.getEnergy();
-        boolean changed = items.restock(energy, storage.getItemInventory(), source, itemTargets);
-        return fluids.restock(energy, storage.getFluidInventory(), source, fluidTargets) || changed;
-    }
-
     boolean canRecover(List<IAEItemStack> itemRequests, List<IAEFluidStack> fluidRequests) {
         return items.canRecover(itemRequests) && fluids.canRecover(fluidRequests);
     }
@@ -257,51 +247,6 @@ public final class LongCircuitBuffer {
         List<V> views() {
             settle();
             return views;
-        }
-
-        boolean restock(IEnergySource energy, IMEMonitor<T> inventory, BaseActionSource source, List<T> targets) {
-            settle();
-            boolean modified = false;
-            for (Entry<T, V> entry : entries) {
-                long limit = 0;
-                for (T target : targets) {
-                    if (entry.stored.isSameType(target)) limit = target.getStackSize();
-                }
-                long excess = entry.stored.getStackSize() - limit;
-                if (excess <= 0) continue;
-                long sent = Math.min(excess, maxPoweredAmount(entry.stored));
-                T rejected = Platform.poweredInsert(
-                    energy,
-                    inventory,
-                    entry.stored.copy()
-                        .setStackSize(sent),
-                    source);
-                entry.refunded(sent, rejected);
-                modified |= rejected == null || rejected.getStackSize() < sent;
-            }
-            settle();
-            for (T target : targets) {
-                long missing = target.getStackSize();
-                boolean present = false;
-                for (Entry<T, V> entry : entries) {
-                    if (!entry.stored.isSameType(target)) continue;
-                    missing -= entry.stored.getStackSize();
-                    present = true;
-                    break;
-                }
-                if (missing <= 0 || (!present && entries.size() >= MAX_TYPES_PER_CHANNEL)) continue;
-                T received = Platform.poweredExtraction(
-                    energy,
-                    inventory,
-                    target.copy()
-                        .setStackSize(Math.min(missing, maxPoweredAmount(target))),
-                    source);
-                if (received != null && received.getStackSize() > 0) {
-                    load(received);
-                    modified = true;
-                }
-            }
-            return modified;
         }
 
         boolean canRecover(List<T> requests) {
