@@ -182,9 +182,12 @@ public final class LateMixinsLoader implements ILateMixinLoader {
             Arrays.asList(
                 "appliedenergistics2.wireless.MixinWirelessVisualiserRender",
                 "appliedenergistics2.TerminalInventorySortMixin",
+                "appliedenergistics2.TerminalSearchCacheMixin",
                 "appliedenergistics2.CraftingMonitorGuiMixin",
                 "appliedenergistics2.AccessorGuiScrollbar",
+                "appliedenergistics2.AccessorGuiMEMonitorable",
                 "appliedenergistics2.AccessorContainerMEMonitorable",
+                "appliedenergistics2.WirelessCraftingSlotSyncMixin",
                 "appliedenergistics2.MixinGuiCraftingTerm",
                 "appliedenergistics2.InterfaceEntryViewportAccessor",
                 "appliedenergistics2.InterfaceTerminalViewportMixin",
